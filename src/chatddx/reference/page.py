@@ -1,10 +1,49 @@
 import ast
+from collections import Counter
 from pathlib import Path
 
 import griffe
 
 from .code import Code, Def, Node, decorated, private
 from .raises import VALIDATORS, Raised, Raises
+
+
+def _legend(directory: Path) -> list[str]:
+    return [
+        f"Written by `chatddx reference` from `{directory}/`: each public name, sorted, with its "
+        + "parameters or fields,",
+        "`∟` its return type, and what it raises.",
+        "",
+        "- `*`: the parameters after it are keyword-only; `/`: those before it are "
+        + "positional-only. A function a",
+        "  class binds as an attribute is its method: its first parameter, the instance, "
+        + "is left out.",
+        "- Raises: the function's own `raise` statements and its private helpers' (through "
+        + "`<helper>`), in the order",
+        "  the code reaches them, each once. What the public functions it calls raise is in "
+        + "their own entries.",
+        "- A message is quoted, with the values of the code that raises it as `{expr}`; an "
+        + "argument that isn't text is",
+        "  as written, and from `<exception>` when it is the exception caught.",
+    ]
+
+
+def _head(value: str | griffe.Expr) -> str:
+    if isinstance(value, str):
+        return value if len(value) <= 60 else "…"
+    if isinstance(value, griffe.ExprCall):
+        return f"{value.function}(…)"
+    if isinstance(value, griffe.ExprSubscript):
+        return f"{value.left}[…]"
+    for kind, written in (
+        (griffe.ExprDict, "{…}"),
+        (griffe.ExprSet, "{…}"),
+        (griffe.ExprList, "[…]"),
+        (griffe.ExprTuple, "(…)"),
+    ):
+        if isinstance(value, kind):
+            return written
+    return "…"
 
 
 def _code(text: str) -> str:
@@ -45,44 +84,40 @@ class Page:
         return found
 
     def render(self) -> str:
-        entries: list[tuple[str, list[str]]] = []
+        named: list[tuple[str, griffe.Object]] = []
         for module in self.modules(self.package):
             for name, member in module.members.items():
-                if (
-                    isinstance(member, griffe.Alias)
+                if not (
+                    isinstance(member, (griffe.Alias, griffe.Module))
                     or private(name)
                     or name == "__all__"
+                    or member.path in self.bound
                 ):
-                    continue
-                entries += self.entry(member)
-        entries.sort(key=lambda e: (e[0].casefold(), e[0]))
+                    named.append((name, member))
+        counted = Counter(name for name, _ in named)
+        entries: list[tuple[str, str, list[str]]] = []
+        for name, member in named:
+            within = member.module.path.removeprefix(self.package.path).lstrip(".")
+            prefix = f"{within or '__init__'}." if counted[name] > 1 else ""
+            entries += [(n, prefix, lines) for n, lines in self.entry(member, prefix)]
+        entries.sort(key=lambda e: (e[0].casefold(), e[0], e[1]))
         directory = self.code.src.relative_to(self.repo).joinpath(
             *self.package.path.split(".")
         )
-        lines = [
-            f"# `{self.package.path}`",
-            "",
-            f"Written by `chatddx reference` from `{directory}/`: each public name's signature "
-            + "and what it raises, in the order the code raises it.",
-        ]
-        for _, written in entries:
+        lines = [f"# `{self.package.path}`", "", *_legend(directory)]
+        for _, _, written in entries:
             lines += ["", *written]
         return "\n".join(lines) + "\n"
 
-    def entry(self, member: griffe.Object) -> list[tuple[str, list[str]]]:
+    def entry(self, member: griffe.Object, prefix: str) -> list[tuple[str, list[str]]]:
         if isinstance(member, griffe.Function):
-            if member.path in self.bound:
-                return []
-            return [(member.name, self.function(member, member.name, None, drop=0))]
+            display = prefix + member.name
+            return [(member.name, self.function(member, display, None, drop=0))]
         if isinstance(member, griffe.Class):
-            return self.cls(member)
+            return self.cls(member, prefix)
         if isinstance(member, (griffe.Attribute, griffe.TypeAlias)):
-            return [
-                (
-                    member.name,
-                    [*self.heading(member.name, member), *self.written(member)],
-                )
-            ]
+            heading = self.heading(prefix + member.name, member)
+            return [(member.name, [*heading, *self.written(member)])]
         return []
 
     def heading(
@@ -91,7 +126,7 @@ class Page:
         marks = (
             []
             if node is None
-            else [f"`@{self.code.segment(obj, d)}`" for d in node.decorator_list]
+            else [self.decorator(obj, d) for d in node.decorator_list]
         )
         if node is not None and node.type_params:
             marks.append(
@@ -110,16 +145,31 @@ class Page:
             _code(f"{obj.filepath.relative_to(self.repo)}:{local}"),
         ]
 
+    def decorator(self, obj: griffe.Object, node: ast.expr) -> str:
+        written = self.code.source(obj, node)
+        if written is not None and "\n" not in written:
+            return _code(f"@{written}")
+        if not isinstance(node, ast.Call):
+            return _code(f"@{self.code.segment(obj, node)}")
+        first = [self.code.source(obj, a) for a in node.args[:1]]
+        shown = [a for a in first if a is not None and "\n" not in a]
+        return _code(
+            f"@{self.code.segment(obj, node.func)}({', '.join([*shown, '…'])})"
+        )
+
     def written(self, obj: griffe.Object) -> list[str]:
         lines = self.code.lines(obj)
         if len(lines) == 1:
             return ["", f"* {_code(lines[0].strip())}"]
-        return ["", f"* {_code(self.annotated(obj))}"]
+        return ["", f"* {_code(self.annotated(obj, valued=True))}"]
 
-    def annotated(self, obj: griffe.Object) -> str:
+    def annotated(self, obj: griffe.Object, valued: bool) -> str:
+        written = obj.name
         if isinstance(obj, griffe.Attribute) and obj.annotation is not None:
-            return f"{obj.name}: {obj.annotation}"
-        return obj.name
+            written += f": {obj.annotation}"
+        if valued and isinstance(obj, griffe.Attribute) and obj.value is not None:
+            written += f" = {_head(obj.value)}"
+        return written
 
     def function(
         self, function: griffe.Object, name: str, cls: griffe.Class | None, drop: int
@@ -182,14 +232,16 @@ class Page:
 
     def said(self, r: Raised) -> str:
         written = _code(r.exception) + ("" if r.message is None else f": {r.message}")
-        notes = [] if r.through is None else [f"through {_code(r.through)}"]
+        notes = [] if r.origin is None else [f"from {_code(r.origin)}"]
+        if r.through is not None:
+            notes.append(f"through {_code(r.through)}")
         if r.validated:
             notes.append("in a `ValidationError`")
         return written + (f" ({', '.join(notes)})" if notes else "")
 
-    def cls(self, cls: griffe.Class) -> list[tuple[str, list[str]]]:
+    def cls(self, cls: griffe.Class, prefix: str) -> list[tuple[str, list[str]]]:
         node = self.code.node(cls)
-        lines = self.heading(cls.name, cls, node)
+        lines = self.heading(prefix + cls.name, cls, node)
         if docstring := ast.get_docstring(node):
             lines += ["", *docstring.splitlines()]
         binds = self.binds(cls)
@@ -205,7 +257,7 @@ class Page:
                 private(name) and name not in binds
             ):
                 continue
-            display = f"{cls.name}.{name}"
+            display = f"{prefix}{cls.name}.{name}"
             if name in binds:
                 entries.append(
                     (display, self.function(binds[name], display, cls, drop=1))
@@ -220,7 +272,7 @@ class Page:
                     else ""
                 )
                 if within or not text:
-                    text = self.annotated(member)
+                    text = self.annotated(member, valued=not within)
                 fields.append(f"* {_code(text)}")
             elif isinstance(member, griffe.Function) and member.lineno:
                 held = self.code.node(member)
@@ -236,7 +288,7 @@ class Page:
         if fields:
             lines += ["", *fields]
         lines += self.listed(self.raises.constructing(cls))
-        return [(cls.name, lines), *entries]
+        return [(cls.name, lines), *((d.removeprefix(prefix), e) for d, e in entries)]
 
 
 def page(code: Code, raises: Raises, package: str, repo: Path) -> str:

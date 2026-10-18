@@ -7,6 +7,14 @@ that keeps data has a schema of its own: the factors (docs/factors.md), the ledg
 Catalog, factors and ledger are append-only, and the database enforces it at tier 2.
 Identity and the worker queue allow updates.
 
+```
+AGENT: replace
+The 3 lines below. docs/store-api.md is dropped for docs/reference/store.md, which `chatddx reference` writes from the code.
+Its sections on each schema's tables are dropped, as is the rest that isn't Python.
+---
+This document describes what the store keeps, how the database guards it, and how it is reached. Classes, fields
+and errors are in docs/reference/store.md, and each schema's tables in its migrations (docs/migrations.md).
+```
 This document describes what the store keeps, how the database guards it, and how it is reached. Classes, fields, rules
 and errors are in the API, docs/store-api.md. Each schema's tables are described with its module's API, and its
 migrations in docs/migrations.md.

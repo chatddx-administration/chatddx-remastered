@@ -23,6 +23,12 @@ functions in `identity` and utilize them here.
 - A facade. Claude clarifies:
 > A way to everything an edge reads. What doesn't depend on the person, an edge reads where it is: a component and
   a run's rows from the store, what is said of a thing from the catalog, how an item ended and whether its requests
+```
+AGENT: replace
+docs/runner-api.md is dropped for docs/reference/runner.md, which `chatddx reference` writes from the code.
+---
+  render the same now from the runner (docs/reference/runner.md), and an endpoint's spec and clearances from the
+```
   render the same now from the runner (docs/runner-api.md), and an endpoint's spec and clearances from the
   inventory.
 

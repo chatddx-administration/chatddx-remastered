@@ -7,6 +7,15 @@ documented elsewhere: the runner and the scoring pass (docs/runner.md), what a r
 names, owners and titles (docs/catalog.md), endpoints and clearance (docs/inventory.md), and model facts and their
 lints (docs/facts.md).
 
+```
+AGENT: replace
+The 2 lines below. docs/repl-api.md is dropped for docs/reference/repl.md, which `chatddx reference` writes from the code.
+Its command table is dropped with it: `COMMANDS` holds the commands.
+---
+This document describes what the shell does and why. Its names and what they raise are in docs/reference/repl.md,
+and its commands in `src/chatddx/repl/commands.py:COMMANDS`; how to use it, command by command, is the manual
+(docs/repl-manual.md).
+```
 This document describes what the shell does and why. Its modules, the command table and what each command calls on the
 bench are in docs/repl-api.md; how to use it, command by command, is the manual (docs/repl-manual.md).
 
@@ -182,6 +191,13 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   expectation makes a new scoring, so its runs are left to score again, and a stopped scoring leaves its run to score.
 - **The latest score per scorer** is the one `runs`, `replay` and `show` read; older ones stay in the ledger.
 - **Judge calls are said as they go**, a line per call as `run tag` has per case, ending with what the judge said at
+```
+AGENT: replace
+docs/runner-api.md is dropped for docs/reference/runner.md, which `chatddx reference` writes from the code.
+It has no section for each module: the module is named instead.
+---
+  the view's `at`, from the scoring pass's events (src/chatddx/runner/score.py).
+```
   the view's `at`, from the scoring pass's events (docs/runner-api.md, "score.py").
 
 ### Scores on the screen

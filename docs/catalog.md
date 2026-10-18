@@ -4,6 +4,12 @@ The catalog gives people handles to factors: Names for components, families of c
 of a component in order; who owns what and who it is shared with, what was deleted and the language of texts.
 None of it changes an output or a score: no component refers to the catalog, so no digest depends on it.
 
+```
+AGENT: replace
+docs/catalog-api.md is dropped for docs/reference/catalog.md, which `chatddx reference` writes from the code.
+---
+Fields, classes, functions and errors are in docs/reference/catalog.md.
+```
 Fields, classes, functions, rules and errors are in the API, docs/catalog-api.md.
 
 The catalog refers to

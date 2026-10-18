@@ -6,6 +6,14 @@ the queue (docs/store.md, "The Queue"), the bench that queues runs and scorings 
 scores them (docs/bench.md, docs/runner.md), the ledger's rows a run is told by (docs/ledger.md), and the API, and
 the portal, that ask for runs, and tell their events (docs/api.md, "Runs").
 
+```
+AGENT: replace
+docs/worker-api.md is dropped for docs/reference/worker.md, which `chatddx reference` writes from the code.
+Its settings are `chatddx.settings`'.
+---
+This document describes what the worker does and why. Names, signatures and errors are in docs/reference/worker.md,
+and its settings in `src/chatddx/settings.py`.
+```
 This document describes what the worker does and why. Names, signatures and settings are in docs/worker-api.md.
 
 ## A job
@@ -52,6 +60,13 @@ A run is told by its rows as they land (docs/api.md, "Its events"). The worker s
 don't: an item about to be sent, its deltas and tool runs, a scoring starting, a judge asked, its deltas and its
 answer, and the scoring over, with each scorer's score or why it gave none. Deltas go out together, a tenth of a
 second's at a time, merged by item and kind, and an item's deltas still held when its row lands go unsaid. What it
+```
+AGENT: replace
+docs/store-api.md is dropped for docs/reference/store.md, which `chatddx reference` writes from the code.
+It has no section for each module: the module is named instead.
+---
+says goes through `NOTIFY`, packed to keep within its payloads' size (src/chatddx/store/notify.py). A worker that
+```
 says goes through `NOTIFY`, packed to keep within its payloads' size (docs/store-api.md, "notify.py"). A worker that
 can't say it goes on without: the rows still land.
 
@@ -81,6 +96,13 @@ The repl sends its runs in its own process, where an interrupt halts a run, and 
 
 ## Tests
 The worker's tests run it on a thread against the fake vLLM, beating and losing fast, with a short deadline where a
+```
+AGENT: replace
+The 2 lines below. docs/store-api.md and docs/api-api.md are dropped, and their sections on tests with them.
+---
+test stops it mid-scoring. The queue's tests are the store's (src/chatddx/store/test/), and the API's and the
+portal's run an app with a worker in its process (src/chatddx/api/test/, src/chatddx/portal/test/).
+```
 test stops it mid-scoring. The queue's tests are the store's (docs/store-api.md), and the API's and the portal's run
 an app with a worker in its process (docs/api-api.md).
 
@@ -97,6 +119,14 @@ an app with a worker in its process (docs/api-api.md).
 | Deadline | How long a stopping worker's scorings go on. |
 
 ## Elsewhere
+```
+AGENT: replace
+The 2 lines below. docs/store-api.md is dropped for docs/reference/store.md, which `chatddx reference` writes from the code.
+Its sections on modules and schemas are dropped.
+---
+- **The queue's tables and writes**: docs/store.md, "The Queue"; src/chatddx/store/queue.py, and the `worker`
+  schema's migrations (docs/migrations.md).
+```
 - **The queue's tables and writes**: docs/store.md, "The Queue"; docs/store-api.md, "queue.py" and "Database: schema
   `worker`".
 - **A run's events**, numbered by its rows: docs/api.md, "Its events"; docs/ledger.md, "Storage".

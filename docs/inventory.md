@@ -12,6 +12,13 @@ Heads-up: The location the vignette sources is a factor! Everything else is not.
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/ledger.md, "Run start").
 
+```
+AGENT: replace
+The 2 lines below. docs/inventory-api.md is dropped for docs/reference/inventory.md, which `chatddx reference` writes from the code.
+---
+This document describes what the inventory says and why. Classes, fields and errors are in docs/reference/inventory.md.
+The `inventory` builds on the `factors` and nothing else.
+```
 This document describes what the inventory says and why. Classes, fields, rules and errors are in the API,
 docs/inventory-api.md. The `inventory` builds on the `factors` and nothing else.
 
@@ -31,6 +38,13 @@ everything it includes.
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
 configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
+```
+AGENT: replace
+docs/inventory-api.md is dropped for docs/reference/inventory.md, which `chatddx reference` writes from the code.
+It has no section for each module: the module is named instead.
+---
+checked when an entry is used (src/chatddx/inventory/check.py).
+```
 checked when an entry is used (docs/inventory-api.md, "check.py").
 
 ### Worlds
@@ -198,6 +212,14 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
 its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
+```
+AGENT: replace
+The 2 lines below. docs/inventory-api.md is dropped for docs/reference/inventory.md, which `chatddx reference` writes from the code.
+It has no section for each module: the module is named instead.
+---
+With a World, init-data ends with the inventory check's findings and a count (src/chatddx/inventory/check.py).
+It finds that out without connecting.
+```
 With a World, init-data ends with the inventory check's findings and a count (docs/inventory-api.md,
 "check.py"). It finds that out without connecting.
 
@@ -238,6 +260,13 @@ The import's findings have the engine's digest as subject:
   holds the current date.
 - `engine.chat_template_unread` (info): the report has no template text, so the template wasn't checked. When it has,
   the template is checked against the engine (`engine.chat_template`, `engine.chat_template_date`;
+```
+AGENT: replace
+docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
+It has no section for each module: the module is named instead.
+---
+  src/chatddx/factors/engine.py).
+```
   docs/factors-api.md, "engine.py").
 - `engine.chat_template_not_the_model_s` (info): the template isn't the model's own at its revision.
 - `endpoint.process` (warning): the server's process wasn't seen.

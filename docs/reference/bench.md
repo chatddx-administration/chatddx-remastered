@@ -1,6 +1,14 @@
 # `chatddx.bench`
 
-Written by `chatddx reference` from `src/chatddx/bench/`: each public name's signature and what it raises, in the order the code raises it.
+Written by `chatddx reference` from `src/chatddx/bench/`: each public name, sorted, with its parameters or fields,
+`∟` its return type, and what it raises.
+
+- `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
+  class binds as an attribute is its method: its first parameter, the instance, is left out.
+- Raises: the function's own `raise` statements and its private helpers' (through `<helper>`), in the order
+  the code reaches them, each once. What the public functions it calls raise is in their own entries.
+- A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
+  as written, and from `<exception>` when it is the exception caught.
 
 ## add_compilations
 `src/chatddx/bench/seen.py:add_compilations`
@@ -25,11 +33,11 @@ Written by `chatddx reference` from `src/chatddx/bench/`: each public name's sig
 
 Raises:
 
-1. `ValueError`: run {run.run} was sent to no endpoint, so it can't run again
-2. `NotFound`: no case {missing[0]} for {seen.person.login}
-3. `OverQuota`: a run holds at most {settings.ITEMS_PER_RUN} items, not {items} (through `_begun`)
-4. `OverQuota`: {said}, as many as a day takes (through `_begun`)
-5. `OverQuota`: {said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more (through `_begun`)
+1. `ValueError`: "run {run.run} was sent to no endpoint, so it can't run again"
+2. `NotFound`: "no case {missing[0]} for {seen.person.login}"
+3. `OverQuota`: "a run holds at most {settings.ITEMS_PER_RUN} items, not {items}" (through `_begun`)
+4. `OverQuota`: "{said}, as many as a day takes" (through `_begun`)
+5. `OverQuota`: "{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more" (through `_begun`)
 
 ## Bench.case
 `src/chatddx/bench/cases.py:case`
@@ -40,7 +48,7 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no appendix {digest} for {seen.person.login}
+1. `NotFound`: "no appendix {digest} for {seen.person.login}"
 
 ## Bench.check
 `src/chatddx/bench/components.py:check`
@@ -50,7 +58,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: a person doesn't write {kind} components
+1. `ValueError`: "a person doesn't write {kind} components"
 
 ## Bench.edit
 `src/chatddx/bench/components.py:edit`
@@ -64,12 +72,12 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no {word} {thread} of yours
-2. `ValueError`: a compiled configuration's language comes from its recipe (through `_configured`)
-3. `ValueError`: only a scorer's views and resources have labels (through `_configured`)
-4. `ValueError`: a person doesn't write {kind} components (through `_written`)
-5. `ValueError`: {kind} components have no language of their own (through `_written`)
-6. `ValueError`: {new.case} isn't a case of the family {old.case} is of (through `_written`)
+1. `NotFound`: "no {word} {thread} of yours"
+2. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
+3. `ValueError`: "only a scorer's views and resources have labels" (through `_configured`)
+4. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
+5. `ValueError`: "{kind} components have no language of their own" (through `_written`)
+6. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
 
 ## Bench.follow
 `src/chatddx/bench/following.py:follow`
@@ -81,11 +89,11 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no {word} {thread} of yours
-2. `ValueError`: {word} {thread}'s changes don't fit its origin's head: {e} (through `_proposed`)
-3. `ValueError`: {word} {thread} has nothing to follow
-4. `ValueError`: a compiled configuration's language comes from its recipe
-5. `ValueError`: {kind} components have no language of their own
+1. `NotFound`: "no {word} {thread} of yours"
+2. `ValueError`: "{word} {thread}'s changes don't fit its origin's head: {e}" (from `ValueError`, through `_proposed`)
+3. `ValueError`: "{word} {thread} has nothing to follow"
+4. `ValueError`: "a compiled configuration's language comes from its recipe"
+5. `ValueError`: "{kind} components have no language of their own"
 
 ## Bench.follow_moved
 `src/chatddx/bench/following.py:follow_moved`
@@ -96,9 +104,9 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no configuration {thread} of yours
-2. `ValueError`: configuration {thread} was compiled for nothing that has moved on
-3. `ValueError`: configuration {thread} can't follow {_what(made)} {made.about}: {made.refused}
+1. `NotFound`: "no configuration {thread} of yours"
+2. `ValueError`: "configuration {thread} was compiled for nothing that has moved on"
+3. `ValueError`: "configuration {thread} can't follow {_what(made)} {made.about}: {made.refused}"
 
 ## Bench.fork
 `src/chatddx/bench/components.py:fork`
@@ -112,12 +120,12 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {held.label} isn't a variation of configuration {thread}
-2. `ValueError`: a compiled configuration's language comes from its recipe (through `_configured`)
-3. `ValueError`: only a scorer's views and resources have labels (through `_configured`)
-4. `ValueError`: a person doesn't write {kind} components (through `_written`)
-5. `ValueError`: {kind} components have no language of their own (through `_written`)
-6. `ValueError`: {new.case} isn't a case of the family {old.case} is of (through `_written`)
+1. `ValueError`: "{held.label} isn't a variation of configuration {thread}"
+2. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
+3. `ValueError`: "only a scorer's views and resources have labels" (through `_configured`)
+4. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
+5. `ValueError`: "{kind} components have no language of their own" (through `_written`)
+6. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
 
 ## Bench.moved
 `src/chatddx/bench/following.py:moved`
@@ -136,12 +144,12 @@ Raises:
 
 Raises:
 
-1. `ValueError`: a person doesn't write {kind} components (through `_written`)
-2. `ValueError`: {kind} components have no language of their own (through `_written`)
-3. `ValueError`: only a scorer's views and resources have labels (through `_written`)
-4. `ValueError`: {new.case} isn't a case of the family {old.case} is of (through `_written`)
-5. `ValueError`: a compiled configuration's language comes from its recipe (through `_configured`)
-6. `ValueError`: {digest} isn't a stored {what}
+1. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
+2. `ValueError`: "{kind} components have no language of their own" (through `_written`)
+3. `ValueError`: "only a scorer's views and resources have labels" (through `_written`)
+4. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
+5. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
+6. `ValueError`: "{digest} isn't a stored {what}"
 
 ## Bench.proposal
 `src/chatddx/bench/following.py:proposal`
@@ -151,7 +159,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {word} {thread}'s changes don't fit its origin's head: {e} (through `_proposed`)
+1. `ValueError`: "{word} {thread}'s changes don't fit its origin's head: {e}" (from `ValueError`, through `_proposed`)
 
 ## Bench.queue
 `src/chatddx/bench/runs.py:queue`
@@ -169,9 +177,9 @@ Raises:
 
 Raises:
 
-1. `ValueError`: run {run.run} hasn't finished
-2. `ValueError`: scorer {missing[0]} doesn't apply to run {run.run}
-3. `ValueError`: no scorer applies to run {run.run}
+1. `ValueError`: "run {run.run} hasn't finished"
+2. `ValueError`: "scorer {missing[0]} doesn't apply to run {run.run}"
+3. `ValueError`: "no scorer applies to run {run.run}"
 
 ## Bench.replacement
 `src/chatddx/bench/cases.py:replacement`
@@ -181,7 +189,7 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no case {case} for {seen.person.login}
+1. `NotFound`: "no case {case} for {seen.person.login}"
 
 ## Bench.resume
 `src/chatddx/bench/runs.py:resume`
@@ -198,7 +206,7 @@ Raises:
 
 Raises:
 
-1. `Ambiguous`: {seen.person.login} has {len(mine)} configurations named {name!r}
+1. `Ambiguous`: "{seen.person.login} has {len(mine)} configurations named {name!r}"
 
 ## Bench.say
 `src/chatddx/bench/saying.py:say`
@@ -214,12 +222,12 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no {word} {thread} of yours
-2. `ValueError`: {word} {thread} is deleted: restore it to say more of it
-3. `ValueError`: a name can't be empty: none takes it away
-4. `ValueError`: a tag can't be empty
-5. `NotFound`: no person {login!r} (through `_sharing`)
-6. `ValueError`: {word} {thread} is yours: it is shared with others
+1. `NotFound`: "no {word} {thread} of yours"
+2. `ValueError`: "{word} {thread} is deleted: restore it to say more of it"
+3. `ValueError`: "a name can't be empty: none takes it away"
+4. `ValueError`: "a tag can't be empty"
+5. `NotFound`: "no person {login!r}" (through `_sharing`)
+6. `ValueError`: "{word} {thread} is yours: it is shared with others"
 
 ## Bench.score
 `src/chatddx/bench/runs.py:score`
@@ -244,12 +252,12 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {variation.label} is a judge configuration: a judge is asked as runs are scored, and isn't run on cases
-2. `NotFound`: no case {missing[0]} for {seen.person.login}
-3. `ValueError`: no case can be sent: {"; ".join(c.refused or "" for c in left_out)}
-4. `OverQuota`: a run holds at most {settings.ITEMS_PER_RUN} items, not {items} (through `_check_quota`)
-5. `OverQuota`: {said}, as many as a day takes (through `_check_quota`)
-6. `OverQuota`: {said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more (through `_check_quota`)
+1. `ValueError`: "{variation.label} is a judge configuration: a judge is asked as runs are scored, and isn't run on cases"
+2. `NotFound`: "no case {missing[0]} for {seen.person.login}"
+3. `ValueError`: "no case can be sent: {"; ".join(c.refused or "" for c in left_out)}"
+4. `OverQuota`: "a run holds at most {settings.ITEMS_PER_RUN} items, not {items}" (through `_check_quota`)
+5. `OverQuota`: "{said}, as many as a day takes" (through `_check_quota`)
+6. `OverQuota`: "{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more" (through `_check_quota`)
 
 ## Bench.take
 `src/chatddx/bench/taking.py:take`
@@ -261,8 +269,8 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {schema} isn't a stored expectation schema
-2. `NotFound`: no person {owner!r}
+1. `ValueError`: "{schema} isn't a stored expectation schema"
+2. `NotFound`: "no person {owner!r}"
 
 ## Bench.take_from
 `src/chatddx/bench/taking.py:take_from`
@@ -273,8 +281,8 @@ Raises:
 
 Raises:
 
-1. `ValueError`: expectation {thread} is yours already
-2. `Conflict`: {seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {mine[0]}: replace it to take this one
+1. `ValueError`: "expectation {thread} is yours already"
+2. `Conflict`: "{seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {mine[0]}: replace it to take this one"
 
 ## Bench.type_case
 `src/chatddx/bench/cases.py:type_case`
@@ -288,12 +296,12 @@ Raises:
 
 Raises:
 
-1. `ValueError`: a typed case holds text
-2. `ValueError`: a typed case may not hold U+0000, which can't be stored
-3. `ValueError`: a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, not {len(text)}
-4. `ValueError`: a name can't be empty: none leaves the case unnamed
-5. `ValueError`: {str(e)}
-6. `OverQuota`: {seen.person.login} has typed {typed} cases in the last day, as many as a day takes
+1. `ValueError`: "a typed case holds text"
+2. `ValueError`: "a typed case may not hold U+0000, which can't be stored"
+3. `ValueError`: "a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, not {len(text)}"
+4. `ValueError`: "a name can't be empty: none leaves the case unnamed"
+5. `ValueError`: str(e) (from `LookupError`)
+6. `OverQuota`: "{seen.person.login} has typed {typed} cases in the last day, as many as a day takes"
 
 ## bound
 `src/chatddx/bench/components.py:bound`
@@ -304,7 +312,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: an appendix is bound to the current vignette of a case you see
+1. `ValueError`: "an appendix is bound to the current vignette of a case you see"
 
 ## Carried `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Carried`
@@ -326,7 +334,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {others[0]}: {then}
+1. `ValueError`: "{seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {others[0]}: {then}"
 
 ## check_kind
 `src/chatddx/bench/seen.py:check_kind`
@@ -339,7 +347,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {word} {thread} holds {kind} components, not {given}
+1. `ValueError`: "{word} {thread} holds {kind} components, not {given}"
 
 ## check_scorer
 `src/chatddx/bench/seen.py:check_scorer`
@@ -349,7 +357,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {"; ".join(found)}
+1. `ValueError`: "; ".join(found)
 
 ## Checked `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Checked`
@@ -453,7 +461,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {seen.title(digest)} is in {held} already: a text's language is the same wherever it is held
+1. `ValueError`: "{seen.title(digest)} is in {held} already: a text's language is the same wherever it is held"
 
 ## kept
 `src/chatddx/bench/configurations.py:kept`
@@ -468,7 +476,7 @@ Raises:
 ## KINDS
 `src/chatddx/bench/model.py:KINDS`
 
-* `KINDS: dict[str, tuple[str, ...]]`
+* `KINDS: dict[str, tuple[str, ...]] = {…}`
 
 ## LABELLED
 `src/chatddx/bench/model.py:LABELLED`
@@ -527,12 +535,12 @@ Raises:
 
 Raises:
 
-1. `Ambiguous`: {str(e)}
+1. `Ambiguous`: str(e) (from `LookupError`)
 
 ## PLACEHOLDERS
 `src/chatddx/bench/model.py:PLACEHOLDERS`
 
-* `PLACEHOLDERS: dict[SlotName, str]`
+* `PLACEHOLDERS: dict[SlotName, str] = {…}`
 
 ## Proposed `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Proposed`
@@ -567,7 +575,7 @@ Raises:
 ## SAVED
 `src/chatddx/bench/model.py:SAVED`
 
-* `SAVED: dict[Kept, Literal['created', 'a new version', 'unchanged']]`
+* `SAVED: dict[Kept, Literal['created', 'a new version', 'unchanged']] = {…}`
 
 ## ScorerStarted `@dataclass(frozen=True)`
 `src/chatddx/bench/runs.py:ScorerStarted`
@@ -616,9 +624,9 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {variation.label} names no model: name the endpoint to send it to
-2. `ValueError`: {str(e)}
-3. `ValueError`: endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(model)}
+1. `ValueError`: "{variation.label} names no model: name the endpoint to send it to"
+2. `ValueError`: str(e) (from `LookupError`)
+3. `ValueError`: "endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(model)}"
 
 ## Seen.case_titled
 `src/chatddx/bench/seen.py:Seen.case_titled`
@@ -628,8 +636,8 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no appendix {', '.join(missing)} of {family.name}
-2. `NotFound`: no case {title} for {self.person.login}
+1. `NotFound`: "no appendix {', '.join(missing)} of {family.name}"
+2. `NotFound`: "no case {title} for {self.person.login}"
 
 ## Seen.described
 `src/chatddx/bench/seen.py:Seen.described`
@@ -645,8 +653,8 @@ Raises:
 
 Raises:
 
-1. `NotFound`: {str(e)}
-2. `NotFound`: endpoint {name!r} serves engine {short(spec.engine)}, which isn't in the store: load its World with init-data
+1. `NotFound`: str(e) (from `LookupError`)
+2. `NotFound`: "endpoint {name!r} serves engine {short(spec.engine)}, which isn't in the store: load its World with init-data"
 
 ## Seen.expectation
 `src/chatddx/bench/seen.py:Seen.expectation`
@@ -680,9 +688,9 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no {word} {name!r} for {self.person.login} (through `Seen._named`)
-2. `Ambiguous`: {word} {name!r} names {len(several)}; name one as OWNER/NAME (through `Seen._named`)
-3. `NotFound`: no case {found} for {self.person.login}
+1. `NotFound`: "no {word} {name!r} for {self.person.login}" (through `Seen._named`)
+2. `Ambiguous`: "{word} {name!r} names {len(several)}; name one as OWNER/NAME" (through `Seen._named`)
+3. `NotFound`: "no case {found} for {self.person.login}"
 
 ## Seen.findings
 `src/chatddx/bench/seen.py:Seen.findings`
@@ -753,10 +761,10 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no run {found} of yours
-2. `NotFound`: {self.person.login} has no runs
-3. `NotFound`: no run of yours starts with {found!r}
-4. `Ambiguous`: {len(several)} runs of yours start with {found!r}
+1. `NotFound`: "no run {found} of yours"
+2. `NotFound`: "{self.person.login} has no runs"
+3. `NotFound`: "no run of yours starts with {found!r}"
+4. `Ambiguous`: "{len(several)} runs of yours start with {found!r}"
 
 ## Seen.runs
 `src/chatddx/bench/seen.py:Seen.runs`
@@ -776,7 +784,7 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no score {score} of run {run.run}
+1. `NotFound`: "no score {score} of run {run.run}"
 
 ## Seen.scorers
 `src/chatddx/bench/seen.py:Seen.scorers`
@@ -807,7 +815,7 @@ Raises:
 
 Raises:
 
-1. `StructuralError`: {variation.label} has no translations into {into}
+1. `StructuralError`: "{variation.label} has no translations into {into}"
 
 ## Seen.thread
 `src/chatddx/bench/seen.py:Seen.thread`
@@ -820,11 +828,11 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no {word} {name!r} for {self.person.login} (through `Seen._named_thread`)
-2. `Ambiguous`: {word} {name!r} names {len(several)}; name one as OWNER/NAME (through `Seen._named_thread`)
-3. `NotFound`: no {what} {name!r} for {self.person.login} (through `Seen._named_thread`)
-4. `Ambiguous`: {what} {name!r} names a {' and a '.join(several)} (through `Seen._named_thread`)
-5. `NotFound`: no {word or 'thread'} {found} for {self.person.login}
+1. `NotFound`: "no {word} {name!r} for {self.person.login}" (through `Seen._named_thread`)
+2. `Ambiguous`: "{word} {name!r} names {len(several)}; name one as OWNER/NAME" (through `Seen._named_thread`)
+3. `NotFound`: "no {what} {name!r} for {self.person.login}" (through `Seen._named_thread`)
+4. `Ambiguous`: "{what} {name!r} names a {' and a '.join(several)}" (through `Seen._named_thread`)
+5. `NotFound`: "no {word or 'thread'} {found} for {self.person.login}"
 
 ## Seen.threads
 `src/chatddx/bench/seen.py:Seen.threads`
@@ -838,7 +846,7 @@ Raises:
 
 Raises:
 
-1. `ValueError`: only a configuration has a purpose and an answer: {word}
+1. `ValueError`: "only a configuration has a purpose and an answer: {word}"
 
 ## Seen.title
 `src/chatddx/bench/seen.py:Seen.title`
@@ -862,9 +870,9 @@ Raises:
 
 Raises:
 
-1. `NotFound`: no edit {head} of configuration {edit.thread}
-2. `ValueError`: no part {part!r}: the parts are {', '.join(RECIPE_PARTS)}
-3. `ValueError`: {digest} isn't a stored {what}
+1. `NotFound`: "no edit {head} of configuration {edit.thread}"
+2. `ValueError`: "no part {part!r}: the parts are {', '.join(RECIPE_PARTS)}"
+3. `ValueError`: "{digest} isn't a stored {what}"
 
 ## Started `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Started`
@@ -902,7 +910,7 @@ Raises:
 * `configuration: Edit`
 * `name: str`
 * `recipe: Recipe | None = None`
-* `parts: Mapping[str, tuple[str | None, str]]`
+* `parts: Mapping[str, tuple[str | None, str]] = field(…)`
 
 ## TriedVariation.held
 `src/chatddx/bench/variation.py:TriedVariation.held`
@@ -925,8 +933,8 @@ Raises:
 
 Raises:
 
-1. `ValueError`: {self.name} has no recipe to set its {part} in
-2. `ValueError`: a configuration always has {'an' if part[0] in 'aeiou' else 'a'} {part}: only {', '.join(OPTIONAL_PARTS)} can be taken out
+1. `ValueError`: "{self.name} has no recipe to set its {part} in"
+2. `ValueError`: "a configuration always has {'an' if part[0] in 'aeiou' else 'a'} {part}: only {', '.join(OPTIONAL_PARTS)} can be taken out"
 
 ## TriedVariation.varied `@property`
 `src/chatddx/bench/variation.py:TriedVariation.varied`
@@ -954,7 +962,7 @@ Raises:
 ## WRITTEN
 `src/chatddx/bench/model.py:WRITTEN`
 
-* `WRITTEN: frozenset[str]`
+* `WRITTEN: frozenset[str] = frozenset(…)`
 
 ## Written `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Written`

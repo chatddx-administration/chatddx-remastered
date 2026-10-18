@@ -77,8 +77,8 @@ Final module-scoped documentation is of shapes:
 1. Authoritative spec (`docs/<module>.md`)
 ```
 AGENT: replace
-The reference is written from the code (src/chatddx/reference/) for the packages in `settings.REFERENCED`,
-and replaces `docs/<module>-api.md`; identity and bench are the pilot.
+The reference is written from the code (src/chatddx/reference/) for the packages in `settings.REFERENCED`, the
+solidified ones, and replaces `docs/<module>-api.md`.
 ---
 2. API Reference (`docs/reference/<module>.md`), written by `chatddx reference`
 ```

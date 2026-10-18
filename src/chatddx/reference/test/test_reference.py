@@ -116,7 +116,7 @@ def test_a_class_lists_its_fields_and_each_method_is_an_entry_of_its_own(
         tmp_path,
         {
             "proj/alpha/held.py": """
-                from dataclasses import dataclass
+                from dataclasses import dataclass, field
 
 
                 class Store:
@@ -137,12 +137,21 @@ def test_a_class_lists_its_fields_and_each_method_is_an_entry_of_its_own(
                 class Kept(LookupError):
                     digest: str
                     kind: str = "case"
+                    labels: dict[str, str] = field(
+                        default_factory=dict
+                    )
+
+
+                KINDS: dict[str, str] = {
+                    "case": "case",
+                }
             """,
         },
     )
     headings = [line for line in found.splitlines() if line.startswith("## ")]
     assert headings == [
         "## Kept `@dataclass(frozen=True)` `(LookupError)`",
+        "## KINDS",
         "## Store",
         "## Store.__init__",
         "## Store.default `@staticmethod`",
@@ -154,7 +163,9 @@ def test_a_class_lists_its_fields_and_each_method_is_an_entry_of_its_own(
     assert entry(found, "## Kept `@dataclass(frozen=True)` `(LookupError)`")[1:] == [
         "* `digest: str`",
         '* `kind: str = "case"`',
+        "* `labels: dict[str, str] = field(…)`",
     ]
+    assert entry(found, "## KINDS")[1:] == ["* `KINDS: dict[str, str] = {…}`"]
 
 
 def test_a_function_a_class_binds_is_written_once_as_the_class_s_method(
@@ -193,7 +204,7 @@ def test_a_function_a_class_binds_is_written_once_as_the_class_s_method(
         "* `times: int`",
         "* ∟`int`",
         "Raises:",
-        "1. `ValueError`: a negative number of times (through `Seen._counted`)",
+        '1. `ValueError`: "a negative number of times" (through `Seen._counted`)',
     ]
 
 
@@ -222,11 +233,53 @@ def test_a_raise_is_said_with_its_message_as_the_code_writes_it(
         },
     )
     assert entry(found, "## find")[4:] == [
-        "1. `ValueError`: nothing to find",
-        "2. `ValueError`: {name}",
+        '1. `ValueError`: "nothing to find"',
+        "2. `ValueError`: name",
         "3. `Missing`",
-        "4. `Missing`: no {name!r} in the store",
+        '4. `Missing`: "no {name!r} in the store"',
     ]
+
+
+def test_an_argument_that_isn_t_text_is_said_as_written(tmp_path: Path) -> None:
+    found = written(
+        tmp_path,
+        {
+            "proj/alpha/problems.py": """
+                class Problem(Exception):
+                    def __init__(self, status: int, detail: str = "") -> None:
+                        super().__init__(status, detail)
+
+
+                def _refused(detail: str = "refused") -> Problem:
+                    return Problem(403, detail)
+
+
+                def checked(n: int) -> None:
+                    if n < 0:
+                        raise Problem(422, f"{n} is negative")
+                    if n == 0:
+                        raise Problem(status=404, detail="nothing")
+                    raise _refused("too many")
+            """,
+        },
+    )
+    assert entry(found, "## checked")[4:] == [
+        '1. `Problem`: 422, "{n} is negative"',
+        '2. `Problem`: status=404, detail="nothing"',
+        '3. `Problem`: "too many" (through `_refused`)',
+    ]
+
+
+def test_a_name_two_modules_define_is_headed_with_its_module(tmp_path: Path) -> None:
+    found = written(
+        tmp_path,
+        {
+            "proj/alpha/one.py": "log = 1\n",
+            "proj/alpha/two.py": "log = 2\n",
+        },
+    )
+    headings = [line for line in found.splitlines() if line.startswith("## ")]
+    assert headings == ["## one.log", "## two.log"]
 
 
 def test_raises_are_in_the_order_the_code_reaches_them_helpers_included(
@@ -255,8 +308,8 @@ def test_raises_are_in_the_order_the_code_reaches_them_helpers_included(
         },
     )
     assert entry(found, "## done")[4:] == [
-        "1. `ValueError`: a negative number of times (through `_checked`)",
-        "2. `OverflowError`: too many times",
+        '1. `ValueError`: "a negative number of times" (through `_checked`)',
+        '2. `OverflowError`: "too many times"',
     ]
 
 
@@ -304,12 +357,12 @@ def test_what_a_function_catches_isn_t_said_to_be_raised_unless_raised_again(
     assert entry(found, "## passed")[1:] == [
         "* ∟`None`",
         "Raises:",
-        "1. `Missing`: gone (through `_inner`)",
+        '1. `Missing`: "gone" (through `_inner`)',
     ]
     assert entry(found, "## translated")[1:] == [
         "* ∟`None`",
         "Raises:",
-        "1. `ValueError`: {str(e)}",
+        "1. `ValueError`: str(e) (from `LookupError`)",
     ]
 
 
@@ -338,7 +391,7 @@ def test_a_validator_s_raise_is_said_of_its_class_in_a_validation_error(
     assert entry(found, "## Person `(BaseModel)`")[1:] == [
         "* `login: str`",
         "Raises:",
-        "1. `ValueError`: a login can't be empty "
+        '1. `ValueError`: "a login can\'t be empty" '
         + "(through `Person._login`, in a `ValidationError`)",
     ]
 

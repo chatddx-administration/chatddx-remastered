@@ -64,9 +64,12 @@ class Code:
         source = self._file(obj.filepath)[0].splitlines()
         return source[obj.lineno - 1 : obj.endlineno or obj.lineno]
 
-    def segment(self, obj: griffe.Object, node: ast.AST) -> str:
+    def source(self, obj: griffe.Object, node: ast.AST) -> str | None:
         assert isinstance(obj.filepath, Path)
-        written = ast.get_source_segment(self._file(obj.filepath)[0], node)
+        return ast.get_source_segment(self._file(obj.filepath)[0], node)
+
+    def segment(self, obj: griffe.Object, node: ast.AST) -> str:
+        written = self.source(obj, node)
         if written is None or "\n" in written:
             return ast.unparse(node)
         return written
@@ -116,18 +119,18 @@ class Code:
             found.value, griffe.ExprTuple
         ):
             return [
-                self._named(e)
+                self.named(e)
                 for e in found.value.elements
                 if isinstance(e, griffe.ExprName)
             ]
         return [] if path is None else [path]
 
-    def _named(self, expr: griffe.ExprName) -> str:
+    def named(self, expr: griffe.ExprName) -> str:
         path = expr.canonical_path
         return path if "." in path else f"builtins.{path}"
 
     def bases(self, cls: griffe.Class) -> list[str]:
-        return [self._named(b) for b in cls.bases if isinstance(b, griffe.ExprName)]
+        return [self.named(b) for b in cls.bases if isinstance(b, griffe.ExprName)]
 
     def member(self, cls: griffe.Class, name: str) -> griffe.Object | None:
         if name in cls.members:

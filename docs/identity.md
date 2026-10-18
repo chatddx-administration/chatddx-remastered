@@ -7,11 +7,12 @@ and the World, and the catalog to the owners it records or is asked about.
 
 ```
 AGENT: replace
-docs/identity-api.md is dropped for docs/reference/identity.md, which `chatddx reference` writes from the code.
+The 3 lines below. docs/identity-api.md and docs/store-api.md are dropped for docs/reference/identity.md and
+docs/reference/store.md, which `chatddx reference` writes from the code; the schema's tables are in its migrations.
 ---
 This document describes what identity holds and why. Names, signatures and errors are in docs/reference/identity.md.
-People, their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` and "Database:
-schema `identity`" in docs/store-api.md), and their migrations are in docs/migrations.md.
+People, their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` in
+docs/reference/store.md), and the `identity` schema and its migrations are in docs/migrations.md.
 ```
 This document describes what identity holds and why. Names, signatures and errors are in docs/identity-api.md. People,
 their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` and "Database: schema

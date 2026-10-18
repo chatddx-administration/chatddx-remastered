@@ -46,7 +46,7 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
   "Environment"). `settings.database` names a host, a user and a database only, so a password or TLS can come only
   from libpq's own `PG*` variables.
 - **A World is a directory**: its inventory, its facts, and a directory source's vignettes (`worlds/sample/vignettes`),
-  which are sensitive unless declared otherwise (`docs/inventory-api.md`, `Source`). Every process but `migrate`
+  which are sensitive unless declared otherwise (`docs/reference/inventory.md`, `Source`). Every process but `migrate`
   reads one.
 - **Where it is to run**, in two places that don't agree yet:
   - `docs/chatddx.md` ("Target stack"): the orchestrator "Runs in Kubernetes, writes the start-ups and hosts the

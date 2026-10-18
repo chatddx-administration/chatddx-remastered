@@ -19,6 +19,7 @@ class Raised:
     kind: str | None
     through: str | None = None
     validated: bool = False
+    origin: str | None = None
 
 
 def _first(raised: list[Raised]) -> tuple[Raised, ...]:
@@ -92,6 +93,7 @@ class _Walker:
         self.function: griffe.Object = function
         self.module: griffe.Module = function.module
         self.found: list[Raised] = []
+        self.handlers: dict[str, str] = {}
         self.receivers: dict[str, griffe.Class] = {}
         args = [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
         for arg in args:
@@ -134,8 +136,14 @@ class _Walker:
         for statement in node.body:
             self.visit(statement, (*caught, *held))
         for handler in node.handlers:
+            outer = dict(self.handlers)
+            if handler.name is not None and handler.type is not None:
+                self.handlers[handler.name] = self.code.segment(
+                    self.function, handler.type
+                )
             for statement in handler.body:
                 self.visit(statement, caught)
+            self.handlers = outer
         for statement in [*node.orelse, *node.finalbody]:
             self.visit(statement, caught)
 
@@ -144,14 +152,19 @@ class _Walker:
             return
         target = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
         kind = self.code.lookup(self.module, target)
+        exception, through = self.code.segment(self.function, target), None
+        factory = self.code.get(kind or "")
+        if isinstance(factory, griffe.Function):
+            if not isinstance(factory.returns, griffe.ExprName):
+                return
+            exception, through = factory.returns.name, factory.name
+            kind = self.code.named(factory.returns)
         if kind is None or self.raises.caught(kind, caught):
             return
-        message = None
-        if isinstance(node.exc, ast.Call) and node.exc.args:
-            message = self.message(node.exc.args[0])
-        self.found.append(
-            Raised(self.code.segment(self.function, target), message, kind)
-        )
+        said = self.said(node.exc) if isinstance(node.exc, ast.Call) else None
+        names = {n.id for n in ast.walk(node.exc) if isinstance(n, ast.Name)}
+        origin = next((t for n, t in self.handlers.items() if n in names), None)
+        self.found.append(Raised(exception, said, kind, through, origin=origin))
 
     def called(self, node: ast.Call, caught: tuple[str, ...]) -> None:
         helper = self.helper(node.func)
@@ -184,18 +197,33 @@ class _Walker:
                 return found, found.parent, f"{found.parent.name}.{found.name}"
         return None
 
-    def message(self, node: ast.expr) -> str:
+    def said(self, call: ast.Call) -> str | None:
+        written = [self.argument(a) for a in call.args]
+        for k in call.keywords:
+            value = self.argument(k.value)
+            written.append(f"**{value}" if k.arg is None else f"{k.arg}={value}")
+        return ", ".join(written) or None
+
+    def argument(self, node: ast.expr) -> str:
+        text = self.text(node)
+        return self.code.segment(self.function, node) if text is None else f'"{text}"'
+
+    def text(self, node: ast.expr) -> str | None:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             return node.value.replace("\n", "\\n")
         if isinstance(node, ast.JoinedStr):
-            return "".join(self.message(v) for v in node.values)
+            return "".join(self.text(v) or "" for v in node.values)
         if isinstance(node, ast.FormattedValue):
             conversion = CONVERSIONS.get(node.conversion, "")
             return f"{{{self.code.segment(self.function, node.value)}{conversion}}}"
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-            return self.message(node.left) + self.message(node.right)
-        if isinstance(node, (ast.Name, ast.Attribute)) and (
-            text := self.code.text(self.module, node)
-        ):
-            return text
-        return f"{{{self.code.segment(self.function, node)}}}"
+            left, right = self.text(node.left), self.text(node.right)
+            if left is None and right is None:
+                return None
+            written = [
+                self.code.segment(self.function, n) for n in (node.left, node.right)
+            ]
+            return (left or f"{{{written[0]}}}") + (right or f"{{{written[1]}}}")
+        if isinstance(node, (ast.Name, ast.Attribute)):
+            return self.code.text(self.module, node)
+        return None

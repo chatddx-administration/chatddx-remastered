@@ -5,6 +5,13 @@ written down as *records*, which are added as things happen and never changed, a
 Records refer to components by digest and to each other by id.
 
 It guarantees a run can be shown to have happened under the conditions it claims. This document describes what the
+```
+AGENT: replace
+The 2 lines below. docs/ledger-api.md is dropped for docs/reference/ledger.md, which `chatddx reference` writes from the code.
+It drops the table of finding codes with it: a finding is made where it is found.
+---
+ledger records and why, and what checking it shows. Names, fields and errors are in docs/reference/ledger.md.
+```
 ledger records and why, and what checking it shows. Names, fields, rules and finding codes are in the API,
 docs/ledger-api.md.
 
@@ -202,6 +209,13 @@ score. All of the ledger's findings are warnings. They come from
 - the runner and the scoring pass, while they run, kept in the finish record (see "Run finish" and "Score finish");
 - checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them.
 
+```
+AGENT: replace
+docs/ledger-api.md is dropped for docs/reference/ledger.md, which `chatddx reference` writes from the code.
+It drops the table of finding codes with it: a finding is made where it is found.
+---
+Each finding is made where it is found, as `Finding(…)` in `src/chatddx/ledger/`.
+```
 The API lists every finding (docs/ledger-api.md, "Finding codes").
 
 ## Storage
