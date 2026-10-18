@@ -37,8 +37,8 @@ items under it are as they were moved. An item that restates another for an API 
 18. [Facts as an engine changes them](#g18-facts-as-an-engine-changes-them) (4)
    - G18b. [Facts waiting on a model or a run](#g18b-facts-waiting-on-a-model-or-a-run) (4)
 19. [Stopping: halts, deadlines and time limits](#g19-stopping-halts-deadlines-and-time-limits) (7)
-20. [Slots for the repl and judges, and turns per owner](#g20-slots-for-the-repl-and-judges-and-turns-per-owner) (3)
-21. [Worker: streams and claims](#g21-worker-streams-and-claims) (5)
+20. [Claims: slots, turns and a lost endpoint](#g20-claims-slots-turns-and-a-lost-endpoint) (5)
+21. [Streams that miss nothing](#g21-streams-that-miss-nothing) (3)
 22. [Picking an endpoint for a model](#g22-picking-an-endpoint-for-a-model) (3)
 23. [Concurrent writers](#g23-concurrent-writers) (6)
 24. [The database repeats the rules](#g24-the-database-repeats-the-rules) (8)
@@ -677,11 +677,13 @@ rest.
 - **A halted run is finished**, so a run stopped with the second press can't be resumed; leaving it unfinished would
   record its calls under way as stopped, and its items wouldn't be sent again.
 
-### G20. Slots for the repl and judges, and turns per owner
-The repl's runs and the worker's judge calls hold slots at their endpoints, and claims take turns per owner at each
-endpoint once people wait on each other. It waits for endpoints that are shared and busy.
+### G20. Claims: slots, turns and a lost endpoint
+The repl's runs and the worker's judge calls hold slots at their endpoints, claims take turns per owner at each
+endpoint once people wait on each other, "ahead" says what the turns make it, and a job at an endpoint the inventory
+lost waits rather than fails. The slots and turns wait for endpoints that are shared and busy.
 
-Triage: kept, but for inventory.4, inventory-api.4 and runner.10, dropped as stale.
+Triage: kept, but for inventory.4, inventory-api.4 and runner.10, dropped as stale; worker.12 and worker.13 came from
+G21.
 
 **worker.1** · From docs/worker.md:109, "Open design issues", "The repl beside the worker"
 
@@ -699,9 +701,18 @@ Take: as it is, and holding slots once endpoints are shared and busy.
 Decided: queue order, as built, then turns per owner at each endpoint once people wait on each other. Turns aren't
 built.
 
-### G21. Worker: streams and claims
-A stream that can't miss a row or an event, a queue that a slow listener can't hold up, and claims that wait for a lost
-endpoint.
+**worker.12** · From docs/worker.md:144, "Open design issues", "Smaller issues"
+
+- **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
+
+**worker.13** · From docs/worker.md:145, "Open design issues", "Smaller issues"
+
+- **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
+
+### G21. Streams that miss nothing
+A stream that can't miss a row or an event, and a notification queue that a slow listener can't hold up.
+
+Triage: kept, but for the queue's items, which went to G20.
 
 **worker.5** · From docs/worker.md:126, "Open design issues", "Smaller issues"
 
@@ -720,14 +731,6 @@ endpoint.
 - **`NOTIFY`'s queue**: a payload waits in the database's notification queue, kept on disk, until every listener has
   read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.
-
-**worker.12** · From docs/worker.md:144, "Open design issues", "Smaller issues"
-
-- **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
-
-**worker.13** · From docs/worker.md:145, "Open design issues", "Smaller issues"
-
-- **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 
 ### G22. Picking an endpoint for a model
 A model served at several endpoints is picked from them, linted, and followed only where served.
