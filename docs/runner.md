@@ -64,15 +64,6 @@ It decides once per run, as it starts and as it resumes, and once per judge as a
 pin, before anything is prepared or rendered: every request a run sends, each tool round's and attempt's included, goes
 to the endpoint the gate admitted. The gate refuses, in order:
 - a judge that reads the vignette or the appendices, which no judge is given (see "Judges");
-```
-AGENT: review
-Why running again and a queued job are refused after an engine change.
----
-Keep: the gate is right, and running again asks for the endpoint's current engine (open option 3a).
-
-New take: keep: a run asks for its handle's latest engine, so the gate refuses only a run started, or queued, before
-the handle moved on.
-```
 - an endpoint that serves another engine than the one asked for;
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
 - tools on a sensitive source, since a tool can't be cleared yet;
@@ -163,20 +154,8 @@ Finishing writes the finish record with those findings and returns what checking
 
 ### Judges
 A judged view's metric reads the verdicts of the view's judge, one per seed (docs/factors.md, "Judge"):
-```
-AGENT: review
-5b.
----
-- **Where its calls go.** A judge names a model; its calls go to the one endpoint serving that model, whose engine
-  the score pins, and through the gate as a run's do, for the run's cases, since a judge reads a completion. Several
-  serving it is refused rather than picked from, as for a run (docs/backlog.md, "Picking an endpoint for a model").
-
-New take: a judge's model is picked by handle; its calls go to the handle's endpoint at its latest engine, which the
-scoring pins, and a handle that doesn't resolve refuses the scoring as ops' error.
-```
-- **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, and through
-  the gate as a run's do, for the run's cases, since a judge reads a completion. Several serving it is refused rather
-  than picked from, as for a run (docs/backlog.md, "Picking an endpoint for a model").
+- **Where its calls go.** a judge's model is picked by handle; its calls go to the handle's endpoint at its latest
+  engine, which the scoring pins, and a handle that doesn't resolve refuses the scoring as ops' error.
 - **What it reads.** The completion and the expectation, as the view picks them. A judge whose skeleton reads the
   vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the

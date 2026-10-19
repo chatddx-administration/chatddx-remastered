@@ -28,21 +28,10 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
 
 ## Running one
-```
-AGENT: review
-The variation replaces the model, not the engine, and the label says `+model=` (`src/chatddx/bench/variation.py`).
----
 The variation is the configuration with its model set to the endpoint's engine's model, unless it is hand-written and
 has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to
 an endpoint serving another model than its own runs as a variation, its model replaced and the rest worked out for it,
 and is named so: `plan-prompted+model=gpt-oss-20b@fake`.
-
-New take: unchanged; scripted runs are the developers' and the fake's, so they keep naming endpoints.
-```
-The variation is the configuration with its model set to the endpoint's engine's model, unless it is hand-written and
-has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to
-an endpoint serving another engine than its own runs as a variation, its engine replaced and the rest worked out for
-that engine's model, and is named so: `plan-prompted+engine=gpt-oss-20b@fake`.
 
 A scripted run's cases are sent in one language: the configuration's own, as written, or one its translations
 cover, translated, so that its start is one run. Cases the bench would send in several, or leave out, are refused

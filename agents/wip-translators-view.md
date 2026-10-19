@@ -131,14 +131,6 @@ Decided: (a), built in step 1.
 - **(a)** The review's run form, on the families in the language.
 - **(b)** The variation page, which runs a configuration in every language its cases are in already.
 
-```
-AGENT: review
-The rule's one statement, and in agents/: docs/ don't say it.
----
-Keep, and say it in docs/bench.md, "Translations" (suggested there).
-
-New take: unchanged.
-```
 Decided: (b) first. Vignettes aren't translated, so comparing languages is comparing case sets, and there is no case
 to compare an answer with across them.
 
@@ -324,4 +316,3 @@ After step 4, by the user's pick of five from what the steps had added:
 - No page drawn twice: the server no longer draws the texts and the request beneath the island.
 - One code: `translations.incomplete` folded into `translations.missing`, both messages ending in the refusal
   compiling gives, suggested to `docs/bench.md`.
-

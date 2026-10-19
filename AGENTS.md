@@ -24,11 +24,15 @@ This document contains project-wide instructions written by humans for agents.
 * `pnpm --dir frontend test` tests frontend
 
 ## Committing
-Before commit:
+If change in docs (changes in docs/* or agents/*):
+* No checks needed
+
+If change in code
 * Remove all docstrings and comments that don't pass doc rule 2 and 3 respectively.
 * run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark the ones that stand out.
 * Typecheck and test frontend as normal.
-* After a change to the API, run:
+
+After a change to any module's surface, run:
   - `chatddx openapi > frontend/openapi.json`
   - `chatddx reference`
 

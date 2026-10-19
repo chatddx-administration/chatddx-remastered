@@ -116,26 +116,10 @@ An endpoint says where one engine is served: the engine, by digest; the server's
 local engine; how many requests it takes at once; and, when it has a secret, the name of the environment variable that
 holds it.
 
-```
-AGENT: review
-An engine change makes a new digest under the same endpoint name. The endpoint's name, and the engine's thread named
-after it, are what tie an endpoint's engines together (open options 2 and 3).
----
-A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
-server answers as. Changing the engine changes its digest, so the endpoint has to change with it, and the engine's
-thread, named after the endpoint, moves on (docs/curation.md, "Loading"): a run at an earlier engine is stale at the
-endpoint. Every endpoint has an address, and a local engine's needs a host too to be started.
-
-New take: the handle, not the endpoint, ties an endpoint's engines together:
-
 A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
 server answers as. Changing the engine changes its digest, so the endpoint has to change with it, and its handle means
 the new engine from then on; runs under the handle on its earlier engines stay grouped under it (docs/bench.md).
 Every endpoint has an address, and a local engine's needs a host too to be started.
-```
-A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
-server answers as. Changing the engine changes its digest, so the endpoint has to change with it. Every endpoint has
-an address, and a local engine's needs a host too to be started.
 
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its provider and
 model. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
@@ -147,42 +131,18 @@ The runner reads the secret from the variable the endpoint names, and sends it a
 the endpoint, the one that confirms it included. It refuses to run when the variable isn't set. The secret itself
 never appears in the inventory or the ledger.
 
-```
-AGENT: review
-The precedent for 4b: a server setting the import takes from the server's configuration, kept out of the engine. The
-arguments that only tune the server would join it.
----
 The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
 configuration, as it takes the arguments that only tune the server (docs/backlog.md, "What reaches vLLM: argv and
 passthrough"), and the runner refuses an execution that would send more.
-
-New take: unchanged.
-```
-The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
-configuration, and the runner refuses an execution that would send more.
 
 An endpoint may name a canary set, by digest, which every run at it sends, so that runs at one endpoint are probed
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
-```
-AGENT: review
-Option 1 would pick among a host's endpoints; 5b sends a judge's calls to the endpoint serving its model.
----
-A run goes to the endpoint serving its configuration's model, on the host it is asked for when one is, and a judge's
-calls to the endpoint serving the judge's model, unless one is named.
-
-New take: by handle:
-
 A run goes to the endpoint its model's handle maps to, and a judge's calls to the one its handle maps to; researchers
 name no endpoint. Ops map each handle to exactly one engine and one endpoint, on one hardware class. A handle that
 doesn't resolve to one is ops' error: the inventory check reports it at init-data, as a worker starts and at the
 engine import, and a researcher's run or scoring is refused saying it is ops'.
-```
-A run goes to the endpoint serving its configuration's model, and a judge's calls to the endpoint serving the judge's
-engine, unless one is named. When no endpoint serves them, or several do and none is named, the run or the scoring is
-refused rather than an endpoint picked; an endpoint named that serves another model is refused too (docs/backlog.md,
-"Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the endpoint named.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
@@ -206,41 +166,17 @@ so a data set's judges are planned with the engines of the World they are loaded
 them leaves them and their scorers out (docs/curation.md, "Factors"). Like clearance, a binding is read only from the
 inventory's own file, and no command writes it.
 
-```
-AGENT: review
-5b: a judge a person writes names a model.
----
-A judge a person writes names its model, and the scoring pass finds the endpoint that serves a judge's model either
-way (docs/runner.md, "Judges").
-
-New take: a judge's model is picked by handle, a person's and a data set's alike, and a data set's judge is bound to a
+A judge's model is picked by handle, a person's and a data set's alike, and a data set's judge is bound to a
 handle rather than an endpoint (`[judge] verdict = "qwen3-8b"`); the scoring pass sends its calls to the handle's
 endpoint.
-```
-A judge a person writes names its engine itself (docs/bench.md, "Components"), and the scoring pass finds the endpoint
-that serves a judge's engine either way (docs/runner.md, "Judges").
 
 ## Configurations
 `configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine's model a data set's
 configurations are made for: init-data makes each recipe once, with that engine (docs/curation.md).
 
-```
-AGENT: review
-In unison with researchers varying models. "A judge keeps its engine as a trial does" changes with 5b.
----
-Which model a configuration is made for is the World's choice, and a researcher swaps the model; the engine is the
-endpoint's, a trial's and a judge's alike. A World that names none loads no configurations: each recipe is
-
-New take: by handle; `configurations` names a handle rather than an endpoint:
-
 Which model a configuration is made for is the World's choice, and a researcher swaps it by its handle; the engine is
 the handle's latest, a trial's and a judge's alike. Ops may put new weights under a handle: configurations pinning the
 old ones are then behind their model, and don't run under the handle until followed.
-```
-Which model a configuration is made for is the World's choice, and a researcher swaps the model; the engine is the
-endpoint's, and a judge keeps its engine as a trial does. A World that names none loads no configurations: each recipe is
-skipped and reported. Like a judge's binding, it is read only from the inventory's own file, and no command writes
-it.
 
 ## Starting and reaching an engine
 An endpoint is joined with the engine it serves and, for a local engine, with the host that runs it. When the
@@ -277,20 +213,10 @@ The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a contain
 engine's values come from its host, not from people: the engine import reads each host's report and writes the
 factors and the inventory entries together.
 
-```
-AGENT: review
-An argument changed on a server reaches the rig only by a new import and a new loading: the engine gets a new digest,
-the endpoint names it, and the engine's thread moves on.
----
-Keep.
-
-New take: the import puts each server's model under the handle ops give it, rather than naming it server@host, and its
-inventory check reports a handle it leaves without exactly one endpoint.
-```
-For each server, the import writes the model artifact, the local engine, the endpoint, and where the host keeps the
-model and the template, all named server@host after the report's host name. The models and engines go to the World's
-`engines.toml`, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
-change them, import again rather than edit.
+For each server, the import puts each server's model under the handle ops give it and its inventory check reports a
+handle it leaves without exactly one endpoint. The models and engines go to the World's `engines.toml`, and the
+endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to change them, import again
+rather than edit.
 
 The endpoint's address is the report's, or a host name given in its place, with the server's port. The host's
 listening address, the capacity and the engine's environment come from the server's configuration, without the
