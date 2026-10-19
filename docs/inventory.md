@@ -3,17 +3,9 @@
 The inventory says which directory holds a source's vignettes, at which address an engine is served, where a host keeps
 the model files and chat template an engine pins.
 
-```
-AGENT: REPLACE
-Judges and configurations are bound to handles (`src/chatddx/inventory/inventory.py:Inventory`).
----
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources. It also says under which handle each of a data set's judges judges, and the handle its
 configurations are made for.
-```
-Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
-sensitive sources. It also says at which endpoint each of a data set's judges judges, and the endpoint whose engine
-its configurations are made for.
 
 Heads-up: The location the vignette sources is a factor! Everything else is not.
 
@@ -29,34 +21,17 @@ table's key. Paths in the file are relative to the file, so a World can be moved
 own files are the host's (see "Hosts").
 
 ### Includes
-```
-AGENT: REPLACE
-A judge and configurations are bound to handles.
----
-endpoints and hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the handle
-configurations are made for, so importing again can't either. A name is defined once, across the inventory and
-```
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
 import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
-endpoints and hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the endpoint
+endpoints and hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the handle
 configurations are made for, so importing again can't either. A name is defined once, across the inventory and
 everything it includes.
 
 ### What loading checks
-```
-AGENT: REPLACE
-Bindings name handles, which the files don't define, so loading no longer checks them; init-data reports one that
-doesn't resolve (`src/chatddx/curation/plan.py`).
----
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, and that each source is named by its table. A judge's and the configurations'
 handles are resolved as the data set is loaded (docs/curation.md, "Facts and the engine"), and anything else that
 needs the engines is checked when an entry is used (src/chatddx/inventory/check.py).
-```
-Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
-endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
-configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
-checked when an entry is used (src/chatddx/inventory/check.py).
 
 ### Worlds
 In chatddx, a world is technically the only the parameters beyond chatddx's control, but the directories `worlds/*` also
@@ -66,15 +41,9 @@ Command line tools take `--world DIR` or fall back to `CHATDDX_WORLD`.
 
 The directory must contain an `inventory.toml` and may contain the others, see table.
 
-```
-AGENT: REPLACE
-The `inventory.toml` row: judges and configurations by handle.
----
-| `inventory.toml` | ops, by hand | sources, clearance, which handle judges each judge, and which handle configurations are made for |
-```
 | File | Author | Holds |
 | --- | --- | --- |
-| `inventory.toml` | ops, by hand | sources, clearance, which endpoint judges each judge, and which endpoint's engine configurations are made for |
+| `inventory.toml` | ops, by hand | sources, clearance, which handle judges each judge, and which handle configurations are made for |
 | `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
 | `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
 | `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
@@ -83,14 +52,8 @@ The `inventory.toml` row: judges and configurations by handle.
 | `_runs/` | developers | scripted runs (docs/scripted.md) |
 
 ```
-```
-AGENT: REPLACE
-The tree's `inventory.toml` line: judges bound to handles.
----
-  inventory.toml   sources, clearance, judges bound to handles, configurations, include = ["endpoints.toml"]
-```
 worlds/<name>/
-  inventory.toml   sources, clearance, judges bound to endpoints, configurations, include = ["endpoints.toml"]
+  inventory.toml   sources, clearance, judges bound to handles, configurations, include = ["endpoints.toml"]
   endpoints.toml   endpoints and hosts
   engines.toml     models, local engines, remote engines
   facts.toml       facts about models the bundled facts don't know
@@ -108,22 +71,11 @@ take another's vignettes or endpoints without copying them.
 
 This repository has three, in `worlds/`:
 
-```
-AGENT: REPLACE
-The bare Qwen3 has weights of its own, `qwen3-8b-bare`, as two endpoints serving one model's weights are ops' error
-(`worlds/test/engines.toml`).
----
 - The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
   endpoints on this machine (one with no reasoning parser and no tool flags, under weights of its own,
   `qwen3-8b-bare`, one serving a made-up model whose facts are the World's own `facts.toml`), a remote endpoint that
   only a fake stands in for, nine vignettes each carrying a quirk of its own, and its data set in `_data/`. Its tools
   are the runner's test tools, so it loads only under pytest.
-```
-- The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
-  endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
-  are the World's own `facts.toml`), a remote endpoint that only a fake stands in for, nine vignettes each carrying
-  a quirk of its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under
-  pytest.
 
 - The sample World: the example new Worlds follow, using everything a World can hold. The sample's vignettes and its
   data set (`_data/`), an endpoint for each fake engine on this machine and the fake host, in an included
@@ -134,15 +86,8 @@ The bare Qwen3 has weights of its own, `qwen3-8b-bare`, as two endpoints serving
   vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
   import writes from the hosts' reports. Both endpoints are cleared for the sample.
 
-```
-AGENT: REPLACE
-Each names a handle (`worlds/*/inventory.toml`).
----
 Each names the handle its configurations are made for: `qwen3-8b-awq` in the test and the sample World, and
 `qwen3-8b` in Kompismoln's.
-```
-Each names the endpoint its configurations are made for: `qwen3@fake` in the test World, `qwen3-8b-awq@fake` in the
-sample World, and `qwen3-8b@pelle` in Kompismoln's.
 
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
@@ -215,15 +160,8 @@ endpoints"). It is read only from the inventory's own file (see "Includes"). Cle
 statement, so no command writes it.
 
 ## Judges
-```
-AGENT: REPLACE
-The table binds handles, as the paragraph below says (`worlds/*/inventory.toml`).
----
 The judge table binds each of a data set's judges, by name, to the handle whose latest engine judges it:
 `[judge] verdict = "qwen3-8b"`. Which engine judges is the World's choice, as the handle a run goes under is,
-```
-The judge table binds each of a data set's judges, by name, to the endpoint whose engine judges it:
-`[judge] verdict = "qwen3-8b@pelle"`. Which engine judges is the World's choice, as the endpoint a run goes to is,
 so a data set's judges are planned with the engines of the World they are loaded into, and a World that binds none of
 them leaves them and their scorers out (docs/curation.md, "Factors"). Like clearance, a binding is read only from the
 inventory's own file, and no command writes it.
@@ -233,15 +171,8 @@ handle rather than an endpoint (`[judge] verdict = "qwen3-8b"`); the scoring pas
 endpoint.
 
 ## Configurations
-```
-AGENT: REPLACE
-It names a handle (`worlds/kompismoln/inventory.toml`).
----
 `configurations = "qwen3-8b"`, at the top of the inventory, names the handle whose model a data set's configurations
 are made for: init-data makes each recipe once, for its model (docs/curation.md).
-```
-`configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine's model a data set's
-configurations are made for: init-data makes each recipe once, with that engine (docs/curation.md).
 
 Which model a configuration is made for is the World's choice, and a researcher swaps it by its handle; the engine is
 the handle's latest, a trial's and a judge's alike. Ops may put new weights under a handle: configurations pinning the

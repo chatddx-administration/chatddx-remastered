@@ -110,17 +110,8 @@ Variation is a configuration with recipe parts replaced (docs/catalog.md, "Confi
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
 set by. With nothing replaced, it is the configuration itself.
 
-```
-AGENT: REPLACE
-It runs under its model's handle, and a hand-written configuration names a handle
-(`src/chatddx/bench/seen.py:Seen.at`).
----
 It is a plain value and an unsaved one is just a digest. It runs under its model's handle, so an edge needs a handle
 beside it only for a hand-written configuration, which has no model part and runs under the one named.
-```
-It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its model,
-so an edge needs an endpoint beside it only for a hand-written configuration, which has no model part and goes where
-named.
 
 A variation replaces the recipe's nine chunks and its model, which can't be taken out.
 
@@ -155,20 +146,10 @@ answers is the title as written (`Seen.answers`): a translated skeleton's is its
 translates its title too.
 
 ### The model
-```
-AGENT: REPLACE
-Several endpoints serving one model's weights are ops' error now, and the test World's bare Qwen3 has weights of its
-own (`worlds/test/engines.toml`, `src/chatddx/bench/seen.py:Seen.handle`, `Seen.served`).
----
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
 from the facts about it. A run goes under the handle the model's weights are under, to the one endpoint serving its
 weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`); none or several is ops' error, said to the person,
 and a look that can't run says why and has no findings. The engine is the trial's: the handle's latest.
-```
-The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
-from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving`);
-several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that names none, and a look rendered
-for none has no findings. The engine is the trial's: the endpoint's.
 
 A reasoning level and a recommended sampling are intents rather than settings: compiling
 resolves them with the facts about the model as they are stored then (docs/facts.md), lands each level where
@@ -357,13 +338,7 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   case's family still seen; another is "not found", as a family is.
 - **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
   the worker (docs/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is refused.
-```
-AGENT: REPLACE
-A start runs under the variation's handle (`src/chatddx/bench/runs.py:start`).
----
 - **Starting** runs a variation under its model's handle. A run for each language its cases are sent in
-```
-- **Starting** runs a variation at the endpoint serving its model. A run for each language its cases are sent in
   (see "Translations"). As it starts, each is named by the variation's label and says what it varied:
   (docs/catalog.md, "What a run ran").
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
