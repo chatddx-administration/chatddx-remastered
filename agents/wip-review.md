@@ -1,6 +1,6 @@
-# Olof's view: work in progress
+# Review: work in progress
 
-A page in the portal where a clinician sees vignettes, writes appendices, edits expectations and composes scorers,
+Review, `/review/{family}`, is a page in the portal where a clinician sees vignettes, writes appendices, edits expectations and composes scorers,
 with or without judges, around one case at a time. Olof stands in for that clinician: someone who works best with a
 simple, clear interface where everything needed to review a case fully, and everything around it, is a saccade away
 rather than a click, a scroll or another page.
@@ -8,21 +8,23 @@ rather than a click, a scroll or another page.
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **It can be done.** The bench and the API write everything the page needs: appendices, cases, expectations,
-   scorers with their labels, and judges (`docs/api.md`, "Forking and editing"). The portal already has the
-   clinicians' half (`agents/wip-portal.md`, 5b). The scorer and judge editors (5d) are missing, as is a way to see
-   what a view picks and scores before anything is saved, and a way to read answers to a case that isn't one's own
-   run (see "The landscape").
-2. **The page gathers what is spread over today's pages.** The vignette is at `/families/{id}/vignette`; appendices,
-   cases and expectations are at `/families/{id}`; an expectation's versions are at `/threads/{id}`; scorers have no
-   editor; and answers and scores are at `/runs/{id}`, one run at a time.
+1. **What it is**: one case at a time, the vignette with its appendices, the expectation with the views that read it,
+   a scorer composed with its judges, and the record of the person's answers to the case. The bench and the API write
+   everything it needs (`docs/api.md`, "Forking and editing"); the page is built (see "Steps").
+2. **The page gathers what is spread over other pages.** The vignette is at `/families/{id}/vignette`; appendices,
+   cases and expectations are at `/families/{id}`; an expectation's versions are at `/threads/{id}`; a scorer is
+   composed only here; and answers and scores are at `/runs/{id}`, one run at a time.
 3. **Decided: the takes on L1 to L7** (see "The landscape"): Olof holds both roles; the island fetches what is
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
 4. **Steps 1 to 6 are built** (see "Built"); what is left is in each step's "What step N leaves" and in "Open".
-5. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b): the run form's
-   endpoint (step 3) and the judge's (step 5) become a handle picked.
+5. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b): the run form picks
+   a model, its own by default (step 3), and a new judge a handle, whose weights it pins (step 5;
+   `agents/wip-judge-handle.md`). Built.
+6. **Decided: scorers and judges become editable on their threads' pages**, the Library's, before a page of their own
+   (`agents/wip-portal.md`, "5d: scorers and judges"). The composer stays the Review's, and shares its judge's fields
+   with the judge's thread page.
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/backlog.md`, "Olof's work"):
@@ -36,11 +38,13 @@ From the request, and from what the sample World waits on (`docs/backlog.md`, "O
   metric reads one; labels; save.
 - **Write the judge**: Olof's prompt replaces the sample's draft judge, as an edit. It settles which of the comment and
   the answer the judge reads, how a Swedish note is read against an English answer, verdict or scale, strictness, and
-  the engine and seeds. This is 5c work (a judge's texts), and the sample's judges wait on it.
+  the model and seeds. This is 5c work (a judge's texts), and the sample's judges wait on it.
 - **See how answers fare**: the answers to the case, each view's value and the judges' verdicts, so that a target, a
   note, a view or a prompt can be corrected with its effect in view.
 
 ## What exists to build on
+As the plan found it; what each step built is under "Built".
+
 | To do | Built below the page | In the portal now | Missing |
 |---|---|---|---|
 | Read the vignette | `GET /api/families/{id}/vignette`, `no-store` | its own page | nothing |
@@ -124,7 +128,7 @@ Decided: (a).
 A person sees only their own runs, and being a collaborator on a run shows nothing (`docs/bench.md`, "What a person
 sees"). A clinician who doesn't start runs has no answers to review, and a researcher's runs are scored against the
 researcher's expectations (`docs/bench.md`, "What a person is scored against").
-- **(a)** Olof runs the case himself from the page: a configuration, an endpoint and seeds, scored by his scorers
+- **(a)** Olof runs the case himself from the page: a configuration, a model and seeds, scored by his scorers
   against his expectations. This matches how his judge is to be measured: "real answers from pelle and malborg on
   `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`" (`docs/backlog.md`, "Olof's work").
 - **(b)** Runs can be shared: a collaborator reads a run's items and scores. That changes `docs/bench.md`, which is
@@ -135,8 +139,8 @@ Decided: (a) now; (b) stays open.
 
 ### L4. How deep "with judges" goes
 - **(a)** A view picks a judge the person sees.
-- **(b)** The person writes a judge over a judge configuration they see: an engine (by the endpoint serving it),
-  seeds and the fill rule. This is the judge's 5d form.
+- **(b)** The person writes a judge over a judge configuration they see: a model, by its handle, seeds and the fill
+  rule. This is the judge's 5d form.
 - **(c)** The person also writes the judge's texts, its instructions and prompt of purpose `judge`, and a judge
   configuration from a recipe. That needs 5c's text editor (a text that knows its slots and inserts) and a
   configuration made from a recipe. It is what Olof's prompt needs.
@@ -173,7 +177,9 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   Decided: (c). The family's page stays the one without scripts, and keeps 5b's browser test.
 - **5c and 5d** (`agents/wip-portal.md`, "Authoring"): the scorer and judge editors are built here as components, and
   the thread's page uses the same ones for a scorer's and a judge's `/threads/{id}`. So this page builds 5d, and 5c's
-  text editor arrives with L4 (c). Decided: as said, and `agents/wip-portal.md` points here for them.
+  text editor arrives with L4 (c). Decided: as said, and `agents/wip-portal.md` points here for them. Since: the
+  threads' pages get their editors as `agents/wip-portal.md` plans them ("5d: scorers and judges"), the judge's
+  sharing this page's judge fields.
 - **Its name**: the address and the page's title name no person. Decided: `/review` and "Review"; the tests keep
   to alice, bob and carol (AGENTS.md, "Placeholder username").
 
@@ -213,7 +219,7 @@ the pattern is typed, a scorer saved, and its score.
 
 ## Built
 ### Step 1: the page, read only
-- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/picks`
+- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/picks`
   (`src/chatddx/api/world.py:picks`), selectors and a document in, and out each selector's picks, by
   `chatddx.factors.select`, or why it doesn't read; and `case` on a run's items and on a score's items, so that the
   island reads one case's alone.
@@ -290,7 +296,7 @@ the pattern is typed, a scorer saved, and its score.
 
 ### Step 3: running the case, and scoring it again
 - **Run this case**, folded at the top of the record (open when there is nothing to read): a configuration of purpose
-  generation the person sees, their own first; an endpoint, or the one serving its model; replicates; and whether to
+  generation the person sees, their own first; a model, its own by default; replicates; and whether to
   score it once it has finished. `POST /review/{family}/runs` starts the case picked, held to be a current case of the
   family, as `POST /api/runs` starts one (`Bench.variation`, `Bench.start`, `Bench.queue` under `refused`), a run per
   language its translations carry it into, and leads back to the review with the record open (`#record`).
@@ -304,8 +310,8 @@ the pattern is typed, a scorer saved, and its score.
   `Bench.queue_scoring` by the scorers it is left to), and leads back to the record, which follows the scorings as it
   follows runs.
 - **The record's rows** say when each run started, since runs of one configuration read alike.
-- **An endpoint serving another model** runs the configuration with that model in its place, as the variation's page
-  does (`diagnoses+model=gpt-oss-20b@malborg`), rather than being refused for serving another model.
+- **Another model** runs the configuration with that model in its place, as the variation's page does
+  (`diagnoses+model=gpt-oss-20b`).
 - **No jump**: the record is opened by `#record` without an element of that id, so the page doesn't scroll to it, and
   the island drops the hash, so the reload after a run doesn't either.
 - **Tests**: `test_running.py`, the case run from its review and followed there, refused from another site and for a
@@ -317,7 +323,7 @@ the pattern is typed, a scorer saved, and its score.
 #### What step 3 leaves
 - **Several runs started together**: one configuration a start; comparing configurations on the case is the portal's
   phase 6 (`agents/wip-portal.md`, "Comparing variations").
-- **A run refused** (several endpoints serve the model, a language the translations don't cover, over quota) is
+- **A run refused** (its handle doesn't resolve, a language the translations don't cover, over quota) is
   answered with the error page, not beside the form.
 - **The cost of the record grows with the runs**: each run listed is read whole, and what is left to score is worked
   out for each (`Bench.unscored`, about 40 ms a run), 50 runs at most.
@@ -325,7 +331,7 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 4: composing a scorer without judges
-- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/scorers/try`
+- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/scorers/try`
   (`src/chatddx/api/scores.py:tried`), a scorer as written and an expectation's data tried on a case's items in some of
   the person's runs: each item's answer as the scoring pass reads it, and each view's value and detail by
   `chatddx.scorers.scorer.score_view`, with nothing stored. A judged view isn't tried, since its judge would be sent
@@ -363,20 +369,20 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 5: with judges
-- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/judges/asked`
+- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/judges/asked`
   (`src/chatddx/api/scores.py:judge_asked`), a stored judge's first request rendered as the scoring pass renders it,
   its `expectation` slot filled by what a view picks of the expectation as typed, the answer and the case's slots as
   placeholders (`chatddx.bench.model.PLACEHOLDERS`). Nothing is sent or stored, and nothing in it is sensitive.
 - **A judged view** (`frontend/src/lib/scorer/Composer.svelte`): the metrics that read a judge's verdicts are offered
   beside the others, "by a judge". Picking one picks a judge, the person's own first, each said by its judge
-  configuration, where it is asked and its seeds, and starts its params from the judge's output schema
+  configuration, the handle it is asked under and its seeds, and starts its params from the judge's output schema
   (`frontend/src/lib/scorer/judging.ts:startingParams`): its verdict at the first field that isn't text, and the
   most points at that field's maximum. The verdict's field is picked from the judge's output schema (`verdictAt`),
   other params are typed.
 - **A new judge** (`frontend/src/lib/scorer/JudgeForm.svelte`), from **a new judge…** in a view's judge picker: a
-  name, a judge configuration the person sees, the endpoint it is asked at (its engine is the judge's), and its
-  seeds (`seedsOf`), checked as typed and saved as a judge of the person's own (`POST /api/threads`), then picked
-  for the view. A judge's texts are step 6.
+  name, a judge configuration the person sees, the model it is asked under, a handle whose weights the judge pins,
+  and its seeds (`seedsOf`), checked as typed and saved as a judge of the person's own (`POST /api/threads`), then
+  picked for the view. A judge's texts are step 6.
 - **What its judge is asked** (`frontend/src/lib/scorer/JudgeAsked.svelte`), folded under a judged view: the judge's
   messages, the expectation filled as the view picks it and following what is typed, the answer as `‹completion›`.
 - **Scored through the worker** (L5 b): a judged view isn't tried; saving the scorer leaves the case's runs to score
@@ -390,14 +396,16 @@ the pattern is typed, a scorer saved, and its score.
 - **A refusal's page leads back** to the page its request came from, when that is within the site
   (`src/chatddx/portal/pages.py:_back`, by `Referer`), and to nothing else: the link home is gone.
 - **Tests**: `test_scores.py` (the API's), what a judge is asked, and what is refused; `test_reviewing.py`, the
-  judges, judge configurations and endpoints the composer is given; vitest for `seedsOf` and `startingParams`; and
+  judges, judge configurations and handles the composer is given; vitest for `seedsOf` and `startingParams`; and
   `test_browser.py`, a judged view composed of carol's comment, a new judge written for it and picked, its verdict
   at `/meets`, what it is asked, the scorer saved and its runs scored again through the worker.
 
 #### What step 5 leaves
-- **A judge is written new**: changing or forking one is on its thread's page, which has no editor yet.
-- **The endpoint a new judge is asked at** is the first listed, not one serving its configuration's model; a judge
-  whose engine no endpoint serves bars its scorer (`docs/runner.md`, "Judges").
+- **A judge is written new** here: changing or forking one is on its thread's page (`agents/wip-portal.md`, "5d:
+  scorers and judges").
+- **The handle a new judge is asked under** is the first listed, not the one its configuration was made for; another
+  says `judge.model_unmatched` as it is typed. A judge whose handle doesn't resolve leaves its scorer out
+  (`docs/runner.md`, "What applies to a run").
 - **A judged view's values come only from scoring**: one judge call per seed per answer, recorded, through the worker.
 
 ### Step 6: the judge's texts
@@ -405,7 +413,7 @@ the pattern is typed, a scorer saved, and its score.
   head, its body and its texts: the judge configuration whose head is its skeleton (the person's own first), the
   recipe that configuration reads, and the recipe's instructions, prompt and output, each with the thread whose head
   it is, whether that thread is the person's, and its language. A judge whose skeleton no configuration in sight
-  heads, as a World's judge compiled for its engine, reads the recipe its compilation recorded; it has no
+  heads, as a World's judge compiled for its handle's model, reads the recipe its compilation recorded; it has no
   configuration then, and saving makes one.
 - **The text editor** (`frontend/src/lib/scorer/TextSegments.svelte`, `texts.ts`), a start on 5c's: a text and its
   slots and inserts, each slot or insert a chip between text boxes, left out by its ×, and one the part allows and
@@ -433,7 +441,7 @@ the pattern is typed, a scorer saved, and its score.
 - **A version of the person's own text or configuration moves that thread's head**: what holds the earlier version
   keeps it, by digest, and a configuration of theirs holding it is left behind its parts, as the catalog proposes.
 - **Only the texts**: the recipe's other parts (sampling, reasoning, few-shot messages, a toolset) and the judge's
-  endpoint and seeds aren't changed here, and the messages shown leave out few-shot messages and tool guidance.
+  handle and seeds aren't changed here, and the messages shown leave out few-shot messages and tool guidance.
 - **The text kinds of 5c** stop at a judge's: an appendix's or a generation's instructions and prompts are still
   written on their threads' pages.
 

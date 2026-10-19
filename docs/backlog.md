@@ -806,6 +806,10 @@ special case.
 ## Olof's work
 
 ### The sample's judge
+```
+AGENT: replace
+The plan was renamed for the page it describes. "agents/wip-olofs-view.md" becomes "agents/wip-review.md" below.
+```
 Olof's work, not a PR: his prompt replaces the sample's draft judge, measured by his grades of real answers, and his
 notes revise the targets. agents/wip-olofs-view.md builds the page he writes it on, and holds grading by hand as an open
 design.

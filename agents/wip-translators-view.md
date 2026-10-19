@@ -3,7 +3,7 @@
 A page in the portal where a translator carries a configuration into another language: its texts beside their
 translations, what is missing and what no longer has a source, the request in both languages, and saving the
 translations with a version of the configuration that holds them. It is to configurations what `/review` is to cases
-(`agents/wip-olofs-view.md`).
+(`agents/wip-review.md`).
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -276,7 +276,7 @@ its instructions, carried over from its unused entry, saved, and the variation p
 
 #### What step 3 leaves
 - **Saving is two writes, not one**: if the configuration's is refused after the translations', their version stays,
-  the person's own and unused, as a judge's texts do (`agents/wip-olofs-view.md`, "What step 6 leaves").
+  the person's own and unused, as a judge's texts do (`agents/wip-review.md`, "What step 6 leaves").
 - **A conflict is said, not resolved**: when a thread has moved on since the page loaded, saving is refused and what
   was typed stays on the page, but nothing offers the version after the latest, as `Saving` does for one thread.
 - **A JSON few-shot answer** is one entry, edited as text: nothing checks yet that its keys and fixed values are its

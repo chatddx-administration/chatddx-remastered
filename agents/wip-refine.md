@@ -4,7 +4,7 @@ A page in the portal where a researcher evolves configurations: a configuration 
 tried over it, run on the same cases at the same engine, and their scores side by side, so that the successful are
 kept, the unsuccessful deleted and a configuration with several successful variations branched out
 (`docs/chatddx.md`, "Intended evolution of configurations"). It is to a configuration's lineage what `/review` is to a
-case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's languages (`agents/wip-translators-view.md`).
+case (`agents/wip-review.md`) and `/translate` to a configuration's languages (`agents/wip-translators-view.md`).
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 

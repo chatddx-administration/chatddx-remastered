@@ -26,8 +26,9 @@ it.
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
-   5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
-   in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
+   5 left (see "Open"). A clinician's page around one case, Review, which builds a scorer's composer with its judges
+   and part of 5c, is in `agents/wip-review.md`, and 5d's editors on the threads' pages are planned under
+   "Authoring"; a translator's page around one configuration, which builds 5c's editor of
    translations, in `agents/wip-translators-view.md`; and a researcher's page around a configuration's lineage,
    Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/wip-refine.md`.
 7. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b). What is built below
@@ -216,6 +217,20 @@ Decided (phase 5), from the options W1 to W11:
 - **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
 - **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
   flow: an appendix, its case, the expectation, and the variation's reach counting it.
+
+### 5d: scorers and judges
+Decided: scorers and judges are made editable on their threads' pages first, `/threads/{id}` under the Library, which
+shows the data model's raw wiring, a page per thread whatever its kind, as the chunks', the expectations' and the
+translations' are. A page of their own for scorers and judges is to follow, proposed by the user and not planned yet.
+Review's composer stays where a scorer is composed around a case (`agents/wip-review.md`), and the threads' pages
+share its pieces.
+
+1. **A judge's editor** on its thread's page: the judge configuration it is asked through, the handle it is asked
+   under and its seeds, checked as typed and saved as a version or a fork of the person's own, with the fields the
+   composer's new judge has. A judge whose weights are behind its handle says so, and picking the handle follows it.
+2. **A scorer's editor** on its thread's page: its views, labels and judges as the composer composes them, without a
+   case to try them on.
+3. **A page for scorers and judges**: what it shows, and how it joins Review, is open.
 
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
@@ -448,7 +463,7 @@ Phase 2, as takes:
 - **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
   titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
 - **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
-  Families and Endpoints, Library since phase 5, Review (`agents/wip-olofs-view.md`) and Translate
+  Families and Endpoints, Library since phase 5, Review (`agents/wip-review.md`) and Translate
   (`agents/wip-translators-view.md`). An island's imported chunks are preloaded
   (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
@@ -630,9 +645,9 @@ From "What the portal shows", not on the pages yet:
 
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
-  have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is built by
-  `agents/wip-refine.md` (step 1).
+  have pages, with what is said, versions, forks and following; the translations' editor is
+  `agents/wip-translators-view.md`'s (T2), the rest of 5c is built by `agents/wip-refine.md` (step 1), and scorers'
+  and judges' editors are "5d: scorers and judges".
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case
