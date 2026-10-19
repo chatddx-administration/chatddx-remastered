@@ -32,8 +32,6 @@ in agents/ tracks is that plan's, not this document's.
   - [A run names the skeleton its look gave](#a-run-names-the-skeleton-its-look-gave)
   - [Vignette identity: renames, repairs and rebinding](#vignette-identity-renames-repairs-and-rebinding)
   - [Titles](#titles)
-  - [Edit history: who, when and why](#edit-history-who-when-and-why)
-  - [Following a part that moved on](#following-a-part-that-moved-on)
   - [Languages](#languages)
   - [Translating JSON few-shot answers](#translating-json-few-shot-answers)
   - [Values the canonical form can't keep](#values-the-canonical-form-cant-keep)
@@ -440,27 +438,6 @@ Decided: a skeleton compiled from a variation of a configuration is titled by th
   recommended · off · qwen3-8b@pelle", where the repl called it "diagnoses-tool+reasoning=off": the configuration it
   came from and the parts set over it. A run of one is named so and says what it varied (docs/catalog.md, "What a run
   ran"), but its skeleton is still titled by its recipe.
-
-### Edit history: who, when and why
-Who changed an entry, a label or a language, and when, shown; and why an edit was made, kept.
-
-Decided: an edit may carry an optional note, stored with it as a commit message is; what changed stays derived from the
-references.
-
-- **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
-  what holds now is shown.
-- When an entry, a label or a language was written isn't given, nor who wrote a label or a language:
-  `Reader.entries` gives an entry's writer only.
-- **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
-- Why an edit was made isn't stored.
-
-### Following a part that moved on
-A configuration offered the new version of a chunk of its recipe, as it is offered its facts' and its model's.
-
-- **Only the facts and the model are followed.** The catalog lists every part of a configuration's recipe whose
-  thread has moved on (`src/chatddx/catalog/threads.py:behind`), but the bench follows `/facts` and `/recipe/model`
-  only (`src/chatddx/bench/following.py:_moved`), so a new version of a chunk, a translator's translations among them,
-  reaches a configuration only by a variation that picks it, saved.
 
 ### Following keeps a fork's renamed view
 Following an origin keeps the label of a view the fork renamed, though its scorer is the origin's.
