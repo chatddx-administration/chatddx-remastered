@@ -37,7 +37,6 @@ def test_an_edit_or_a_keep_naming_an_old_head_is_refused(conn: Connection) -> No
     assert kept == "edited" and threads.head(rows, first.thread) == third
 
 
-@pytest.mark.slow
 def test_edits_of_one_thread_land_one_at_a_time(conn: Connection) -> None:
     catalog = Catalog(conn)
     alice = People(conn).add("alice", "Alice")
