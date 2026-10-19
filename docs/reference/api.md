@@ -1577,11 +1577,6 @@ Raises:
 
 * `label: str = Field(description="its name, and the chunks it replaces")`
 * `language: str | None = Field(…)`
-```
-SIGN-OFF: REMOVE
-remove the line below
-```
-* `into: str`
 * `texts: list[TranslatedText] = Field(…)`
 * `unused: dict[str, str] = Field(…)`
 * `written: dict[str, JsonValue] = Field(description="its request as written")`

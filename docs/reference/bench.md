@@ -893,11 +893,6 @@ Raises:
 `src/chatddx/bench/model.py:Translation`
 
 * `language: str | None`
-```
-SIGN-OFF: REMOVE
-remove the line below
-```
-* `into: str`
 * `texts: dict[str, list[tuple[str, str | None]]]`
 * `unused: dict[str, str]`
 * `skeleton: Skeleton`

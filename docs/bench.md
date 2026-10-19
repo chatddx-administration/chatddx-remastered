@@ -130,14 +130,7 @@ For a variation, the bench gives:
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced.
-```
-AGENT: REPLACE
-The two lines don't parse ("go into and, and leave it"); the codes are said under "Translations".
----
 - **its lints**, `translations.missing` and `translations.incomplete` among them (see "Translations").
-```
-- **its lints**,  `translations.missing`, `translations.incomplete` warnings for each other language its
-  translations go into and, and leave it untranslated.
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
   skeleton they are sent as, or why they are left out (see "Translations").
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
@@ -186,18 +179,12 @@ Cases and appendices aren't translated: each is in a language of its own. A requ
 and no language tag reaches the model.
 
 #### Incomplete translations refuse compilation
-```
-AGENT: REPLACE
-It doesn't fire for a language `translations.missing` already reports, nor for the configuration's own
-(src/chatddx/bench/seen.py:incomplete); the paragraph's second line, with that said.
----
-untranslated. Running it in that language would therefore be refused. It fires when any text has no entry, unless
-`translations.missing` says so of that language's cases, and never for the configuration's own language.
-```
-`translations.incomplete`: The configuration's translations into some language leave at least one of its texts
-untranslated. Running it in that language would therefore be refused. It fires when any text has no entry.
 Typical cause: someone edits a source text, for instance the instructions. Translations are keyed by the exact text,
 so the old entry stops matching and the new text has none.
+
+`translations.incomplete`: The configuration's translations into some language leave at least one of its texts
+untranslated. Running it in that language would therefore be refused. It fires when any text has no entry, unless
+`translations.missing` says so of that language's cases, and never for the configuration's own language.
 
 `translations.missing`: some of the look's cases are in a language this configuration can't be sent in, so they're left out.
 It fires only when the look is over cases (families or a tag), and only for a language whose group is refused, either because:
