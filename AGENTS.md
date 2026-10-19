@@ -34,11 +34,11 @@ Before commit:
 
 ## Development stages
 
-1. Felt - Not mentioned anywhere but still present somehow
+1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
 4. Named - `<thing>` now refers to it and can be grepped
-5. Itemized - Referred to as an item in `docs/backlog.md`
+5. Itemized - Referred to as items in `docs/backlog.md`
 6. Planned - Referred to as a plan in `agents/plan-<thing>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
 8. Solidified - Dependable and documented in `docs/<thing>.md` and `docs/reference/<thing>.md`

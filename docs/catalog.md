@@ -246,7 +246,7 @@ Each kind is described by:
 | Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
 | Chunk (toolset) | Its tools. | `with web_search` |
 | Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
-| Translations chunk | The languages it translates into, and its size, the texts of the language with the most. | `translations into de, sv, 12 texts` |
+| Translations chunk | Languages codes, its size and the texts of the language with the most. | `translations into de, sv, 12 texts` |
 | Tool | Its name. | `web_search` |
 | Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
 | Expectation | Its case. | `expectation for Dutchfall11w` |

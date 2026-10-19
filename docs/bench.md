@@ -54,9 +54,6 @@ A thread or a family is found by its name, matched whole first, since names may 
 person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`; none raises
 `NotFound`.
 
-A configuration's name carries no language: it is one thread, written in one language and translated into others
-(see "The languages it runs in"), so `plan` is found as any name is.
-
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
 word names; the same method takes a name or an id. A run is also found by the start of its id, among their own, as a
@@ -128,50 +125,27 @@ saved (docs/catalog.md, "Titles"). Neither is stored.
 For a variation, the bench gives:
 - **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
   else the varied recipe compiled against the facts about its model as they are stored now, a skeleton nobody
-  has saved; compiled into a language, against the facts its compilation pinned when nothing is replaced;
-- **the request it would send**, with placeholders for the slots, and for the model when no engine is at hand;
+  has saved; compiled into a language, against the facts its compilation pinned when nothing is replaced.
+- **the request it would send**, with placeholders for the slots, and for the model when no engine is at hand.
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
-  when nothing is replaced;
-```
-AGENT: REPLACE
-The look's lints now say what its translations leave untranslated whatever the cases
-(src/chatddx/bench/seen.py:incomplete; agents/wip-translators-view.md, T4).
----
-- **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
-  (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
-  over any one case since they read none; with families, a trial for each language their cases are sent in, its
-  skeleton in that language and its cases in theirs, and a `translations.missing` warning for each language left
-  out, with why; and, whatever the families, a `translations.incomplete` warning for each other language its
-  translations go into and leave a text of it untranslated, with the texts;
-```
-- **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
-  (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
-  over any one case since they read none; with families, a trial for each language their cases are sent in, its
-  skeleton in that language and its cases in theirs, and a `translations.missing` warning for each language left
-  out, with why;
+  when nothing is replaced.
+- **its lints**,  `translations.missing`, `translations.incomplete` warnings for each other language its
+  translations go into and, and leave it untranslated.
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
-  skeleton they are sent as, or why they are left out (see "The languages it runs in");
+  skeleton they are sent as, or why they are left out (see "Translations").
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
 A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on that engine: its lints
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
-starting it is refused. An edge lists configurations by purpose (`Seen.threads(…, purpose=…)`), since a judge
+starting it is refused. Configurations are listed by purpose (`Seen.threads(…, purpose=…)`), since a judge
 configuration is no use where a run's is wanted.
 
-```
-AGENT: REPLACE
-Translating a schema translates its title, so what a translated skeleton answers is told by the title as written
-(src/chatddx/bench/seen.py:Seen.answers; agents/wip-translators-view.md, F1).
----
-An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
+Configurations can be listed by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
 JSON Schema, as a page that shows management plans offers only the configurations that answer one. What a skeleton
 answers is the title as written (`Seen.answers`): a translated skeleton's is its recipe's, since translating a schema
 translates its title too.
-```
-An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
-JSON Schema, as a page that shows management plans offers only the configurations that answer one.
 
 ### The model
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
@@ -189,33 +163,32 @@ serves another is refused before the gate would refuse it. An model no endpoint 
 several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written
 configuration has no model part, and runs at the endpoint named.
 
-### The languages it runs in
-A configuration is written in one language, its own: its recipe's texts' (docs/catalog.md, "Languages"), or a
-hand-written skeleton's own. Its translations carry it into others. Vignettes are never translated, so the request
-follows the case: started on some cases, a variation groups them by their families' languages, and sends
-- the cases in its own language, and those of no language, as written, the latter linted `language.unknown`;
-- the cases in a language its translations cover translated: its recipe compiled into that language, against the
-  facts the configuration was compiled against when nothing is replaced, so that the translation differs from it by
-  its texts alone;
-- none of the cases in a language they don't cover, or cover without a text it holds: those are left out, and said
-  with why, as `lines has no translations into sv` or `no translation into sv for '…'`.
+### Translations
+Principal author: researchers (translators)
 
-When its own language is unknown, nothing says a case isn't in it, so a case of a language its translations don't cover
-goes as written too. A translated skeleton is compiled when a look or a run needs it, and its compilation is stored as
-a run starts on it, as a varied one's is, so that the run's skeleton has a language. A judge configuration reads no
-case, and runs in none.
+Translations map source texts to their translations, much as gettext does, into languages named by tags such as
+`sv` or `pt-BR`. One chunk holds every language a configuration is translated into, so adding a language is a new
+version of it.
 
-```
-AGENT: ADD
-A paragraph closing "The languages it runs in", for src/chatddx/bench/seen.py:Seen.translation
-(agents/wip-translators-view.md, T6).
----
-A variation is also given in a language for its translator, with nothing stored: each text it holds, part by part in
-the order compiling translates them, with its translation there or none, from its translations or from entries given
-as typed; the entries no text of it has, which a source edited since leaves behind; and its skeleton compiled into
-the language, a text without a translation as written. A hand-written configuration has no recipe to translate, and a
-configuration isn't translated into its own language.
-```
+A configuration is written in one language and its translations carry it into others. A recipe may name translations,
+and compiling it into one of their languages passes every text it holds through that language's entries:
+the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
+the descriptions of tools and of the answer function, the titles and descriptions in schemas, and the appendix
+layout.
+
+Cases and appendices aren't translated: each is in a language of its own. A request's language is implicit in its text,
+and no language tag reaches the model.
+
+#### Incomplete translations refuse compilation
+`translations.incomplete`: The configuration's translations into some language leave at least one of its texts
+untranslated. Running it in that language would therefore be refused. It fires when any text has no entry.
+Typical cause: someone edits a source text, for instance the instructions. Translations are keyed by the exact text,
+so the old entry stops matching and the new text has none.
+
+`translations.missing`: some of the look's cases are in a language this configuration can't be sent in, so they're left out.
+It fires only when the look is over cases (families or a tag), and only for a language whose group is refused, either because:
+- the variation has no translations into that language
+- its translations miss a text the compilation needs
 
 ## Writes for the person
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
@@ -276,7 +249,7 @@ language, being the same digest.
 A translations chunk has no language of its own: it says the languages it translates into itself, so the bench
 refuses one given it, as it does for any component that isn't a text.
 
-The bench doesn't carry the previous version's language over by itself: an edge offers it, and the person keeps it or
+The bench doesn't carry the previous version's language over by itself: the edge offers it, and the person keeps it or
 changes it (docs/catalog.md, "Languages").
 
 ### Scorers
@@ -332,8 +305,8 @@ vignette awaits that replacement instead.
 A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
 `database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
 the person's own are written with it, all at once, in the language the person says it is written in, and named when
-they say so. A typed case always has a language, since a configuration is sent in its case's (see "The languages it
-runs in"). It runs as any case: a vignette is fetched from its source, a directory's file or a database source's text,
+they say so. A typed case always has a language, since a configuration is sent in its case's (see "Translations").
+It runs as any case: a vignette is fetched from its source, a directory's file or a database source's text,
 wherever the bench, the runner and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
@@ -376,15 +349,9 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   case's family still seen; another is "not found", as a family is.
 - **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
   the worker (docs/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is refused.
-- **Starting** runs a variation at the endpoint serving its model, or the one named (see "The model"), on some
-  cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
-  are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so
-  trials, the ledger and scoring are as they are for one. As it starts, each is named by the variation's label and says
-  what it varied: the edit it was built on and the parts replaced over it, its model among them (docs/catalog.md,
-  "What a run ran"); every run but the first also names the first, by a `with` entry, so that an edge shows them as
-  one start. The cases left out are said, and a start that can send none of its cases is refused. The day's quota and
-  the items a run takes are held for every run of a start before any starts. Running again keeps a run's cleanup,
-  execution, canary set, name and what it varied under new seeds: one run, in the run's language, started alone.
+- **Starting** runs a variation at the endpoint serving its model. A run for each language its cases are sent in
+  (see "Translations"). As it starts, each is named by the variation's label and says what it varied:
+  (docs/catalog.md, "What a run ran").
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.

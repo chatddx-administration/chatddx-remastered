@@ -1558,10 +1558,6 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 ## TranslatedText `(_Schema)`
 `src/chatddx/api/schemas.py:TranslatedText`
 
@@ -1595,7 +1591,6 @@ add these lines here
 * `given: schemas.Translating`
 * ∟`schemas.Translation`
 
-```
 ## Tried `(_Schema)`
 `src/chatddx/api/schemas.py:Tried`
 

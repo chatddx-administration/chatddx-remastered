@@ -31,7 +31,7 @@ version of every facts thread, read when they are needed, so a correction loaded
 
 A configuration sent in another language than its own is its recipe compiled into that language, against the facts
 its own compilation names rather than the current ones when nothing is replaced, so that the translation differs
-from it by its texts alone (docs/bench.md, "The languages it runs in"). A correction reaches the translation as it
+from it by its texts alone (docs/bench.md, "Translations"). A correction reaches the translation as it
 reaches the configuration, by following its facts.
 
 ## What a model's facts hold
