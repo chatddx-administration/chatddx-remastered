@@ -257,6 +257,31 @@ share its pieces.
   judges (step 3) is where they meet.
 - **The fill rule** isn't offered: `text@1` is the only one.
 
+#### Built: step 2, a scorer's editor
+- **On its thread's page** (`src/chatddx/portal/threads.py:_scorer`, `frontend/src/lib/scorer/ScorerEditor.svelte`):
+  the expectation schema it is held to, picked from those the person sees, and its views as Review's composer
+  composes them: each view's label, what it reads of what is expected and of the answer, line by line or not, its
+  metric, and, for a judged one, its judge, a new judge written in place, and its params. Checked as typed, its lints
+  included, and saved with its labels as a version of the person's own or a fork; a change of labels alone is a new
+  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship has no editor.
+- **Begun from the Library**: **Write a new one** under scorers, `/library/new?kind=scorer`, starting from the shipped
+  code, the first expectation schema and one view.
+- **Shared with Review**: the views' form is `frontend/src/lib/scorer/ScorerViews.svelte`, which Review's composer
+  now renders too, adding what belongs beside a case through snippets: the values tried on the case's answers, what a
+  judge is asked, and changing what it is asked. What both are offered comes from
+  `src/chatddx/portal/scoring.py:scorer_choices` (it was `judges.py`, and takes the composer's helpers from
+  `review.py`); the answer's choices are `scorers.ts:answeredChoices`.
+- **Tests**: `test_library.py`, a scorer's editor's props, forked and edited, and begun from the Library; vitest for
+  `answeredChoices`; `test_browser.py`, `lines` forked with a label changed, then a view moved down, saved as its
+  second version with its labels following.
+
+#### What step 2 leaves
+- **Nothing to try a view on**: without a case, no values are tried and no judge is asked; the editor says to compose
+  it beside a case on the Review page for that.
+- **Selectors that filter a list by what is written in it**, as `notes where author is carol › comment`, are offered
+  only beside an expectation that holds them; on a scorer's page they show as typed.
+- **A judge's texts** are changed beside a case, on the Review page, or on the judge configuration's own page.
+
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
 the plan, and ran it later (`docs/portal.md` at 504792c, "The Batch"). In remastered a trial holds its cases and

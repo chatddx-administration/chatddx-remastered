@@ -3,22 +3,22 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
-from chatddx.api import schemas, threads as api
+from chatddx.api import schemas, threads as api, world as api_world
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.catalog import LANGUAGE_KINDS
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import CHUNK_PARTS, Translations
-from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
 
-from .judges import judge_choices
 from .pages import BenchDep, own_first, page, within
+from .scoring import blank, judge_choices, scorer_choices
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
 CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
-BEGUN = [*CHUNKS, "judge"]
+BEGUN = [*CHUNKS, "judge", "scorer"]
 
 router = APIRouter()
 
@@ -51,11 +51,18 @@ def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
         raise HTTPException(
             404, f"no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"
         )
-    editor = {"mode": "new", "name": ""} | (
-        _judge(bench, None)
-        if kind == "judge"
-        else {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
-    )
+    match kind:
+        case "judge":
+            held = _judge(bench, None)
+        case "scorer":
+            held = _scorer(bench, None, None)
+            if held is None:
+                raise HTTPException(
+                    404, "a scorer reads an expectation schema, and you see none"
+                )
+        case _:
+            held = {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
+    editor = {"mode": "new", "name": ""} | held
     return page(
         request,
         "begun.html",
@@ -148,6 +155,9 @@ def _editor(
             return {**given, "kind": "translations", "into": held.into}
         case Judge():
             return {**given, **_judge(bench, held)}
+        case Scorer():
+            found = _scorer(bench, held, shown.head.digest)
+            return None if found is None else {**given, **found}
         case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
             return {
                 **given,
@@ -188,6 +198,45 @@ def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
         "problem": problem,
         **judge_choices(bench),
         "me": bench.person.login,
+    }
+
+
+def _scorer(
+    bench: Bench, held: Scorer | None, labelled: str | None
+) -> dict[str, Any] | None:
+    code = next(
+        (
+            c
+            for c in api_world.scorer_code(bench)
+            if held is None or c.entry_point == held.entry_point
+        ),
+        None,
+    )
+    read = [
+        (t.head.digest, t.name or t.title)
+        for t in own_first(bench, api.threads(bench, "expectation_schema"))
+    ]
+    if held is not None and held.expectation_schema not in {d for d, _ in read}:
+        read.append((held.expectation_schema, bench.title(held.expectation_schema)))
+    if code is None or not read:
+        return None
+    body = blank(code, read[0][0]) if held is None else held.model_dump(mode="json")
+    named = {} if labelled is None else bench.labels(labelled)
+    return {
+        "kind": "scorer",
+        "body": body,
+        "labels": [named.get(i, f"view {i}") for i in range(len(body["views"]))],
+        "schemas": [
+            {
+                "digest": digest,
+                "name": name,
+                "json_schema": resolve(
+                    bench.store.get, digest, ExpectationSchema
+                ).json_schema,
+            }
+            for digest, name in read
+        ],
+        **scorer_choices(bench, code, () if held is None else held.judges),
     }
 
 

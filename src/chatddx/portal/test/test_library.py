@@ -198,6 +198,55 @@ def test_a_judge_is_begun_from_the_library(signed: TestClient) -> None:
 
 
 @pytest.mark.slow
+def test_a_scorer_s_page_edits_its_views_labels_and_judges(signed: TestClient) -> None:
+    lines = thread(signed, "scorer", "lines", "archive")
+    editor = thread_props(shown(signed, f"/threads/{lines['id']}"))["editor"]
+    body = signed.get(f"/api/components/{lines['head']['digest']}").json()["body"]
+    [targets] = signed.get(
+        "/api/threads", params={"kind": "expectation_schema", "name": "targets"}
+    ).json()
+    held = ("mode", "kind", "body", "labels", "me")
+    assert {k: editor[k] for k in held} == {
+        "mode": "fork",
+        "kind": "scorer",
+        "body": body,
+        "labels": ["text", "differential", "dont-miss"],
+        "me": "alice",
+    }
+    assert {"digest": targets["head"]["digest"], "name": "targets"} in [
+        {"digest": s["digest"], "name": s["name"]} for s in editor["schemas"]
+    ]
+    assert {"first_mention", "verdict"} <= {m["name"] for m in editor["metrics"]}
+    assert {"verdict", "graded", "remote"} <= {j["name"] for j in editor["judges"]}
+    assert editor["judging"] and editor["models"] and editor["outputs"]
+
+    forked = signed.post(
+        f"/api/threads/{lines['id']}/forks", json={"name": "my lines"}
+    ).json()
+    page = shown(signed, f"/threads/{forked['id']}")
+    assert thread_props(page)["editor"]["mode"] == "edit"
+
+
+@pytest.mark.slow
+def test_a_scorer_is_begun_from_the_library(signed: TestClient) -> None:
+    assert 'href="/library/new?kind=scorer"' in shown(signed, "/library?kind=scorer")
+    page = shown(signed, "/library/new?kind=scorer")
+    editor = json.loads(
+        page.split("data-scorer-editor>", 1)[1]
+        .split('<script type="application/json">', 1)[1]
+        .split("</script>", 1)[0]
+    )
+    first = editor["schemas"][0]["digest"]
+    assert (editor["mode"], editor["kind"], editor["labels"]) == (
+        "new",
+        "scorer",
+        ["view 0"],
+    )
+    assert editor["body"]["expectation_schema"] == first
+    assert editor["body"]["entry_point"] == "chatddx.scorers.metrics:score"
+
+
+@pytest.mark.slow
 def test_a_configuration_is_made_from_a_recipe_of_the_chunks_one_sees(
     signed: TestClient,
 ) -> None:

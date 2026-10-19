@@ -179,7 +179,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   the thread's page uses the same ones for a scorer's and a judge's `/threads/{id}`. So this page builds 5d, and 5c's
   text editor arrives with L4 (c). Decided: as said, and `agents/wip-portal.md` points here for them. Since: the
   threads' pages get their editors as `agents/wip-portal.md` plans them ("5d: scorers and judges"), the judge's
-  sharing this page's judge fields.
+  sharing this page's judge fields and the scorer's its views' form (`frontend/src/lib/scorer/ScorerViews.svelte`).
 - **Its name**: the address and the page's title name no person. Decided: `/review` and "Review"; the tests keep
   to alice, bob and carol (AGENTS.md, "Placeholder username").
 
