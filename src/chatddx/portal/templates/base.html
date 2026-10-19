@@ -26,7 +26,7 @@
       <a href="/" class="font-display text-lg font-bold tracking-tight text-foreground">ChatDDX</a>
       {% if person %}
       <nav class="flex flex-wrap gap-1 text-sm">
-        {% for href, label in [("/review", "Review"), ("/translate", "Translate"), ("/runs", "Runs"), ("/configurations", "Configurations"), ("/families", "Families"), ("/library", "Library"), ("/endpoints", "Endpoints")] %}
+        {% for href, label in [("/review", "Review"), ("/translate", "Translate"), ("/refine", "Refine"), ("/runs", "Runs"), ("/configurations", "Configurations"), ("/families", "Families"), ("/library", "Library"), ("/endpoints", "Endpoints")] %}
         {% set here = request.url.path == href or request.url.path.startswith(href ~ "/") %}
         <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="rounded-md px-3 py-1.5 font-medium transition-colors {{ 'bg-primary/10 text-primary' if here else 'text-muted-foreground hover:bg-muted hover:text-foreground' }}">{{ label }}</a>
         {% endfor %}

@@ -3,7 +3,7 @@ from typing import final
 from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
-from .following import follow, follow_moved, moved, proposal
+from .following import follow, follow_moved, lineage, moved, proposal
 from .runs import again, queue, queue_scoring, resume, score, start
 from .saying import say
 from .seen import Seen
@@ -28,6 +28,7 @@ class Bench(Seen):
     say = say
 
     proposal = proposal
+    lineage = lineage
     follow = follow
     moved = moved
     follow_moved = follow_moved

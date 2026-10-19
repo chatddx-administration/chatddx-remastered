@@ -240,7 +240,7 @@ Take:
 - **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
   nothing writes yet; the runs page filters by them.
 
-C1 and C2 are built by `agents/wip-refine.md` (steps 2 and 3), where C2 fills Refine's trying list.
+C1 is built by `agents/wip-refine.md` (step 2), and C2 is its step 3's, where it fills Refine's trying list.
 
 Open:
 - **Every combination**, as the old crossing made (`plan.py:crossed`), or endpoints as well as parts: C2 varies one
@@ -249,8 +249,6 @@ Open:
 - **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
   endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
   (`docs/backlog.md`, "Claims: slots, turns and a lost endpoint").
-- **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
-  same cases (`docs/scripted.md`, "The runs").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
   export (`docs/backlog.md`, "Export and publication"). It is what would bring a kept grouping back.
 

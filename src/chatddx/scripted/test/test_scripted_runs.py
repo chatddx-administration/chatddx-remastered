@@ -7,7 +7,7 @@ from chatddx.cli import main
 from chatddx.ledger import RunStarted
 from chatddx.scripted import RUNS, load, ran_before, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
-from chatddx.test.world import LINES, NATIVE, TEST, freed
+from chatddx.test.world import COMPARED, LINES, NATIVE, TEST, freed
 
 HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
@@ -35,6 +35,10 @@ def held(bench: Bench, name: str) -> RunStarted:
         ),
         ("judged", {"noted": ("completed", None)}),
         ("appendix", {"whitespace with labs": ("completed", None)}),
+        *(
+            (name, {"crlf": ("completed", None), "bom": ("completed", None)})
+            for name in COMPARED
+        ),
     ],
 )
 def test_each_scripted_run_runs_as_its_script_answers(

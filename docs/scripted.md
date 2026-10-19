@@ -74,6 +74,16 @@ The sample World's ten:
 | `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
 | `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
 
+```
+AGENT: replace
+Three runs to compare, over the same cases at qwen3@fake (agents/wip-refine.md, step 2).
+---
+The test World's nine are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored, on
+`crlf` and `whitespace`, as `lines` leaves Swedish cases out), `judged` and `appendix`; and three to compare, over
+`crlf` and `bom`: `instructed` (`lines-instructed`), `instructed-greedy` (the same, sampled near greedily) and
+`guided` (`lines-guided`, its fork), each answering both cases alike, since a run doesn't send its cases in the order a
+scripted run lists them.
+```
 The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored, on
 `crlf` and `whitespace`, as `lines` leaves Swedish cases out), `judged` and `appendix`.
 

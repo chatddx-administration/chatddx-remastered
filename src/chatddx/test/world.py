@@ -43,8 +43,11 @@ NATIVE_TOOLS = "native-tools"
 TOOL_ANSWER = "tool-answer"
 OFF = "off"
 LINES_GUIDED = "lines-guided"
+LINES_INSTRUCTED = "lines-instructed"
 JUDGE = "judge"
 CLINICIAN = "clinician"
+
+COMPARED = ("instructed", "instructed-greedy", "guided")
 
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [

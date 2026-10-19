@@ -1,3 +1,4 @@
+from statistics import mean
 from typing import Annotated
 from uuid import UUID
 
@@ -5,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, R
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from chatddx.bench import Bench, NotFound, Started
+from chatddx.bench import Bench, Graded, NotFound, Started
 from chatddx.catalog import Subject
 from chatddx.catalog.language import language_of
 from chatddx.catalog.read import about as about_of
@@ -323,6 +324,82 @@ def runs(
         _run_of(bench, r, r.run in finished, left.get(r.run), placed.get(r.run))
         for r in page
     ]
+
+
+@router.get("/runs/compared")
+def compared(
+    bench: BenchDep,
+    run: Annotated[
+        list[UUID], Query(min_length=1, max_length=20, description="the runs, in order")
+    ],
+) -> schemas.Compared:
+    started = [bench.run(r) for r in run]
+    trials = [resolve(bench.store.get, s.trial, Trial) for s in started]
+    keys = [
+        [(case, at) for case in t.cases for at in range(len(t.seeds))] for t in trials
+    ]
+    shared = [k for k in keys[0] if all(k in other for other in keys[1:])]
+    apart = [
+        schemas.HeldBySome(
+            case=case, runs=[s.run for s, t in zip(started, trials) if case in t.cases]
+        )
+        for case in dict.fromkeys(c for t in trials for c in t.cases)
+        if not all(case in t.cases for t in trials)
+    ]
+    scored = [{g.scorer.digest: g for g in bench.scores_of(s)} for s in started]
+    named = {d: g for by in reversed(scored) for d, g in by.items()}
+    views: list[schemas.ComparedView] = []
+    values: dict[tuple[str, int], list[list[float | None]]] = {}
+    for digest, graded in sorted(named.items(), key=lambda n: (n[1].name, n[0])):
+        for view in range(len(graded.scorer.views)):
+            per_run = [_values(by.get(digest), view, shared) for by in scored]
+            values[(digest, view)] = per_run
+            found = [[v for v in vs if v is not None] for vs in per_run]
+            views.append(
+                schemas.ComparedView(
+                    scorer=digest,
+                    name=graded.name,
+                    view=view,
+                    label=graded.label(view),
+                    means=[mean(f) if f else None for f in found],
+                    counts=[len(f) for f in found],
+                )
+            )
+    finished = bench.store.finished(run)
+    placed = Queue(bench.conn).placed(run)
+    return schemas.Compared(
+        runs=[
+            _run_of(bench, s, s.run in finished, None, placed.get(s.run))
+            for s in started
+        ],
+        views=views,
+        items=[
+            schemas.ComparedItem(
+                case=case,
+                replicate=at,
+                values=[
+                    [values[(v.scorer, v.view)][r][i] for r in range(len(started))]
+                    for v in views
+                ],
+            )
+            for i, (case, at) in enumerate(shared)
+        ],
+        apart=apart,
+    )
+
+
+def _values(
+    graded: Graded | None, view: int, shared: list[tuple[str, int]]
+) -> list[float | None]:
+    score = None if graded is None else graded.score
+    held: dict[tuple[str, int], float | None] = {}
+    if score is not None:
+        held = {
+            (i.key.case, i.key.replicate): i.value
+            for i in score.items
+            if i.view == view
+        }
+    return [held.get(k) for k in shared]
 
 
 @router.get("/runs/{run}")

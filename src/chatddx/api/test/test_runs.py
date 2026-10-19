@@ -15,6 +15,7 @@ from chatddx.api import telling
 from chatddx.api.app import app
 from chatddx.api.test.helpers import endpoint
 from chatddx.api.test.test_variations import digest, thread
+from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan
@@ -22,9 +23,11 @@ from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.scripted.test.test_scripted_runs import held
 from chatddx.store import Catalog, People, Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
+    COMPARED,
     GPT_OSS,
     JUDGE,
     LINES,
@@ -693,3 +696,43 @@ def test_a_run_s_items_and_a_score_s_are_read_for_one_case(signed: TestClient) -
         scored = signed.get(path, params=case).json()["items"]
         assert scored and {i["case"] for i in scored} == {f["case"]}
     assert len(signed.get(f"/api/runs/{run}/items").json()) == 2
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
+def test_runs_are_compared_over_the_items_they_share(
+    signed: TestClient, bench: Bench
+) -> None:
+    runs = [str(held(bench, name).run) for name in COMPARED]
+    got = signed.get("/api/runs/compared", params={"run": runs})
+    assert got.status_code == 200
+    compared = got.json()
+    assert [r["id"] for r in compared["runs"]] == runs
+    views = {(v["name"], v["label"]): v for v in compared["views"]}
+    differential = views[(LINES, "differential")]
+    assert (differential["means"], differential["counts"]) == (
+        [0.75, 0.5, 0.0],
+        [2, 2, 2],
+    )
+    assert views[(LINES, "dont-miss")]["counts"] == [0, 0, 0]
+    at = list(views).index((LINES, "differential"))
+    cases = compared["runs"][0]["cases"]
+    assert {i["case"] for i in compared["items"]} == set(cases)
+    assert sorted(i["values"][at] for i in compared["items"]) == [
+        [0.5, 1.0, 0.0],
+        [1.0, 0.0, 0.0],
+    ]
+    assert compared["apart"] == []
+
+    appendix = str(held(bench, "appendix").run)
+    apart = signed.get("/api/runs/compared", params={"run": [runs[0], appendix]}).json()
+    assert apart["items"] == []
+    assert {c["case"]: c["runs"] for c in apart["apart"]} == {
+        **{case: [runs[0]] for case in cases},
+        apart["runs"][1]["cases"][0]: [appendix],
+    }
+    assert all(c == [0, 0] for v in apart["views"] for c in [v["counts"]])
+
+    assert signed.get("/api/runs/compared").status_code == 422
+    unknown = signed.get("/api/runs/compared", params={"run": [str(uuid4())]})
+    assert unknown.status_code == 404

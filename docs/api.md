@@ -173,6 +173,15 @@ either is an edit of the person's own thread, which names the head it was made o
 lints say; only following an origin takes a language. Following a thread with nothing to follow, or whose changes
 no longer fit, is unprocessable.
 
+```
+AGENT: insert
+A thread's lineage, `GET /api/threads/{id}/lineage`, for the portal's Refine (agents/wip-refine.md, step 2).
+---
+A thread's lineage is its first origin and every fork below it, as far as the person sees them, each with its
+origin, how many forks down it is, its base and what it varies, whether its origin has moved on since, the
+references of its head whose threads have moved on, and whether it is deleted, which only its owner sees.
+```
+
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
 "Taking"):
@@ -289,6 +298,16 @@ It cancels the calls under way, record them as stopped and the run is finished u
   breaks its schema. They are sensitive.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
+
+```
+AGENT: insert
+Runs compared, `GET /api/runs/compared?run=…`, for the portal's Refine and its page comparing runs
+(agents/wip-refine.md, step 2).
+---
+- **Runs compared**, in the order given: the items every one of their trials holds, by case and replicate, each
+  view's value per item and run, under each scorer that scored one of them, each view's mean per run over those
+  items and how many it has a value for, and the cases only some of them hold.
+```
 
 Only the person's own runs are seen; a collaborator on a run doesn't see it.
 

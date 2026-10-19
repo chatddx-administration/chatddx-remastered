@@ -3,11 +3,12 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.test_variations import thread
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
-from chatddx.test.world import JUDGE, LINES, NATIVE
+from chatddx.test.world import JUDGE, LINES, LINES_GUIDED, LINES_INSTRUCTED, NATIVE, OFF
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
@@ -143,4 +144,48 @@ def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
     assert (got.status_code, got.json()) == (
         404,
         {"detail": f"no expectation {archives['id']} for bob", "code": "not_found"},
+    )
+
+
+@pytest.mark.slow
+def test_a_lineage_runs_from_the_first_origin_through_every_fork_one_sees(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    guided = thread(signed, "configuration", LINES_GUIDED)
+    found = signed.get(f"/api/threads/{guided['id']}/lineage").json()
+    assert [(k["owner"], k["name"], k["depth"]) for k in found] == [
+        ("archive", LINES_INSTRUCTED, 0),
+        ("archive", LINES_GUIDED, 1),
+        ("alice", LINES_GUIDED, 2),
+        ("alice", LINES_INSTRUCTED, 1),
+    ]
+    first, archives, mine, instructed = found
+    assert (first["origin"], first["base"], first["varies"]) == (None, None, [])
+    assert (archives["origin"], mine["origin"]) == (first["id"], archives["id"])
+    assert "/recipe/few_shot" in {v["path"] for v in archives["varies"]}
+    assert mine["varies"] == [] and mine["base"]["id"] == archives["head"]["id"]
+    assert not any(k["moved_on"] or k["behind"] or k["deleted"] for k in found)
+    assert signed.get(f"/api/threads/{instructed['id']}/lineage").json() == found
+
+    forked = signed.post(
+        f"/api/threads/{instructed['id']}/forks", json={"name": "terse"}
+    ).json()
+    off = thread(signed, "reasoning", OFF)["head"]["digest"]
+    edited = {"head": instructed["head"]["id"], "parts": {"reasoning": off}}
+    got = signed.post(f"/api/threads/{instructed['id']}/edits", json=edited)
+    assert got.status_code == 201
+    assert signed.patch(
+        f"/api/threads/{forked['id']}", json={"deleted": True}
+    ).is_success
+    now = signed.get(f"/api/threads/{guided['id']}/lineage").json()
+    [terse] = [k for k in now if k["id"] == forked["id"]]
+    assert (terse["origin"], terse["depth"], terse["moved_on"], terse["deleted"]) == (
+        instructed["id"],
+        2,
+        True,
+        True,
+    )
+    assert (
+        signed.get(f"/api/threads/{guided['id']}/lineage", headers=bob).status_code
+        == 404
     )

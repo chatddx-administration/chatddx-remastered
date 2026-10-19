@@ -112,6 +112,17 @@ Raises:
 4. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
 5. `ValueError`: "{kind} components have no language of their own" (through `_written`)
 6. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Bench.lineage
+`src/chatddx/bench/following.py:lineage`
+
+* `thread: int`
+* ∟`list[Kin]`
+```
 
 ## Bench.moved
 `src/chatddx/bench/following.py:moved`
@@ -443,6 +454,22 @@ Raises:
 * `name: str | None`
 * `head: int | None = None`
 * ∟`Written`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Kin `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Kin`
+
+* `edit: Edit`
+* `about: About`
+* `origin: int | None`
+* `depth: int`
+* `divergence: Divergence | None`
+* `moved_on: bool`
+* `behind: list[str]`
+```
 
 ## KINDS
 `src/chatddx/bench/model.py:KINDS`

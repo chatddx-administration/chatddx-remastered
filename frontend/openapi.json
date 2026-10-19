@@ -916,6 +916,60 @@
         }
       }
     },
+    "/api/threads/{thread}/lineage": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Lineage",
+        "operationId": "lineage_api_threads__thread__lineage_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Kin"
+                  },
+                  "title": "Response Lineage Api Threads  Thread  Lineage Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/follows": {
       "get": {
         "tags": [
@@ -2212,6 +2266,64 @@
         }
       }
     },
+    "/api/runs/compared": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Compared",
+        "operationId": "compared_api_runs_compared_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 20,
+              "description": "the runs, in order",
+              "title": "Run"
+            },
+            "description": "the runs, in order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Compared"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs/{run}": {
       "get": {
         "tags": [
@@ -3009,6 +3121,142 @@
         ],
         "description": "a chunk's digest; empty or null takes an optional part out"
       },
+      "Compared": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/ComparedView"
+            },
+            "type": "array",
+            "title": "Views",
+            "description": "each view of each scorer that scored one of the runs, by its name"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComparedItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "the items every run's trial holds, by case and replicate"
+          },
+          "apart": {
+            "items": {
+              "$ref": "#/components/schemas/HeldBySome"
+            },
+            "type": "array",
+            "title": "Apart",
+            "description": "the cases only some of the runs hold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runs",
+          "views",
+          "items",
+          "apart"
+        ],
+        "title": "Compared"
+      },
+      "ComparedItem": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "values": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "a value per run, in the order the runs are given, for each view in the order the views are"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate",
+          "values"
+        ],
+        "title": "ComparedItem"
+      },
+      "ComparedView": {
+        "properties": {
+          "scorer": {
+            "type": "string",
+            "title": "Scorer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "means": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Means",
+            "description": "each run's mean over the shared items it has a value for, in the order the runs are given"
+          },
+          "counts": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Counts",
+            "description": "how many of the shared items each run has a value for"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "name",
+          "view",
+          "label",
+          "means",
+          "counts"
+        ],
+        "title": "ComparedView"
+      },
       "Component": {
         "properties": {
           "digest": {
@@ -3654,6 +3902,30 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HeldBySome": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "runs": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Runs",
+            "description": "the runs that hold it"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "runs"
+        ],
+        "title": "HeldBySome"
+      },
       "Item": {
         "properties": {
           "case": {
@@ -3749,6 +4021,154 @@
         "title": "ItemDetail"
       },
       "JsonValue": {},
+      "Kin": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the word for its kind: configuration for a skeleton"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its head's"
+          },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "the thread it is a fork of; null for the first of the lineage"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "description": "how many forks down from the first it is"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a fork's: the version of its origin it is compared with"
+          },
+          "varies": {
+            "items": {
+              "$ref": "#/components/schemas/Varied"
+            },
+            "type": "array",
+            "title": "Varies",
+            "description": "a fork's: what its head changes"
+          },
+          "moved_on": {
+            "type": "boolean",
+            "title": "Moved On",
+            "description": "a fork's: its origin has moved on since its base, so following it is proposed"
+          },
+          "behind": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Behind",
+            "description": "the references of its head whose threads have moved on, by path"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "word",
+          "name",
+          "title",
+          "owner",
+          "tags",
+          "language",
+          "translated",
+          "head",
+          "origin",
+          "depth",
+          "base",
+          "varies",
+          "moved_on",
+          "behind",
+          "deleted"
+        ],
+        "title": "Kin"
+      },
       "Kind": {
         "properties": {
           "kind": {

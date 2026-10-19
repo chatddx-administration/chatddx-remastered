@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
@@ -18,6 +19,7 @@ from chatddx.store import Queue
 
 from .configurations import linked
 from .pages import BenchDep, page
+from .refine import viewed
 
 PLAN = "management_plan_v1"
 SHOWN = 50
@@ -42,6 +44,34 @@ def runs(
         more=len(found) > SHOWN,
         left=left,
         queue=api_queue.queue(bench),
+    )
+
+
+@router.get("/runs/compare")
+def comparing(
+    request: Request,
+    bench: BenchDep,
+    run: Annotated[list[UUID] | None, Query()] = None,
+    by: str | None = None,
+) -> Response:
+    if not run:
+        raise HTTPException(422, "pick the runs to compare on the runs page")
+    compared = api.compared(bench, run)
+    cases = [i.case for i in compared.items] + [c.case for c in compared.apart]
+    picked = viewed(compared.views, by)
+    at = next(
+        (i for i, v in enumerate(compared.views) if f"{v.scorer}:{v.view}" == picked),
+        None,
+    )
+    return page(
+        request,
+        "compare.html",
+        person=bench.person,
+        compared=compared,
+        titles={case: bench.title(case) for case in cases},
+        by=picked,
+        at=at,
+        kept="?" + urlencode([("run", str(r)) for r in run]),
     )
 
 

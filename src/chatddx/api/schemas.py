@@ -340,6 +340,25 @@ class Follows(_Schema):
     )
 
 
+class Kin(Thread):
+    origin: int | None = Field(
+        description="the thread it is a fork of; null for the first of the lineage"
+    )
+    depth: int = Field(description="how many forks down from the first it is")
+    base: Edit | None = Field(
+        description="a fork's: the version of its origin it is compared with"
+    )
+    varies: list[Varied] = Field(description="a fork's: what its head changes")
+    moved_on: bool = Field(
+        description="a fork's: its origin has moved on since its base, so following it "
+        + "is proposed"
+    )
+    behind: list[str] = Field(
+        description="the references of its head whose threads have moved on, by path"
+    )
+    deleted: bool
+
+
 class NewFollow(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
     follow: Literal["origin", "moved"] = Field(
@@ -788,6 +807,45 @@ class ItemDetail(Item):
     call: JsonValue
     turns: JsonValue
     answer: Answer
+
+
+class ComparedView(_Schema):
+    scorer: str
+    name: str
+    view: int
+    label: str
+    means: list[float | None] = Field(
+        description="each run's mean over the shared items it has a value for, in the "
+        + "order the runs are given"
+    )
+    counts: list[int] = Field(
+        description="how many of the shared items each run has a value for"
+    )
+
+
+class ComparedItem(_Schema):
+    case: str
+    replicate: int
+    values: list[list[float | None]] = Field(
+        description="a value per run, in the order the runs are given, for each view in "
+        + "the order the views are"
+    )
+
+
+class HeldBySome(_Schema):
+    case: str
+    runs: list[UUID] = Field(description="the runs that hold it")
+
+
+class Compared(_Schema):
+    runs: list[Run]
+    views: list[ComparedView] = Field(
+        description="each view of each scorer that scored one of the runs, by its name"
+    )
+    items: list[ComparedItem] = Field(
+        description="the items every run's trial holds, by case and replicate"
+    )
+    apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")
 
 
 class ScoredItem(_Schema):

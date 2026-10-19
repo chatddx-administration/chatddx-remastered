@@ -152,6 +152,43 @@ Raises:
 `src/chatddx/api/app.py:CODES`
 
 * `CODES: dict[int, Code] = {…}`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Compared `(_Schema)`
+`src/chatddx/api/schemas.py:Compared`
+
+* `runs: list[Run]`
+* `views: list[ComparedView] = Field(…)`
+* `items: list[ComparedItem] = Field(…)`
+* `apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")`
+
+## compared `@router.get("/runs/compared")`
+`src/chatddx/api/runs.py:compared`
+
+* `bench: BenchDep`
+* `run: Annotated[list[UUID], Query(min_length=1, max_length=20, description='the runs, in order')]`
+* ∟`schemas.Compared`
+
+## ComparedItem `(_Schema)`
+`src/chatddx/api/schemas.py:ComparedItem`
+
+* `case: str`
+* `replicate: int`
+* `values: list[list[float | None]] = Field(…)`
+
+## ComparedView `(_Schema)`
+`src/chatddx/api/schemas.py:ComparedView`
+
+* `scorer: str`
+* `name: str`
+* `view: int`
+* `label: str`
+* `means: list[float | None] = Field(…)`
+* `counts: list[int] = Field(…)`
+```
 
 ## Component `(_Schema)`
 `src/chatddx/api/schemas.py:Component`
@@ -461,6 +498,17 @@ Raises:
 * `heard: Heard`
 * ∟`None`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## HeldBySome `(_Schema)`
+`src/chatddx/api/schemas.py:HeldBySome`
+
+* `case: str`
+* `runs: list[UUID] = Field(description="the runs that hold it")`
+
+```
 ## Item `(_Schema)`
 `src/chatddx/api/schemas.py:Item`
 
@@ -609,6 +657,22 @@ Raises:
 * `token: str`
 * ∟`None`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Kin `(Thread)`
+`src/chatddx/api/schemas.py:Kin`
+
+* `origin: int | None = Field(…)`
+* `depth: int = Field(description="how many forks down from the first it is")`
+* `base: Edit | None = Field(…)`
+* `varies: list[Varied] = Field(description="a fork's: what its head changes")`
+* `moved_on: bool = Field(…)`
+* `behind: list[str] = Field(…)`
+* `deleted: bool`
+
+```
 ## Kind `(_Schema)`
 `src/chatddx/api/schemas.py:Kind`
 
@@ -654,6 +718,18 @@ Raises:
 * `language: str`
 * `cases: list[str]`
 * `why: str`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## lineage `@router.get("/threads/{thread}/lineage")`
+`src/chatddx/api/threads.py:lineage`
+
+* `bench: BenchDep`
+* `thread: int`
+* ∟`list[schemas.Kin]`
+```
 
 ## Listener
 `src/chatddx/api/listening.py:Listener`

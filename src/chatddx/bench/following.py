@@ -17,7 +17,7 @@ from chatddx.identity import owns, sees
 
 from .components import keep_language
 from .errors import NotFound
-from .model import COMPILED_LANGUAGE, LABELLED, Moved, Proposed, Written
+from .model import COMPILED_LANGUAGE, LABELLED, Kin, Moved, Proposed, Written
 from .seen import (
     Seen,
     check_expecting,
@@ -68,6 +68,52 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
             labels=labels,
         )
     return Written(edit, "a new version", linted(seen, proposed.digest))
+
+
+def lineage(seen: Seen, thread: int) -> list[Kin]:
+    _ = seen.thread(thread, deleted=True)
+    first = thread
+    while (up := threads.origin(seen.rows, first)) is not None and _shown(seen, up):
+        first = up
+    found: list[Kin] = []
+
+    def down(at: int, origin: int | None, depth: int) -> None:
+        edit, about = seen.thread(at, deleted=True)
+        diverged = threads.divergence(seen.rows, at)
+        moved_on = (
+            diverged is not None
+            and diverged.moved
+            and _shown(seen, diverged.origin_head.thread)
+        )
+        found.append(
+            Kin(edit, about, origin, depth, diverged, moved_on, _behind(seen, at))
+        )
+        for fork in sorted(threads.forks(seen.rows, at)):
+            if _shown(seen, fork):
+                down(fork, at, depth + 1)
+
+    down(first, None, 0)
+    return found
+
+
+def _shown(seen: Seen, thread: int) -> bool:
+    try:
+        _ = seen.thread(thread, deleted=True)
+    except NotFound:
+        return False
+    return True
+
+
+def _behind(seen: Seen, thread: int) -> list[str]:
+    held = [
+        (b.path, b.head.thread)
+        for b in threads.behind(seen.rows, thread)
+        if b.head is not None
+    ]
+    known = read.abouts(seen.rows, [Subject(thread=t) for _, t in held])
+    return sorted(
+        {p for p, t in held if sees(seen.person.id, known[Subject(thread=t)])}
+    )
 
 
 def moved(seen: Seen, thread: int) -> Moved | None:

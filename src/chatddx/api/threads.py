@@ -427,6 +427,31 @@ def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDeta
     return _detail(bench, thread)
 
 
+@router.get("/threads/{thread}/lineage")
+def lineage(bench: BenchDep, thread: int) -> list[schemas.Kin]:
+    found = bench.lineage(thread)
+    languages = edit_languages(bench.rows, [k.edit for k in found])
+    kind = catalog.threads.thread(bench.rows, thread).kind
+    return [
+        schemas.Kin(
+            **thread_of(bench, kind, k.edit, k.about, languages).model_dump(),
+            origin=k.origin,
+            depth=k.depth,
+            base=None if k.divergence is None else _edit_of(bench, k.divergence.base),
+            varies=[]
+            if k.divergence is None
+            else [
+                schemas.Varied(path=path, base=base, fork=fork)
+                for path, (base, fork) in k.divergence.varies.items()
+            ],
+            moved_on=k.moved_on,
+            behind=k.behind,
+            deleted=k.about.deleted,
+        )
+        for k in found
+    ]
+
+
 @router.get("/threads/{thread}/follows")
 def follows(bench: BenchDep, thread: int) -> schemas.Follows:
     with refused():

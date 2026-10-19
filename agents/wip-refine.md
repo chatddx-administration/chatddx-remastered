@@ -16,8 +16,8 @@ case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's language
    from Refine. The order of the steps is suggested, and the agent's to change (see "Steps").
 3. **Decided: a set is held to one language**, so that a variation's start over it is one run, never a run per
    language (see "What the docs hold it to").
-4. **Step 1 is built** (see "Built"); what it leaves is in "What step 1 leaves". Step 1 is `agents/wip-portal.md`'s 5c
-   ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
+4. **Steps 1 and 2 are built** (see "Built"); what they leave is in each step's "What step N leaves". Step 1 is
+   `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
 
 ## What the researcher is here to do
 From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned"):
@@ -38,9 +38,9 @@ From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned
 | A configuration from a recipe | `POST /api/threads` with `recipe`; `POST /api/recipes/check` | a form on `/configurations` (step 1) | nothing |
 | A look over a chunk as typed | parts are taken by digest only; translations as typed are the one exception (`Translating.entries`, `POST /api/threads/{id}/translation`) | none | a part given whole (step 4) |
 | Run variations | `POST /api/runs`, the worker | one variation at a time, from its page | several, over one set (step 3) |
-| Read their scores | `GET /api/runs/{id}/scores`, a run at a time | a run's page | runs side by side (step 2) |
+| Read their scores | `GET /api/runs/{id}/scores`; `GET /api/runs/compared` | a run's page; Refine and `/runs/compare` (step 2) | nothing |
 | Keep one | fork, edit, save by name | Save on the variation's page | a chunk and its configuration saved together, built for a judge only (`frontend/src/lib/scorer/rewriting.ts`; step 4) |
-| A configuration's lineage | `catalog.threads.forks`, `origin`, `divergence`, `proposal` | "Forked from", and **Follow its origin** | the forks, which the API doesn't give (step 2) |
+| A configuration's lineage | `GET /api/threads/{id}/lineage` (step 2) | Refine's lineage drawer (step 2); **Follow its origin** on a configuration's page | nothing |
 | Delete | the `deleted` entry; `POST /threads/{id}/delete` takes any thread | **Restore** in the Library | **Delete** on a configuration (step 5) |
 | Follow a chunk that moved on | `catalog.threads.behind` lists it | nothing | the bench follows facts and the model only (step 5) |
 
@@ -281,6 +281,43 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   other.
 - **A recipe that compiles to a skeleton a configuration holds already** isn't said so by the form.
 - **A toolset's tool at an earlier version** is kept and shown by its digest; the tools offered are the latest.
+
+### Step 2: the API's reads, and the page read only
+- **The API**, suggested to `docs/api.md` as `AGENT` blocks:
+  - `GET /api/threads/{id}/lineage` (`src/chatddx/api/threads.py:lineage`, `Bench.lineage` in
+    `src/chatddx/bench/following.py`), as planned, with each thread's `origin` and `depth` to draw it by. Its origin
+    has moved on only when the person sees the origin, a reference is behind only when they see the thread that
+    moved on, and a deleted thread is there only for its owner.
+  - `GET /api/runs/compared?run=…` (`src/chatddx/api/runs.py:compared`), up to twenty runs, as planned: items by
+    case and replicate, under each run's latest score under each scorer, and cases by digest, as the runs give them.
+- **The page** (`src/chatddx/portal/refine.py`, `templates/refine.html`; the `refine` island remembers the drawer):
+  - **Its columns**: the version shown, then each other configuration of its lineage, the person's own first.
+    Configurations holding one skeleton share a column ("lines-instructed = archive/lines-instructed"), since a fork
+    that varies nothing holds its origin's; a deleted one has none.
+  - **A column's run** is the person's latest reaching its skeleton (`GET /api/runs?reaching=`) at the set's
+    endpoint's engine, in the set's language, and, when tags or families narrow the set, over its cases only. The
+    rest are counted as gone elsewhere.
+  - **The set**: the endpoint, the one serving the model when only one does, else picked; the language, the
+    configuration's own unless picked; tags from a form, and families from the address.
+  - **The lineage** is sorted within a level by the view `by` names (`scorer:view`), by default the first with a
+    value, each configuration with its column's mean.
+  - A judge configuration isn't found here: a judge isn't run on cases.
+- **`/runs/compare?run=…`** (C1; `src/chatddx/portal/runs.py:comparing`, `templates/compare.html`): the runs ticked
+  on the runs page or a configuration's page (`macros.html:runs_table`, whose checkboxes join a form of their own), a
+  mean per view and run, and, under the view `by` names, each item.
+- **Tests**: the test World's scripted runs gain `instructed`, `instructed-greedy` and `guided`
+  (`src/chatddx/test/world.py:COMPARED`), over `crlf` and `bom` at `qwen3@fake`, `lines-instructed`'s lineage rather
+  than `lines`', which has no fork; each answers both cases alike, since a run doesn't send its cases in the order a
+  scripted run lists them. `test_threads.py`, a lineage; `test_runs.py`, runs compared; `test_scripted_runs.py`, the
+  three; `src/chatddx/portal/test/test_refining.py`, Refine and comparing runs; and by hand in Chromium on `ran`.
+
+#### What step 2 leaves
+- **The set's seed** isn't held: step 3 runs with it, and runs are matched without it, their replicates by index.
+- **A variation's runs** aren't a configuration's column: a column is found by the configuration's skeleton, and the
+  trying list (step 3) shows a variation's.
+- **Families** narrow the set from the address only; the form offers tags.
+- **Means only**, over the shared items, as "Aggregation" (`docs/backlog.md`) waits.
+- **A lineage costs a few queries per thread**: its title, what it varies and what is behind.
 
 ## Open
 - **Others' runs**: a person compares their own runs only. A collaborator's runs of a shared configuration aren't
