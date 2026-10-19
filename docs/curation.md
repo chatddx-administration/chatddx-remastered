@@ -124,49 +124,24 @@ that isn't the configuration's own (docs/catalog.md, "Languages"). Notes in the 
 own.
 
 ### Facts and the engine
-```
-AGENT: REPLACE
-Loading makes recipes for the handle the inventory names (`src/chatddx/curation/plan.py:plan_factors`).
----
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
 `facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for the model under the handle the
 World names for configurations, its intents compiled against its facts (docs/facts.md, "Compiling intents").
-```
-Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
-reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
-`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for that endpoint's engine's model,
-its intents compiled against its facts (docs/facts.md, "Compiling intents").
 
-```
-AGENT: REPLACE
-The World names a handle for configurations, and one that doesn't resolve is reported with why.
----
 A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
 sampling, and a recipe is skipped and reported when the facts refuse it on that model, when the World names no
 handle for configurations, or when that handle doesn't resolve to one endpoint, which is ops' to mend. Engines and
 facts are planned first for this reason. A researcher swaps the model at the bench, as any other part
 (docs/bench.md).
-```
-A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
-sampling, and a recipe is skipped and reported when the facts refuse it on that engine, or when the World names no
-endpoint for configurations. Engines and facts are planned first for this reason. A researcher swaps the model at the
-bench, as any other part (docs/bench.md).
 
 ## The World
-```
-AGENT: REPLACE
-Judges and configurations are bound to handles (`worlds/*/inventory.toml`).
----
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes, the handles its judges are bound to and the handle its configurations are made for, and
-```
-A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes, the endpoints its judges are bound to and the endpoint whose engine its configurations are made for, and
-takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors,
-and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's
-fake engines are loaded only with the sample World, and a World that serves a model of its own brings what is known
-about it, which loading stores for the models its engines serve.
+vignettes, the handles its judges are bound to and the handle its configurations are made for, and takes its
+`engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors, and its
+`facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake
+engines are loaded only with the sample World, and a World that serves a model of its own brings what is known about it,
+which loading stores for the models its engines serve.
 
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.

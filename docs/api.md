@@ -11,14 +11,7 @@ needs are there from the start rather than added later.
 
 - **The bench is the surface for what depends on who is asking**: what a person sees, finds and owns. What doesn't
   depend on them is the same for everyone, read from the store and the World, if through the bench's reads that take
-```
-AGENT: REPLACE
-`GET /api/models` lists handles now, each with its weights, latest engine and what refuses it
-(`src/chatddx/api/world.py:models`).
----
   no person: a component by its digest, the endpoints, and the models by their handles.
-```
-  no person: a component by its digest, the endpoints and the models.
 - **What a person sees is a convenience, not protection.** It decides what is relevant to show them. Protection is
   clearance, which the runner's gate enforces, and the database's grants (agents/wip-clearance.md).
 - **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score. The
@@ -92,18 +85,10 @@ A look at a variation gives:
 - each part's chunk, its title and what it holds, and whether it was replaced; the model is a part too, by its
   digest. A reasoning level, and a recommended sampling, also say the level the model is asked for
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
-```
-AGENT: REPLACE
-A hand-written configuration is looked at under a handle, `under`, as `endpoint` gave way to it, and a look says the
-handle it runs under or why it can't run (`src/chatddx/api/threads.py:variation`).
----
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   a handle (`under`), for the model.
 - the handle it runs under (`model`), or why it can't run (`problem`): its handle doesn't resolve to one endpoint,
   which is ops' to mend, its model is behind its handle, or it names no model and no handle is given.
-```
-- the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
-  an endpoint, for the model.
 - Translations (`docs/bench.md`, "Translations")
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
@@ -111,22 +96,11 @@ A case with expectations to choose from is listed apart, as `choosing`, rather t
 sent in, its own as written or the one it is translated into, since the language of a skeleton otherwise comes from
 its stored compilations, which it hasn't got yet.
 
-```
-AGENT: REPLACE
-No endpoint is named any more; a handle named for a hand-written configuration that isn't one is refused instead
-(`src/chatddx/bench/seen.py:Seen.at`).
----
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, or a stored model; a
 part that can't be taken out, the model among them; parts that don't compile together, among them a reasoning level
 or a recommended sampling that the facts about the model refuse, or that a model without facts can't work
 out; a handle named for a hand-written configuration that isn't one; or a parameter the request doesn't know, so that
 a misspelt part is refused rather than ignored. A look's queries don't grow with the number of cases it is over.
-```
-A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, or a stored model; a
-part that can't be taken out, the model among them; parts that don't compile together, among them a reasoning level
-or a recommended sampling that the facts about the model refuse, or that a model without facts can't work
-out; an endpoint named that serves another model; or a parameter the request doesn't know, so that a misspelt part is
-refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
 ## Translations
 See docs/bench.md, "Translations".
@@ -233,21 +207,11 @@ replaced over it, or nothing for a run started from a trial alone (docs/catalog.
 start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
 started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
 
-```
-AGENT: REPLACE
-A start names no endpoint: a run goes under its variation's handle (`src/chatddx/api/runs.py:_new`,
-`src/chatddx/bench/seen.py:Seen.at`).
----
 A run goes under its variation's handle, to the one endpoint the handle resolves to, and its trial takes the
 handle's latest engine; a hand-written configuration names no model, so a start names the handle it runs under
 (`under`). A handle that resolves to no endpoint or several is refused as ops' error, a variation whose weights its
 handle no longer holds as behind its model, and a handle named for a configuration with a model part as one it runs
 under already, all before the gate is asked (docs/bench.md, "The model").
-```
-A run goes to the endpoint serving its variation's model, or to the endpoint the request names, which must serve it,
-and its trial takes that endpoint's engine; a hand-written configuration names no model, so it needs an endpoint
-named. No endpoint serving the model, or several when none is named, is refused before the gate is asked, as an
-endpoint named that serves another model is (docs/bench.md, "The model").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
@@ -317,25 +281,7 @@ A halt goes through the queue, and reaches the job's worker wherever it is.
 It cancels the calls under way, record them as stopped and the run is finished unscored.
 
 ### Reading runs
-```
-AGENT: REPLACE
-A run says its handle and whether it ran at the handle's latest engine, and its line names the handle
-(`src/chatddx/api/runs.py:_run_of`, `src/chatddx/bench/seen.py:Seen.described`).
----
-- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
-  a scorer that scored them, to a start's runs (`with`), or to those left to score, each with the scorers it is left
-  to be scored by. Each says what ran: its trial, skeleton, the language its request is sent in, the first run of its
-  start, engine, endpoint, its handle (`model`) and whether it ran at the handle's latest engine (`latest`), cases,
-  seeds, and a line saying it as people read it, by its handle; and its latest job: how it stands and why, whether it
-  was asked to halt, and while it is queued, how many jobs at its endpoint are under way or are to be taken before it,
-  none while its owner has paused.
-```
-- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
-  a scorer that scored them, to a start's runs (`with`), or to those left to score, each with the scorers it is left
-  to be scored by. Each says what ran: its trial, skeleton, the language its request is sent in, the first run of its
-  start, engine, endpoint, cases, seeds, and a line saying it as people read it; and its latest job: how it stands and
-  why, whether it was asked to halt, and while it is queued, how many jobs at its endpoint are under way or are to be
-  taken before it, none while its owner has paused.
+- **A person's runs**, newest first by trial's digest or by a scorer that scored them
 - **A run** adds when it started and finished, the rig it ran on, what it noted as it went, what checking it finds
   now, each item's outcome and tokens, and its latest score under each scorer.
 - **A run's scores**: the latest under each scorer, or every one, newest first. A score says its scoring, when it
