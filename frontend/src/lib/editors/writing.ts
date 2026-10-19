@@ -25,20 +25,19 @@ export type Saved =
 
 export type Labelled = (string | null)[];
 
-export async function saved(
-  editing: Editing,
-  name: string,
-  component: Component,
-  views?: Labelled,
-): Promise<Saved> {
-  const thread = editing.thread ?? 0;
-  const labels = views ? { labels: { views } } : {};
-  if (editing.mode === "edit") {
+export type Target = { thread: number | null; head?: number; mine?: boolean; name: string };
+export type Written =
+  | { digest: string; thread: number; head: number; cases: Record<string, string> }
+  | { problem: string; moved: number | null };
+
+export async function written(at: Target, body: Record<string, unknown>): Promise<Written> {
+  if (at.thread !== null && at.mine && at.head !== undefined) {
+    const thread = at.thread;
     const got = await api.POST("/api/threads/{thread}/edits", {
       params: { path: { thread } },
-      body: { head: editing.head ?? 0, component, ...labels },
+      body: { head: at.head, ...body },
     });
-    if (got.data) return { to: `/threads/${thread}`, thread, cases: got.data.cases ?? {} };
+    if (got.data) return { digest: got.data.digest, thread, head: got.data.id, cases: got.data.cases ?? {} };
     if (got.response.status === 409) {
       const now = await api.GET("/api/threads/{thread}", { params: { path: { thread } } });
       return { problem: why(got.error), moved: now.data?.head.id ?? null };
@@ -46,13 +45,29 @@ export async function saved(
     return { problem: why(got.error), moved: null };
   }
   const got =
-    editing.mode === "new"
-      ? await api.POST("/api/threads", { body: { component, name: name.trim(), ...labels } })
+    at.thread === null
+      ? await api.POST("/api/threads", { body: { name: at.name, ...body } })
       : await api.POST("/api/threads/{thread}/forks", {
-          params: { path: { thread } },
-          body: { name: name.trim(), component, ...labels },
+          params: { path: { thread: at.thread } },
+          body: { name: at.name, ...body },
         });
   return got.data
-    ? { to: `/threads/${got.data.id}`, thread: got.data.id, cases: {} }
+    ? { digest: got.data.head.digest, thread: got.data.id, head: got.data.head.id, cases: {} }
     : { problem: why(got.error), moved: null };
+}
+
+export async function saved(
+  editing: Editing,
+  name: string,
+  component: Component,
+  views?: Labelled,
+): Promise<Saved> {
+  const at = {
+    thread: editing.mode === "new" ? null : (editing.thread ?? 0),
+    head: editing.head ?? 0,
+    mine: editing.mode === "edit",
+    name: name.trim(),
+  };
+  const got = await written(at, { component, ...(views ? { labels: { views } } : {}) });
+  return "problem" in got ? got : { to: `/threads/${got.thread}`, thread: got.thread, cases: got.cases };
 }

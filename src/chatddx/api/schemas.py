@@ -395,30 +395,6 @@ class Variation(_Schema):
     reach: list[Reach]
 
 
-class TranslatedText(_Schema):
-    part: str
-    text: str
-    translation: str | None = Field(description="null while it has none")
-
-
-class Translation(_Schema):
-    label: str = Field(description="its name, and the chunks it replaces")
-    language: str | None = Field(
-        description="the language it is written in; null when unknown"
-    )
-    texts: list[TranslatedText] = Field(
-        description="the texts it holds, part by part, in the order they are sent"
-    )
-    unused: dict[str, str] = Field(
-        description="the entries into the language that none of its texts has"
-    )
-    written: dict[str, JsonValue] = Field(description="its request as written")
-    request: dict[str, JsonValue] = Field(
-        description="its request translated, a text without a translation as "
-        + "written; in both, placeholders for the case and the model"
-    )
-
-
 class Family(_Schema):
     id: int
     name: str

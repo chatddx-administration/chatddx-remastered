@@ -7,11 +7,12 @@ import {
   entriesOf,
   type Held,
   marked,
-  missingOf,
   places,
   savedTo,
+  textsOf,
   translationsOf,
   unlike,
+  unusedOf,
   visible,
 } from "./translate";
 
@@ -118,13 +119,13 @@ describe("marked", () => {
     expect(marked("", ["List"])).toEqual([]);
   });
 
-  it("takes the texts without a translation, once each", () => {
-    const texts = [
-      { part: "output", text: "A", translation: null },
-      { part: "few_shot", text: "A", translation: null },
-      { part: "output", text: "B", translation: "Bé" },
+  it("takes each text once, and the entries none of them has as unused", () => {
+    const texts: [string, string[]][] = [
+      ["output", ["A", "B"]],
+      ["few_shot", ["A"]],
     ];
-    expect(missingOf(texts)).toEqual(["A"]);
+    expect(textsOf(texts)).toEqual(["A", "B"]);
+    expect(unusedOf({ A: "Á", Gone: "Borta" }, texts)).toEqual({ Gone: "Borta" });
   });
 });
 

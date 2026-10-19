@@ -1,4 +1,4 @@
-import { written } from "$lib/scorer/rewriting";
+import { written } from "$lib/editors/writing";
 import type { Configuration, Held, Unchanged } from "./translate";
 
 export type Saved = { to: string } | { problem: string };

@@ -130,6 +130,12 @@ For a variation, the bench gives:
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced.
+```
+AGENT: REPLACE
+`translations.incomplete` is folded into `translations.missing` (src/chatddx/bench/seen.py:missing).
+---
+- **its lints**, `translations.missing` among them (see "Translations").
+```
 - **its lints**, `translations.missing` and `translations.incomplete` among them (see "Translations").
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
   skeleton they are sent as, or why they are left out (see "Translations").
@@ -182,6 +188,16 @@ and no language tag reaches the model.
 Typical cause: someone edits a source text, for instance the instructions. Translations are keyed by the exact text,
 so the old entry stops matching and the new text has none.
 
+```
+AGENT: REPLACE
+One code for one fact (src/chatddx/bench/seen.py:missing): replaces the two paragraphs and the list that follow, down to
+"its translations miss a text the compilation needs".
+---
+`translations.missing`: running the configuration in some language would be refused, and the warning says why, as
+compiling it there says: its translations don't go into the language, or leave a text untranslated. It fires for
+each language the look's cases are in that can't be sent, saying how many are left out, and for each other language
+its translations go into and leave a text untranslated, whatever the cases; never for the configuration's own.
+```
 `translations.incomplete`: The configuration's translations into some language leave at least one of its texts
 untranslated. Running it in that language would therefore be refused. It fires when any text has no entry, unless
 `translations.missing` says so of that language's cases, and never for the configuration's own language.

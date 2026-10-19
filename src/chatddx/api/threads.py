@@ -268,23 +268,11 @@ def variation(
 @router.post("/threads/{thread}/translation")
 def translation(
     bench: BenchDep, thread: int, given: schemas.Translating
-) -> schemas.Translation:
+) -> dict[str, JsonValue]:
     with refused():
         varied = bench.variation(thread, given.given(), given.head)
         made = bench.translation(varied, given.into, given.entries)
-        written = bench.skeleton(varied)
-    return schemas.Translation(
-        label=varied.label,
-        language=made.language,
-        texts=[
-            schemas.TranslatedText(part=part, text=text, translation=translation)
-            for part, found in made.texts.items()
-            for text, translation in found
-        ],
-        unused=made.unused,
-        written=written.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
-        request=made.skeleton.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
-    )
+    return made.render(model=MODEL, seed=None, fills=PLACEHOLDERS)
 
 
 def made(

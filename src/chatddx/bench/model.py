@@ -92,14 +92,6 @@ class Carried:
 
 
 @dataclass(frozen=True)
-class Translation:
-    language: str | None
-    texts: dict[str, list[tuple[str, str | None]]]
-    unused: dict[str, str]
-    skeleton: Skeleton
-
-
-@dataclass(frozen=True)
 class Started:
     runs: list[tuple[Carried, Running]]
     left_out: list[Carried]

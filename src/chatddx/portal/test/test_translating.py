@@ -3,7 +3,6 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from markupsafe import escape
 
 from chatddx.identity import Person
 from chatddx.portal.test.test_reading import shown
@@ -55,55 +54,40 @@ def test_translate_opens_the_person_s_first_configuration(signed: TestClient) ->
 
 
 @pytest.mark.slow
-def test_a_configuration_s_texts_are_shown_beside_their_translations(
+def test_a_configuration_s_texts_are_given_with_the_chunk_translating_them(
     signed: TestClient,
 ) -> None:
     guided = configuration(signed, LINES_GUIDED)
     page = shown(signed, f"/translate/{guided['id']}")
     held = props(page)
-    swedish = {t["text"]: t["translation"] for t in held["texts"]}
+    swedish = held["translations"]["body"]["into"]["sv"]
 
     assert (held["into"], held["language"]) == ("sv", "en")
-    assert escape(INSTRUCTION) in page and escape(swedish[INSTRUCTION]) in page
-    assert "every text translated" in page
-    assert "instructions · " in page and "appendix layout · " in page
+    parts = dict(held["texts"])
+    assert [part for part, _ in held["texts"]] == [
+        "instructions",
+        "few_shot",
+        "output",
+        "appendix_layout",
+    ]
+    assert parts["instructions"] == [INSTRUCTION] and INSTRUCTION in swedish
     assert {b["part"] for b in held["bodies"]} >= {"instructions", "few_shot", "output"}
-    assert held["request"]["messages"][0]["content"].startswith("Du bistår")
+    assert held["request"]["messages"][0]["content"].startswith(swedish[INSTRUCTION])
     assert held["written"]["messages"][0]["content"].startswith(INSTRUCTION)
+    assert f'href="/threads/{held["translations"]["thread"]}"' in page
     assert "sv ✓" in listed(page, guided["id"])
 
 
 @pytest.mark.slow
-def test_a_text_without_a_translation_is_said_missing(signed: TestClient) -> None:
+def test_a_text_without_a_translation_is_sent_as_written(signed: TestClient) -> None:
     lines = configuration(signed, LINES)
     page = shown(signed, f"/translate/{lines['id']}")
-    [text] = props(page)["texts"]
+    held = props(page)
+    [(part, [text])] = held["texts"]
 
-    assert (text["part"], text["translation"]) == ("output", None)
-    assert "· 1 missing" in page and "no translations" in page
-    assert "sv 1" in listed(page, lines["id"])
-    assert escape(text["text"]) in props(page)["request"]["messages"][0]["content"]
-
-
-@pytest.mark.slow
-def test_an_entry_no_text_holds_is_listed_apart(signed: TestClient) -> None:
-    guided = configuration(signed, LINES_GUIDED)
-    entries = {
-        t["text"]: t["translation"]
-        for t in props(shown(signed, f"/translate/{guided['id']}"))["texts"]
-    }
-    body = {"kind": "chunk.translations", "into": {"sv": {**entries, "Gone": "Borta"}}}
-    made = signed.post("/api/threads", json={"name": "more", "component": body})
-    assert made.status_code == 201, made.json()
-    parts = {"translations": made.json()["head"]["digest"]}
-    forked = signed.post(
-        f"/api/threads/{guided['id']}/forks", json={"name": "kept", "parts": parts}
-    )
-    assert forked.status_code == 201, forked.json()
-
-    page = shown(signed, f"/translate/{forked.json()['id']}")
-    assert props(page)["unused"] == {"Gone": "Borta"}
-    assert "Not used by it: 1" in page and "Borta" in page
+    assert (part, held["translations"]) == ("output", None)
+    assert "no translations" in page and "sv 1" in listed(page, lines["id"])
+    assert text in held["request"]["messages"][0]["content"]
 
 
 @pytest.mark.slow
@@ -173,7 +157,7 @@ def test_languages_are_offered_its_translations_first_then_its_cases_and_any(
     page = shown(signed, f"/translate/{guided['id']}?into=de")
     held = props(page)
     assert held["into"] == "de"
-    assert {t["translation"] for t in held["texts"]} == {None}
+    assert "de" not in held["translations"]["body"]["into"]
     assert "a language it isn&#39;t translated into yet" in page
 
 

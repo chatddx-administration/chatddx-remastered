@@ -11,15 +11,6 @@
 <span class="inline-flex items-center gap-1 rounded-full px-1.5 text-[0.7rem] {{ 'bg-success/10 text-success' if not missing else 'bg-warning/10 text-warning' }}">{{ language }} {{ "✓" if not missing else missing }}<span class="sr-only">{{ ", complete" if not missing else " missing" }}</span></span>
 {%- endmacro %}
 
-{% macro sent(held) %}
-{% for m in held.messages %}
-<div class="mb-2 rounded-lg bg-muted/40 p-2.5 text-sm">
-  <div class="mb-1 text-xs font-medium text-muted-foreground">{{ m.role }}</div>
-  <div class="whitespace-pre-wrap break-words">{{ m.content }}</div>
-</div>
-{% endfor %}
-{% endmacro %}
-
 {% block title %}{{ "Translate · " ~ named(configuration) if configuration else "Translate" }} · ChatDDX{% endblock %}
 {% block main %}
 {% if not configuration %}
@@ -106,36 +97,7 @@
   <p class="text-sm text-muted-foreground">Nothing to translate it into yet: it has no translations, and no case you see is in a language other than its own. Name one above to start.</p>
   {% else %}
   <div id="translate-texts">
-    <div class="mb-2 grid grid-cols-2 gap-3 text-[0.7rem] uppercase tracking-wide text-muted-foreground">
-      <span>Written in {{ own or "no language known" }}</span>
-      <span>Into {{ into }} <span class="normal-case {{ 'text-warning' if missing else 'text-success' }}">· {{ "every text translated" if not missing else missing ~ " missing" }}</span></span>
-    </div>
-    {% for part, found in groups %}
-    <section class="mb-4">
-      <h2 class="mb-1.5 text-xs font-medium text-muted-foreground">{{ part | replace("_", " ") }} · {% if parts[part].thread %}<a class="{{ link }}" href="/threads/{{ parts[part].thread }}">{{ parts[part].title }}</a>{% else %}{{ parts[part].title }}{% endif %}</h2>
-      {% for t in found %}
-      <div class="grid grid-cols-2 gap-3 border-t border-border/60 py-1.5 text-sm">
-        <div class="whitespace-pre-wrap break-words">{{ t.text }}</div>
-        {% if t.translation is none %}
-        <div class="text-warning">missing</div>
-        {% else %}
-        <div class="whitespace-pre-wrap break-words">{{ t.translation }}</div>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </section>
-    {% endfor %}
-    {% if made.unused %}
-    <details{% if made.unused | length <= 5 %} open{% endif %}>
-      <summary class="mb-1.5 cursor-pointer text-xs font-medium text-muted-foreground">Not used by it: {{ made.unused | length }}, of a text it doesn't hold</summary>
-      {% for text, translation in made.unused.items() %}
-      <div class="grid grid-cols-2 gap-3 border-t border-border/60 py-1.5 text-sm text-muted-foreground">
-        <div class="whitespace-pre-wrap break-words">{{ text }}</div>
-        <div class="whitespace-pre-wrap break-words">{{ translation }}</div>
-      </div>
-      {% endfor %}
-    </details>
-    {% endif %}
+    <p class="text-sm text-muted-foreground">Its texts are shown and translated with scripts{% if translations and translations.thread %}; without them, <a class="{{ link }}" href="/threads/{{ translations.thread }}">its translations' page</a> lists their entries{% endif %}.</p>
   </div>
   {% endif %}
   {% endcall %}
@@ -145,11 +107,8 @@
     <span class="{{ upright }}">Request{% if into %} <span class="font-normal text-muted-foreground">into {{ into }}</span>{% endif %}</span>
   </summary>
   <div class="{{ opened }} xl:w-[40rem]">
-    {% if made %}
-    <div id="translate-request">
-      <p class="mb-3 text-xs text-muted-foreground">What it sends into {{ into }}, a text without a translation as written; the case as a placeholder.</p>
-      {{ sent(made.request) }}
-    </div>
+    {% if props %}
+    <div id="translate-request"><p class="text-sm text-muted-foreground">The request is shown with scripts.</p></div>
     {% else %}
     <p class="text-sm text-muted-foreground">Nothing translated.</p>
     {% endif %}

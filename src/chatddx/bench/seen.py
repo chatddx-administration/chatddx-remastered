@@ -34,7 +34,6 @@ from chatddx.factors.request import (
     landings,
     texts,
     translated,
-    untranslated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
@@ -58,7 +57,6 @@ from .model import (
     Family,
     Graded,
     Reach,
-    Translation,
     word_of,
 )
 from .variation import TriedVariation
@@ -395,17 +393,16 @@ class Seen:
         if carried is None:
             first = next(iter(self.families()), None)
             if first is None:
-                return incomplete(self, variation, ())
+                return missing(self, variation, ())
             registry, made = trial(self, skeleton, engine, [first.case], (seed,))
             if by_hand:
                 add_compilations(self, registry, skeleton.digest)
             found = lints(registry, self.facts, [made.digest])
-            return found + incomplete(self, variation, ())
+            return found + missing(self, variation, ())
         known = self._languages_of([c for each in carried for c in each.cases])
         found: list[Finding] = []
         for each in carried:
             if each.skeleton is None:
-                found.append(left_out(each, variation.configuration.digest))
                 continue
             registry, made = trial(self, each.skeleton, engine, each.cases, (seed,))
             if by_hand:
@@ -418,42 +415,31 @@ class Seen:
             for finding in lints(registry, self.facts, [made.digest], languages):
                 if finding not in found:
                     found.append(finding)
-        return found + incomplete(self, variation, carried)
+        return found + missing(self, variation, carried)
 
     def translation(
         self,
         variation: TriedVariation,
         into: str,
         entries: Mapping[str, str] | None = None,
-    ) -> Translation:
+    ) -> Skeleton:
         recipe = variation.varied
         if recipe is None:
             raise ValueError(f"{variation.label} has no recipe to translate")
-        own = recipe_language(self.rows, recipe)
-        if language_tag(into) == own:
+        if language_tag(into) == recipe_language(self.rows, recipe):
             raise ValueError(f"{variation.label} is written in {into}")
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         if entries is None:
             entries = translated(recipe, registry.get).get(into, {})
-        held = texts(recipe, registry.get)
-        needed = {t for found in held.values() for t in found}
-        if needed:
-            # Policy: a text without a translation is shown as written, where compiling
-            # refuses it.
-            filled = Translations(into={into: {t: entries.get(t) or t for t in needed}})
-            recipe = recipe.model_copy(update={"translations": registry.add(filled)})
-            facts = compiled_with(self, variation)
-            skeleton = compile_request(recipe, registry.get, facts, into)
-        else:
-            skeleton = self.skeleton(variation)
-        return Translation(
-            language=own,
-            texts={
-                part: [(t, entries.get(t) or None) for t in found]
-                for part, found in held.items()
-            },
-            unused={t: tr for t, tr in entries.items() if t not in needed},
-            skeleton=skeleton,
+        needed = {t for found in texts(recipe, registry.get).values() for t in found}
+        if not needed:
+            return self.skeleton(variation)
+        # Policy: a text without a translation is sent as written, where compiling
+        # refuses it.
+        filled = Translations(into={into: {t: entries.get(t) or t for t in needed}})
+        recipe = recipe.model_copy(update={"translations": registry.add(filled)})
+        return compile_request(
+            recipe, registry.get, compiled_with(self, variation), into
         )
 
     # Accommodating for a discovered fact: a schema's title is translated with its
@@ -920,43 +906,41 @@ def check_expecting(
         )
 
 
-def left_out(carried: Carried, subject: str) -> Finding:
-    cases = (
-        "1 case is" if len(carried.cases) == 1 else f"{len(carried.cases)} cases are"
-    )
-    return Finding(
-        code="translations.missing",
-        message=f"{cases} in {carried.language}, and left out: {carried.refused}",
-        subject=subject,
-    )
-
-
-def incomplete(
+def missing(
     seen: Seen, variation: TriedVariation, carried: Sequence[Carried]
 ) -> list[Finding]:
+    found = [
+        _missing(variation, each.refused, each)
+        for each in carried
+        if each.refused is not None
+    ]
     recipe = variation.varied
-    if recipe is None or recipe.translations is None:
-        return []
-    registry = seen.store.load(s.digest for s in iter_refs(recipe))
-    said = {c.language for c in carried if c.refused is not None}
-    said.add(recipe_language(seen.rows, recipe))
-    found: list[Finding] = []
-    for language in translated(recipe, registry.get):
-        if language in said:
+    if recipe is None:
+        return found
+    looked = {c.language for c in carried} | {recipe_language(seen.rows, recipe)}
+    for language in translated(recipe, seen.store.get):
+        if language in looked:
             continue
-        if not (missing := untranslated(recipe, registry.get, language)):
-            continue
-        count = "1 text" if len(missing) == 1 else f"{len(missing)} texts"
-        listed = ", ".join(repr(t) for t in missing)
-        found.append(
-            Finding(
-                code="translations.incomplete",
-                message=f"its translations into {language} leave {count} "
-                + f"untranslated: {listed}",
-                subject=variation.configuration.digest,
-            )
-        )
+        try:
+            _ = seen.skeleton(variation, language)
+        except StructuralError as e:
+            found.append(_missing(variation, str(e)))
     return found
+
+
+def _missing(
+    variation: TriedVariation, refused: str, carried: Carried | None = None
+) -> Finding:
+    subject = variation.configuration.digest
+    if carried is None:
+        return Finding(code="translations.missing", message=refused, subject=subject)
+    n = len(carried.cases)
+    cases = "1 case is" if n == 1 else f"{n} cases are"
+    return Finding(
+        code="translations.missing",
+        message=f"{cases} in {carried.language}, and left out: {refused}",
+        subject=subject,
+    )
 
 
 def _language_in(

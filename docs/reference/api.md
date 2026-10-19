@@ -1558,6 +1558,10 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
+```
+SIGN-OFF: REMOVE
+remove the 7 lines below
+```
 ## TranslatedText `(_Schema)`
 `src/chatddx/api/schemas.py:TranslatedText`
 
@@ -1572,6 +1576,10 @@ Raises:
 * `into: str = Field(description="the language it is translated into, such as 'sv'")`
 * `entries: dict[str, str] | None = Field(…)`
 
+```
+SIGN-OFF: REMOVE
+remove the 10 lines below
+```
 ## Translation `(_Schema)`
 `src/chatddx/api/schemas.py:Translation`
 
@@ -1588,6 +1596,12 @@ Raises:
 * `bench: BenchDep`
 * `thread: int`
 * `given: schemas.Translating`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* ∟`dict[str, JsonValue]`
+```
 * ∟`schemas.Translation`
 
 ## Tried `(_Schema)`

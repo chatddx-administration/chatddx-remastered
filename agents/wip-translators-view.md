@@ -121,7 +121,7 @@ Decided: (a) now; (b) suggested to the backlog; (c) stays there.
 
 ### T6. Seeing what it makes
 - **(a)** A route that stores nothing: a configuration, the translations into a language as typed, and the language
-  in; its texts with their translations, the unused entries, and the request as written and as translated out. One
+  in; the request translated out (reduced from its texts, the unused entries and the request as written too). One
   implementation, `compile_request`, and nothing sensitive, as no case is in it.
 - **(b)** The substitution ported to TypeScript, as `texts.ts:asked` placed guidance.
 
@@ -196,18 +196,15 @@ its instructions, carried over from its unused entry, saved, and the variation p
 
 ## Built
 ### Step 1: what a configuration is in a language
-- **The bench**, suggested to `docs/bench.md` as `AGENT` blocks with the lint and F1: `Seen.translation`, a
-  variation's texts by part with their translations into a language, from its translations or from entries given as
-  typed, the entries no text uses, and its skeleton translated with a text without a translation left as written.
-  Refused for a hand-written configuration, and into its own language.
-- **The lint**: `translations.incomplete`, on a configuration's look, for each language its translations go into
-  and leave a text of it untranslated, whatever cases are given (`src/chatddx/bench/seen.py:incomplete`, by
-  `chatddx.factors.request:untranslated`, which compiling into a language refuses by too). A
-  language whose cases are left out for it says so as `translations.missing` instead.
-- **The API**, suggested to `docs/api.md` as an `AGENT` block: `POST /api/threads/{thread}/translation`
-  (`src/chatddx/api/threads.py:translation`), a variation as the look takes it, a language and the entries into it as
-  typed in; the texts, the unused entries, and the request as written and as translated, with placeholders for the
-  case and the model, out. Nothing is stored, and nothing in it is sensitive.
+- **The bench**: `Seen.translation`, a variation's skeleton translated into a language by its translations or by
+  entries given as typed, a text without a translation left as written. Refused for a hand-written configuration, and
+  into its own language.
+- **The lint**: `translations.missing`, on a configuration's look (`src/chatddx/bench/seen.py:missing`): for each
+  language its cases are in and can't be sent, how many are left out and why, and for each other language its
+  translations go into and leave a text untranslated, whatever cases are given, why, as compiling into it says.
+- **The API**: `POST /api/threads/{thread}/translation` (`src/chatddx/api/threads.py:translation`), a variation as
+  the look takes it, a language and the entries into it as typed in; the request translated, with placeholders for
+  the case and the model, out. Nothing is stored, and nothing in it is sensitive.
 - **F1**: `Seen.answers`, the title of a skeleton's answer's schema as written: a translated skeleton's is its
   compilation's recipe's. A run's page and the review draw a management plan by it.
 - **Tests**: `src/chatddx/bench/test/test_translating.py` and `src/chatddx/api/test/test_translating.py`, on the test
@@ -236,8 +233,10 @@ its instructions, carried over from its unused entry, saved, and the variation p
   part's chunks' JSON, the toolset's tools included (`translate.ts:places`): a few-shot turn, a schema's property
   path, the answer tool's description, an insert's surroundings, the layout's; whitespace shown at a text's edges and
   each line's end (`visible`), and a translation whose edges aren't its source's said so (`unlike`); and in the
-  translated request, each text without a translation marked where it is sent (`marked`). Without scripts, the server
-  draws the texts and the translated messages plainly.
+  translated request, each text without a translation marked where it is sent (`marked`). The server gives the texts
+  by part, in the order they are sent, and the translations chunk; what each text is translated as and which entries
+  are unused the island works out (`translate.ts:entriesInto`, `unusedOf`). Without scripts the page says where the
+  entries are, on the translations' thread page.
 - **Shared with the review**: its panes and drawers are macros (`templates/macros.html`: `pane`, `drawer`, `rail`,
   `upright`, `opened`), and a drawer is remembered per viewer by `frontend/src/lib/drawers.ts:remembered`.
 - **Tests**: `src/chatddx/portal/test/test_translating.py` on `curated`; `frontend/src/lib/translate/translate.test.ts`;
@@ -262,7 +261,8 @@ its instructions, carried over from its unused entry, saved, and the variation p
   `POST /api/components/check` (`translate.ts:entriesOf`, `translationsOf`: what is typed, the unused kept, and the
   chunk's other languages as they are), and the request translated with what is typed, by
   `POST /api/threads/{thread}/translation`, which the request drawer follows (`live.svelte.ts`).
-- **Saving** (T5 a, `frontend/src/lib/translate/saving.ts:saved`), by `rewriting.ts:written`, now shared: the
+- **Saving** (T5 a, `frontend/src/lib/translate/saving.ts:saved`), by `frontend/src/lib/editors/writing.ts:written`,
+  which every editor's saving goes through since the second reduction: the
   translations as a version of the person's own, a fork of another's, or a new thread named after the configuration
   when none holds them; then the configuration holding them, as a version of the person's own at its latest, else a
   fork from the edit shown; a part already held isn't written again. The line says where both go
@@ -304,4 +304,16 @@ its instructions, carried over from its unused entry, saved, and the variation p
   configuration's own is unknown.
 - **The drawer's marks** cover the languages its translations go into and its cases are in, not one typed: a new
   language shows there once saved.
+
+### Reduced again
+After step 4, by the user's pick of five from what the steps had added:
+- `missingOf`, unused since step 3, gone.
+- The translation route gives the translated request alone; `Seen.translation` gives the skeleton; the bench's
+  `Translation` and the API's `TranslatedText` and `Translation` gone, and the page works out the rest from the
+  texts and the chunk it is given.
+- One write: `writing.ts:written`, a version of the person's own, a fork, or a new thread, which `saved`, a judge's
+  texts and translations all go through; `rewriting.ts`'s own gone.
+- No page drawn twice: the server no longer draws the texts and the request beneath the island.
+- One code: `translations.incomplete` folded into `translations.missing`, both messages ending in the refusal
+  compiling gives, suggested to `docs/bench.md`.
 

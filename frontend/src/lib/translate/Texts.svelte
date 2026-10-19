@@ -10,33 +10,32 @@
   import { saved } from "./saving";
   import {
     closest,
+    entriesInto,
     entriesOf,
     places,
     savedTo,
+    textsOf,
     type Translating,
     translationsOf,
     type Unchanged,
+    unusedOf,
   } from "./translate";
 
   let { translating, live }: { translating: Translating; live: Live } = $props();
   const given = untrack(() => translating);
   const now = untrack(() => live);
 
-  const groups = (() => {
-    const found = new Map<string, Translating["texts"]>();
-    for (const t of given.texts) found.set(t.part, [...(found.get(t.part) ?? []), t]);
-    return [...found.entries()];
-  })();
-  const unused = Object.keys(given.unused);
+  const leftover = unusedOf(entriesInto(given.translations, given.into), given.texts);
+  const unused = Object.keys(leftover);
   // Compromise: a chunk serving several configurations holds many texts another uses, so they come folded.
   const FEW = 5;
 
   const kept = $derived(
-    Object.fromEntries(Object.entries(given.unused).filter(([text]) => !now.left.includes(text))),
+    Object.fromEntries(Object.entries(leftover).filter(([text]) => !now.left.includes(text))),
   );
   const entries = $derived(entriesOf(now.typed, kept));
   const body = $derived(translationsOf(given.translations, given.into, entries));
-  const missing = $derived(new Set(given.texts.filter((t) => !now.typed[t.text]).map((t) => t.text)).size);
+  const missing = $derived(textsOf(given.texts).filter((text) => !now.typed[text]).length);
   const digest = $derived(now.found && "digest" in now.found ? now.found.digest : null);
   const unchanged: Unchanged = $derived({
     translations: digest !== null && digest === given.translations?.digest,
@@ -60,7 +59,7 @@
       ]);
       if (now.asked !== sent) return;
       now.found = held ? found : { problem: "Translations hold at least one language: write a translation to save them." };
-      if (translated.data) now.request = translated.data.request;
+      if (translated.data) now.request = translated.data;
       else now.found = { problem: why(translated.error) };
     }, 400);
     return () => clearTimeout(timer);
@@ -95,30 +94,30 @@
   <span>Written in {given.language ?? "no language known"}</span>
   <span>Into {given.into} <span class="normal-case {missing ? 'text-warning' : 'text-success'}">· {missing ? `${missing} missing` : "every text translated"}</span></span>
 </div>
-{#each groups as [part, texts] (part)}
+{#each given.texts as [part, texts] (part)}
   {@const held = given.parts[part]}
   <section class="mb-4">
     <h2 class="mb-1.5 text-xs font-medium text-muted-foreground">
       {part.replaceAll("_", " ")} ·
       {#if held?.thread}<a class="text-primary hover:underline" href="/threads/{held.thread}">{held.title}</a>{:else}{held?.title}{/if}
     </h2>
-    {#each texts as t (t.text)}
-      {@const offer = now.typed[t.text] ? null : closest(t.text, kept)}
+    {#each texts as text (text)}
+      {@const offer = now.typed[text] ? null : closest(text, kept)}
       <Entry
-        text={t.text}
-        bind:value={now.typed[t.text] as string}
-        places={places(t.text, part, given.bodies).filter(Boolean)}
-        oninput={() => edited(t.text)}
+        {text}
+        bind:value={now.typed[text] as string}
+        places={places(text, part, given.bodies).filter(Boolean)}
+        oninput={() => edited(text)}
       >
         {#if offer}
           <div class="mt-1 rounded-md bg-muted/50 p-2 text-xs">
             <p class="text-muted-foreground">An unused entry of a text much like it:</p>
             <p class="mt-0.5 whitespace-pre-wrap break-words">{#each offer.words as w, i (i)}{#if w.added}<ins class="bg-success/15 text-success no-underline">{w.value}</ins>{:else if w.removed}<del class="bg-destructive/10 text-destructive">{w.value}</del>{:else}{w.value}{/if}{/each}</p>
             <p class="mt-0.5 whitespace-pre-wrap break-words">→ {offer.translation}</p>
-            <button type="button" class="mt-1 text-primary hover:underline" onclick={() => started(t.text, offer.translation)}>Start from its translation</button>
+            <button type="button" class="mt-1 text-primary hover:underline" onclick={() => started(text, offer.translation)}>Start from its translation</button>
           </div>
         {/if}
-        {#if now.checking.includes(t.text)}
+        {#if now.checking.includes(text)}
           <p class="mt-0.5 text-xs text-warning">Started from a similar text's translation: check it against this one.</p>
         {/if}
       </Entry>
@@ -132,7 +131,7 @@
     </summary>
     {#each unused as text (text)}
       {@const left = now.left.includes(text)}
-      <Entry {text} value={given.unused[text] ?? ""} {left}>
+      <Entry {text} value={leftover[text] ?? ""} {left}>
         <button type="button" class="mt-0.5 text-xs text-primary hover:underline" onclick={() => leave(text)}>
           {left ? "Keep it" : "Leave it out"}
         </button>

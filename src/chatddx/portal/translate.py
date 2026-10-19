@@ -6,9 +6,17 @@ from fastapi.responses import RedirectResponse
 from chatddx.api import families as api_families, schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import Bench
+from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog.language import recipe_language
 from chatddx.factors.base import resolve
-from chatddx.factors.request import Purpose, Recipe, Toolset, translated, untranslated
+from chatddx.factors.request import (
+    Purpose,
+    Recipe,
+    Toolset,
+    texts,
+    translated,
+    untranslated,
+)
 
 from .pages import BenchDep, page
 
@@ -61,15 +69,16 @@ def translate(
         return page(request, "translate.html", **context)
     with refused():
         given = schemas.Translating.model_validate({"into": into, "head": head})
-        made = api.translation(bench, thread, given)
-    missing = len({t.text for t in made.texts if t.translation is None})
+        sent = api.translation(bench, thread, given)
+    written = bench.skeleton(varied).render(model=MODEL, seed=None, fills=PLACEHOLDERS)
     props: dict[str, Any] = {
         "into": into,
         "language": own,
-        "texts": [t.model_dump(mode="json") for t in made.texts],
-        "unused": made.unused,
-        "written": made.written,
-        "request": made.request,
+        # Accommodating for a discovered fact: tojson sorts an object's keys, and the
+        # parts go in the order they are sent.
+        "texts": list(texts(recipe, bench.store.get).items()),
+        "written": written,
+        "request": sent,
         "bodies": _bodies(bench, recipe),
         "parts": _parts(bench, recipe),
         "head": head,
@@ -95,10 +104,6 @@ def translate(
         "translate.html",
         **context,
         into=into,
-        made=made,
-        groups=_grouped(made.texts),
-        missing=missing,
-        parts=_parts(bench, recipe),
         translations=_translations(bench, recipe),
         props=props,
         island="translate",
@@ -138,15 +143,6 @@ def _marks(bench: Bench, t: schemas.Thread, families: set[str]) -> dict[str, int
     return {
         language: len(untranslated(recipe, get, language)) for language in sorted(into)
     }
-
-
-def _grouped(
-    found: list[schemas.TranslatedText],
-) -> list[tuple[str, list[schemas.TranslatedText]]]:
-    groups: dict[str, list[schemas.TranslatedText]] = {}
-    for t in found:
-        groups.setdefault(t.part, []).append(t)
-    return list(groups.items())
 
 
 def _parts(bench: Bench, recipe: Recipe) -> dict[str, dict[str, Any]]:

@@ -771,7 +771,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Translation"
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "title": "Response Translation Api Threads  Thread  Translation Post"
                 }
               }
             }
@@ -6345,38 +6349,6 @@
         ],
         "title": "ThreadDetail"
       },
-      "TranslatedText": {
-        "properties": {
-          "part": {
-            "type": "string",
-            "title": "Part"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "translation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Translation",
-            "description": "null while it has none"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "part",
-          "text",
-          "translation"
-        ],
-        "title": "TranslatedText"
-      },
       "Translating": {
         "properties": {
           "instructions": {
@@ -6448,70 +6420,6 @@
           "into"
         ],
         "title": "Translating"
-      },
-      "Translation": {
-        "properties": {
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "its name, and the chunks it replaces"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language",
-            "description": "the language it is written in; null when unknown"
-          },
-          "texts": {
-            "items": {
-              "$ref": "#/components/schemas/TranslatedText"
-            },
-            "type": "array",
-            "title": "Texts",
-            "description": "the texts it holds, part by part, in the order they are sent"
-          },
-          "unused": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Unused",
-            "description": "the entries into the language that none of its texts has"
-          },
-          "written": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Written",
-            "description": "its request as written"
-          },
-          "request": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Request",
-            "description": "its request translated, a text without a translation as written; in both, placeholders for the case and the model"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "label",
-          "language",
-          "texts",
-          "unused",
-          "written",
-          "request"
-        ],
-        "title": "Translation"
       },
       "Tried": {
         "properties": {

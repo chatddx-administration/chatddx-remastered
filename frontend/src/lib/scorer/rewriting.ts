@@ -1,4 +1,4 @@
-import { api, why } from "$lib/api/client";
+import { written } from "$lib/editors/writing";
 import type { JudgeChoice } from "./JudgeForm.svelte";
 
 export type Chunk = {
@@ -16,31 +16,6 @@ export type Texts = {
   parts: Record<"instructions" | "prompt" | "output", Chunk | null>;
 };
 export type Part = keyof Texts["parts"];
-export type Written = { digest: string; thread: number; head: number } | { problem: string };
-
-export async function written(
-  at: { thread: number | null; head?: number; mine?: boolean; name: string },
-  body: Record<string, unknown>,
-): Promise<Written> {
-  if (at.thread !== null && at.mine && at.head !== undefined) {
-    const got = await api.POST("/api/threads/{thread}/edits", {
-      params: { path: { thread: at.thread } },
-      body: { head: at.head, ...body },
-    });
-    return got.data ? { digest: got.data.digest, thread: at.thread, head: got.data.id } : { problem: why(got.error) };
-  }
-  const got =
-    at.thread === null
-      ? await api.POST("/api/threads", { body: { name: at.name, ...body } })
-      : await api.POST("/api/threads/{thread}/forks", {
-          params: { path: { thread: at.thread } },
-          body: { name: at.name, ...body },
-        });
-  return got.data
-    ? { digest: got.data.head.digest, thread: got.data.id, head: got.data.head.id }
-    : { problem: why(got.error) };
-}
-
 export async function rewritten(
   judge: JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number },
   bodies: Partial<Record<Part, Record<string, unknown>>>,

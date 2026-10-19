@@ -1,13 +1,13 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { Live } from "./live.svelte";
-  import { marked, type Translating } from "./translate";
+  import { marked, textsOf, type Translating } from "./translate";
 
   let { translating, live }: { translating: Translating; live: Live } = $props();
   const given = untrack(() => translating);
   const now = untrack(() => live);
 
-  const missing = $derived([...new Set(given.texts.filter((t) => !now.typed[t.text]).map((t) => t.text))]);
+  const missing = $derived(textsOf(given.texts).filter((text) => !now.typed[text]));
   const written = given.written.messages ?? [];
   const sent = $derived(now.request.messages ?? []);
   function rest(request: Translating["request"]): string {

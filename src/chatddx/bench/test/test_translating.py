@@ -1,6 +1,6 @@
 import pytest
 
-from chatddx.bench import Bench
+from chatddx.bench import Bench, Carried
 from chatddx.bench.configurations import keep_compilation
 from chatddx.bench.model import PLACEHOLDERS
 from chatddx.factors.base import resolve
@@ -33,45 +33,25 @@ def first_message(skeleton: Skeleton) -> object:
     return messages[0]["content"]
 
 
-def test_a_configuration_s_texts_come_with_their_translations(bench: Bench) -> None:
+def test_a_configuration_is_translated_by_its_translations(bench: Bench) -> None:
     guided = bench.variation(LINES_GUIDED)
     made = bench.translation(guided, "sv")
 
-    assert (made.language, made.unused) == ("en", {})
-    assert list(made.texts) == ["instructions", "few_shot", "output", "appendix_layout"]
-    assert dict(made.texts["instructions"]) == {
-        INSTRUCTION: swedish(bench)[INSTRUCTION]
-    }
-    assert all(
-        translation is not None for t in made.texts.values() for _, translation in t
-    )
-    assert made.skeleton.digest == bench.skeleton(guided, "sv").digest
+    assert made.digest == bench.skeleton(guided, "sv").digest
+    content = first_message(made)
+    assert isinstance(content, str) and content.startswith(swedish(bench)[INSTRUCTION])
 
 
-def test_entries_as_typed_leave_a_text_as_written_and_an_entry_unused(
-    bench: Bench,
-) -> None:
+def test_a_text_without_an_entry_as_typed_is_sent_as_written(bench: Bench) -> None:
     typed = {t: tr for t, tr in swedish(bench).items() if t != INSTRUCTION}
-    typed["Gone since"] = "Borta sedan"
     made = bench.translation(bench.variation(LINES_GUIDED), "sv", typed)
 
-    assert made.texts["instructions"] == [(INSTRUCTION, None)]
-    assert made.unused == {"Gone since": "Borta sedan"}
-    content = first_message(made.skeleton)
+    content = first_message(made)
     assert isinstance(content, str) and content.startswith(INSTRUCTION)
     assert "Lista de tänkbara diagnoserna" in content
 
-
-def test_a_configuration_without_translations_has_every_text_as_written(
-    bench: Bench,
-) -> None:
     lines = bench.variation(LINES)
-    made = bench.translation(lines, "sv")
-
-    assert {t for found in made.texts.values() for t in found} == {
-        ("List the plausible diagnoses, one per line, most likely first.", None)
-    }
-    assert made.skeleton.digest == lines.configuration.digest
+    assert bench.translation(lines, "sv").digest == lines.configuration.digest
 
 
 def test_a_translation_needs_a_recipe_and_another_language(
@@ -89,27 +69,28 @@ def test_a_translation_needs_a_recipe_and_another_language(
 
 
 @pytest.mark.slow
-def test_translations_that_leave_a_text_out_are_linted_whatever_the_cases(
+def test_translations_that_leave_a_text_out_are_said_whatever_the_cases(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN).engine
     terse = bench.new(Instructions(text="Read the case."), "terse", language="en")
     varied = bench.variation(LINES_GUIDED, {"instructions": terse.edit.digest})
+    refused = "no translation into sv for 'Read the case.'"
 
-    found = {f.code: f.message for f in bench.findings(varied, engine, 7)}
-    assert found["translations.incomplete"] == (
-        "its translations into sv leave 1 text untranslated: 'Read the case.'"
-    )
+    def said(carried: list[Carried] | None = None) -> list[str]:
+        found = bench.findings(varied, engine, 7, carried)
+        return [f.message for f in found if f.code == "translations.missing"]
 
+    assert said() == [refused]
     cases = [f.case for f in bench.families() if f.about.language == "sv"]
-    carried = bench.languages(varied, cases)
-    codes = {f.code for f in bench.findings(varied, engine, 7, carried)}
-    assert "translations.missing" in codes
-    assert "translations.incomplete" not in codes
-
+    n = len(cases)
+    assert said(bench.languages(varied, cases)) == [
+        f"{n} cases are in sv, and left out: {refused}"
+    ]
     guided = bench.variation(LINES_GUIDED)
-    codes = {f.code for f in bench.findings(guided, engine, 7)}
-    assert "translations.incomplete" not in codes
+    assert not [
+        f for f in bench.findings(guided, engine, 7) if f.code == "translations.missing"
+    ]
 
 
 def test_a_translated_answer_is_told_by_its_schema_s_title_as_written(

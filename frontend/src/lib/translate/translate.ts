@@ -1,5 +1,4 @@
 import { diffWords } from "diff";
-import type { Schemas } from "$lib/api/client";
 import type { Words } from "$lib/thread/diff";
 
 export type Entries = Record<string, string>;
@@ -19,8 +18,7 @@ export type Configuration = {
 export type Translating = {
   into: string;
   language: string | null;
-  texts: Schemas["TranslatedText"][];
-  unused: Entries;
+  texts: [string, string[]][];
   written: Request;
   request: Request;
   bodies: Body[];
@@ -155,8 +153,18 @@ export function marked(content: string, missing: string[]): Run[] {
   return runs;
 }
 
-export function missingOf(texts: Schemas["TranslatedText"][]): string[] {
-  return [...new Set(texts.filter((t) => t.translation === null).map((t) => t.text))];
+
+export function entriesInto(held: Held | null, into: string): Entries {
+  return { ...(held?.body.into[into] ?? {}) };
+}
+
+export function textsOf(texts: Translating["texts"]): string[] {
+  return [...new Set(texts.flatMap(([, found]) => found))];
+}
+
+export function unusedOf(entries: Entries, texts: Translating["texts"]): Entries {
+  const held = new Set(textsOf(texts));
+  return Object.fromEntries(Object.entries(entries).filter(([text]) => !held.has(text)));
 }
 
 export type Offer = { text: string; translation: string; words: Words };
