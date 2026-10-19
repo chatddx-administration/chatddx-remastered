@@ -29,7 +29,7 @@ it.
    5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
    in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
    translations, in `agents/wip-translators-view.md`; and a researcher's page around a configuration's lineage,
-   Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/plan-refine.md`.
+   Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/wip-refine.md`.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -240,7 +240,7 @@ Take:
 - **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
   nothing writes yet; the runs page filters by them.
 
-C1 and C2 are built by `agents/plan-refine.md` (steps 2 and 3), where C2 fills Refine's trying list.
+C1 and C2 are built by `agents/wip-refine.md` (steps 2 and 3), where C2 fills Refine's trying list.
 
 Open:
 - **Every combination**, as the old crossing made (`plan.py:crossed`), or endpoints as well as parts: C2 varies one
@@ -624,7 +624,7 @@ From "What the portal shows", not on the pages yet:
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
   have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
   pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is
-  `agents/plan-refine.md`'s (step 1).
+  `agents/wip-refine.md`'s (step 1).
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case
