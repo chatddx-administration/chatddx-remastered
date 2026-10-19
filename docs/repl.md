@@ -1,14 +1,7 @@
 # Repl
 
-```
-AGENT: replace
-The repl names no endpoint: its runs go under the model's handle. The first two lines below.
----
 The repl, `chatddx repl LOGIN`, is a shell for one person over a World: choose a configuration, see what a request
 would be, run cases under its model's handle, and look back at runs and score them. It works through the bench
-```
-The repl, `chatddx repl LOGIN`, is a shell for one person over a World: choose a configuration and an endpoint, see
-what a request would be, run cases, and look back at runs and score them. It works through the bench
 (`src/chatddx/bench/`, docs/bench.md), the person-scoped view the API shares, and strings together pieces
 documented elsewhere: the runner and the scoring pass (docs/runner.md), what a request is made of (docs/factors.md),
 names, owners and titles (docs/catalog.md), endpoints and clearance (docs/inventory.md), and model facts and their
@@ -42,12 +35,6 @@ are the runs they own; the runner writes the owner (docs/catalog.md, "Owners").
 A person is scored against their own expectations only. One shared with them counts once they take it (`take`), so
 what they're scored against never changes under them when someone else edits theirs.
 
-```
-AGENT: replace
-The cell is dropped (src/chatddx/repl/shell.py:Repl): the shell holds a variation, which runs under its model's
-handle, and `on` and `cell` are gone. The heading and the two paragraphs below; a model that refuses a pick is now
-refused by `set model`, as any part that doesn't compile is (see "Parts").
----
 ## The variation
 The variation is what the shell runs: the edit of a configuration thread it holds, its recipe, and the parts set on it
 (`TriedVariation`), its model among them. It runs under its model's handle (docs/bench.md, "The model"), at the one
@@ -60,18 +47,6 @@ Whenever the variation changes, the shell says the handle it runs under, `variat
 can't run, as a note rather than a failure, so a piped session goes on; then what the lints find in it: `factors.lint`
 and the facts' checks on the pair, run as a trial of the variation and one case, none when it can't run. Lints warn and
 never refuse (docs/chatddx.md, "Compromises").
-```
-## The cell
-The cell is what the shell runs: a configuration, and the endpoint named for it, if any. The configuration is a
-variation of a configuration thread: the edit the cell holds, its recipe, and the parts set on it (`TriedVariation`),
-its model among them. The engine the cell is rendered and linted for is the endpoint's, or the one serving the
-configuration's model when the cell has no endpoint and one does (`Repl.engine`);
-
-Whenever the cell changes, the shell says what the lints find in it: `factors.lint` and the facts' checks on the pair,
-run as a trial of the cell and one case. A reasoning level or a recommended sampling that the facts about a new
-engine's model refuse, or that can't be worked out for a model without facts, is said as soon as the engine changes,
-as a note rather than a failure, so a piped session goes on; the cell changes all the same, so that `set` can mend it.
-Lints warn and never refuse (docs/chatddx.md, "Compromises").
 
 ### Names
 A configuration is a thread written in one language, which its translations carry into others (docs/curation.md,
@@ -79,73 +54,28 @@ A configuration is a thread written in one language, which its translations carr
 carries neither a model nor a language. A name is looked for as given: `plan (en)` and `free-text-guided sv` name
 nothing.
 
-```
-AGENT: replace
-`on` and `cell` are gone, and the model is set as any part is (see "Parts").
----
 The shell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`), and nothing is
 picked again by name.
-```
-The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`), and nothing is
-picked again by name. `on ENDPOINT` puts the endpoint's model in the configuration, as `set model` would, and keeps
-every part set on it, worked out again for the new endpoints's model; `use` and `cell` put the named endpoint's model in.
-An endpoint serving the configuration's own model unsets the part (see "Parts").
 
-```
-AGENT: replace
-`cell` is gone.
----
 Names hold spaces and need no quotes: a command's last name takes the rest of the line. `run` takes a seed only as a
 whole number after a case's title.
-```
-Names hold spaces and need no quotes: a command's last name takes the rest of the line, and `cell` takes its endpoint
-from the last word. `run` takes a seed only as a whole number after a case's title.
 
 ### Parts
-```
-AGENT: replace
-The repl holds no endpoint to keep or drop: a model set runs under its handle (src/chatddx/repl/choosing.py:set_).
----
 `set PART CHUNK` puts another chunk in one of the recipe's nine chunk parts, and `set model NAME` another model by its
 handle (`qwen3-8b-awq`), the weights the handle holds now; the variation then runs under it.
-```
-`set PART CHUNK` puts another chunk in one of the recipe's nine chunk parts, and `set model NAME` another model named as
-its thread is (`qwen3-8b-awq`), and keeps an endpoint named that serves it, unsetting one that serves another;
-the prompt then shows the endpoint serving the model, when one does.
 
-```
-AGENT: replace
-The paragraph below: its last two lines are about the endpoint the cell held, and a model that refuses a pick is
-refused as any part that doesn't compile is.
----
 A chunk is named plainly, as `off`, a reasoning chunk asking for a level that the facts work out for the model.
 The variation compiles at once, so a part that doesn't compile is refused and the variation stays as it was, a model
 that refuses a pick among them: set the pick otherwise first. Setting the configuration's own chunk or model unsets
 the part, and `none` takes an optional part out.
-```
-A chunk is named plainly, as `off`, a reasoning chunk asking for a level that the facts work out for the model.
-The variation compiles at once, so a part that doesn't compile is refused and the cell stays as it was.
-Setting the configuration's own chunk or model unsets the part, and `none` takes an optional part out.
-`set model` keeps an endpoint named that serves the new model, and drops one that serves another,
-so the cell runs where the new model is served.
 
 ### Saving
-```
-AGENT: replace
-"the cell's configuration" becomes "the configuration in use", and "The cell then holds" becomes "The shell then
-holds".
-```
-`save NAME` makes the cell's configuration the person's own. Their live thread named NAME gets a new edit, or none when
+`save NAME` makes the configuration in use the person's own. Their live thread named NAME gets a new edit, or none when
 its head has the same digest; without one, a thread named NAME is forked from the edit the cell holds. When parts are
 set, the compilation is written with the running code as compiler. The cell then holds the saved configuration.
 
 ## Looking
 Nothing here is sent anywhere.
-```
-AGENT: replace
-`show` is the variation (src/chatddx/repl/inspecting.py:_show_variation): the handle it runs under, or why it can't
-run, and no lints when it can't.
----
 - **`show`** is the variation: the handle it runs under, or why it can't run; each part with its chunk's title and what
   it is (`catalog/titles.py:describe`), the engine among them; the level a reasoning level landed on, when the engine's
   model is asked for another, as `reasoning off → low`, with why for a nearest, `its nearest: always reasons: …`; the
@@ -159,25 +89,8 @@ run, and no lints when it can't.
   `translations.missing`, and per scorer view how many cases it can hold the variation to: a case has it when the
   expectation the person is scored against gives the view's expectation selector something to pick, and the view is
   offered by the variation's output (see "Scoring").
-```
-- **`show`** is the cell: each part with its chunk's title and what it is (`catalog/titles.py:describe`), the engine
-  among them; the level a reasoning level landed on, when the engine's model is asked for another, as `reasoning off
-  → low`, with why for a nearest, `its nearest: always reasons: …`; the level a recommended sampling follows, as
-  `recommended sampling, for reasoning on`; the endpoint the cell runs at and the name its engine is served under; the messages
-  rendered with placeholder fills (`‹vignette›`), and the body, with the output's schema and the tools' parameters
-  left to `show output` and `show tool`. A greedy cell says its seed isn't sent. Then the languages the cases it counts
-  are in (`Bench.languages`, docs/bench.md), a line each, as a run would send them: `en: 79 cases, as written`, `sv: 20
-  cases, translated`, or, in yellow, `sv: 20 cases, left out: plan has no translations into sv`; none for a judge
-  configuration. Then the lints of each language's trial of the cell and its cases, the cases left out said as
-  `translations.missing`, and per scorer view how many cases it can hold the cell to: a case has it when the
-  expectation the person is scored against gives the view's expectation selector something to pick, and the view is
-  offered by the cell's output (see "Scoring").
 - **`show tag TAG...`** is the same over the cases with any of the tags, those `run tag` would run.
-```
-AGENT: replace
-"or the cell's own" becomes "or the variation's own".
-```
-- **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
+- **`show KIND [NAME]`** is a component the person sees, by kind and name, or the variation's own: its fields, digests in
   them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
   for a configuration and its parts (`Bench.runs(reaching=…)`), through scorings for a scorer, an expectation and a
   schema (`Bench.runs(scored_by=…)`); a judge counts the runs it judged and its calls, and sums up its own views only;
@@ -197,27 +110,13 @@ AGENT: replace
   owner.
 - **`endpoints`** lists the World's endpoints: engine, model, URL and the sources each is cleared for.
 - **`cases`** lists the person's cases, and how many carry each tag.
-```
-AGENT: replace
-The table is headed by the handles served, as researchers see models (src/chatddx/repl/inspecting.py:reasoning).
----
 - **`reasoning`** is a table of every reasoning level, `default` first, on every model the stored facts know, headed
   by the handles served under it: the level it collapses into or lands on as its nearest, with why, what is sent, and
   the sampling recommended for it, or why the model refuses it; a last row, `budget`, says how a thinking budget is
   sent, or why it is refused. `▸` marks the level the variation's configuration asks for, `default` without a
   reasoning part, and the handle it runs under (docs/facts.md, "Reasoning").
-```
-- **`reasoning`** is a table of every reasoning level, `default` first, on every model the stored facts know, headed
-  by the endpoints serving it: the level it collapses into or lands on as its nearest, with why, what is sent, and the
-  sampling recommended for it, or why the model refuses it; a last row, `budget`, says how a thinking budget is sent,
-  or why it is refused. `▸` marks the level the cell's configuration asks for, `default` without a reasoning part, and
-  the endpoint the cell runs at (docs/facts.md, "Reasoning").
-```
-AGENT: replace
-"whether the cell's output offers it" becomes "whether the output of the configuration in use offers it".
-```
 - **`scorers`** lists every view of every scorer: its metric, the judge of a judged one, what it reads, what it is held
-  to, the scorer's owner, and whether the cell's output offers it.
+  to, the scorer's owner, and whether the output of the configuration in use offers it.
 
 ## Running
 ### Seeds
@@ -226,24 +125,14 @@ seed: drawn below 100,000 for a readable prompt, and held from 0 to 2³¹−1. O
 (docs/factors.md, "Rendering"); the shell says so and runs, and the trial holds the seed all the same.
 
 ### A run
-```
-AGENT: replace
-A run goes under the variation's handle, and its title names the handle, as `Bench.described` does
-(src/chatddx/repl/running.py:run). The paragraph below up to "The trial is stored".
----
 `run CASE [SEED]` makes a trial of the variation's skeleton, its handle's latest engine, one case and one seed, the
 shell's unless one is given, and starts it at the endpoint the handle resolves to (see "The variation"; docs/runner.md,
 "A run"). The case is sent in its own language (`Bench.start`, docs/bench.md): as written, in the configuration's own
 or a case of none, or translated, and the title says so, `trial: free-text-guided × qwen3-8b-awq × casesfromedn1, in
 sv, translated (seed 42)`; a case in a language the translations don't cover isn't sent, `no case can be sent: plan
 has no translations into sv`.
-```
-`run CASE [SEED]` makes a trial of the cell's skeleton, the endpoint's engine, one case and one seed, the shell's unless one is
-given, and starts it at the endpoint the cell runs at (see "The cell"; docs/runner.md, "A run"). The case is sent in
-its own language (`Bench.start`, docs/bench.md): as written, in the configuration's own or a case of none, or
-translated, and the title says so, `trial: free-text-guided × qwen3-8b-awq@fake × casesfromedn1, in sv, translated
-(seed 42)`; a case in a language the translations don't cover isn't sent, `no case can be sent: plan has no
-translations into sv`. The trial is stored and not threaded: a thread per trial would flood the catalog. An unsaved
+
+The trial is stored and not threaded: a thread per trial would flood the catalog. An unsaved
 variation's compilation is stored before its run, with the running code as compiler, as a translated skeleton's is,
 so the run's skeleton keeps a recipe and a title. The gate refuses before anything is written (docs/runner.md, "The
 gate"), said as `refused: …`.
@@ -334,32 +223,17 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   a case, it names them, and `take from OWNER` takes theirs.
 
 ## Completion
-```
-AGENT: replace
-`under` completes models by their handles. The paragraph's first two sentences.
----
 Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks, models and
 engines by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags,
 each once.
-```
-Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks and engines
-by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags, each
-once. `replay` completes the latest 20 runs' ids, and `score` the runs left to score, both fresh at each Tab. The rest
-is read once, and again after a `save`.
 
 ## Terms
 
-```
-AGENT: replace
-The Cell row goes, and the Variation row says what the shell holds.
----
-| Variation | A configuration thread's edit with parts set on it: what the shell holds and runs, under its model's handle. |
-```
 | Term | Meaning |
 | --- | --- |
 | Repl, shell | `chatddx repl`, for one person over a World. |
 | Cell | What the shell runs: a configuration, its model one of its parts, and the endpoint named for it, if any. |
-| Variation | A configuration thread's edit with parts set on it, as the cell holds it. |
+| Variation | A configuration thread's edit with parts set on it: what the shell holds and runs, under its model's handle. |
 | Translated | A run whose skeleton is the configuration's compiled into its cases' language by its translations. |
 | Left out | Cases in a language the configuration's translations don't cover: said, and not sent. |
 | Case title | A family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices. |

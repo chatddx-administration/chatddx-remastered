@@ -550,13 +550,6 @@ carrying it fixes the API's `item.delta` and the portal's live view too.
   `GET /api/runs?with=` and a run's page in the portal do (`Bench.runs(started_with=…)`).
 - **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
   when it starts, so their width could be too.
-```
-AGENT: remove
-The prompt reads nothing again: it shows the variation's label, and a handle named with `under`, both held
-(src/chatddx/repl/shell.py:Repl.prompt).
-```
-- `repl/shell.py:Repl.prompt` reads the store on every render, to derive the endpoint, where the prompt read nothing
-  before; a connection dropped surfaces at the prompt, outside `handle`'s catch.
 
 ### Unknown query parameters
 Routes refuse what they don't declare.

@@ -394,10 +394,6 @@ check before the other has written.
 
 ## Terms
 
-```
-AGENT: remove
-The Cell row: the repl's cell is dropped, and the repl holds a variation, run under its model's handle.
-```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
@@ -419,4 +415,3 @@ The Cell row: the repl's cell is dropped, and the repl holds a variation, run un
 | Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-| Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |
