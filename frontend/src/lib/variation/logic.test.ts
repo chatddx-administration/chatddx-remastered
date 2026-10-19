@@ -9,7 +9,6 @@ import {
   queryOf,
   replaced,
   tagged,
-  where,
   whereSaveGoes,
 } from "./logic";
 
@@ -47,19 +46,19 @@ describe("a variation's address", () => {
   it("names only what is replaced, an optional part taken out as empty", () => {
     const tried = { ...base, output: DIGEST(4), reasoning: null };
     expect(replaced(tried, base)).toEqual({ output: DIGEST(4), reasoning: null });
-    const query = queryOf({ picked: tried, head: 7, endpoint: null, tags: [] }, base, 7);
+    const query = queryOf({ picked: tried, head: 7, under: null, tags: [] }, base, 7);
     expect(query.toString()).toBe(new URLSearchParams({ output: DIGEST(4), reasoning: "" }).toString());
   });
 
-  it("names the edit only when it isn't the latest, and the endpoint and each tag", () => {
-    const query = queryOf({ picked: base, head: 5, endpoint: "qwen@fake", tags: ["a", "b"] }, base, 7);
+  it("names the edit only when it isn't the latest, and the handle and each tag", () => {
+    const query = queryOf({ picked: base, head: 5, under: "qwen3-8b", tags: ["a", "b"] }, base, 7);
     expect([...query]).toEqual([
       ["head", "5"],
-      ["endpoint", "qwen@fake"],
+      ["under", "qwen3-8b"],
       ["tag", "a"],
       ["tag", "b"],
     ]);
-    expect(queryOf({ picked: base, head: 7, endpoint: null, tags: [] }, base, 7).toString()).toBe("");
+    expect(queryOf({ picked: base, head: 7, under: null, tags: [] }, base, 7).toString()).toBe("");
   });
 });
 
@@ -82,37 +81,6 @@ describe("a part's choices", () => {
       { digest: DIGEST(3), text: "medium" },
       { digest: DIGEST(9), text: "older" },
     ]);
-  });
-});
-
-describe("where a run goes", () => {
-  const endpoint = (name: string, serves: string): Schemas["Endpoint"] => ({
-    name,
-    engine: DIGEST(9),
-    title: null,
-    model: null,
-    serves,
-    url: "http://127.0.0.1:1/v1/",
-    host: null,
-    max_jobs: 1,
-    credential: null,
-    cleared_for: [],
-    takes_typed: false,
-    problem: null,
-  });
-  const endpoints = [endpoint("qwen@a", DIGEST(1)), endpoint("qwen@b", DIGEST(1)), endpoint("gpt@a", DIGEST(2))];
-
-  it("is the one endpoint serving the model, or the one named among several", () => {
-    expect(where(endpoints, DIGEST(2), null)).toEqual({ at: "gpt@a", among: [endpoints[2]] });
-    expect(where(endpoints, DIGEST(1), null)).toEqual({ at: null, among: endpoints.slice(0, 2) });
-    expect(where(endpoints, DIGEST(1), "qwen@b").at).toBe("qwen@b");
-    expect(where(endpoints, DIGEST(1), "gpt@a").at).toBeNull();
-    expect(where(endpoints, DIGEST(3), null)).toEqual({ at: null, among: [] });
-  });
-
-  it("is the one named for a hand-written configuration, which names no model", () => {
-    expect(where(endpoints, null, null)).toEqual({ at: null, among: endpoints });
-    expect(where(endpoints, null, "gpt@a").at).toBe("gpt@a");
   });
 });
 

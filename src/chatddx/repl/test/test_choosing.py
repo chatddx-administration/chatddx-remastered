@@ -64,7 +64,7 @@ def test_on_puts_its_endpoint_s_model_in_the_configuration_keeping_every_pick(
 ):
     _ = say("use native")
     assert tried(repl).name == NATIVE
-    assert repl.prompt == f"alice {NATIVE} #7> "
+    assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
 
     written = say("set reasoning off", f"on {GPT_OSS}")
     assert (
@@ -234,7 +234,7 @@ def test_one_s_own_configuration_shadows_the_archive_s(
 
     _ = say(f"use archive/{NATIVE}")
     assert bench.thread(tried(repl).configuration.thread)[1].owner != bench.person.id
-    assert repl.prompt == f"alice archive/{NATIVE} #7> "
+    assert repl.prompt == f"alice archive/{NATIVE}×{QWEN} #7> "
 
 
 def test_another_s_configuration_is_found_where_it_is_shared(

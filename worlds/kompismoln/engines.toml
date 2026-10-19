@@ -2,7 +2,7 @@
 # The models and engines its hosts serve; import again rather than edit.
 # Where they're served: endpoints.toml.
 
-[local_model."qwen3-8b@pelle"]
+[local_model.qwen3-8b]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "4da05a8edb55c6046cce958586c33b61da07bb79"
 files = [
@@ -23,14 +23,14 @@ files = [
 [local_engine."qwen3-8b@pelle"]
 description = "Qwen/Qwen3-8B-AWQ on pelle, as its o11n.vllm report has it."
 tags = ["pelle"]
-model = "qwen3-8b@pelle"
+model = "qwen3-8b"
 hardware = { gpu = "NVIDIA GeForce RTX 3070", compute_capability = [8, 6], vram_mib = 8192, driver = "595.99.02" }
 runtime = { version = "0.24.0", closure = "/nix/store/wc7y3a2yrlz03kj3587pwwz86jcamhhs-vllm-runtime" }
 chat_template = "e132ae041e1217b5e1114eb9dc292484a7f478df945d72fa49ba01b88d8ec01a"
 argv = ["--enforce-eager", "--gpu-memory-utilization=0.95", "--max-model-len=8192", "--max-num-seqs=1", "--enable-prefix-caching", "--tool-call-parser=hermes", "--enable-auto-tool-choice"]
 env = { VLLM_USE_FLASHINFER_SAMPLER = "0" }
 
-[local_model."gpt-oss-20b@malborg"]
+[local_model.gpt-oss-20b]
 repo = "openai/gpt-oss-20b"
 revision = "6cee5e81ee83917806bbde320786a8fb61efebee"
 files = [
@@ -53,7 +53,7 @@ files = [
 [local_engine."gpt-oss-20b@malborg"]
 description = "openai/gpt-oss-20b on malborg, as its o11n.vllm report has it."
 tags = ["malborg"]
-model = "gpt-oss-20b@malborg"
+model = "gpt-oss-20b"
 hardware = { gpu = "NVIDIA GeForce RTX 5090", compute_capability = [12, 0], vram_mib = 32607, driver = "595.99.02" }
 runtime = { version = "0.24.0", closure = "/nix/store/wc7y3a2yrlz03kj3587pwwz86jcamhhs-vllm-runtime" }
 chat_template = "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146"

@@ -36,7 +36,7 @@
     judges: JudgeChoice[];
     titles: Record<string, string>;
     judging: Judging[];
-    endpoints: Serving[];
+    models: Serving[];
     me: string;
     case: string;
     runs: string[];
@@ -306,7 +306,7 @@
               >
                 {#if !judge && view.judge}<option value={view.judge}>{titles[view.judge] ?? "its judge"}</option>{/if}
                 {#each judges as j (j.thread)}
-                  <option value={j.digest}>{(j.owner && j.owner !== given.me ? `${j.owner}/` : "") + j.name}: {j.configuration}{j.endpoint ? ` at ${j.endpoint}` : ""}, {j.seeds.length === 1 ? "1 seed" : `${j.seeds.length} seeds`}</option>
+                  <option value={j.digest}>{(j.owner && j.owner !== given.me ? `${j.owner}/` : "") + j.name}: {j.configuration}{j.model ? ` under ${j.model}` : ""}, {j.seeds.length === 1 ? "1 seed" : `${j.seeds.length} seeds`}</option>
                 {/each}
                 <option value="new">a new judge…</option>
               </select>
@@ -349,7 +349,7 @@
           <JudgeForm
             me={given.me}
             judging={given.judging}
-            endpoints={given.endpoints}
+            models={given.models}
             made={(j) => {
               judges.push(j);
               writing = null;

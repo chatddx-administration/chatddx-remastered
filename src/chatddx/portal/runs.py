@@ -63,14 +63,11 @@ def comparing(
         (i for i, v in enumerate(compared.views) if f"{v.scorer}:{v.view}" == picked),
         None,
     )
-    differ = [
-        said
-        for said, held in (
-            ("at different engines", {r.engine for r in compared.runs}),
-            ("in different languages", {r.language for r in compared.runs}),
-        )
-        if len(held) > 1
-    ]
+    engines: dict[str, set[str]] = {}
+    for r in compared.runs:
+        if r.model is not None:
+            engines.setdefault(r.model, set()).add(r.engine)
+    grouped = sorted(h for h, held in engines.items() if len(held) > 1)
     return page(
         request,
         "compare.html",
@@ -79,7 +76,7 @@ def comparing(
         titles={case: bench.title(case) for case in cases},
         by=picked,
         at=at,
-        differ=differ,
+        grouped=grouped,
         kept="?" + urlencode([("run", str(r)) for r in run]),
     )
 

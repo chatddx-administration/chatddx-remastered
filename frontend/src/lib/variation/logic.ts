@@ -19,7 +19,7 @@ export type Picked = Record<Part, string | null>;
 export type State = {
   picked: Picked;
   head: number;
-  endpoint: string | null;
+  under: string | null;
   tags: string[];
 };
 
@@ -33,7 +33,7 @@ export function queryOf(state: State, base: Picked, latest: number): URLSearchPa
     query.append(part, digest ?? "");
   }
   if (state.head !== latest) query.append("head", String(state.head));
-  if (state.endpoint !== null) query.append("endpoint", state.endpoint);
+  if (state.under !== null) query.append("under", state.under);
   for (const tag of state.tags) query.append("tag", tag);
   return query;
 }
@@ -70,15 +70,6 @@ export function choicesOf(
       text: names.length > 1 ? `${first} = ${names.slice(1).join(", ")}` : first,
     }))
     .sort((a, b) => a.text.localeCompare(b.text));
-}
-
-export type Where = { at: string | null; among: Schemas["Endpoint"][] };
-
-// src/chatddx/bench/seen.py:Seen.at picks the endpoint a run goes to.
-export function where(endpoints: Schemas["Endpoint"][], model: string | null, named: string | null): Where {
-  const among = model === null ? endpoints : endpoints.filter((e) => e.serves === model);
-  if (named !== null && among.some((e) => e.name === named)) return { at: named, among };
-  return { at: model !== null && among.length === 1 ? (among[0]?.name ?? null) : null, among };
 }
 
 export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["Family"][] {

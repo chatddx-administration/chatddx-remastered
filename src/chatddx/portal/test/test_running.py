@@ -17,7 +17,7 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, LINES, OFF, QWEN, faked
+from chatddx.test.world import GPT_OSS, GPT_OSS_ARTIFACT, LINES, OFF, faked
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def started(signed: TestClient, **more: Any) -> str:
     query = {"kind": "configuration", "name": LINES, "owner": "alice"}
     [lines] = signed.get("/api/threads", params=query).json()
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
-    body = {"configuration": lines["id"], "endpoint": QWEN, "families": [crlf["id"]]}
+    body = {"configuration": lines["id"], "families": [crlf["id"]]}
     got = signed.post("/api/runs", json={**body, **more})
     assert got.status_code == 202, got.json()
     return got.json()["runs"][0]["run"]
@@ -207,7 +207,6 @@ def test_a_case_is_run_from_its_review_and_followed_there(
     form = {
         "configuration": str(lines["id"]),
         "case": crlf["case"],
-        "endpoint": QWEN,
         "replicates": "2",
         "score": "true",
         "back": back,
@@ -284,17 +283,19 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
 
 
 @pytest.mark.slow
-def test_a_case_run_from_its_review_at_another_model_s_endpoint_runs_with_that_model(
+def test_a_case_run_from_its_review_under_another_model_runs_with_that_model(
     signed: TestClient, world: Inventory, conn: Connection
 ) -> None:
     query = {"kind": "configuration", "name": LINES, "owner": "alice"}
     [lines] = signed.get("/api/threads", params=query).json()
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
-    [gpt_oss] = [e for e in signed.get("/api/endpoints").json() if e["name"] == GPT_OSS]
+    [gpt_oss] = [
+        m for m in signed.get("/api/models").json() if m["name"] == GPT_OSS_ARTIFACT
+    ]
     form = {
         "configuration": str(lines["id"]),
         "case": crlf["case"],
-        "endpoint": GPT_OSS,
+        "model": GPT_OSS_ARTIFACT,
         "back": f"/review/{crlf['id']}",
     }
     with faked(world, Store(conn).get, endpoint=GPT_OSS):
@@ -302,6 +303,10 @@ def test_a_case_run_from_its_review_at_another_model_s_endpoint_runs_with_that_m
         assert got.status_code == 303, got.text
         [run] = signed.get("/api/runs", params={"reaching": crlf["case"]}).json()
         _ = settled(signed, run["id"])
-    assert run["endpoint"] == GPT_OSS
-    assert run["ran"]["parts"] == {"model": gpt_oss["serves"]}
+    assert (run["endpoint"], run["model"], run["latest"]) == (
+        GPT_OSS,
+        GPT_OSS_ARTIFACT,
+        True,
+    )
+    assert run["ran"]["parts"] == {"model": gpt_oss["weights"]}
     assert run["described"].startswith(f"{LINES}+model=")

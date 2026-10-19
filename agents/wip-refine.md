@@ -16,7 +16,7 @@ case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's language
    from Refine. The order of the steps is suggested, and the agent's to change (see "Steps").
 3. **Decided: the set's language is its cases'**, so that a variation's start over it is one run, never a run per
    language (see "What the docs hold it to").
-4. **Steps 1 and 2 are built** (see "Built"); what they leave is in each step's "What step N leaves". Step 1 is
+4. **Steps 1, 2 and 2b are built** (see "Built"); what they leave is in each step's "What step N leaves". Step 1 is
    `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
 5. **Decided: researchers see model handles**, such as `qwen3-8b`, never engines, endpoints or a model's proper name;
    ops map each handle to one engine and one endpoint, and a handle always means its latest engine (`docs/chatddx.md`,
@@ -378,6 +378,49 @@ A pass over the branch against main (`agents/reduce.md`):
 - **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`, to be
   reduced once step 2b has reworked them.
 
+### Step 2b: model handles, and the set by them
+- **Handles** (`src/chatddx/bench/model.py:Handle`; `src/chatddx/bench/seen.py`): `Seen.handle`, the one live model
+  thread holding the weights at any version; `Seen.handle_named`; `Seen.served`, the one endpoint serving the
+  handle's weights now, through `Inventory.serving`, whose refusals now say they are ops' to mend; `Seen.latest`;
+  `Seen.under`, a run's engine's handle and whether it is the latest. `Seen.at` takes an endpoint only from the repl
+  and scripted runs, refuses weights behind their handle ("follow it first"), and runs a hand-written configuration
+  under the handle named. A run is described by its handle (`Seen.described`).
+- **Running again** (`src/chatddx/bench/runs.py:again`): under the run's handle at its latest engine, refused as
+  ops' error or as behind.
+- **The World**: `configurations` and `[judge]` name handles, resolved as the data set is planned
+  (`src/chatddx/curation/plan.py`, `under`), no longer checked as the inventory loads; the inventory check's
+  `endpoint.model_shared` for weights served at several endpoints, at init-data, as a worker starts and at the import
+  (`src/chatddx/inventory/check.py`). The import names a server's model by the server's name, once for a handle on
+  several hosts, and refuses other weights under it (`src/chatddx/importers/o11n.py:engines_toml`). The Worlds'
+  models are renamed to handles, and the test World's bare Qwen3 has `qwen3-8b-bare`, a revision of its own.
+- **The API**, unlike the plan, names the handle `under` in the look and in a start, as the look's query already has
+  `model`, the recipe part: the look says `model`, the handle it runs under, or `problem`; a run says `model` and
+  `latest`; `GET /api/models` lists the handles with their weights, latest engine, whether a typed case runs under
+  them and what refuses them.
+- **The portal**: the variation page picks a handle for a hand-written configuration only and says what it runs
+  under; the home page, the review's run form and the judge form pick a handle; the composer, the runs tables, a
+  run's page and `/runs/compare` show a run's handle, "an earlier engine" when it is; the nav's Endpoints is Models
+  (`/models`, `src/chatddx/portal/world.py`).
+- **Refine** (`src/chatddx/portal/refine.py`): `model=` forces a handle on every column; a column is the skeletons a
+  configuration sends the set's cases as, a language each (`Seen.languages`), under its handle; its run is the
+  latest at the handle's latest engine, and its earlier engines' runs are folded under it; a column whose weights are
+  behind says so, and one that can't be worked out says why. A set whose cases are in several languages is said to
+  be, as a run sends one's.
+- **`/runs/compare`** says when runs under one handle ran at different engines, grouped under it.
+- **Tests**: `test_serving.py`, the check's finding; `test_judges.py`, `test_plan.py`, judges and configurations by
+  handle; `test_o11n.py`, a handle on two hosts; `test_seen.py`, running again; `test_world.py`, the handles and a
+  shared model's; the API's, the portal's and the repl's tests without endpoints; vitest for the variation's address.
+
+#### What step 2b leaves
+- **A person's judge pins an engine**, the handle's latest when it is written, until "Judges name a model"
+  (`docs/backlog.md`) changes the judge's kind.
+- **The repl and scripted runs** name endpoints; the repl's cell shows its endpoint while its runs are described by
+  their handles.
+- **A retired handle reads as ops' error**: no endpoint serving its weights is said alike either way.
+- **A set over several languages** is said, not refused; step 3 refuses a start over it.
+- **A Refine column compiles its configuration's translations** to find its skeletons, each time the page is shown.
+- **The Models page shows facts as they are**, a model's proper name among them.
+
 ## Open
 - **Others' runs**: a person compares their own runs only. A collaborator's runs of a shared configuration aren't
   offered.
@@ -410,7 +453,7 @@ A configuration offered the new version of a chunk of its recipe, as it is offer
   reaches a configuration only by a variation that picks it, saved.
 
 ### Picking an endpoint for a model
-Step 2b builds it: a handle resolves to exactly one endpoint, or it is ops' error.
+Built by step 2b: a handle resolves to exactly one endpoint, or it is ops' error.
 
 Decided: a handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an endpoint to be named,
 the variation page's endpoint picker goes, and a judge's handle resolves as a run's: a handle that resolves to no
@@ -418,6 +461,5 @@ endpoint or several is reported at init-data, as a worker starts and at the engi
 researcher as ops' error. It replaces the decision that a run is refused until its endpoint is named, and the one
 that a look for no endpoint gives the model's findings alone.
 
-- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
-  part linted it for the recipe's engine; the repl's `show` shows no lints either.
+- **A look that can't run has no findings**, and says why (`problem`); the repl's `show` shows no lints either.
 - **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.

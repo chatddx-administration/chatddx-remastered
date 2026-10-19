@@ -211,7 +211,7 @@ def test_the_sample_loads_with_its_world_s_fakes(
         *(
             f"[lint warning] model.local {name}: model.revision: revision 'fake' is not a "
             + "commit and can move"
-            for name in fakes
+            for name in ("qwen3-8b-awq", "gpt-oss-20b")
         ),
         *(
             f"[lint warning] engine.local {name}: engine.closure: closure 'chatddx "

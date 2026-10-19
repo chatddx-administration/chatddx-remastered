@@ -25,7 +25,6 @@ from chatddx.test.world import (
     NATIVE,
     QWEN,
     QWEN_ARTIFACT,
-    QWEN_BARE,
     TOOL_ANSWER,
 )
 
@@ -100,7 +99,8 @@ def test_run_needs_a_configuration_and_an_endpoint_serving_its_model(
     bench.inventory = world.model_copy(update={"endpoints": endpoints})
     written = say(f"use {LINES}", "run noted")
     assert (
-        f"{QWEN_BARE}, {QWEN}, twin@fake serve model {QWEN_ARTIFACT}; name the one to use"
+        f"{QWEN}, twin@fake serve model {QWEN_ARTIFACT}, which one endpoint should: "
+        + "ops' to mend"
         in written
     )
     assert ran(bench) == []

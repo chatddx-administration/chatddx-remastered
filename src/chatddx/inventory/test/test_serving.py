@@ -157,7 +157,7 @@ def test_an_inventory_says_which_sources_an_endpoint_is_cleared_for(
         _ = Inventory.load(path)
 
 
-def test_an_inventory_binds_each_judge_to_an_endpoint(tmp_path: Path) -> None:
+def test_an_inventory_binds_each_judge_to_a_handle(tmp_path: Path) -> None:
     engine = "sha256:" + "c" * 64
     imported = tmp_path / "imported.toml"
     _ = imported.write_text(
@@ -166,11 +166,6 @@ def test_an_inventory_binds_each_judge_to_an_endpoint(tmp_path: Path) -> None:
     path = tmp_path / "inventory.toml"
     _ = path.write_text('include = ["imported.toml"]\n\n[judge]\nverdict = "qwen"\n')
     assert Inventory.load(path).judges == {"verdict": "qwen"}
-    _ = path.write_text('include = ["imported.toml"]\n\n[judge]\nverdict = "other"\n')
-    with pytest.raises(
-        ValidationError, match="judge 'verdict' is bound to no endpoint 'other'"
-    ):
-        _ = Inventory.load(path)
     _ = imported.write_text(imported.read_text() + '\n[judge]\nverdict = "qwen"\n')
     _ = path.write_text('include = ["imported.toml"]\n')
     with pytest.raises(ValueError, match="has only 'endpoint' and 'host' tables"):
@@ -259,6 +254,8 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
         ("gemma", "endpoint.remote_host", "warning"),
         ("ghost", "endpoint.engine_unknown", "warning"),
         ("model", "endpoint.not_engine", "warning"),
+        ("again@pelle", "endpoint.model_shared", "warning"),
+        ("nowhere", "endpoint.model_shared", "warning"),
         ("again@pelle", "endpoint.shared_url", "warning"),
         ("pelle", "host.unpinned", "info"),
         ("gemma", "cleared.not_sensitive", "info"),
@@ -266,6 +263,10 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     messages = {(f.subject, f.code): f.message for f in check(inventory, reg.get)}
     assert messages[("qwen@pelle", "endpoint.unstartable")] == (
         f"host 'pelle' doesn't say where it keeps chat template {TEMPLATE}"
+    )
+    assert messages[("nowhere", "endpoint.model_shared")] == (
+        "endpoint 'qwen@pelle' serves its model's weights too, so the handle they are "
+        + "under resolves to neither: ops' to mend"
     )
     assert messages[("again@pelle", "endpoint.shared_url")] == (
         f"{url} is also the address of endpoint 'qwen@pelle'"

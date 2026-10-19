@@ -1,5 +1,5 @@
 include = ["endpoints.toml"]
-configurations = "qwen3-8b-awq@fake"
+configurations = "qwen3-8b-awq"
 
 [source.sample]
 path = "vignettes"
@@ -14,5 +14,5 @@ kind = "database"
 "mistral-small@remote" = ["sample"]
 
 [judge]
-verdict = "qwen3-8b-awq@fake"
-graded = "gpt-oss-20b@fake"
+verdict = "qwen3-8b-awq"
+graded = "gpt-oss-20b"

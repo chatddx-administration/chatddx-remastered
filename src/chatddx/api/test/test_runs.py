@@ -35,6 +35,7 @@ from chatddx.test.world import (
     NATIVE_TOOLS,
     OFF,
     QWEN,
+    QWEN_ARTIFACT,
     faked,
 )
 
@@ -63,7 +64,6 @@ def asked(
         "configuration": thread(signed, "configuration", configuration)["id"],
         "families": [family(signed, "crlf")["id"]],
         "seeds": [7],
-        "endpoint": QWEN,
         **more,
     }
 
@@ -324,7 +324,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
             "the configuration's tools would get content from source test",
         ),
         (
-            asked(signed, parts={"model": model(signed, GPT_OSS)}, endpoint=GPT_OSS),
+            asked(signed, parts={"model": model(signed, GPT_OSS)}),
             f"endpoint '{GPT_OSS}' can't be",
         ),
     ):
@@ -347,8 +347,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"families": None, "cases": []}, "at least 1 item"),
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
-        ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
-        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
+        ({"under": "nowhere"}, "runs under its model's handle: set its model instead"),
         ({"parts": {"model": None}}, "a configuration always has a model"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
@@ -535,10 +534,12 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
         "parts": {},
     }
     varied, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
-    assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
+    assert varied["described"].startswith(
+        f"{LINES}+reasoning={OFF} × {QWEN_ARTIFACT} × "
+    )
     assert varied["ran"] == {**ran, "parts": {"reasoning": off}}
     plain, _ = sent(signed, asked(signed, score=False))
-    assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
+    assert plain["described"].startswith(f"{LINES} × {QWEN_ARTIFACT} × ")
     assert plain["ran"] == ran
 
     edits = f"/api/threads/{mine['id']}/edits"

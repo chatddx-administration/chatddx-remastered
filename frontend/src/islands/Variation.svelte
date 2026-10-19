@@ -21,7 +21,6 @@
     queryOf,
     replaced,
     tagged,
-    where,
     whereSaveGoes,
   } from "$lib/variation/logic";
   import { untrack } from "svelte";
@@ -29,7 +28,7 @@
 
   let { held }: { held: Props } = $props();
   const given = untrack(() => held);
-  const { configuration, me, versions, base, optional, endpoints, families } = given;
+  const { configuration, me, versions, base, optional, models, families } = given;
   const familyNames: Record<string, string> = Object.fromEntries(families.map((f) => [f.id, f.name]));
   const head = given.look.head.id;
   const latest = versions.at(-1)?.id ?? head;
@@ -37,7 +36,7 @@
 
   let look = $state(given.look);
   let picked = $state<Picked>(pickedOf(given.look));
-  let endpoint = $state<string | null>(given.endpoint);
+  let under = $state<string | null>(given.under);
   let tags = $state<string[]>(given.tags);
   let runs = $state(given.runs);
   let looking = $state(false);
@@ -80,7 +79,6 @@
     }),
   );
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
-  const sends = $derived(where(endpoints, compiled ? picked.model : null, endpoint));
   const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
   const carriages = $derived(carried(sent, look.languages));
   const sending = $derived(carriages.filter((c) => c.refused === null));
@@ -109,14 +107,14 @@
 
   function relink(): void {
     for (const a of document.querySelectorAll<HTMLAnchorElement>("a[data-head]")) {
-      const query = queryOf({ picked, head: Number(a.dataset.head), endpoint, tags }, base, latest);
+      const query = queryOf({ picked, head: Number(a.dataset.head), under, tags }, base, latest);
       a.href = `?${query}`;
     }
   }
 
   let asked = 0;
   async function refresh(): Promise<void> {
-    const query = queryOf({ picked, head, endpoint, tags }, base, latest);
+    const query = queryOf({ picked, head, under, tags }, base, latest);
     const sent = ++asked;
     looking = true;
     const got = await api.GET("/api/threads/{thread}/variation", {
@@ -144,14 +142,11 @@
 
   function pick(part: Part, digest: string): void {
     picked[part] = digest || null;
-    if (part === "model" && !where(endpoints, picked.model, endpoint).among.some((e) => e.name === endpoint)) {
-      endpoint = null;
-    }
     void refresh();
   }
 
-  function at(name: string): void {
-    endpoint = name || null;
+  function handled(name: string): void {
+    under = name || null;
     void refresh();
   }
 
@@ -166,7 +161,7 @@
 
   async function run(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (sends.at === null || sent.length === 0) return;
+    if (look.model === null || sent.length === 0) return;
     starting = true;
     unstarted = null;
     const got = await api.POST("/api/runs", {
@@ -174,7 +169,7 @@
         configuration: configuration.id,
         head,
         parts: replaced(picked, base),
-        ...(endpoint === null ? {} : { endpoint }),
+        ...(compiled || under === null ? {} : { under }),
         families: sent.map((f) => f.id),
         ...(replicates > 1 ? { replicates } : { seeds: [seed] }),
         score: scored,
@@ -212,7 +207,7 @@
       return;
     }
     const kept = to === "version" ? configuration.id : got.data.id;
-    const query = queryOf({ picked: base, head: latest, endpoint, tags }, base, latest);
+    const query = queryOf({ picked: base, head: latest, under, tags }, base, latest);
     location.assign(`/configurations/${kept}?${query}`);
   }
 </script>
@@ -301,22 +296,21 @@
 <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
   <h2 class="mb-4 text-lg font-semibold">What it makes</h2>
   <div class="mb-4 flex flex-wrap items-end gap-4">
-    {#if !compiled || sends.among.length > 1}
+    {#if !compiled}
       <div class="space-y-1.5">
-        <Label for="endpoint">At the endpoint</Label>
-        <NativeSelect.Root id="endpoint" size="sm" value={endpoint ?? ""} onchange={(e) => at(e.currentTarget.value)}>
-          <NativeSelect.Option value="">{compiled ? "Pick one to run it" : "None: no lints"}</NativeSelect.Option>
-          {#each sends.among as e (e.name)}
-            <NativeSelect.Option value={e.name} disabled={e.problem !== null}>
-              {e.name}{e.model ? ` (${e.model})` : ""}
-            </NativeSelect.Option>
+        <Label for="model">Under the model</Label>
+        <NativeSelect.Root id="model" size="sm" value={under ?? ""} onchange={(e) => handled(e.currentTarget.value)}>
+          <NativeSelect.Option value="">None: no lints</NativeSelect.Option>
+          {#each models as m (m)}
+            <NativeSelect.Option value={m}>{m}</NativeSelect.Option>
           {/each}
         </NativeSelect.Root>
       </div>
-    {:else if sends.at !== null}
-      <p class="text-sm text-muted-foreground">Sent to {sends.at}, which serves its model.</p>
-    {:else}
-      <p class="text-sm text-warning">No endpoint of the World serves its model.</p>
+    {/if}
+    {#if look.model !== null}
+      <p class="text-sm text-muted-foreground">Runs under {look.model}.</p>
+    {:else if compiled || under !== null}
+      <p class="text-sm text-warning">{look.problem}</p>
     {/if}
   </div>
   {#if given.everyTag.length}
@@ -340,7 +334,7 @@
 
   <h3 class="mb-2 text-sm font-medium">What the lints say</h3>
   {#if look.findings === null}
-    <p class="text-sm text-muted-foreground">Pick an endpoint to lint it there.</p>
+    <p class="text-sm text-muted-foreground">{compiled ? "No lints while it can't run." : "Pick a model to lint it under."}</p>
   {:else if look.findings.length === 0}
     <p class="text-sm text-muted-foreground">Nothing.</p>
   {:else}
@@ -477,14 +471,14 @@
       </label>
     </div>
     <p class="text-sm" aria-live="polite">
-      {#if sends.at === null}
-        {compiled && sends.among.length === 0 ? "No endpoint serves its model." : "Pick an endpoint to run it at."}
+      {#if look.model === null}
+        {compiled ? "It can't run until its model can." : "Pick a model to run it under."}
       {:else if sent.length === 0}
         Pick a case to run it on.
       {:else if items === 0}
         None of its cases can be sent.
       {:else}
-        Sends {items} {items === 1 ? "item" : "items"} to {sends.at}, one at a time{replicates > 1
+        Sends {items} {items === 1 ? "item" : "items"} under {look.model}, one at a time{replicates > 1
           ? `, a replicate each under ${replicates} seeds drawn`
           : ""}{look.greedy
           ? replicates > 1
@@ -519,7 +513,7 @@
     {/if}
     <Button
       type="submit"
-      disabled={sends.at === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
+      disabled={look.model === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
     >
       {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
       Run it
@@ -574,7 +568,7 @@
           <tr>
             <th class="pb-2 pr-4 font-medium">Started</th>
             <th class="pb-2 pr-4 font-medium">Run</th>
-            <th class="pb-2 pr-4 font-medium">Endpoint</th>
+            <th class="pb-2 pr-4 font-medium">Model</th>
             <th class="pb-2 font-medium">Finished</th>
           </tr>
         </thead>
@@ -585,7 +579,7 @@
               <td class="py-2 pr-4 align-top">
                 <a href="/runs/{run.id}" class="text-primary hover:underline">{run.described}</a>
               </td>
-              <td class="whitespace-nowrap py-2 pr-4 align-top">{run.endpoint ?? "—"}</td>
+              <td class="whitespace-nowrap py-2 pr-4 align-top">{run.model ?? "—"}</td>
               <td class="py-2 align-top">{run.finished ? "yes" : "no"}</td>
             </tr>
           {/each}

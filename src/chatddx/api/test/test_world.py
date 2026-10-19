@@ -8,14 +8,17 @@ from chatddx.api.test.helpers import endpoint
 from chatddx.inventory import EndpointSpec, Inventory
 from chatddx.test.world import (
     GPT_OSS,
-    GPT_OSS_MODEL,
+    GPT_OSS_ARTIFACT,
     MISTRAL,
-    MISTRAL_MODEL,
+    MISTRAL_ARTIFACT,
     QWEN,
+    QWEN_ARTIFACT,
     QWEN_BARE,
+    QWEN_BARE_ARTIFACT,
     QWEN_MODEL,
     REMOTE,
     TEST,
+    UNKNOWN_MODEL,
 )
 
 GHOST = "sha256:" + "0" * 64
@@ -90,17 +93,48 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
     assert "isn't in the store" in shown["problem"]
 
 
-def test_models_are_told_by_their_facts_with_the_endpoints_serving_them(
+def test_models_are_their_handles_each_with_its_latest_engine_and_facts(
     signed: TestClient,
 ) -> None:
     models = {m["name"]: m for m in signed.get("/api/models").json()}
-    assert models[QWEN_MODEL]["endpoints"] == [QWEN_BARE, QWEN]
-    assert models[GPT_OSS_MODEL]["endpoints"] == [GPT_OSS]
-    assert models[MISTRAL_MODEL]["endpoints"] == [MISTRAL]
-    assert models[MISTRAL_MODEL]["facts"]["family"] == "mistral"
-    unknown = endpoint(signed, REMOTE)["model"]
-    assert models[unknown]["endpoints"] == [REMOTE]
-    assert [m for m, held in models.items() if held["facts"] is None] == [unknown]
+    endpoints = {e["name"]: e for e in signed.get("/api/endpoints").json()}
+    for handle, at in (
+        (QWEN_ARTIFACT, QWEN),
+        (QWEN_BARE_ARTIFACT, QWEN_BARE),
+        (GPT_OSS_ARTIFACT, GPT_OSS),
+        (MISTRAL_ARTIFACT, MISTRAL),
+        (UNKNOWN_MODEL, REMOTE),
+    ):
+        held, served = models.pop(handle), endpoints[at]
+        assert (held["weights"], held["engine"], held["problem"]) == (
+            served["serves"],
+            served["engine"],
+            None,
+        )
+        assert held["takes_typed"] == served["takes_typed"]
+        assert (held["facts"] is None) == (handle == UNKNOWN_MODEL)
+    assert models == {}
+
+
+def test_weights_served_at_two_endpoints_are_ops_to_mend(
+    served: FastAPI, signed: TestClient
+) -> None:
+    held = served.state.chatddx
+    twin = held.inventory.endpoint(QWEN).model_copy(
+        update={"url": HttpUrl("http://127.0.0.1:1/v1/")}
+    )
+    endpoints = {**held.inventory.endpoints, "twin@fake": twin}
+    served.state.chatddx = AppState(
+        held.conninfo,
+        held.inventory.model_copy(update={"endpoints": endpoints}),
+        held.listener,
+    )
+    [qwen] = [m for m in signed.get("/api/models").json() if m["name"] == QWEN_ARTIFACT]
+    assert (qwen["engine"], qwen["problem"]) == (
+        None,
+        f"{QWEN}, twin@fake serve model {QWEN_ARTIFACT}, which one endpoint should: "
+        + "ops' to mend",
+    )
 
 
 @pytest.mark.slow

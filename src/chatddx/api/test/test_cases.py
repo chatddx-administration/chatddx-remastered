@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.test.world import LINES, QWEN
+from chatddx.test.world import LINES
 
 ZERO = "sha256:" + "0" * 64
 
@@ -97,7 +97,7 @@ def test_a_run_names_its_cases_among_the_current_ones(signed: TestClient) -> Non
         "/api/threads",
         params={"kind": "configuration", "name": LINES, "owner": "alice"},
     ).json()
-    asked = {"configuration": configuration["id"], "endpoint": QWEN, "cases": [ZERO]}
+    asked = {"configuration": configuration["id"], "cases": [ZERO]}
     got = signed.post("/api/runs", json=asked)
     assert (got.status_code, got.json()) == (
         422,

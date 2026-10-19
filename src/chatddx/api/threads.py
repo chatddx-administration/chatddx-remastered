@@ -10,6 +10,7 @@ from chatddx.bench import (
     WRITTEN,
     Bench,
     Carried,
+    Endpoint,
     Moved,
     Proposed,
     Reach,
@@ -163,15 +164,13 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     ]
 
 
-def _engine_at(
-    bench: Bench, varied: TriedVariation, endpoint: str | None
-) -> str | None:
+def _at(bench: Bench, varied: TriedVariation, model: str | None) -> Endpoint | str:
     try:
-        return bench.at(varied, endpoint).engine
+        return bench.at(varied, model=model)
     except (LookupError, ValueError) as e:
-        if endpoint is not None:
+        if model is not None and varied.recipe is None:
             raise HTTPException(422, str(e)) from None
-        return None
+        return str(e)
 
 
 def component_of(doc: Mapping[str, JsonValue]) -> Component:
@@ -223,7 +222,8 @@ def variation(
         varied = bench.variation(thread, query.given(), query.head)
         skeleton = bench.skeleton(varied)
         landed = bench.landed(varied)
-        engine = _engine_at(bench, varied, query.endpoint)
+        at = _at(bench, varied, query.under)
+    engine = None if isinstance(at, str) else at.engine
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
     carried: list[Carried] = []
@@ -250,6 +250,8 @@ def variation(
         parts=parts,
         seed=seed,
         request=bench.request(varied, engine, seed),
+        model=None if isinstance(at, str) else bench.handle(at.model.digest).name,
+        problem=at if isinstance(at, str) else None,
         findings=findings,
         languages=[
             schemas.Carried(

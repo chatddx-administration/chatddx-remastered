@@ -8,7 +8,7 @@
   {{ heading("Comparing runs", "Side by side over the items every one of them holds.") }}
 
   {% call section("How they fare") %}
-  {% if differ %}<p class="mb-3 rounded-lg bg-warning/10 p-3 text-sm">They ran {{ differ | join(" and ") }}, so they aren't like for like.</p>{% endif %}
+  {% if grouped %}<p class="mb-3 rounded-lg bg-warning/10 p-3 text-sm">Some ran under {{ grouped | join(" and ") }} at different engines: grouped under it, they aren't like for like.</p>{% endif %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="text-left text-xs text-muted-foreground">
@@ -17,7 +17,7 @@
           {% for r in compared.runs %}
           <th class="pb-2 pr-4 align-bottom font-medium">
             <a class="block text-primary hover:underline" href="/runs/{{ r.id }}">{{ r.described }}</a>
-            <span class="font-normal">{{ r.endpoint or "—" }} · {{ r.at | when }}</span>
+            <span class="font-normal">{{ r.model or "—" }}{{ "" if r.latest else ", an earlier engine" }} · {{ r.at | when }}</span>
           </th>
           {% endfor %}
         </tr>

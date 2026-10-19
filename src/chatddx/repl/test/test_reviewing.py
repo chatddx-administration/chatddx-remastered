@@ -7,7 +7,7 @@ from chatddx.bench import Bench
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.scripted import RUNS, run, scripted_runs
-from chatddx.test.world import LINES, NATIVE, QWEN, TEST
+from chatddx.test.world import LINES, NATIVE, QWEN, QWEN_ARTIFACT, TEST
 
 SCRIPTED = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
@@ -34,10 +34,10 @@ def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     written = say("runs")
     latest, first = rows(written)
 
-    assert f"{NATIVE} × {QWEN} × crlf (seed 7)" in latest
+    assert f"{NATIVE} × {QWEN_ARTIFACT} × crlf (seed 7)" in latest
     assert " valid " in latest
     assert "answer 0/0/0/—" in written
-    assert f"{LINES} × {QWEN} × noted (seed 7)" in first
+    assert f"{LINES} × {QWEN_ARTIFACT} × noted (seed 7)" in first
     assert " completed " in first
 
     [only] = rows(say("runs 1"))
@@ -54,7 +54,7 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     end = next(i for i, line in enumerate(live) if line.startswith("recorded as"))
 
     assert replayed[0].startswith("run ")
-    assert replayed[0].endswith(f": {LINES} × {QWEN} × noted (seed 7)")
+    assert replayed[0].endswith(f": {LINES} × {QWEN_ARTIFACT} × noted (seed 7)")
     assert ", finished, at http://127.0.0.1:" in replayed[1]
     assert "is the one that was sent" in replayed[2]
     streamed = [
@@ -72,7 +72,7 @@ def test_replay_shows_a_run_of_several_cases_again_by_its_lines(say: Say):
 
     replayed = say("replay")
 
-    assert f"× {QWEN} × {len(targets)} cases (seed 7)" in replayed
+    assert f"× {QWEN_ARTIFACT} × {len(targets)} cases (seed 7)" in replayed
     assert sorted(c[0] for c in cells(replayed) if c[2:] == ["valid"]) == targets
     assert any(c[:2] == ["answer", "answer"] for c in cells(replayed))
 

@@ -232,12 +232,12 @@
           <select name="configuration" class="h-9 {{ field }}">
             {% for t in configurations %}<option value="{{ t.id }}">{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}</option>{% endfor %}
           </select></label>
-        <label class="grid gap-1"><span class="text-muted-foreground">Endpoint</span>
-          <select name="endpoint" class="h-9 {{ field }}">
-            <option value="">where its model is served</option>
-            {% for e in endpoints %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+        <label class="grid gap-1"><span class="text-muted-foreground">Model</span>
+          <select name="model" class="h-9 {{ field }}">
+            <option value="">its own</option>
+            {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
           </select>
-          <span class="text-xs text-muted-foreground">One serving another model runs it with that model in place of its own.</span></label>
+          <span class="text-xs text-muted-foreground">Another runs it with that model in place of its own.</span></label>
         <label class="flex items-center gap-2"><span class="text-muted-foreground">Replicates</span>
           <input type="number" name="replicates" value="1" min="1" max="{{ most }}" class="h-9 w-20 {{ field }}"></label>
         <label class="flex items-center gap-2"><input type="checkbox" name="score" value="true" checked> Score it once it has finished</label>

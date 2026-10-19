@@ -186,7 +186,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         tmp_path, Facts(), rig(), World(tmp_path, Inventory(), engines=(engines,))
     )
     for i in imports:
-        assert plan.named("local_model", i.name).digest == i.model.digest
+        assert plan.named("local_model", i.server).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
         assert plan.named("local_engine", i.name).tags == (i.host,)
     world = tmp_path / "inventory.toml"
@@ -223,7 +223,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     )
     with pytest.raises(
         ValueError,
-        match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
+        match=r"model \['gpt-oss-20b', 'qwen3-8b'\] are named before",
     ):
         _ = plan_factors(
             sample,
@@ -427,6 +427,20 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
         main(["import-engine", str(path)])
 
 
+def test_a_server_s_name_is_its_model_s_handle_on_every_host() -> None:
+    pelle = imported(report(), "qwen3-8b")
+    malborg = imported(report(hostname="malborg"), "qwen3-8b")
+    assert engines_toml([pelle, malborg]).count("[local_model.qwen3-8b]") == 1
+    assert [(f.subject, f.code) for f in checked([pelle, malborg])][-1] == (
+        "qwen3-8b@malborg",
+        "endpoint.model_shared",
+    )
+    other = server(model=server()["model"] | {"revision": "b" * 40})
+    elsewhere = imported(report({"qwen3-8b": other}, "malborg"), "qwen3-8b")
+    with pytest.raises(ValueError, match="qwen3-8b@malborg serves other weights"):
+        _ = engines_toml([pelle, elsewhere])
+
+
 def test_the_command_imports_several_hosts_at_once(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -441,7 +455,8 @@ def test_the_command_imports_several_hosts_at_once(
     ]
     assert set(Inventory.load(endpoints).hosts) == {"pelle", "malborg"}
     assert '[local_engine."gpt-oss-20b@malborg"]' in engines.read_text()
+    assert "[local_model.gpt-oss-20b]" in engines.read_text()
     _ = import_engine(tmp_path, *paths, "--server", "gpt-oss-20b")
-    assert "qwen3-8b@pelle" not in engines.read_text()
+    assert "[local_model.qwen3-8b]" not in engines.read_text()
     with pytest.raises(SystemExit, match="--endpoint-host takes one report"):
         _ = import_engine(tmp_path, *paths, "--endpoint-host", "pelle.km")

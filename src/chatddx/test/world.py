@@ -27,6 +27,7 @@ MISTRAL_MODEL = "test/mistral-7b"
 MODELS = (QWEN_MODEL, GPT_OSS_MODEL, MISTRAL_MODEL)
 
 QWEN_ARTIFACT = "qwen3-8b-awq"
+QWEN_BARE_ARTIFACT = "qwen3-8b-bare"
 GPT_OSS_ARTIFACT = "gpt-oss-20b"
 MISTRAL_ARTIFACT = "mistral-7b"
 UNKNOWN_MODEL = "unknown"
@@ -52,9 +53,14 @@ COMPARED = ("instructed", "instructed-greedy", "guided")
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [
     *(
-        f"[lint warning] model.local {name}: model.revision: revision 'fake' is not a "
-        + "commit and can move"
-        for name in ("qwen3-8b-awq", "gpt-oss-20b", "mistral-7b")
+        f"[lint warning] model.local {name}: model.revision: revision {revision!r} is "
+        + "not a commit and can move"
+        for name, revision in (
+            ("qwen3-8b-awq", "fake"),
+            ("gpt-oss-20b", "fake"),
+            ("mistral-7b", "fake"),
+            (QWEN_BARE_ARTIFACT, "fake-bare"),
+        )
     ),
     *(
         f"[lint warning] engine.local {name}: engine.closure: closure 'chatddx "

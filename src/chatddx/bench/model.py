@@ -56,6 +56,13 @@ MODEL = "‹model›"
 
 
 @dataclass(frozen=True)
+class Handle:
+    name: str
+    thread: int
+    weights: str
+
+
+@dataclass(frozen=True)
 class Endpoint:
     name: str
     spec: EndpointSpec

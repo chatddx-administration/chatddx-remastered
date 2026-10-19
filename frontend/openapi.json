@@ -655,7 +655,7 @@
             "description": "the edit it varies, by id: the configuration's head unless given"
           },
           {
-            "name": "endpoint",
+            "name": "under",
             "in": "query",
             "required": false,
             "schema": {
@@ -667,10 +667,10 @@
                   "type": "null"
                 }
               ],
-              "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names",
-              "title": "Endpoint"
+              "description": "the handle a hand-written configuration is rendered and linted under; a configuration with a model part runs under its model's",
+              "title": "Under"
             },
-            "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names"
+            "description": "the handle a hand-written configuration is rendered and linted under; a configuration with a model part runs under its model's"
           },
           {
             "name": "tag",
@@ -2064,7 +2064,7 @@
         },
         "responses": {
           "202": {
-            "description": "The run's trial started again with other seeds, as a run of its own, named as the run is, and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The run's skeleton started again over its cases under its handle, at the handle's latest engine, with other seeds, as a run of its own, named as the run is, and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4555,25 +4555,56 @@
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "the handle"
+          },
+          "weights": {
+            "type": "string",
+            "title": "Weights",
+            "description": "the weights it holds now, by digest"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine",
+            "description": "its latest engine, when it resolves"
           },
           "facts": {
             "$ref": "#/components/schemas/JsonValue"
           },
-          "endpoints": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Endpoints"
+          "takes_typed": {
+            "type": "boolean",
+            "title": "Takes Typed",
+            "description": "whether a case typed into the World's database source can run under it: the source isn't sensitive, or its endpoint is cleared for it"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why it doesn't resolve to one endpoint, which is ops' to mend"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "name",
+          "weights",
+          "engine",
           "facts",
-          "endpoints"
+          "takes_typed",
+          "problem"
         ],
         "title": "Model"
       },
@@ -4983,7 +5014,7 @@
             "$ref": "#/components/schemas/Parts",
             "default": {}
           },
-          "endpoint": {
+          "under": {
             "anyOf": [
               {
                 "type": "string"
@@ -4992,8 +5023,8 @@
                 "type": "null"
               }
             ],
-            "title": "Endpoint",
-            "description": "where to send it: the one serving its model unless named, and one a hand-written configuration names"
+            "title": "Under",
+            "description": "the handle a hand-written configuration runs under; a configuration with a model part runs under its model's"
           },
           "families": {
             "anyOf": [
@@ -5801,6 +5832,23 @@
             ],
             "title": "Endpoint"
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle its weights are under; null when they are under none"
+          },
+          "latest": {
+            "type": "boolean",
+            "title": "Latest",
+            "description": "whether it ran at its handle's latest engine"
+          },
           "cases": {
             "items": {
               "type": "string"
@@ -5872,6 +5920,8 @@
           "started_with",
           "engine",
           "endpoint",
+          "model",
+          "latest",
           "cases",
           "seeds",
           "described",
@@ -5939,6 +5989,23 @@
               }
             ],
             "title": "Endpoint"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle its weights are under; null when they are under none"
+          },
+          "latest": {
+            "type": "boolean",
+            "title": "Latest",
+            "description": "whether it ran at its handle's latest engine"
           },
           "cases": {
             "items": {
@@ -6054,6 +6121,8 @@
           "started_with",
           "engine",
           "endpoint",
+          "model",
+          "latest",
           "cases",
           "seeds",
           "described",
@@ -7080,6 +7149,30 @@
             "type": "object",
             "title": "Request"
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle it runs under"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, its model is behind its handle, or it names no model"
+          },
           "findings": {
             "anyOf": [
               {
@@ -7121,6 +7214,8 @@
           "parts",
           "seed",
           "request",
+          "model",
+          "problem",
           "findings",
           "languages",
           "reach"

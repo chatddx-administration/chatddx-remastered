@@ -15,7 +15,7 @@ from chatddx.inventory import Inventory
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, OFF, QWEN, QWEN_MODEL, TEST
+from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT, QWEN_MODEL, TEST
 
 
 @pytest.fixture
@@ -49,9 +49,7 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
 ) -> None:
     mine = thread(signed, "configuration", LINES)
     off = thread(signed, "reasoning", OFF)["head"]["digest"]
-    page = shown(
-        signed, f"/configurations/{mine['id']}?reasoning={off}&endpoint={QWEN}"
-    )
+    page = shown(signed, f"/configurations/{mine['id']}?reasoning={off}")
     assert escape(f"{LINES}+reasoning={OFF}") in page
 
     given = held(page)
@@ -66,16 +64,15 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     assert all("language" in t for p in RECIPE_PARTS for t in given["choices"][p])
     assert given["me"] == "alice" and given["configuration"]["id"] == mine["id"]
 
-    assert given["endpoint"] == QWEN and look["findings"] is not None
+    assert given["under"] is None and look["findings"] is not None
+    assert (look["model"], look["problem"]) == (QWEN_ARTIFACT, None)
     models = [t["head"]["digest"] for t in given["choices"]["model"]]
     assert recipe["model"] in models
-    served = {e["serves"] for e in given["endpoints"]}
-    assert set(models) <= served and len(models) == len(set(models))
+    handles = {t["name"] for t in given["choices"]["model"]}
+    assert handles == set(given["models"]) and len(models) == len(set(models))
 
-    tagged = held(
-        shown(signed, f"/configurations/{mine['id']}?endpoint={QWEN}&tag=targets")
-    )
-    assert (tagged["endpoint"], tagged["tags"]) == (QWEN, ["targets"])
+    tagged = held(shown(signed, f"/configurations/{mine['id']}?tag=targets"))
+    assert (tagged["under"], tagged["tags"]) == (None, ["targets"])
     assert {r["cases"] for r in tagged["look"]["reach"]} != {0}
 
 

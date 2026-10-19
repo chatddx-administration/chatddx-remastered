@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from typing import Annotated
 from urllib.parse import urlencode
 
@@ -11,12 +12,25 @@ from chatddx.api import (
     threads as api,
     world as api_world,
 )
-from chatddx.bench import Bench
+from chatddx.api.state import refused
+from chatddx.bench import Bench, Handle, NotFound
+from chatddx.factors.base import StructuralError
 from chatddx.factors.request import RECIPE_PARTS, Recipe
 
 from .pages import BenchDep, own_first, page
 
 router = APIRouter()
+
+
+@dataclass
+class Column:
+    skeletons: tuple[str, ...]
+    handle: str | None
+    refused: str | None = None
+    behind: bool = False
+    names: list[schemas.Kin] = field(default_factory=list[schemas.Kin])
+    run: schemas.Run | None = None
+    earlier: list[schemas.Run] = field(default_factory=list[schemas.Run])
 
 
 @router.get("/refine")
@@ -32,8 +46,7 @@ def refine(
     request: Request,
     bench: BenchDep,
     thread: int,
-    endpoint: str | None = None,
-    language: str | None = None,
+    model: str | None = None,
     tag: Annotated[list[str] | None, Query()] = None,
     family: Annotated[list[int] | None, Query()] = None,
     head: int | None = None,
@@ -48,56 +61,35 @@ def refine(
         raise HTTPException(
             404, f"configuration {thread} is a judge's, and a judge isn't run on cases"
         )
+    with refused(NotFound):
+        forced = None if model is None else bench.handle_named(model)
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == varied.configuration.id)
     lineage = api.lineage(bench, thread)
-    endpoints = api_world.endpoints(bench)
-    serving = [e for e in endpoints if recipe is not None and e.serves == recipe.model]
-    chosen = endpoint or (serving[0].name if len(serving) == 1 else None)
-    spec = next((e for e in endpoints if e.name == chosen), None)
-    if chosen is not None and spec is None:
-        raise HTTPException(422, f"no endpoint {chosen!r} in the World")
     families = api_families.families(bench)
-    language = language or shown.language
     tags, picked = tag or [], family or []
     held = [
         f
         for f in families
         if (not tags and not picked) or f.id in picked or set(f.tags) & set(tags)
     ]
-    cases = {f.case for f in held if language is None or f.language == language}
-    narrowed = bool(tags or picked)
+    cases = [f.case for f in held]
 
-    columns = _columns(versions[at].digest, lineage, thread, bench.person.login)
-    matched = [
-        next(
-            (
-                r
-                for r in api_runs.runs(bench, reaching=skeleton, limit=200)
-                if spec is not None
-                and r.engine == spec.engine
-                and (language is None or r.language == language)
-                and (not narrowed or set(r.cases) <= cases)
-            ),
-            None,
-        )
-        for skeleton, _ in columns
-    ]
-    ran = [r for r in matched if r is not None]
+    columns = _columns(bench, thread, versions[at].id, lineage, forced, cases)
+    ran = [c.run for c in columns if c.run is not None]
     compared = api_runs.compared(bench, [r.id for r in ran]) if ran else None
     views = [] if compared is None else compared.views
     sorted_by = viewed(views, by)
     counted = iter(range(len(ran)))
-    at_run = [None if r is None else next(counted) for r in matched]
+    at_run = [None if c.run is None else next(counted) for c in columns]
     rows = [(keyed(v), v, _fares(v, at_run)) for v in views]
     sorting = next((fares for key, _, fares in rows if key == sorted_by), None)
     by_column: list[float | None] = [
         None if fare is None else fare[0] for fare in sorting or [None for _ in columns]
     ]
-    mean_of = {k.id: m for (_, names), m in zip(columns, by_column) for k in names}
+    mean_of = {k.id: m for c, m in zip(columns, by_column) for k in c.names}
     query: list[tuple[str, str | int]] = [
-        *([("endpoint", chosen)] if chosen else []),
-        *([("language", language)] if language else []),
+        *([("model", model)] if model else []),
         *(("tag", t) for t in tags),
         *(("family", f) for f in picked),
     ]
@@ -116,18 +108,14 @@ def refine(
         gone=[k for k, _ in ordered if k.deleted],
         me=next(k for k in lineage if k.id == thread),
         mean_of=mean_of,
-        endpoints=endpoints,
-        endpoint=chosen,
-        languages=sorted(
-            {*shown.translated, *(f.language for f in families if f.language)}
-            | {lang for lang in (language, shown.language) if lang}
-        ),
-        language=language,
+        models=[m.name for m in api_world.models(bench) if m.problem is None],
+        model=model,
         every_tag=sorted({t for f in families for t in f.tags}),
         tags=tags,
         families=[f for f in families if f.id in picked],
-        cases=len(cases) if narrowed else None,
-        columns=[(names, run) for (_, names), run in zip(columns, matched)],
+        cases=len(cases) if tags or picked else None,
+        languages=sorted({f.language for f in held if f.language}),
+        columns=columns,
         compared=compared,
         rows=rows,
         by=sorted_by,
@@ -136,15 +124,64 @@ def refine(
     )
 
 
-# Policy: A fork that varies nothing holds its origin's skeleton, so it shares its column.
+# Policy: Configurations that send the set's cases as the same skeletons under the same
+# handle share a column, as a fork that varies nothing does its origin's.
 def _columns(
-    skeleton: str, lineage: list[schemas.Kin], thread: int, me: str
-) -> list[tuple[str, list[schemas.Kin]]]:
-    held: dict[str, list[schemas.Kin]] = {skeleton: []}
-    for k in sorted(lineage, key=lambda k: (k.id != thread, k.owner != me)):
-        if not k.deleted:
-            held.setdefault(k.head.digest, []).append(k)
-    return list(held.items())
+    bench: Bench,
+    thread: int,
+    head: int,
+    lineage: list[schemas.Kin],
+    forced: Handle | None,
+    cases: list[str],
+) -> list[Column]:
+    found: dict[tuple[tuple[str, ...], str | None], Column] = {}
+    shown = _column(bench, thread, head, forced, cases)
+    found[(shown.skeletons, shown.handle)] = shown
+    login = bench.person.login
+    for k in sorted(lineage, key=lambda k: (k.id != thread, k.owner != login)):
+        if k.deleted:
+            continue
+        column = _column(bench, k.id, None, forced, cases)
+        found.setdefault((column.skeletons, column.handle), column).names.append(k)
+    for column in found.values():
+        if column.refused is None:
+            column.run, column.earlier = _matched(bench, column, cases)
+    return list(found.values())
+
+
+def _column(
+    bench: Bench, thread: int, head: int | None, forced: Handle | None, cases: list[str]
+) -> Column:
+    held = bench.variation(thread, None, head)
+    weights = held.held("model")
+    try:
+        if forced is not None and weights is not None:
+            held = bench.variation(thread, {"model": forced.weights}, head)
+        handle = forced or (None if weights is None else bench.handle(weights))
+        carried = bench.languages(held, cases)
+    except (StructuralError, ValueError) as e:
+        return Column((held.configuration.digest,), None, str(e))
+    skeletons = sorted({c.skeleton.digest for c in carried if c.skeleton is not None})
+    return Column(
+        tuple(skeletons),
+        None if handle is None else handle.name,
+        behind=forced is None and handle is not None and handle.weights != weights,
+    )
+
+
+def _matched(
+    bench: Bench, column: Column, cases: list[str]
+) -> tuple[schemas.Run | None, list[schemas.Run]]:
+    found = {
+        r.id: r
+        for s in column.skeletons
+        for r in api_runs.runs(bench, reaching=s, limit=200)
+        if (column.handle is None or r.model == column.handle)
+        and set(r.cases) <= set(cases)
+    }
+    under = sorted(found.values(), key=lambda r: r.at, reverse=True)
+    latest = [r for r in under if r.latest]
+    return next(iter(latest), None), [r for r in under if not r.latest]
 
 
 def keyed(view: schemas.ComparedView) -> str:

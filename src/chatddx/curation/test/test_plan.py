@@ -127,7 +127,7 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
         + "model, which has none, for model.remote gemma@api"
     )
     assert on(None, factors=INTENTS).skipped[-1] == (
-        "recipe raw: the World names no endpoint configurations are made for"
+        "recipe raw: the World names no handle configurations are made for"
     )
     old = '[sampling.recommended]\nfrom_facts = { effort = "default" }\n'
     with pytest.raises(ValueError, match="sampling: from_facts is gone"):

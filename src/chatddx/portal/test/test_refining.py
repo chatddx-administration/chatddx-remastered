@@ -14,11 +14,12 @@ from chatddx.scripted.test.test_scripted_runs import held
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     COMPARED,
+    GPT_OSS_ARTIFACT,
     JUDGE,
     LINES,
     LINES_GUIDED,
     LINES_INSTRUCTED,
-    QWEN,
+    QWEN_ARTIFACT,
 )
 
 
@@ -62,7 +63,7 @@ def test_a_configuration_s_lineage_fares_side_by_side_on_a_set(
 ) -> None:
     mine = thread(signed, "configuration", LINES_INSTRUCTED)
     instructed, _, guided = (held(bench, name).run for name in COMPARED)
-    page = shown(signed, f"/refine/{mine['id']}?endpoint={QWEN}")
+    page = shown(signed, f"/refine/{mine['id']}")
     text = said(page)
 
     assert re.search(
@@ -73,18 +74,24 @@ def test_a_configuration_s_lineage_fares_side_by_side_on_a_set(
     assert f'href="/runs/{instructed}"' in page and f'href="/runs/{guided}"' in page
     assert page.index(f"/runs/{instructed}") < page.index(f"/runs/{guided}")
     assert re.search(r"lines · differential 0\.75 \(2\) 0\.00 \(2\)", text)
-    assert "each column is its latest run of yours there" in text
+    assert "each column is its latest run of yours at its model's latest engine" in text
+    assert f"under {QWEN_ARTIFACT}" in text
 
     whole = signed.get(f"/api/runs/{instructed}/scores").json()
     [lines] = [g for g in whole if g["name"] == LINES]
     by = f"{lines['scorer']}:2"
-    page = shown(signed, f"/refine/{mine['id']}?endpoint={QWEN}&by={by}")
+    page = shown(signed, f"/refine/{mine['id']}?by={by}")
     assert re.search(r"Lineage 4 \S+ — ", said(page))
 
-    page = shown(signed, f"/refine/{mine['id']}?endpoint={QWEN}&tag=targets")
+    page = shown(signed, f"/refine/{mine['id']}?tag=targets")
     text = said(page)
-    assert "not run" in text and "None of them has a run there yet." in text
-    assert "Pick an endpoint" in said(shown(signed, f"/refine/{mine['id']}"))
+    assert "not run" in text
+    assert "None of them has a run at its model's latest engine yet." in text
+    forced = said(shown(signed, f"/refine/{mine['id']}?model={GPT_OSS_ARTIFACT}"))
+    assert (
+        f"under {GPT_OSS_ARTIFACT}" in forced and f"under {QWEN_ARTIFACT}" not in forced
+    )
+    assert "not run" in forced
 
 
 @pytest.mark.slow
@@ -98,7 +105,7 @@ def test_what_isn_t_refined_here_isn_t_found(signed: TestClient) -> None:
     got = signed.get(f"/refine/{judge['id']}")
     assert got.status_code == 404 and escape("a judge isn't run on cases") in got.text
     lines = thread(signed, "configuration", LINES)
-    assert signed.get(f"/refine/{lines['id']}?endpoint=nowhere").status_code == 422
+    assert signed.get(f"/refine/{lines['id']}?model=nowhere").status_code == 422
 
 
 @pytest.mark.slow

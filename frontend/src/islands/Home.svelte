@@ -22,9 +22,9 @@
   let login = $state<string>();
   let text = $state("");
   let configurations = $state<Schemas["Thread"][]>([]);
-  let endpoints = $state<Schemas["Endpoint"][]>([]);
+  let models = $state<Schemas["Model"][]>([]);
   let configuration = $state<number>();
-  let endpoint = $state<string>();
+  let model = $state<string>();
   let language = $state<string>();
   const languages = $derived(spoken(configurations.find((t) => t.id === configuration)));
   let phase = $state<Phase>("idle");
@@ -40,7 +40,7 @@
     const [me, found, served] = await Promise.all([
       api.GET("/api/me"),
       api.GET("/api/threads", { params: { query: { kind: "configuration", answers: PLAN } } }),
-      api.GET("/api/endpoints"),
+      api.GET("/api/models"),
     ]);
     if (!me.data || !found.data || !served.data) {
       failure = why(me.error ?? found.error ?? served.error);
@@ -48,8 +48,8 @@
     }
     login = me.data.login;
     configurations = preferred(found.data);
-    endpoints = served.data.filter((e) => e.problem === null && e.takes_typed);
-    endpoint = endpoints[0]?.name;
+    models = served.data.filter((m) => m.problem === null && m.takes_typed);
+    model = models[0]?.name;
     configuration = configurations[0]?.id;
   });
 
@@ -75,7 +75,7 @@
 
   async function analyze(event: SubmitEvent) {
     event.preventDefault();
-    if (configuration === undefined || endpoint === undefined || language === undefined || !text.trim()) return;
+    if (configuration === undefined || model === undefined || language === undefined || !text.trim()) return;
     failure = null;
     item = null;
     progress = begun();
@@ -91,8 +91,7 @@
       const started = await api.POST("/api/runs", {
         body: {
           configuration,
-          endpoint,
-          parts: compiled ? { model: endpoints.find((e) => e.name === endpoint)?.serves ?? null } : {},
+          ...(compiled ? { parts: { model: models.find((m) => m.name === model)?.weights ?? null } } : { under: model }),
           families: [typed.family],
           score: false,
         },
@@ -180,15 +179,15 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div class="flex flex-col gap-4 sm:flex-row">
             <div class="grid gap-2">
-              <Label for="endpoint">Endpoint</Label>
+              <Label for="model">Model</Label>
               <NativeSelect.Root
-                id="endpoint"
+                id="model"
                 class="min-w-52"
-                bind:value={endpoint}
+                bind:value={model}
                 disabled={busy}
               >
-                {#each endpoints as e (e.name)}
-                  <NativeSelect.Option value={e.name}>{e.name}</NativeSelect.Option>
+                {#each models as m (m.name)}
+                  <NativeSelect.Option value={m.name}>{m.name}</NativeSelect.Option>
                 {/each}
               </NativeSelect.Root>
             </div>
@@ -213,7 +212,7 @@
             type="submit"
             size="lg"
             class="gap-2 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
-            disabled={busy || !text.trim() || configuration === undefined || endpoint === undefined}
+            disabled={busy || !text.trim() || configuration === undefined || model === undefined}
           >
             {#if busy}
               <LoaderCircleIcon class="animate-spin" />

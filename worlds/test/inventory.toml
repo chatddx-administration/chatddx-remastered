@@ -1,5 +1,5 @@
 include = ["endpoints.toml"]
-configurations = "qwen3@fake"
+configurations = "qwen3-8b-awq"
 
 [source.test]
 path = "vignettes"
@@ -15,6 +15,6 @@ kind = "database"
 "qwen3-bare@fake" = ["test"]
 
 [judge]
-verdict = "qwen3@fake"
-graded = "qwen3@fake"
-remote = "unknown@remote"
+verdict = "qwen3-8b-awq"
+graded = "qwen3-8b-awq"
+remote = "unknown"

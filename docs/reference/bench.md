@@ -26,6 +26,15 @@ Written by `chatddx reference` from `src/chatddx/bench/`; how to read it is in [
 Raises:
 1. `ValueError`: "run {run.run} was sent to no endpoint, so it can't run again"
 2. `NotFound`: "no case {missing[0]} for {seen.person.login}"
+```
+SIGN-OFF: REPLACE
+replace the 3 lines below with these
+---
+3. `ValueError`: "run {run.run} ran weights {handle.name} no longer holds: run its configuration, followed, instead"
+4. `OverQuota`: "a run holds at most {settings.ITEMS_PER_RUN} items, not {items}" (through `_begun`)
+5. `OverQuota`: "{said}, as many as a day takes" (through `_begun`)
+6. `OverQuota`: "{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more" (through `_begun`)
+```
 3. `OverQuota`: "a run holds at most {settings.ITEMS_PER_RUN} items, not {items}" (through `_begun`)
 4. `OverQuota`: "{said}, as many as a day takes" (through `_begun`)
 5. `OverQuota`: "{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more" (through `_begun`)
@@ -421,6 +430,18 @@ Raises:
 * `view: int`
 * ∟`str`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Handle `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Handle`
+
+* `name: str`
+* `thread: int`
+* `weights: str`
+
+```
 ## keep_compilation
 `src/chatddx/bench/configurations.py:keep_compilation`
 
@@ -620,10 +641,26 @@ Raises:
 `src/chatddx/bench/seen.py:Seen.at`
 
 * `variation: TriedVariation`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `endpoint: str | None = None`
+* `model: str | None = None`
+```
 * `endpoint: str | None`
 * ∟`Endpoint`
 
 Raises:
+```
+SIGN-OFF: REPLACE
+replace the 3 lines below with these
+---
+1. `ValueError`: "endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(weights)}"
+2. `ValueError`: "{variation.label} names no model: name the one to run it under"
+3. `ValueError`: "{variation.label} runs under its model's handle: set its model instead"
+4. `ValueError`: "{variation.label}'s model is behind {handle.name}, which holds other weights now: follow it first"
+```
 1. `ValueError`: "{variation.label} names no model: name the endpoint to send it to"
 2. `ValueError`: str(e) (from `LookupError`)
 3. `ValueError`: "endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(model)}"
@@ -698,6 +735,26 @@ Raises:
 * `carried: Sequence[Carried] | None = None`
 * ∟`list[Finding]`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Seen.handle
+`src/chatddx/bench/seen.py:Seen.handle`
+
+* `weights: str`
+* ∟`Handle`
+
+Raises:
+1. `ValueError`: "{self.title(weights)} is under {under}, and weights are under one: ops' to mend"
+
+## Seen.handle_named
+`src/chatddx/bench/seen.py:Seen.handle_named`
+
+* `name: str`
+* ∟`Handle`
+
+```
 ## Seen.holder
 `src/chatddx/bench/seen.py:Seen.holder`
 
@@ -723,6 +780,17 @@ Raises:
 * `variation: TriedVariation`
 * `cases: Sequence[str]`
 * ∟`list[Carried]`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Seen.latest
+`src/chatddx/bench/seen.py:Seen.latest`
+
+* `handle: Handle`
+* ∟`str | None`
+```
 
 ## Seen.login
 `src/chatddx/bench/seen.py:Seen.login`
@@ -794,6 +862,20 @@ Raises:
 * `every: bool = False`
 * ∟`list[Graded]`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Seen.served
+`src/chatddx/bench/seen.py:Seen.served`
+
+* `handle: Handle`
+* ∟`Endpoint`
+
+Raises:
+1. `ValueError`: str(e) (from `LookupError`)
+
+```
 ## Seen.shared
 `src/chatddx/bench/seen.py:Seen.shared`
 
@@ -857,6 +939,17 @@ Raises:
 Raises:
 1. `ValueError`: "{variation.label} has no recipe to translate"
 2. `ValueError`: "{variation.label} is written in {into}"
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Seen.under
+`src/chatddx/bench/seen.py:Seen.under`
+
+* `engine: str`
+* ∟`tuple[Handle | None, bool]`
+```
 
 ## Seen.unscored
 `src/chatddx/bench/seen.py:Seen.unscored`

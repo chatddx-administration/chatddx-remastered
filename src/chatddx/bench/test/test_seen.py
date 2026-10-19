@@ -19,11 +19,12 @@ from chatddx.catalog import About, Edit, Entry, EntryField, Subject, read, threa
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
+from chatddx.factors.engine import FileDigest, LocalModel, model_of
 from chatddx.factors.request import Prompt
 from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person, owns
 from chatddx.inventory import World
-from chatddx.runner import Halt, Refused, Runner
+from chatddx.runner import Halt, Runner
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -36,7 +37,9 @@ from chatddx.test.world import (
     MISTRAL_MODEL,
     NATIVE,
     QWEN,
+    QWEN_ARTIFACT,
     QWEN_BARE,
+    QWEN_MODEL,
     REMOTE,
     TEST,
     TOOL_ANSWER,
@@ -640,21 +643,40 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
         _ = bench.start(variation, QWEN, [case], (7,))
 
 
-def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
+def test_a_run_runs_again_under_its_handle_or_is_refused_saying_why(
     conn: Connection, alice: Person, plan: Plan
 ) -> None:
     made = trial(conn, plan, LINES, "crlf")
     run = ran(conn, alice, made, endpoint=QWEN)
     inventory = World.load(TEST).inventory
-    other = inventory.endpoint(GPT_OSS).engine
     endpoints = dict(inventory.endpoints)
-    endpoints[QWEN] = endpoints[QWEN].model_copy(update={"engine": other})
-    moved = inventory.model_copy(update={"endpoints": endpoints})
-    bench = Bench(conn, alice, moved)
+    endpoints[QWEN] = endpoints[QWEN_BARE]
+    bench = Bench(conn, alice, inventory.model_copy(update={"endpoints": endpoints}))
+    handle, latest = bench.under(made.engine)
+    assert (None if handle is None else handle.name, latest) == (QWEN_ARTIFACT, False)
     with pytest.raises(
-        Refused, match=f"serves engine {other}, the trial's is {made.engine}"
+        ValueError,
+        match=f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend",
     ):
         _ = bench.again(bench.run(run), (9,))
+
+    store = Store(conn)
+    registry = store.load([])
+    weights = registry.add(
+        LocalModel(
+            repo=QWEN_MODEL,
+            revision="newer",
+            files=(FileDigest(path="none", sha256="0" * 64),),
+        )
+    )
+    _ = store.add(registry, [weights])
+    held = Bench(conn, alice, inventory).handle(model_of(made.engine, store.get).digest)
+    _ = Catalog(conn).edit(held.thread, weights, alice.id)
+    later = Bench(conn, alice, inventory)
+    with pytest.raises(
+        ValueError, match=f"ran weights {QWEN_ARTIFACT} no longer holds"
+    ):
+        _ = later.again(later.run(run), (9,))
 
 
 def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(

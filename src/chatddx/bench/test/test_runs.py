@@ -21,6 +21,7 @@ from chatddx.test.world import (
     LINES,
     LINES_GUIDED,
     QWEN,
+    QWEN_ARTIFACT,
     faked,
 )
 
@@ -228,10 +229,11 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     )
     assert varying(bench, second.run) == varying(bench, first.run)
     assert bench.described(second.started) == (
-        f"{LINES_GUIDED} × {QWEN} × 2 cases, in sv, translated (seed 7)"
+        f"{LINES_GUIDED} × {QWEN_ARTIFACT} × 2 cases, in sv, translated (seed 7)"
     )
     assert (
-        bench.described(first.started) == f"{LINES_GUIDED} × {QWEN} × 2 cases (seed 7)"
+        bench.described(first.started)
+        == f"{LINES_GUIDED} × {QWEN_ARTIFACT} × 2 cases (seed 7)"
     )
 
     lines = bench.variation(LINES)

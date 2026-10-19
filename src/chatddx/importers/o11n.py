@@ -267,22 +267,29 @@ def _value(value: object) -> str:
 
 def engines_toml(imports: Iterable[Imported]) -> str:
     tables: list[str] = []
+    handles: dict[str, LocalModel] = {}
     for i in imports:
-        files = "".join(
-            f"\n  {_value({'path': f.path, 'sha256': f.sha256})},"
-            for f in i.model.files
-        )
-        tables.append(
-            f"[local_model.{_key(i.name)}]\n"
-            + f"repo = {_value(i.model.repo)}\n"
-            + f"revision = {_value(i.model.revision)}\n"
-            + f"files = [{files}\n]\n"
-        )
+        if (held := handles.setdefault(i.server, i.model)) is i.model:
+            files = "".join(
+                f"\n  {_value({'path': f.path, 'sha256': f.sha256})},"
+                for f in i.model.files
+            )
+            tables.append(
+                f"[local_model.{_key(i.server)}]\n"
+                + f"repo = {_value(i.model.repo)}\n"
+                + f"revision = {_value(i.model.revision)}\n"
+                + f"files = [{files}\n]\n"
+            )
+        elif held != i.model:
+            raise ValueError(
+                f"{i.name} serves other weights under handle {i.server!r} than a "
+                + "server of that name on another host"
+            )
         e = i.engine
         fields = {
             "description": f"{i.model.repo} on {i.host}, as its o11n.vllm report has it.",
             "tags": [i.host],
-            "model": i.name,
+            "model": i.server,
             "hardware": e.hardware.model_dump(),
             "runtime": {"version": e.runtime.version, "closure": e.runtime.closure},
             "chat_template": e.chat_template,

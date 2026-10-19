@@ -10,7 +10,7 @@ from chatddx.repl.commands import complete
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, cells, line_of, pattern, tagged
 from chatddx.store import Catalog, People, Rows, Store
-from chatddx.test.world import LINES, QWEN
+from chatddx.test.world import LINES, QWEN, QWEN_ARTIFACT
 
 
 # A new version of the expectation the person reads for a case, from their own thread.
@@ -45,7 +45,7 @@ def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
     retarget(bench, "noted", {"diagnosis": {"pattern": "fake & diagnosis"}})
     written = say("score")
 
-    assert written.count(f": {LINES} × {QWEN} × noted") == 2
+    assert written.count(f": {LINES} × {QWEN_ARTIFACT} × noted") == 2
     assert [row[:2] for row in cells(written)].count(["differential", "1"]) == 2
     assert ["lines", "text", "2", "@0", "0"] in cells(written)
     assert ["differential", "2", "1", "0"] in cells(written)

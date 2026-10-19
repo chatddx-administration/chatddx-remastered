@@ -1,11 +1,11 @@
-[local_model."qwen3-8b-awq@fake"]
+[local_model.qwen3-8b-awq]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[local_model."gpt-oss-20b@fake"]
+[local_model.gpt-oss-20b]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
 files = [
@@ -15,7 +15,7 @@ files = [
 [local_engine."qwen3-8b-awq@fake"]
 description = "Qwen3 on the fake vLLM, served as the old fake stack served it."
 tags = ["fake"]
-model = "qwen3-8b-awq@fake"
+model = "qwen3-8b-awq"
 hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "none" }
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -30,7 +30,7 @@ argv = [
 [local_engine."gpt-oss-20b@fake"]
 description = "gpt-oss on the fake vLLM, served as the old fake stack served it."
 tags = ["fake"]
-model = "gpt-oss-20b@fake"
+model = "gpt-oss-20b"
 hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "none" }
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

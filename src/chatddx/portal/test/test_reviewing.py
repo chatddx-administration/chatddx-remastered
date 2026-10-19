@@ -261,10 +261,8 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     assert {j["digest"] for j in composing["judging"]} == {
         j["head"]["digest"] for j in judging
     }
-    endpoints = {
-        e["name"] for e in signed.get("/api/endpoints").json() if not e["problem"]
-    }
-    assert {e["name"] for e in composing["endpoints"]} == endpoints
+    models = {m["name"] for m in signed.get("/api/models").json() if m["engine"]}
+    assert {m["name"] for m in composing["models"]} == models
     blank = composing["blank"]
     assert blank["expectation_schema"] == body["expectation_schema"]
     code = signed.get("/api/scorer-code").json()[0]

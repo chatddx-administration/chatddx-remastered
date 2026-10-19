@@ -792,8 +792,23 @@ Raises:
 ## Model `(_Schema)`
 `src/chatddx/api/schemas.py:Model`
 
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `name: str = Field(description="the handle")`
+* `weights: str = Field(description="the weights it holds now, by digest")`
+* `engine: str | None = Field(description="its latest engine, when it resolves")`
+```
 * `name: str`
 * `facts: JsonValue`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `takes_typed: bool = Field(…)`
+* `problem: str | None = Field(…)`
+```
 * `endpoints: list[str]`
 
 ## ModelDigest
@@ -890,6 +905,12 @@ Raises:
 * `configuration: int`
 * `head: int | None = Field(…)`
 * `parts: Parts = Parts()`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `under: str | None = Field(…)`
+```
 * `endpoint: str | None = Field(…)`
 * `families: list[int] | None = Field(…)`
 * `tags: list[str] | None = Field(…)`
@@ -1152,6 +1173,13 @@ Raises:
 * `started_with: UUID | None = Field(…)`
 * `engine: str`
 * `endpoint: str | None`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+* `model: str | None = Field(…)`
+* `latest: bool = Field(description="whether it ran at its handle's latest engine")`
+```
 * `cases: list[str]`
 * `seeds: list[int]`
 * `described: str`
@@ -1696,6 +1724,13 @@ Raises:
 * `parts: list[Part] | None`
 * `seed: int`
 * `request: dict[str, JsonValue]`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+* `model: str | None = Field(description="the handle it runs under")`
+* `problem: str | None = Field(…)`
+```
 * `findings: list[Finding] | None`
 * `languages: list[Carried] = Field(…)`
 * `reach: list[Reach]`
@@ -1709,6 +1744,12 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_at`)
+```
 1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_engine_at`)
 
 ## Varied `(_Schema)`
@@ -1722,6 +1763,12 @@ Raises:
 `src/chatddx/api/schemas.py:Varying`
 
 * `head: int | None = Field(…)`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `under: str | None = Field(…)`
+```
 * `endpoint: str | None = Field(…)`
 * `tag: list[str] = Field(…)`
 * `seed: int | None = Field(None, description="drawn when not given")`

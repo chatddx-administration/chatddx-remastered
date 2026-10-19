@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from pydantic import JsonValue
 
-from chatddx.bench import KINDS, WRITTEN, Bench, Checked, NotFound
+from chatddx.bench import KINDS, WRITTEN, Bench, Checked, Endpoint, Handle, NotFound
+from chatddx.factors.engine import model_of
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
 from chatddx.factors.select import select
@@ -54,22 +55,30 @@ def endpoints(bench: BenchDep) -> list[schemas.Endpoint]:
 
 @router.get("/models")
 def models(bench: BenchDep) -> list[schemas.Model]:
-    serving: dict[str, list[str]] = {}
-    for name in sorted(bench.inventory.endpoints):
-        try:
-            model = bench.endpoint(name).model
-        except LookupError:
-            continue
-        serving.setdefault(model.name, []).append(name)
     known = bench.facts.models
-    return [
-        schemas.Model(
-            name=model,
-            facts=known[model].model_dump(mode="json") if model in known else None,
-            endpoints=serving.get(model, []),
+    found: list[schemas.Model] = []
+    for edit, about in bench.threads("model"):
+        handle = Handle(about.name or str(edit.thread), edit.thread, edit.digest)
+        weights = model_of(edit.digest, bench.store.get).name
+        at: Endpoint | None = None
+        problem = None
+        try:
+            at = bench.served(handle)
+        except (LookupError, ValueError) as e:
+            problem = str(e)
+        found.append(
+            schemas.Model(
+                name=handle.name,
+                weights=edit.digest,
+                engine=None if at is None else at.engine,
+                facts=known[weights].model_dump(mode="json")
+                if weights in known
+                else None,
+                takes_typed=at is not None and bench.inventory.takes_typed(at.name),
+                problem=problem,
+            )
         )
-        for model in sorted(set(known) | set(serving))
-    ]
+    return sorted(found, key=lambda m: m.name)
 
 
 @router.get("/components/{digest}")

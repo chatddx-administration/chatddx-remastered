@@ -177,10 +177,10 @@ class Varying(Parts):
         None,
         description="the edit it varies, by id: the configuration's head unless given",
     )
-    endpoint: str | None = Field(
+    under: str | None = Field(
         None,
-        description="to render and lint it for: the one serving a configuration's "
-        + "model unless named, and one a hand-written configuration names",
+        description="the handle a hand-written configuration is rendered and linted "
+        + "under; a configuration with a model part runs under its model's",
     )
     tag: list[str] = Field(
         default_factory=list[str],
@@ -409,6 +409,11 @@ class Variation(_Schema):
     parts: list[Part] | None
     seed: int
     request: dict[str, JsonValue]
+    model: str | None = Field(description="the handle it runs under")
+    problem: str | None = Field(
+        description="why it can't run: its handle doesn't resolve, which is ops' to "
+        + "mend, its model is behind its handle, or it names no model"
+    )
     findings: list[Finding] | None
     languages: list[Carried] = Field(
         description="the languages its cases are sent in, the configuration's own "
@@ -533,9 +538,17 @@ class Endpoint(_Schema):
 
 
 class Model(_Schema):
-    name: str
+    name: str = Field(description="the handle")
+    weights: str = Field(description="the weights it holds now, by digest")
+    engine: str | None = Field(description="its latest engine, when it resolves")
     facts: JsonValue
-    endpoints: list[str]
+    takes_typed: bool = Field(
+        description="whether a case typed into the World's database source can run "
+        + "under it: the source isn't sensitive, or its endpoint is cleared for it"
+    )
+    problem: str | None = Field(
+        description="why it doesn't resolve to one endpoint, which is ops' to mend"
+    )
 
 
 class Component(_Schema):
@@ -670,10 +683,10 @@ class NewRun(Seeds):
         description="the edit it varies, by id: the configuration's head unless given",
     )
     parts: Parts = Parts()
-    endpoint: str | None = Field(
+    under: str | None = Field(
         None,
-        description="where to send it: the one serving its model unless named, and "
-        + "one a hand-written configuration names",
+        description="the handle a hand-written configuration runs under; a "
+        + "configuration with a model part runs under its model's",
     )
     families: list[int] | None = Field(
         None, min_length=1, description="the cases to run, by family"
@@ -760,6 +773,10 @@ class Run(_Schema):
     )
     engine: str
     endpoint: str | None
+    model: str | None = Field(
+        description="the handle its weights are under; null when they are under none"
+    )
+    latest: bool = Field(description="whether it ran at its handle's latest engine")
     cases: list[str]
     seeds: list[int]
     described: str

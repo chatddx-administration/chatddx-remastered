@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, json %}
+{% block title %}Models · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  {{ heading("Models", "The models a configuration can run under, each by its handle.") }}
+  {% call section("Models") %}
+  <div class="space-y-2">
+    {% for m in models %}
+    <details class="rounded-lg border border-border/60 bg-background/40 p-3">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ m.name }}</span>
+        <span class="text-muted-foreground">{% if m.facts is none %}no facts{% endif %}</span>
+        {% if m.problem %}<span class="block text-xs text-destructive">{{ m.problem }}</span>{% endif %}</summary>
+      {% if m.facts is not none %}<div class="mt-3">{{ json(m.facts) }}</div>{% endif %}
+    </details>
+    {% endfor %}
+  </div>
+  {% endcall %}
+</div>
+{% endblock %}

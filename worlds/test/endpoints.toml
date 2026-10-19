@@ -5,7 +5,7 @@ host = "fake"
 max_jobs = 4
 
 [endpoint."qwen3-bare@fake"]
-engine = "sha256:d01761603c584e56be48e4eb041a6440b8a6231c43540f6b846ca1bafacb24d4"
+engine = "sha256:84c8924d467906c35e786e2e5a1486f96a595acf86893698dccfa87b6dbde276"
 url = "http://127.0.0.1:12202/v1/"
 host = "fake"
 
@@ -31,6 +31,7 @@ bind = "127.0.0.1"
 
 [host.fake.models]
 "sha256:780333aa42e9a91994cae8bfae86cda9f3837c2252261552c344390c1c7b65a6" = "Qwen/Qwen3-8B-AWQ"
+"sha256:1330a7197bb9b70839a78e0b15beec4b695ca55e105b859446144aa41bdbb89f" = "Qwen/Qwen3-8B-AWQ"
 "sha256:8644ba8ef08ed4c64c5d56e914126bbea75519309a8e6be7370cdb29fab5d685" = "openai/gpt-oss-20b"
 "sha256:4d5ddb6db7a8efb32f73c065efbe270edab574b1d931f64e9e03a1add32d3212" = "test/mistral-7b"
 

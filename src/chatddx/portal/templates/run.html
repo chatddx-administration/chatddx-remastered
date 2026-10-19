@@ -35,7 +35,7 @@
     ("Finished", run.finished_at | when),
     ("Job", job(run.job)),
     ("Configuration", held),
-    ("Endpoint", run.endpoint or "—"),
+    ("Model", (run.model or "—") ~ ("" if run.latest else ", an earlier engine")),
     ("Engine", engine),
     ("Cases", run.cases | length),
     ("Seeds", run.seeds | join(", ")),

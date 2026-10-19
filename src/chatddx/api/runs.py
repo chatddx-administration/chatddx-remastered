@@ -69,7 +69,7 @@ def _new(bench: Bench, given: schemas.NewRun) -> Started:
         variation = bench.variation(
             given.configuration, given.parts.given(), given.head
         )
-        at = bench.at(variation, given.endpoint)
+        at = bench.at(variation, model=given.under)
         return bench.start(
             variation,
             at.name,
@@ -126,9 +126,10 @@ def start(
     status_code=202,
     responses={
         202: {
-            "description": "The run's trial started again with other seeds, as a run "
-            + "of its own, named as the run is, and queued: the worker sends it, "
-            + "finishes it and scores it whoever listens, and its events are at "
+            "description": "The run's skeleton started again over its cases under its "
+            + "handle, at the handle's latest engine, with other seeds, as a run of its "
+            + "own, named as the run is, and queued: the worker sends it, finishes it "
+            + "and scores it whoever listens, and its events are at "
             + "`/api/runs/{run}/events`."
         }
     },
@@ -242,6 +243,7 @@ def _run_of(
     trial = resolve(bench.store.get, started.trial, Trial)
     about = about_of(bench.rows, Subject(run=started.run))
     ran = None if about.varied is None else bench.rows.edit(about.varied)
+    handle, latest = bench.under(trial.engine)
     return schemas.Run(
         id=started.run,
         at=started.at,
@@ -251,6 +253,8 @@ def _run_of(
         started_with=about.started_with,
         engine=trial.engine,
         endpoint=None if started.endpoint is None else started.endpoint.name,
+        model=None if handle is None else handle.name,
+        latest=latest,
         cases=list(trial.cases),
         seeds=list(trial.seeds),
         described=bench.described(started),

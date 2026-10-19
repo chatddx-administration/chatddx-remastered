@@ -9,6 +9,7 @@ from chatddx.catalog import Entry, EntryField, Subject, read, titles
 from chatddx.catalog.families import family_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case, CleanupOp
+from chatddx.factors.engine import model_of
 from chatddx.factors.request import RECIPE_PARTS, Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.ledger import RunStarted
@@ -112,11 +113,19 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         raise NotFound(f"no case {missing[0]} for {seen.person.login}")
     skeleton = resolve(seen.store.get, ran.skeleton, Skeleton)
     about = read.about(seen.rows, Subject(run=run.run))
+    weights = model_of(ran.engine, seen.store.get).digest
+    handle = seen.handle(weights)
+    if handle.weights != weights:
+        raise ValueError(
+            f"run {run.run} ran weights {handle.name} no longer holds: run its "
+            + "configuration, followed, instead"
+        )
+    at = seen.served(handle)
     return _begun(
         seen,
         skeleton,
-        run.endpoint.name,
-        ran.engine,
+        at.name,
+        at.engine,
         list(ran.cases),
         seeds,
         about.name or seen.title(ran.skeleton),
