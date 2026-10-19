@@ -14,7 +14,9 @@ case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's language
    missing is the page, the chunk editors, a few reads from the API, and a look over a chunk nobody has stored.
 2. **Decided: the takes on E1 to E8** (see "The landscape"), the name, Refine, and the chunk editors first, apart
    from Refine. The order of the steps is suggested, and the agent's to change (see "Steps").
-3. **Nothing is built.** Step 1 is `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and
+3. **Decided: a set is held to one language**, so that a variation's start over it is one run, never a run per
+   language (see "What the docs hold it to").
+4. **Nothing is built.** Step 1 is `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and
    C2 ("Comparing variations").
 
 ## What the researcher is here to do
@@ -51,8 +53,9 @@ From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned
   address, never a record.
 - **A person's runs are their own** (`src/chatddx/bench/seen.py:Seen.runs`), **scored against the expectations they
   hold** (`docs/bench.md`, "What a person is scored against"): a researcher who holds none has empty columns.
-- **A start is a run per language** (`docs/bench.md`, "Translations"), so a set of cases in two languages gives a
-  variation two runs (see "Open").
+- **A start is a run per language** (`docs/bench.md`, "Translations"), so a set is held to one language: its cases
+  are those of the families picked or tagged that are written in it, the configuration's own by default. A variation
+  whose translations don't cover it runs nothing over the set, and says so.
 - **Judged views cost judge calls**, through the worker (`docs/runner.md`, "Judges").
 
 ## The page
@@ -60,11 +63,11 @@ A sketch, at a wide screen, in the review's layout: two columns are the main act
 and how its variations fare; the lineage is a drawer at the left, folded to a rail.
 
 ```
-┌▲┬ lines-instructed · v3 of 3 ◀ ▶ ──────────┬ on qwen3@fake · tag sample · seed 7 ──────────────────────┐
+┌▲┬ lines-instructed · v3 of 3 ◀ ▶ ──────────┬ on qwen3@fake · in en · tag sample · seed 7 ──────────────┐
 │L│ instructions  clinician            ✎     │              lines-instructed  +prompt=terse  lines-guided │
 │i│ prompt        case        ▾        ✎     │ lines first  0.80 (9)          0.70 (9)       —            │
 │n│ output        lines       ▾        ✎     │       recall 0.60 (9)          0.65 (9)       —            │
-│e│ sampling      greedy      ▾        ✎     │ in sv        2 runs folded                                 │
+│e│ sampling      greedy      ▾        ✎     │ at gpt-oss@fake  1 run, apart                             │
 │a│ ▸ the request · lints · reach            │ only here: 1 case                                         │
 │g│ [Try it]  tried: +prompt=terse           │ [Run 1 not run]  [Score 1 left]                           │
 │e│ [Save] a fork of yours, "lines-terse"    │                                                           │
@@ -78,12 +81,12 @@ and how its variations fare; the lineage is a drawer at the left, folded to a ra
   each part's editor in place (✎). Under it the request, the lints and each scorer view's reach, folded; **Try it**,
   which adds the variation to the trying list; and saving, with the line saying where it goes.
 - **How they fare**: a column per variation, the configuration's own first, then the trying list, then the forks;
-  a row per scorer view with its mean over the items the columns share and their count; the runs in another language,
-  at another engine or over other cases folded apart; what isn't run or isn't scored, with **Run** and **Score**.
+  a row per scorer view with its mean over the items the columns share and their count; the runs at another engine
+  or over other cases folded apart; what isn't run or isn't scored, with **Run** and **Score**.
 
-The address keeps what is set: `/refine/{configuration}?endpoint=…&tag=…&family=…&seed=…&head=…&try=…`, a `try` per
-variation tried, its parts as `PART:DIGEST` joined by commas. `/refine` leads to the person's first configuration, as
-`/translate` does, and the nav says Refine.
+The address keeps what is set: `/refine/{configuration}?endpoint=…&language=…&tag=…&family=…&seed=…&head=…&try=…`,
+a `try` per variation tried, its parts as `PART:DIGEST` joined by commas. `/refine` leads to the person's first
+configuration, as `/translate` does, and the nav says Refine.
 
 ## The landscape
 Decided: the take on each.
@@ -187,8 +190,8 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
     Sensitive in nothing it gives, as a run's scores aren't.
 - **The page** (`src/chatddx/portal/refine.py`, `templates/refine.html`): the lineage, the configuration with its
   versions stepped through, and how they fare on the set, the configuration's own and each fork's latest runs by
-  skeleton (`Seen.runs(reaching=…)`) at the set's endpoint's engine, compared by `GET /api/runs/compared`. Nothing is
-  written from it yet.
+  skeleton (`Seen.runs(reaching=…)`) at the set's endpoint's engine and in its language, compared by
+  `GET /api/runs/compared`. Nothing is written from it yet.
 - **`/runs/compare?run=…`** (C1), the same table over runs picked on the runs page.
 - **Tests**: the test World's scripted runs gain runs to compare, over the same cases at `qwen3@fake`: `lines`, and
   `lines` with a part set, and `lines-guided`, a fork, named in `src/chatddx/test/world.py`
@@ -200,8 +203,8 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   one variation each (C2). Each tried variation is a column, said **not run** until it is.
 - **Run**: a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs it starts, what each
   sets, what the gate refuses and why, the cases, and each scorer view's reach; then a `POST /api/runs` per variation
-  over the set, a run per language each. A variation that replaces the model runs at the endpoint serving it, and its
-  column is apart.
+  over the set, one run each. A variation that replaces the model runs at the endpoint serving it, and its column is
+  apart.
 - **While they run**: each column follows its runs (`frontend/src/lib/runs/`), and the comparison reloads once they
   are done. **Score** queues what is left to score.
 - **Save** a tried variation: a fork, or a version of the person's own, as the variation's page saves it, which then
@@ -243,8 +246,6 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   (`agents/wip-portal.md`, "Comparing variations", Open).
 - **Several runs of one variation on the set**: the latest is compared and the others folded; whether replicates in
   separate runs ever pool waits for "Aggregation".
-- **The set's cases in two languages**: the page folds the runs in a language other than the configuration's own
-  apart; a column per variation and language, or the set held to one language, would do instead.
 
 ## Taken from the backlog
 
