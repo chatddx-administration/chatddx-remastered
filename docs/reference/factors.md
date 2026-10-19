@@ -1495,16 +1495,11 @@ Raises:
 * `get: Resolver`
 * ∟`list[str]`
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 ## Trial.item_keys `@property`
 `src/chatddx/factors/trial.py:Trial.item_keys`
 
 * ∟`list[tuple[str, int]]`
 
-```
 ## TrialRef
 `src/chatddx/factors/trial.py:TrialRef`
 

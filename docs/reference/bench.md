@@ -48,13 +48,7 @@ Raises:
 
 Raises:
 1. `ValueError`: "{digest} isn't a stored {what}" (through `_stored_parts`)
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 2. `ValueError`: "a person doesn't write {component.kind_name} components"
-```
-2. `ValueError`: "a person doesn't write {kind} components"
 
 ## Bench.edit
 `src/chatddx/bench/components.py:edit`
@@ -141,23 +135,12 @@ Raises:
 * ∟`Written`
 
 Raises:
-```
-SIGN-OFF: REPLACE
-replace the 6 lines below with these
----
 1. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
 2. `ValueError`: "only a scorer's views and resources have labels" (through `_configured`)
 3. `ValueError`: "{digest} isn't a stored {what}" (through `_stored_parts`)
 4. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
 5. `ValueError`: "{kind} components have no language of their own" (through `_written`)
 6. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
-```
-1. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
-2. `ValueError`: "{kind} components have no language of their own" (through `_written`)
-3. `ValueError`: "only a scorer's views and resources have labels" (through `_written`)
-4. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
-5. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
-6. `ValueError`: "{digest} isn't a stored {what}" (through `_stored_parts`)
 
 ## Bench.proposal
 `src/chatddx/bench/following.py:proposal`
@@ -473,18 +456,8 @@ Raises:
 * `edit: Edit`
 * `about: About`
 * `origin: int | None`
-```
-SIGN-OFF: REMOVE
-remove the line below
-```
-* `depth: int`
 * `divergence: Divergence | None`
 * `moved_on: bool`
-```
-SIGN-OFF: REMOVE
-remove the line below
-```
-* `behind: list[str]`
 
 ## KINDS
 `src/chatddx/bench/model.py:KINDS`
