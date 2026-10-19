@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+export const FIELD = "h-8 rounded-md border border-input bg-transparent px-2";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

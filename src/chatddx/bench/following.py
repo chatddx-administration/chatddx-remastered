@@ -77,7 +77,7 @@ def lineage(seen: Seen, thread: int) -> list[Kin]:
         first = up
     found: list[Kin] = []
 
-    def down(at: int, origin: int | None, depth: int) -> None:
+    def down(at: int, origin: int | None) -> None:
         edit, about = seen.thread(at, deleted=True)
         diverged = threads.divergence(seen.rows, at)
         moved_on = (
@@ -85,14 +85,12 @@ def lineage(seen: Seen, thread: int) -> list[Kin]:
             and diverged.moved
             and _shown(seen, diverged.origin_head.thread)
         )
-        found.append(
-            Kin(edit, about, origin, depth, diverged, moved_on, _behind(seen, at))
-        )
+        found.append(Kin(edit, about, origin, diverged, moved_on))
         for fork in sorted(threads.forks(seen.rows, at)):
             if _shown(seen, fork):
-                down(fork, at, depth + 1)
+                down(fork, at)
 
-    down(first, None, 0)
+    down(first, None)
     return found
 
 
@@ -102,18 +100,6 @@ def _shown(seen: Seen, thread: int) -> bool:
     except NotFound:
         return False
     return True
-
-
-def _behind(seen: Seen, thread: int) -> list[str]:
-    held = [
-        (b.path, b.head.thread)
-        for b in threads.behind(seen.rows, thread)
-        if b.head is not None
-    ]
-    known = read.abouts(seen.rows, [Subject(thread=t) for _, t in held])
-    return sorted(
-        {p for p, t in held if sees(seen.person.id, known[Subject(thread=t)])}
-    )
 
 
 def moved(seen: Seen, thread: int) -> Moved | None:

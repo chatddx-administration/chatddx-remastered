@@ -63,6 +63,14 @@ def comparing(
         (i for i, v in enumerate(compared.views) if f"{v.scorer}:{v.view}" == picked),
         None,
     )
+    differ = [
+        said
+        for said, held in (
+            ("at different engines", {r.engine for r in compared.runs}),
+            ("in different languages", {r.language for r in compared.runs}),
+        )
+        if len(held) > 1
+    ]
     return page(
         request,
         "compare.html",
@@ -71,6 +79,7 @@ def comparing(
         titles={case: bench.title(case) for case in cases},
         by=picked,
         at=at,
+        differ=differ,
         kept="?" + urlencode([("run", str(r)) for r in run]),
     )
 

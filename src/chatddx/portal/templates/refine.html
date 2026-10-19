@@ -1,20 +1,8 @@
 {% extends "base.html" %}
-{% from "macros.html" import drawer, opened, pane, rail, upright %}
+{% from "macros.html" import drawer, mean, named, opened, pane, rail, upright with context %}
 
 {% set link = "text-primary hover:underline" %}
 {% set field = "h-8 rounded-md border border-input bg-transparent px-2" %}
-
-{% macro named(t) -%}
-{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
-{%- endmacro %}
-
-{% macro parted(path) -%}
-{{ path | replace("/recipe/", "") | replace("/", "") | replace("_", " ") }}
-{%- endmacro %}
-
-{% macro mean(value) -%}
-{{ "—" if value is none else "%.2f" | format(value) }}
-{%- endmacro %}
 
 {% block title %}{{ "Refine · " ~ named(configuration) if configuration else "Refine" }} · ChatDDX{% endblock %}
 {% block main %}
@@ -28,27 +16,25 @@
 
   {% call drawer("lineage", "Lineage") %}
   <summary class="{{ rail }}">
-    <span class="{{ upright }}">Lineage <span class="font-normal text-muted-foreground">{{ lineage | rejectattr("deleted") | list | length }}</span></span>
+    <span class="{{ upright }}">Lineage <span class="font-normal text-muted-foreground">{{ lineage | length }}</span></span>
   </summary>
   <div class="{{ opened }} xl:w-72">
     <ol class="space-y-0.5 text-sm">
-      {% for k in lineage if not k.deleted %}
-      <li style="padding-left: {{ k.depth }}rem">
+      {% for k, depth in lineage %}
+      <li style="padding-left: {{ depth }}rem">
         <a href="/refine/{{ k.id }}{{ kept }}"{% if k.id == configuration.id %} aria-current="page"{% endif %}
            class="block rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if k.id == configuration.id else 'hover:bg-muted' }}">
           <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(k) }}</span><span class="font-mono text-xs text-muted-foreground">{{ mean(mean_of.get(k.id)) }}</span></span>
-          {% if k.varies or k.moved_on or k.behind %}
+          {% if k.varies or k.moved_on %}
           <span class="block text-xs text-muted-foreground">
             {%- if k.varies %}varies {{ k.varies | map(attribute="path") | map("replace", "/recipe/", "") | map("replace", "_", " ") | join(", ") }}{% endif %}
             {%- if k.moved_on %}{{ " · " if k.varies }}its origin moved on{% endif %}
-            {%- if k.behind %}{{ " · " if k.varies or k.moved_on }}behind: {% for b in k.behind %}{{ parted(b) }}{{ ", " if not loop.last }}{% endfor %}{% endif %}
           </span>
           {% endif %}
         </a>
       </li>
       {% endfor %}
     </ol>
-    {% set gone = lineage | selectattr("deleted") | list %}
     {% if gone %}
     <details class="mt-3 text-sm">
       <summary class="cursor-pointer text-xs text-muted-foreground">Deleted, yours ({{ gone | length }})</summary>
@@ -136,16 +122,12 @@
       <tbody>
         {% if compared %}
         {% set kept_by = here ~ (kept or "?") ~ ("&" if kept else "") %}
-        {% for v in compared.views %}
-        {% set key = v.scorer ~ ":" ~ v.view %}
+        {% for key, v, fares in rows %}
         <tr class="border-t border-border/60{{ ' bg-primary/5' if key == by }}">
           <th scope="row" class="py-1.5 pr-4 text-left align-top font-medium"><a class="{{ 'text-primary' if key == by else 'hover:underline' }}" href="{{ kept_by }}by={{ key | urlencode }}">{{ v.name }} · {{ v.label }}</a></th>
-          {% set at_run = namespace(i=0) %}
-          {% for names, run in columns %}
+          {% for fare in fares %}
           <td class="py-1.5 pr-4 align-top font-mono">
-            {%- if run -%}
-            {{ mean(v.means[at_run.i]) }} <span class="text-xs text-muted-foreground">({{ v.counts[at_run.i] }})</span>
-            {%- set at_run.i = at_run.i + 1 -%}
+            {%- if fare -%}{{ mean(fare[0]) }} <span class="text-xs text-muted-foreground">({{ fare[1] }})</span>
             {%- else -%}<span class="text-muted-foreground">—</span>{%- endif -%}
           </td>
           {% endfor %}
@@ -165,10 +147,6 @@
     <ul class="mt-1 space-y-0.5 text-xs">{% for c in compared.apart %}<li>{{ titles.get(c.case, c.case | short) }}: {{ c.runs | length }} of {{ compared.runs | length }}</li>{% endfor %}</ul>
   </details>
   {% endif %}
-  {% endif %}
-  {% set apart = namespace(n=0) %}{% for n in elsewhere %}{% set apart.n = apart.n + n %}{% endfor %}
-  {% if apart.n %}
-  <p class="mt-3 text-xs text-muted-foreground">{{ apart.n }} other run{{ "" if apart.n == 1 else "s" }} of theirs went elsewhere: at another engine, in another language, or over other cases. Their configurations' pages list them.</p>
   {% endif %}
   {% endif %}
   {% endcall %}

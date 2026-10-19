@@ -143,10 +143,8 @@ class Kin:
     edit: Edit
     about: About
     origin: int | None
-    depth: int
     divergence: Divergence | None
     moved_on: bool
-    behind: list[str]
 
 
 @dataclass(frozen=True)

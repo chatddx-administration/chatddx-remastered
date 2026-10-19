@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { type Body, FIELD, numberOf, type Tool, typedOf } from "../chunks";
+  import type { Schemas } from "$lib/api/client";
+  import { FIELD } from "$lib/utils";
+  import { choicesOf } from "$lib/variation/logic";
+  import { type Body, numberOf, typedOf } from "../chunks";
 
-  let { body, set, tools }: { body: Body; set: (body: Body) => void; tools: Tool[] } = $props();
+  let { body, set, tools, me }: { body: Body; set: (body: Body) => void; tools: Schemas["Thread"][]; me: string } = $props();
 
   const held = $derived((Array.isArray(body.tools) ? body.tools : []) as string[]);
-  const offered = $derived([...tools, ...held.filter((d) => !tools.some((t) => t.digest === d)).map((d) => ({ digest: d, name: `${d.slice(7, 19)}, an earlier version` }))]);
+  const offered = $derived(choicesOf(tools, me, held.map((digest) => ({ digest, title: null }))));
 
   function picked(digest: string, on: boolean): void {
     set({ ...body, tools: on ? [...held, digest] : held.filter((d) => d !== digest) });
@@ -14,8 +17,8 @@
 <div class="space-y-3 text-sm">
   <fieldset class="space-y-1">
     <legend class="font-medium">Its tools</legend>
-    {#each offered as t (t.digest)}
-      <label class="flex items-center gap-2"><input type="checkbox" checked={held.includes(t.digest)} onchange={(e) => picked(t.digest, e.currentTarget.checked)} /> {t.name}</label>
+    {#each offered as c (c.digest)}
+      <label class="flex items-center gap-2"><input type="checkbox" checked={held.includes(c.digest)} onchange={(e) => picked(c.digest, e.currentTarget.checked)} /> {c.text}</label>
     {:else}
       <p class="text-muted-foreground">No tool you see: tools are shipped by developers.</p>
     {/each}

@@ -75,7 +75,9 @@ def test_a_chunk_s_page_edits_it_in_a_form_of_its_kind(signed: TestClient) -> No
         "name": OFF,
         "kind": "chunk",
         "chunk": "chunk.reasoning",
+        "languaged": False,
         "tools": [],
+        "me": "alice",
         "body": body,
         "language": None,
     }
@@ -84,20 +86,14 @@ def test_a_chunk_s_page_edits_it_in_a_form_of_its_kind(signed: TestClient) -> No
     assert thread_props(page)["editor"]["mode"] == "fork"
 
     lines = thread(signed, "output", LINES)
-    assert (
-        thread_props(shown(signed, f"/threads/{lines['id']}"))["editor"]["language"]
-        == lines["language"]
-        == "en"
-    )
+    given = thread_props(shown(signed, f"/threads/{lines['id']}"))["editor"]
+    assert given["languaged"]
+    assert given["language"] == lines["language"] == "en"
     toolset = signed.get(
         "/api/threads", params={"kind": "toolset", "owner": "alice"}
     ).json()[0]
     tools = thread_props(shown(signed, f"/threads/{toolset['id']}"))["editor"]["tools"]
-    listed = signed.get("/api/threads", params={"kind": "tool"}).json()
-    assert len(listed) > len(tools)
-    assert sorted(t["digest"] for t in tools) == sorted(
-        {t["head"]["digest"] for t in listed}
-    )
+    assert tools == signed.get("/api/threads", params={"kind": "tool"}).json()
 
 
 @pytest.mark.slow
@@ -118,7 +114,9 @@ def test_a_chunk_is_begun_from_the_library(signed: TestClient) -> None:
         "language": None,
         "kind": "chunk",
         "chunk": "chunk.sampling",
+        "languaged": False,
         "tools": [],
+        "me": "alice",
     }
     for kind in ("translations", "tool", "stack"):
         assert signed.get(f"/library/new?kind={kind}").status_code == 404

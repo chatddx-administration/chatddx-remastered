@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { FIELD } from "$lib/utils";
   import SettingsTable from "../SettingsTable.svelte";
-  import { type Body, EFFORTS, FIELD, LEVELS, numberOf, typedOf } from "../chunks";
+  import { type Body, EFFORTS, LEVELS, numberOf, typedOf } from "../chunks";
 
   let { body, set }: { body: Body; set: (body: Body) => void } = $props();
 

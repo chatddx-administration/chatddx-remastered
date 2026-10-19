@@ -344,7 +344,6 @@ class Kin(Thread):
     origin: int | None = Field(
         description="the thread it is a fork of; null for the first of the lineage"
     )
-    depth: int = Field(description="how many forks down from the first it is")
     base: Edit | None = Field(
         description="a fork's: the version of its origin it is compared with"
     )
@@ -352,9 +351,6 @@ class Kin(Thread):
     moved_on: bool = Field(
         description="a fork's: its origin has moved on since its base, so following it "
         + "is proposed"
-    )
-    behind: list[str] = Field(
-        description="the references of its head whose threads have moved on, by path"
     )
     deleted: bool
 
@@ -815,21 +811,17 @@ class ComparedView(_Schema):
     view: int
     label: str
     means: list[float | None] = Field(
-        description="each run's mean over the shared items it has a value for, in the "
-        + "order the runs are given"
+        description="each run's mean over the items it has a value for, in the order "
+        + "the runs are given"
     )
-    counts: list[int] = Field(
-        description="how many of the shared items each run has a value for"
+    values: list[list[float | None]] = Field(
+        description="each run's value for each item, in the order the items are"
     )
 
 
-class ComparedItem(_Schema):
+class ItemKey(_Schema):
     case: str
     replicate: int
-    values: list[list[float | None]] = Field(
-        description="a value per run, in the order the runs are given, for each view in "
-        + "the order the views are"
-    )
 
 
 class HeldBySome(_Schema):
@@ -842,9 +834,7 @@ class Compared(_Schema):
     views: list[ComparedView] = Field(
         description="each view of each scorer that scored one of the runs, by its name"
     )
-    items: list[ComparedItem] = Field(
-        description="the items every run's trial holds, by case and replicate"
-    )
+    items: list[ItemKey] = Field(description="the items every run's trial holds")
     apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")
 
 

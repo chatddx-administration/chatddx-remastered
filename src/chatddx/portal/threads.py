@@ -6,23 +6,19 @@ from fastapi.responses import RedirectResponse
 from chatddx.api import schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
+from chatddx.catalog import LANGUAGE_KINDS
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import CHUNK_PARTS, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema
 
-from .pages import BenchDep, page, within
+from .pages import BenchDep, own_first, page, within
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
 CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
 
 router = APIRouter()
-
-
-def _listed(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:
-    login = bench.person.login
-    return sorted(found, key=lambda t: (t.owner != login, (t.name or t.title).lower()))
 
 
 @router.get("/library")
@@ -39,7 +35,7 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
         listed=[("/configurations", "configurations", False)]
         + [(f"/library?kind={w}", w.replace("_", " "), w == kind) for w in WORDS],
         word=kind,
-        threads=_listed(bench, api.threads(bench, kind)),
+        threads=own_first(bench, api.threads(bench, kind)),
         written=bool(set(KINDS[kind]) & WRITTEN),
         begun=kind in CHUNKS,
         deleted=deleted,
@@ -162,14 +158,13 @@ def _editor(
 
 
 def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
-    tools: dict[str, str] = {}
-    if kind == "chunk.toolset":
-        for t in _listed(bench, api.threads(bench, "tool")):
-            _ = tools.setdefault(t.head.digest, t.name or t.title)
+    tools = api.threads(bench, "tool") if kind == "chunk.toolset" else []
     return {
         "kind": "chunk",
         "chunk": kind,
-        "tools": [{"digest": d, "name": name} for d, name in tools.items()],
+        "languaged": kind in LANGUAGE_KINDS,
+        "tools": [t.model_dump(mode="json") for t in tools],
+        "me": bench.person.login,
     }
 
 

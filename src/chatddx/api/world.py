@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import JsonValue
 
-from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
+from chatddx.bench import KINDS, WRITTEN, Bench, Checked, NotFound
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
 from chatddx.factors.select import select
@@ -102,17 +102,16 @@ def kinds(_: BenchDep) -> list[schemas.Kind]:
 @router.post("/components/check")
 def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
     with refused(LookupError):
-        checked = bench.check(component_of(given))
-    return schemas.Checked(
-        digest=checked.digest,
-        findings=[schemas.Finding.of(f) for f in checked.findings],
-    )
+        return _checked(bench.check(component_of(given)))
 
 
 @router.post("/recipes/check")
 def check_recipe(bench: BenchDep, given: schemas.RecipeBody) -> schemas.Checked:
     with refused(LookupError):
-        checked = bench.check(Recipe.model_validate(given))
+        return _checked(bench.check(Recipe.model_validate(given)))
+
+
+def _checked(checked: Checked) -> schemas.Checked:
     return schemas.Checked(
         digest=checked.digest,
         findings=[schemas.Finding.of(f) for f in checked.findings],

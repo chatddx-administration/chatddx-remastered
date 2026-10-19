@@ -14,11 +14,11 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { api, why } from "$lib/api/client";
   import { Button } from "$lib/components/ui/button";
-  import { FIELD } from "$lib/editors/chunks";
   import Findings from "$lib/editors/Findings.svelte";
-  import { LAYOUT, type Layout, missing, type Part, PARTS, recipeOf } from "$lib/editors/recipe";
+  import { LAYOUT, type Layout, missing, recipeOf } from "$lib/editors/recipe";
   import { type Checked, written } from "$lib/editors/writing";
-  import { choicesOf } from "$lib/variation/logic";
+  import { FIELD } from "$lib/utils";
+  import { choicesOf, type Part, PARTS } from "$lib/variation/logic";
 
   let { props }: { props: RecipeProps } = $props();
   const given = untrack(() => props);
@@ -31,7 +31,7 @@
   let problem = $state<string | null>(null);
   let asked = 0;
 
-  const lacking = $derived(missing(picks));
+  const lacking = $derived(missing(picks, given.optional));
   const recipe = $derived(recipeOf(given.purpose, picks, layout));
 
   $effect(() => {

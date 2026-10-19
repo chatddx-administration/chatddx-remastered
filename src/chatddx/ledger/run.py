@@ -159,11 +159,7 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     if len(set(probes)) != len(probes):
         raise StructuralError("duplicate canary calls")
 
-    expected = {
-        ItemKey(case=c, replicate=r)
-        for c in trial.cases
-        for r in range(len(trial.seeds))
-    }
+    expected = {ItemKey(case=c, replicate=r) for c, r in trial.item_keys}
     keys = [i.key for i in run.items]
     if stray := set(keys) - expected:
         raise StructuralError(f"run items outside the trial: {sorted(map(str, stray))}")

@@ -18,7 +18,7 @@ from chatddx.factors.request import (
     untranslated,
 )
 
-from .pages import BenchDep, page
+from .pages import BenchDep, own_first, page
 
 router = APIRouter()
 
@@ -129,9 +129,7 @@ def _regional(own: str | None, going: set[str], families: set[str]) -> list[str]
 
 
 def _listed(bench: Bench, purpose: Purpose) -> list[schemas.Thread]:
-    login = bench.person.login
-    found = api.threads(bench, "configuration", purpose=purpose)
-    return sorted(found, key=lambda t: (t.owner != login, t.name or t.title))
+    return own_first(bench, api.threads(bench, "configuration", purpose=purpose))
 
 
 def _marks(bench: Bench, t: schemas.Thread, families: set[str]) -> dict[str, int]:

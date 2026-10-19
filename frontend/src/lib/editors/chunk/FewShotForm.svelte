@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { type Body, FIELD, moved } from "../chunks";
+  import { FIELD } from "$lib/utils";
+  import { type Body, moved } from "../chunks";
 
   type Example = { role: string; content: string };
 

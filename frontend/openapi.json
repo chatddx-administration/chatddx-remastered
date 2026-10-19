@@ -3140,11 +3140,11 @@
           },
           "items": {
             "items": {
-              "$ref": "#/components/schemas/ComparedItem"
+              "$ref": "#/components/schemas/ItemKey"
             },
             "type": "array",
             "title": "Items",
-            "description": "the items every run's trial holds, by case and replicate"
+            "description": "the items every run's trial holds"
           },
           "apart": {
             "items": {
@@ -3164,44 +3164,6 @@
           "apart"
         ],
         "title": "Compared"
-      },
-      "ComparedItem": {
-        "properties": {
-          "case": {
-            "type": "string",
-            "title": "Case"
-          },
-          "replicate": {
-            "type": "integer",
-            "title": "Replicate"
-          },
-          "values": {
-            "items": {
-              "items": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": "array"
-            },
-            "type": "array",
-            "title": "Values",
-            "description": "a value per run, in the order the runs are given, for each view in the order the views are"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "case",
-          "replicate",
-          "values"
-        ],
-        "title": "ComparedItem"
       },
       "ComparedView": {
         "properties": {
@@ -3234,15 +3196,25 @@
             },
             "type": "array",
             "title": "Means",
-            "description": "each run's mean over the shared items it has a value for, in the order the runs are given"
+            "description": "each run's mean over the items it has a value for, in the order the runs are given"
           },
-          "counts": {
+          "values": {
             "items": {
-              "type": "integer"
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
             },
             "type": "array",
-            "title": "Counts",
-            "description": "how many of the shared items each run has a value for"
+            "title": "Values",
+            "description": "each run's value for each item, in the order the items are"
           }
         },
         "additionalProperties": false,
@@ -3253,7 +3225,7 @@
           "view",
           "label",
           "means",
-          "counts"
+          "values"
         ],
         "title": "ComparedView"
       },
@@ -4020,6 +3992,25 @@
         ],
         "title": "ItemDetail"
       },
+      "ItemKey": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate"
+        ],
+        "title": "ItemKey"
+      },
       "JsonValue": {},
       "Kin": {
         "properties": {
@@ -4104,11 +4095,6 @@
             "title": "Origin",
             "description": "the thread it is a fork of; null for the first of the lineage"
           },
-          "depth": {
-            "type": "integer",
-            "title": "Depth",
-            "description": "how many forks down from the first it is"
-          },
           "base": {
             "anyOf": [
               {
@@ -4133,14 +4119,6 @@
             "title": "Moved On",
             "description": "a fork's: its origin has moved on since its base, so following it is proposed"
           },
-          "behind": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Behind",
-            "description": "the references of its head whose threads have moved on, by path"
-          },
           "deleted": {
             "type": "boolean",
             "title": "Deleted"
@@ -4160,11 +4138,9 @@
           "translated",
           "head",
           "origin",
-          "depth",
           "base",
           "varies",
           "moved_on",
-          "behind",
           "deleted"
         ],
         "title": "Kin"

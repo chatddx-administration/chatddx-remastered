@@ -232,7 +232,8 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
 - **Follow its origin** from the lineage, as the configuration's page offers it.
 - **Following a part that moved on** (see "Taken from the backlog"): the bench follows each recipe part that moved on,
   not only `/facts` and `/recipe/model` (`src/chatddx/bench/following.py:_moved`), offered per part in the lineage and
-  on the configuration's page.
+  on the configuration's page. The lineage takes back the references of each head whose threads have moved on, pruned
+  until a page reads them (step 2, "Reduced").
 - **Notes** (see "Taken from the backlog", decided): an edit carries an optional note, a new column of `catalog.edit`
   (a migration, `docs/migrations.md`); the API's edits and forks take it, saving offers it, and the versions show it
   with who wrote the version and when. Who changed an entry, a label or a language, and when, are shown where they
@@ -254,8 +255,8 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   - `TextSegments.svelte` is imported from `lib/scorer/`, where the judge's texts have it, rather than moved;
   - a settings table, shared by passthrough and reasoning (`SettingsTable.svelte`), reads a value as JSON where it is
     JSON and else as a text, and shows a text that would read as JSON quoted;
-  - a toolset's tools are offered one per digest, the person's own name first, since a giftbag's forks share their
-    origins' digests;
+  - a toolset's tools are offered one per digest, as the variation's pickers offer them
+    (`frontend/src/lib/variation/logic.ts:choicesOf`), since a giftbag's forks share their origins' digests;
   - **As JSON**, beside every form, edits the whole chunk, for what a form doesn't say.
 
   A text kind's language is offered from the head's, and sent with the save (`writing.ts:saved` takes a language). A
@@ -285,18 +286,18 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
 ### Step 2: the API's reads, and the page read only
 - **The API**, suggested to `docs/api.md` as `AGENT` blocks:
   - `GET /api/threads/{id}/lineage` (`src/chatddx/api/threads.py:lineage`, `Bench.lineage` in
-    `src/chatddx/bench/following.py`), as planned, with each thread's `origin` and `depth` to draw it by. Its origin
-    has moved on only when the person sees the origin, a reference is behind only when they see the thread that
-    moved on, and a deleted thread is there only for its owner.
-  - `GET /api/runs/compared?run=…` (`src/chatddx/api/runs.py:compared`), up to twenty runs, as planned: items by
-    case and replicate, under each run's latest score under each scorer, and cases by digest, as the runs give them.
+    `src/chatddx/bench/following.py`), as planned, with each thread's `origin` to draw it by. Its origin has moved on
+    only when the person sees the origin, and a deleted thread is there only for its owner.
+  - `GET /api/runs/compared?run=…` (`src/chatddx/api/runs.py:compared`), up to twenty runs, as planned: the items
+    every trial holds, by case and replicate (`src/chatddx/factors/trial.py:Trial.item_keys`, which the ledger's
+    expected items read too), each view's values per run and item and its mean per run, under each run's latest score
+    under each scorer, and cases by digest, as the runs give them.
 - **The page** (`src/chatddx/portal/refine.py`, `templates/refine.html`; the `refine` island remembers the drawer):
   - **Its columns**: the version shown, then each other configuration of its lineage, the person's own first.
     Configurations holding one skeleton share a column ("lines-instructed = archive/lines-instructed"), since a fork
     that varies nothing holds its origin's; a deleted one has none.
   - **A column's run** is the person's latest reaching its skeleton (`GET /api/runs?reaching=`) at the set's
-    endpoint's engine, in the set's language, and, when tags or families narrow the set, over its cases only. The
-    rest are counted as gone elsewhere.
+    endpoint's engine, in the set's language, and, when tags or families narrow the set, over its cases only.
   - **The set**: the endpoint, the one serving the model when only one does, else picked; the language, the
     configuration's own unless picked; tags from a form, and families from the address.
   - **The lineage** is sorted within a level by the view `by` names (`scorer:view`), by default the first with a
@@ -304,7 +305,8 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   - A judge configuration isn't found here: a judge isn't run on cases.
 - **`/runs/compare?run=…`** (C1; `src/chatddx/portal/runs.py:comparing`, `templates/compare.html`): the runs ticked
   on the runs page or a configuration's page (`macros.html:runs_table`, whose checkboxes join a form of their own), a
-  mean per view and run, and, under the view `by` names, each item.
+  mean per view and run, and, under the view `by` names, each item; runs at different engines or in different
+  languages are said not to be like for like.
 - **Tests**: the test World's scripted runs gain `instructed`, `instructed-greedy` and `guided`
   (`src/chatddx/test/world.py:COMPARED`), over `crlf` and `bom` at `qwen3@fake`, `lines-instructed`'s lineage rather
   than `lines`', which has no fork; each answers both cases alike, since a run doesn't send its cases in the order a
@@ -317,7 +319,18 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   trying list (step 3) shows a variation's.
 - **Families** narrow the set from the address only; the form offers tags.
 - **Means only**, over the shared items, as "Aggregation" (`docs/backlog.md`) waits.
-- **A lineage costs a few queries per thread**: its title, what it varies and what is behind.
+- **A lineage costs a few queries per thread**: its title and what it varies.
+
+#### Reduced
+A pass over the branch against main (`agents/reduce.md`):
+- **Pruned**: the lineage's `depth`, which the page counts from the origins, and `behind`, which no page read and step
+  5 brings back; the counts of `GET /api/runs/compared`, counted from its values; the runs Refine counted as gone
+  elsewhere.
+- **Consolidated**: `Bench.check` and `new` match on the component; the portal's own-first sorting
+  (`src/chatddx/portal/pages.py:own_first`), its `named` and `mean` macros (`macros.html`), the editors' field class
+  (`frontend/src/lib/utils.ts:FIELD`), the recipe's parts (`logic.ts:PARTS`, with the optional parts from the
+  server), and a chunk's language and tools given with its editor (`src/chatddx/portal/threads.py:_chunk`).
+- **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`.
 
 ## Open
 - **Others' runs**: a person compares their own runs only. A collaborator's runs of a shared configuration aren't

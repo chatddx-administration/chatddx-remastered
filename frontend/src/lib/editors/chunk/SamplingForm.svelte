@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { type Body, FIELD, numberOf, SAMPLED, stopsOf, typedOf } from "../chunks";
+  import { FIELD } from "$lib/utils";
+  import { type Body, numberOf, SAMPLED, stopsOf, typedOf } from "../chunks";
 
   let { body, set }: { body: Body; set: (body: Body) => void } = $props();
 

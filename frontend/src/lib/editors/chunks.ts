@@ -1,10 +1,4 @@
 export type Body = Record<string, unknown>;
-export type Tool = { digest: string; name: string };
-
-export const FIELD = "h-8 rounded-md border border-input bg-transparent px-2";
-
-// Duplication: src/chatddx/catalog/model.py:LANGUAGE_KINDS, those of them a chunk editor writes.
-export const LANGUAGED = new Set(["chunk.instructions", "chunk.few_shot", "chunk.prompt", "chunk.output", "chunk.toolset"]);
 
 // Duplication: src/chatddx/factors/request.py:SLOTS_BY_PURPOSE and INSERTS_BY_KIND.
 export const SLOTS_FOR: Record<string, string[]> = {

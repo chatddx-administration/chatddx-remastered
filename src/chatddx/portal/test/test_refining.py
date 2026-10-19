@@ -84,7 +84,6 @@ def test_a_configuration_s_lineage_fares_side_by_side_on_a_set(
     page = shown(signed, f"/refine/{mine['id']}?endpoint={QWEN}&tag=targets")
     text = said(page)
     assert "not run" in text and "None of them has a run there yet." in text
-    assert "2 other runs of theirs went elsewhere" in text
     assert "Pick an endpoint" in said(shown(signed, f"/refine/{mine['id']}"))
 
 

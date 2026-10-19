@@ -153,18 +153,22 @@ def test_a_lineage_runs_from_the_first_origin_through_every_fork_one_sees(
 ) -> None:
     guided = thread(signed, "configuration", LINES_GUIDED)
     found = signed.get(f"/api/threads/{guided['id']}/lineage").json()
-    assert [(k["owner"], k["name"], k["depth"]) for k in found] == [
-        ("archive", LINES_INSTRUCTED, 0),
-        ("archive", LINES_GUIDED, 1),
-        ("alice", LINES_GUIDED, 2),
-        ("alice", LINES_INSTRUCTED, 1),
+    assert [(k["owner"], k["name"]) for k in found] == [
+        ("archive", LINES_INSTRUCTED),
+        ("archive", LINES_GUIDED),
+        ("alice", LINES_GUIDED),
+        ("alice", LINES_INSTRUCTED),
     ]
     first, archives, mine, instructed = found
     assert (first["origin"], first["base"], first["varies"]) == (None, None, [])
-    assert (archives["origin"], mine["origin"]) == (first["id"], archives["id"])
+    assert (archives["origin"], mine["origin"], instructed["origin"]) == (
+        first["id"],
+        archives["id"],
+        first["id"],
+    )
     assert "/recipe/few_shot" in {v["path"] for v in archives["varies"]}
     assert mine["varies"] == [] and mine["base"]["id"] == archives["head"]["id"]
-    assert not any(k["moved_on"] or k["behind"] or k["deleted"] for k in found)
+    assert not any(k["moved_on"] or k["deleted"] for k in found)
     assert signed.get(f"/api/threads/{instructed['id']}/lineage").json() == found
 
     forked = signed.post(
@@ -179,9 +183,8 @@ def test_a_lineage_runs_from_the_first_origin_through_every_fork_one_sees(
     ).is_success
     now = signed.get(f"/api/threads/{guided['id']}/lineage").json()
     [terse] = [k for k in now if k["id"] == forked["id"]]
-    assert (terse["origin"], terse["depth"], terse["moved_on"], terse["deleted"]) == (
+    assert (terse["origin"], terse["moved_on"], terse["deleted"]) == (
         instructed["id"],
-        2,
         True,
         True,
     )

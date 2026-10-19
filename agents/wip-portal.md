@@ -590,6 +590,13 @@ What the portal needs below its pages that isn't built:
   configuration, which the old bench's `held.py` showed, to the portal; `Bench.runs(reaching=…)` and `Bench.runs(scored_by=…)` cover
   the repl's part of it. The retired sample-data plan wanted the reverse too: every configuration using a component,
   such as an output, which needs a query the catalog doesn't have. Both would show on a thread's page.
+- **Factor constants copied into TypeScript.** The chunk editors spell out what the factors already say: the slots
+  each purpose allows and the inserts a text takes (`frontend/src/lib/editors/chunks.ts:SLOTS_FOR`, `TEXT_INSERTS`;
+  `src/chatddx/factors/request.py:SLOTS_BY_PURPOSE`, `INSERTS_BY_KIND`), the reasoning levels and efforts (`LEVELS`,
+  `EFFORTS`; `src/chatddx/factors/facts.py:Effort`, `src/chatddx/factors/request.py:Reasoning.effort`), and the
+  sampling settings (`SAMPLED`; `src/chatddx/factors/request.py:Sampling`). The levels, efforts and settings are in
+  the kinds' JSON Schemas, which `GET /api/kinds` publishes (W7), and could be read from there; the slots and inserts
+  the schemas don't say, so the server would give them with the editor.
 
 ### What the pages to read leave
 From "What the portal shows", not on the pages yet:

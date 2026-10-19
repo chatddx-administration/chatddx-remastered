@@ -30,6 +30,7 @@
   import { api, why } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
+  import { FIELD } from "$lib/utils";
   import { seedsOf } from "./judging";
 
   let {
@@ -57,7 +58,6 @@
   let asked = 0;
 
   const read = $derived(seedsOf(seeds));
-  const field = "h-8 rounded-md border border-input bg-transparent px-2";
 
   function component(): Component | null {
     const engine = given.endpoints.find((e) => e.name === endpoint)?.engine;
@@ -104,21 +104,21 @@
 <form class="space-y-2 rounded-lg border border-dashed border-border p-2.5" onsubmit={save} aria-label="A new judge">
   <p class="font-medium">A new judge</p>
   <div class="grid gap-2 sm:grid-cols-2">
-    <label class="grid gap-1"><span class="text-muted-foreground">Name</span><input class={field} bind:value={name} /></label>
+    <label class="grid gap-1"><span class="text-muted-foreground">Name</span><input class={FIELD} bind:value={name} /></label>
     <label class="grid gap-1"
       ><span class="text-muted-foreground">Its request, a judge configuration</span>
-      <select class={field} bind:value={configuration}>
+      <select class={FIELD} bind:value={configuration}>
         {#each given.judging as j (j.thread)}<option value={j.digest}>{(j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name}</option>{/each}
       </select></label
     >
     <label class="grid gap-1"
       ><span class="text-muted-foreground">Asked at</span>
-      <select class={field} bind:value={endpoint}>
+      <select class={FIELD} bind:value={endpoint}>
         {#each given.endpoints as e (e.name)}<option value={e.name}>{e.name}</option>{/each}
       </select></label
     >
     <label class="grid gap-1"
-      ><span class="text-muted-foreground">Seeds, a call each</span><input class="{field} font-mono" bind:value={seeds} /></label
+      ><span class="text-muted-foreground">Seeds, a call each</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
     >
   </div>
   {#if typeof read === "string"}<p class="text-destructive">{read}</p>{/if}

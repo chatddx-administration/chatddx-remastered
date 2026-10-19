@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { FIELD, type Row, rowsOf, settingsOf } from "./chunks";
+  import { FIELD } from "$lib/utils";
+  import { type Row, rowsOf, settingsOf } from "./chunks";
 
   let {
     settings,

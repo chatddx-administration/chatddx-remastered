@@ -1,5 +1,6 @@
 <script lang="ts" module>
-  import type { Body, Tool } from "./chunks";
+  import type { Schemas } from "$lib/api/client";
+  import type { Body } from "./chunks";
   import type { Mode } from "./writing";
 
   export type ChunkEditing = {
@@ -11,12 +12,15 @@
     name: string;
     body: Body | null;
     language: string | null;
-    tools: Tool[];
+    languaged: boolean;
+    tools: Schemas["Thread"][];
+    me: string;
   };
 </script>
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import { FIELD } from "$lib/utils";
   import FewShotForm from "./chunk/FewShotForm.svelte";
   import InstructionsForm from "./chunk/InstructionsForm.svelte";
   import OutputForm from "./chunk/OutputForm.svelte";
@@ -25,7 +29,7 @@
   import ReasoningForm from "./chunk/ReasoningForm.svelte";
   import SamplingForm from "./chunk/SamplingForm.svelte";
   import ToolsetForm from "./chunk/ToolsetForm.svelte";
-  import { blank, FIELD, jsonOf, LANGUAGED } from "./chunks";
+  import { blank, jsonOf } from "./chunks";
   import Findings from "./Findings.svelte";
   import Saving from "./Saving.svelte";
   import { type Checked, checked, type Component } from "./writing";
@@ -99,11 +103,11 @@
     ></textarea>
     {#if read && "problem" in read}<p class="text-sm text-destructive">Not JSON: {read.problem}</p>{/if}
   {:else if given.chunk === "chunk.toolset"}
-    <ToolsetForm {body} {set} tools={given.tools} />
+    <ToolsetForm {body} {set} tools={given.tools} me={given.me} />
   {:else if Form}
     <Form {body} {set} />
   {/if}
-  {#if LANGUAGED.has(given.chunk)}
+  {#if given.languaged}
     <label class="grid max-w-xs gap-1 text-sm"
       ><span class="text-muted-foreground">The language its text is written in, such as en</span>
       <input class="{FIELD} font-mono" bind:value={language} autocomplete="off" /></label
@@ -113,7 +117,7 @@
   <Saving
     editing={given}
     {component}
-    language={() => (LANGUAGED.has(given.chunk) && language.trim() ? language.trim() : null)}
+    language={() => (given.languaged && language.trim() ? language.trim() : null)}
     unchanged={found !== null && "digest" in found && found.digest === digest}
     blocked={found === null || "problem" in found || (read !== null && "problem" in read)}
   />

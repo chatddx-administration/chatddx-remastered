@@ -158,6 +158,12 @@ Raises:
 
 * `runs: list[Run]`
 * `views: list[ComparedView] = Field(…)`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `items: list[ItemKey] = Field(description="the items every run's trial holds")`
+```
 * `items: list[ComparedItem] = Field(…)`
 * `apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")`
 
@@ -168,6 +174,10 @@ Raises:
 * `run: Annotated[list[UUID], Query(min_length=1, max_length=20, description='the runs, in order')]`
 * ∟`schemas.Compared`
 
+```
+SIGN-OFF: REMOVE
+remove the 7 lines below
+```
 ## ComparedItem `(_Schema)`
 `src/chatddx/api/schemas.py:ComparedItem`
 
@@ -183,6 +193,12 @@ Raises:
 * `view: int`
 * `label: str`
 * `means: list[float | None] = Field(…)`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `values: list[list[float | None]] = Field(…)`
+```
 * `counts: list[int] = Field(…)`
 
 ## Component `(_Schema)`
@@ -557,6 +573,17 @@ add these lines here
 `src/chatddx/api/schemas.py:ItemEndedData`
 
 * `why: str | None`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## ItemKey `(_Schema)`
+`src/chatddx/api/schemas.py:ItemKey`
+
+* `case: str`
+* `replicate: int`
+```
 
 ## runs.items `@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])`
 `src/chatddx/api/runs.py:items`
@@ -660,11 +687,9 @@ add these lines here
 `src/chatddx/api/schemas.py:Kin`
 
 * `origin: int | None = Field(…)`
-* `depth: int = Field(description="how many forks down from the first it is")`
 * `base: Edit | None = Field(…)`
 * `varies: list[Varied] = Field(description="a fork's: what its head changes")`
 * `moved_on: bool = Field(…)`
-* `behind: list[str] = Field(…)`
 * `deleted: bool`
 
 ```

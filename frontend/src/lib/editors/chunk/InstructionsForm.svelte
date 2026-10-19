@@ -1,7 +1,8 @@
 <script lang="ts">
   import TextSegments from "$lib/scorer/TextSegments.svelte";
   import { segmentsOf, textOf } from "$lib/scorer/texts";
-  import { type Body, FIELD, TEXT_INSERTS } from "../chunks";
+  import { FIELD } from "$lib/utils";
+  import { type Body, TEXT_INSERTS } from "../chunks";
 
   let { body, set }: { body: Body; set: (body: Body) => void } = $props();
 </script>

@@ -3,6 +3,7 @@ from functools import partial
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, families, read, threads
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import Component, resolve
+from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.request import RECIPE_PARTS, Recipe
 from chatddx.factors.scoring import Expectation, Judge, Scorer
@@ -28,32 +29,32 @@ _UNLABELLED = "only a scorer's views and resources have labels"
 
 
 def check(seen: Seen, component: Component | Recipe) -> Checked:
-    if isinstance(component, Recipe):
-        _stored_parts(seen, component)
-        registry, compilation = compiled(seen, component)
-        findings = lints(
-            registry,
-            seen.facts,
-            [compilation.skeleton],
-            partial(language_of, seen.rows),
-        )
-        return Checked(compilation.skeleton, findings)
-    kind = component.kind_name
-    if kind not in WRITTEN:
-        raise ValueError(f"a person doesn't write {kind} components")
-    if isinstance(component, Scorer):
-        check_scorer(component)
-    if isinstance(component, Appendix):
-        component = bound(seen, component)
+    match component:
+        case Recipe():
+            _stored_parts(seen, component)
+            registry, compilation = compiled(seen, component)
+            digest = compilation.skeleton
+        case _ if component.kind_name not in WRITTEN:
+            raise ValueError(f"a person doesn't write {component.kind_name} components")
+        case Scorer():
+            check_scorer(component)
+            registry, digest = _registered(seen, component)
+        case Appendix():
+            registry, digest = _registered(seen, bound(seen, component))
+        case Judge():
+            registry, digest = _registered(seen, component)
+            add_compilations(seen, registry, component.skeleton)
+        case _:
+            registry, digest = _registered(seen, component)
+    findings = lints(registry, seen.facts, [digest], partial(language_of, seen.rows))
+    return Checked(digest, findings)
+
+
+def _registered(seen: Seen, component: Component) -> tuple[Registry, str]:
     registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
     registry.check(registry.closure([component.digest]))
-    if isinstance(component, Judge):
-        add_compilations(seen, registry, component.skeleton)
-    findings = lints(
-        registry, seen.facts, [component.digest], partial(language_of, seen.rows)
-    )
-    return Checked(component.digest, findings)
+    return registry, component.digest
 
 
 def new(
@@ -63,22 +64,24 @@ def new(
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
-    if not isinstance(component, Recipe):
-        return _written(
-            seen, component, None, name=name, language=language, labels=labels
-        )
-    _configured(language, labels)
-    _stored_parts(seen, component)
-    registry, compilation = compiled(seen, component)
-    with seen.conn.transaction():
-        _ = seen.store.add(registry, [compilation.digest])
-        edit = seen.catalog.create(
-            compilation.skeleton,
-            seen.person.id,
-            compilation=compilation.digest,
-            name=name,
-        )
-    return Written(edit, "created", linted(seen, compilation.skeleton))
+    match component:
+        case Recipe():
+            _configured(language, labels)
+            _stored_parts(seen, component)
+            registry, compilation = compiled(seen, component)
+            with seen.conn.transaction():
+                _ = seen.store.add(registry, [compilation.digest])
+                edit = seen.catalog.create(
+                    compilation.skeleton,
+                    seen.person.id,
+                    compilation=compilation.digest,
+                    name=name,
+                )
+            return Written(edit, "created", linted(seen, compilation.skeleton))
+        case _:
+            return _written(
+                seen, component, None, name=name, language=language, labels=labels
+            )
 
 
 def _stored_parts(seen: Seen, recipe: Recipe) -> None:

@@ -317,12 +317,18 @@ def runs(
     if unscored:
         left = {r.run: scorers for r, scorers in bench.outstanding()}
         found = [r for r in found if r.run in left]
-    page = found[offset : offset + limit]
-    finished = bench.store.finished([r.run for r in page])
-    placed = Queue(bench.conn).placed([r.run for r in page])
+    return _runs_of(bench, found[offset : offset + limit], left)
+
+
+def _runs_of(
+    bench: Bench, started: list[RunStarted], left: dict[UUID, list[str]] | None = None
+) -> list[schemas.Run]:
+    ids = [r.run for r in started]
+    finished = bench.store.finished(ids)
+    placed = Queue(bench.conn).placed(ids)
     return [
-        _run_of(bench, r, r.run in finished, left.get(r.run), placed.get(r.run))
-        for r in page
+        _run_of(bench, r, r.run in finished, (left or {}).get(r.run), placed.get(r.run))
+        for r in started
     ]
 
 
@@ -335,26 +341,15 @@ def compared(
 ) -> schemas.Compared:
     started = [bench.run(r) for r in run]
     trials = [resolve(bench.store.get, s.trial, Trial) for s in started]
-    keys = [
-        [(case, at) for case in t.cases for at in range(len(t.seeds))] for t in trials
-    ]
-    shared = [k for k in keys[0] if all(k in other for other in keys[1:])]
-    apart = [
-        schemas.HeldBySome(
-            case=case, runs=[s.run for s, t in zip(started, trials) if case in t.cases]
-        )
-        for case in dict.fromkeys(c for t in trials for c in t.cases)
-        if not all(case in t.cases for t in trials)
-    ]
+    held = [set(t.item_keys) for t in trials]
+    shared = [k for k in trials[0].item_keys if all(k in h for h in held)]
     scored = [{g.scorer.digest: g for g in bench.scores_of(s)} for s in started]
     named = {d: g for by in reversed(scored) for d, g in by.items()}
     views: list[schemas.ComparedView] = []
-    values: dict[tuple[str, int], list[list[float | None]]] = {}
     for digest, graded in sorted(named.items(), key=lambda n: (n[1].name, n[0])):
         for view in range(len(graded.scorer.views)):
-            per_run = [_values(by.get(digest), view, shared) for by in scored]
-            values[(digest, view)] = per_run
-            found = [[v for v in vs if v is not None] for vs in per_run]
+            values = [_values(by.get(digest), view, shared) for by in scored]
+            found = [[v for v in vs if v is not None] for vs in values]
             views.append(
                 schemas.ComparedView(
                     scorer=digest,
@@ -362,29 +357,21 @@ def compared(
                     view=view,
                     label=graded.label(view),
                     means=[mean(f) if f else None for f in found],
-                    counts=[len(f) for f in found],
+                    values=values,
                 )
             )
-    finished = bench.store.finished(run)
-    placed = Queue(bench.conn).placed(run)
     return schemas.Compared(
-        runs=[
-            _run_of(bench, s, s.run in finished, None, placed.get(s.run))
-            for s in started
-        ],
+        runs=_runs_of(bench, started),
         views=views,
-        items=[
-            schemas.ComparedItem(
+        items=[schemas.ItemKey(case=c, replicate=r) for c, r in shared],
+        apart=[
+            schemas.HeldBySome(
                 case=case,
-                replicate=at,
-                values=[
-                    [values[(v.scorer, v.view)][r][i] for r in range(len(started))]
-                    for v in views
-                ],
+                runs=[s.run for s, t in zip(started, trials) if case in t.cases],
             )
-            for i, (case, at) in enumerate(shared)
+            for case in dict.fromkeys(c for t in trials for c in t.cases)
+            if not all(case in t.cases for t in trials)
         ],
-        apart=apart,
     )
 
 

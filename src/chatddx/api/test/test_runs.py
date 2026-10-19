@@ -710,18 +710,13 @@ def test_runs_are_compared_over_the_items_they_share(
     assert [r["id"] for r in compared["runs"]] == runs
     views = {(v["name"], v["label"]): v for v in compared["views"]}
     differential = views[(LINES, "differential")]
-    assert (differential["means"], differential["counts"]) == (
-        [0.75, 0.5, 0.0],
-        [2, 2, 2],
-    )
-    assert views[(LINES, "dont-miss")]["counts"] == [0, 0, 0]
-    at = list(views).index((LINES, "differential"))
+    assert differential["means"] == [0.75, 0.5, 0.0]
+    items = [(i["case"], i["replicate"]) for i in compared["items"]]
     cases = compared["runs"][0]["cases"]
-    assert {i["case"] for i in compared["items"]} == set(cases)
-    assert sorted(i["values"][at] for i in compared["items"]) == [
-        [0.5, 1.0, 0.0],
-        [1.0, 0.0, 0.0],
-    ]
+    assert items == [(case, 0) for case in cases]
+    by_item = list(zip(*differential["values"]))
+    assert sorted(by_item) == [(0.5, 1.0, 0.0), (1.0, 0.0, 0.0)]
+    assert views[(LINES, "dont-miss")]["values"] == [[None, None]] * 3
     assert compared["apart"] == []
 
     appendix = str(held(bench, "appendix").run)
@@ -731,7 +726,7 @@ def test_runs_are_compared_over_the_items_they_share(
         **{case: [runs[0]] for case in cases},
         apart["runs"][1]["cases"][0]: [appendix],
     }
-    assert all(c == [0, 0] for v in apart["views"] for c in [v["counts"]])
+    assert all(v["values"] == [[], []] for v in apart["views"])
 
     assert signed.get("/api/runs/compared").status_code == 422
     unknown = signed.get("/api/runs/compared", params={"run": [str(uuid4())]})

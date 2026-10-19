@@ -36,6 +36,10 @@ class Trial(Component):
     cleanup: tuple[CleanupOp, ...] = ()
     seeds: Annotated[tuple[int, ...], AfterValidator(distinct)] = Field(min_length=1)
 
+    @property
+    def item_keys(self) -> list[tuple[str, int]]:
+        return [(c, r) for c in self.cases for r in range(len(self.seeds))]
+
     @override
     def cross_check(self, get: Resolver) -> list[str]:
         skeleton = resolve(get, self.skeleton, Skeleton)

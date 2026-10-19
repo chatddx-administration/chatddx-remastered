@@ -14,14 +14,14 @@ from chatddx.api import (
 from chatddx.bench import Bench
 from chatddx.factors.request import RECIPE_PARTS, Recipe
 
-from .pages import BenchDep, page
+from .pages import BenchDep, own_first, page
 
 router = APIRouter()
 
 
 @router.get("/refine")
 def refining(request: Request, bench: BenchDep) -> Response:
-    listed = _listed(bench)
+    listed = own_first(bench, api.threads(bench, "configuration", purpose="generation"))
     if listed:
         return RedirectResponse(f"/refine/{listed[0].id}", 303)
     return page(request, "refine.html", person=bench.person, configuration=None)
@@ -69,34 +69,39 @@ def refine(
     narrowed = bool(tags or picked)
 
     columns = _columns(versions[at].digest, lineage, thread, bench.person.login)
-    matched: list[schemas.Run | None] = []
-    elsewhere: list[int] = []
-    for skeleton, _ in columns:
-        found = api_runs.runs(bench, reaching=skeleton, limit=200)
-        on = [
-            r
-            for r in found
-            if spec is not None
-            and r.engine == spec.engine
-            and (language is None or r.language == language)
-            and (not narrowed or set(r.cases) <= cases)
-        ]
-        matched.append(on[0] if on else None)
-        elsewhere.append(len(found) - len(on))
+    matched = [
+        next(
+            (
+                r
+                for r in api_runs.runs(bench, reaching=skeleton, limit=200)
+                if spec is not None
+                and r.engine == spec.engine
+                and (language is None or r.language == language)
+                and (not narrowed or set(r.cases) <= cases)
+            ),
+            None,
+        )
+        for skeleton, _ in columns
+    ]
     ran = [r for r in matched if r is not None]
     compared = api_runs.compared(bench, [r.id for r in ran]) if ran else None
     views = [] if compared is None else compared.views
     sorted_by = viewed(views, by)
-    means = _means(compared, matched, sorted_by)
-    mean_of = {k.id: m for (_, names), m in zip(columns, means) for k in names}
-
+    counted = iter(range(len(ran)))
+    at_run = [None if r is None else next(counted) for r in matched]
+    rows = [(keyed(v), v, _fares(v, at_run)) for v in views]
+    sorting = next((fares for key, _, fares in rows if key == sorted_by), None)
+    by_column: list[float | None] = [
+        None if fare is None else fare[0] for fare in sorting or [None for _ in columns]
+    ]
+    mean_of = {k.id: m for (_, names), m in zip(columns, by_column) for k in names}
     query: list[tuple[str, str | int]] = [
         *([("endpoint", chosen)] if chosen else []),
         *([("language", language)] if language else []),
         *(("tag", t) for t in tags),
         *(("family", f) for f in picked),
     ]
-    kept = "?" + urlencode(query) if query else ""
+    ordered = _ordered(lineage, mean_of)
     return page(
         request,
         "refine.html",
@@ -107,7 +112,8 @@ def refine(
         titles=_titles(bench, recipe, compared),
         versions=versions,
         at=at,
-        lineage=_ordered(lineage, mean_of),
+        lineage=[(k, depth) for k, depth in ordered if not k.deleted],
+        gone=[k for k, _ in ordered if k.deleted],
         me=next(k for k in lineage if k.id == thread),
         mean_of=mean_of,
         endpoints=endpoints,
@@ -122,18 +128,12 @@ def refine(
         families=[f for f in families if f.id in picked],
         cases=len(cases) if narrowed else None,
         columns=[(names, run) for (_, names), run in zip(columns, matched)],
-        elsewhere=elsewhere,
         compared=compared,
+        rows=rows,
         by=sorted_by,
-        kept=kept,
+        kept="?" + urlencode(query) if query else "",
         island="refine",
     )
-
-
-def _listed(bench: Bench) -> list[schemas.Thread]:
-    login = bench.person.login
-    found = api.threads(bench, "configuration", purpose="generation")
-    return sorted(found, key=lambda t: (t.owner != login, t.name or t.title))
 
 
 # Policy: A fork that varies nothing holds its origin's skeleton, so it shares its column.
@@ -147,41 +147,44 @@ def _columns(
     return list(held.items())
 
 
+def keyed(view: schemas.ComparedView) -> str:
+    return f"{view.scorer}:{view.view}"
+
+
 def viewed(views: list[schemas.ComparedView], by: str | None) -> str | None:
-    keys = [f"{v.scorer}:{v.view}" for v in views]
-    if by in keys:
+    if by in {keyed(v) for v in views}:
         return by
-    return next((k for k, v in zip(keys, views) if any(v.counts)), None)
+    valued = (v for v in views if any(x is not None for xs in v.values for x in xs))
+    return next((keyed(v) for v in valued), None)
 
 
-def _means(
-    compared: schemas.Compared | None,
-    matched: list[schemas.Run | None],
-    by: str | None,
-) -> list[float | None]:
-    if compared is None or by is None:
-        return [None for _ in matched]
-    [view] = [v for v in compared.views if f"{v.scorer}:{v.view}" == by]
-    at = iter(view.means)
-    return [None if r is None else next(at) for r in matched]
+def _fares(
+    view: schemas.ComparedView, at_run: list[int | None]
+) -> list[tuple[float | None, int] | None]:
+    return [
+        None
+        if i is None
+        else (view.means[i], sum(x is not None for x in view.values[i]))
+        for i in at_run
+    ]
 
 
 def _ordered(
     lineage: list[schemas.Kin], mean_of: dict[int, float | None]
-) -> list[schemas.Kin]:
+) -> list[tuple[schemas.Kin, int]]:
     forks: dict[int | None, list[schemas.Kin]] = {}
     for k in lineage:
         forks.setdefault(k.origin, []).append(k)
-    found: list[schemas.Kin] = []
+    found: list[tuple[schemas.Kin, int]] = []
 
-    def down(origin: int | None) -> None:
+    def down(origin: int | None, depth: int) -> None:
         for k in sorted(
             forks.get(origin, []), key=lambda k: _higher(mean_of.get(k.id))
         ):
-            found.append(k)
-            down(k.id)
+            found.append((k, depth))
+            down(k.id, depth + 1)
 
-    down(None)
+    down(None, 0)
     return found
 
 

@@ -436,16 +436,9 @@ def lineage(bench: BenchDep, thread: int) -> list[schemas.Kin]:
         schemas.Kin(
             **thread_of(bench, kind, k.edit, k.about, languages).model_dump(),
             origin=k.origin,
-            depth=k.depth,
             base=None if k.divergence is None else _edit_of(bench, k.divergence.base),
-            varies=[]
-            if k.divergence is None
-            else [
-                schemas.Varied(path=path, base=base, fork=fork)
-                for path, (base, fork) in k.divergence.varies.items()
-            ],
+            varies=[] if k.divergence is None else _varied(k.divergence),
             moved_on=k.moved_on,
-            behind=k.behind,
             deleted=k.about.deleted,
         )
         for k in found
@@ -469,15 +462,19 @@ def _proposal_of(bench: Bench, proposed: Proposed) -> schemas.Proposal:
     return schemas.Proposal(
         base=_edit_of(bench, diverged.base),
         origin_head=_edit_of(bench, diverged.origin_head),
-        varies=[
-            schemas.Varied(path=path, base=base, fork=fork)
-            for path, (base, fork) in diverged.varies.items()
-        ],
+        varies=_varied(diverged),
         recipe=held.model_dump(mode="json") if recipe else None,
         component=None if recipe else held.model_dump(mode="json"),
         digest=proposed.digest,
         compilation=proposed.compilation,
     )
+
+
+def _varied(diverged: catalog.Divergence) -> list[schemas.Varied]:
+    return [
+        schemas.Varied(path=path, base=base, fork=fork)
+        for path, (base, fork) in diverged.varies.items()
+    ]
 
 
 def _moved_of(bench: Bench, moved: Moved) -> schemas.Moved:
