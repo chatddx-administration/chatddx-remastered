@@ -45,14 +45,20 @@ def translate(
         "judges": _listed(bench, "judge"),
     }
     if recipe is None or recipe.purpose == "judge":
-        return page(request, "translate.html", **context, recipe=recipe)
+        return page(request, "translate.html", **context, recipe=recipe, going=[])
     own = recipe_language(bench.rows, recipe)
-    offered = sorted(
-        (set(translated(recipe, bench.store.get)) | families) - {own or ""}
-    )
-    into = into or next(iter(offered), None)
+    going = set(translated(recipe, bench.store.get)) - {own or ""}
+    cased = families - going - {own or ""}
+    context |= {
+        "recipe": recipe,
+        "own": own,
+        "going": sorted(going),
+        "cased": sorted(cased),
+        "regional": _regional(own, going, families),
+    }
+    into = into or next(iter([*sorted(going), *sorted(cased)]), None)
     if into is None:
-        return page(request, "translate.html", **context, recipe=recipe, own=own)
+        return page(request, "translate.html", **context)
     with refused():
         given = schemas.Translating.model_validate({"into": into, "head": head})
         made = api.translation(bench, thread, given)
@@ -88,10 +94,7 @@ def translate(
         request,
         "translate.html",
         **context,
-        recipe=recipe,
-        own=own,
         into=into,
-        offered=sorted({*offered, into}),
         made=made,
         groups=_grouped(made.texts),
         missing=missing,
@@ -100,6 +103,24 @@ def translate(
         props=props,
         island="translate",
     )
+
+
+def _regional(own: str | None, going: set[str], families: set[str]) -> list[str]:
+    said: list[str] = []
+    for language in sorted(families - going - {own or ""}):
+        base = language.split("-")[0]
+        if own is not None and own.split("-")[0] == base:
+            said.append(
+                f"Cases you see in {language} aren't sent as written, though it is "
+                + f"written in {own}: a language's tag is compared whole."
+            )
+        if near := sorted(t for t in going if t.split("-")[0] == base):
+            said.append(
+                f"Cases you see in {language} aren't sent by its translations into "
+                + f"{', '.join(near)}: a language's tag is compared whole, so they want "
+                + f"translations into {language}."
+            )
+    return said
 
 
 def _listed(bench: Bench, purpose: Purpose) -> list[schemas.Thread]:

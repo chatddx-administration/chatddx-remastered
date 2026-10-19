@@ -158,3 +158,34 @@ def test_a_translations_thread_s_page_edits_its_entries(signed: TestClient) -> N
         "edit",
         body["into"],
     )
+
+
+@pytest.mark.slow
+def test_languages_are_offered_its_translations_first_then_its_cases_and_any(
+    signed: TestClient,
+) -> None:
+    lines = configuration(signed, LINES)
+    page = shown(signed, f"/translate/{lines['id']}")
+    nav = page.split('aria-label="Languages"', 1)[1].split("</nav>", 1)[0]
+    assert "cases you see are in it" in nav and 'name="into"' in nav
+
+    guided = configuration(signed, LINES_GUIDED)
+    page = shown(signed, f"/translate/{guided['id']}?into=de")
+    held = props(page)
+    assert held["into"] == "de"
+    assert {t["translation"] for t in held["texts"]} == {None}
+    assert "a language it isn&#39;t translated into yet" in page
+
+
+@pytest.mark.slow
+def test_a_case_in_a_regional_tag_is_said_to_want_its_own_translations(
+    signed: TestClient,
+) -> None:
+    for language in ("sv-SE", "en-GB"):
+        typed = {"text": "Fever and a cough.", "language": language}
+        assert signed.post("/api/families", json=typed).status_code == 201
+    guided = configuration(signed, LINES_GUIDED)
+    page = shown(signed, f"/translate/{guided['id']}")
+    assert "Cases you see in sv-SE aren&#39;t sent by its translations into sv" in page
+    assert "Cases you see in en-GB aren&#39;t sent as written" in page
+    assert "sv-SE ✓" not in listed(page, guided["id"])

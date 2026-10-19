@@ -269,5 +269,7 @@ def _derive(rows: Reader, digest: str, compilation: str | None = None) -> str:
             else [resolve(rows.get, compilation, Compilation)]
         )
         if compilations:
-            return _describe_recipe(compilations[0].recipe, partial(title_of, rows))
+            made = compilations[0]
+            described = _describe_recipe(made.recipe, partial(title_of, rows))
+            return described if made.into is None else f"{described}, in {made.into}"
     return describe(component, partial(title_of, rows))

@@ -914,6 +914,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     assert titles.title_of(rows, translated.skeleton).endswith(
         f" · translations into sv, {len(needed)} texts · "
         + titles.title_of(rows, base.model)
+        + ", in sv"
     )
     with pytest.raises(ValueError, match="translations components have no language"):
         in_language(swedish, "sv")

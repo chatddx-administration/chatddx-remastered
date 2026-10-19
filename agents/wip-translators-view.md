@@ -13,7 +13,7 @@ translations with a version of the configuration that holds them. It is to confi
    What is missing is a way to see which texts a configuration holds and which of them its translations leave out,
    an editor for a translations chunk (5c's, `agents/wip-portal.md`, "Authoring"), and the page around them.
 2. **Decided: the takes on T1 to T11** (see "The landscape"), and F1 (a) (see "Found on the way").
-3. **Steps 1 to 3 are built** (see "Built"); step 4 is next (see "Steps").
+3. **Steps 1 to 4 are built** (see "Built"); what is left is in each step's "What step N leaves".
 
 ## What the translator is here to do
 - **See what a configuration holds to translate**: its instructions, few-shot examples, prompt, the output's guidance
@@ -174,7 +174,7 @@ Decided: (a).
 Ride along, moved here:
 - **`docs/backlog.md`, "Languages"**: translations an edit detached, closed by the lint of step 1 and the page's
   unused entries (T4).
-- **`docs/backlog.md`, "Titles"**: a translated skeleton's title doesn't say its language; step 4.
+- **`docs/backlog.md`, "Titles"**: a translated skeleton's title doesn't say its language, closed by step 4.
 
 Related, staying in the backlog: "Translating JSON few-shot answers" (T9 b), "Exporting data sets" (T5 c), "The
 data's stage, said in code" (vetting the sample's Swedish), "Edit history: who, when and why" (a translator's note on
@@ -187,7 +187,8 @@ texts of `lines-guided` translated into sv, which step 1's tests read).
    marks, the texts in their places, the unused entries, and the request both ways.
 3. **Writing**, built (see "Built"): the entries' editor, the closest unused entry offered, checked as typed, and
    saving as T5 (a); the translations chunk's thread page uses the same editor.
-4. **A new language**, the languages offered (T8), and a translated skeleton titled with its language.
+4. **A new language**, the languages offered (T8), and a translated skeleton titled with its language, built (see
+   "Built").
 
 Tests, as the review's: the pages by `TestClient` on `ran`; the routes in the API's tests; vitest for the page's logic;
 and a browser test of a translator's flow on the test World: `lines-guided`'s Swedish, a text left out by an edit of
@@ -281,4 +282,26 @@ its instructions, carried over from its unused entry, saved, and the variation p
 - **A JSON few-shot answer** is one entry, edited as text: nothing checks yet that its keys and fixed values are its
   source's (T9 a).
 - **A new language** is step 4's: the editor writes into the languages offered.
+
+### Step 4: languages
+- **The languages offered** (T8, `src/chatddx/portal/translate.py`): those its translations go into, solid, then those
+  only the cases the person sees are in, dashed, then any other by its tag, typed beside them ("Translate into it"),
+  which opens the page in it with every text missing; saving writes it into the translations beside the others
+  (`translate.ts:translationsOf`). A tag that isn't one, or the configuration's own, is refused with the error page.
+- **A regional tag said where it happens** (`_regional`): cases the person sees in `sv-SE` are said not to be sent by
+  translations into `sv`, and cases in `en-GB` not to be sent as written by a configuration written in `en`, since a
+  tag is compared whole (`Seen.languages`).
+- **An unknown own language is said so**, with why: its texts' chunks have none, or not the same one.
+- **A translated skeleton's title says its language** (`src/chatddx/catalog/titles.py:_derive`): its recipe's
+  description, then ", in sv", suggested to `docs/catalog.md` as an `AGENT` block; what `docs/backlog.md`'s "Titles"
+  held of it moved here.
+- **Tests**: `test_translating.py`, the languages offered, a new one, and the regional notes; and
+  `src/chatddx/catalog/test/test_titles.py`, a translated configuration titled with its language.
+
+#### What step 4 leaves
+- **Correcting a language** (`docs/backlog.md`, "Languages": decided, a person may correct the language of a text only
+  their own threads hold) didn't ride along: it is a write of the bench's, and the page only says when a
+  configuration's own is unknown.
+- **The drawer's marks** cover the languages its translations go into and its cases are in, not one typed: a new
+  language shows there once saved.
 

@@ -114,6 +114,19 @@ def test_recipes_are_described_by_every_part() -> None:
     assert described(reg, with_tools) == english + " · with web_search" + on
 
 
+def test_a_translated_configuration_is_titled_with_its_language() -> None:
+    reg = Registry()
+    _ = world(reg)
+    rows = Memory(reg)
+    recipe = generation_recipe(reg)
+    needed = untranslated(recipe, reg.get, "sv")
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
+    bilingual = recipe.model_copy(update={"translations": swedish})
+    written = compiled(reg, bilingual).skeleton
+    sent = compiled(reg, bilingual, "sv").skeleton
+    assert titles.title_of(rows, sent) == titles.title_of(rows, written) + ", in sv"
+
+
 def test_forks_are_titled_by_what_they_change() -> None:
     reg = Registry()
     rows = Memory(reg)
