@@ -21,7 +21,6 @@ in agents/ tracks is that plan's, not this document's.
   - [Unheeded reasoning](#unheeded-reasoning)
   - [Tool rounds](#tool-rounds)
   - [What reaches vLLM: argv and passthrough](#what-reaches-vllm-argv-and-passthrough)
-  - [Inventory checked everywhere](#inventory-checked-everywhere)
   - [Facts: the checks](#facts-the-checks)
   - [Facts as an engine changes them](#facts-as-an-engine-changes-them)
   - [Stopping: halts, deadlines and time limits](#stopping-halts-deadlines-and-time-limits)
@@ -244,31 +243,6 @@ Decided: a passthrough's refusals stay, and a key vLLM 0.24 doesn't take gets a 
   - lints instead of refusals: risky options would give a finding, in the spirit of "warnings, not crashes". But a
     passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
     response are closer to the clearance block than to a warning.
-
-```
-AGENT: remove
-Done, as the user chose: the worker logs the check's findings as it starts, against the engines the store holds
-(src/chatddx/worker/worker.py:Worker.serve), and the engine import, before it writes, prints them for the endpoints
-and hosts it writes, against the models and engines it writes (src/chatddx/importers/o11n.py:checked). Its line in
-Contents goes with it; docs/inventory.md and docs/worker.md carry suggestions for saying so.
-```
-### Inventory checked everywhere
-The runner, when it starts, and the engine import, before it writes, run the inventory check and pass its findings on,
-as init-data does. Endpoint names are agents/wip-clearance.md's (Open 1, "What a grant keys on").
-
-- Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
-  confirmed, one entry at a time:
-  - whether an endpoint's digest names an engine;
-  - whether a local engine's endpoint has a host;
-  - whether the host says where the model and template are.
-
-  One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-  starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines' endpoints at
-  one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins, and a
-  clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and the
-  engine import don't run it yet, and still check one entry at a time.
-- The runner and the engine import don't run `check`: they check an entry when they use it.
-- **The runner and the engine import don't run the inventory check** that loading does.
 
 ### Facts: the checks
 Checking pairs and loading facts warn where they now stay silent or warn wrongly: an unknown budget warned about,

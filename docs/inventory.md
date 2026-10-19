@@ -198,16 +198,8 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
 its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
-```
-AGENT: replace
-The worker runs the check too, as it starts, with the engines the store holds
-(src/chatddx/worker/worker.py:Worker.serve).
----
 With a World, init-data ends with the inventory check's findings and a count (src/chatddx/inventory/check.py), and a
 worker logs them as it starts, against the engines the store holds. Neither connects to find them.
-```
-With a World, init-data ends with the inventory check's findings and a count (src/chatddx/inventory/check.py).
-It finds that out without connecting.
 
 ## Importing from a host
 `chatddx import-engine REPORT… [--server NAME]… [--endpoint-host HOST] --engines PATH --endpoints PATH`. A report is
@@ -255,14 +247,9 @@ The import's findings have the engine's digest as subject:
 - `endpoint.version` (warning): the server says it is another vLLM version than its package.
 - `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
 
-```
-AGENT: insert
-The import runs the inventory check on what it writes (src/chatddx/importers/o11n.py:checked).
----
 Before it writes, the import also checks the endpoints and hosts it writes against the models and engines it writes,
 with the inventory check (see "Reaching an engine"), and prints the findings after its own. As it refuses two servers
 at one address and says where each engine's model and template are, the check finds nothing in what it writes today.
-```
 
 ## Terms
 

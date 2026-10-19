@@ -78,13 +78,7 @@ before it. The portal's runs page shows the person's queue with its controls, an
 runs a worker in its own process; `chatddx portal` and `chatddx api` run none. A deployment runs the HTTP server, the
 API and the worker as separate services. Several workers work alike, taking turns to claim.
 
-```
-AGENT: insert
-A worker runs the inventory check as it starts, wherever it runs (src/chatddx/worker/worker.py:Worker.serve).
----
 A worker logs the inventory check's findings as it starts (docs/inventory.md, "Reaching an engine").
-```
-The repl sends its runs in its own process, where an interrupt halts a run, and not through the worker.
 
 ## Tests
 The worker's tests run it on a thread against the fake vLLM, beating and losing fast, with a short deadline where a
