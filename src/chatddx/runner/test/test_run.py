@@ -621,7 +621,6 @@ def tooled(
 ASKED = "'fake query'"
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan

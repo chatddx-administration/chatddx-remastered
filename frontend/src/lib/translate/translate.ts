@@ -1,0 +1,144 @@
+import type { Schemas } from "$lib/api/client";
+
+export type Body = { part: string; body: Record<string, unknown> };
+export type Part = { title: string; thread: number | null };
+export type Request = Record<string, unknown> & { messages?: { role: string; content: string }[] };
+export type Translating = {
+  into: string;
+  language: string | null;
+  texts: Schemas["TranslatedText"][];
+  unused: Record<string, string>;
+  written: Request;
+  request: Request;
+  bodies: Body[];
+  parts: Record<string, Part>;
+};
+
+type Step = string | number;
+
+// Mirroring src/chatddx/factors/request.py:_DATA and _NAMED: a schema's data, which compiling leaves
+// untranslated, and the keys whose members are named.
+const DATA = new Set(["enum", "const", "default", "examples"]);
+const NAMED = new Set(["properties", "patternProperties", "$defs", "definitions", "dependentSchemas"]);
+
+function found(node: unknown, text: string, at: Step[], into: Step[][]): void {
+  if (node === text) {
+    into.push(at);
+  } else if (Array.isArray(node)) {
+    node.forEach((v, i) => found(v, text, [...at, i], into));
+  } else if (node !== null && typeof node === "object") {
+    for (const [k, v] of Object.entries(node)) if (!DATA.has(k)) found(v, text, [...at, k], into);
+  }
+}
+
+function schemaPlace(path: Step[]): string {
+  const names: string[] = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const step = path[i];
+    if (typeof step === "string" && NAMED.has(step)) names.push(String(path[++i]));
+  }
+  const last = String(path.at(-1));
+  return ["schema", ...names].join(" › ") + ` · ${last}`;
+}
+
+function at(node: unknown, path: Step[]): unknown {
+  let held = node;
+  for (const step of path) held = (held as Record<Step, unknown> | undefined)?.[step];
+  return held;
+}
+
+function around(path: Step[], body: Record<string, unknown>): string {
+  const last = path.at(-1);
+  if (last !== "before" && last !== "after") return "";
+  const insert = at(body, [...path.slice(0, -1), "insert"]);
+  return `${last} ‹${String(insert).replaceAll("_", " ")}›`;
+}
+
+export function place(path: Step[], body: Record<string, unknown>): string {
+  const [first, second] = path;
+  switch (body.kind) {
+    case "chunk.few_shot": {
+      const messages = (body.messages ?? []) as { role: string }[];
+      const role = messages[Number(second)]?.role ?? "message";
+      const nth = messages.slice(0, Number(second) + 1).filter((m) => m.role === role).length;
+      return `${role} ${nth}`;
+    }
+    case "chunk.output":
+      if (first === "json_schema") return schemaPlace(path.slice(1));
+      if (first === "contract") return "the answer tool's description";
+      return ["guidance", around(path, body)].filter(Boolean).join(", ");
+    case "tool":
+      if (first === "parameters") return `${String(body.name)}'s parameters, ${schemaPlace(path.slice(1))}`;
+      return `${String(body.name)}'s description`;
+    case "chunk.toolset":
+      return "guidance";
+    case undefined:
+      return first === "between" ? "between appendices" : `${String(first)} the appendices`;
+    default:
+      return around(path, body);
+  }
+}
+
+export function places(text: string, part: string, bodies: Body[]): string[] {
+  const said: string[] = [];
+  for (const b of bodies) {
+    if (b.part !== part) continue;
+    const paths: Step[][] = [];
+    found(b.body, text, [], paths);
+    for (const path of paths) {
+      const label = place(path, b.body);
+      if (!said.includes(label)) said.push(label);
+    }
+  }
+  return said;
+}
+
+export function edges(text: string): [string, string] {
+  const lead = /^\s*/.exec(text)?.[0] ?? "";
+  if (lead === text) return [lead, ""];
+  return [lead, /\s*$/.exec(text)?.[0] ?? ""];
+}
+
+export function unlike(source: string, translation: string): boolean {
+  const [a, b] = edges(source);
+  const [c, d] = edges(translation);
+  return a !== c || b !== d;
+}
+
+function shownEdge(edge: string): string {
+  return edge.replaceAll(" ", "·").replaceAll("\t", "⇥");
+}
+
+export function visible(text: string): string {
+  const [lead, trail] = edges(text);
+  const core = text.slice(lead.length, text.length - trail.length);
+  return (shownEdge(lead) + core + shownEdge(trail)).replaceAll("\n", "⏎\n");
+}
+
+export type Run = { text: string; missing: boolean };
+
+export function marked(content: string, missing: string[]): Run[] {
+  const sought = [...new Set(missing.filter((m) => m.trim()))].sort((a, b) => b.length - a.length);
+  const runs: Run[] = [];
+  const push = (text: string, isMissing: boolean) => {
+    const last = runs.at(-1);
+    if (last && last.missing === isMissing && !isMissing) last.text += text;
+    else runs.push({ text, missing: isMissing });
+  };
+  let i = 0;
+  while (i < content.length) {
+    const hit = sought.find((m) => content.startsWith(m, i));
+    if (hit) {
+      push(hit, true);
+      i += hit.length;
+    } else {
+      push(content[i] ?? "", false);
+      i += 1;
+    }
+  }
+  return runs;
+}
+
+export function missingOf(texts: Schemas["TranslatedText"][]): string[] {
+  return [...new Set(texts.filter((t) => t.translation === null).map((t) => t.text))];
+}

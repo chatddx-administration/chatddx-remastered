@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% from "macros.html" import drawer, opened, pane, rail, upright %}
+
+{% set link = "text-primary hover:underline" %}
+
+{% macro named(t) -%}
+{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
+{%- endmacro %}
+
+{% macro mark(language, missing) -%}
+<span class="inline-flex items-center gap-1 rounded-full px-1.5 text-[0.7rem] {{ 'bg-success/10 text-success' if not missing else 'bg-warning/10 text-warning' }}">{{ language }} {{ "✓" if not missing else missing }}<span class="sr-only">{{ ", complete" if not missing else " missing" }}</span></span>
+{%- endmacro %}
+
+{% macro sent(held) %}
+{% for m in held.messages %}
+<div class="mb-2 rounded-lg bg-muted/40 p-2.5 text-sm">
+  <div class="mb-1 text-xs font-medium text-muted-foreground">{{ m.role }}</div>
+  <div class="whitespace-pre-wrap break-words">{{ m.content }}</div>
+</div>
+{% endfor %}
+{% endmacro %}
+
+{% block title %}{{ "Translate · " ~ named(configuration) if configuration else "Translate" }} · ChatDDX{% endblock %}
+{% block main %}
+{% if not configuration %}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <p class="text-muted-foreground">No configuration to translate.</p>
+</div>
+{% else %}
+{% set here = "/translate/" ~ configuration.id %}
+<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_auto]">
+
+  {% call drawer("configurations", "Configurations") %}
+  <summary class="{{ rail }}">
+    <span class="{{ upright }}">Configurations <span class="font-normal text-muted-foreground">{{ listed | length }}</span></span>
+  </summary>
+  <div class="{{ opened }} xl:w-64">
+    <ol class="space-y-0.5 text-sm">
+      {% for t, marks in listed %}
+      <li>
+        <a href="/translate/{{ t.id }}{{ '?into=' ~ into if into else '' }}"{% if t.id == configuration.id %} aria-current="page"{% endif %}
+           class="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if t.id == configuration.id else 'hover:bg-muted' }}">
+          <span class="min-w-0 flex-1 truncate">{{ named(t) }}</span>
+          {% for language, missing in marks.items() %}{{ mark(language, missing) }}{% endfor %}
+        </a>
+      </li>
+      {% else %}
+      <li class="text-muted-foreground">None.</li>
+      {% endfor %}
+    </ol>
+    <p class="mt-4 text-xs leading-relaxed text-muted-foreground">Each language its translations go into, or a case you see is in: ✓ when every text is translated, else how many aren't.</p>
+    {% if judges %}
+    <h2 class="mb-1 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Judges</h2>
+    <p class="mb-2 text-xs text-muted-foreground">A judge runs in no language, so its translations aren't used.</p>
+    <ol class="space-y-0.5 text-sm">
+      {% for t in judges %}
+      <li><a class="block truncate rounded-md px-2 py-1 hover:bg-muted" href="/configurations/{{ t.id }}">{{ named(t) }}</a></li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </div>
+  {% endcall %}
+
+  {% call pane("Texts") %}
+  <header class="mb-4">
+    <h1 class="text-xl font-bold tracking-tight">{{ named(configuration) }}</h1>
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      {% if recipe and recipe.purpose != "judge" %}
+      <span>written in {{ own or "no language known" }}</span>
+      <span>·</span>
+      {% if translations %}
+      <span>translations: {% if translations.thread %}<a class="{{ link }}" href="/threads/{{ translations.thread }}">{{ translations.title }}</a>{% else %}{{ translations.title }}{% endif %}</span>
+      {% else %}
+      <span>no translations</span>
+      {% endif %}
+      <span>·</span>
+      {% endif %}
+      <a class="{{ link }}" href="/configurations/{{ configuration.id }}{{ '?head=' ~ head if head else '' }}">its page</a>
+    </p>
+    {% if offered %}
+    <nav class="mt-3 flex flex-wrap items-center gap-1 text-xs" aria-label="Languages">
+      <span class="mr-1 text-muted-foreground">Into</span>
+      {% for language in offered %}
+      <a href="{{ here }}?into={{ language | urlencode }}{{ '&head=' ~ head if head else '' }}"{% if language == into %} aria-current="page"{% endif %}
+         class="rounded-full border px-2.5 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if language == into else 'border-border text-muted-foreground hover:text-foreground' }}">{{ language }}</a>
+      {% endfor %}
+      <span class="ml-2 {{ 'text-warning' if missing else 'text-success' }}">{{ "every text translated" if not missing else (missing ~ " text" ~ ("" if missing == 1 else "s") ~ " missing") }}</span>
+    </nav>
+    {% endif %}
+  </header>
+
+  {% if recipe is none %}
+  <p class="text-sm text-muted-foreground">It is written by hand: it has no recipe to translate.</p>
+  {% elif recipe.purpose == "judge" %}
+  <p class="text-sm text-muted-foreground">It is a judge's: a judge runs in no language, so its translations aren't used.</p>
+  {% elif not into %}
+  <p class="text-sm text-muted-foreground">Nothing to translate it into: it has no translations, and no case you see is in a language other than its own.</p>
+  {% else %}
+  <div id="translate-texts">
+    <div class="mb-2 grid grid-cols-2 gap-3 text-[0.7rem] uppercase tracking-wide text-muted-foreground">
+      <span>Written in {{ own or "no language known" }}</span><span>Into {{ into }}</span>
+    </div>
+    {% for part, found in groups %}
+    <section class="mb-4">
+      <h2 class="mb-1.5 text-xs font-medium text-muted-foreground">{{ part | replace("_", " ") }} · {% if parts[part].thread %}<a class="{{ link }}" href="/threads/{{ parts[part].thread }}">{{ parts[part].title }}</a>{% else %}{{ parts[part].title }}{% endif %}</h2>
+      {% for t in found %}
+      <div class="grid grid-cols-2 gap-3 border-t border-border/60 py-1.5 text-sm">
+        <div class="whitespace-pre-wrap break-words">{{ t.text }}</div>
+        {% if t.translation is none %}
+        <div class="text-warning">missing</div>
+        {% else %}
+        <div class="whitespace-pre-wrap break-words">{{ t.translation }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+    {% if made.unused %}
+    <details{% if made.unused | length <= 5 %} open{% endif %}>
+      <summary class="mb-1.5 cursor-pointer text-xs font-medium text-muted-foreground">Not used by it: {{ made.unused | length }}, of a text it doesn't hold</summary>
+      {% for text, translation in made.unused.items() %}
+      <div class="grid grid-cols-2 gap-3 border-t border-border/60 py-1.5 text-sm text-muted-foreground">
+        <div class="whitespace-pre-wrap break-words">{{ text }}</div>
+        <div class="whitespace-pre-wrap break-words">{{ translation }}</div>
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endcall %}
+
+  {% call drawer("request", "Request") %}
+  <summary class="{{ rail }}">
+    <span class="{{ upright }}">Request{% if into %} <span class="font-normal text-muted-foreground">into {{ into }}</span>{% endif %}</span>
+  </summary>
+  <div class="{{ opened }} xl:w-[40rem]">
+    {% if made %}
+    <div id="translate-request">
+      <p class="mb-3 text-xs text-muted-foreground">What it sends into {{ into }}, a text without a translation as written; the case as a placeholder.</p>
+      {{ sent(made.request) }}
+    </div>
+    {% else %}
+    <p class="text-sm text-muted-foreground">Nothing translated.</p>
+    {% endif %}
+  </div>
+  {% endcall %}
+</div>
+{% if props %}<script type="application/json" id="translate-props">{{ props | tojson }}</script>{% endif %}
+{% endif %}
+{% endblock %}

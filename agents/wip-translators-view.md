@@ -13,7 +13,7 @@ translations with a version of the configuration that holds them. It is to confi
    What is missing is a way to see which texts a configuration holds and which of them its translations leave out,
    an editor for a translations chunk (5c's, `agents/wip-portal.md`, "Authoring"), and the page around them.
 2. **Decided: the takes on T1 to T11** (see "The landscape"), and F1 (a) (see "Found on the way").
-3. **Step 1 is built** (see "Built"); steps 2 to 4 are next (see "Steps").
+3. **Steps 1 and 2 are built** (see "Built"); steps 3 and 4 are next (see "Steps").
 
 ## What the translator is here to do
 - **See what a configuration holds to translate**: its instructions, few-shot examples, prompt, the output's guidance
@@ -183,8 +183,8 @@ texts of `lines-guided` translated into sv, which step 1's tests read).
 
 ## Steps
 1. **What a configuration is in a language**, built (see "Built"): the route of T6, the lint of T4, and F1.
-2. **The page, read only**: `/translate/{configuration}`, the configurations' drawer with their marks, the texts in
-   their places, the unused entries, and the request both ways.
+2. **The page, read only**, built (see "Built"): `/translate/{configuration}`, the configurations' drawer with their
+   marks, the texts in their places, the unused entries, and the request both ways.
 3. **Writing**: the entries' editor, the closest unused entry offered, checked as typed, and saving as T5 (a); the
    translations chunk's thread page uses the same editor.
 4. **A new language**, the languages offered (T8), and a translated skeleton titled with its language.
@@ -218,9 +218,34 @@ its instructions, carried over from its unused entry, saved, and the variation p
 - **A judge configuration isn't linted** for its translations, which nothing uses (F2).
 - **A text two parts hold** is listed under each, with one entry for both.
 
-## Open
-- **Where the drawer's marks come from**: a mark per configuration and language compiles nothing, as the texts and the
-  entries are compared, but it reads every configuration's recipe and chunks; `api/threads.py:thread_of` reads a
-  compilation per configuration already, for `translated` (`docs/backlog.md`, "Performance, once measured").
+### Step 2: the page, read only
+- **`/translate`** opens the person's first generation configuration, their own first; **`/translate/{configuration}`**
+  takes `into` and `head` (`src/chatddx/portal/translate.py`, `templates/translate.html`). Translate is second in the
+  nav, after Review.
+  - **Configurations**, a drawer: the generation configurations the person sees, each marked per language its
+    translations go into or a family they see is in, ✓ or the number of texts missing (`untranslated`); judge
+    configurations apart, linking their pages, as a judge runs in no language (T11).
+  - **The texts**: written in its language, its translations' thread, and the languages offered, those its
+    translations go into and its families' (step 4 adds a new one); by part, each text beside its translation or
+    marked missing; the entries no text of it holds after them, folded when there are more than five.
+  - **Request**, a drawer: the request as written and as translated, side by side, message by message, and the rest of
+    the request folded.
+  - A hand-written configuration, a judge's, and one with no language to go into each say so instead.
+- **The island** (`frontend/src/islands/translate.ts`, `frontend/src/lib/translate/`): each text's places, found in its
+  part's chunks' JSON, the toolset's tools included (`translate.ts:places`): a few-shot turn, a schema's property
+  path, the answer tool's description, an insert's surroundings, the layout's; whitespace shown at a text's edges and
+  each line's end (`visible`), and a translation whose edges aren't its source's said so (`unlike`); and in the
+  translated request, each text without a translation marked where it is sent (`marked`). Without scripts, the server
+  draws the texts and the translated messages plainly.
+- **Shared with the review**: its panes and drawers are macros (`templates/macros.html`: `pane`, `drawer`, `rail`,
+  `upright`, `opened`), and a drawer is remembered per viewer by `frontend/src/lib/drawers.ts:remembered`.
+- **Tests**: `src/chatddx/portal/test/test_translating.py` on `curated`; `frontend/src/lib/translate/translate.test.ts`;
+  and by hand on the sample World in Chromium, light, dark and narrow: about 0.14 s a page, marks included.
+
+#### What step 2 leaves
+- **Marking is by the text**: an untranslated text is marked wherever it occurs in the translated request, so a title
+  that is also a `$defs` name, as `IndividualDiagnosis` is in the sample's plan, is marked as the name too.
+- **The marks count every text for a configuration without translations**, as for one whose translations miss them:
+  `plan` shows `sv 34`.
 - **A chunk shared by several configurations**: what is unused is unused by the configuration shown, and may be another
-  one's.
+  one's; the sample's `sample` shows 50 to `free-text-guided`, folded.

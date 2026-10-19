@@ -9,7 +9,16 @@ from chatddx import settings
 from chatddx.api import app as api
 from chatddx.inventory import Inventory
 
-from . import configurations, families, pages, review, runs, threads, world
+from . import (
+    configurations,
+    families,
+    pages,
+    review,
+    runs,
+    threads,
+    translate,
+    world,
+)
 from .assets import ROUTE, Assets
 
 
@@ -32,6 +41,7 @@ def app(
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
     for router in (
         review.router,
+        translate.router,
         runs.router,
         configurations.router,
         families.router,

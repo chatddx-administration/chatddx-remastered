@@ -88,6 +88,7 @@ def test_a_translation_needs_a_recipe_and_another_language(
         _ = bench.translation(bench.variation("by hand"), "sv")
 
 
+@pytest.mark.slow
 def test_translations_that_leave_a_text_out_are_linted_whatever_the_cases(
     bench: Bench,
 ) -> None:
