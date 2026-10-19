@@ -15,7 +15,7 @@ from chatddx.factors.request import (
     ToolOutput,
     Toolset,
     Translations,
-    texts,
+    untranslated,
 )
 from chatddx.factors.scoring import ExpectationSchema
 from chatddx.factors.test.sample import generation_recipe, world
@@ -92,7 +92,7 @@ def test_recipes_are_described_by_every_part() -> None:
     _ = world(reg)
     title = titler(reg)
     recipe = generation_recipe(reg)
-    needed = [t for part in texts(recipe, reg.get).values() for t in part]
+    needed = untranslated(recipe, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     search = reg.add(
         Tool(

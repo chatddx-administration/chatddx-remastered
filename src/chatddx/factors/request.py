@@ -640,14 +640,9 @@ class Compilation(Component):
             facts = resolve(get, self.facts, ModelFacts)
             if (model := model_of(self.recipe.model, get).name) != facts.model:
                 found.append(f"facts about {facts.model} compiled a recipe for {model}")
-        if self.into is not None and self.into not in self._languages(get):
+        if self.into is not None and self.into not in translated(self.recipe, get):
             found.append(f"the recipe has no translations into {self.into}")
         return found
-
-    def _languages(self, get: Resolver) -> set[str]:
-        if self.recipe.translations is None:
-            return set()
-        return set(resolve(get, self.recipe.translations, Translations).into)
 
 
 def _tool_name(tool: JsonValue) -> str:
@@ -698,7 +693,7 @@ def _check_slots(
         raise ValueError(f"slots used more than once: {sorted(dupes)}")
 
 
-Translate = Callable[[str], str]
+_Translate = Callable[[str], str]
 
 _PROSE = frozenset({"title", "description"})
 _NAMED = frozenset(
@@ -707,12 +702,12 @@ _NAMED = frozenset(
 _DATA = frozenset({"enum", "const", "default", "examples"})
 
 
-def _tr(text: str, tr: Translate) -> str:
+def _tr(text: str, tr: _Translate) -> str:
     return tr(text) if text.strip() else text
 
 
 def _tr_segments[T](
-    segments: Iterable[str | Insert | T], tr: Translate
+    segments: Iterable[str | Insert | T], tr: _Translate
 ) -> tuple[str | Insert | T, ...]:
     translated: list[str | Insert | T] = []
     for s in segments:
@@ -730,12 +725,12 @@ def _tr_segments[T](
 
 
 def _tr_text(
-    text: str | tuple[str | Insert, ...], tr: Translate
+    text: str | tuple[str | Insert, ...], tr: _Translate
 ) -> str | tuple[str | Insert, ...]:
     return _tr(text, tr) if isinstance(text, str) else _tr_segments(text, tr)
 
 
-def _tr_schema(node: JsonValue, tr: Translate) -> JsonValue:
+def _tr_schema(node: JsonValue, tr: _Translate) -> JsonValue:
     match node:
         case list():
             return [_tr_schema(v, tr) for v in node]
@@ -755,7 +750,15 @@ def _tr_schema(node: JsonValue, tr: Translate) -> JsonValue:
             return node
 
 
-def _tr_output(output: Output, tr: Translate) -> Output:
+def _tr_layout(layout: AppendixLayout, tr: _Translate) -> AppendixLayout:
+    return AppendixLayout(
+        before=_tr(layout.before, tr),
+        between=_tr(layout.between, tr),
+        after=_tr(layout.after, tr),
+    )
+
+
+def _tr_output(output: Output, tr: _Translate) -> Output:
     doc = output.model_dump()
     if output.guidance is not None:
         doc["guidance"] = _tr_text(output.guidance, tr)
@@ -779,11 +782,11 @@ class _Parts(NamedTuple):
     tools: tuple[Tool, ...]
 
 
-def _tr_instructions(c: Instructions, tr: Translate) -> Instructions:
+def _tr_instructions(c: Instructions, tr: _Translate) -> Instructions:
     return Instructions(role=c.role, text=_tr_text(c.text, tr))
 
 
-def _tr_few_shot(f: FewShot, tr: Translate) -> FewShot:
+def _tr_few_shot(f: FewShot, tr: _Translate) -> FewShot:
     return FewShot(
         messages=tuple(
             Example(role=m.role, content=_tr(m.content, tr)) for m in f.messages
@@ -791,12 +794,12 @@ def _tr_few_shot(f: FewShot, tr: Translate) -> FewShot:
     )
 
 
-def _tr_prompt(p: Prompt, tr: Translate) -> Prompt:
+def _tr_prompt(p: Prompt, tr: _Translate) -> Prompt:
     return Prompt(purpose=p.purpose, segments=_tr_segments(p.segments, tr))
 
 
 def _tr_toolset(
-    ts: Toolset, get: Resolver, tr: Translate
+    ts: Toolset, get: Resolver, tr: _Translate
 ) -> tuple[Toolset, tuple[Tool, ...]]:
     toolset = Toolset(
         tools=ts.tools,
@@ -816,49 +819,39 @@ def _tr_toolset(
     return toolset, tools
 
 
-# The recipe's text-bearing parts, with every text passed through tr(part).
-def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Parts:
+# The recipe's text-bearing parts, with every text passed through tr.
+def _parts(recipe: Recipe, get: Resolver, tr: _Translate) -> _Parts:
     instructions = few_shot = None
     if recipe.instructions is not None:
         c = resolve(get, recipe.instructions, Instructions)
-        instructions = _tr_instructions(c, tr("instructions"))
+        instructions = _tr_instructions(c, tr)
     if recipe.few_shot is not None:
-        few_shot = _tr_few_shot(resolve(get, recipe.few_shot, FewShot), tr("few_shot"))
-    prompt = _tr_prompt(resolve(get, recipe.prompt, Prompt), tr("prompt"))
-    output = _tr_output(resolve(get, recipe.output, Output), tr("output"))
-    layout, t = recipe.appendix_layout, tr("appendix_layout")
-    appendix_layout = AppendixLayout(
-        before=_tr(layout.before, t),
-        between=_tr(layout.between, t),
-        after=_tr(layout.after, t),
-    )
+        few_shot = _tr_few_shot(resolve(get, recipe.few_shot, FewShot), tr)
+    prompt = _tr_prompt(resolve(get, recipe.prompt, Prompt), tr)
+    output = _tr_output(resolve(get, recipe.output, Output), tr)
+    appendix_layout = _tr_layout(recipe.appendix_layout, tr)
     toolset, tools = None, ()
     if recipe.toolset is not None:
         ts = resolve(get, recipe.toolset, Toolset)
-        toolset, tools = _tr_toolset(ts, get, tr("toolset"))
+        toolset, tools = _tr_toolset(ts, get, tr)
     return _Parts(
         instructions, few_shot, prompt, output, appendix_layout, toolset, tools
     )
 
 
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
-    found: dict[str, list[str]] = {}
-
-    def collect(part: str) -> Translate:
-        seen = found.setdefault(part, [])
-
-        def tr(text: str) -> str:
-            if text not in seen:
-                seen.append(text)
-            return text
-
-        return tr
-
-    _ = _parts(recipe, get, collect)
-    return {part: tuple(seen) for part, seen in found.items() if seen}
+    found: dict[str, tuple[str, ...]] = {}
+    for part in ("instructions", "few_shot", "prompt", "output"):
+        if (digest := getattr(recipe, part)) and (held := own_texts(get(digest), get)):
+            found[part] = held
+    if held := own_texts(recipe.appendix_layout, get):
+        found["appendix_layout"] = held
+    if recipe.toolset and (held := own_texts(get(recipe.toolset), get)):
+        found["toolset"] = held
+    return found
 
 
-def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
+def own_texts(chunk: Component | AppendixLayout, get: Resolver) -> tuple[str, ...]:
     seen: list[str] = []
 
     def tr(text: str) -> str:
@@ -877,16 +870,23 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
             _ = _tr_output(chunk, tr)
         case Toolset():
             _ = _tr_toolset(chunk, get, tr)
-        case Translations():
-            seen.extend(
-                t
-                for entries in chunk.into.values()
-                for t in entries.values()
-                if t.strip() and t not in seen
-            )
+        case AppendixLayout():
+            _ = _tr_layout(chunk, tr)
         case _:
             pass
     return tuple(seen)
+
+
+def translated(recipe: Recipe, get: Resolver) -> dict[str, dict[str, str]]:
+    if recipe.translations is None:
+        return {}
+    return resolve(get, recipe.translations, Translations).into
+
+
+def untranslated(recipe: Recipe, get: Resolver, into: str) -> tuple[str, ...]:
+    entries = translated(recipe, get).get(into, {})
+    held = {t for found in texts(recipe, get).values() for t in found}
+    return tuple(sorted(held - entries.keys()))
 
 
 def landings(
@@ -920,17 +920,6 @@ def landings(
     return landed, followed
 
 
-def _translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
-    held = (
-        {}
-        if recipe.translations is None
-        else resolve(get, recipe.translations, Translations).into
-    )
-    if into not in held:
-        raise StructuralError(f"no translations into {into}")
-    return held[into]
-
-
 def compile_request(
     recipe: Recipe,
     get: Resolver,
@@ -938,23 +927,15 @@ def compile_request(
     into: str | None = None,
 ) -> Skeleton:
     landed, followed = landings(recipe, get, facts)
-    entries = None if into is None else _translations_into(recipe, get, into)
-    missing: set[str] = set()
-
-    def translate(text: str) -> str:
-        if entries is None:
-            return text
-        if text not in entries:
-            missing.add(text)
-            return text
-        return entries[text]
-
-    parts = _parts(recipe, get, lambda _: translate)
-    if missing:
-        raise StructuralError(
-            f"no translation into {into} for "
-            + ", ".join(repr(t) for t in sorted(missing))
-        )
+    entries: dict[str, str] = {}
+    if into is not None:
+        if into not in (held := translated(recipe, get)):
+            raise StructuralError(f"no translations into {into}")
+        if missing := untranslated(recipe, get, into):
+            listed = ", ".join(repr(t) for t in missing)
+            raise StructuralError(f"no translation into {into} for {listed}")
+        entries = held[into]
+    parts = _parts(recipe, get, lambda text: entries.get(text, text))
     prompt, output = parts.prompt, parts.output
     sampling = resolve(get, recipe.sampling, Sampling)
     if prompt.purpose != recipe.purpose:

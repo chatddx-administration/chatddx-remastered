@@ -10,7 +10,7 @@ from chatddx.factors.request import (
     Slot,
     Translations,
     compile_request,
-    texts,
+    untranslated,
 )
 from chatddx.factors.scoring import Judge, Scoring
 from chatddx.factors.test.sample import generation_recipe, world
@@ -30,7 +30,7 @@ def test_a_request_is_in_the_language_its_parts_agree_on() -> None:
     assert language.language_of(rows, plan.skeleton) == "en"
     assert language.language_of(rows, ids["trial"]) == "en"
 
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     recipe = base.model_copy(update={"translations": swedish})
     assert compiled(reg, recipe).skeleton == plan.skeleton
@@ -67,7 +67,7 @@ def test_every_compilation_of_a_skeleton_votes() -> None:
         plan.skeleton
     )
     assert language.language_of(rows, plan.skeleton) == "en"
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     unchanged = reg.add(Translations(into={"sv": {t: t for t in needed}}))
     retold = compiled(reg, base.model_copy(update={"translations": unchanged}), "sv")
     assert retold.skeleton == plan.skeleton
@@ -82,7 +82,7 @@ def test_an_edit_is_in_the_language_of_its_own_recipe() -> None:
     assert base.instructions is not None
     for part in (base.instructions, base.prompt, base.output):
         rows.set_language(part, "en")
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     unchanged = reg.add(Translations(into={"sv": {t: t for t in needed}}))
     retold = compiled(reg, base.model_copy(update={"translations": unchanged}), "sv")
     assert retold.skeleton == plan.skeleton
@@ -119,7 +119,7 @@ def test_many_digests_are_given_the_language_each_has_alone() -> None:
     assert base.instructions is not None
     for part in (base.instructions, base.prompt, base.output):
         rows.set_language(part, "en")
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     translated = compiled(reg, base.model_copy(update={"translations": swedish}), "sv")
     uncompiled = reg.add(

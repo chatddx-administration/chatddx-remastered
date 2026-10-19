@@ -9,7 +9,7 @@ from chatddx.factors.request import (
     Instructions,
     Skeleton,
     Translations,
-    texts,
+    untranslated,
 )
 from chatddx.identity import Person
 from chatddx.test.world import LINES, LINES_GUIDED, NATIVE, QWEN
@@ -37,7 +37,7 @@ def test_a_configuration_s_texts_come_with_their_translations(bench: Bench) -> N
     guided = bench.variation(LINES_GUIDED)
     made = bench.translation(guided, "sv")
 
-    assert (made.language, made.into, made.unused) == ("en", "sv", {})
+    assert (made.language, made.unused) == ("en", {})
     assert list(made.texts) == ["instructions", "few_shot", "output", "appendix_layout"]
     assert dict(made.texts["instructions"]) == {
         INSTRUCTION: swedish(bench)[INSTRUCTION]
@@ -116,8 +116,8 @@ def test_a_translated_answer_is_told_by_its_schema_s_title_as_written(
 ) -> None:
     native = bench.variation(NATIVE)
     assert native.recipe is not None
-    held = texts(native.recipe, bench.store.get)
-    into = {"sv": {t: f"[sv] {t}" for found in held.values() for t in found}}
+    needed = untranslated(native.recipe, bench.store.get, "sv")
+    into = {"sv": {t: f"[sv] {t}" for t in needed}}
     made = bench.new(Translations(into=into), "native-sv")
     varied = bench.variation(NATIVE, {"translations": made.edit.digest})
     compilation = keep_compilation(bench, varied, "sv")

@@ -94,7 +94,6 @@ class Carried:
 @dataclass(frozen=True)
 class Translation:
     language: str | None
-    into: str
     texts: dict[str, list[tuple[str, str | None]]]
     unused: dict[str, str]
     skeleton: Skeleton

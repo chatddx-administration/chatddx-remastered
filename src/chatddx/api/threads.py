@@ -29,7 +29,7 @@ from chatddx.factors.request import (
     Compilation,
     Purpose,
     Recipe,
-    Translations,
+    translated,
 )
 from chatddx.factors.trial import suggest_seeds
 
@@ -88,9 +88,7 @@ def _translated(bench: Bench, edit: catalog.Edit) -> list[str]:
     if edit.compilation is None:
         return []
     recipe = resolve(bench.store.get, edit.compilation, Compilation).recipe
-    if recipe.translations is None:
-        return []
-    return list(resolve(bench.store.get, recipe.translations, Translations).into)
+    return list(translated(recipe, bench.store.get))
 
 
 @router.get("/threads")
@@ -273,20 +271,19 @@ def translation(
 ) -> schemas.Translation:
     with refused():
         varied = bench.variation(thread, given.given(), given.head)
-        translated = bench.translation(varied, given.into, given.entries)
+        made = bench.translation(varied, given.into, given.entries)
         written = bench.skeleton(varied)
     return schemas.Translation(
         label=varied.label,
-        language=translated.language,
-        into=translated.into,
+        language=made.language,
         texts=[
             schemas.TranslatedText(part=part, text=text, translation=translation)
-            for part, found in translated.texts.items()
+            for part, found in made.texts.items()
             for text, translation in found
         ],
-        unused=translated.unused,
+        unused=made.unused,
         written=written.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
-        request=translated.skeleton.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
+        request=made.skeleton.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
     )
 
 

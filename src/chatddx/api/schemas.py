@@ -406,7 +406,6 @@ class Translation(_Schema):
     language: str | None = Field(
         description="the language it is written in; null when unknown"
     )
-    into: str
     texts: list[TranslatedText] = Field(
         description="the texts it holds, part by part, in the order they are sent"
     )

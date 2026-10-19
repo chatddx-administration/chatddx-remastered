@@ -6468,10 +6468,6 @@
             "title": "Language",
             "description": "the language it is written in; null when unknown"
           },
-          "into": {
-            "type": "string",
-            "title": "Into"
-          },
           "texts": {
             "items": {
               "$ref": "#/components/schemas/TranslatedText"
@@ -6510,7 +6506,6 @@
         "required": [
           "label",
           "language",
-          "into",
           "texts",
           "unused",
           "written",

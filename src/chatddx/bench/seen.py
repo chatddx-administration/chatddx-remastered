@@ -12,7 +12,6 @@ from chatddx.catalog.titles import short
 from chatddx.factors.base import (
     Component,
     Finding,
-    Resolver,
     StructuralError,
     iter_refs,
     language_tag,
@@ -34,6 +33,8 @@ from chatddx.factors.request import (
     compiled as compile_recipe,
     landings,
     texts,
+    translated,
+    untranslated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
@@ -332,11 +333,7 @@ class Seen:
             else recipe_language(self.rows, recipe)
         )
         held = self._languages_of(cases)
-        into = (
-            []
-            if recipe is None or recipe.translations is None
-            else list(resolve(self.store.get, recipe.translations, Translations).into)
-        )
+        into = [] if recipe is None else list(translated(recipe, self.store.get))
 
         def sent_in(language: str | None) -> str | None:
             if language is None or language == own:
@@ -437,7 +434,7 @@ class Seen:
             raise ValueError(f"{variation.label} is written in {into}")
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         if entries is None:
-            entries = _entries(recipe, registry.get, into)
+            entries = translated(recipe, registry.get).get(into, {})
         held = texts(recipe, registry.get)
         needed = {t for found in held.values() for t in found}
         if needed:
@@ -451,7 +448,6 @@ class Seen:
             skeleton = self.skeleton(variation)
         return Translation(
             language=own,
-            into=into,
             texts={
                 part: [(t, entries.get(t) or None) for t in found]
                 for part, found in held.items()
@@ -942,13 +938,13 @@ def incomplete(
     if recipe is None or recipe.translations is None:
         return []
     registry = seen.store.load(s.digest for s in iter_refs(recipe))
-    needed = {t for found in texts(recipe, registry.get).values() for t in found}
     said = {c.language for c in carried if c.refused is not None}
     said.add(recipe_language(seen.rows, recipe))
     found: list[Finding] = []
-    into = resolve(registry.get, recipe.translations, Translations).into
-    for language, entries in into.items():
-        if language in said or not (missing := sorted(needed - entries.keys())):
+    for language in translated(recipe, registry.get):
+        if language in said:
+            continue
+        if not (missing := untranslated(recipe, registry.get, language)):
             continue
         count = "1 text" if len(missing) == 1 else f"{len(missing)} texts"
         listed = ", ".join(repr(t) for t in missing)
@@ -961,12 +957,6 @@ def incomplete(
             )
         )
     return found
-
-
-def _entries(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
-    if recipe.translations is None:
-        return {}
-    return resolve(get, recipe.translations, Translations).into.get(into, {})
 
 
 def _language_in(

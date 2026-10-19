@@ -27,11 +27,7 @@ def test_a_configuration_is_given_in_its_language_and_translated(
     assert got.status_code == 200, got.json()
     shown = got.json()
 
-    assert (shown["label"], shown["language"], shown["into"]) == (
-        LINES_GUIDED,
-        "en",
-        "sv",
-    )
+    assert (shown["label"], shown["language"]) == (LINES_GUIDED, "en")
     assert [t["part"] for t in shown["texts"]] == [
         "instructions",
         "few_shot",

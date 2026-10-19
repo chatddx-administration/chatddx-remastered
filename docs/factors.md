@@ -366,6 +366,18 @@ most tool rounds one item may take. Its guidance goes where the instructions or 
 instructions, following the output's guidance.
 
 ### Translations
+```
+AGENT: REPLACE
+The reduction of translations gave the factors the helpers the note asks for
+(src/chatddx/factors/request.py:translated, untranslated); what translations are stays docs/bench.md's. Replace the
+note, two lines.
+---
+A recipe's translations are a chunk of its own, `chunk.translations`, which docs/bench.md, "Translations", describes.
+Here they are what compiling into a language reads: `translated` gives what a recipe's translations hold, by language,
+and `untranslated` the texts of the recipe they leave without an entry in one, every text in a language they don't go
+into. Compiling into a language refuses one they don't go into, and one they leave a text untranslated in, listing
+every such text.
+```
 > Factors currently have no notion of translations, exploration of a factor-level compilation is encouraged. Or provide
 a untranslated(recipe, get, into) helper or the like.
 

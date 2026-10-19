@@ -130,6 +130,12 @@ For a variation, the bench gives:
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced.
+```
+AGENT: REPLACE
+The two lines don't parse ("go into and, and leave it"); the codes are said under "Translations".
+---
+- **its lints**, `translations.missing` and `translations.incomplete` among them (see "Translations").
+```
 - **its lints**,  `translations.missing`, `translations.incomplete` warnings for each other language its
   translations go into and, and leave it untranslated.
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
@@ -180,6 +186,14 @@ Cases and appendices aren't translated: each is in a language of its own. A requ
 and no language tag reaches the model.
 
 #### Incomplete translations refuse compilation
+```
+AGENT: REPLACE
+It doesn't fire for a language `translations.missing` already reports, nor for the configuration's own
+(src/chatddx/bench/seen.py:incomplete); the paragraph's second line, with that said.
+---
+untranslated. Running it in that language would therefore be refused. It fires when any text has no entry, unless
+`translations.missing` says so of that language's cases, and never for the configuration's own language.
+```
 `translations.incomplete`: The configuration's translations into some language leave at least one of its texts
 untranslated. Running it in that language would therefore be refused. It fires when any text has no entry.
 Typical cause: someone edits a source text, for instance the instructions. Translations are keyed by the exact text,

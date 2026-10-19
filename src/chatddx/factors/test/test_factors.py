@@ -71,6 +71,8 @@ from chatddx.factors.request import (
     landings,
     next_request,
     texts,
+    translated,
+    untranslated,
 )
 from chatddx.factors.response import ToolCall, tool_calls
 from chatddx.factors.scoring import (
@@ -875,13 +877,13 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         swedish
     )
     german = {text: f"[de] {text}" for text in swedish if text != "ACS."}
-    translated = recipe.model_copy(
+    bilingual = recipe.model_copy(
         update={
             "translations": reg.add(Translations(into={"sv": swedish, "de": german}))
         }
     )
-    assert compile_request(translated, reg.get) == compile_request(recipe, reg.get)
-    skeleton = compile_request(translated, reg.get, into="sv")
+    assert compile_request(bilingual, reg.get) == compile_request(recipe, reg.get)
+    skeleton = compile_request(bilingual, reg.get, into="sv")
     system, user, assistant, prompt = skeleton.messages
     assert system.content[0] == (
         "Du är akutläkare.\n\nSvara med:\n\n"
@@ -910,11 +912,18 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "parameters": skeleton.output_schema,
     }
 
+    assert list(translated(bilingual, reg.get)) == ["de", "sv"]
+    assert (translated(recipe, reg.get), untranslated(bilingual, reg.get, "sv")) == (
+        {},
+        (),
+    )
+    assert untranslated(bilingual, reg.get, "de") == ("ACS.",)
+    assert untranslated(recipe, reg.get, "sv") == tuple(sorted(swedish))
     with pytest.raises(StructuralError, match="no translation into de for 'ACS.'"):
-        _ = compile_request(translated, reg.get, into="de")
+        _ = compile_request(bilingual, reg.get, into="de")
     for into in ("fi", "en"):
         with pytest.raises(StructuralError, match=f"no translations into {into}$"):
-            _ = compile_request(translated, reg.get, into=into)
+            _ = compile_request(bilingual, reg.get, into=into)
     with pytest.raises(StructuralError, match="no translations into sv"):
         _ = compile_request(recipe, reg.get, into="sv")
     refused: list[dict[str, dict[str, str]]] = [
@@ -932,7 +941,7 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
 def test_a_compilation_says_the_language_it_compiled_into(reg: Registry) -> None:
     _ = world(reg)
     base = generation_recipe(reg)
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     swedish = Translations(into={"sv": {t: f"[sv] {t}" for t in needed}})
     recipe = base.model_copy(update={"translations": reg.add(swedish)})
     skeleton, compilation = compiled(recipe, reg.get, RIG, into="sv")

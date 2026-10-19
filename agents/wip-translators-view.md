@@ -200,7 +200,8 @@ its instructions, carried over from its unused entry, saved, and the variation p
   typed, the entries no text uses, and its skeleton translated with a text without a translation left as written.
   Refused for a hand-written configuration, and into its own language.
 - **The lint**: `translations.incomplete`, on a configuration's look, for each language its translations go into
-  and leave a text of it untranslated, whatever cases are given (`src/chatddx/bench/seen.py:incomplete`). A
+  and leave a text of it untranslated, whatever cases are given (`src/chatddx/bench/seen.py:incomplete`, by
+  `chatddx.factors.request:untranslated`, which compiling into a language refuses by too). A
   language whose cases are left out for it says so as `translations.missing` instead.
 - **The API**, suggested to `docs/api.md` as an `AGENT` block: `POST /api/threads/{thread}/translation`
   (`src/chatddx/api/threads.py:translation`), a variation as the look takes it, a language and the entries into it as

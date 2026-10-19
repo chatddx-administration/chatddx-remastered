@@ -41,6 +41,7 @@ from chatddx.factors.request import (
     Slot,
     Translations,
     texts,
+    untranslated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scoring
 from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
@@ -904,7 +905,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     in_language(base.output, "en")
     assert language_of(rows, plan.skeleton) == "en"
 
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     translated = compiled_recipe(
         store, reg, base.model_copy(update={"translations": swedish}), "sv"
