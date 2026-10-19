@@ -19,6 +19,13 @@ files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
+[local_model.qwen3-8b-bare]
+repo = "Qwen/Qwen3-8B-AWQ"
+revision = "fake-bare"
+files = [
+  { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+]
+
 [local_engine."qwen3@fake"]
 description = "Qwen3 on the fake vLLM, with its reasoning and tool parsers."
 tags = ["fake"]
@@ -37,7 +44,7 @@ argv = [
 [local_engine."qwen3-bare@fake"]
 description = "Qwen3 on the fake vLLM, with no reasoning parser and no tool flags."
 tags = ["fake"]
-model = "qwen3-8b-awq"
+model = "qwen3-8b-bare"
 hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "none" }
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

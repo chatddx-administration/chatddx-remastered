@@ -1,5 +1,5 @@
 include = ["endpoints.toml"]
-configurations = "qwen3-8b@pelle"
+configurations = "qwen3-8b"
 
 [source.sample]
 path = "../sample/vignettes"
@@ -13,5 +13,5 @@ kind = "database"
 "gpt-oss-20b@malborg" = ["sample", "typed"]
 
 [judge]
-verdict = "qwen3-8b@pelle"
-graded = "gpt-oss-20b@malborg"
+verdict = "qwen3-8b"
+graded = "gpt-oss-20b"

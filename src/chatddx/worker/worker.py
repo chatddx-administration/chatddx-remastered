@@ -14,10 +14,10 @@ from chatddx import settings
 from chatddx.api import schemas
 from chatddx.api.events import graded_of, scoring_of
 from chatddx.bench import Bench, Graded
-from chatddx.inventory import Inventory
+from chatddx.inventory import Inventory, check
 from chatddx.ledger import RunStarted
 from chatddx.runner import Halt, Running
-from chatddx.store import Job, People, Queue
+from chatddx.store import Job, People, Queue, Store
 from chatddx.store.notify import WORKERS, listen
 from chatddx.store.store import Connection
 
@@ -93,6 +93,15 @@ class Worker:
             self._waking = waking
         try:
             with self._connect() as conn:
+                for f in check(self._inventory, Store(conn).get):
+                    log.log(
+                        logging.INFO if f.level == "info" else logging.WARNING,
+                        "[world %s] %s: %s: %s",
+                        f.level,
+                        f.subject,
+                        f.code,
+                        f.message,
+                    )
                 queue = Queue(conn)
                 queue.enlist(self.id)
                 listen(conn, WORKERS)

@@ -19,9 +19,10 @@ Finds:
 2. `endpoint.not_engine`: "{digest} is a {engine.kind_name}, not an engine" (through `_engine`)
 3. `endpoint.unstartable`: str(e) (from `LookupError`, through `_endpoint`)
 4. `endpoint.remote_host`: "it serves a remote engine, which no host of ours runs, but names host {host!r}" (through `_endpoint`)
-5. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
-6. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
-7. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
+5. `endpoint.model_shared`: "endpoint {names[0]!r} serves its model's weights too, so the handle they are under resolves to neither: ops' to mend"
+6. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
+7. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
+8. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
 
 ## DatabaseSource `(Source)`
 `src/chatddx/inventory/sources.py:DatabaseSource`
@@ -91,8 +92,6 @@ Raises:
 2. `ValueError`: "endpoint {name!r} names no host {endpoint.host!r}" (through `Inventory._hosts_exist`, in a `ValidationError`)
 3. `ValueError`: "cleared names no endpoint {name!r}" (through `Inventory._cleared_exist`, in a `ValidationError`)
 4. `ValueError`: "endpoint {name!r} is cleared for no source {', '.join(unknown)}" (through `Inventory._cleared_exist`, in a `ValidationError`)
-5. `ValueError`: "judge {name!r} is bound to no endpoint {endpoint!r}" (through `Inventory._judges_bound`, in a `ValidationError`)
-6. `ValueError`: "configurations are made for no endpoint {self.configurations!r}" (through `Inventory._judges_bound`, in a `ValidationError`)
 
 ## Inventory.endpoint
 `src/chatddx/inventory/inventory.py:Inventory.endpoint`
@@ -123,8 +122,8 @@ Raises:
 * ∟`str`
 
 Raises:
-1. `LookupError`: "no endpoint serves {what}"
-2. `LookupError`: "{', '.join(named)} serve {what}; name the one to use"
+1. `LookupError`: "no endpoint serves {what}, which is ops' to mend"
+2. `LookupError`: "{', '.join(named)} serve {what}, which one endpoint should: ops' to mend"
 
 ## Inventory.source `[S: Source]`
 `src/chatddx/inventory/inventory.py:Inventory.source`

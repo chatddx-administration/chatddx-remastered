@@ -29,6 +29,7 @@ from chatddx.fake_vllm.server import run, run_all
 from chatddx.identity import Role
 from chatddx.importers.o11n import (
     Imported,
+    checked,
     endpoints_toml,
     engines_toml,
     imported,
@@ -189,6 +190,7 @@ def _import_engine(args: argparse.Namespace) -> None:
         if missing := sorted(set(args.server or ()) - {i.server for i in imports}):
             raise LookupError(f"no report has a server {', '.join(missing)}")
         engines, endpoints = engines_toml(imports), endpoints_toml(imports)
+        found = checked(imports)
     except (OSError, LookupError, ValueError) as e:
         raise SystemExit(f"import-engine: {e}") from None
     for i in imports:
@@ -196,6 +198,11 @@ def _import_engine(args: argparse.Namespace) -> None:
             print(
                 f"[import {f.level}] {i.name}: {f.code}: {f.message}", file=sys.stderr
             )
+    for f in found:
+        print(
+            f"[inventory {f.level}] {f.subject}: {f.code}: {f.message}",
+            file=sys.stderr,
+        )
     written = f"# Written by `{' '.join(['chatddx import-engine', *args.reports])}`.\n"
     _ = args.engines.write_text(
         written

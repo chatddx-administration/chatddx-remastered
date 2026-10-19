@@ -11,7 +11,7 @@ needs are there from the start rather than added later.
 
 - **The bench is the surface for what depends on who is asking**: what a person sees, finds and owns. What doesn't
   depend on them is the same for everyone, read from the store and the World, if through the bench's reads that take
-  no person: a component by its digest, the endpoints and the models.
+  no person: a component by its digest, the endpoints, and the models by their handles.
 - **What a person sees is a convenience, not protection.** It decides what is relevant to show them. Protection is
   clearance, which the runner's gate enforces, and the database's grants (agents/wip-clearance.md).
 - **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score. The
@@ -74,7 +74,7 @@ A configuration's variation is the configuration with some of its parts replaced
 time and nothing is stored by looking.
 
 The latest configuration means its head when the request comes (unless an edit is given), and a variation with parts
-replaced is compiled against the facts about its engine's model as they are stored then, so a variation looked at and
+replaced is compiled against the facts about its model as they are stored then, so a variation looked at and
 one run moments later can differ if the configuration or the facts moved in between; each run records the skeleton it
 ran, and its compilation the facts.
 
@@ -86,7 +86,9 @@ A look at a variation gives:
   digest. A reasoning level, and a recommended sampling, also say the level the model is asked for
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
-  an endpoint, for the model.
+  a handle (`under`), for the model.
+- the handle it runs under (`model`), or why it can't run (`problem`): its handle doesn't resolve to one endpoint,
+  which is ops' to mend, its model is behind its handle, or it names no model and no handle is given.
 - Translations (`docs/bench.md`, "Translations")
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
@@ -97,8 +99,8 @@ its stored compilations, which it hasn't got yet.
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, or a stored model; a
 part that can't be taken out, the model among them; parts that don't compile together, among them a reasoning level
 or a recommended sampling that the facts about the model refuse, or that a model without facts can't work
-out; an endpoint named that serves another model; or a parameter the request doesn't know, so that a misspelt part is
-refused rather than ignored. A look's queries don't grow with the number of cases it is over.
+out; a handle named for a hand-written configuration that isn't one; or a parameter the request doesn't know, so that
+a misspelt part is refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
 ## Translations
 See docs/bench.md, "Translations".
@@ -108,6 +110,10 @@ A component of a kind a person writes is checked as a write would store it, and 
 references, which must be stored, the rules that take several components, and a scorer's code and parameters. It
 gives back the digest it would have and what the lints say of it, or is refused as the write would be. A client checks
 what a person types as they type it.
+
+A recipe is checked as making a configuration of it would make it, and nothing is written: each part a stored chunk of
+that part and the model a stored model, compiled against the facts about its model as they are now. It gives back the
+digest of the skeleton it compiles to and what the lints say of it, or is refused as making it would be.
 
 ## Picking
 Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view
@@ -169,6 +175,10 @@ either is an edit of the person's own thread, which names the head it was made o
 lints say; only following an origin takes a language. Following a thread with nothing to follow, or whose changes
 no longer fit, is unprocessable.
 
+A thread's lineage is its first origin and every fork below it, as far as the person sees them, each with its
+origin, its base and what it varies, whether its origin has moved on since, and whether it is deleted, which only its
+owner sees.
+
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
 "Taking"):
@@ -197,10 +207,11 @@ replaced over it, or nothing for a run started from a trial alone (docs/catalog.
 start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
 started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
 
-A run goes to the endpoint serving its variation's model, or to the endpoint the request names, which must serve it,
-and its trial takes that endpoint's engine; a hand-written configuration names no model, so it needs an endpoint
-named. No endpoint serving the model, or several when none is named, is refused before the gate is asked, as an
-endpoint named that serves another model is (docs/bench.md, "The model").
+A run goes under its variation's handle, to the one endpoint the handle resolves to, and its trial takes the
+handle's latest engine; a hand-written configuration names no model, so a start names the handle it runs under
+(`under`). A handle that resolves to no endpoint or several is refused as ops' error, a variation whose weights its
+handle no longer holds as behind its model, and a handle named for a configuration with a model part as one it runs
+under already, all before the gate is asked (docs/bench.md, "The model").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
@@ -260,20 +271,17 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
-Running again draws new seeds, and runs the run's trial in its one language, as a run of its own rather than one of
-the start it was made in.
+Running again runs the run's skeleton over its cases in its one language, under its handle, and so at the handle's
+latest engine, as a run of its own rather than one of the start it was made in, with new seeds or its own. It is
+refused as ops' error when the handle no longer resolves, and as behind when the handle holds other weights than the
+run's.
 
 ### Halting
 A halt goes through the queue, and reaches the job's worker wherever it is.
 It cancels the calls under way, record them as stopped and the run is finished unscored.
 
 ### Reading runs
-- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
-  a scorer that scored them, to a start's runs (`with`), or to those left to score, each with the scorers it is left
-  to be scored by. Each says what ran: its trial, skeleton, the language its request is sent in, the first run of its
-  start, engine, endpoint, cases, seeds, and a line saying it as people read it; and its latest job: how it stands and
-  why, whether it was asked to halt, and while it is queued, how many jobs at its endpoint are under way or are to be
-  taken before it, none while its owner has paused.
+- **A person's runs**, newest first by trial's digest or by a scorer that scored them
 - **A run** adds when it started and finished, the rig it ran on, what it noted as it went, what checking it finds
   now, each item's outcome and tokens, and its latest score under each scorer.
 - **A run's scores**: the latest under each scorer, or every one, newest first. A score says its scoring, when it
@@ -285,6 +293,9 @@ It cancels the calls under way, record them as stopped and the run is finished u
   breaks its schema. They are sensitive.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
+- **Runs compared**, in the order given: the items every one of their trials holds, by case and replicate, each
+  view's value per run and item, under each scorer that scored one of them, each view's mean per run over those
+  items, and the cases only some of them hold.
 
 Only the person's own runs are seen; a collaborator on a run doesn't see it.
 

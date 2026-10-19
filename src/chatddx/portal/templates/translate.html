@@ -1,11 +1,7 @@
 {% extends "base.html" %}
-{% from "macros.html" import drawer, opened, pane, rail, upright %}
+{% from "macros.html" import drawer, named, opened, pane, rail, upright with context %}
 
 {% set link = "text-primary hover:underline" %}
-
-{% macro named(t) -%}
-{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
-{%- endmacro %}
 
 {% macro mark(language, missing) -%}
 <span class="inline-flex items-center gap-1 rounded-full px-1.5 text-[0.7rem] {{ 'bg-success/10 text-success' if not missing else 'bg-warning/10 text-warning' }}">{{ language }} {{ "✓" if not missing else missing }}<span class="sr-only">{{ ", complete" if not missing else " missing" }}</span></span>

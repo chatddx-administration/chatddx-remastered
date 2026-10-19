@@ -1,0 +1,10 @@
+description = "The same two cases on a fork of instructed's configuration."
+configuration = "lines-guided"
+endpoint = "qwen3@fake"
+cases = ["crlf", "bom"]
+
+[[turn]]
+content = "Migraine"
+
+[[turn]]
+content = "Migraine"

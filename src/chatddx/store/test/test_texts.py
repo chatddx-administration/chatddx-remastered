@@ -39,7 +39,6 @@ def test_a_database_source_s_texts_are_kept_and_fetched_through_the_store(
 
 
 @pytest.mark.parametrize("autocommit", [True])
-@pytest.mark.slow
 def test_a_text_is_never_changed_and_only_the_admin_deletes_one(
     conn: Connection, admin: Connection
 ) -> None:

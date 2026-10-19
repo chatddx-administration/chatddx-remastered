@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import JsonValue
 
+from chatddx.api import schemas
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
 from chatddx.api.state import NO_STORE, state
 from chatddx.bench import Bench
@@ -87,6 +88,11 @@ def page_bench(request: Request, conn: ConnDep, person: PersonDep) -> Bench:
 
 
 type BenchDep = Annotated[Bench, Depends(page_bench)]
+
+
+def own_first(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:
+    login = bench.person.login
+    return sorted(found, key=lambda t: (t.owner != login, (t.name or t.title).lower()))
 
 
 def _back(request: Request) -> str | None:

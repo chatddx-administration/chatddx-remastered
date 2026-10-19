@@ -125,6 +125,13 @@ Raises:
 * `given: schemas.ComponentBody`
 * ∟`schemas.Checked`
 
+## check_recipe `@router.post("/recipes/check")`
+`src/chatddx/api/world.py:check_recipe`
+
+* `bench: BenchDep`
+* `given: schemas.RecipeBody`
+* ∟`schemas.Checked`
+
 ## Checked `(_Schema)`
 `src/chatddx/api/schemas.py:Checked`
 
@@ -145,6 +152,31 @@ Raises:
 `src/chatddx/api/app.py:CODES`
 
 * `CODES: dict[int, Code] = {…}`
+
+## Compared `(_Schema)`
+`src/chatddx/api/schemas.py:Compared`
+
+* `runs: list[Run]`
+* `views: list[ComparedView] = Field(…)`
+* `items: list[ItemKey] = Field(description="the items every run's trial holds")`
+* `apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")`
+
+## compared `@router.get("/runs/compared")`
+`src/chatddx/api/runs.py:compared`
+
+* `bench: BenchDep`
+* `run: Annotated[list[UUID], Query(min_length=1, max_length=20, description='the runs, in order')]`
+* ∟`schemas.Compared`
+
+## ComparedView `(_Schema)`
+`src/chatddx/api/schemas.py:ComparedView`
+
+* `scorer: str`
+* `name: str`
+* `view: int`
+* `label: str`
+* `means: list[float | None] = Field(…)`
+* `values: list[list[float | None]] = Field(…)`
 
 ## Component `(_Schema)`
 `src/chatddx/api/schemas.py:Component`
@@ -454,6 +486,12 @@ Raises:
 * `heard: Heard`
 * ∟`None`
 
+## HeldBySome `(_Schema)`
+`src/chatddx/api/schemas.py:HeldBySome`
+
+* `case: str`
+* `runs: list[UUID] = Field(description="the runs that hold it")`
+
 ## Item `(_Schema)`
 `src/chatddx/api/schemas.py:Item`
 
@@ -507,6 +545,12 @@ Raises:
 `src/chatddx/api/schemas.py:ItemEndedData`
 
 * `why: str | None`
+
+## ItemKey `(_Schema)`
+`src/chatddx/api/schemas.py:ItemKey`
+
+* `case: str`
+* `replicate: int`
 
 ## runs.items `@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])`
 `src/chatddx/api/runs.py:items`
@@ -602,6 +646,15 @@ Raises:
 * `token: str`
 * ∟`None`
 
+## Kin `(Thread)`
+`src/chatddx/api/schemas.py:Kin`
+
+* `origin: int | None = Field(…)`
+* `base: Edit | None = Field(…)`
+* `varies: list[Varied] = Field(description="a fork's: what its head changes")`
+* `moved_on: bool = Field(…)`
+* `deleted: bool`
+
 ## Kind `(_Schema)`
 `src/chatddx/api/schemas.py:Kind`
 
@@ -647,6 +700,13 @@ Raises:
 * `language: str`
 * `cases: list[str]`
 * `why: str`
+
+## lineage `@router.get("/threads/{thread}/lineage")`
+`src/chatddx/api/threads.py:lineage`
+
+* `bench: BenchDep`
+* `thread: int`
+* ∟`list[schemas.Kin]`
 
 ## Listener
 `src/chatddx/api/listening.py:Listener`
@@ -732,9 +792,12 @@ Raises:
 ## Model `(_Schema)`
 `src/chatddx/api/schemas.py:Model`
 
-* `name: str`
+* `name: str = Field(description="the handle")`
+* `weights: str = Field(description="the weights it holds now, by digest")`
+* `engine: str | None = Field(description="its latest engine, when it resolves")`
 * `facts: JsonValue`
-* `endpoints: list[str]`
+* `takes_typed: bool = Field(…)`
+* `problem: str | None = Field(…)`
 
 ## ModelDigest
 `src/chatddx/api/schemas.py:ModelDigest`
@@ -830,7 +893,7 @@ Raises:
 * `configuration: int`
 * `head: int | None = Field(…)`
 * `parts: Parts = Parts()`
-* `endpoint: str | None = Field(…)`
+* `under: str | None = Field(…)`
 * `families: list[int] | None = Field(…)`
 * `tags: list[str] | None = Field(…)`
 * `cases: list[str] | None = Field(…)`
@@ -1000,6 +1063,11 @@ Raises:
 * `missing: list[int]`
 * `choosing: list[int]`
 
+## RecipeBody
+`src/chatddx/api/schemas.py:RecipeBody`
+
+* `RecipeBody`
+
 ## refused `@contextmanager`
 `src/chatddx/api/state.py:refused`
 
@@ -1087,6 +1155,8 @@ Raises:
 * `started_with: UUID | None = Field(…)`
 * `engine: str`
 * `endpoint: str | None`
+* `model: str | None = Field(…)`
+* `latest: bool = Field(description="whether it ran at its handle's latest engine")`
 * `cases: list[str]`
 * `seeds: list[int]`
 * `described: str`
@@ -1631,6 +1701,8 @@ Raises:
 * `parts: list[Part] | None`
 * `seed: int`
 * `request: dict[str, JsonValue]`
+* `model: str | None = Field(description="the handle it runs under")`
+* `problem: str | None = Field(…)`
 * `findings: list[Finding] | None`
 * `languages: list[Carried] = Field(…)`
 * `reach: list[Reach]`
@@ -1644,7 +1716,7 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
-1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_engine_at`)
+1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_at`)
 
 ## Varied `(_Schema)`
 `src/chatddx/api/schemas.py:Varied`
@@ -1657,7 +1729,7 @@ Raises:
 `src/chatddx/api/schemas.py:Varying`
 
 * `head: int | None = Field(…)`
-* `endpoint: str | None = Field(…)`
+* `under: str | None = Field(…)`
 * `tag: list[str] = Field(…)`
 * `seed: int | None = Field(None, description="drawn when not given")`
 

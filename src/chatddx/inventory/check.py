@@ -7,7 +7,9 @@ from .inventory import Inventory
 from .serving import start_up
 
 
-def _engine(get: Resolver, name: str, digest: str) -> Component | Finding:
+def _engine(
+    get: Resolver, name: str, digest: str
+) -> LocalEngine | RemoteEngine | Finding:
     try:
         engine = get(digest)
     except StructuralError as e:
@@ -43,14 +45,27 @@ def _endpoint(
 def check(inventory: Inventory, get: Resolver) -> list[Finding]:
     findings: list[Finding] = []
     local: dict[str, LocalEngine] = {}
+    serving: dict[str, list[str]] = {}
     for name, endpoint in inventory.endpoints.items():
         match _engine(get, name, endpoint.engine):
             case Finding() as f:
                 findings.append(f)
             case engine:
                 findings.extend(_endpoint(inventory, get, name, engine))
+                serving.setdefault(engine.model, []).append(name)
                 if isinstance(engine, LocalEngine):
                     local[name] = engine
+
+    for names in serving.values():
+        for name in names[1:]:
+            findings.append(
+                Finding(
+                    code="endpoint.model_shared",
+                    message=f"endpoint {names[0]!r} serves its model's weights too, so "
+                    + "the handle they are under resolves to neither: ops' to mend",
+                    subject=name,
+                )
+            )
 
     at: dict[str, list[str]] = {}
     for name in local:

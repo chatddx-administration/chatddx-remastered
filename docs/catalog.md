@@ -216,6 +216,9 @@ A thread's title is its name. Without one, a fork is shown by its origin's title
 ("plan, output: management-plan-shown"), or as "a fork of plan" when it varies nothing; any other thread is shown by
 what its head holds.
 
+Researchers see handles, not engines, so a run on an earlier engine reads as under its handle, folded with
+its group (`qwen3-8b, an earlier engine`); the engine's own title stays ops'.
+
 Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
 catalog prefers, in order:
 1. a live thread whose head it is: its name, or else its title;

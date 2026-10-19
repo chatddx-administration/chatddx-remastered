@@ -8,11 +8,11 @@ export type Props = {
   base: Picked;
   optional: Part[];
   look: Schemas["Variation"];
-  endpoint: string | null;
+  under: string | null;
   tags: string[];
   choices: Record<Part, Schemas["Thread"][]>;
   configurations: Schemas["Thread"][];
-  endpoints: Schemas["Endpoint"][];
+  models: string[];
   everyTag: string[];
   families: Schemas["Family"][];
   itemsPerRun: number;

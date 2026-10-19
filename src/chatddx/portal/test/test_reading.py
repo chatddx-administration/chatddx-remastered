@@ -136,12 +136,14 @@ def test_families_are_listed_by_tag_and_read_with_their_cases_and_vignette(
 
 
 @pytest.mark.slow
-def test_endpoints_and_models_are_listed(signed: TestClient) -> None:
-    page = shown(signed, "/endpoints")
-    for e in signed.get("/api/endpoints").json():
-        assert escape(e["name"]) in page
+def test_models_are_listed_by_their_handles_and_no_endpoint_is_shown(
+    signed: TestClient,
+) -> None:
+    page = shown(signed, "/models")
     for m in signed.get("/api/models").json():
         assert escape(m["name"]) in page
+    for e in signed.get("/api/endpoints").json():
+        assert escape(e["name"]) not in page
 
 
 @pytest.mark.usefixtures("alice")

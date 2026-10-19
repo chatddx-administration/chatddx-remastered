@@ -110,9 +110,8 @@ Variation is a configuration with recipe parts replaced (docs/catalog.md, "Confi
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
 set by. With nothing replaced, it is the configuration itself.
 
-It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its model,
-so an edge needs an endpoint beside it only for a hand-written configuration, which has no model part and goes where
-named.
+It is a plain value and an unsaved one is just a digest. It runs under its model's handle, so an edge needs a handle
+beside it only for a hand-written configuration, which has no model part and runs under the one named.
 
 A variation replaces the recipe's nine chunks and its model, which can't be taken out.
 
@@ -148,35 +147,32 @@ translates its title too.
 
 ### The model
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
-from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving`);
-several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that names none, and a look rendered
-for none has no findings. The engine is the trial's: the endpoint's.
+from the facts about it. A run goes under the handle the model's weights are under, to the one endpoint serving its
+weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`); none or several is ops' error, said to the person,
+and a look that can't run says why and has no findings. The engine is the trial's: the handle's latest.
 
 A reasoning level and a recommended sampling are intents rather than settings: compiling
 resolves them with the facts about the model as they are stored then (docs/facts.md), lands each level where
 the facts say, on its nearest when the model can't be asked for it, and refuses what they refuse, and any intent on a
 model they don't know. So a variation is refused for its model as it is looked at, before anything runs.
 
-A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
-serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
-several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written
-configuration has no model part, and runs at the endpoint named.
+A run goes under its variation's handle: to the one endpoint ops map it to, at its latest engine. A handle that doesn't
+resolve to one endpoint is refused as ops' error, and a variation whose weights its handle no longer holds is behind
+its model, and refused until followed. A hand-written configuration has no model part, and runs under the handle
+named.
 
 ### Translations
 Principal author: researchers (translators)
 
 Translations map source texts to their translations, much as gettext does, into languages named by tags such as
 `sv` or `pt-BR`. One chunk holds every language a configuration is translated into, so adding a language is a new
-version of it.
+version of it. Vignettes aren't translated, so comparing languages is comparing case sets.
 
 A configuration is written in one language and its translations carry it into others. A recipe may name translations,
 and compiling it into one of their languages passes every text it holds through that language's entries:
 the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
 the descriptions of tools and of the answer function, the titles and descriptions in schemas, and the appendix
 layout.
-
-Cases and appendices aren't translated: each is in a language of its own. A request's language is implicit in its text,
-and no language tag reaches the model.
 
 `translations.missing`: running the configuration in some language would be refused, and the warning says why, as
 compiling it there says: its translations don't go into the language, or leave a text untranslated. It fires for
@@ -216,11 +212,8 @@ What every write has in common:
 - **Editing** keeps it as a new version of a configuration the person owns.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
-- **Making one from a recipe** of the person's own, by the chunks' digests for each part and an engine's, its purpose
-  and its appendix layout: compiled by the running code against the facts about the engine's model, and kept as a new
-  configuration with no origin. Each part must be a stored chunk of that part, the engine a stored engine, and the
-  recipe must compile: an intent the facts refuse doesn't, nor one on a model they don't know. Its language comes
-  from its recipe, so none is given.
+- **Making one from a recipe** a recipe is made with a model's digest (docs/api.md, "New") picked by its handle,
+  compiled against the facts about it.
 
 A configuration is kept with the compilation that makes it: for a variation with parts replaced, or a recipe, the one
 the running code compiles; otherwise the configuration's own.
@@ -345,7 +338,7 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   case's family still seen; another is "not found", as a family is.
 - **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
   the worker (docs/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is refused.
-- **Starting** runs a variation at the endpoint serving its model. A run for each language its cases are sent in
+- **Starting** runs a variation under its model's handle. A run for each language its cases are sent in
   (see "Translations"). As it starts, each is named by the variation's label and says what it varied:
   (docs/catalog.md, "What a run ran").
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").

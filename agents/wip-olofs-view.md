@@ -21,6 +21,8 @@ rather than a click, a scroll or another page.
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
 4. **Steps 1 to 6 are built** (see "Built"); what is left is in each step's "What step N leaves" and in "Open".
+5. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b): the run form's
+   endpoint (step 3) and the judge's (step 5) become a handle picked.
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/backlog.md`, "Olof's work"):

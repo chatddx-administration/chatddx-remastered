@@ -13,6 +13,7 @@
     after,
     to,
     labels,
+    language,
   }: {
     editing: Editing;
     component: () => Component;
@@ -21,6 +22,7 @@
     after?: (cases: number) => string;
     to?: (saved: Extract<Saved, { to: string }>) => string;
     labels?: () => Labelled;
+    language?: () => string | null;
   } = $props();
 
   let name = $state(untrack(() => editing.name));
@@ -35,7 +37,7 @@
     event.preventDefault();
     busy = true;
     problem = null;
-    const got = await saved({ ...editing, head }, name, component(), labels?.());
+    const got = await saved({ ...editing, head }, name, component(), labels?.(), language?.());
     busy = false;
     if ("to" in got) {
       const where = to ? to(got) : got.to;

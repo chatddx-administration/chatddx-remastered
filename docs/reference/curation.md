@@ -112,9 +112,9 @@ Raises:
 8. `ValueError`: "{path}: {e}" (from `ValueError`, through `_texts`)
 9. `ValueError`: "{table}.{name} is in {where} and texts-{language}.toml: a text is written in one language, and translated into others"
 10. `ValueError`: "tags must be a list of strings, not {value!r}" (through `_tags`)
-11. `ValueError`: "recipe.{name}: a recipe's model is the World's: its inventory names the endpoint configurations are made for"
+11. `ValueError`: "recipe.{name}: a recipe's model is the World's: its inventory names the handle configurations are made for"
 12. `ValueError`: "recipe.{name}: no {part} named {body[part]!r}"
-13. `ValueError`: "judge.{name}: a judge's engine is the World's, which binds the judge to an endpoint in its inventory's [judge] table"
+13. `ValueError`: "judge.{name}: a judge's engine is the World's, which binds the judge to a handle in its inventory's [judge] table"
 14. `ValueError`: "judge.{name}: no recipe named {recipe!r}"
 15. `ValueError`: "judge.{name}: {e}" (from `ValidationError`)
 16. `ValueError`: "judge.{name}: {'; '.join(refused)}"

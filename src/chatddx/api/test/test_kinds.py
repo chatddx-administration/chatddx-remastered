@@ -1,10 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.helpers import endpoint
 from chatddx.api.test.test_variations import thread
 from chatddx.api.test.test_writes import body
 from chatddx.bench import KINDS, WRITTEN
-from chatddx.test.world import CLINICIAN
+from chatddx.test.world import CLINICIAN, QWEN
 
 GHOST = "sha256:" + "0" * 64
 
@@ -73,5 +74,36 @@ def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
         ({**held, "v": 2}, "chunk.reasoning is at v1, not v2"),
     ):
         got = signed.post("/api/components/check", json=given)
+        assert got.status_code == 422, given
+        assert said in str(got.json()["detail"])
+
+
+@pytest.mark.slow
+def test_a_recipe_is_checked_as_a_new_configuration_compiles_it_and_nothing_is_written(
+    signed: TestClient,
+) -> None:
+    def digest(kind: str, name: str) -> str:
+        return thread(signed, kind, name, "archive")["head"]["digest"]
+
+    recipe = {
+        "prompt": digest("prompt", "case"),
+        "output": digest("output", "native"),
+        "sampling": digest("sampling", "greedy"),
+        "model": endpoint(signed, QWEN)["serves"],
+    }
+    got = signed.post("/api/recipes/check", json=recipe)
+    assert got.status_code == 200
+    checked = got.json()
+    assert checked["findings"] == []
+    assert signed.get(f"/api/components/{checked['digest']}").status_code == 404
+    made = signed.post("/api/threads", json={"recipe": recipe, "name": "checked"})
+    assert made.json()["head"]["digest"] == checked["digest"]
+
+    for given, said in (
+        ({**recipe, "prompt": recipe["output"]}, "isn't a stored chunk of prompt"),
+        ({**recipe, "model": GHOST}, "isn't a stored model"),
+        ({k: v for k, v in recipe.items() if k != "sampling"}, "sampling"),
+    ):
+        got = signed.post("/api/recipes/check", json=given)
         assert got.status_code == 422, given
         assert said in str(got.json()["detail"])

@@ -21,20 +21,16 @@ in agents/ tracks is that plan's, not this document's.
   - [Unheeded reasoning](#unheeded-reasoning)
   - [Tool rounds](#tool-rounds)
   - [What reaches vLLM: argv and passthrough](#what-reaches-vllm-argv-and-passthrough)
-  - [Inventory checked everywhere](#inventory-checked-everywhere)
   - [Facts: the checks](#facts-the-checks)
   - [Facts as an engine changes them](#facts-as-an-engine-changes-them)
   - [Stopping: halts, deadlines and time limits](#stopping-halts-deadlines-and-time-limits)
   - [Streams that miss nothing](#streams-that-miss-nothing)
-  - [Picking an endpoint for a model](#picking-an-endpoint-for-a-model)
   - [Concurrent writers](#concurrent-writers)
   - [The database repeats the rules](#the-database-repeats-the-rules)
   - [Compilations checked](#compilations-checked)
   - [A run names the skeleton its look gave](#a-run-names-the-skeleton-its-look-gave)
   - [Vignette identity: renames, repairs and rebinding](#vignette-identity-renames-repairs-and-rebinding)
   - [Titles](#titles)
-  - [Edit history: who, when and why](#edit-history-who-when-and-why)
-  - [Following a part that moved on](#following-a-part-that-moved-on)
   - [Languages](#languages)
   - [Translating JSON few-shot answers](#translating-json-few-shot-answers)
   - [Values the canonical form can't keep](#values-the-canonical-form-cant-keep)
@@ -89,6 +85,9 @@ check canaries.
 One check that compares runs: their canary outputs, prompt-token fingerprints and system fingerprints. The canary
 outputs wait for "Canary sets in use".
 
+Take: the group under a handle is where its canaries would be compared across its engines, which would give the
+group the evidence it lacks; still a take.
+
 Decided: the same canary output is the same digest of each choice's message and the same prompt-token fingerprint, the
 fingerprint under a code of its own; neither needs a new field, since `CanaryCall.call` holds the response and the
 prompt-token fingerprint. Decided: runs are compared within the same trial digest at the same endpoint, and drift is a
@@ -138,9 +137,9 @@ What may be pooled and what aggregates scores: runs grouped by their recorded fa
 checked, before anything pools them. Nothing plans it yet.
 
 - A trial's digest covers its pinned factors only. Its outputs also depend on its run's recorded and observed factors:
-  execution settings on an engine that isn't batch invariant, a remote engine that changed between runs, a tool that
-  answered differently. Seeds within a run are replicates; runs of the same trial are a second source of variation, and
-  it has no name yet.
+  execution settings and the server's tuning arguments on an engine that isn't batch invariant, a remote engine that
+  changed between runs, a tool that answered differently. Seeds within a run are replicates; runs of the same trial
+  are a second source of variation, and it has no name yet.
 
   Nothing aggregates scores today, but anything that compares or pools runs by the trial's digest alone would mix
   conditions without noticing. It needs to group by the recorded factors as well, and to check the evidence of the
@@ -150,8 +149,8 @@ checked, before anything pools them. Nothing plans it yet.
   processing the data into publishable results may become a requirement.
 - **Not all a model reads is in the request's language.** Chat templates add English of their own (default system
   prompts, harmony's channel instructions, tool-call scaffolding), and reasoning is often English whatever the
-  prompt. The same text also takes another number of tokens in Swedish than in English, so budgets confound a
-  comparison between languages.
+  prompt. The same text also takes another number of tokens in Swedish than in English, so an analysis split by
+  language says so; languages themselves are never compared, as their cases differ.
 
 ### Export and publication
 How records leave the store with the factors they reference, under a seal that covers the whole log, and with what an
@@ -163,9 +162,10 @@ analysis needs frozen: languages and titles. Nothing plans it yet.
 - **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 - **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
-  analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
-  synonyms or an ontology, takes it from the expectation data or its resources, which are factors, not from the
-  catalog at scoring time.
+  analysis split by language should freeze them at export, as titles. A run keeps the language it was sent in, so one
+  whose cases' language has since been corrected is stale, and compared with nothing. A scorer that needs the
+  language, for stemming, synonyms or an ontology, takes it from the expectation data or its resources, which are
+  factors, not from the catalog at scoring time.
 - How scores are aggregated and exported together with the factors and the ledger for publication.
 
 ### Digests to settle before real data
@@ -236,6 +236,16 @@ the first entry off docs/vllm.md, "Not emulated".
 
 Decided: a passthrough's refusals stay, and a key vLLM 0.24 doesn't take gets a warning lint, on local engines only.
 
+Decided: the arguments that don't change what is computed, such as `--max-num-seqs`, `--gpu-memory-utilization`
+and logging, are the endpoint's rather than the engine's: out of its digest, written with the endpoint by the engine
+import, as its capacity is, and recorded with each run, as its execution settings are (docs/factors.md, "Execution").
+Each flag in the list says which it is, and one the list doesn't know stays in the engine.
+
+- **Every argument is in the engine's digest**, so changing one that only tunes the server makes another engine: the
+  endpoint serves it under another name, a set at the endpoint no longer finds its earlier runs, running them again is
+  refused at the gate, and a judge at it is another judge. Batching arguments still change the arithmetic on an engine
+  that isn't batch invariant, as execution settings do, so "Aggregation" groups by them.
+
 - `argv` is checked without vLLM's list of flags: a bare argument after a flag that takes no value passes, and lints
   don't expand abbreviated flags.
 - A passthrough refuses a fixed list of options and lets everything else through. Two other ways:
@@ -244,24 +254,6 @@ Decided: a passthrough's refusals stay, and a key vLLM 0.24 doesn't take gets a 
   - lints instead of refusals: risky options would give a finding, in the spirit of "warnings, not crashes". But a
     passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
     response are closer to the clearance block than to a warning.
-
-### Inventory checked everywhere
-The runner, when it starts, and the engine import, before it writes, run the inventory check and pass its findings on,
-as init-data does. Endpoint names are agents/wip-clearance.md's (Open 1, "What a grant keys on").
-
-- Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
-  confirmed, one entry at a time:
-  - whether an endpoint's digest names an engine;
-  - whether a local engine's endpoint has a host;
-  - whether the host says where the model and template are.
-
-  One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-  starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines' endpoints at
-  one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins, and a
-  clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and the
-  engine import don't run it yet, and still check one entry at a time.
-- The runner and the engine import don't run `check`: they check an entry when they use it.
-- **The runner and the engine import don't run the inventory check** that loading does.
 
 ### Facts: the checks
 Checking pairs and loading facts warn where they now stay silent or warn wrongly: an unknown budget warned about,
@@ -334,21 +326,19 @@ A stream that can't miss a row or an event, and a notification queue that a list
   read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.
 
-### Picking an endpoint for a model
-A look for a model several endpoints serve is linted, a model that moved on is followed only where it is served, and a
-judge whose engine two endpoints serve doesn't bar its scorer. That a run is refused until its endpoint is named is
-decided: a preference among the endpoints, such as the World's `configurations` endpoint, would pick silently.
+### Judges name a model
+A judge names a model, as a recipe does, rather than an engine: its calls go to the endpoint serving that model,
+picked as a run's endpoint is (see "Picking an endpoint for a model"), and the engine they went to is pinned with the
+score, as a trial pins a run's. It changes the judge's kind, so it is cheapest before real scores are stored.
 
-Decided: a look for no endpoint gives the findings of the model alone, `facts.*`, and says that the engine's wait for an
-endpoint to be named.
+Decided: a judge's model is picked by handle, and its engine is the handle's latest.
 
-- **A model served at several endpoints** isn't picked from them: a run is refused until the endpoint is named, as
-  the test World's two Qwen3 endpoints show; the variation page offers the picker, and a look rendered for none of
-  them has no findings. A judge pins its engine as a trial does, and a judge whose engine two endpoints serve bars
-  its scorer (docs/runner.md, "Judges"), which stays unlikely: it is one engine served twice.
-- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
-  part linted it for the recipe's engine; the repl's `show` shows no lints either.
-- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.
+Take: judges name model handles, as recipes do. The section becomes "Judges name a handle":
+
+A judge's model is picked by its handle, such as `qwen3-8b`, as a recipe's is: the judge pins the weights, and its
+calls go to the endpoint ops map the handle to, at its latest engine, which the scoring pins. A handle that doesn't
+resolve to one endpoint refuses the scoring as ops' error, and a judge whose weights the handle no longer holds is
+behind, and doesn't judge under it until followed.
 
 ### Concurrent writers
 The rules hold with two writers at once: adopting a vignette, taking an expectation and saving a name.
@@ -459,27 +449,6 @@ Decided: a skeleton compiled from a variation of a configuration is titled by th
   recommended · off · qwen3-8b@pelle", where the repl called it "diagnoses-tool+reasoning=off": the configuration it
   came from and the parts set over it. A run of one is named so and says what it varied (docs/catalog.md, "What a run
   ran"), but its skeleton is still titled by its recipe.
-
-### Edit history: who, when and why
-Who changed an entry, a label or a language, and when, shown; and why an edit was made, kept.
-
-Decided: an edit may carry an optional note, stored with it as a commit message is; what changed stays derived from the
-references.
-
-- **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
-  what holds now is shown.
-- When an entry, a label or a language was written isn't given, nor who wrote a label or a language:
-  `Reader.entries` gives an entry's writer only.
-- **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
-- Why an edit was made isn't stored.
-
-### Following a part that moved on
-A configuration offered the new version of a chunk of its recipe, as it is offered its facts' and its model's.
-
-- **Only the facts and the model are followed.** The catalog lists every part of a configuration's recipe whose
-  thread has moved on (`src/chatddx/catalog/threads.py:behind`), but the bench follows `/facts` and `/recipe/model`
-  only (`src/chatddx/bench/following.py:_moved`), so a new version of a chunk, a translator's translations among them,
-  reaches a configuration only by a variation that picks it, saved.
 
 ### Following keeps a fork's renamed view
 Following an origin keeps the label of a view the fork renamed, though its scorer is the origin's.
@@ -740,7 +709,8 @@ The slots and turns wait for endpoints that are shared and busy; the lost endpoi
 - Decided: queue order, as built, then turns per owner at each endpoint once people wait on each other. Turns aren't
   built.
 - **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
-- **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
+- **A job whose handle moved on** to another engine while it was queued fails at the gate and says to run it
+  again; one whose handle no longer resolves to one endpoint fails as ops' error.
 
 ### Garbage collection
 A collection, run as the admin, of what nothing refers to, with the ledger and every person's threads, deleted ones too,

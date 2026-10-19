@@ -26,12 +26,24 @@ def configurations(
     request: Request, bench: BenchDep, purpose: Purpose = "generation"
 ) -> Response:
     found = api.threads(bench, "configuration", purpose=purpose)
+    models = api_world.models(bench)
+    props: dict[str, Any] = {
+        "purpose": purpose,
+        "me": bench.person.login,
+        "optional": list(OPTIONAL_PARTS),
+        "choices": {
+            p: [t.model_dump(mode="json") for t in _choices(bench, p, models)]
+            for p in RECIPE_PARTS
+        },
+    }
     return page(
         request,
         "configurations.html",
         person=bench.person,
         configurations=sorted(found, key=lambda t: (t.name or t.title).lower()),
         purpose=purpose,
+        props=props,
+        island="recipe",
     )
 
 
@@ -44,7 +56,7 @@ def configuration(
 ) -> Response:
     held = bench.variation(thread, None, query.head)
     purpose = "generation" if held.recipe is None else held.recipe.purpose
-    endpoints = api_world.endpoints(bench)
+    models = api_world.models(bench)
     siblings = api.threads(bench, "configuration", purpose=purpose)
     look = api.variation(bench, thread, query)
     shown = api.thread(bench, thread)
@@ -72,14 +84,14 @@ def configuration(
         "base": base,
         "optional": list(OPTIONAL_PARTS),
         "look": look.model_dump(mode="json"),
-        "endpoint": query.endpoint,
+        "under": query.under,
         "tags": query.tag,
         "choices": {
-            p: [t.model_dump(mode="json") for t in _choices(bench, p, endpoints)]
+            p: [t.model_dump(mode="json") for t in _choices(bench, p, models)]
             for p in RECIPE_PARTS
         },
         "configurations": [t.model_dump(mode="json") for t in siblings],
-        "endpoints": [e.model_dump(mode="json") for e in endpoints],
+        "models": [m.name for m in models if m.problem is None],
         "everyTag": sorted({t for f in families for t in f.tags}),
         "families": [f.model_dump(mode="json") for f in families],
         "itemsPerRun": settings.ITEMS_PER_RUN,
@@ -116,17 +128,17 @@ def linked(query: schemas.Varying, head: int, latest: int) -> str:
     ]
     if head != latest:
         given.append(("head", head))
-    if query.endpoint is not None:
-        given.append(("endpoint", query.endpoint))
+    if query.under is not None:
+        given.append(("under", query.under))
     given += [("tag", tag) for tag in query.tag]
     return "?" + urlencode(given) if given else "?"
 
 
 def _choices(
-    bench: Bench, part: str, endpoints: list[schemas.Endpoint]
+    bench: Bench, part: str, models: list[schemas.Model]
 ) -> list[schemas.Thread]:
     found = api.threads(bench, part)
     if part != "model":
         return found
-    served = {e.serves for e in endpoints}
+    served = {m.weights for m in models if m.problem is None}
     return [t for t in found if t.head.digest in served]

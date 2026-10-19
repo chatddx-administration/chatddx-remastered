@@ -30,8 +30,8 @@ A file with any other key, or a turn the fake can't read, is refused when it is 
 ## Running one
 The variation is the configuration with its model set to the endpoint's engine's model, unless it is hand-written and
 has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to
-an endpoint serving another engine than its own runs as a variation, its engine replaced and the rest worked out for
-that engine's model, and is named so: `plan-prompted+engine=gpt-oss-20b@fake`.
+an endpoint serving another model than its own runs as a variation, its model replaced and the rest worked out for it,
+and is named so: `plan-prompted+model=gpt-oss-20b`.
 
 A scripted run's cases are sent in one language: the configuration's own, as written, or one its translations
 cover, translated, so that its start is one run. Cases the bench would send in several, or leave out, are refused
@@ -74,8 +74,11 @@ The sample World's ten:
 | `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
 | `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
 
-The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored, on
-`crlf` and `whitespace`, as `lines` leaves Swedish cases out), `judged` and `appendix`.
+The test World's nine are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored, on
+`crlf` and `whitespace`, as `lines` leaves Swedish cases out), `judged` and `appendix`; and three to compare, over
+`crlf` and `bom`: `instructed` (`lines-instructed`), `instructed-greedy` (the same, sampled near greedily) and
+`guided` (`lines-guided`, its fork), each answering both cases alike, since a run doesn't send its cases in the order a
+scripted run lists them.
 
 ## Tests
 src/chatddx/scripted/test/.

@@ -177,10 +177,10 @@ class Varying(Parts):
         None,
         description="the edit it varies, by id: the configuration's head unless given",
     )
-    endpoint: str | None = Field(
+    under: str | None = Field(
         None,
-        description="to render and lint it for: the one serving a configuration's "
-        + "model unless named, and one a hand-written configuration names",
+        description="the handle a hand-written configuration is rendered and linted "
+        + "under; a configuration with a model part runs under its model's",
     )
     tag: list[str] = Field(
         default_factory=list[str],
@@ -207,6 +207,13 @@ type ComponentBody = Annotated[
     Field(
         description="a component's JSON as GET /api/components/{digest} gives its "
         + "body, kind included"
+    ),
+]
+type RecipeBody = Annotated[
+    dict[str, JsonValue],
+    Field(
+        description="a recipe's parts by digest, its purpose and its appendix layout, "
+        + "as a configuration's recipe reads"
     ),
 ]
 type Language = Annotated[
@@ -333,6 +340,21 @@ class Follows(_Schema):
     )
 
 
+class Kin(Thread):
+    origin: int | None = Field(
+        description="the thread it is a fork of; null for the first of the lineage"
+    )
+    base: Edit | None = Field(
+        description="a fork's: the version of its origin it is compared with"
+    )
+    varies: list[Varied] = Field(description="a fork's: what its head changes")
+    moved_on: bool = Field(
+        description="a fork's: its origin has moved on since its base, so following it "
+        + "is proposed"
+    )
+    deleted: bool
+
+
 class NewFollow(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
     follow: Literal["origin", "moved"] = Field(
@@ -387,6 +409,11 @@ class Variation(_Schema):
     parts: list[Part] | None
     seed: int
     request: dict[str, JsonValue]
+    model: str | None = Field(description="the handle it runs under")
+    problem: str | None = Field(
+        description="why it can't run: its handle doesn't resolve, which is ops' to "
+        + "mend, its model is behind its handle, or it names no model"
+    )
     findings: list[Finding] | None
     languages: list[Carried] = Field(
         description="the languages its cases are sent in, the configuration's own "
@@ -511,9 +538,17 @@ class Endpoint(_Schema):
 
 
 class Model(_Schema):
-    name: str
+    name: str = Field(description="the handle")
+    weights: str = Field(description="the weights it holds now, by digest")
+    engine: str | None = Field(description="its latest engine, when it resolves")
     facts: JsonValue
-    endpoints: list[str]
+    takes_typed: bool = Field(
+        description="whether a case typed into the World's database source can run "
+        + "under it: the source isn't sensitive, or its endpoint is cleared for it"
+    )
+    problem: str | None = Field(
+        description="why it doesn't resolve to one endpoint, which is ops' to mend"
+    )
 
 
 class Component(_Schema):
@@ -648,10 +683,10 @@ class NewRun(Seeds):
         description="the edit it varies, by id: the configuration's head unless given",
     )
     parts: Parts = Parts()
-    endpoint: str | None = Field(
+    under: str | None = Field(
         None,
-        description="where to send it: the one serving its model unless named, and "
-        + "one a hand-written configuration names",
+        description="the handle a hand-written configuration runs under; a "
+        + "configuration with a model part runs under its model's",
     )
     families: list[int] | None = Field(
         None, min_length=1, description="the cases to run, by family"
@@ -738,6 +773,10 @@ class Run(_Schema):
     )
     engine: str
     endpoint: str | None
+    model: str | None = Field(
+        description="the handle its weights are under; null when they are under none"
+    )
+    latest: bool = Field(description="whether it ran at its handle's latest engine")
     cases: list[str]
     seeds: list[int]
     described: str
@@ -781,6 +820,39 @@ class ItemDetail(Item):
     call: JsonValue
     turns: JsonValue
     answer: Answer
+
+
+class ComparedView(_Schema):
+    scorer: str
+    name: str
+    view: int
+    label: str
+    means: list[float | None] = Field(
+        description="each run's mean over the items it has a value for, in the order "
+        + "the runs are given"
+    )
+    values: list[list[float | None]] = Field(
+        description="each run's value for each item, in the order the items are"
+    )
+
+
+class ItemKey(_Schema):
+    case: str
+    replicate: int
+
+
+class HeldBySome(_Schema):
+    case: str
+    runs: list[UUID] = Field(description="the runs that hold it")
+
+
+class Compared(_Schema):
+    runs: list[Run]
+    views: list[ComparedView] = Field(
+        description="each view of each scorer that scored one of the runs, by its name"
+    )
+    items: list[ItemKey] = Field(description="the items every run's trial holds")
+    apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")
 
 
 class ScoredItem(_Schema):

@@ -46,12 +46,9 @@ On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   a `local_model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
   not digests.
-- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
-  (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
-  skeleton and its compilation are stored with the judge, without a thread of their own; a judge names no `language`.
-  A judge the World binds to no endpoint, whose endpoint serves no engine the World has, or whose recipe the facts
-  refuse on that engine, is skipped and reported, and so is every scorer whose views name it; a binding for a judge
-  the data set doesn't have is reported too. A judge's skeleton may not have tools.
+- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds a data set's judge
+  to a handle, whose latest engine judges, and its recipe is compiled for the handle's model; a handle that doesn't
+  resolve skips the judge and its scorers, reported as ops' error.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A record
@@ -129,21 +126,22 @@ own.
 ### Facts and the engine
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
-`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for that endpoint's engine's model,
-its intents compiled against its facts (docs/facts.md, "Compiling intents").
+`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for the model under the handle the
+World names for configurations, its intents compiled against its facts (docs/facts.md, "Compiling intents").
 
 A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
-sampling, and a recipe is skipped and reported when the facts refuse it on that engine, or when the World names no
-endpoint for configurations. Engines and facts are planned first for this reason. A researcher swaps the model at the
-bench, as any other part (docs/bench.md).
+sampling, and a recipe is skipped and reported when the facts refuse it on that model, when the World names no
+handle for configurations, or when that handle doesn't resolve to one endpoint, which is ops' to mend. Engines and
+facts are planned first for this reason. A researcher swaps the model at the bench, as any other part
+(docs/bench.md).
 
 ## The World
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes, the endpoints its judges are bound to and the endpoint whose engine its configurations are made for, and
-takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors,
-and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's
-fake engines are loaded only with the sample World, and a World that serves a model of its own brings what is known
-about it, which loading stores for the models its engines serve.
+vignettes, the handles its judges are bound to and the handle its configurations are made for, and takes its
+`engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors, and its
+`facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake
+engines are loaded only with the sample World, and a World that serves a model of its own brings what is known about it,
+which loading stores for the models its engines serve.
 
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.

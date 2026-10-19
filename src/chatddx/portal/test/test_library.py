@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import pytest
@@ -7,7 +8,7 @@ from chatddx.identity import Person
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.portal.test.test_varying import held, thread
-from chatddx.test.world import LINES, OFF
+from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT
 
 
 @pytest.fixture
@@ -60,6 +61,83 @@ def test_a_thread_s_page_holds_its_versions_and_what_is_said(
         303,
         f"/configurations/{lines['id']}",
     )
+
+
+@pytest.mark.slow
+def test_a_chunk_s_page_edits_it_in_a_form_of_its_kind(signed: TestClient) -> None:
+    off = thread(signed, "reasoning", OFF)
+    editor = thread_props(shown(signed, f"/threads/{off['id']}"))["editor"]
+    body = signed.get(f"/api/components/{off['head']['digest']}").json()["body"]
+    assert editor == {
+        "mode": "edit",
+        "thread": off["id"],
+        "head": off["head"]["id"],
+        "name": OFF,
+        "kind": "chunk",
+        "chunk": "chunk.reasoning",
+        "languaged": False,
+        "tools": [],
+        "me": "alice",
+        "body": body,
+        "language": None,
+    }
+    archives = thread(signed, "reasoning", OFF, "archive")
+    page = shown(signed, f"/threads/{archives['id']}")
+    assert thread_props(page)["editor"]["mode"] == "fork"
+
+    lines = thread(signed, "output", LINES)
+    given = thread_props(shown(signed, f"/threads/{lines['id']}"))["editor"]
+    assert given["languaged"]
+    assert given["language"] == lines["language"] == "en"
+    toolset = signed.get(
+        "/api/threads", params={"kind": "toolset", "owner": "alice"}
+    ).json()[0]
+    tools = thread_props(shown(signed, f"/threads/{toolset['id']}"))["editor"]["tools"]
+    assert tools == signed.get("/api/threads", params={"kind": "tool"}).json()
+
+
+@pytest.mark.slow
+def test_a_chunk_is_begun_from_the_library(signed: TestClient) -> None:
+    assert 'href="/library/new?kind=prompt"' in shown(signed, "/library?kind=prompt")
+    for kind in ("appendix", "translations", "tool"):
+        assert "/library/new" not in shown(signed, f"/library?kind={kind}")
+    page = shown(signed, "/library/new?kind=sampling")
+    editor = json.loads(
+        page.split("data-chunk-editor>", 1)[1]
+        .split('<script type="application/json">', 1)[1]
+        .split("</script>", 1)[0]
+    )
+    assert editor == {
+        "mode": "new",
+        "name": "",
+        "body": None,
+        "language": None,
+        "kind": "chunk",
+        "chunk": "chunk.sampling",
+        "languaged": False,
+        "tools": [],
+        "me": "alice",
+    }
+    for kind in ("translations", "tool", "stack"):
+        assert signed.get(f"/library/new?kind={kind}").status_code == 404
+
+
+@pytest.mark.slow
+def test_a_configuration_is_made_from_a_recipe_of_the_chunks_one_sees(
+    signed: TestClient,
+) -> None:
+    page = shown(signed, "/configurations")
+    opened = '<script type="application/json" id="recipe-props">'
+    given = json.loads(page.split(opened, 1)[1].split("</script>", 1)[0])
+    assert (given["purpose"], given["me"]) == ("generation", "alice")
+    assert "prompt" not in given["optional"] and "reasoning" in given["optional"]
+    reasoning = signed.get("/api/threads", params={"kind": "reasoning"}).json()
+    assert [t["id"] for t in given["choices"]["reasoning"]] == [
+        t["id"] for t in reasoning
+    ]
+    assert QWEN_ARTIFACT in {t["name"] for t in given["choices"]["model"]}
+    judged = shown(signed, "/configurations?purpose=judge")
+    assert '"purpose": "judge"' in judged
 
 
 @pytest.mark.slow

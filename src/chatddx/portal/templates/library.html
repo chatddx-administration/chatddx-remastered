@@ -7,6 +7,7 @@
   {{ tabs(listed) }}
 
   {% call section(word | replace("_", " ")) %}
+  {% if begun %}<p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/library/new?kind={{ word }}">Write a new one</a></p>{% endif %}
   {% if threads %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">

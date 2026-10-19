@@ -13,6 +13,7 @@ from . import (
     configurations,
     families,
     pages,
+    refine,
     review,
     runs,
     threads,
@@ -41,6 +42,7 @@ def app(
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
     for router in (
         review.router,
+        refine.router,
         translate.router,
         runs.router,
         configurations.router,

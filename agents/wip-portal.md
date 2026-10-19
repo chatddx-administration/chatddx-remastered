@@ -28,7 +28,11 @@ it.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
    in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
-   translations, in `agents/wip-translators-view.md`.
+   translations, in `agents/wip-translators-view.md`; and a researcher's page around a configuration's lineage,
+   Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/wip-refine.md`.
+7. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b). What is built below
+   with an endpoint picked or shown, the variation page's (V1, V4), the home page's, the run's page and the runs'
+   tables, and the Endpoints page, is reworked there to pick and show handles.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -239,6 +243,8 @@ Take:
 - **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
   nothing writes yet; the runs page filters by them.
 
+C1 is built by `agents/wip-refine.md` (step 2), and C2 is its step 3's, where it fills Refine's trying list.
+
 Open:
 - **Every combination**, as the old crossing made (`plan.py:crossed`), or endpoints as well as parts: C2 varies one
   part at a time at one endpoint.
@@ -246,8 +252,6 @@ Open:
 - **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
   endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
   (`docs/backlog.md`, "Claims: slots, turns and a lost endpoint").
-- **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
-  same cases (`docs/scripted.md`, "The runs").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
   export (`docs/backlog.md`, "Export and publication"). It is what would bring a kept grouping back.
 
@@ -589,6 +593,13 @@ What the portal needs below its pages that isn't built:
   configuration, which the old bench's `held.py` showed, to the portal; `Bench.runs(reaching=…)` and `Bench.runs(scored_by=…)` cover
   the repl's part of it. The retired sample-data plan wanted the reverse too: every configuration using a component,
   such as an output, which needs a query the catalog doesn't have. Both would show on a thread's page.
+- **Factor constants copied into TypeScript.** The chunk editors spell out what the factors already say: the slots
+  each purpose allows and the inserts a text takes (`frontend/src/lib/editors/chunks.ts:SLOTS_FOR`, `TEXT_INSERTS`;
+  `src/chatddx/factors/request.py:SLOTS_BY_PURPOSE`, `INSERTS_BY_KIND`), the reasoning levels and efforts (`LEVELS`,
+  `EFFORTS`; `src/chatddx/factors/facts.py:Effort`, `src/chatddx/factors/request.py:Reasoning.effort`), and the
+  sampling settings (`SAMPLED`; `src/chatddx/factors/request.py:Sampling`). The levels, efforts and settings are in
+  the kinds' JSON Schemas, which `GET /api/kinds` publishes (W7), and could be read from there; the slots and inserts
+  the schemas don't say, so the server would give them with the editor.
 
 ### What the pages to read leave
 From "What the portal shows", not on the pages yet:
@@ -620,7 +631,8 @@ From "What the portal shows", not on the pages yet:
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
   have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2).
+  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is built by
+  `agents/wip-refine.md` (step 1).
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case

@@ -20,7 +20,13 @@ from chatddx.portal.assets import Assets
 from chatddx.portal.test.conftest import PASSWORD
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, LINES, LINES_GUIDED, QWEN, faked
+from chatddx.test.world import (
+    GPT_OSS_ARTIFACT,
+    LINES,
+    LINES_GUIDED,
+    QWEN_ARTIFACT,
+    faked,
+)
 
 pytestmark = pytest.mark.slow
 
@@ -34,9 +40,8 @@ def _settled(page: Page, run: str) -> None:
     raise AssertionError(f"run {run} is still under way")
 
 
-def _endpoint(page: Page, name: str) -> dict[str, Any]:
-    listed = page.request.get("/api/endpoints").json()
-    [found] = [e for e in listed if e["name"] == name]
+def _model(page: Page, name: str) -> dict[str, Any]:
+    [found] = [m for m in page.request.get("/api/models").json() if m["name"] == name]
     return found
 
 
@@ -112,30 +117,24 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/configurations/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
-        # Accommodating for the test World: two endpoints serve Qwen3, so the page asks which.
-        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
-        _ = page.select_option("#endpoint", QWEN)
+        expect(page.get_by_text(f"Runs under {QWEN_ARTIFACT}.")).to_be_visible()
         expect(
-            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
+            page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
         ).to_be_visible()
-        gpt_oss = _endpoint(page, GPT_OSS)["serves"]
+        gpt_oss = _model(page, GPT_OSS_ARTIFACT)["weights"]
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", gpt_oss)
-        expect(
-            page.get_by_text(f"Sent to {GPT_OSS}, which serves its model.")
-        ).to_be_visible()
-        qwen = _endpoint(page, QWEN)["serves"]
+        expect(page.get_by_text(f"Runs under {GPT_OSS_ARTIFACT}.")).to_be_visible()
+        qwen = _model(page, QWEN_ARTIFACT)["weights"]
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", qwen)
-        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
-        _ = page.select_option("#endpoint", QWEN)
         expect(
-            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
+            page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
         ).to_be_visible()
         page.get_by_label("of the families picked").check()
         page.get_by_label("Find a family").fill("crlf")
         page.get_by_label("crlf", exact=True).check()
-        expect(page.get_by_text("Sends 1 item to")).to_be_visible()
+        expect(page.get_by_text("Sends 1 item under")).to_be_visible()
         page.get_by_role("button", name="Run it").click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
         run = page.url.rsplit("/", 1)[1]
@@ -193,8 +192,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
             )
         ).to_be_visible()
         expect(page.get_by_text("Left out")).to_have_count(0)
-        _ = page.select_option("#endpoint", QWEN)
-        expect(page.get_by_text("Sends 4 items to")).to_be_visible()
+        expect(page.get_by_text("Sends 4 items under")).to_be_visible()
         page.get_by_role("button", name="Run it").click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
         first = page.url.rsplit("/", 1)[1]
@@ -328,7 +326,7 @@ def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
         expect(record).to_contain_text("Record")
         record.locator("summary").first.click()
         _ = page.get_by_label("Configuration").select_option(str(lines["id"]))
-        _ = page.get_by_label("Endpoint").select_option(QWEN)
+        _ = page.get_by_label("Model").select_option(QWEN_ARTIFACT)
         page.get_by_role("button", name="Run it").click()
         expect(record).to_have_attribute("open", "")
         page.wait_for_url(re.compile(rf"/review/{crlf['id']}$"))
@@ -362,7 +360,7 @@ def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
         "owner": "alice",
     }
     lines = page.request.get("/api/threads", params=query).json()[0]
-    body = {"configuration": lines["id"], "endpoint": QWEN, "families": [crlf["id"]]}
+    body = {"configuration": lines["id"], "families": [crlf["id"]]}
     with faked(world, Store(conn).get):
         started = page.request.post("/api/runs", data=body).json()
         run = started["runs"][0]["run"]
@@ -423,7 +421,7 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
         "owner": "alice",
     }
     lines = page.request.get("/api/threads", params=query).json()[0]
-    body = {"configuration": lines["id"], "endpoint": QWEN, "families": [noted["id"]]}
+    body = {"configuration": lines["id"], "families": [noted["id"]]}
     query = {"kind": "scorer", "name": LINES}
     scorer = page.request.get("/api/threads", params=query).json()[0]
 
@@ -445,7 +443,7 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
         _ = judge.select_option("new")
         written = page.get_by_role("form", name="A new judge")
         written.get_by_label("Name").fill("strict")
-        _ = written.get_by_label("Asked at").select_option(QWEN)
+        _ = written.get_by_label("Asked under the model").select_option(QWEN_ARTIFACT)
         written.get_by_label("Seeds, a call each").fill("1, 2")
         written.get_by_role("button", name="Save the judge").click()
         expect(written).to_have_count(0)
@@ -593,4 +591,62 @@ def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
     ).json()
     [swedish_cases] = [c for c in look["languages"] if c["language"] == "sv"]
     assert (swedish_cases["translated"], swedish_cases["refused"]) == (True, None)
+    assert errors == []
+
+
+def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_configuration(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def mine(kind: str, name: str) -> dict[str, Any]:
+        query: dict[str, str | float | bool] = {"kind": kind, "name": name}
+        listed = page.request.get("/api/threads", params={**query, "owner": "alice"})
+        return listed.json()[0]
+
+    case = mine("prompt", "case")
+    _ = page.goto(f"/threads/{case['id']}")
+    edit = page.locator("#edit")
+    edit.get_by_label("Its text, text 1").fill("The case:\n")
+    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
+    expect(edit.get_by_text("Nothing to say of it.")).to_be_visible()
+    edit.get_by_role("button", name="Save").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    prompt = mine("prompt", "case")["head"]["digest"]
+    held = page.request.get(f"/api/components/{prompt}").json()["body"]
+    assert held["segments"] == [
+        "The case:\n",
+        {"slot": "vignette"},
+        {"slot": "appendices"},
+    ]
+
+    _ = page.goto("/library?kind=sampling")
+    page.get_by_role("link", name="Write a new one").click()
+    page.get_by_label("Start from the sampling").uncheck()
+    page.get_by_label("temperature").fill("0.3")
+    page.get_by_label("Name").fill("warm")
+    expect(page.get_by_text("Writes “warm”, a new thread of your own.")).to_be_visible()
+    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
+    warm = mine("sampling", "warm")["head"]["digest"]
+    assert (
+        page.request.get(f"/api/components/{warm}").json()["body"]["temperature"] == 0.3
+    )
+
+    _ = page.goto("/configurations")
+    made = page.get_by_role("form", name="A new configuration")
+    _ = made.get_by_label("prompt, required").select_option(prompt)
+    _ = made.get_by_label("output, required").select_option(label=LINES)
+    _ = made.get_by_label("sampling, required").select_option(warm)
+    model = _model(page, QWEN_ARTIFACT)["weights"]
+    _ = made.get_by_label("model, required").select_option(model)
+    expect(made.get_by_text("It compiles to")).to_be_visible()
+    made.get_by_label("Name").fill("lines-warm")
+    made.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/configurations/\d+$"))
+    configuration = mine("configuration", "lines-warm")
+    recipe = page.request.get(f"/api/threads/{configuration['id']}").json()["recipe"]
+    assert (recipe["prompt"], recipe["sampling"]) == (prompt, warm)
     assert errors == []

@@ -56,6 +56,13 @@ MODEL = "‹model›"
 
 
 @dataclass(frozen=True)
+class Handle:
+    name: str
+    thread: int
+    weights: str
+
+
+@dataclass(frozen=True)
 class Endpoint:
     name: str
     spec: EndpointSpec
@@ -136,6 +143,15 @@ class Proposed:
     proposal: Recipe | Component
     digest: str
     compilation: str | None
+
+
+@dataclass(frozen=True)
+class Kin:
+    edit: Edit
+    about: About
+    origin: int | None
+    divergence: Divergence | None
+    moved_on: bool
 
 
 @dataclass(frozen=True)

@@ -93,20 +93,6 @@ class Inventory(Frozen):
                 )
         return self
 
-    @model_validator(mode="after")
-    def _judges_bound(self) -> Self:
-        for name, endpoint in self.judges.items():
-            if endpoint not in self.endpoints:
-                raise ValueError(f"judge {name!r} is bound to no endpoint {endpoint!r}")
-        if (
-            self.configurations is not None
-            and self.configurations not in self.endpoints
-        ):
-            raise ValueError(
-                f"configurations are made for no endpoint {self.configurations!r}"
-            )
-        return self
-
     @classmethod
     def load(cls, path: Path) -> Self:
         with path.open("rb") as f:
@@ -165,10 +151,11 @@ class Inventory(Frozen):
             case [one]:
                 return one
             case []:
-                raise LookupError(f"no endpoint serves {what}")
+                raise LookupError(f"no endpoint serves {what}, which is ops' to mend")
             case _:
                 raise LookupError(
-                    f"{', '.join(named)} serve {what}; name the one to use"
+                    f"{', '.join(named)} serve {what}, which one endpoint should: "
+                    + "ops' to mend"
                 )
 
     def source[S: Source](self, name: str | None = None, kind: type[S] = Source) -> S:

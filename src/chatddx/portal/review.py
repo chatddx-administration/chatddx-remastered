@@ -163,7 +163,7 @@ def review(
         pending=pending,
         left=left,
         configurations=_configurations(bench),
-        endpoints=[e.name for e in api_world.endpoints(bench)],
+        models=[m.name for m in api_world.models(bench) if m.problem is None],
         most=settings.ITEMS_PER_RUN,
         at=None if at is None else at + 1,
         previous=previous,
@@ -207,7 +207,7 @@ def running_in_review(
     family: int,
     configuration: Annotated[int, Form()],
     case: Annotated[str, Form()],
-    endpoint: Annotated[str, Form()] = "",
+    model: Annotated[str, Form()] = "",
     replicates: Annotated[int, Form(ge=1, le=settings.ITEMS_PER_RUN)] = 1,
     score: Annotated[bool, Form()] = False,
     back: Annotated[str | None, Form()] = None,
@@ -216,13 +216,14 @@ def running_in_review(
         raise HTTPException(422, f"no case {case} of family {family}")
     with refused(NotFound):
         variation = bench.variation(configuration, {}, None)
-        if endpoint and variation.recipe is not None:
-            serves = bench.endpoint(endpoint).model.digest
-            if variation.held("model") != serves:
-                variation = bench.variation(configuration, {"model": serves}, None)
-        started = bench.start(
-            variation, endpoint or None, [case], suggest_seeds(replicates)
+        if model and variation.recipe is not None:
+            weights = bench.handle_named(model).weights
+            if variation.held("model") != weights:
+                variation = bench.variation(configuration, {"model": weights}, None)
+        at = bench.at(
+            variation, model=model if model and variation.recipe is None else None
         )
+        started = bench.start(variation, at.name, [case], suggest_seeds(replicates))
     for _, running in started.runs:
         _ = bench.queue(running, score)
     return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
@@ -533,10 +534,10 @@ def _composing(
             }
             for t in _configurations(bench, "judge")
         ],
-        "endpoints": [
-            {"name": e.name, "engine": e.engine}
-            for e in api_world.endpoints(bench)
-            if e.problem is None
+        "models": [
+            {"name": m.name, "engine": m.engine}
+            for m in api_world.models(bench)
+            if m.engine is not None
         ],
         "case": case,
         "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
@@ -550,10 +551,7 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
         api.threads(bench, "judge"), key=lambda t: (t.owner != login, t.name or t.title)
     ):
         judge = resolve(bench.store.get, t.head.digest, Judge)
-        try:
-            at = bench.inventory.serving(judge.engine)
-        except LookupError:
-            at = None
+        handle, _ = bench.under(judge.engine)
         found.append(
             {
                 "digest": t.head.digest,
@@ -564,7 +562,7 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
                 "name": t.name or t.title,
                 "owner": t.owner,
                 "configuration": bench.title(judge.skeleton),
-                "endpoint": at,
+                "model": None if handle is None else handle.name,
                 "seeds": list(judge.seeds),
                 "output_schema": resolve(
                     bench.store.get, judge.skeleton, Skeleton
@@ -706,7 +704,7 @@ def _answers(
                 {
                     "run": str(r.id),
                     "described": r.described,
-                    "endpoint": r.endpoint,
+                    "model": r.model,
                     "at": r.at,
                     "anchor": at,
                     "replicate": item.replicate,

@@ -121,11 +121,15 @@ and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
 The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer`, `--revision`, `--host` and `--port` (`engine.py: OWNED_FLAGS`).
 
-No comparison between the 3070 and the 5090; each hardware class is its own cage.
+No comparison across hardware under one model-handle: ops never expose a handle, such as `qwen3-8b`, on two hardware
+classes, so each handle is in one cage. A researcher varies the model by its handle and may compare handles; the
+engines are ops'.
 
 - **Remote inference.** An A100 serving Gemma behind an OpenAI-compatible API. More may follow. We don't control the engine and it can change without notice, so some uncertainty is accepted.
   - The endpoint is vetted for sensitive cases.
   - It honors `seed` and returns model identifiers.
+  - A remote model is a handle as a local one is, and what changes unseen behind it stays under its latest
+    engine, observed rather than pinned.
 
 Returns model identifiers: the run check compares the returned `model` with the declared one (`ledger.run:check_run`). `system_fingerprint` is kept in the raw response but not checked.
 
@@ -188,21 +192,24 @@ described below.
 
 ### Before a run
 1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions,
-   FewShot, Reasoning and Passthrough are optional; and it names an engine, LocalEngine or RemoteEngine. A Reasoning
-   chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
-   is sent.
+   FewShot, Reasoning, Passthrough, Translations and Toolset are optional; and it names a model, LocalModel or
+   RemoteModel. A Reasoning chunk may ask for a level, and a Sampling chunk for the sampling the model's makers
+   recommend, rather than say what is sent.
 
 2. The Recipe is compiled into a Skeleton against the facts about its model and into a language its translations cover.
    The Skeleton is stored as a frozen factor, holding:
-   A Compilation notes which recipe produced which skeleton, against which facts, and into which language.
-   Two engines of one model compile a recipe to one skeleton.
+   - A Compilation notes which recipe produced which skeleton, against which facts, and into which language.
+
+   A skeleton holds no model: a recipe compiles to one skeleton for every engine of its model, and, without intents,
+   for every model; a trial's engine says which model a run of it was sent to.
 
 3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
    references.
 
 4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
-   seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving
-   it. Cases of a language its translations don't cover are left out.
+   seeds. A trial of a configuration with a recipe takes the latest engine of the handle its model is under, and its
+   run goes to the handle's endpoint; a recipe whose weights the handle no longer holds is behind its model, and
+   doesn't run under the handle until followed. Cases of a language its translations don't cover are left out.
 
 ### Per run
 1. The runner records a RunStarted row which holds the trial, the execution settings (Execution), the canary set, and the version of the rig code.

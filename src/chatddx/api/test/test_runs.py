@@ -15,6 +15,7 @@ from chatddx.api import telling
 from chatddx.api.app import app
 from chatddx.api.test.helpers import endpoint
 from chatddx.api.test.test_variations import digest, thread
+from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan
@@ -22,9 +23,11 @@ from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.scripted.test.test_scripted_runs import held
 from chatddx.store import Catalog, People, Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
+    COMPARED,
     GPT_OSS,
     JUDGE,
     LINES,
@@ -32,6 +35,7 @@ from chatddx.test.world import (
     NATIVE_TOOLS,
     OFF,
     QWEN,
+    QWEN_ARTIFACT,
     faked,
 )
 
@@ -60,7 +64,6 @@ def asked(
         "configuration": thread(signed, "configuration", configuration)["id"],
         "families": [family(signed, "crlf")["id"]],
         "seeds": [7],
-        "endpoint": QWEN,
         **more,
     }
 
@@ -321,7 +324,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
             "the configuration's tools would get content from source test",
         ),
         (
-            asked(signed, parts={"model": model(signed, GPT_OSS)}, endpoint=GPT_OSS),
+            asked(signed, parts={"model": model(signed, GPT_OSS)}),
             f"endpoint '{GPT_OSS}' can't be",
         ),
     ):
@@ -344,8 +347,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"families": None, "cases": []}, "at least 1 item"),
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
-        ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
-        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
+        ({"under": "nowhere"}, "runs under its model's handle: set its model instead"),
         ({"parts": {"model": None}}, "a configuration always has a model"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
@@ -532,10 +534,12 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
         "parts": {},
     }
     varied, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
-    assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
+    assert varied["described"].startswith(
+        f"{LINES}+reasoning={OFF} × {QWEN_ARTIFACT} × "
+    )
     assert varied["ran"] == {**ran, "parts": {"reasoning": off}}
     plain, _ = sent(signed, asked(signed, score=False))
-    assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
+    assert plain["described"].startswith(f"{LINES} × {QWEN_ARTIFACT} × ")
     assert plain["ran"] == ran
 
     edits = f"/api/threads/{mine['id']}/edits"
@@ -693,3 +697,38 @@ def test_a_run_s_items_and_a_score_s_are_read_for_one_case(signed: TestClient) -
         scored = signed.get(path, params=case).json()["items"]
         assert scored and {i["case"] for i in scored} == {f["case"]}
     assert len(signed.get(f"/api/runs/{run}/items").json()) == 2
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
+def test_runs_are_compared_over_the_items_they_share(
+    signed: TestClient, bench: Bench
+) -> None:
+    runs = [str(held(bench, name).run) for name in COMPARED]
+    got = signed.get("/api/runs/compared", params={"run": runs})
+    assert got.status_code == 200
+    compared = got.json()
+    assert [r["id"] for r in compared["runs"]] == runs
+    views = {(v["name"], v["label"]): v for v in compared["views"]}
+    differential = views[(LINES, "differential")]
+    assert differential["means"] == [0.75, 0.5, 0.0]
+    items = [(i["case"], i["replicate"]) for i in compared["items"]]
+    cases = compared["runs"][0]["cases"]
+    assert items == [(case, 0) for case in cases]
+    by_item = list(zip(*differential["values"]))
+    assert sorted(by_item) == [(0.5, 1.0, 0.0), (1.0, 0.0, 0.0)]
+    assert views[(LINES, "dont-miss")]["values"] == [[None, None]] * 3
+    assert compared["apart"] == []
+
+    appendix = str(held(bench, "appendix").run)
+    apart = signed.get("/api/runs/compared", params={"run": [runs[0], appendix]}).json()
+    assert apart["items"] == []
+    assert {c["case"]: c["runs"] for c in apart["apart"]} == {
+        **{case: [runs[0]] for case in cases},
+        apart["runs"][1]["cases"][0]: [appendix],
+    }
+    assert all(v["values"] == [[], []] for v in apart["views"])
+
+    assert signed.get("/api/runs/compared").status_code == 422
+    unknown = signed.get("/api/runs/compared", params={"run": [str(uuid4())]})
+    assert unknown.status_code == 404

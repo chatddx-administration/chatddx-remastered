@@ -56,6 +56,7 @@ from .model import (
     Endpoint,
     Family,
     Graded,
+    Handle,
     Reach,
     word_of,
 )
@@ -80,6 +81,7 @@ class Seen:
         self.people: People = People(conn)
         self._logins: dict[int, str] = {}
         self._models: dict[str, Model] = {}
+        self._handles: dict[str, Handle] = {}
 
     def login(self, person: int | None) -> str:
         if person is None:
@@ -249,28 +251,85 @@ class Seen:
         model = self._model_of(engine)
         return None if model is None else model.digest
 
-    def at(self, variation: TriedVariation, endpoint: str | None) -> Endpoint:
-        model = variation.held("model")
-        if model is None:
-            if endpoint is None:
+    def handle(self, weights: str) -> Handle:
+        if weights not in self._handles:
+            held = {e.thread for e in self.rows.edits_holding([weights])}
+            known = read.abouts(self.rows, [Subject(thread=t) for t in held])
+            live = sorted(t for t in held if not known[Subject(thread=t)].deleted)
+            names = [known[Subject(thread=t)].name or str(t) for t in live]
+            if len(live) != 1:
+                under = f"handles {', '.join(names)}" if live else "no handle"
                 raise ValueError(
-                    f"{variation.label} names no model: name the endpoint to send it to"
+                    f"{self.title(weights)} is under {under}, and weights are under "
+                    + "one: ops' to mend"
                 )
-            return self.endpoint(endpoint)
-        if endpoint is None:
-            try:
-                endpoint = self.inventory.serving(
-                    model, self._served_model, f"model {self.title(model)}"
-                )
-            except LookupError as e:
-                raise ValueError(str(e)) from None
-        found = self.endpoint(endpoint)
-        if found.model.digest != model:
-            raise ValueError(
-                f"endpoint {endpoint!r} serves another model than {variation.label}'s, "
-                + f"{self.title(model)}"
+            head = read.heads_of(self.rows, live)[live[0]]
+            self._handles[weights] = Handle(names[0], live[0], head.digest)
+        return self._handles[weights]
+
+    def handle_named(self, name: str) -> Handle:
+        edit, about = self.thread(name, "model")
+        return Handle(about.name or name, edit.thread, edit.digest)
+
+    def served(self, handle: Handle) -> Endpoint:
+        try:
+            name = self.inventory.serving(
+                handle.weights, self._served_model, f"model {handle.name}"
             )
-        return found
+        except LookupError as e:
+            raise ValueError(str(e)) from None
+        return self.endpoint(name)
+
+    def latest(self, handle: Handle) -> str | None:
+        try:
+            return self.served(handle).engine
+        except (LookupError, ValueError):
+            return None
+
+    def under(self, engine: str) -> tuple[Handle | None, bool]:
+        weights = self._served_model(engine)
+        if weights is None:
+            return None, False
+        try:
+            handle = self.handle(weights)
+        except ValueError:
+            return None, False
+        return handle, self.latest(handle) == engine
+
+    # Policy: Only the repl and scripted runs name an endpoint; a researcher names a
+    # handle, and only for a hand-written configuration.
+    def at(
+        self,
+        variation: TriedVariation,
+        endpoint: str | None = None,
+        model: str | None = None,
+    ) -> Endpoint:
+        weights = variation.held("model")
+        if endpoint is not None:
+            found = self.endpoint(endpoint)
+            if weights is not None and found.model.digest != weights:
+                raise ValueError(
+                    f"endpoint {endpoint!r} serves another model than "
+                    + f"{variation.label}'s, {self.title(weights)}"
+                )
+            return found
+        if weights is None:
+            if model is None:
+                raise ValueError(
+                    f"{variation.label} names no model: name the one to run it under"
+                )
+            return self.served(self.handle_named(model))
+        if model is not None:
+            raise ValueError(
+                f"{variation.label} runs under its model's handle: set its model instead"
+            )
+        handle = self.handle(weights)
+        if handle.weights != weights:
+            raise ValueError(
+                f"{variation.label}'s model is behind {handle.name}, which holds other "
+                + "weights now: follow it first"
+            )
+        return self.served(handle)
 
     def variation(
         self,
@@ -687,7 +746,14 @@ class Seen:
 
     def described(self, run: RunStarted) -> str:
         trial = resolve(self.store.get, run.trial, Trial)
-        where = self.title(trial.engine) if run.endpoint is None else run.endpoint.name
+        handle, _ = self.under(trial.engine)
+        where = (
+            handle.name
+            if handle is not None
+            else self.title(trial.engine)
+            if run.endpoint is None
+            else run.endpoint.name
+        )
         cases = (
             self.title(trial.cases[0])
             if len(trial.cases) == 1

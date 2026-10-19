@@ -3,6 +3,7 @@ import json
 import threading
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
     Imported,
+    checked,
     endpoints_toml,
     engines_toml,
     imported,
@@ -184,7 +186,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         tmp_path, Facts(), rig(), World(tmp_path, Inventory(), engines=(engines,))
     )
     for i in imports:
-        assert plan.named("local_model", i.name).digest == i.model.digest
+        assert plan.named("local_model", i.server).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
         assert plan.named("local_engine", i.name).tags == (i.host,)
     world = tmp_path / "inventory.toml"
@@ -221,7 +223,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     )
     with pytest.raises(
         ValueError,
-        match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
+        match=r"model \['gpt-oss-20b', 'qwen3-8b'\] are named before",
     ):
         _ = plan_factors(
             sample,
@@ -252,6 +254,25 @@ def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
     same = report({"qwen3-8b": server(), "small": other | {"port": 12009}})
     with pytest.raises(ValueError, match="small@pelle and qwen3-8b@pelle are both at"):
         _ = endpoints_toml([imported(same, "qwen3-8b"), imported(same, "small")])
+
+
+def test_it_checks_the_inventory_it_writes_against_the_engines_it_writes() -> None:
+    other = server(
+        model=server()["model"] | {"id": "openai/gpt-oss-20b"},
+        chat_template=template("null\n", used=False),
+    )
+    imports = [
+        imported(report(), "qwen3-8b"),
+        imported(report({"gpt-oss-20b": other}, "malborg"), "gpt-oss-20b"),
+    ]
+    assert checked(imports) == []
+    hostless = imports[0].endpoint.model_copy(update={"host": None})
+    found = checked([replace(imports[0], endpoint=hostless), imports[1]])
+    assert [(f.code, f.subject) for f in found] == [
+        ("endpoint.unstartable", "qwen3-8b@pelle"),
+        ("host.unpinned", "pelle"),
+        ("host.unpinned", "pelle"),
+    ]
 
 
 def test_it_refuses_what_an_engine_can_t_record() -> None:
@@ -406,6 +427,20 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
         main(["import-engine", str(path)])
 
 
+def test_a_server_s_name_is_its_model_s_handle_on_every_host() -> None:
+    pelle = imported(report(), "qwen3-8b")
+    malborg = imported(report(hostname="malborg"), "qwen3-8b")
+    assert engines_toml([pelle, malborg]).count("[local_model.qwen3-8b]") == 1
+    assert [(f.subject, f.code) for f in checked([pelle, malborg])][-1] == (
+        "qwen3-8b@malborg",
+        "endpoint.model_shared",
+    )
+    other = server(model=server()["model"] | {"revision": "b" * 40})
+    elsewhere = imported(report({"qwen3-8b": other}, "malborg"), "qwen3-8b")
+    with pytest.raises(ValueError, match="qwen3-8b@malborg serves other weights"):
+        _ = engines_toml([pelle, elsewhere])
+
+
 def test_the_command_imports_several_hosts_at_once(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -420,7 +455,8 @@ def test_the_command_imports_several_hosts_at_once(
     ]
     assert set(Inventory.load(endpoints).hosts) == {"pelle", "malborg"}
     assert '[local_engine."gpt-oss-20b@malborg"]' in engines.read_text()
+    assert "[local_model.gpt-oss-20b]" in engines.read_text()
     _ = import_engine(tmp_path, *paths, "--server", "gpt-oss-20b")
-    assert "qwen3-8b@pelle" not in engines.read_text()
+    assert "[local_model.qwen3-8b]" not in engines.read_text()
     with pytest.raises(SystemExit, match="--endpoint-host takes one report"):
         _ = import_engine(tmp_path, *paths, "--endpoint-host", "pelle.km")

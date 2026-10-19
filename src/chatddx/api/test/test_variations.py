@@ -16,6 +16,7 @@ from chatddx.store.store import Connection
 from chatddx.test.world import (
     DATA,
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     JUDGE,
     LINES,
     LINES_GUIDED,
@@ -59,7 +60,7 @@ def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
         "thread",
         *RECIPE_PARTS,
         "head",
-        "endpoint",
+        "under",
         "tag",
         "seed",
     }
@@ -68,7 +69,7 @@ def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
 @pytest.mark.slow
 def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> None:
     mine = thread(signed, "configuration", LINES)
-    shown = variation(signed, mine, seed=7, endpoint=QWEN)
+    shown = variation(signed, mine, seed=7)
     assert (shown["head"], shown["skeleton"]) == (mine["head"], mine["head"]["digest"])
     assert not shown["greedy"]
 
@@ -254,20 +255,20 @@ def test_a_variation_is_rendered_and_linted_for_the_engine_serving_its_model(
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
     engine = endpoint(signed, QWEN)["engine"]
-    shown = variation(signed, web, endpoint=QWEN)
+    shown = variation(signed, web)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
     assert {"vllm.native_tools_uncallable", "translations.missing"} <= codes
-    assert variation(signed, web, endpoint=QWEN, seed=shown["seed"]) == shown
+    assert variation(signed, web, seed=shown["seed"]) == shown
 
-    english = variation(signed, web, endpoint=QWEN, tag="targets")
+    english = variation(signed, web, tag="targets")
     assert "translations.missing" not in {f["code"] for f in english["findings"]}
     assert [c["language"] for c in english["languages"]] == ["en"]
     tagged = signed.get("/api/families", params={"tag": "targets"}).json()
     assert {f["language"] for f in tagged} == {"en"}
     assert {r["cases"] for r in english["reach"]} == {len(tagged)}
 
-    nowhere = variation(signed, web, endpoint=QWEN, tag="nowhere")
+    nowhere = variation(signed, web, tag="nowhere")
     assert {r["cases"] for r in nowhere["reach"]} == {0}
     assert [f["code"] for f in nowhere["findings"]] == ["vllm.native_tools_uncallable"]
     assert nowhere["languages"] == []
@@ -332,7 +333,7 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
     off = digest(signed, "reasoning", OFF)
 
     def codes(**params: Any) -> set[str]:
-        shown = variation(signed, web, endpoint=QWEN, reasoning=off, **params)
+        shown = variation(signed, web, reasoning=off, **params)
         assert shown["skeleton"] != web["head"]["digest"]
         return {f["code"] for f in shown["findings"]}
 
@@ -340,7 +341,7 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
     assert "translations.missing" in codes()
 
     guided = thread(signed, "configuration", LINES_GUIDED)
-    shown = variation(signed, guided, endpoint=QWEN, reasoning=off)
+    shown = variation(signed, guided, reasoning=off)
     english, swedish = shown["languages"]
     assert (english["language"], english["skeleton"]) == ("en", shown["skeleton"])
     assert (swedish["language"], swedish["translated"], swedish["refused"]) == (
@@ -358,7 +359,7 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
 def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
     query = {"kind": "configuration", "purpose": "judge", "name": JUDGE}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
-    shown = variation(signed, judging, endpoint=QWEN)
+    shown = variation(signed, judging)
     assert shown["reach"] == [] and shown["findings"] == []
     assert "‹completion›" in str(shown["request"])
 
@@ -382,12 +383,15 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
             + f"{', '.join(OPTIONAL_PARTS)} can be taken out",
         ),
         ({"model": ""}, "a configuration always has a model"),
-        ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
-        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
     ):
         got = signed.get(path, params=params)
         assert got.status_code == 422, params
         assert got.json()["detail"].startswith(said)
+    under = signed.get(path, params={"under": GPT_OSS_ARTIFACT}).json()
+    assert (under["model"], under["findings"]) == (None, None)
+    assert (
+        under["problem"] == "lines runs under its model's handle: set its model instead"
+    )
 
     swedish = signed.get(path, params={"translations": untranslated}).json()
     assert [c["refused"] for c in swedish["languages"]] == [
@@ -430,7 +434,7 @@ def test_a_look_s_queries_don_t_grow_with_its_cases(
 
     def look(**params: Any) -> tuple[int, int]:
         counted[0] = 0
-        shown = variation(signed, web, endpoint=QWEN, **params)
+        shown = variation(signed, web, **params)
         return shown["reach"][0]["cases"], counted[0]
 
     (few, queries), (every, again) = look(tag="swedish"), look()

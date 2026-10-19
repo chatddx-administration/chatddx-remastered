@@ -1,0 +1,11 @@
+description = "The same two cases on a variation of instructed's configuration, sampled near greedily."
+configuration = "lines-instructed"
+set = { sampling = "near-greedy" }
+endpoint = "qwen3@fake"
+cases = ["crlf", "bom"]
+
+[[turn]]
+content = "Subdural haematoma\nStroke"
+
+[[turn]]
+content = "Subdural haematoma\nStroke"

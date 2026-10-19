@@ -12,6 +12,7 @@ from chatddx.test.world import (
     GPT_OSS_MODEL,
     JUDGE,
     QWEN,
+    QWEN_ARTIFACT,
     REMOTE,
     copied,
     edit,
@@ -49,11 +50,15 @@ def test_a_judge_s_recipe_is_compiled_with_its_engine() -> None:
     assert remote.engine == plan.named("remote_engine", REMOTE).digest
 
 
-def test_a_judge_takes_its_engine_from_the_endpoint_the_world_binds_it_to(
+def test_a_judge_takes_its_engine_from_the_handle_the_world_binds_it_to(
     tmp_path: Path,
 ) -> None:
     world = copied(tmp_path)
-    edit(world / "inventory.toml", 'graded = "qwen3@fake"', f'graded = "{GPT_OSS}"')
+    edit(
+        world / "inventory.toml",
+        f'graded = "{QWEN_ARTIFACT}"',
+        f'graded = "{GPT_OSS_ARTIFACT}"',
+    )
     plan = world_plan(world, world / "_data")
     get = plan.registry.get
     graded = resolve(get, plan.named("judge", "graded").digest, Judge)
@@ -79,13 +84,15 @@ def test_a_judge_the_world_doesn_t_bind_is_skipped_and_so_is_its_scorer(
         SCORER + "\n[expectation_schema.targets]",
     )
     edit(
-        world / "inventory.toml", 'verdict = "qwen3@fake"\n', 'nobody = "qwen3@fake"\n'
+        world / "inventory.toml",
+        f'verdict = "{QWEN_ARTIFACT}"\n',
+        f'nobody = "{QWEN_ARTIFACT}"\n',
     )
     plan = world_plan(world, world / "_data")
-    assert "judge verdict: the World binds it to no endpoint" in plan.skipped
+    assert "judge verdict: the World binds it to no handle" in plan.skipped
     assert "scorer noted: judge verdict isn't planned" in plan.skipped
     assert (
-        "judge nobody: the World binds it to qwen3@fake, but the data has none"
+        f"judge nobody: the World binds it to {QWEN_ARTIFACT}, but the data has none"
         in plan.skipped
     )
     with pytest.raises(LookupError):

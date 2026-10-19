@@ -10,6 +10,7 @@ from chatddx.bench import (
     WRITTEN,
     Bench,
     Carried,
+    Endpoint,
     Moved,
     Proposed,
     Reach,
@@ -163,15 +164,13 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     ]
 
 
-def _engine_at(
-    bench: Bench, varied: TriedVariation, endpoint: str | None
-) -> str | None:
+def _at(bench: Bench, varied: TriedVariation, model: str | None) -> Endpoint | str:
     try:
-        return bench.at(varied, endpoint).engine
+        return bench.at(varied, model=model)
     except (LookupError, ValueError) as e:
-        if endpoint is not None:
+        if model is not None and varied.recipe is None:
             raise HTTPException(422, str(e)) from None
-        return None
+        return str(e)
 
 
 def component_of(doc: Mapping[str, JsonValue]) -> Component:
@@ -223,7 +222,8 @@ def variation(
         varied = bench.variation(thread, query.given(), query.head)
         skeleton = bench.skeleton(varied)
         landed = bench.landed(varied)
-        engine = _engine_at(bench, varied, query.endpoint)
+        at = _at(bench, varied, query.under)
+    engine = None if isinstance(at, str) else at.engine
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
     carried: list[Carried] = []
@@ -250,6 +250,8 @@ def variation(
         parts=parts,
         seed=seed,
         request=bench.request(varied, engine, seed),
+        model=None if isinstance(at, str) else bench.handle(at.model.digest).name,
+        problem=at if isinstance(at, str) else None,
         findings=findings,
         languages=[
             schemas.Carried(
@@ -427,6 +429,24 @@ def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDeta
     return _detail(bench, thread)
 
 
+@router.get("/threads/{thread}/lineage")
+def lineage(bench: BenchDep, thread: int) -> list[schemas.Kin]:
+    found = bench.lineage(thread)
+    languages = edit_languages(bench.rows, [k.edit for k in found])
+    kind = catalog.threads.thread(bench.rows, thread).kind
+    return [
+        schemas.Kin(
+            **thread_of(bench, kind, k.edit, k.about, languages).model_dump(),
+            origin=k.origin,
+            base=None if k.divergence is None else _edit_of(bench, k.divergence.base),
+            varies=[] if k.divergence is None else _varied(k.divergence),
+            moved_on=k.moved_on,
+            deleted=k.about.deleted,
+        )
+        for k in found
+    ]
+
+
 @router.get("/threads/{thread}/follows")
 def follows(bench: BenchDep, thread: int) -> schemas.Follows:
     with refused():
@@ -444,15 +464,19 @@ def _proposal_of(bench: Bench, proposed: Proposed) -> schemas.Proposal:
     return schemas.Proposal(
         base=_edit_of(bench, diverged.base),
         origin_head=_edit_of(bench, diverged.origin_head),
-        varies=[
-            schemas.Varied(path=path, base=base, fork=fork)
-            for path, (base, fork) in diverged.varies.items()
-        ],
+        varies=_varied(diverged),
         recipe=held.model_dump(mode="json") if recipe else None,
         component=None if recipe else held.model_dump(mode="json"),
         digest=proposed.digest,
         compilation=proposed.compilation,
     )
+
+
+def _varied(diverged: catalog.Divergence) -> list[schemas.Varied]:
+    return [
+        schemas.Varied(path=path, base=base, fork=fork)
+        for path, (base, fork) in diverged.varies.items()
+    ]
 
 
 def _moved_of(bench: Bench, moved: Moved) -> schemas.Moved:

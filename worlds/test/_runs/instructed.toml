@@ -1,0 +1,10 @@
+description = "Two cases answered alike, to compare with a variation and a fork over the same cases."
+configuration = "lines-instructed"
+endpoint = "qwen3@fake"
+cases = ["crlf", "bom"]
+
+[[turn]]
+content = "Pneumonia\nSubdural haematoma"
+
+[[turn]]
+content = "Pneumonia\nSubdural haematoma"

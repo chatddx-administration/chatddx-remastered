@@ -1,5 +1,6 @@
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
@@ -32,6 +33,7 @@ def test_a_configuration_s_request_is_translated_by_its_translations(
     assert "‹vignette›" in contents(sent)[-1]
 
 
+@pytest.mark.slow
 def test_entries_as_typed_are_sent_and_a_text_without_one_as_written(
     signed: TestClient,
 ) -> None:

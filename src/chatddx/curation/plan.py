@@ -463,13 +463,22 @@ def plan_factors(
         r.digest: r for r in plan.records if r.table in ("local_model", "remote_model")
     }
 
-    def model_at(endpoint: str) -> Planned | None:
-        if inventory is None:
-            return None
-        engine = engines.get(inventory.endpoint(endpoint).engine)
-        if engine is None:
-            return None
-        return models.get(model_of(engine.digest, plan.registry.get).digest)
+    def under(handle: str) -> tuple[Planned, Planned] | str:
+        assert inventory is not None
+        model = next((r for r in models.values() if r.name == handle), None)
+        if model is None:
+            return f"the World has no model under handle {handle}"
+
+        def serves(engine: str) -> str | None:
+            if engine not in engines:
+                return None
+            return model_of(engine, plan.registry.get).digest
+
+        try:
+            endpoint = inventory.serving(model.digest, serves, f"model {handle}")
+        except LookupError as e:
+            return str(e)
+        return model, engines[inventory.endpoint(endpoint).engine]
 
     served: dict[str, list[str]] = {}
     for r in engines.values():
@@ -516,7 +525,7 @@ def plan_factors(
             plan_table(table)
 
     configured = None if inventory is None else inventory.configurations
-    target = None if configured is None else model_at(configured)
+    target = None if configured is None else under(configured)
     made: dict[str, dict[str, JsonValue]] = {}
     for name, raw in found.get("recipe", {}).items():
         assert isinstance(raw, dict)
@@ -527,7 +536,7 @@ def plan_factors(
         if "model" in body:
             raise ValueError(
                 f"recipe.{name}: a recipe's model is the World's: its inventory names "
-                + "the endpoint configurations are made for"
+                + "the handle configurations are made for"
             )
         for part in CHUNK_PARTS:
             if part not in body:
@@ -536,14 +545,14 @@ def plan_factors(
                 raise ValueError(f"recipe.{name}: no {part} named {body[part]!r}")
             body[part] = chunk.digest
         made[name] = body
-        if target is None:
+        if not isinstance(target, tuple):
             plan.skipped.append(
-                f"recipe {name}: the World names no endpoint configurations are "
-                + "made for"
+                f"recipe {name}: "
+                + (target or "the World names no handle configurations are made for")
             )
             add("recipe", name, None)
             continue
-        held = compiled_for(f"recipe {name}", body, target)
+        held = compiled_for(f"recipe {name}", body, target[0])
         if held is None:
             add("recipe", name, None)
             continue
@@ -571,24 +580,22 @@ def plan_factors(
         if "engine" in body:
             raise ValueError(
                 f"judge.{name}: a judge's engine is the World's, which binds the judge "
-                + "to an endpoint in its inventory's [judge] table"
+                + "to a handle in its inventory's [judge] table"
             )
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
         recipe = str(body.pop("recipe", ""))
         if (asked := made.get(recipe)) is None:
             raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
-        if inventory is None or (endpoint := bound.get(name)) is None:
-            plan.skipped.append(f"judge {name}: the World binds it to no endpoint")
+        if inventory is None or (handle := bound.get(name)) is None:
+            plan.skipped.append(f"judge {name}: the World binds it to no handle")
             add("judge", name, None)
             continue
-        at = engines.get(inventory.endpoint(endpoint).engine)
-        if at is None or (of := model_at(endpoint)) is None:
-            plan.skipped.append(
-                f"judge {name}: endpoint {endpoint} serves no engine the World has"
-            )
+        if isinstance(resolved := under(handle), str):
+            plan.skipped.append(f"judge {name}: {resolved}")
             add("judge", name, None)
             continue
+        of, at = resolved
         held = compiled_for(f"judge {name}", asked, of)
         if held is None:
             add("judge", name, None)

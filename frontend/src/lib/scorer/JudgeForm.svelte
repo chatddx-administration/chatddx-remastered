@@ -16,7 +16,7 @@
     name: string;
     owner: string | null;
     configuration: string;
-    endpoint: string | null;
+    model: string | null;
     seeds: number[];
     output_schema: Schema | null;
     head?: number;
@@ -30,26 +30,27 @@
   import { api, why } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
+  import { FIELD } from "$lib/utils";
   import { seedsOf } from "./judging";
 
   let {
     me,
     judging,
-    endpoints,
+    models,
     made,
     left,
   }: {
     me: string;
     judging: Judging[];
-    endpoints: Serving[];
+    models: Serving[];
     made: (judge: JudgeChoice) => void;
     left: () => void;
   } = $props();
-  const given = untrack(() => ({ judging, endpoints }));
+  const given = untrack(() => ({ judging, models }));
 
   let name = $state("");
   let configuration = $state(given.judging[0]?.digest ?? "");
-  let endpoint = $state(given.endpoints[0]?.name ?? "");
+  let model = $state(given.models[0]?.name ?? "");
   let seeds = $state("1");
   let found = $state<Checked | null>(null);
   let problem = $state<string | null>(null);
@@ -57,10 +58,9 @@
   let asked = 0;
 
   const read = $derived(seedsOf(seeds));
-  const field = "h-8 rounded-md border border-input bg-transparent px-2";
 
   function component(): Component | null {
-    const engine = given.endpoints.find((e) => e.name === endpoint)?.engine;
+    const engine = given.models.find((m) => m.name === model)?.engine;
     if (!configuration || !engine || typeof read === "string") return null;
     return { kind: "judge", skeleton: configuration, engine, seeds: read, fill: "text@1" } as never;
   }
@@ -94,7 +94,7 @@
       name: got.data.name ?? name.trim(),
       owner: got.data.owner,
       configuration: from?.name ?? "",
-      endpoint,
+      model,
       seeds: typeof read === "string" ? [] : read,
       output_schema: from?.output_schema ?? null,
     });
@@ -104,21 +104,21 @@
 <form class="space-y-2 rounded-lg border border-dashed border-border p-2.5" onsubmit={save} aria-label="A new judge">
   <p class="font-medium">A new judge</p>
   <div class="grid gap-2 sm:grid-cols-2">
-    <label class="grid gap-1"><span class="text-muted-foreground">Name</span><input class={field} bind:value={name} /></label>
+    <label class="grid gap-1"><span class="text-muted-foreground">Name</span><input class={FIELD} bind:value={name} /></label>
     <label class="grid gap-1"
       ><span class="text-muted-foreground">Its request, a judge configuration</span>
-      <select class={field} bind:value={configuration}>
+      <select class={FIELD} bind:value={configuration}>
         {#each given.judging as j (j.thread)}<option value={j.digest}>{(j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name}</option>{/each}
       </select></label
     >
     <label class="grid gap-1"
-      ><span class="text-muted-foreground">Asked at</span>
-      <select class={field} bind:value={endpoint}>
-        {#each given.endpoints as e (e.name)}<option value={e.name}>{e.name}</option>{/each}
+      ><span class="text-muted-foreground">Asked under the model</span>
+      <select class={FIELD} bind:value={model}>
+        {#each given.models as m (m.name)}<option value={m.name}>{m.name}</option>{/each}
       </select></label
     >
     <label class="grid gap-1"
-      ><span class="text-muted-foreground">Seeds, a call each</span><input class="{field} font-mono" bind:value={seeds} /></label
+      ><span class="text-muted-foreground">Seeds, a call each</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
     >
   </div>
   {#if typeof read === "string"}<p class="text-destructive">{read}</p>{/if}

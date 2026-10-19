@@ -7,12 +7,6 @@ from .pages import BenchDep, page
 router = APIRouter()
 
 
-@router.get("/endpoints")
-def endpoints(request: Request, bench: BenchDep) -> Response:
-    return page(
-        request,
-        "endpoints.html",
-        person=bench.person,
-        endpoints=api.endpoints(bench),
-        models=api.models(bench),
-    )
+@router.get("/models")
+def models(request: Request, bench: BenchDep) -> Response:
+    return page(request, "models.html", person=bench.person, models=api.models(bench))

@@ -101,10 +101,11 @@ refuse:
 - It asks a model that refuses a thinking budget for one.
 - Its output contract is one the model refuses.
 
-A skeleton compiled from a reasoning level on the engine it is paired with sends one of its model's ways of asking,
+A skeleton compiled from a reasoning level for the model it is sent to sends one of its model's ways of asking,
 and one compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks
-matter for literal chunks, hand-written skeletons, and a skeleton paired with another engine than its recipe's.
-init-data checks with the facts it loaded from files, the bench with the stored ones.
+matter for literal chunks, hand-written skeletons, and a skeleton sent to another model than its recipe's.
+
+`init-data` checks with the facts it loaded from files, the bench with the stored ones.
 
 It also notes, without warning, the facts' caveat on the skeleton's contract, and a pair whose model has no facts, so
 that the checks above that need them were skipped.

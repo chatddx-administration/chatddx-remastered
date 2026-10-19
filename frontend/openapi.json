@@ -655,7 +655,7 @@
             "description": "the edit it varies, by id: the configuration's head unless given"
           },
           {
-            "name": "endpoint",
+            "name": "under",
             "in": "query",
             "required": false,
             "schema": {
@@ -667,10 +667,10 @@
                   "type": "null"
                 }
               ],
-              "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names",
-              "title": "Endpoint"
+              "description": "the handle a hand-written configuration is rendered and linted under; a configuration with a model part runs under its model's",
+              "title": "Under"
             },
-            "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names"
+            "description": "the handle a hand-written configuration is rendered and linted under; a configuration with a model part runs under its model's"
           },
           {
             "name": "tag",
@@ -902,6 +902,60 @@
           },
           "409": {
             "description": "The person has their own expectation of the case under that schema: replace it to take this one"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/lineage": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Lineage",
+        "operationId": "lineage_api_threads__thread__lineage_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Kin"
+                  },
+                  "title": "Response Lineage Api Threads  Thread  Lineage Get"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1631,6 +1685,60 @@
         ]
       }
     },
+    "/api/recipes/check": {
+      "post": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Check Recipe",
+        "operationId": "check_recipe_api_recipes_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object",
+                "title": "Given",
+                "description": "a recipe's parts by digest, its purpose and its appendix layout, as a configuration's recipe reads"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/scorer-code": {
       "get": {
         "tags": [
@@ -1956,7 +2064,7 @@
         },
         "responses": {
           "202": {
-            "description": "The run's trial started again with other seeds, as a run of its own, named as the run is, and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The run's skeleton started again over its cases under its handle, at the handle's latest engine, with other seeds, as a run of its own, named as the run is, and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2144,6 +2252,64 @@
           },
           "409": {
             "description": "Nothing is queued or under way for the run"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/compared": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Compared",
+        "operationId": "compared_api_runs_compared_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 20,
+              "description": "the runs, in order",
+              "title": "Run"
+            },
+            "description": "the runs, in order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Compared"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -2955,6 +3121,114 @@
         ],
         "description": "a chunk's digest; empty or null takes an optional part out"
       },
+      "Compared": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/ComparedView"
+            },
+            "type": "array",
+            "title": "Views",
+            "description": "each view of each scorer that scored one of the runs, by its name"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemKey"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "the items every run's trial holds"
+          },
+          "apart": {
+            "items": {
+              "$ref": "#/components/schemas/HeldBySome"
+            },
+            "type": "array",
+            "title": "Apart",
+            "description": "the cases only some of the runs hold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runs",
+          "views",
+          "items",
+          "apart"
+        ],
+        "title": "Compared"
+      },
+      "ComparedView": {
+        "properties": {
+          "scorer": {
+            "type": "string",
+            "title": "Scorer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "means": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Means",
+            "description": "each run's mean over the items it has a value for, in the order the runs are given"
+          },
+          "values": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "each run's value for each item, in the order the items are"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "name",
+          "view",
+          "label",
+          "means",
+          "values"
+        ],
+        "title": "ComparedView"
+      },
       "Component": {
         "properties": {
           "digest": {
@@ -3600,6 +3874,30 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HeldBySome": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "runs": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Runs",
+            "description": "the runs that hold it"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "runs"
+        ],
+        "title": "HeldBySome"
+      },
       "Item": {
         "properties": {
           "case": {
@@ -3694,7 +3992,159 @@
         ],
         "title": "ItemDetail"
       },
+      "ItemKey": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate"
+        ],
+        "title": "ItemKey"
+      },
       "JsonValue": {},
+      "Kin": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the word for its kind: configuration for a skeleton"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its head's"
+          },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "the thread it is a fork of; null for the first of the lineage"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a fork's: the version of its origin it is compared with"
+          },
+          "varies": {
+            "items": {
+              "$ref": "#/components/schemas/Varied"
+            },
+            "type": "array",
+            "title": "Varies",
+            "description": "a fork's: what its head changes"
+          },
+          "moved_on": {
+            "type": "boolean",
+            "title": "Moved On",
+            "description": "a fork's: its origin has moved on since its base, so following it is proposed"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "word",
+          "name",
+          "title",
+          "owner",
+          "tags",
+          "language",
+          "translated",
+          "head",
+          "origin",
+          "base",
+          "varies",
+          "moved_on",
+          "deleted"
+        ],
+        "title": "Kin"
+      },
       "Kind": {
         "properties": {
           "kind": {
@@ -4105,25 +4555,56 @@
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "the handle"
+          },
+          "weights": {
+            "type": "string",
+            "title": "Weights",
+            "description": "the weights it holds now, by digest"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine",
+            "description": "its latest engine, when it resolves"
           },
           "facts": {
             "$ref": "#/components/schemas/JsonValue"
           },
-          "endpoints": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Endpoints"
+          "takes_typed": {
+            "type": "boolean",
+            "title": "Takes Typed",
+            "description": "whether a case typed into the World's database source can run under it: the source isn't sensitive, or its endpoint is cleared for it"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why it doesn't resolve to one endpoint, which is ops' to mend"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "name",
+          "weights",
+          "engine",
           "facts",
-          "endpoints"
+          "takes_typed",
+          "problem"
         ],
         "title": "Model"
       },
@@ -4533,7 +5014,7 @@
             "$ref": "#/components/schemas/Parts",
             "default": {}
           },
-          "endpoint": {
+          "under": {
             "anyOf": [
               {
                 "type": "string"
@@ -4542,8 +5023,8 @@
                 "type": "null"
               }
             ],
-            "title": "Endpoint",
-            "description": "where to send it: the one serving its model unless named, and one a hand-written configuration names"
+            "title": "Under",
+            "description": "the handle a hand-written configuration runs under; a configuration with a model part runs under its model's"
           },
           "families": {
             "anyOf": [
@@ -5351,6 +5832,23 @@
             ],
             "title": "Endpoint"
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle its weights are under; null when they are under none"
+          },
+          "latest": {
+            "type": "boolean",
+            "title": "Latest",
+            "description": "whether it ran at its handle's latest engine"
+          },
           "cases": {
             "items": {
               "type": "string"
@@ -5422,6 +5920,8 @@
           "started_with",
           "engine",
           "endpoint",
+          "model",
+          "latest",
           "cases",
           "seeds",
           "described",
@@ -5489,6 +5989,23 @@
               }
             ],
             "title": "Endpoint"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle its weights are under; null when they are under none"
+          },
+          "latest": {
+            "type": "boolean",
+            "title": "Latest",
+            "description": "whether it ran at its handle's latest engine"
           },
           "cases": {
             "items": {
@@ -5604,6 +6121,8 @@
           "started_with",
           "engine",
           "endpoint",
+          "model",
+          "latest",
           "cases",
           "seeds",
           "described",
@@ -6630,6 +7149,30 @@
             "type": "object",
             "title": "Request"
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "the handle it runs under"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, its model is behind its handle, or it names no model"
+          },
           "findings": {
             "anyOf": [
               {
@@ -6671,6 +7214,8 @@
           "parts",
           "seed",
           "request",
+          "model",
+          "problem",
           "findings",
           "languages",
           "reach"
