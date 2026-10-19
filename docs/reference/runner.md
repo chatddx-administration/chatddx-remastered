@@ -9,13 +9,7 @@ Written by `chatddx reference` from `src/chatddx/runner/`; how to read it is in 
 * `get: Resolver`
 * `endpoint: str`
 * `trial: Trial`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `judged: tuple[Judge, str] | None = None`
-```
-* `judge: Judge | None = None`
 * `timeout: float = 10.0`
 * ∟`str | None`
 
@@ -37,13 +31,7 @@ Raises:
 * `get: Resolver`
 * `endpoint: str`
 * `trial: Trial`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `judged: tuple[Judge, str] | None = None`
-```
-* `judge: Judge | None = None`
 * ∟`None`
 
 Raises:
@@ -251,12 +239,7 @@ Finds:
 * `get: Resolver`
 * `trial: Trial`
 * `judge: str`
-```
-SIGN-OFF: ADD
-add these lines here
----
 * `engine: str`
-```
 * ∟`str`
 
 Raises:

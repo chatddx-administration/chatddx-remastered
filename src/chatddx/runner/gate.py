@@ -40,7 +40,6 @@ def admit(
     return key
 
 
-# What refuses an endpoint for as long as the World is as it is; admit adds what may pass later.
 def bar(
     inventory: Inventory,
     get: Resolver,

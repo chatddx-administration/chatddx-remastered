@@ -350,18 +350,9 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   ran, its case or how many, the language it was translated into, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
-```
-AGENT: replace
-A scoring pins each judge's handle's latest engine, and a judge behind its handle refuses it
-(src/chatddx/bench/seen.py:scoring, Seen.judged).
----
-- **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against, and with
-  each judge's handle's latest engine. Cases without one are left out, and a run whose cases have none has no scoring
-  under that scorer. A judge whose weights its handle no longer holds is behind, and refuses the scoring: "follow it
-  first".
-```
-- **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
-  without one are left out, and a run whose cases have none has no scoring under that scorer.
+- **A run's scoring** is built from the expectation each of its cases is scored against, and with each judge's handle's
+  latest engine. Cases without one are left out, and a run whose cases have none has no scoring under that scorer.
+  A judge whose weights its handle no longer holds is behind, and refuses the scoring: "follow it first".
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
   to the one endpoint serving its judge's model, as the bench names none (docs/runner.md, "Judges"). The scoring

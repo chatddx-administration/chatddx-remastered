@@ -260,13 +260,7 @@ described below.
   - Build the judge request with the judge's Skeleton's render() (purpose "judge").
     Its slots are filled with the completion and the expectation, as the view picks them;
     a judge that reads the case or the appendices is refused.
-```
-AGENT: replace
-A judge pins weights; the engine is the one its scoring pins, its handle's latest when the scoring is built.
----
   - Send it to the engine the scoring pins for the judge, once per seed in Judge.seeds.
-```
-  - Send it to the judge's engine, once per seed in Judge.seeds.
   - Record each call as a JudgeCall: which judge, which seed index, and the call itself.
 6. Write one ScoreItem per (run item, view):
   - the item key;
