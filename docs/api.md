@@ -78,6 +78,8 @@ AGENT: review
 "The facts about its engine's model" is stale.
 ---
 replaced is compiled against the facts about its model as they are stored then, so a variation looked at and
+
+New take: unchanged.
 ```
 The latest configuration means its head when the request comes (unless an edit is given), and a variation with parts
 replaced is compiled against the facts about its engine's model as they are stored then, so a variation looked at and
@@ -203,6 +205,8 @@ A case of no language is sent in the configuration's own, the one way two config
 languages. They differ in their texts too, so that is a variation compared, not a language.
 ---
 Keep.
+
+New take: unchanged.
 ```
 A start is a run per language its cases are sent in (`docs/bench.md`, "Translations"): the cases in the
 configuration's own language, and those in none, as written, and those in each language its translations cover
@@ -289,6 +293,13 @@ After an engine change it is refused at the gate, since the trial pins the engin
 Running again runs the run's skeleton over its cases in its one language, at the engine its endpoint serves now, as a
 run of its own rather than one of the start it was made in: with new seeds, or with its own, which, at a newer engine,
 measures what the engine's change did.
+
+New take: by handle:
+
+Running again runs the run's skeleton over its cases in its one language, under its handle, and so at the handle's
+latest engine, as a run of its own rather than one of the start it was made in, with new seeds or its own. It is
+refused as ops' error when the handle no longer resolves, and as behind when the handle holds other weights than the
+run's.
 ```
 Running again draws new seeds, and runs the run's trial in its one language, as a run of its own rather than one of
 the start it was made in.

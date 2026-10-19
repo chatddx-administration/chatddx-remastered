@@ -20,6 +20,8 @@ Language is never compared and should be silent: a set holds one language only b
 ---
 3. **Decided: a set is held to one language**, so that a variation's start over it is one run, never a run per
    language: the language its cases are written in, never picked (see "What the docs hold it to").
+
+New take: decided with the address, which takes no `language=`: the set's language is its cases'.
 ```
 3. **Decided: a set is held to one language**, so that a variation's start over it is one run, never a run per
    language (see "What the docs hold it to").
@@ -59,6 +61,12 @@ of the set, though models are what researchers vary (option 1).
 ---
 - **No comparison across hardware**: each hardware class is its own cage (`docs/chatddx.md`, "Target stack"). The set
   is a host, and a variation that replaces the model runs at the endpoint on it serving that model.
+
+New take: a handle is on one hardware class, and comparing across handles is fine:
+
+- **One hardware class per handle**: ops never expose a handle on two (`docs/chatddx.md`, "Target stack"), and
+  comparing across handles is fine. Each column runs under its own model's handle, or under the one `model=` forces
+  on every column.
 ```
 - **No comparison across hardware**: each hardware class is its own cage (`docs/chatddx.md`, "Target stack"). A
   variation that replaces the model goes to the endpoint serving it, another engine.
@@ -75,6 +83,8 @@ The set's language is picked here, the configuration's own by default; under the
 - **A start is a run per language** (`docs/bench.md`, "Translations"), so a set is held to one language, its cases':
   a set whose tags or families pick cases in several is refused, to be narrowed. A variation whose translations
   don't cover it runs nothing over the set, and says so.
+
+New take: unchanged; the address has no `language=`.
 ```
 - **A start is a run per language** (`docs/bench.md`, "Translations"), so a set is held to one language: its cases
   are those of the families picked or tagged that are written in it, the configuration's own by default. A variation
@@ -89,6 +99,9 @@ gpt-oss@fake 1 run, apart" puts a model's variation apart.
 ---
 The header says the host and the cases, `on pelle · tag sample · seed 7`, and a model's variation is a column like
 any other.
+
+New take: the header says the cases and, when `model=` forces one, the handle: `qwen3-8b · tag sample · seed 7`; each
+column otherwise names its own handle.
 ```
 A sketch, at a wide screen, in the review's layout: two columns are the main actors, the configuration being varied
 and how its variations fare; the lineage is a drawer at the left, folded to a rail.
@@ -119,6 +132,9 @@ endpoint's engine changes.
 - **How they fare**: a column per variation, the configuration's own first, then the trying list, then the forks;
   a row per scorer view with its mean over the items the columns share and their count; the runs at an earlier engine
   of their endpoint, or over other cases, folded apart; what isn't run or isn't scored, with **Run** and **Score**.
+
+New take: a column's mean is over its runs at its handle's latest engine; its runs on earlier engines, or under a
+retired handle, are folded away under the handle, accessible and out of the mean.
 ```
 - **How they fare**: a column per variation, the configuration's own first, then the trying list, then the forks;
   a row per scorer view with its mean over the items the columns share and their count; the runs at another engine
@@ -129,6 +145,9 @@ AGENT: review
 `endpoint=` and `language=` in the address: options 1 and the language rule.
 ---
 The address keeps what is set: `/refine/{configuration}?host=…&tag=…&family=…&seed=…&head=…&try=…`,
+
+New take: decided: `/refine/{configuration}?model=…&tag=…&family=…&seed=…&head=…&try=…`. `model=` is optional: a
+handle forced on every column, each otherwise under its own model's.
 ```
 The address keeps what is set: `/refine/{configuration}?endpoint=…&language=…&tag=…&family=…&seed=…&head=…&try=…`,
 a `try` per variation tried, its parts as `PART:DIGEST` joined by commas. `/refine` leads to the person's first
@@ -159,6 +178,12 @@ an engine change empties every column (options 1 and 2).
 
 Take: (b), with (a) reachable from the runs page. Runs at an earlier engine of their endpoint are stale and listed
 apart.
+
+New take: by handle:
+
+- **(b)** A set kept in the address: the cases by tag or family, a seed, and optionally a handle forced on every
+  column. Each variation is matched to its runs by skeleton and handle, at the handle's latest engine; one without
+  a run offers **Run**. Runs on the handle's earlier engines are grouped under it and folded away.
 ```
 - **(b)** A set kept in the address: an endpoint, the cases by tag or family, and a seed. Each variation is matched to
   its runs by skeleton at the set's engine; one without a run offers **Run**.
@@ -251,6 +276,8 @@ AGENT: review
 Step 2's plan: runs at the set's endpoint's engine and in its language.
 ---
   skeleton and model (`Seen.runs(reaching=…)`) at the endpoint on the set's host serving each one's model, compared by
+
+New take: by skeleton and handle, at each handle's latest engine.
 ```
 - **The page** (`src/chatddx/portal/refine.py`, `templates/refine.html`): the lineage, the configuration with its
   versions stepped through, and how they fare on the set, the configuration's own and each fork's latest runs by
@@ -271,6 +298,10 @@ AGENT: review
 ---
   over the set, one run each. A variation that replaces the model runs at the endpoint on the set's host serving
   it, a column like any other.
+
+New take: a variation that replaces the model runs under its handle, a column like any other, and with `model=` every
+column runs under that handle. A handle that doesn't resolve is refused as ops' error, and weights the handle no
+longer holds are behind, to be followed first.
 ```
 - **Run**: a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs it starts, what each
   sets, what the gate refuses and why, the cases, and each scorer view's reach; then a `POST /api/runs` per variation
@@ -371,6 +402,9 @@ its column and is credited with its origin's run.
 ---
     Configurations holding one skeleton and one model share a column ("lines-instructed = archive/lines-instructed"),
     since a fork that varies nothing holds its origin's; a deleted one has none.
+
+New take: configurations holding one skeleton under one handle share a column; with `model=` every column is under the
+same handle, so the columns are skeletons.
 ```
   - **Its columns**: the version shown, then each other configuration of its lineage, the person's own first.
     Configurations holding one skeleton share a column ("lines-instructed = archive/lines-instructed"), since a fork
@@ -382,6 +416,10 @@ which follows from the cases.
 ---
   - **A column's run** is the person's latest reaching its skeleton at the endpoint on the set's host serving its
     model, at the engine it serves now, over the set's cases; a run at an earlier engine is stale and folded apart.
+
+New take: a column's run is the person's latest reaching its skeleton under its handle, or `model=`'s, at the handle's
+latest engine, over the set's cases; runs on earlier engines or under a retired handle are folded under it, accessible
+and out of the mean.
 ```
   - **A column's run** is the person's latest reaching its skeleton (`GET /api/runs?reaching=`) at the set's
     endpoint's engine, in the set's language, and, when tags or families narrow the set, over its cases only.
@@ -391,6 +429,9 @@ An endpoint and a language picked: options 1 and the language rule.
 ---
   - **The set**: the host, the one serving the model when only one does, else picked; tags from a form, and
     families from the address; its language is its cases'.
+
+New take: the set is the cases, by tags from a form and families from the address, a seed, and optionally `model=`, a
+handle forced on every column; no endpoint and no language.
 ```
   - **The set**: the endpoint, the one serving the model when only one does, else picked; the language, the
     configuration's own unless picked; tags from a form, and families from the address.
@@ -403,6 +444,9 @@ AGENT: review
 ---
   mean per view and run, and, under the view `by` names, each item; runs at different engines are said not to be like
   for like, each engine by its title; runs in different languages share no cases, which the items say.
+
+New take: runs show their handle, not their engine; runs under one handle on different engines are said to be grouped
+under it rather than like for like, and languages as above.
 ```
 - **`/runs/compare?run=…`** (C1; `src/chatddx/portal/runs.py:comparing`, `templates/compare.html`): the runs ticked
   on the runs page or a configuration's page (`macros.html:runs_table`, whose checkboxes join a form of their own), a

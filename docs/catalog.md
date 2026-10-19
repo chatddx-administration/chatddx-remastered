@@ -110,6 +110,9 @@ A trial's engine is behind once the engine's thread moved on: what option 3a fol
 current engine.
 ---
 Keep.
+
+New take: keep: a trial's engine behind is how a run under a handle on an earlier engine is told, and a
+configuration's model behind how a handle's weights moved on.
 ```
 - the head's own references, such as a trial's skeleton, engine and cases;
 - for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
@@ -230,6 +233,9 @@ its earlier version reads "qwen3-8b@pelle (earlier)"; the Local engine row below
 changed between the two isn't said.
 ---
 Keep; the pages show a run's engine by this title where runs differ in engine.
+
+New take: researchers see handles, not engines, so a run on an earlier engine reads as under its handle, folded with
+its group (`qwen3-8b, an earlier engine`); the engine's own title stays ops'.
 ```
 Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
 catalog prefers, in order:

@@ -69,6 +69,9 @@ AGENT: review
 Why running again and a queued job are refused after an engine change.
 ---
 Keep: the gate is right, and running again asks for the endpoint's current engine (open option 3a).
+
+New take: keep: a run asks for its handle's latest engine, so the gate refuses only a run started, or queued, before
+the handle moved on.
 ```
 - an endpoint that serves another engine than the one asked for;
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
@@ -167,6 +170,9 @@ AGENT: review
 - **Where its calls go.** A judge names a model; its calls go to the one endpoint serving that model, whose engine
   the score pins, and through the gate as a run's do, for the run's cases, since a judge reads a completion. Several
   serving it is refused rather than picked from, as for a run (docs/backlog.md, "Picking an endpoint for a model").
+
+New take: a judge's model is picked by handle; its calls go to the handle's endpoint at its latest engine, which the
+scoring pins, and a handle that doesn't resolve refuses the scoring as ops' error.
 ```
 - **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, and through
   the gate as a run's do, for the run's cases, since a judge reads a completion. Several serving it is refused rather

@@ -144,6 +144,9 @@ The manual speaks of a configuration's engine; it has a model, which `set model`
 ---
 The endpoint is the one serving the configuration's model, here the
 model the sample's configurations are made for.
+
+New take: the shell is a researcher's, so it speaks handles: the cell is a configuration under a handle, `qwen3-8b`,
+the configuration's model's unless one is set, and it shows no endpoint or engine.
 ```
 The endpoint is the one serving the configuration's engine, here the
 engine the sample's configurations are made for. A configuration someone
@@ -163,6 +166,9 @@ AGENT: review
 Puts an endpoint in the cell, and the model it serves in the cell's
 configuration, keeping everything else you chose. The configuration is
 worked out again for that model.
+
+New take: `on ENDPOINT` goes, since researchers don't see endpoints; `set model HANDLE` swaps the model by its handle,
+and the prompt shows `+model=qwen3-8b`.
 ```
 Puts an endpoint in the cell, and the engine it serves in the cell's
 configuration, keeping everything else you chose. The configuration is
@@ -187,6 +193,8 @@ AGENT: review
 Stale: the endpoint's model.
 ---
 Both at once: the configuration, with the endpoint's model in it.
+
+New take: `cell CONFIGURATION HANDLE`: both at once, the configuration under the handle.
 ```
 Both at once: the configuration, with the endpoint's engine in it.
 
@@ -217,6 +225,9 @@ part, and a chunk that doesn't fit is refused, leaving the cell as it
 was. Choosing a configuration again with `use` or `cell` forgets what you
 set, but for the model of an endpoint you named; `on` another endpoint
 keeps it all, worked out again for its model.
+
+New take: unchanged but for the endpoint: choosing a configuration again forgets what you set, but for a handle you
+set, and the cell is worked out again for each handle you set.
 ```
 The prompt shows what you changed (`+reasoning=off`). A reasoning chunk
 asks for a level, as `off`, and the engine's model is asked for it as its
@@ -252,6 +263,8 @@ The command is `set model NAME` (docs/repl.md, "Parts").
 `set model NAME` swaps the model alone, named as its thread is
 (`qwen3-8b-awq`), and keeps an endpoint you named that serves it; one
 that serves another is let go.
+
+New take: `set model HANDLE` swaps the model alone, by its handle (`qwen3-8b`), and the cell runs under it.
 ```
 `set engine NAME` swaps the engine alone, named as `endpoints` lists it,
 and the cell runs at the endpoint serving it; an endpoint you named that
@@ -265,6 +278,9 @@ AGENT: review
 ---
 Shows the cell: each part and what it is, the model among them, where
 a reasoning level or a recommended sampling landed on the model,
+
+New take: the model is shown by its handle, and the endpoint and the name its engine is served under, which are ops',
+aren't shown.
 ```
 Shows the cell: each part and what it is, the engine among them, where
 a reasoning level or a recommended sampling landed on the engine's model,

@@ -36,6 +36,8 @@ The variation is the configuration with its model set to the endpoint's engine's
 has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to
 an endpoint serving another model than its own runs as a variation, its model replaced and the rest worked out for it,
 and is named so: `plan-prompted+model=gpt-oss-20b@fake`.
+
+New take: unchanged; scripted runs are the developers' and the fake's, so they keep naming endpoints.
 ```
 The variation is the configuration with its model set to the endpoint's engine's model, unless it is hand-written and
 has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to

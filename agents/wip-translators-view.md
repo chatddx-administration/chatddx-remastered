@@ -136,6 +136,8 @@ AGENT: review
 The rule's one statement, and in agents/: docs/ don't say it.
 ---
 Keep, and say it in docs/bench.md, "Translations" (suggested there).
+
+New take: unchanged.
 ```
 Decided: (b) first. Vignettes aren't translated, so comparing languages is comparing case sets, and there is no case
 to compare an answer with across them.

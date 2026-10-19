@@ -45,6 +45,9 @@ holds an engine: after an engine's arguments change, every earlier trial at that
 serves.
 ---
 Keep: its engine is the endpoint's, and its language its cases'.
+
+New take: keep: a trial's engine is its handle's latest when it starts, which only ops see, and its language its
+cases'.
 ```
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
 - **Replicate:** one seed of a trial, identified by its index.
@@ -136,6 +139,12 @@ Hardware is never varied, models are. Refine's set pins one endpoint, so a varia
 ---
 No comparison between the 3070 and the 5090; each hardware class is its own cage, in which a researcher varies the
 model and ops the engine.
+
+New take: a handle is on one hardware class, and comparing across handles is fine:
+
+No comparison across hardware under one handle: ops never expose a handle, such as `qwen3-8b`, on two hardware
+classes, so each handle is in one cage. A researcher varies the model by its handle and may compare handles; the
+engines are ops'.
 ```
 No comparison between the 3070 and the 5090; each hardware class is its own cage.
 
@@ -146,6 +155,9 @@ engine whose vLLM arguments change gets a new digest, and its runs no longer com
 arguments that don't change what is computed.
 ---
 Keep: what changes unseen can only be observed, and what we change, we pin.
+
+New take: keep. A remote model is a handle as a local one is, and what changes unseen behind it stays under its latest
+engine, observed rather than pinned.
 ```
 - **Remote inference.** An A100 serving Gemma behind an OpenAI-compatible API. More may follow. We don't control the engine and it can change without notice, so some uncertainty is accepted.
   - The endpoint is vetted for sensitive cases.
@@ -220,6 +232,9 @@ toolsets. This is the primary doc, so by AGENTS.md the contradiction stops the w
    FewShot, Reasoning, Passthrough, Translations and Toolset are optional; and it names a model, LocalModel or
    RemoteModel. A Reasoning chunk may ask for a level, and a Sampling chunk for the sampling the model's makers
    recommend, rather than say what is sent.
+
+New take: unchanged: a recipe pins the weights, and a researcher picks them by handle, such as `qwen3-8b`, without
+seeing the model's proper name.
 ```
 1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions,
    FewShot, Reasoning and Passthrough are optional; and it names an engine, LocalEngine or RemoteEngine. A Reasoning
@@ -234,6 +249,8 @@ swaps the model shares its origin's column and is credited with its run.
 ---
    A skeleton holds no model: a recipe compiles to one skeleton for every engine of its model, and, without intents,
    for every model; a trial's engine says which model a run of it was sent to.
+
+New take: unchanged; Refine keys its columns by skeleton and handle.
 ```
 2. The Recipe is compiled into a Skeleton against the facts about its model and into a language its translations cover.
    The Skeleton is stored as a frozen factor, holding:
@@ -251,6 +268,13 @@ language follows from its cases, as said, never picked.
 4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
    seeds. A trial of a configuration with a recipe takes the engine of the endpoint serving the recipe's model, and its
    run goes there. Cases of a language its translations don't cover are left out.
+
+New take: by handle:
+
+4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
+   seeds. A trial of a configuration with a recipe takes the latest engine of the handle its model is under, and its
+   run goes to the handle's endpoint; a recipe whose weights the handle no longer holds is behind its model, and
+   doesn't run under the handle until followed. Cases of a language its translations don't cover are left out.
 ```
 4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
    seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving

@@ -50,6 +50,8 @@ Language isn't a factor: what it changes is held by the skeleton a recipe is com
 nothing compares by language.
 ---
 Keep.
+
+New take: unchanged.
 ```
 - Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/catalog.md].
 - Sensitivity and vetting: [agents/wip-clearance.md].
@@ -168,6 +170,8 @@ AGENT: review
 The Intent row: "the facts about the engine's model" is stale, a recipe names its model.
 ---
 | Intent | What a reasoning or sampling chunk asks of the model, a reasoning level or the recommended sampling, worked out from the facts about the recipe's model when the recipe is compiled. |
+
+New take: unchanged.
 ```
 | Term | Meaning |
 | --- | --- |
@@ -265,6 +269,8 @@ Stale, with item 3: a recipe names a model, and the engine is the endpoint's.
 2. A recipe picks one chunk per part, and the model the request is for.
 3. The compiler turns the recipe into a skeleton, the frozen request that trials and judges reference, working out
    what its intents send from the facts about the model.
+
+New take: unchanged.
 ```
 2. A recipe picks one chunk per part, and the engine the request is for.
 3. The compiler turns the recipe into a skeleton, the frozen request that trials and judges reference, working out
@@ -341,6 +347,8 @@ AGENT: review
 ---
 A sampling chunk may instead ask for the sampling the model's makers recommend, an intent: compiling fills it in from
 the facts about the recipe's model, for the level the reasoning chunk asks for, where it lands, or the
+
+New take: unchanged.
 ```
 A sampling chunk may instead ask for the sampling the model's makers recommend, an intent: compiling fills it in from
 the facts about the recipe's engine's model, for the level the reasoning chunk asks for, where it lands, or the
@@ -359,6 +367,8 @@ AGENT: review
 ---
 thinking-token budget beside it. Compiling works out what a level sends from the facts about the recipe's model: the
 effort and chat template arguments of the level it lands on, which may be another, its nearest, when the
+
+New take: unchanged.
 ```
 A reasoning chunk holds the reasoning effort, a thinking-token budget and arguments for the chat template, or asks for
 a reasoning level (off, on, minimal, low, medium, high, xhigh, or the model's default), an intent, with at most a
@@ -423,6 +433,8 @@ typed chunk or model, a prompt whose purpose differs from the recipe's, translat
 asked for or a text they leave untranslated, a guidance placed in both the instructions and the prompt, an answer
 function named like one of the toolset's tools, an intent the facts refuse or know nothing of, an intent on a model
 with no facts, and facts about another model than the recipe's.
+
+New take: unchanged: the recipe pins the weights, which researchers pick by handle.
 ```
 A recipe is not a component. It holds a purpose and an appendix layout, a prompt, an output, a sampling chunk and an
 engine, and optionally instructions, few-shot examples, reasoning, a passthrough, translations and a toolset.
@@ -446,6 +458,8 @@ what a run of it was sent to.
 code nor the facts are a separate factor: whatever they did is frozen in the skeleton. A skeleton holds no model:
 the model changes it only through its facts, so a recipe compiles to one skeleton per language for every engine of its
 model, and, without intents, for every model. What a run of it was sent to is its trial's engine.
+
+New take: unchanged.
 ```
 The recipe is kept only in the compilation, next to the compiler's version, the facts compiled against and the
 language compiled into (see "Compilation"). Trials reference the skeleton, not the recipe, so neither the compiler's
@@ -469,6 +483,8 @@ model they ask no intent of give one skeleton instead.
 ---
 skeleton (see "How chunks affect each other"), two recipes that differ only in a model they ask no intent of among
 them, so a skeleton may have several compilations, and a hand-written one has none.
+
+New take: unchanged.
 ```
 A compilation is provenance, not a factor: no component refers to it, so it changes no digest and no output. Trials and
 judges reference the skeleton, which holds whatever the compiler did. The same recipe compiled by the same compiler
@@ -484,6 +500,8 @@ A bundle carries a compilation when it is one of the roots, and the chunks, the 
 it, so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that
 the compilation's facts are about the recipe's model, and that the recipe's translations go into the
 language it names.
+
+New take: unchanged.
 ```
 A bundle carries a compilation when it is one of the roots, and the chunks, the engine and the facts then come with
 it, so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that
@@ -535,6 +553,13 @@ can't judge an engine's effects; a trial's engine is the endpoint's, and a judge
 An engine is where requests are sent, written by ops (docs/chatddx.md, "Roles mentioned"). Researchers pick a
 recipe's model, and a trial takes the engine of the endpoint serving it, as a judge will (docs/backlog.md, "Judges
 name a model"). Every engine speaks the same API: OpenAI-compatible chat completions.
+
+New take: by handle:
+
+An engine is where requests are sent, written by ops (docs/chatddx.md, "Roles mentioned"), who map each model handle,
+such as `qwen3-8b`, to one engine and one endpoint; a handle always means its latest engine (docs/inventory.md).
+Researchers pick a recipe's model and a judge's by handle, and see no engines, endpoints or proper model names. Every
+engine speaks the same API: OpenAI-compatible chat completions.
 ```
 An engine is where requests are sent. Researchers pick engines for recipes, as one more part, and for trials and
 judges. Every engine speaks the same API: OpenAI-compatible chat completions.
@@ -568,6 +593,8 @@ revision, and where the server listens, which is the endpoint's. Every other arg
 belongs in the engine, where its digest pins it, and nothing may get around that: not an argument that sets what the
 script owns, however it is spelled or shortened; not one that reads arguments from a file; and not one that would stop
 vLLM from starting. The arguments that only tune the server are the endpoint's, recorded with each run.
+
+New take: unchanged.
 ```
 The start-up script owns the model's identity: the weights, the served name, the chat template, the tokenizer and the
 revision, and where the server listens, which is the endpoint's. Every other argument belongs in the engine, where its
@@ -736,6 +763,15 @@ pick the model and the fill rule.
 
 A judge is an LLM used as a metric: a judge skeleton, a model, its own seeds, and a fill rule. Its calls go to the
 endpoint serving the model, and the score pins the engine they went to (docs/backlog.md, "Judges name a model").
+
+New take: by handle:
+
+Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
+pick the model, by its handle, and the fill rule.
+
+A judge is an LLM used as a metric: a judge skeleton, the weights picked by handle, its own seeds, and a fill rule.
+Its calls go to the handle's endpoint, at its latest engine, which the scoring pins (docs/backlog.md, "Judges name a
+handle").
 ```
 Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
 pick the engine and the fill rule.

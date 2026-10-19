@@ -108,6 +108,8 @@ AGENT: review
 A skeleton compiled from a reasoning level for the model it is sent to sends one of its model's ways of asking,
 and one compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks
 matter for literal chunks, hand-written skeletons, and a skeleton sent to another model than its recipe's.
+
+New take: unchanged.
 ```
 A skeleton compiled from a reasoning level on the engine it is paired with sends one of its model's ways of asking,
 and one compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks

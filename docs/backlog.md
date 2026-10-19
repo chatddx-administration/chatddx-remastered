@@ -92,6 +92,9 @@ Open option 3b: drift is compared only within one trial, so an endpoint's canari
 aren't compared, though they would measure the change without a case.
 ---
 Take: an endpoint's canaries are also compared across its engine's versions, saying what a change of arguments did.
+
+New take: the group under a handle is where its canaries would be compared across its engines, which would give the
+group the evidence it lacks; still a take.
 ```
 Decided: the same canary output is the same digest of each choice's message and the same prompt-token fingerprint, the
 fingerprint under a code of its own; neither needs a new field, since `CanaryCall.call` holds the response and the
@@ -150,6 +153,9 @@ join what it groups by.
   execution settings and the server's tuning arguments on an engine that isn't batch invariant, a remote engine that
   changed between runs, a tool that answered differently. Seeds within a run are replicates; runs of the same trial
   are a second source of variation, and it has no name yet.
+
+New take: unchanged. The runs grouped under a handle are what this section splits by engine before pooling: the group
+is practical, for scoring and unpublishable analysis, and never published as one condition.
 ```
 - A trial's digest covers its pinned factors only. Its outputs also depend on its run's recorded and observed factors:
   execution settings on an engine that isn't batch invariant, a remote engine that changed between runs, a tool that
@@ -171,6 +177,8 @@ What it says matters to an analysis split by language.
   prompts, harmony's channel instructions, tool-call scaffolding), and reasoning is often English whatever the
   prompt. The same text also takes another number of tokens in Swedish than in English, so an analysis split by
   language says so; languages themselves are never compared, as their cases differ.
+
+New take: unchanged.
 ```
 - **Not all a model reads is in the request's language.** Chat templates add English of their own (default system
   prompts, harmony's channel instructions, tool-call scaffolding), and reasoning is often English whatever the
@@ -196,6 +204,9 @@ before the correction the case went as written, after it translated.
   whose cases' language has since been corrected is stale, and compared with nothing. A scorer that needs the
   language, for stemming, synonyms or an ontology, takes it from the expectation data or its resources, which are
   factors, not from the catalog at scoring time.
+
+New take: unchanged; such a run is folded away under its handle as a run on an earlier engine is: accessible, and out
+of the means.
 ```
 - **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
   analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
@@ -286,6 +297,10 @@ Each flag in the list says which it is, and one the list doesn't know stays in t
   endpoint serves it under another name, a set at the endpoint no longer finds its earlier runs, running them again is
   refused at the gate, and a judge at it is another judge. Batching arguments still change the arithmetic on an engine
   that isn't batch invariant, as execution settings do, so "Aggregation" groups by them.
+
+New take: decided as written, and it matters more under handles: a handle means its latest engine and Refine's means
+read that engine only, so every tuning argument changed folds a handle's runs away. Keeping those arguments out of the
+digest keeps the latest engine latest.
 ```
 - `argv` is checked without vLLM's list of flags: a bare argument after a flag that takes no value passes, and lints
   don't expand abbreviated flags.
@@ -327,6 +342,8 @@ The arguments that change the model's defaults change what is computed, so under
 the facts still describe the model's own defaults.
 ---
 Keep; 4b's list marks them as the engine's.
+
+New take: unchanged: ops choose these arguments per engine, and a handle's latest engine carries them.
 ```
 Facts about a model on a runtime, and the defaults an engine's command line sets over the model's own. The command line
 can be done now; facts keyed by runtime wait for a second runtime.
@@ -391,6 +408,12 @@ AGENT: review
   them has no findings. A judge pins its engine as a trial does until it names a model (see "Judges name a model"),
   and a judge whose engine two endpoints serve bars its scorer (docs/runner.md, "Judges"), which stays unlikely: it is
   one engine served twice.
+
+New take: decided otherwise. A handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an
+endpoint to be named, the variation page's endpoint picker goes, and a judge's handle resolves as a run's. The
+section becomes the inventory check's: a handle that resolves to no endpoint or several, reported at init-data, as a
+worker starts and at the engine import, and refused to a researcher as ops' error. The decision that a run is
+refused until its endpoint is named is replaced.
 ```
 - **A model served at several endpoints** isn't picked from them: a run is refused until the endpoint is named, as
   the test World's two Qwen3 endpoints show; the variation page offers the picker, and a look rendered for none of
@@ -422,6 +445,15 @@ a trial is when it starts.
 - **An engine that changes takes its judges with it.** A person's judge whose engine no endpoint serves any more bars
   its scorer (docs/runner.md, "Judges"); a data set's judge loaded again after its engine changed is another judge, and
   so is every scorer whose views name it, so their scores read as another scorer's.
+
+New take: judges name model handles, as recipes do. The section becomes "Judges name a handle":
+
+A judge's model is picked by its handle, such as `qwen3-8b`, as a recipe's is: the judge pins the weights, and its
+calls go to the endpoint ops map the handle to, at its latest engine, which the scoring pins. A handle that doesn't
+resolve to one endpoint refuses the scoring as ops' error, and a judge whose weights the handle no longer holds is
+behind, and doesn't judge under it until followed.
+
+Decided: a judge's model is picked by handle, and its engine is the handle's latest.
 ```
 ### Concurrent writers
 The rules hold with two writers at once: adopting a vignette, taking an expectation and saving a name.
@@ -798,6 +830,9 @@ An engine change does the same to the jobs queued at the endpoint, as their tria
 ---
 - **A job at an endpoint the inventory lost**, or whose engine has since moved on, is claimed and fails at the
   gate, rather than waiting; one whose engine moved on says to run it again.
+
+New take: a job whose handle moved on to another engine while it was queued fails at the gate and says to run it
+again; one whose handle no longer resolves to one endpoint fails as ops' error.
 ```
 - **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 

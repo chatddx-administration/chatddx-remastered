@@ -163,6 +163,13 @@ Option 1: Refine's set would pin a host, the cage, and each column's run go to t
 "several serve, unless one is named" then holds within the host.
 ---
 A run goes to the endpoint serving its variation's model, on the host it is asked for when one is.
+
+New take: by handle, the paragraph whole:
+
+A run goes under its variation's handle: to the one endpoint ops map it to, at its latest engine. A handle that doesn't
+resolve to one endpoint is refused as ops' error, and a variation whose weights its handle no longer holds is behind
+its model, and refused until followed. A hand-written configuration has no model part, and runs under the handle
+named.
 ```
 A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
 serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
@@ -191,6 +198,8 @@ Cases and appendices aren't translated: each is in a language of its own. A requ
 and no language tag reaches the model. So a request is sent in its case's language, and a case of none in the
 configuration's own: the language follows from the cases and nobody picks it, and runs in different languages are over
 different cases, so they are never compared.
+
+New take: unchanged, and decided with Refine's address, which takes no `language=`.
 ```
 Cases and appendices aren't translated: each is in a language of its own. A request's language is implicit in its text,
 and no language tag reaches the model.
@@ -242,6 +251,8 @@ Stale: a recipe is made with a model's digest (docs/api.md, "New"), compiled aga
   configuration with no origin. Each part must be a stored chunk of that part, the model a stored model, and the
   recipe must compile: an intent the facts refuse doesn't, nor one on a model they don't know. Its language comes
   from its recipe, so none is given.
+
+New take: unchanged; the model's digest is picked by its handle.
 ```
 - **Making one from a recipe** of the person's own, by the chunks' digests for each part and an engine's, its purpose
   and its appendix layout: compiled by the running code against the facts about the engine's model, and kept as a new
