@@ -360,3 +360,20 @@ A configuration offered the new version of a chunk of its recipe, as it is offer
   thread has moved on (`src/chatddx/catalog/threads.py:behind`), but the bench follows `/facts` and `/recipe/model`
   only (`src/chatddx/bench/following.py:_moved`), so a new version of a chunk, a translator's translations among them,
   reaches a configuration only by a variation that picks it, saved.
+
+### Picking an endpoint for a model
+A look for a model several endpoints serve is linted, a model that moved on is followed only where it is served, and a
+judge whose engine two endpoints serve doesn't bar its scorer. That a run is refused until its endpoint is named is
+decided: a preference among the endpoints, such as the World's `configurations` endpoint, would pick silently.
+
+Decided: a look for no endpoint gives the findings of the model alone, `facts.*`, and says that the engine's wait for an
+endpoint to be named.
+
+Decided. A handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an
+endpoint to be named, the variation page's endpoint picker goes, and a judge's handle resolves as a run's. The
+section becomes the inventory check's: a handle that resolves to no endpoint or several, reported at init-data, as a
+worker starts and at the engine import, and refused to a researcher as ops' error. The decision that a run is
+refused until its endpoint is named is replaced.
+- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
+  part linted it for the recipe's engine; the repl's `show` shows no lints either.
+- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.

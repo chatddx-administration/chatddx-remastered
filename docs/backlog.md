@@ -25,7 +25,6 @@ in agents/ tracks is that plan's, not this document's.
   - [Facts as an engine changes them](#facts-as-an-engine-changes-them)
   - [Stopping: halts, deadlines and time limits](#stopping-halts-deadlines-and-time-limits)
   - [Streams that miss nothing](#streams-that-miss-nothing)
-  - [Picking an endpoint for a model](#picking-an-endpoint-for-a-model)
   - [Concurrent writers](#concurrent-writers)
   - [The database repeats the rules](#the-database-repeats-the-rules)
   - [Compilations checked](#compilations-checked)
@@ -326,23 +325,6 @@ A stream that can't miss a row or an event, and a notification queue that a list
 - **`NOTIFY`'s queue**: a payload waits in the database's notification queue, kept on disk, until every listener has
   read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.
-
-### Picking an endpoint for a model
-A look for a model several endpoints serve is linted, a model that moved on is followed only where it is served, and a
-judge whose engine two endpoints serve doesn't bar its scorer. That a run is refused until its endpoint is named is
-decided: a preference among the endpoints, such as the World's `configurations` endpoint, would pick silently.
-
-Decided: a look for no endpoint gives the findings of the model alone, `facts.*`, and says that the engine's wait for an
-endpoint to be named.
-
-Decided. A handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an
-endpoint to be named, the variation page's endpoint picker goes, and a judge's handle resolves as a run's. The
-section becomes the inventory check's: a handle that resolves to no endpoint or several, reported at init-data, as a
-worker starts and at the engine import, and refused to a researcher as ops' error. The decision that a run is
-refused until its endpoint is named is replaced.
-- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
-  part linted it for the recipe's engine; the repl's `show` shows no lints either.
-- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.
 
 ### Judges name a model
 A judge names a model, as a recipe does, rather than an engine: its calls go to the endpoint serving that model,
