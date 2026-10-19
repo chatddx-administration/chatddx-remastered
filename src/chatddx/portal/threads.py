@@ -10,13 +10,15 @@ from chatddx.catalog import LANGUAGE_KINDS
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import CHUNK_PARTS, Translations
-from chatddx.factors.scoring import Expectation, ExpectationSchema
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge
 
+from .judges import judge_choices
 from .pages import BenchDep, own_first, page, within
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
 CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
+BEGUN = [*CHUNKS, "judge"]
 
 router = APIRouter()
 
@@ -37,7 +39,7 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
         word=kind,
         threads=own_first(bench, api.threads(bench, kind)),
         written=bool(set(KINDS[kind]) & WRITTEN),
-        begun=kind in CHUNKS,
+        begun=kind in BEGUN,
         deleted=deleted,
         word_of=word_of,
     )
@@ -45,17 +47,15 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
 
 @router.get("/library/new")
 def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
-    if kind not in CHUNKS:
+    if kind not in BEGUN:
         raise HTTPException(
-            404, f"no {kind} is begun here: the chunks are {', '.join(CHUNKS)}"
+            404, f"no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"
         )
-    editor = {
-        "mode": "new",
-        "name": "",
-        "body": None,
-        "language": None,
-        **_chunk(bench, f"chunk.{kind}"),
-    }
+    editor = {"mode": "new", "name": ""} | (
+        _judge(bench, None)
+        if kind == "judge"
+        else {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
+    )
     return page(
         request,
         "begun.html",
@@ -146,6 +146,8 @@ def _editor(
             }
         case Translations():
             return {**given, "kind": "translations", "into": held.into}
+        case Judge():
+            return {**given, **_judge(bench, held)}
         case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
             return {
                 **given,
@@ -164,6 +166,27 @@ def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
         "chunk": kind,
         "languaged": kind in LANGUAGE_KINDS,
         "tools": [t.model_dump(mode="json") for t in tools],
+        "me": bench.person.login,
+    }
+
+
+def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
+    handle, behind, problem = None, False, None
+    if held is not None:
+        try:
+            found = bench.handle(held.model)
+            handle, behind = found.name, found.weights != held.model
+            _ = bench.served(found)
+        except ValueError as e:
+            problem = str(e)
+    return {
+        "kind": "judge",
+        "body": None if held is None else held.model_dump(mode="json"),
+        "configuration": None if held is None else bench.title(held.skeleton),
+        "handle": handle,
+        "behind": behind,
+        "problem": problem,
+        **judge_choices(bench),
         "me": bench.person.login,
     }
 

@@ -2,14 +2,7 @@
   import type { Schema } from "$lib/schema/form";
   import type { Texts } from "./rewriting";
 
-  export type Judging = {
-    digest: string;
-    thread: number;
-    name: string;
-    owner: string | null;
-    output_schema: Schema | null;
-  };
-  export type Serving = { name: string; weights: string };
+  export type { Judging, Serving } from "./judging";
   export type JudgeChoice = {
     digest: string;
     thread: number;
@@ -31,7 +24,8 @@
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
   import { FIELD } from "$lib/utils";
-  import { seedsOf } from "./judging";
+  import JudgeFields from "./JudgeFields.svelte";
+  import { configurationChoices, type Judging, madeFor, modelChoices, type Serving, seedsOf } from "./judging";
 
   let {
     me,
@@ -49,8 +43,10 @@
   const given = untrack(() => ({ judging, models }));
 
   let name = $state("");
-  let configuration = $state(given.judging[0]?.digest ?? "");
-  let model = $state(given.models[0]?.name ?? "");
+  const start = given.judging[0]?.digest ?? "";
+  const fitting = madeFor(given.judging, given.models);
+  let configuration = $state(start);
+  let weights = $state(fitting[start] ?? given.models[0]?.weights ?? "");
   let seeds = $state("1");
   let found = $state<Checked | null>(null);
   let problem = $state<string | null>(null);
@@ -60,7 +56,6 @@
   const read = $derived(seedsOf(seeds));
 
   function component(): Component | null {
-    const weights = given.models.find((m) => m.name === model)?.weights;
     if (!configuration || !weights || typeof read === "string") return null;
     return { kind: "judge", skeleton: configuration, model: weights, seeds: read, fill: "text@1" } as never;
   }
@@ -94,7 +89,7 @@
       name: got.data.name ?? name.trim(),
       owner: got.data.owner,
       configuration: from?.name ?? "",
-      model,
+      model: given.models.find((m) => m.weights === weights)?.name ?? null,
       seeds: typeof read === "string" ? [] : read,
       output_schema: from?.output_schema ?? null,
     });
@@ -105,21 +100,14 @@
   <p class="font-medium">A new judge</p>
   <div class="grid gap-2 sm:grid-cols-2">
     <label class="grid gap-1"><span class="text-muted-foreground">Name</span><input class={FIELD} bind:value={name} /></label>
-    <label class="grid gap-1"
-      ><span class="text-muted-foreground">Its request, a judge configuration</span>
-      <select class={FIELD} bind:value={configuration}>
-        {#each given.judging as j (j.thread)}<option value={j.digest}>{(j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name}</option>{/each}
-      </select></label
-    >
-    <label class="grid gap-1"
-      ><span class="text-muted-foreground">Asked under the model</span>
-      <select class={FIELD} bind:value={model}>
-        {#each given.models as m (m.name)}<option value={m.name}>{m.name}</option>{/each}
-      </select></label
-    >
-    <label class="grid gap-1"
-      ><span class="text-muted-foreground">Seeds, a call each</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
-    >
+    <JudgeFields
+      configurations={configurationChoices(given.judging, me)}
+      models={modelChoices(given.models)}
+      made={fitting}
+      bind:configuration
+      bind:weights
+      bind:seeds
+    />
   </div>
   {#if typeof read === "string"}<p class="text-destructive">{read}</p>{/if}
   <Findings {found} />

@@ -232,6 +232,31 @@ share its pieces.
    case to try them on.
 3. **A page for scorers and judges**: what it shows, and how it joins Review, is open.
 
+#### Built: step 1, a judge's editor
+- **On its thread's page** (`src/chatddx/portal/threads.py:_judge`, `frontend/src/lib/scorer/JudgeEditor.svelte`):
+  the judge configuration it is asked through, the handle it is asked under and its seeds, checked as typed
+  (`POST /api/components/check`, its lints on the handle's latest engine) and saved as a version of the person's own
+  or a fork, as every thread's editor saves. A judge asked through an earlier version of a configuration, or under
+  weights no handle holds now, keeps that as a choice of its own, "as it is asked now" and "the weights it holds".
+  Weights behind their handle say "pick HANDLE to follow it", and a handle that doesn't resolve says why, as ops'
+  error, and to pick another; both from the server (`behind`, `problem`).
+- **Begun from the Library**: **Write a new one** under judges, `/library/new?kind=judge`, the same editor with
+  nothing in it.
+- **Shared with Review**: the fields are `frontend/src/lib/scorer/JudgeFields.svelte`, which the composer's new judge
+  uses too, and what they offer comes from `src/chatddx/portal/judges.py:judge_choices`, the judge configurations
+  the person sees with the weights each was made for, and the handles that resolve. Picking a configuration moves the
+  model to the one it was made for, when it is offered, and a new judge starts there (`judging.ts:madeFor`).
+- **A scorer keeps the version it names**: the editor says that the scorers asking a judge keep asking the version
+  they ask until they are changed.
+- **Tests**: `test_library.py`, a judge's editor's props, forked, edited, behind its handle, and begun from the
+  Library; vitest for what the fields offer (`judging.test.ts`); `test_browser.py`, `graded` forked with a seed of its
+  own, then put under `gpt-oss-20b`, saying `judge.model_unmatched`, and saved as its second version.
+
+#### What step 1 leaves
+- **Which scorers ask a judge** isn't shown on its page, nor offered to be changed with it: the page for scorers and
+  judges (step 3) is where they meet.
+- **The fill rule** isn't offered: `text@1` is the only one.
+
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
 the plan, and ran it later (`docs/portal.md` at 504792c, "The Batch"). In remastered a trial holds its cases and

@@ -5,7 +5,7 @@
 <div class="mx-auto max-w-5xl px-4 py-8">
   <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
   {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from nothing.") }}
-  <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6" data-chunk-editor>
+  <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6" data-{{ "judge" if word == "judge" else "chunk" }}-editor>
     <p class="text-sm text-muted-foreground">Writing one takes scripts.</p>
     <script type="application/json">{{ editor | tojson }}</script>
   </section>

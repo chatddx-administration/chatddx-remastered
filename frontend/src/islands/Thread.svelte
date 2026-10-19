@@ -4,6 +4,7 @@
   import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
   import type { ChunkEditing } from "$lib/editors/ChunkEditor.svelte";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
+  import type { JudgeEditing } from "$lib/scorer/JudgeEditor.svelte";
   import type { TranslationsEditing } from "$lib/translate/TranslationsEditor.svelte";
 
   export type Version = Schemas["Edit"] & { body: Record<string, unknown> };
@@ -11,7 +12,7 @@
     word: string;
     versions: Version[];
     titles: Record<string, string>;
-    editor: AppendixEditing | ChunkEditing | ExpectationEditing | TranslationsEditing | null;
+    editor: AppendixEditing | ChunkEditing | ExpectationEditing | JudgeEditing | TranslationsEditing | null;
   };
 </script>
 
@@ -20,6 +21,7 @@
   import AppendixEditor from "$lib/editors/AppendixEditor.svelte";
   import ChunkEditor from "$lib/editors/ChunkEditor.svelte";
   import ExpectationEditor from "$lib/editors/ExpectationEditor.svelte";
+  import JudgeEditor from "$lib/scorer/JudgeEditor.svelte";
   import Changed from "$lib/thread/Changed.svelte";
   import Holds from "$lib/thread/Holds.svelte";
   import TranslationsEditor from "$lib/translate/TranslationsEditor.svelte";
@@ -90,6 +92,8 @@
       <TranslationsEditor editor={given.editor} digest={head} />
     {:else if given.editor.kind === "chunk"}
       <ChunkEditor editor={given.editor} digest={head} />
+    {:else if given.editor.kind === "judge"}
+      <JudgeEditor editor={given.editor} digest={head} />
     {/if}
   </section>
 {/if}

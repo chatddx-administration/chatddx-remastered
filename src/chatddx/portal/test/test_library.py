@@ -4,11 +4,14 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.identity import Person
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.portal.test.test_varying import held, thread
-from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT
+from chatddx.store import Catalog, Store
+from chatddx.store.store import Connection
+from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT, QWEN_MODEL
 
 
 @pytest.fixture
@@ -120,6 +123,78 @@ def test_a_chunk_is_begun_from_the_library(signed: TestClient) -> None:
     }
     for kind in ("translations", "tool", "stack"):
         assert signed.get(f"/library/new?kind={kind}").status_code == 404
+
+
+@pytest.mark.slow
+def test_a_judge_s_page_edits_its_configuration_handle_and_seeds(
+    signed: TestClient, conn: Connection, alice: Person
+) -> None:
+    verdict = thread(signed, "judge", "verdict", "archive")
+    page = f"/threads/{verdict['id']}"
+    editor = thread_props(shown(signed, page))["editor"]
+    body = signed.get(f"/api/components/{verdict['head']['digest']}").json()["body"]
+    models = {m["name"]: m["weights"] for m in signed.get("/api/models").json()}
+    query = {"kind": "configuration", "purpose": "judge"}
+    judging = signed.get("/api/threads", params=query).json()
+    held = ("mode", "kind", "body", "handle", "behind", "problem", "me")
+    assert {k: editor[k] for k in held} == {
+        "mode": "fork",
+        "kind": "judge",
+        "body": body,
+        "handle": QWEN_ARTIFACT,
+        "behind": False,
+        "problem": None,
+        "me": "alice",
+    }
+    assert body["model"] == models[QWEN_ARTIFACT]
+    assert {"name": QWEN_ARTIFACT, "weights": models[QWEN_ARTIFACT]} in editor["models"]
+    assert {j["thread"] for j in editor["judging"]} == {t["id"] for t in judging}
+
+    mine = {**body, "seeds": [4]}
+    made = signed.post("/api/threads", json={"component": mine, "name": "mine"})
+    assert made.status_code == 201
+    assert thread_props(shown(signed, f"/threads/{made.json()['id']}"))["editor"][
+        "mode"
+    ] == ("edit")
+
+    store = Store(conn)
+    registry = store.load([])
+    weights = registry.add(
+        LocalModel(
+            repo=QWEN_MODEL,
+            revision="newer",
+            files=(FileDigest(path="none", sha256="0" * 64),),
+        )
+    )
+    _ = store.add(registry, [weights])
+    handle = thread(signed, "model", QWEN_ARTIFACT, "archive")
+    _ = Catalog(conn).edit(handle["id"], weights, alice.id)
+    behind = thread_props(shown(signed, page))["editor"]
+    assert (behind["handle"], behind["behind"]) == (QWEN_ARTIFACT, True)
+    assert behind["problem"] == (
+        f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend"
+    )
+
+
+@pytest.mark.slow
+def test_a_judge_is_begun_from_the_library(signed: TestClient) -> None:
+    assert 'href="/library/new?kind=judge"' in shown(signed, "/library?kind=judge")
+    page = shown(signed, "/library/new?kind=judge")
+    editor = json.loads(
+        page.split("data-judge-editor>", 1)[1]
+        .split('<script type="application/json">', 1)[1]
+        .split("</script>", 1)[0]
+    )
+    held = ("mode", "name", "kind", "body", "handle", "problem")
+    assert {k: editor[k] for k in held} == {
+        "mode": "new",
+        "name": "",
+        "kind": "judge",
+        "body": None,
+        "handle": None,
+        "problem": None,
+    }
+    assert editor["judging"] and editor["models"]
 
 
 @pytest.mark.slow

@@ -26,6 +26,7 @@ from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
 from .families import appended, built, written_for
+from .judges import judge_choices
 from .pages import BenchDep, page, within
 from .runs import PLAN
 
@@ -522,23 +523,7 @@ def _composing(
         "judges": judges,
         "titles": titles | {j["digest"]: j["name"] for j in judges},
         "me": bench.person.login,
-        "judging": [
-            {
-                "digest": t.head.digest,
-                "thread": t.id,
-                "name": t.name or t.title,
-                "owner": t.owner,
-                "output_schema": resolve(
-                    bench.store.get, t.head.digest, Skeleton
-                ).output_schema,
-            }
-            for t in _configurations(bench, "judge")
-        ],
-        "models": [
-            {"name": m.name, "weights": m.weights}
-            for m in api_world.models(bench)
-            if m.engine is not None
-        ],
+        **judge_choices(bench),
         "case": case,
         "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
     }

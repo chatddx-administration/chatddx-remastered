@@ -403,9 +403,9 @@ the pattern is typed, a scorer saved, and its score.
 #### What step 5 leaves
 - **A judge is written new** here: changing or forking one is on its thread's page (`agents/wip-portal.md`, "5d:
   scorers and judges").
-- **The handle a new judge is asked under** is the first listed, not the one its configuration was made for; another
-  says `judge.model_unmatched` as it is typed. A judge whose handle doesn't resolve leaves its scorer out
-  (`docs/runner.md`, "What applies to a run").
+- **A judge whose handle doesn't resolve** leaves its scorer out (`docs/runner.md`, "What applies to a run"). A new
+  judge starts under the handle its configuration was made for, since the judge's editor (`agents/wip-portal.md`,
+  "5d: scorers and judges").
 - **A judged view's values come only from scoring**: one judge call per seed per answer, recorded, through the worker.
 
 ### Step 6: the judge's texts

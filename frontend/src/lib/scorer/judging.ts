@@ -1,6 +1,48 @@
 import type { Schema } from "$lib/schema/form";
 import { choices } from "./selectors";
 
+export type Judging = {
+  digest: string;
+  thread: number;
+  name: string;
+  owner: string | null;
+  output_schema: Schema | null;
+  weights: string | null;
+};
+export type Serving = { name: string; weights: string };
+export type Choice = { key: string; value: string; label: string };
+export type Holding = { skeleton: string; configuration: string; weights: string; handle: string | null };
+
+export function configurationChoices(judging: Judging[], me: string, held: Holding | null = null): Choice[] {
+  const listed = judging.map((j) => ({
+    key: String(j.thread),
+    value: j.digest,
+    label: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
+  }));
+  if (!held || listed.some((c) => c.value === held.skeleton)) return listed;
+  return [{ key: "held", value: held.skeleton, label: `${held.configuration}, as it is asked now` }, ...listed];
+}
+
+export function modelChoices(models: Serving[], held: Holding | null = null): Choice[] {
+  const listed = models.map((m) => ({ key: m.name, value: m.weights, label: m.name }));
+  if (!held || listed.some((c) => c.value === held.weights)) return listed;
+  const label = held.handle ? `${held.handle}, the weights it holds` : "the weights it holds";
+  return [{ key: "held", value: held.weights, label }, ...listed];
+}
+
+export function madeFor(judging: Judging[], models: Serving[]): Record<string, string> {
+  const offered = new Set(models.map((m) => m.weights));
+  return Object.fromEntries(
+    judging.flatMap((j) => (j.weights && offered.has(j.weights) ? [[j.digest, j.weights]] : [])),
+  );
+}
+
+export function modelHint(handle: string | null, behind: boolean, problem: string | null): string | null {
+  if (problem) return `${problem}. Pick a model it can be asked under.`;
+  if (behind && handle) return `Its weights are behind ${handle}, which holds other weights now: pick ${handle} to follow it.`;
+  return null;
+}
+
 export function seedsOf(text: string): number[] | string {
   const given = text.split(/[\s,]+/).filter(Boolean);
   if (!given.length) return "a judge has a seed or more";
