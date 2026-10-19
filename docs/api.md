@@ -109,15 +109,9 @@ references, which must be stored, the rules that take several components, and a 
 gives back the digest it would have and what the lints say of it, or is refused as the write would be. A client checks
 what a person types as they type it.
 
-```
-AGENT: insert
-A recipe is checked too, by `POST /api/recipes/check`, for the portal's new configuration from a recipe
-(agents/wip-refine.md, step 1).
----
 A recipe is checked as making a configuration of it would make it, and nothing is written: each part a stored chunk of
 that part and the model a stored model, compiled against the facts about its model as they are now. It gives back the
 digest of the skeleton it compiles to and what the lints say of it, or is refused as making it would be.
-```
 
 ## Picking
 Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view

@@ -50,12 +50,11 @@ Things can bounce around freely across these stages but is only in one stage at 
 Docs are never edited and reworked in the same commit: Move verbatim, commit,
 then edit or insert suggestions if permitted.
 
-### Step 5 and above
-docs *move*: backlog -> plan -> wip -> doc
-A thing is never explained in more than one doc at a time.
+### Stage 5 and above
+docs *move* between backlog, plan, wip and doc, so a `thing` is never explained in more than one doc at a time.
 
-### Step 8 and above
-Guarded by rule 1 and `chatddx reference`
+### Stage 8 and above
+Guarded by rule 1 and `chatddx reference`.
 
 ## Documentation rules
 
@@ -81,7 +80,7 @@ AGENT: <verb>
 The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop,
 describe the landscape and provide options.
 
-- The module scoped documentation is in `docs/<module>.md`.
+- The module-scoped documentation is in `docs/<module>.md`.
 - The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
 - References from code to docs are never allowed.
 
