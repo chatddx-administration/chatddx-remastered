@@ -18,13 +18,16 @@ case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's language
    language (see "What the docs hold it to").
 4. **Steps 1 and 2 are built** (see "Built"); what they leave is in each step's "What step N leaves". Step 1 is
    `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
+5. **Decided: researchers see model handles**, such as `qwen3-8b`, never engines, endpoints or a model's proper name;
+   ops map each handle to one engine and one endpoint, and a handle always means its latest engine (`docs/chatddx.md`,
+   "Target stack"; `docs/inventory.md`, "Endpoints"). Step 2b brings the project and the page there (see "Steps").
 
 ## What the researcher is here to do
 From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned"):
 - **Hand-edit chunks**: instructions, few-shot examples, prompts, outputs, sampling, reasoning, passthrough and
   toolsets. Translations are the translator's (`agents/wip-translators-view.md`), tools the developers'.
 - **Try variations**: a configuration with parts replaced, seen before it runs.
-- **Run them over the same cases at the same engine**, and read their scores side by side.
+- **Run them over the same cases under their model handles**, and read their scores side by side.
 - **Keep the successful** as configurations, a fork or a new version of their own, and **delete the unsuccessful**.
 - **Branch out** a configuration with several successful variations, and **delete** the configurations that don't
   work out.
@@ -54,9 +57,9 @@ From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned
   address, never a record.
 - **A person's runs are their own** (`src/chatddx/bench/seen.py:Seen.runs`), **scored against the expectations they
   hold** (`docs/bench.md`, "What a person is scored against"): a researcher who holds none has empty columns.
-- **A start is a run per language** (`docs/bench.md`, "Translations"), so a set is held to one language: its cases
-  are those of the families picked or tagged that are written in it, the configuration's own by default. A variation
-  whose translations don't cover it runs nothing over the set, and says so.
+- **A start is a run per language** (`docs/bench.md`, "Translations"), and comparing languages is comparing case sets:
+  the set's language is its cases', never picked. A set whose tags or families pick cases in several languages is
+  refused, to be narrowed. A variation whose translations don't cover its cases runs nothing over the set, and says so.
 - **Judged views cost judge calls**, through the worker (`docs/runner.md`, "Judges").
 
 ## The page
@@ -82,11 +85,15 @@ and how its variations fare; the lineage is a drawer at the left, folded to a ra
 - **The configuration**: its recipe part by part, a picker per part as the variation's page has, and, from step 4,
   each part's editor in place (✎). Under it the request, the lints and each scorer view's reach, folded; **Try it**,
   which adds the variation to the trying list; and saving, with the line saying where it goes.
-- **How they fare**: a column's mean is over its runs at its handle's latest engine; its runs on earlier engines,
-  or under a retired handle, are folded away under the handle, accessible and out of the mean.
+- **How they fare**: a column per variation, the configuration's own first, then the trying list, then the forks;
+  a row per scorer view with its mean over the items the columns share and their count; what isn't run or isn't
+  scored, with **Run** and **Score**. A column's mean is over its runs at its handle's latest engine; its runs on
+  earlier engines, or under a retired handle, are folded away under the handle, accessible and out of the mean.
 
-The address keeps what is set: `/refine/{configuration}?model=…&tag=…&family=…&seed=…&head=…&try=…`. `model=` is optional: a
-handle forced on every column, each otherwise under its own model's.
+The address keeps what is set: `/refine/{configuration}?model=…&tag=…&family=…&seed=…&head=…&try=…`, a `try` per
+variation tried, its parts as `PART:DIGEST` joined by commas. `model=` is optional: a handle forced on every column,
+each otherwise under its own model's. `/refine` leads to the person's first configuration, as `/translate` does, and
+the nav says Refine.
 
 ## The landscape
 Decided: the take on each.
@@ -107,7 +114,7 @@ Take: (a). The workflow is per configuration, and the catalog organises configur
   a run offers **Run**. Runs on the handle's earlier engines are grouped under it and folded away.
 - **(c)** Every run of each skeleton, whatever its cases, which "Aggregation" rules out.
 
-Take: (b), with (a) reachable from the runs page. Runs at another engine than the set's endpoint's are listed apart.
+Take: (b), with (a) reachable from the runs page.
 
 ### E3. Several variations at once
 - **(a)** Several chunks picked for one part, a run each, one part at a time (C2).
@@ -199,12 +206,49 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   (`agents/wip-portal.md`, "Comparing variations", Open: none of them sets a part yet); `test_threads.py` and
   `test_runs.py` for the API's; `src/chatddx/portal/test/test_refining.py` for the page's.
 
+### Step 2b: model handles, and the set by them
+Decided by the user, after step 2 (see "Start with this", 5): what a researcher sees of models, engines and
+endpoints, and Refine's set in those terms.
+- **A handle** is the name of a model's thread, such as `qwen3-8b`: the weights a recipe pins are a version of it, and
+  new weights put under it by ops make its configurations behind their model (`docs/catalog.md`, "What has moved on").
+  Take: nothing new is stored; the World names its model records by handle, as the test World does already.
+- **Resolving a handle**: its thread's head, the weights it holds now, served by exactly one endpoint, whose engine is
+  the handle's latest. None or several is ops' error: the inventory check reports weights served at several endpoints
+  at init-data, as a worker starts and at the engine import, and a researcher's run, look or scoring is refused saying
+  it is ops'. A configuration whose weights are behind its handle is refused until followed; a hand-written one runs
+  under the handle named (see "Taken from the backlog", "Picking an endpoint for a model").
+- **The World**: the inventory's `configurations` and `[judge]` name handles. The engine import names a server's
+  model by the server's name, the handle ops give it, and its endpoint and engine server@host as now. The sample's
+  and kompismoln's models are renamed to their handles, and the test World's bare Qwen3 gets weights of its own,
+  `qwen3-8b-bare`, as two endpoints serving one model's weights are now ops' error.
+- **The API**: `endpoint` gives way to `model`, a handle, in the look and in a start, for a hand-written configuration
+  only; the look says the handle it runs under, or why it can't run; a run says its handle and whether it ran at its
+  latest engine; running again runs under the run's handle; `GET /api/models` lists the handles, each with what refuses
+  it, if anything. `GET /api/endpoints` stays, the World's for ops.
+- **The portal**: no endpoint is picked or shown to a researcher. The variation page's endpoint picker goes, the home
+  page's, the review's run form's and the judge form's pick a handle, runs show their handle, and the nav's Endpoints
+  becomes Models.
+- **Refine's set**: `/refine/{configuration}?model=…&tag=…&family=…`, no `endpoint=` or `language=`; columns by
+  skeleton and handle, each under its own model's handle unless `model=` forces one on every column; a column's mean
+  over its runs at the handle's latest engine, and its runs on earlier engines, or under a retired handle, folded away
+  under the handle, accessible.
+- **`/runs/compare`**: runs show their handle; runs under one handle on different engines are said to be grouped
+  under it rather than like for like.
+- **Kept**: the repl and scripted runs name endpoints, as they are developers' and the fake's (`docs/repl.md`,
+  `docs/scripted.md`). A person's judge picks a handle and pins its latest engine, until "Judges name a model"
+  (`docs/backlog.md`) changes the judge's kind.
+- **Tests**: the inventory check's finding; loading by handle; the bench's resolving, refusals and running again;
+  the API's look, start, runs and models; the portal's pages; the import's naming; vitest for the variation page's
+  logic without endpoints.
+
 ### Step 3: the trying list, and running it
 - **Try it** adds the variation looked at to the list, in the address. Several chunks picked for one part fill it with
   one variation each (C2). Each tried variation is a column, said **not run** until it is.
-- **Run**: a variation that replaces the model runs under its handle, a column like any other, and with `model=` every
-  column runs under that handle. A handle that doesn't resolve is refused as ops' error, and weights the handle no
-  longer holds are behind, to be followed first.
+- **Run**: a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs it starts, what each
+  sets, what the gate refuses and why, the cases, and each scorer view's reach; then a `POST /api/runs` per variation
+  over the set, one run each. A variation that replaces the model runs under its handle, a column like any other, and
+  with `model=` every column runs under that handle. A handle that doesn't resolve is refused as ops' error, and
+  weights the handle no longer holds are behind, to be followed first.
 - **While they run**: each column follows its runs (`frontend/src/lib/runs/`), and the comparison reloads once they
   are done. **Score** queues what is left to score.
 - **Save** a tried variation: a fork, or a version of the person's own, as the variation's page saves it, which then
@@ -293,18 +337,21 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
     expected items read too), each view's values per run and item and its mean per run, under each run's latest score
     under each scorer, and cases by digest, as the runs give them.
 - **The page** (`src/chatddx/portal/refine.py`, `templates/refine.html`; the `refine` island remembers the drawer):
-  - **Its columns**: configurations holding one skeleton under one handle share a column; with `model=` every column is under the
-same handle, so the columns are skeletons.
-  - **A column's run** is the person's latest reaching its skeleton under its handle, or `model=`'s, at the handle's
-latest engine, over the set's cases; runs on earlier engines or under a retired handle are folded under it, accessible
-and out of the mean.
-  - **The set**: is the cases, by tags from a form and families from the address, a seed, and optionally `model=`, a
-handle forced on every column; no endpoint and no language.
+  - **Its columns**: the version shown, then each other configuration of its lineage, the person's own first.
+    Configurations holding one skeleton share a column ("lines-instructed = archive/lines-instructed"), since a fork
+    that varies nothing holds its origin's; a deleted one has none.
+  - **A column's run** is the person's latest reaching its skeleton (`GET /api/runs?reaching=`) at the set's
+    endpoint's engine, in the set's language, and, when tags or families narrow the set, over its cases only.
+  - **The set**: the endpoint, the one serving the model when only one does, else picked; the language, the
+    configuration's own unless picked; tags from a form, and families from the address. Step 2b replaces the set and
+    the columns by handle.
   - **The lineage** is sorted within a level by the view `by` names (`scorer:view`), by default the first with a
     value, each configuration with its column's mean.
   - A judge configuration isn't found here: a judge isn't run on cases.
-- **`/runs/compare?run=…`** runs show their handle, not their engine; runs under one handle on different engines are said to be grouped
-under it rather than like for like, and languages as above.
+- **`/runs/compare?run=…`** (C1; `src/chatddx/portal/runs.py:comparing`, `templates/compare.html`): the runs ticked
+  on the runs page or a configuration's page (`macros.html:runs_table`, whose checkboxes join a form of their own), a
+  mean per view and run, and, under the view `by` names, each item; runs at different engines or in different
+  languages are said not to be like for like, which step 2b changes.
 - **Tests**: the test World's scripted runs gain `instructed`, `instructed-greedy` and `guided`
   (`src/chatddx/test/world.py:COMPARED`), over `crlf` and `bom` at `qwen3@fake`, `lines-instructed`'s lineage rather
   than `lines`', which has no fork; each answers both cases alike, since a run doesn't send its cases in the order a
@@ -328,7 +375,8 @@ A pass over the branch against main (`agents/reduce.md`):
   (`src/chatddx/portal/pages.py:own_first`), its `named` and `mean` macros (`macros.html`), the editors' field class
   (`frontend/src/lib/utils.ts:FIELD`), the recipe's parts (`logic.ts:PARTS`, with the optional parts from the
   server), and a chunk's language and tools given with its editor (`src/chatddx/portal/threads.py:_chunk`).
-- **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`.
+- **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`, to be
+  reduced once step 2b has reworked them.
 
 ## Open
 - **Others' runs**: a person compares their own runs only. A collaborator's runs of a shared configuration aren't
@@ -362,18 +410,14 @@ A configuration offered the new version of a chunk of its recipe, as it is offer
   reaches a configuration only by a variation that picks it, saved.
 
 ### Picking an endpoint for a model
-A look for a model several endpoints serve is linted, a model that moved on is followed only where it is served, and a
-judge whose engine two endpoints serve doesn't bar its scorer. That a run is refused until its endpoint is named is
-decided: a preference among the endpoints, such as the World's `configurations` endpoint, would pick silently.
+Step 2b builds it: a handle resolves to exactly one endpoint, or it is ops' error.
 
-Decided: a look for no endpoint gives the findings of the model alone, `facts.*`, and says that the engine's wait for an
-endpoint to be named.
+Decided: a handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an endpoint to be named,
+the variation page's endpoint picker goes, and a judge's handle resolves as a run's: a handle that resolves to no
+endpoint or several is reported at init-data, as a worker starts and at the engine import, and refused to a
+researcher as ops' error. It replaces the decision that a run is refused until its endpoint is named, and the one
+that a look for no endpoint gives the model's findings alone.
 
-Decided. A handle resolves to exactly one endpoint, or it is ops' error, so no run waits for an
-endpoint to be named, the variation page's endpoint picker goes, and a judge's handle resolves as a run's. The
-section becomes the inventory check's: a handle that resolves to no endpoint or several, reported at init-data, as a
-worker starts and at the engine import, and refused to a researcher as ops' error. The decision that a run is
-refused until its endpoint is named is replaced.
 - **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
   part linted it for the recipe's engine; the repl's `show` shows no lints either.
 - **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.

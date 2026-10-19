@@ -30,6 +30,9 @@ it.
    in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
    translations, in `agents/wip-translators-view.md`; and a researcher's page around a configuration's lineage,
    Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/wip-refine.md`.
+7. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b). What is built below
+   with an endpoint picked or shown, the variation page's (V1, V4), the home page's, the run's page and the runs'
+   tables, and the Endpoints page, is reworked there to pick and show handles.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx

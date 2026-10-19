@@ -212,7 +212,7 @@ its instructions, carried over from its unused entry, saved, and the variation p
 
 #### What step 1 leaves
 - **The lint needs an endpoint**, as every lint of a look does: a look rendered for none has no findings
-  (`docs/backlog.md`, "Picking an endpoint for a model"). The route needs none.
+  (`agents/wip-refine.md`, "Picking an endpoint for a model"). The route needs none.
 - **A judge configuration isn't linted** for its translations, which nothing uses (F2).
 - **A text two parts hold** is listed under each, with one entry for both.
 
