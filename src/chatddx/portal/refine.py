@@ -26,8 +26,7 @@ router = APIRouter()
 class Column:
     skeletons: tuple[str, ...]
     handle: str | None
-    refused: str | None = None
-    behind: bool = False
+    said: str | None = None
     names: list[schemas.Kin] = field(default_factory=list[schemas.Kin])
     run: schemas.Run | None = None
     earlier: list[schemas.Run] = field(default_factory=list[schemas.Run])
@@ -114,7 +113,6 @@ def refine(
         tags=tags,
         families=[f for f in families if f.id in picked],
         cases=len(cases) if tags or picked else None,
-        languages=sorted({f.language for f in held if f.language}),
         columns=columns,
         compared=compared,
         rows=rows,
@@ -144,8 +142,7 @@ def _columns(
         column = _column(bench, k.id, None, forced, cases)
         found.setdefault((column.skeletons, column.handle), column).names.append(k)
     for column in found.values():
-        if column.refused is None:
-            column.run, column.earlier = _matched(bench, column, cases)
+        column.run, column.earlier = _matched(bench, column, set(cases))
     return list(found.values())
 
 
@@ -162,22 +159,23 @@ def _column(
     except (StructuralError, ValueError) as e:
         return Column((held.configuration.digest,), None, str(e))
     skeletons = sorted({c.skeleton.digest for c in carried if c.skeleton is not None})
+    name = None if handle is None else handle.name
+    behind = forced is None and handle is not None and handle.weights != weights
     return Column(
         tuple(skeletons),
-        None if handle is None else handle.name,
-        behind=forced is None and handle is not None and handle.weights != weights,
+        name,
+        f"its model is behind {name}: follow it" if behind else None,
     )
 
 
 def _matched(
-    bench: Bench, column: Column, cases: list[str]
+    bench: Bench, column: Column, cases: set[str]
 ) -> tuple[schemas.Run | None, list[schemas.Run]]:
     found = {
         r.id: r
         for s in column.skeletons
         for r in api_runs.runs(bench, reaching=s, limit=200)
-        if (column.handle is None or r.model == column.handle)
-        and set(r.cases) <= set(cases)
+        if (column.handle is None or r.model == column.handle) and set(r.cases) <= cases
     }
     under = sorted(found.values(), key=lambda r: r.at, reverse=True)
     latest = [r for r in under if r.latest]

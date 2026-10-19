@@ -375,8 +375,11 @@ A pass over the branch against main (`agents/reduce.md`):
   (`src/chatddx/portal/pages.py:own_first`), its `named` and `mean` macros (`macros.html`), the editors' field class
   (`frontend/src/lib/utils.ts:FIELD`), the recipe's parts (`logic.ts:PARTS`, with the optional parts from the
   server), and a chunk's language and tools given with its editor (`src/chatddx/portal/threads.py:_chunk`).
-- **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`, to be
-  reduced once step 2b has reworked them.
+- **Kept**: Refine's set and the matching of a column's run stay in the page rather than `GET /api/runs`.
+
+After step 2b, the set it left out: the note on a set over several languages pruned, as language stays silent and
+the comparison's items show what isn't shared; a column's reasons it can't be worked out and that its weights are
+behind one `said`; a column that can't be worked out matched as any, finding nothing (`src/chatddx/portal/refine.py`).
 
 ### Step 2b: model handles, and the set by them
 - **Handles** (`src/chatddx/bench/model.py:Handle`; `src/chatddx/bench/seen.py`): `Seen.handle`, the one live model
@@ -403,9 +406,8 @@ A pass over the branch against main (`agents/reduce.md`):
   (`/models`, `src/chatddx/portal/world.py`).
 - **Refine** (`src/chatddx/portal/refine.py`): `model=` forces a handle on every column; a column is the skeletons a
   configuration sends the set's cases as, a language each (`Seen.languages`), under its handle; its run is the
-  latest at the handle's latest engine, and its earlier engines' runs are folded under it; a column whose weights are
-  behind says so, and one that can't be worked out says why. A set whose cases are in several languages is said to
-  be, as a run sends one's.
+  latest at the handle's latest engine, and its earlier engines' runs are folded under it; a column says why it can't
+  be worked out, or that its weights are behind its handle.
 - **`/runs/compare`** says when runs under one handle ran at different engines, grouped under it.
 - **Tests**: `test_serving.py`, the check's finding; `test_judges.py`, `test_plan.py`, judges and configurations by
   handle; `test_o11n.py`, a handle on two hosts; `test_seen.py`, running again; `test_world.py`, the handles and a
@@ -417,7 +419,8 @@ A pass over the branch against main (`agents/reduce.md`):
 - **The repl and scripted runs** name endpoints; the repl's cell shows its endpoint while its runs are described by
   their handles.
 - **A retired handle reads as ops' error**: no endpoint serving its weights is said alike either way.
-- **A set over several languages** is said, not refused; step 3 refuses a start over it.
+- **A set over several languages** is neither said nor refused: its columns' runs in different languages share no
+  items, which the comparison's items show; step 3 refuses a start over it.
 - **A Refine column compiles its configuration's translations** to find its skeletons, each time the page is shown.
 - **The Models page shows facts as they are**, a model's proper name among them.
 

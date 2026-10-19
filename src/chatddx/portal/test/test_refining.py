@@ -5,12 +5,14 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.bench import Bench
+from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.portal.test.test_varying import thread
 from chatddx.scripted.test.test_scripted_runs import held
+from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     COMPARED,
@@ -20,6 +22,7 @@ from chatddx.test.world import (
     LINES_GUIDED,
     LINES_INSTRUCTED,
     QWEN_ARTIFACT,
+    QWEN_MODEL,
 )
 
 
@@ -92,6 +95,29 @@ def test_a_configuration_s_lineage_fares_side_by_side_on_a_set(
         f"under {GPT_OSS_ARTIFACT}" in forced and f"under {QWEN_ARTIFACT}" not in forced
     )
     assert "not run" in forced
+
+
+@pytest.mark.slow
+def test_a_column_whose_weights_its_handle_no_longer_holds_says_so(
+    signed: TestClient, bench: Bench
+) -> None:
+    store = Store(bench.conn)
+    registry = store.load([])
+    weights = registry.add(
+        LocalModel(
+            repo=QWEN_MODEL,
+            revision="newer",
+            files=(FileDigest(path="none", sha256="0" * 64),),
+        )
+    )
+    _ = store.add(registry, [weights])
+    handle = bench.handle_named(QWEN_ARTIFACT)
+    _ = Catalog(bench.conn).edit(handle.thread, weights, bench.person.id)
+    bench.conn.commit()
+    mine = thread(signed, "configuration", LINES_INSTRUCTED)
+    text = said(shown(signed, f"/refine/{mine['id']}"))
+    assert f"its model is behind {QWEN_ARTIFACT}: follow it" in text
+    assert "None of them has a run at its model's latest engine yet." in text
 
 
 @pytest.mark.slow

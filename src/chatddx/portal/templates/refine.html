@@ -99,9 +99,6 @@
   <p class="mb-3 text-xs text-muted-foreground">
     {% if cases is none %}Every case you see{% else %}{{ cases }} case{{ "" if cases == 1 else "s" }}{% for f in families %} · {{ f.name }}{% endfor %}{% endif %}{{ ", under " ~ model if model }}: each column is its latest run of yours at its model's latest engine.
   </p>
-  {% if languages | length > 1 %}
-  <p class="mb-3 rounded-lg bg-warning/10 p-3 text-sm">These cases are written in {{ languages | join(" and ") }}, and a run sends one language's: narrow the set by tag to compare like for like.</p>
-  {% endif %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="text-left text-xs text-muted-foreground">
@@ -111,9 +108,8 @@
           <th class="pb-2 pr-4 align-bottom font-medium">
             <span class="block text-foreground">{% if c.names %}{% for k in c.names %}{{ named(k) }}{{ " = " if not loop.last }}{% endfor %}{% else %}version {{ at + 1 }}{% endif %}</span>
             {% if c.handle %}<span class="block font-normal">under {{ c.handle }}</span>{% endif %}
-            {% if c.refused %}<span class="block font-normal text-destructive">{{ c.refused }}</span>
-            {% elif c.behind %}<span class="block font-normal text-warning">its model is behind {{ c.handle }}: follow it</span>{% endif %}
-            {% if c.run %}<a class="{{ link }} font-normal" href="/runs/{{ c.run.id }}">{{ c.run.at | when }}</a>{% elif not c.refused %}<span class="font-normal">not run</span>{% endif %}
+            {% if c.said %}<span class="block font-normal text-warning">{{ c.said }}</span>{% endif %}
+            {% if c.run %}<a class="{{ link }} font-normal" href="/runs/{{ c.run.id }}">{{ c.run.at | when }}</a>{% else %}<span class="font-normal">not run</span>{% endif %}
             {% if c.earlier %}
             <details class="font-normal">
               <summary class="cursor-pointer">{{ c.earlier | length }} at an earlier engine</summary>
