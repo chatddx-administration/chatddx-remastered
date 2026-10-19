@@ -3,6 +3,7 @@ import json
 import threading
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
     Imported,
+    checked,
     endpoints_toml,
     engines_toml,
     imported,
@@ -252,6 +254,25 @@ def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
     same = report({"qwen3-8b": server(), "small": other | {"port": 12009}})
     with pytest.raises(ValueError, match="small@pelle and qwen3-8b@pelle are both at"):
         _ = endpoints_toml([imported(same, "qwen3-8b"), imported(same, "small")])
+
+
+def test_it_checks_the_inventory_it_writes_against_the_engines_it_writes() -> None:
+    other = server(
+        model=server()["model"] | {"id": "openai/gpt-oss-20b"},
+        chat_template=template("null\n", used=False),
+    )
+    imports = [
+        imported(report(), "qwen3-8b"),
+        imported(report({"gpt-oss-20b": other}, "malborg"), "gpt-oss-20b"),
+    ]
+    assert checked(imports) == []
+    hostless = imports[0].endpoint.model_copy(update={"host": None})
+    found = checked([replace(imports[0], endpoint=hostless), imports[1]])
+    assert [(f.code, f.subject) for f in found] == [
+        ("endpoint.unstartable", "qwen3-8b@pelle"),
+        ("host.unpinned", "pelle"),
+        ("host.unpinned", "pelle"),
+    ]
 
 
 def test_it_refuses_what_an_engine_can_t_record() -> None:

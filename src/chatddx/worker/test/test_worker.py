@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 from collections.abc import Callable, Generator
@@ -93,6 +94,27 @@ def until(queue: Queue, job: Job, done: Callable[[Job], bool]) -> Job:
 
 def ended(job: Job) -> bool:
     return job.ended is not None
+
+
+def test_a_worker_says_what_the_inventory_check_finds_as_it_starts(
+    conninfo: str, world: Inventory, caplog: pytest.LogCaptureFixture
+) -> None:
+    unknown = "sha256:" + "0" * 64
+    stray = world.endpoint(QWEN).model_copy(update={"engine": unknown})
+    strayed = world.model_copy(update={"endpoints": world.endpoints | {"stray": stray}})
+    with caplog.at_level(logging.INFO, "chatddx.worker"):
+        with serving(conninfo, world):
+            pass
+        with serving(conninfo, strayed):
+            pass
+
+    assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
+        (
+            logging.WARNING,
+            f"[world warning] stray: endpoint.engine_unknown: {unknown} is not in "
+            + "the store",
+        )
+    ]
 
 
 @pytest.mark.usefixtures("fake")

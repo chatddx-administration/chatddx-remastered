@@ -3,7 +3,7 @@ import re
 import sys
 import urllib.parse
 import urllib.request
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -19,7 +19,7 @@ from chatddx.factors.engine import (
     check_chat_template,
 )
 from chatddx.factors.lint import lint
-from chatddx.inventory import EndpointSpec, HostSpec
+from chatddx.inventory import EndpointSpec, HostSpec, Inventory, check
 
 # What o11n.vllm's report says about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).
@@ -296,21 +296,15 @@ def engines_toml(imports: Iterable[Imported]) -> str:
     return "\n".join(tables)
 
 
-def endpoints_toml(imports: Iterable[Imported]) -> str:
-    tables: list[str] = []
+def _inventory(imports: Iterable[Imported]) -> Inventory:
+    endpoints: dict[str, EndpointSpec] = {}
     hosts: dict[str, HostSpec] = {}
     urls: dict[str, str] = {}
     for i in imports:
         e = i.endpoint
         if (other := urls.setdefault(str(e.url), i.name)) != i.name:
             raise ValueError(f"{i.name} and {other} are both at {e.url}")
-        tables.append(
-            f"[endpoint.{_key(i.name)}]\n"
-            + f"engine = {_value(e.engine)}\n"
-            + f"url = {_value(str(e.url))}\n"
-            + f"host = {_value(e.host)}\n"
-            + f"max_jobs = {_value(e.max_jobs)}\n"
-        )
+        endpoints[i.name] = e
         known = hosts.get(i.host, HostSpec(bind=i.bind))
         if known.bind != i.bind:
             raise ValueError(
@@ -321,7 +315,20 @@ def endpoints_toml(imports: Iterable[Imported]) -> str:
             models=known.models | {i.model.digest: i.location},
             templates=known.templates | {i.engine.chat_template: i.template},
         )
-    for name, host in hosts.items():
+    return Inventory(endpoints=endpoints, hosts=hosts)
+
+
+def endpoints_toml(imports: Iterable[Imported]) -> str:
+    inventory = _inventory(imports)
+    tables = [
+        f"[endpoint.{_key(name)}]\n"
+        + f"engine = {_value(e.engine)}\n"
+        + f"url = {_value(str(e.url))}\n"
+        + f"host = {_value(e.host)}\n"
+        + f"max_jobs = {_value(e.max_jobs)}\n"
+        for name, e in inventory.endpoints.items()
+    ]
+    for name, host in inventory.hosts.items():
         tables.append(
             f"[host.{_key(name)}]\nbind = {_value(host.bind)}\n\n"
             + f"[host.{_key(name)}.models]\n"
@@ -330,3 +337,11 @@ def endpoints_toml(imports: Iterable[Imported]) -> str:
             + "".join(f"{_key(k)} = {_value(v)}\n" for k, v in host.templates.items())
         )
     return "\n".join(tables)
+
+
+def checked(imports: Sequence[Imported]) -> list[Finding]:
+    registry = Registry()
+    for i in imports:
+        _ = registry.add(i.model)
+        _ = registry.add(i.engine)
+    return check(_inventory(imports), registry.get)

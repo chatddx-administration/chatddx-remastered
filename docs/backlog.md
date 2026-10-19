@@ -245,6 +245,13 @@ Decided: a passthrough's refusals stay, and a key vLLM 0.24 doesn't take gets a 
     passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
     response are closer to the clearance block than to a warning.
 
+```
+AGENT: remove
+Done, as the user chose: the worker logs the check's findings as it starts, against the engines the store holds
+(src/chatddx/worker/worker.py:Worker.serve), and the engine import, before it writes, prints them for the endpoints
+and hosts it writes, against the models and engines it writes (src/chatddx/importers/o11n.py:checked). Its line in
+Contents goes with it; docs/inventory.md and docs/worker.md carry suggestions for saying so.
+```
 ### Inventory checked everywhere
 The runner, when it starts, and the engine import, before it writes, run the inventory check and pass its findings on,
 as init-data does. Endpoint names are agents/wip-clearance.md's (Open 1, "What a grant keys on").
