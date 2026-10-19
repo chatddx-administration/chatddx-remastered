@@ -152,10 +152,6 @@ Raises:
 `src/chatddx/api/app.py:CODES`
 
 * `CODES: dict[int, Code] = {…}`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 ## Compared `(_Schema)`
 `src/chatddx/api/schemas.py:Compared`
@@ -188,7 +184,6 @@ add these lines here
 * `label: str`
 * `means: list[float | None] = Field(…)`
 * `counts: list[int] = Field(…)`
-```
 
 ## Component `(_Schema)`
 `src/chatddx/api/schemas.py:Component`
