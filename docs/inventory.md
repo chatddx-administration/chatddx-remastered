@@ -255,13 +255,6 @@ at one address and says where each engine's model and template are, the check fi
 
 ## Terms
 
-```
-AGENT: replace
-The judge table and `configurations` name handles since model handles. The Bound and Configurations rows.
----
-| Bound | A data set's judge, given the handle whose latest engine judges it. |
-| Configurations | The handle whose model a data set's configurations are made for. |
-```
 | Term | Meaning |
 | --- | --- |
 | Inventory | Files written by ops that say where things are: vignette sources, endpoints and hosts. For now, they also say which endpoints are cleared for which sources. |
@@ -272,6 +265,6 @@ The judge table and `configurations` name handles since model handles. The Bound
 | Location | Where a host keeps a file, written the way the host reads it. |
 | Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. |
 | Include | A file whose endpoints and hosts an inventory takes as its own. |
-| Bound | A data set's judge, given the endpoint whose engine judges it. |
-| Configurations | The endpoint whose engine a data set's configurations are made for. |
+| Bound | A data set's judge, given the handle whose latest engine judges it. |
+| Configurations | The handle whose model a data set's configurations are made for. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |

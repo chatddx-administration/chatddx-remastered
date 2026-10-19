@@ -88,13 +88,7 @@ the endpoint the World names for configurations; one the facts about its model r
 is a served model the facts don't know.
 
 ## Checking pairs
-```
-AGENT: replace
-A judge pins weights rather than an engine (src/chatddx/facts/lint.py:_pair). The first line below.
----
 A trial pairs a skeleton with an engine, and a judge pairs one with weights, whose model may have facts. Checking the
-```
-A trial or a judge pairs a skeleton with an engine, whose model may have facts. Checking the pairs warns when the
 skeleton was written for another model than the one it is paired with, or asks the model for something its facts
 refuse:
 - Its reasoning settings match none of the ways the model is known to be asked for a level, so they were written for

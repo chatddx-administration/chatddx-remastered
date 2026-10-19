@@ -637,17 +637,8 @@ Every scorer selects the same way, through its views.
 Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
 pick the model, by its handle, and the fill rule.
 
-```
-AGENT: replace
-The backlog section is built and gone (agents/wip-judge-handle.md); the sentence stands without it. The two lines
-below.
----
 A judge is an LLM used as a metric: a judge skeleton, the weights picked by handle, its own seeds, and a fill rule.
 Its calls go to the handle's endpoint, at its latest engine, which the scoring pins.
-```
-A judge is an LLM used as a metric: a judge skeleton, the weights picked by handle, its own seeds, and a fill rule.
-Its calls go to the handle's endpoint, at its latest engine, which the scoring pins (docs/backlog.md, "Judges name a
-handle").
 
 Vignettes will probably never go to a judge: the scoring pass refuses a judge whose skeleton reads them, before anything
 is written.
@@ -664,17 +655,9 @@ generation engines (agents/wip-clearance.md).
 ### Scoring
 Principal author: researchers.
 
-```
-AGENT: replace
-The scoring pins each judge's engine (src/chatddx/factors/scoring.py:Scoring.engines), as a trial pins a run's.
----
 A scoring is what a score applies: a scorer plus the expectations it scores against, and the engine each of its
 judges is sent to. Every expectation follows the scorer's expectation schema, and each case has at most one. The
 judges a scoring uses are the ones its scorer's views name, each pinned to one engine serving its weights.
-```
-A scoring is what a score applies: a scorer plus the expectations it scores against. Every expectation follows the
-scorer's expectation schema, and each case has at most one. The judges a scoring uses are the ones its scorer's views
-name.
 
 ## Canary sets
 Principal author: developers.
@@ -690,29 +673,20 @@ Keeping them out of the components means knowledge that changes between vLLM rel
 any digest.
 
 They look at:
-- pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path.
-- views whose expectation selector can't pick anything from documents that follow the scorer's expectation schema. The
+- Pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path.
+- Views whose expectation selector can't pick anything from documents that follow the scorer's expectation schema. The
   check leans towards "reachable", so a finding is certain.
-- expectation schemas and outputs' schemas that can't be checked or break their draft, and expectations whose data
+- Expectation schemas and outputs' schemas that can't be checked or break their draft, and expectations whose data
   fails its schema or can't be checked against it.
-```
-AGENT: replace
-A judge pins weights, so its skeleton pairs with an engine only where one is given: the engine it is sent to
-(src/chatddx/factors/lint.py:lint, `engines`). The first line of this bullet and the first of the next.
----
-- each trial, and each judge on the engine it is sent to, as a pair of skeleton and engine. On a vLLM 0.24 engine,
-- each trial whose skeleton its compilations say was worked out for another model than its engine serves, and each
+- Each trial, and each judge on the engine it is sent to, as a pair of skeleton and engine. A temperature it raises,
+  a thinking budget or tools without the server options they need, tools that a native contract leaves uncallable,
+  and a constrained answer that the model can't reason before giving. On any other engine, a schema reference the
+  engine isn't known to resolve, in the output's schema or a toolset tool's parameters.
+- Each trial whose skeleton its compilations say was worked out for another model than its engine serves, and each
   judge whose weights are another model:
-```
-- each trial and judge as a pair of skeleton and engine. On a vLLM 0.24 engine, that is what vLLM would change, refuse
-  or quietly defeat: a temperature it raises, a thinking budget or tools without the server options they need, tools
-  that a native contract leaves uncallable, and a constrained answer that the model can't reason before giving. On any
-  other engine, a schema reference the engine isn't known to resolve, in the output's schema or a toolset tool's
-  parameters.
-- each trial and judge whose skeleton its compilations say was worked out for another model than its engine serves:
   a level or a recommended sampling meant for one model, sent to another. Two engines of one model, and a skeleton
   worked out from no facts, pair with any; a skeleton with no compilation at hand isn't checked.
-- with languages known, trials whose cases are in another language than the request, or in an unknown one.
+- With languages known, trials whose cases are in another language than the request, or in an unknown one.
 
 Checks against the model facts belong to the facts (docs/facts.md). Other findings come from the steps that observe
 them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a component that a
