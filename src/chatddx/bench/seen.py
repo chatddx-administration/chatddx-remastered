@@ -35,7 +35,7 @@ from chatddx.factors.request import (
     texts,
     translated,
 )
-from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
+from chatddx.factors.scoring import Expectation, Judge, JudgeEngine, Scorer, Scoring
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints
 from chatddx.identity import Person, collaborates, owns, preferred, sees
@@ -286,6 +286,15 @@ class Seen:
         except (LookupError, ValueError):
             return None
 
+    def judged(self, judge: Judge) -> Endpoint:
+        handle = self.handle(judge.model)
+        if handle.weights != judge.model:
+            raise ValueError(
+                f"{self.title(judge.digest)}: its model is behind {handle.name}, which "
+                + "holds other weights now: follow it first"
+            )
+        return self.served(handle)
+
     def under(self, engine: str) -> tuple[Handle | None, bool]:
         weights = self._served_model(engine)
         if weights is None:
@@ -446,9 +455,11 @@ class Seen:
             _ = registry.add(skeleton)
             if by_hand:
                 add_compilations(self, registry, skeleton.digest)
-            judge = Judge(skeleton=skeleton.digest, engine=engine, seeds=(seed,))
+            model = model_of(engine, registry.get).digest
+            judge = Judge(skeleton=skeleton.digest, model=model, seeds=(seed,))
             _ = registry.add(judge)
-            return lints(registry, self.facts, [judge.digest])
+            at = {judge.digest: engine}
+            return lints(registry, self.facts, [judge.digest], engines=at)
         if carried is None:
             first = next(iter(self.families()), None)
             if first is None:
@@ -664,12 +675,16 @@ class Seen:
         schema = resolve(self.store.get, trial.skeleton, Skeleton).output_schema
         return [s for s in found if self._applies(s[2], trial, schema)]
 
+    # Policy: A judge behind its handle still applies, so that its scorer stays left to
+    # score and scoring says why.
     def _applies(self, scorer: Scorer, trial: Trial, schema: JsonValue) -> bool:
         if not all(v.offered_by(schema) for v in scorer.views):
             return False
         try:
             for judge in scorer.judges:
-                _ = judge_at(self.inventory, self.store.get, trial, judge)
+                weights = resolve(self.store.get, judge, Judge).model
+                engine = self.served(self.handle(weights)).engine
+                _ = judge_at(self.inventory, self.store.get, trial, judge, engine)
         except (ValueError, Refused):
             return False
         return True
@@ -778,7 +793,7 @@ class Seen:
         for edit, _, scorer in self.scorers(run):
             try:
                 built = scoring(self, run, edit.digest)
-            except Ambiguous:
+            except (Ambiguous, ValueError):
                 found.append(edit.digest)
                 continue
             if built is None:
@@ -856,10 +871,18 @@ def picked(seen: Seen, cases: Sequence[str], schema: str) -> dict[str, str | Non
 
 def scoring(seen: Seen, run: RunStarted, scorer: str) -> Scoring | None:
     trial = resolve(seen.store.get, run.trial, Trial)
-    schema = resolve(seen.store.get, scorer, Scorer).expectation_schema
-    held = picked(seen, list(trial.cases), schema)
-    found = tuple(e for e in held.values() if e is not None)
-    return Scoring(scorer=scorer, expectations=found) if found else None
+    found = resolve(seen.store.get, scorer, Scorer)
+    held = picked(seen, list(trial.cases), found.expectation_schema)
+    expectations = tuple(e for e in held.values() if e is not None)
+    if not expectations:
+        return None
+    engines = tuple(
+        JudgeEngine(
+            judge=j, engine=seen.judged(resolve(seen.store.get, j, Judge)).engine
+        )
+        for j in found.judges
+    )
+    return Scoring(scorer=scorer, expectations=expectations, engines=engines)
 
 
 def labels_of(seen: Seen, edit: Edit) -> dict[int, str]:
@@ -930,7 +953,23 @@ def linted(seen: Seen, digest: str) -> list[Finding]:
     registry = seen.store.load([digest])
     if isinstance(paired := registry.get(digest), Trial | Judge):
         add_compilations(seen, registry, paired.skeleton)
-    return lints(registry, seen.facts, [digest], partial(language_of, seen.rows))
+    engines = judging(seen, paired, registry) if isinstance(paired, Judge) else {}
+    languages = partial(language_of, seen.rows)
+    return lints(registry, seen.facts, [digest], languages, engines)
+
+
+# Policy: A judge's skeleton is linted on its handle's latest engine, where it would
+# judge, and on none where it can't.
+def judging(seen: Seen, judge: Judge, registry: Registry) -> dict[str, str]:
+    try:
+        engine = seen.judged(judge).engine
+    except (LookupError, ValueError):
+        return {}
+    held = seen.store.load([engine])
+    for digest in held:
+        if digest not in registry:
+            _ = registry.add(held.get(digest))
+    return {judge.digest: engine}
 
 
 # src/chatddx/factors/lint.py:_made_for reads them from the registry.

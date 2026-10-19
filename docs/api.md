@@ -300,6 +300,13 @@ Only the person's own runs are seen; a collaborator on a run doesn't see it.
 
 ## Scoring
 A run is scored as soon as it is finished by default but a request can ask for it to be left with `"score": false`.
+```
+AGENT: replace
+A judge names a handle; its calls go where the handle resolves, at the engine the scoring pins.
+---
+A judged view is scored as any other, its judge's calls sent to the endpoint its handle resolves to, at the engine
+the scoring pins.
+```
 A judged view is scored as any other, its judge's calls sent to the one endpoint that serves the judge's engine.
 The scores come in `run.scored`, and with the run when it is read: each item's value under each view.
 Also each view's mean over the items, or why the scorer gave none.

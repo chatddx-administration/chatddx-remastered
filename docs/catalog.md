@@ -240,6 +240,12 @@ skeleton, it is shown by its purpose and the start of its digest: "generation co
 
 Each kind is described by:
 
+```
+AGENT: replace
+A judge is titled by its skeleton and its model's handle (src/chatddx/catalog/titles.py:describe). Its row.
+---
+| Judge | Its skeleton and its model's handle. | `judge grader under qwen3-8b` |
+```
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |

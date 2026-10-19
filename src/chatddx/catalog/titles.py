@@ -179,8 +179,8 @@ def describe(component: Component, title: Title) -> str:
                 f"{title(skeleton)} on {title(engine)}, "
                 + f"{_count(len(cases), 'case')}, {_count(len(seeds), 'seed')}"
             )
-        case Judge(skeleton=skeleton, engine=engine):
-            return f"judge {title(skeleton)} on {title(engine)}"
+        case Judge(skeleton=skeleton, model=model):
+            return f"judge {title(skeleton)} under {title(model)}"
         case Scorer(entry_point=entry_point, version=version):
             return f"scorer {entry_point} v{version}"
         case Scoring(scorer=scorer, expectations=expectations):

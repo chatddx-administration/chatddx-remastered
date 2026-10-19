@@ -127,7 +127,7 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
             raise StructuralError(f"score item {item.key} is not in the run")
         findings.extend(_judged(item, scorer.views[item.view].judge, judges))
         for judge in dict.fromkeys(jc.judge for jc in item.judge_calls):
-            want = served_model_name(judges[judge].engine, registry.get)
+            want = served_model_name(scoring.engine_of(judge), registry.get)
             calls = (jc.call for jc in item.judge_calls if jc.judge == judge)
             findings.extend(attest_model(calls, want, "judge engine", str(item.key)))
     if (ran := started.scorer_version) != scorer.version:

@@ -7,8 +7,16 @@ from chatddx.catalog import Subject, read
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.cases import Case
+from chatddx.factors.engine import model_of
 from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring, View
+from chatddx.factors.scoring import (
+    Expectation,
+    Judge,
+    JudgeEngine,
+    Scorer,
+    Scoring,
+    View,
+)
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -211,8 +219,19 @@ def judged(plan: Plan, *views: View) -> Scorer:
     return found.model_copy(update={"views": views}) if views else found
 
 
+# Compromise: By weights, so that a judge a test copies finds its original's engine.
 def scoring_of(plan: Plan, made: Trial, by: Scorer) -> Scoring:
-    return Scoring(scorer=plan.registry.add(by), expectations=expectations(plan, made))
+    get = plan.registry.get
+    serving = {model_of(e, get).digest: e for e in plan.engines.values()}
+    engines = tuple(
+        JudgeEngine(judge=j, engine=serving[resolve(get, j, Judge).model])
+        for j in by.judges
+    )
+    return Scoring(
+        scorer=plan.registry.add(by),
+        expectations=expectations(plan, made),
+        engines=engines,
+    )
 
 
 @pytest.mark.usefixtures("fake")

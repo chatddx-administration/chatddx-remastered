@@ -277,6 +277,7 @@ def _started(seen: Seen, run: RunStarted, scorer: str) -> Grading:
     built = scoring(seen, run, scorer)
     if built is None:
         raise LookupError("none of the run's cases has an expectation")
-    registry = seen.store.load([built.scorer, *built.expectations])
+    pinned = [e.engine for e in built.engines]
+    registry = seen.store.load([built.scorer, *built.expectations, *pinned])
     runner = Runner(seen.conn, seen.inventory, seen.person)
     return runner.score(run.run, built, registry)

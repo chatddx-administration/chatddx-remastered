@@ -202,8 +202,8 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
 @pytest.mark.slow
 def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
     skeleton = bench.variation(JUDGE).configuration.digest
-    engine = bench.endpoint(QWEN).engine
-    written = bench.new(Judge(skeleton=skeleton, engine=engine, seeds=(1, 2)), "twice")
+    weights = bench.endpoint(QWEN).model.digest
+    written = bench.new(Judge(skeleton=skeleton, model=weights, seeds=(1, 2)), "twice")
     assert written.what == "created"
     assert [f.code for f in written.findings] == ["judge.greedy_seeds"]
 
@@ -213,34 +213,35 @@ def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> Non
         forked.what == "created"
         and bench.thread(forked.edit.thread)[1].owner == bench.person.id
     )
-    once = Judge(skeleton=skeleton, engine=engine, seeds=(3,))
+    once = Judge(skeleton=skeleton, model=weights, seeds=(3,))
     edited = bench.edit(forked.edit.thread, forked.edit.id, once)
     assert (edited.what, edited.edit.digest) == ("a new version", once.digest)
 
     generation = bench.variation(LINES).configuration.digest
     with pytest.raises(ValueError, match="judge uses a generation skeleton"):
-        _ = bench.new(Judge(skeleton=generation, engine=engine, seeds=(1,)), "wrong")
+        _ = bench.new(Judge(skeleton=generation, model=weights, seeds=(1,)), "wrong")
 
 
 def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
     bench: Bench,
 ) -> None:
     graded = bench.variation("judge-graded").configuration.digest
-    gpt_oss = bench.endpoint(GPT_OSS).engine
-    judge = Judge(skeleton=graded, engine=gpt_oss, seeds=(1,))
-    said = f"the skeleton is worked out for {QWEN_MODEL}, and the engine serves "
+    gpt_oss = bench.endpoint(GPT_OSS).model.digest
+    judge = Judge(skeleton=graded, model=gpt_oss, seeds=(1,))
+    said = f"the skeleton is worked out for {QWEN_MODEL}, and the judge's model is "
     for findings in (
         bench.check(judge).findings,
         bench.new(judge, "elsewhere").findings,
     ):
-        [unmatched] = [f for f in findings if f.code == "judge.engine_unmatched"]
+        [unmatched] = [f for f in findings if f.code == "judge.model_unmatched"]
         assert unmatched.message.startswith(said)
-    on_qwen = Judge(skeleton=graded, engine=bench.endpoint(QWEN).engine, seeds=(1,))
-    assert "judge.engine_unmatched" not in {
+    qwen = bench.endpoint(QWEN).model.digest
+    on_qwen = Judge(skeleton=graded, model=qwen, seeds=(1,))
+    assert "judge.model_unmatched" not in {
         f.code for f in bench.check(on_qwen).findings
     }
     greedy = bench.variation(JUDGE).configuration.digest
-    anywhere = Judge(skeleton=greedy, engine=gpt_oss, seeds=(1,))
-    assert "judge.engine_unmatched" not in {
+    anywhere = Judge(skeleton=greedy, model=gpt_oss, seeds=(1,))
+    assert "judge.model_unmatched" not in {
         f.code for f in bench.check(anywhere).findings
     }

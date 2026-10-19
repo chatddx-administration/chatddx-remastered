@@ -58,13 +58,15 @@ def _ignore(_: ScoreEvent) -> None:
     pass
 
 
-def judge_at(inventory: Inventory, get: Resolver, trial: Trial, judge: str) -> str:
+def judge_at(
+    inventory: Inventory, get: Resolver, trial: Trial, judge: str, engine: str
+) -> str:
     found = resolve(get, judge, Judge)
     try:
-        name = inventory.serving(found.engine)
+        name = inventory.serving(engine)
     except LookupError as e:
         raise Refused(str(e)) from None
-    bar(inventory, get, name, trial, found)
+    bar(inventory, get, name, trial, (found, engine))
     return name
 
 
@@ -96,13 +98,14 @@ def grade(
     judging: dict[str, _Judging] = {}
     at: list[JudgeEndpoint] = []
     for ref in scorer.judges:
-        name = judge_at(inventory, get, trial, ref)
+        engine = scoring.engine_of(ref)
+        name = judge_at(inventory, get, trial, ref, engine)
         judge = resolve(get, ref, Judge)
-        secret = admit(inventory, get, name, trial, judge)
+        secret = admit(inventory, get, name, trial, (judge, engine))
         url = str(inventory.endpoint(name).url)
         skeleton = resolve(get, judge.skeleton, Skeleton)
         judging[ref] = _Judging(
-            judge, skeleton, served_model_name(judge.engine, get), url, secret
+            judge, skeleton, served_model_name(engine, get), url, secret
         )
         at.append(JudgeEndpoint(judge=ref, endpoint=Endpoint(name=name, url=url)))
 

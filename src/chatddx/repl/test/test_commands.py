@@ -1,5 +1,3 @@
-import pytest
-
 from chatddx.bench import Bench
 from chatddx.repl.commands import COMMANDS, complete, handle
 from chatddx.repl.running import case_and_seed
@@ -51,7 +49,6 @@ def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
     assert repl.variation is None
 
 
-@pytest.mark.slow
 def test_a_name_with_spaces_needs_no_quotes(repl: Repl, bench: Bench, say: Say):
     by_hand(bench)
     _ = say("use by hand")

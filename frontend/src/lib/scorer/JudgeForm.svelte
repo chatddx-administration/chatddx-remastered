@@ -9,7 +9,7 @@
     owner: string | null;
     output_schema: Schema | null;
   };
-  export type Serving = { name: string; engine: string };
+  export type Serving = { name: string; weights: string };
   export type JudgeChoice = {
     digest: string;
     thread: number;
@@ -60,9 +60,9 @@
   const read = $derived(seedsOf(seeds));
 
   function component(): Component | null {
-    const engine = given.models.find((m) => m.name === model)?.engine;
-    if (!configuration || !engine || typeof read === "string") return null;
-    return { kind: "judge", skeleton: configuration, engine, seeds: read, fill: "text@1" } as never;
+    const weights = given.models.find((m) => m.name === model)?.weights;
+    if (!configuration || !weights || typeof read === "string") return null;
+    return { kind: "judge", skeleton: configuration, model: weights, seeds: read, fill: "text@1" } as never;
   }
 
   $effect(() => {

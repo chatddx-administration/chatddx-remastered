@@ -429,6 +429,19 @@ Raises:
 * `thread: int`
 * `weights: str`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## judging
+`src/chatddx/bench/seen.py:judging`
+
+* `seen: Seen`
+* `judge: Judge`
+* `registry: Registry`
+* ∟`dict[str, str]`
+
+```
 ## keep_compilation
 `src/chatddx/bench/configurations.py:keep_compilation`
 
@@ -730,6 +743,20 @@ Raises:
 * `recipe: Recipe | None = None`
 * ∟`tuple[Edit, About] | None`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Seen.judged
+`src/chatddx/bench/seen.py:Seen.judged`
+
+* `judge: Judge`
+* ∟`Endpoint`
+
+Raises:
+1. `ValueError`: "{self.title(judge.digest)}: its model is behind {handle.name}, which holds other weights now: follow it first"
+
+```
 ## Seen.labels
 `src/chatddx/bench/seen.py:Seen.labels`
 

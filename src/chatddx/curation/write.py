@@ -321,7 +321,8 @@ class _Init:
 
     def lint(self) -> None:
         registry, facts, digests = self.plan.registry, self.plan.facts, [*self.landed]
-        findings = lints(registry, facts, digests, partial(language_of, self.rows))
+        languages = partial(language_of, self.rows)
+        findings = lints(registry, facts, digests, languages, self.plan.engines)
         for f in findings:
             what = ", ".join(self.landed.get(f.subject or "") or [str(f.subject)])
             self.lines.append(f"[lint {f.level}] {what}: {f.code}: {f.message}")

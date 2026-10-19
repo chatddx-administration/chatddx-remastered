@@ -25,7 +25,7 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Queue, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, faked
+from chatddx.test.world import LINES, QWEN_ARTIFACT, faked
 
 
 @pytest.fixture
@@ -244,6 +244,8 @@ def test_what_a_judge_is_asked_is_its_request_with_what_a_view_picks(
     assert asked["picked"] == [comment]
     said = "".join(m["content"] for m in asked["request"]["messages"])
     assert comment in said and "‹completion›" in said
+    models = {m["name"]: m["engine"] for m in signed.get("/api/models").json()}
+    assert asked["request"]["model"] == models[QWEN_ARTIFACT]
 
     assert (
         signed.post("/api/judges/asked", json={**body, "expectation": "$["}).status_code

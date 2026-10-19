@@ -236,7 +236,7 @@ endpoints, and Refine's set in those terms.
   under it rather than like for like.
 - **Kept**: scripted runs name endpoints, as they are the fake's (`docs/scripted.md`); the repl was kept so too, and
   then brought to handles (see "Built", step 2b). A person's judge picks a handle and pins its latest engine, until
-  "Judges name a model" (`docs/backlog.md`) changes the judge's kind.
+  "Judges name a model" changes the judge's kind, since built (`agents/wip-judge-handle.md`).
 - **Tests**: the inventory check's finding; loading by handle; the bench's resolving, refusals and running again;
   the API's look, start, runs and models; the portal's pages; the import's naming; vitest for the variation page's
   logic without endpoints.
@@ -423,8 +423,6 @@ behind one `said`; a column that can't be worked out matched as any, finding not
   `src/chatddx/repl/test/`, a hand-written configuration run under a handle among them.
 
 #### What step 2b leaves
-- **A person's judge pins an engine**, the handle's latest when it is written, until "Judges name a model"
-  (`docs/backlog.md`) changes the judge's kind.
 - **Scripted runs** name endpoints.
 - **A retired handle reads as ops' error**: no endpoint serving its weights is said alike either way.
 - **A set over several languages** is neither said nor refused: its columns' runs in different languages share no

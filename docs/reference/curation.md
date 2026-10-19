@@ -81,6 +81,12 @@ Raises:
 * `skipped: list[str] = field(default_factory=list)`
 * `untranslated: list[str] = field(default_factory=list)`
 * `compilations: list[str] = field(default_factory=list)`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+* `engines: dict[str, str] = field(default_factory=dict)`
+```
 
 ## Plan.named
 `src/chatddx/curation/plan.py:Plan.named`
@@ -114,6 +120,12 @@ Raises:
 10. `ValueError`: "tags must be a list of strings, not {value!r}" (through `_tags`)
 11. `ValueError`: "recipe.{name}: a recipe's model is the World's: its inventory names the handle configurations are made for"
 12. `ValueError`: "recipe.{name}: no {part} named {body[part]!r}"
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+13. `ValueError`: "judge.{name}: a judge's model is the World's, which binds the judge to a handle in its inventory's [judge] table"
+```
 13. `ValueError`: "judge.{name}: a judge's engine is the World's, which binds the judge to a handle in its inventory's [judge] table"
 14. `ValueError`: "judge.{name}: no recipe named {recipe!r}"
 15. `ValueError`: "judge.{name}: {e}" (from `ValidationError`)

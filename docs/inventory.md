@@ -255,6 +255,13 @@ at one address and says where each engine's model and template are, the check fi
 
 ## Terms
 
+```
+AGENT: replace
+The judge table and `configurations` name handles since model handles. The Bound and Configurations rows.
+---
+| Bound | A data set's judge, given the handle whose latest engine judges it. |
+| Configurations | The handle whose model a data set's configurations are made for. |
+```
 | Term | Meaning |
 | --- | --- |
 | Inventory | Files written by ops that say where things are: vignette sources, endpoints and hosts. For now, they also say which endpoints are cleared for which sources. |

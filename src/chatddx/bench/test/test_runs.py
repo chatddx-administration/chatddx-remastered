@@ -272,12 +272,12 @@ def test_a_start_one_of_whose_runs_the_gate_refuses_begins_none(
         get: Resolver,
         endpoint: str,
         trial: Trial,
-        judge: Judge | None = None,
+        judged: tuple[Judge, str] | None = None,
     ):
         calls.append(trial.digest)
         if len(calls) == 2:
             raise Refused("the second is refused")
-        return admitted(inventory, get, endpoint, trial, judge)
+        return admitted(inventory, get, endpoint, trial, judged)
 
     monkeypatch.setattr("chatddx.runner.run.admit", admit)
     with pytest.raises(Refused, match="the second is refused"):

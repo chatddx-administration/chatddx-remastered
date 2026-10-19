@@ -14,6 +14,7 @@ from chatddx.test.world import (
     QWEN,
     QWEN_ARTIFACT,
     REMOTE,
+    UNKNOWN_MODEL,
     copied,
     edit,
     world_plan,
@@ -33,7 +34,7 @@ def edited(tmp_path: Path, old: str, new: str) -> Path:
     return world
 
 
-def test_a_judge_s_recipe_is_compiled_with_its_engine() -> None:
+def test_a_judge_s_recipe_is_compiled_for_its_handle_s_weights() -> None:
     plan = world_plan()
 
     def judge(name: str) -> Judge:
@@ -41,16 +42,21 @@ def test_a_judge_s_recipe_is_compiled_with_its_engine() -> None:
 
     graded, verdict, remote = judge("graded"), judge("verdict"), judge("remote")
     skeleton = plan.named("recipe", "judge-graded").digest
-    assert (graded.skeleton, graded.engine, graded.seeds) == (
+    assert (graded.skeleton, graded.model, graded.seeds) == (
         skeleton,
-        plan.named("local_engine", QWEN).digest,
+        plan.named("local_model", QWEN_ARTIFACT).digest,
         (1, 2, 3),
     )
     assert verdict.skeleton == remote.skeleton == plan.named("recipe", JUDGE).digest
-    assert remote.engine == plan.named("remote_engine", REMOTE).digest
+    assert remote.model == plan.named("remote_model", UNKNOWN_MODEL).digest
+    assert plan.engines == {
+        graded.digest: plan.named("local_engine", QWEN).digest,
+        verdict.digest: plan.named("local_engine", QWEN).digest,
+        remote.digest: plan.named("remote_engine", REMOTE).digest,
+    }
 
 
-def test_a_judge_takes_its_engine_from_the_handle_the_world_binds_it_to(
+def test_a_judge_takes_its_weights_from_the_handle_the_world_binds_it_to(
     tmp_path: Path,
 ) -> None:
     world = copied(tmp_path)
@@ -62,8 +68,8 @@ def test_a_judge_takes_its_engine_from_the_handle_the_world_binds_it_to(
     plan = world_plan(world, world / "_data")
     get = plan.registry.get
     graded = resolve(get, plan.named("judge", "graded").digest, Judge)
-    engine = plan.named("local_engine", GPT_OSS).digest
-    assert graded.engine == engine
+    assert graded.model == plan.named("local_model", GPT_OSS_ARTIFACT).digest
+    assert plan.engines[graded.digest] == plan.named("local_engine", GPT_OSS).digest
     assert graded.skeleton != plan.named("recipe", "judge-graded").digest
     [made] = [
         compilation
@@ -99,13 +105,14 @@ def test_a_judge_the_world_doesn_t_bind_is_skipped_and_so_is_its_scorer(
         _ = plan.named("judge", "verdict")
 
 
-def test_a_judge_names_no_engine_of_its_own(tmp_path: Path) -> None:
+@pytest.mark.parametrize("field", ["engine", "model"])
+def test_a_judge_names_no_model_or_engine_of_its_own(
+    tmp_path: Path, field: str
+) -> None:
     world = edited(
-        tmp_path, "[judge.verdict]\n", f'[judge.verdict]\nengine = "{QWEN}"\n'
+        tmp_path, "[judge.verdict]\n", f'[judge.verdict]\n{field} = "{QWEN}"\n'
     )
-    with pytest.raises(
-        ValueError, match="judge.verdict: a judge's engine is the World"
-    ):
+    with pytest.raises(ValueError, match="judge.verdict: a judge's model is the World"):
         _ = world_plan(world, world / "_data")
 
 

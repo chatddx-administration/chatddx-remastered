@@ -535,7 +535,7 @@ def _composing(
             for t in _configurations(bench, "judge")
         ],
         "models": [
-            {"name": m.name, "engine": m.engine}
+            {"name": m.name, "weights": m.weights}
             for m in api_world.models(bench)
             if m.engine is not None
         ],
@@ -551,7 +551,10 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
         api.threads(bench, "judge"), key=lambda t: (t.owner != login, t.name or t.title)
     ):
         judge = resolve(bench.store.get, t.head.digest, Judge)
-        handle, _ = bench.under(judge.engine)
+        try:
+            handle = bench.handle(judge.model).name
+        except ValueError:
+            handle = None
         found.append(
             {
                 "digest": t.head.digest,
@@ -562,7 +565,7 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
                 "name": t.name or t.title,
                 "owner": t.owner,
                 "configuration": bench.title(judge.skeleton),
-                "model": None if handle is None else handle.name,
+                "model": handle,
                 "seeds": list(judge.seeds),
                 "output_schema": resolve(
                     bench.store.get, judge.skeleton, Skeleton

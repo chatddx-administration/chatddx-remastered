@@ -104,6 +104,7 @@ class Plan:
     skipped: list[str] = field(default_factory=list)
     untranslated: list[str] = field(default_factory=list)
     compilations: list[str] = field(default_factory=list)
+    engines: dict[str, str] = field(default_factory=dict)
 
     def named(self, table: str, name: str) -> Planned:
         for r in self.records:
@@ -577,9 +578,9 @@ def plan_factors(
     for name, raw in judges.items():
         assert isinstance(raw, dict)
         body = dict(raw)
-        if "engine" in body:
+        if "engine" in body or "model" in body:
             raise ValueError(
-                f"judge.{name}: a judge's engine is the World's, which binds the judge "
+                f"judge.{name}: a judge's model is the World's, which binds the judge "
                 + "to a handle in its inventory's [judge] table"
             )
         tags = _tags(body.pop("tags", []))
@@ -604,12 +605,13 @@ def plan_factors(
         plan.compilations.append(compilation)
         try:
             judge = Judge.model_validate(
-                {**body, "skeleton": skeleton, "engine": at.digest}
+                {**body, "skeleton": skeleton, "model": of.digest}
             )
         except ValidationError as e:
             raise ValueError(f"judge.{name}: {e}") from None
         if refused := judge.cross_check(plan.registry.get):
             raise ValueError(f"judge.{name}: {'; '.join(refused)}")
+        plan.engines[judge.digest] = at.digest
         add(
             "judge",
             name,
