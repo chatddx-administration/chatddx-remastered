@@ -101,6 +101,14 @@ refuse:
 - It asks a model that refuses a thinking budget for one.
 - Its output contract is one the model refuses.
 
+```
+AGENT: review
+"Paired with another engine than its recipe's" is stale: a recipe names a model.
+---
+A skeleton compiled from a reasoning level for the model it is sent to sends one of its model's ways of asking,
+and one compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks
+matter for literal chunks, hand-written skeletons, and a skeleton sent to another model than its recipe's.
+```
 A skeleton compiled from a reasoning level on the engine it is paired with sends one of its model's ways of asking,
 and one compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks
 matter for literal chunks, hand-written skeletons, and a skeleton paired with another engine than its recipe's.

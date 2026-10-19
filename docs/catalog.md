@@ -104,6 +104,13 @@ when someone accepts a proposal.
 
 ### What has moved on
 For any thread, the catalog lists the references of its head that could be updated. It looks at:
+```
+AGENT: review
+A trial's engine is behind once the engine's thread moved on: what option 3a follows to run again at the endpoint's
+current engine.
+---
+Keep.
+```
 - the head's own references, such as a trial's skeleton, engine and cases;
 - for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
@@ -216,6 +223,14 @@ A thread's title is its name. Without one, a fork is shown by its origin's title
 ("plan, output: management-plan-shown"), or as "a fork of plan" when it varies nothing; any other thread is shown by
 what its head holds.
 
+```
+AGENT: review
+Correcting the last run: an endpoint's engines don't share a title. An engine is a thread named after its endpoint, so
+its earlier version reads "qwen3-8b@pelle (earlier)"; the Local engine row below describes one outside a thread. What
+changed between the two isn't said.
+---
+Keep; the pages show a run's engine by this title where runs differ in engine.
+```
 Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
 catalog prefers, in order:
 1. a live thread whose head it is: its name, or else its title;

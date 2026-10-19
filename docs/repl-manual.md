@@ -138,6 +138,13 @@ cell: plan × qwen3-8b-awq@fake
 alice plan×qwen3-8b-awq@fake #2475>
 ```
 
+```
+AGENT: review
+The manual speaks of a configuration's engine; it has a model, which `set model` swaps (docs/repl.md, "Parts").
+---
+The endpoint is the one serving the configuration's model, here the
+model the sample's configurations are made for.
+```
 The endpoint is the one serving the configuration's engine, here the
 engine the sample's configurations are made for. A configuration someone
 else shares with you is named with its owner first: `use bob/bobs-plan`.
@@ -148,6 +155,15 @@ engine in the configuration.
 
 ### `on ENDPOINT`
 
+```
+AGENT: review
+`on` puts the endpoint's model in the configuration, and the prompt reads `+model=`
+(`src/chatddx/repl/test/test_choosing.py`); so does every transcript here that reads `+engine=`.
+---
+Puts an endpoint in the cell, and the model it serves in the cell's
+configuration, keeping everything else you chose. The configuration is
+worked out again for that model.
+```
 Puts an endpoint in the cell, and the engine it serves in the cell's
 configuration, keeping everything else you chose. The configuration is
 worked out again for the new engine's model:
@@ -166,6 +182,12 @@ lints find in it, and what the new engine's model can't do (see `set`).
 
 ### `cell CONFIGURATION ENDPOINT`
 
+```
+AGENT: review
+Stale: the endpoint's model.
+---
+Both at once: the configuration, with the endpoint's model in it.
+```
 Both at once: the configuration, with the endpoint's engine in it.
 
 ```
@@ -183,6 +205,19 @@ alice plan×qwen3-8b-awq@fake #2475> set reasoning off
 cell: plan+reasoning=off × qwen3-8b-awq@fake
 ```
 
+```
+AGENT: review
+"The engine's model" and "the engine of an endpoint you named" are stale.
+---
+The prompt shows what you changed (`+reasoning=off`). A reasoning chunk
+asks for a level, as `off`, and the model is asked for it as its facts
+say. `none` takes an optional part out: `set toolset none` takes
+the tools away. Setting the configuration's own chunk again unsets the
+part, and a chunk that doesn't fit is refused, leaving the cell as it
+was. Choosing a configuration again with `use` or `cell` forgets what you
+set, but for the model of an endpoint you named; `on` another endpoint
+keeps it all, worked out again for its model.
+```
 The prompt shows what you changed (`+reasoning=off`). A reasoning chunk
 asks for a level, as `off`, and the engine's model is asked for it as its
 facts say. `none` takes an optional part out: `set toolset none` takes
@@ -210,12 +245,27 @@ cell: plan+reasoning=on-budget-2048+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
 openai/gpt-oss-20b: no thinking budget is documented for harmony: set another in its place
 ```
 
+```
+AGENT: review
+The command is `set model NAME` (docs/repl.md, "Parts").
+---
+`set model NAME` swaps the model alone, named as its thread is
+(`qwen3-8b-awq`), and keeps an endpoint you named that serves it; one
+that serves another is let go.
+```
 `set engine NAME` swaps the engine alone, named as `endpoints` lists it,
 and the cell runs at the endpoint serving it; an endpoint you named that
 serves another engine is let go.
 
 ### `show`
 
+```
+AGENT: review
+"The engine among them" is stale: the model is the part, the engine the endpoint's.
+---
+Shows the cell: each part and what it is, the model among them, where
+a reasoning level or a recommended sampling landed on the model,
+```
 Shows the cell: each part and what it is, the engine among them, where
 a reasoning level or a recommended sampling landed on the engine's model,
 the endpoint and the name its engine is served under, the messages the

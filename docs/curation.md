@@ -46,6 +46,14 @@ On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   a `local_model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
   not digests.
+```
+AGENT: review
+A data set's judge names no engine already, but is compiled for the engine of its endpoint and pins it, so an engine
+change loads it as another judge, and every scorer naming it too. 5b.
+---
+- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
+  (docs/inventory.md, "Judges"), whose model judges. The recipe is compiled for that model, as written, and the
+```
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
   skeleton and its compilation are stored with the judge, without a thread of their own; a judge names no `language`.
@@ -164,6 +172,13 @@ thing it comes to.
    written. A recipe its translations can't carry into a language is made all the same, and said after the records:
    `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data
    set gives one.
+```
+AGENT: review
+This is how an engine change reaches the catalog: the engine's record, named after its endpoint, gets a new edit, so
+its thread holds its versions, and trials and judges holding the earlier one are behind it.
+---
+Keep.
+```
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.

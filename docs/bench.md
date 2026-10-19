@@ -157,6 +157,13 @@ resolves them with the facts about the model as they are stored then (docs/facts
 the facts say, on its nearest when the model can't be asked for it, and refuses what they refuse, and any intent on a
 model they don't know. So a variation is refused for its model as it is looked at, before anything runs.
 
+```
+AGENT: review
+Option 1: Refine's set would pin a host, the cage, and each column's run go to the endpoint on it serving its model;
+"several serve, unless one is named" then holds within the host.
+---
+A run goes to the endpoint serving its variation's model, on the host it is asked for when one is.
+```
 A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
 serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
 several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written
@@ -175,6 +182,16 @@ the instructions, the few-shot examples and the prompt, the guidance and the tex
 the descriptions of tools and of the answer function, the titles and descriptions in schemas, and the appendix
 layout.
 
+```
+AGENT: review
+The rule, that language is never compared, is said nowhere in docs/: it follows from this paragraph and from a start
+being a run per language. Refine's set and /runs/compare treat language as a dimension (agents/wip-refine.md).
+---
+Cases and appendices aren't translated: each is in a language of its own. A request's language is implicit in its text,
+and no language tag reaches the model. So a request is sent in its case's language, and a case of none in the
+configuration's own: the language follows from the cases and nobody picks it, and runs in different languages are over
+different cases, so they are never compared.
+```
 Cases and appendices aren't translated: each is in a language of its own. A request's language is implicit in its text,
 and no language tag reaches the model.
 
@@ -216,6 +233,16 @@ What every write has in common:
 - **Editing** keeps it as a new version of a configuration the person owns.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
+```
+AGENT: review
+Stale: a recipe is made with a model's digest (docs/api.md, "New"), compiled against the facts about it.
+---
+- **Making one from a recipe** of the person's own, by the chunks' digests for each part and a model's, its purpose
+  and its appendix layout: compiled by the running code against the facts about the model, and kept as a new
+  configuration with no origin. Each part must be a stored chunk of that part, the model a stored model, and the
+  recipe must compile: an intent the facts refuse doesn't, nor one on a model they don't know. Its language comes
+  from its recipe, so none is given.
+```
 - **Making one from a recipe** of the person's own, by the chunks' digests for each part and an engine's, its purpose
   and its appendix layout: compiled by the running code against the facts about the engine's model, and kept as a new
   configuration with no origin. Each part must be a stored chunk of that part, the engine a stored engine, and the

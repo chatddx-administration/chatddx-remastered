@@ -73,6 +73,12 @@ threads are listed apart, and each can still be read by its id, with its version
 A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
 time and nothing is stored by looking.
 
+```
+AGENT: review
+"The facts about its engine's model" is stale.
+---
+replaced is compiled against the facts about its model as they are stored then, so a variation looked at and
+```
 The latest configuration means its head when the request comes (unless an edit is given), and a variation with parts
 replaced is compiled against the facts about its engine's model as they are stored then, so a variation looked at and
 one run moments later can differ if the configuration or the facts moved in between; each run records the skeleton it
@@ -191,6 +197,13 @@ A person is scored against their own expectations only, so they take the shared 
 ### Starting one
 Runs are started within their request, so whatever refuses them does so before anything is sent.
 
+```
+AGENT: review
+A case of no language is sent in the configuration's own, the one way two configurations send one case in different
+languages. They differ in their texts too, so that is a variation compared, not a language.
+---
+Keep.
+```
 A start is a run per language its cases are sent in (`docs/bench.md`, "Translations"): the cases in the
 configuration's own language, and those in none, as written, and those in each language its translations cover
 translated, each a run of its own. The cases of a language they can't carry it into are left out, and the answer says
@@ -268,6 +281,15 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
+```
+AGENT: review
+After an engine change it is refused at the gate, since the trial pins the engine the endpoint no longer serves
+(`src/chatddx/bench/runs.py:again`). Open option 3a.
+---
+Running again runs the run's skeleton over its cases in its one language, at the engine its endpoint serves now, as a
+run of its own rather than one of the start it was made in: with new seeds, or with its own, which, at a newer engine,
+measures what the engine's change did.
+```
 Running again draws new seeds, and runs the run's trial in its one language, as a run of its own rather than one of
 the start it was made in.
 
