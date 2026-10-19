@@ -37,7 +37,6 @@ def held(bench: Bench, name: str) -> RunStarted:
         ("appendix", {"whitespace with labs": ("completed", None)}),
     ],
 )
-@pytest.mark.slow
 def test_each_scripted_run_runs_as_its_script_answers(
     bench: Bench, name: str, outcomes: dict[str, tuple[str, str | None]]
 ) -> None:
@@ -50,7 +49,6 @@ def test_each_scripted_run_runs_as_its_script_answers(
 
 
 @pytest.mark.parametrize("template", ["ran"], indirect=True)
-@pytest.mark.slow
 def test_a_scripted_run_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
     started = held(bench, "judged")
 

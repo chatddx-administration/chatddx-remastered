@@ -461,7 +461,6 @@ def _expectation_of(rows: Rows, case: str, owner: int) -> int:
     return thread
 
 
-@pytest.mark.slow
 def test_a_person_takes_the_expectations_shared_with_them(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -658,7 +657,6 @@ def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
         _ = bench.again(bench.run(run), (9,))
 
 
-@pytest.mark.slow
 def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:

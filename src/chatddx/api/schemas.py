@@ -189,6 +189,19 @@ class Varying(Parts):
     seed: int | None = Field(None, description="drawn when not given")
 
 
+class Translating(Parts):
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
+    into: str = Field(description="the language it is translated into, such as 'sv'")
+    entries: dict[str, str] | None = Field(
+        None,
+        description="the translations into it as typed, each text and its "
+        + "translation: its translations' own unless given",
+    )
+
+
 type ComponentBody = Annotated[
     dict[str, JsonValue],
     Field(

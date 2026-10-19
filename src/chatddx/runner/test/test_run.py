@@ -748,7 +748,6 @@ def test_an_interrupt_after_a_tool_ran_keeps_its_round_without_a_call(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_an_interrupt_inside_a_tool_records_it_as_stopped(
     conn: Connection,
     inventory: Inventory,
@@ -781,7 +780,6 @@ def test_an_interrupt_inside_a_tool_records_it_as_stopped(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:

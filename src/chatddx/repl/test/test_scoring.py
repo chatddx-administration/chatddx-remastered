@@ -100,7 +100,6 @@ def _dropped(bench: Bench, name: str) -> tuple[str, str]:
     return case, schema
 
 
-@pytest.mark.slow
 def test_take_takes_the_expectations_shared_for_the_cases_without_one_of_yours(
     bench: Bench, say: Say
 ):

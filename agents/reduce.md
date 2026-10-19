@@ -1,7 +1,7 @@
 ### Continuous surface reduction
 Solidified things still move, just under friction. Reduction is the tool to keep the surfaces in check.
 When asked to `reduce <thing>`:
-1. Map the surface by studying the thing's code and doc while ignoring other things and the things history.
+1. Map the surface by studying the thing's code and doc while ignoring other things and the thing's history.
 2. Deliniate its responsibility, identify:
     - does it take responsibility it shouldn't?
     - does it not take responsibility it should?

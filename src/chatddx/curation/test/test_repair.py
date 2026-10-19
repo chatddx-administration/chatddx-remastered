@@ -71,7 +71,6 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
-@pytest.mark.slow
 def test_repair_leaves_other_people_s_families_alone(
     conn: Connection, alice: Person
 ) -> None:

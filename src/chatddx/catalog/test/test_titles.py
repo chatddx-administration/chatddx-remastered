@@ -15,7 +15,7 @@ from chatddx.factors.request import (
     ToolOutput,
     Toolset,
     Translations,
-    texts,
+    untranslated,
 )
 from chatddx.factors.scoring import ExpectationSchema
 from chatddx.factors.test.sample import generation_recipe, world
@@ -92,7 +92,7 @@ def test_recipes_are_described_by_every_part() -> None:
     _ = world(reg)
     title = titler(reg)
     recipe = generation_recipe(reg)
-    needed = [t for part in texts(recipe, reg.get).values() for t in part]
+    needed = untranslated(recipe, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     search = reg.add(
         Tool(
@@ -112,6 +112,19 @@ def test_recipes_are_described_by_every_part() -> None:
     )
     with_tools = recipe.model_copy(update={"toolset": tools})
     assert described(reg, with_tools) == english + " · with web_search" + on
+
+
+def test_a_translated_configuration_is_titled_with_its_language() -> None:
+    reg = Registry()
+    _ = world(reg)
+    rows = Memory(reg)
+    recipe = generation_recipe(reg)
+    needed = untranslated(recipe, reg.get, "sv")
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
+    bilingual = recipe.model_copy(update={"translations": swedish})
+    written = compiled(reg, bilingual).skeleton
+    sent = compiled(reg, bilingual, "sv").skeleton
+    assert titles.title_of(rows, sent) == titles.title_of(rows, written) + ", in sv"
 
 
 def test_forks_are_titled_by_what_they_change() -> None:

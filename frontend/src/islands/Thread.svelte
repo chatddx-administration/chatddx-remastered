@@ -3,13 +3,14 @@
 
   import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
+  import type { TranslationsEditing } from "$lib/translate/TranslationsEditor.svelte";
 
   export type Version = Schemas["Edit"] & { body: Record<string, unknown> };
   export type Held = {
     word: string;
     versions: Version[];
     titles: Record<string, string>;
-    editor: AppendixEditing | ExpectationEditing | null;
+    editor: AppendixEditing | ExpectationEditing | TranslationsEditing | null;
   };
 </script>
 
@@ -19,6 +20,7 @@
   import ExpectationEditor from "$lib/editors/ExpectationEditor.svelte";
   import Changed from "$lib/thread/Changed.svelte";
   import Holds from "$lib/thread/Holds.svelte";
+  import TranslationsEditor from "$lib/translate/TranslationsEditor.svelte";
 
   let { held }: { held: Held } = $props();
   const given = untrack(() => held);
@@ -82,6 +84,8 @@
       <AppendixEditor editor={given.editor} digest={head} />
     {:else if given.editor.kind === "expectation"}
       <ExpectationEditor editor={given.editor} digest={head} />
+    {:else if given.editor.kind === "translations"}
+      <TranslationsEditor editor={given.editor} digest={head} />
     {/if}
   </section>
 {/if}

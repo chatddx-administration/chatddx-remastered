@@ -224,7 +224,6 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
         _ = store.score(alone)
 
 
-@pytest.mark.slow
 def test_database_guards_the_ledger(conn: Connection) -> None:
     store, _, ids = stored_world(conn)
     run_id = uuid4()

@@ -52,6 +52,7 @@ PLACEHOLDERS: dict[SlotName, str] = {
     "completion": "‹completion›",
     "expectation": "‹expectation›",
 }
+MODEL = "‹model›"
 
 
 @dataclass(frozen=True)

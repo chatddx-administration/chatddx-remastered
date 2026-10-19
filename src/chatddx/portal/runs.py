@@ -51,7 +51,6 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     under_way = Queue(bench.conn).open(run) is not None
     shown = api.run(bench, run)
     skeleton = resolve(bench.store.get, shown.skeleton, Skeleton)
-    schema = skeleton.output_schema
     left = (
         [] if under_way or shown.finished_at is None else bench.unscored(bench.run(run))
     )
@@ -74,7 +73,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         titles=titles,
         engine=bench.title(shown.engine),
         configuration=_configuration(bench, shown.ran, shown.skeleton),
-        plan=isinstance(schema, dict) and schema.get("title") == PLAN,
+        plan=bench.answers(skeleton) == PLAN,
         scores=[(graded, _rows(graded)) for graded in shown.scores],
         said=_said,
         under_way=under_way,

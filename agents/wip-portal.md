@@ -27,7 +27,8 @@ it.
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
-   in `agents/wip-olofs-view.md`.
+   in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
+   translations, in `agents/wip-translators-view.md`.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -443,8 +444,9 @@ Phase 2, as takes:
 - **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
   titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
 - **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
-  Families and Endpoints, Library since phase 5, and Review (`agents/wip-olofs-view.md`). An island's imported
-  chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
+  Families and Endpoints, Library since phase 5, Review (`agents/wip-olofs-view.md`) and Translate
+  (`agents/wip-translators-view.md`). An island's imported chunks are preloaded
+  (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
   scripted runs each run once (`docs/scripted.md`). By hand on the sample World in Chromium,
   every page, with the plan drawn.
@@ -521,7 +523,7 @@ Phase 5, first half, as decided (see "Authoring"):
   (`test_browser.py`); vitest for the differences, the schema's form and where a save goes; and by hand on the sample
   World.
 
-Languages (docs/bench.md, "The languages it runs in"):
+Languages (docs/bench.md, "Translations"):
 - **The variation page** says, under its run line, where it runs ("A run per language: in en, 1 case; in sv, 3 cases,
   translated.") and lists the cases left out with why, from the look's `languages` and each family's language
   (`frontend/src/lib/variation/logic.ts:carried`); a family picked beyond the look's goes as its language's, said as
@@ -618,7 +620,7 @@ From "What the portal shows", not on the pages yet:
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
   have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers.
+  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2).
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case

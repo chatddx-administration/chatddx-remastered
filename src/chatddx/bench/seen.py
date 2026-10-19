@@ -14,6 +14,7 @@ from chatddx.factors.base import (
     Finding,
     StructuralError,
     iter_refs,
+    language_tag,
     resolve,
 )
 from chatddx.factors.bundle import Registry
@@ -23,6 +24,7 @@ from chatddx.factors.facts import Landing, ModelFacts
 from chatddx.factors.request import (
     RECIPE_PARTS,
     Compilation,
+    Output,
     Purpose,
     Recipe,
     Skeleton,
@@ -30,6 +32,8 @@ from chatddx.factors.request import (
     compile_request,
     compiled as compile_recipe,
     landings,
+    texts,
+    translated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
@@ -46,6 +50,7 @@ from chatddx.store.store import Connection
 from .errors import Ambiguous, NotFound
 from .model import (
     KINDS,
+    MODEL,
     PLACEHOLDERS,
     Carried,
     Endpoint,
@@ -326,11 +331,7 @@ class Seen:
             else recipe_language(self.rows, recipe)
         )
         held = self._languages_of(cases)
-        into = (
-            []
-            if recipe is None or recipe.translations is None
-            else list(resolve(self.store.get, recipe.translations, Translations).into)
-        )
+        into = [] if recipe is None else list(translated(recipe, self.store.get))
 
         def sent_in(language: str | None) -> str | None:
             if language is None or language == own:
@@ -367,9 +368,7 @@ class Seen:
     def request(
         self, variation: TriedVariation, engine: str | None, seed: int
     ) -> dict[str, JsonValue]:
-        model = (
-            "‹model›" if engine is None else served_model_name(engine, self.store.get)
-        )
+        model = MODEL if engine is None else served_model_name(engine, self.store.get)
         return self.skeleton(variation).render(
             model=model, seed=seed, fills=PLACEHOLDERS
         )
@@ -394,16 +393,16 @@ class Seen:
         if carried is None:
             first = next(iter(self.families()), None)
             if first is None:
-                return []
+                return missing(self, variation, ())
             registry, made = trial(self, skeleton, engine, [first.case], (seed,))
             if by_hand:
                 add_compilations(self, registry, skeleton.digest)
-            return lints(registry, self.facts, [made.digest])
+            found = lints(registry, self.facts, [made.digest])
+            return found + missing(self, variation, ())
         known = self._languages_of([c for each in carried for c in each.cases])
         found: list[Finding] = []
         for each in carried:
             if each.skeleton is None:
-                found.append(left_out(each, variation.configuration.digest))
                 continue
             registry, made = trial(self, each.skeleton, engine, each.cases, (seed,))
             if by_hand:
@@ -416,7 +415,41 @@ class Seen:
             for finding in lints(registry, self.facts, [made.digest], languages):
                 if finding not in found:
                     found.append(finding)
-        return found
+        return found + missing(self, variation, carried)
+
+    def translation(
+        self,
+        variation: TriedVariation,
+        into: str,
+        entries: Mapping[str, str] | None = None,
+    ) -> Skeleton:
+        recipe = variation.varied
+        if recipe is None:
+            raise ValueError(f"{variation.label} has no recipe to translate")
+        if language_tag(into) == recipe_language(self.rows, recipe):
+            raise ValueError(f"{variation.label} is written in {into}")
+        registry = self.store.load(s.digest for s in iter_refs(recipe))
+        if entries is None:
+            entries = translated(recipe, registry.get).get(into, {})
+        needed = {t for found in texts(recipe, registry.get).values() for t in found}
+        if not needed:
+            return self.skeleton(variation)
+        # Policy: a text without a translation is sent as written, where compiling
+        # refuses it.
+        filled = Translations(into={into: {t: entries.get(t) or t for t in needed}})
+        recipe = recipe.model_copy(update={"translations": registry.add(filled)})
+        return compile_request(
+            recipe, registry.get, compiled_with(self, variation), into
+        )
+
+    # Accommodating for a discovered fact: a schema's title is translated with its
+    # other texts.
+    def answers(self, skeleton: Skeleton) -> str | None:
+        for compilation in self.store.compilations(skeleton.digest):
+            if compilation.into is not None:
+                output = resolve(self.store.get, compilation.recipe.output, Output)
+                return _titled(output.json_schema)
+        return _titled(skeleton.output_schema)
 
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
         skeleton = self.skeleton(variation)
@@ -873,13 +906,39 @@ def check_expecting(
         )
 
 
-def left_out(carried: Carried, subject: str) -> Finding:
-    cases = (
-        "1 case is" if len(carried.cases) == 1 else f"{len(carried.cases)} cases are"
-    )
+def missing(
+    seen: Seen, variation: TriedVariation, carried: Sequence[Carried]
+) -> list[Finding]:
+    found = [
+        _missing(variation, each.refused, each)
+        for each in carried
+        if each.refused is not None
+    ]
+    recipe = variation.varied
+    if recipe is None:
+        return found
+    looked = {c.language for c in carried} | {recipe_language(seen.rows, recipe)}
+    for language in translated(recipe, seen.store.get):
+        if language in looked:
+            continue
+        try:
+            _ = seen.skeleton(variation, language)
+        except StructuralError as e:
+            found.append(_missing(variation, str(e)))
+    return found
+
+
+def _missing(
+    variation: TriedVariation, refused: str, carried: Carried | None = None
+) -> Finding:
+    subject = variation.configuration.digest
+    if carried is None:
+        return Finding(code="translations.missing", message=refused, subject=subject)
+    n = len(carried.cases)
+    cases = "1 case is" if n == 1 else f"{n} cases are"
     return Finding(
         code="translations.missing",
-        message=f"{cases} in {carried.language}, and left out: {carried.refused}",
+        message=f"{cases} in {carried.language}, and left out: {refused}",
         subject=subject,
     )
 

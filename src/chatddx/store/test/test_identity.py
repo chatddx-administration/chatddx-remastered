@@ -64,7 +64,6 @@ def test_sessions(conn: Connection) -> None:
     assert people.session(token) is None
 
 
-@pytest.mark.slow
 def test_session_tokens_are_not_stored(conn: Connection) -> None:
     people = People(conn)
     token = people.open_session(people.add("alice", "Alice").id)
@@ -111,7 +110,6 @@ def test_reader_sees_people_but_not_secrets(conn: Connection) -> None:
     assert privileges == (True, False, False, False)
 
 
-@pytest.mark.slow
 def test_roles_match_the_database_check(admin: Connection) -> None:
     row = admin.execute(
         """

@@ -161,7 +161,6 @@ def test_a_worker_wakes_to_a_queued_job_and_says_what_its_rows_don_t(
     assert Rows() in heard
 
 
-@pytest.mark.slow
 def test_a_halt_stops_the_run_and_leaves_it_unscored(
     conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
 ) -> None:

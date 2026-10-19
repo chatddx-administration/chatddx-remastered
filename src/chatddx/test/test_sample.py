@@ -71,7 +71,6 @@ def test_the_sample_s_texts_are_english_and_translated_into_swedish() -> None:
     assert sample.untranslated == []
 
 
-@pytest.mark.slow
 def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
     sample = sample_plan()
     get = sample.registry.get
@@ -202,7 +201,6 @@ def template(sampled: Loaded) -> str:
     return sampled.name
 
 
-@pytest.mark.slow
 def test_the_sample_loads_with_its_world_s_fakes(
     conn: Connection, sampled: Loaded
 ) -> None:

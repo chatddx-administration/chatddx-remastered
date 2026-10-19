@@ -188,8 +188,8 @@ Finds:
 * ∟`Skeleton`
 
 Raises:
-1. `StructuralError`: "no translations into {into}" (through `_translations_into`)
-2. `StructuralError`: "no translation into {into} for {", ".join(repr(t) for t in sorted(missing))}"
+1. `StructuralError`: "no translations into {into}"
+2. `StructuralError`: "no translation into {into} for {listed}"
 3. `StructuralError`: "{prompt.purpose} prompt in a {recipe.purpose} recipe"
 4. `StructuralError`: "{name.replace('_', ' ')} is inserted in both the instructions and the prompt"
 5. `StructuralError`: "the answer tool {name!r} has the name of a tool in the toolset"
@@ -788,7 +788,7 @@ Raises:
 ## own_texts
 `src/chatddx/factors/request.py:own_texts`
 
-* `chunk: Component`
+* `chunk: Component | AppendixLayout`
 * `get: Resolver`
 * ∟`tuple[str, ...]`
 
@@ -1460,10 +1460,12 @@ Raises:
 * `get: Resolver`
 * ∟`list[str]`
 
-## Translate
-`src/chatddx/factors/request.py:Translate`
+## translated
+`src/chatddx/factors/request.py:translated`
 
-* `Translate = Callable[[str], str]`
+* `recipe: Recipe`
+* `get: Resolver`
+* ∟`dict[str, dict[str, str]]`
 
 ## Translations `(Component)`
 `src/chatddx/factors/request.py:Translations`
@@ -1502,6 +1504,14 @@ Raises:
 `src/chatddx/factors/engine.py:UNPINNED_FLAGS`
 
 * `UNPINNED_FLAGS = frozenset({"--config"})`
+
+## untranslated
+`src/chatddx/factors/request.py:untranslated`
+
+* `recipe: Recipe`
+* `get: Resolver`
+* `into: str`
+* ∟`tuple[str, ...]`
 
 ## Validators
 `src/chatddx/factors/lint.py:Validators`

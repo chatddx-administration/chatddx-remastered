@@ -460,22 +460,29 @@ Raises:
 * `edit: Edit`
 * ∟`dict[int, str]`
 
-## left_out
-`src/chatddx/bench/seen.py:left_out`
-
-* `carried: Carried`
-* `subject: str`
-* ∟`Finding`
-
-Finds:
-1. `translations.missing`: "{cases} in {carried.language}, and left out: {carried.refused}"
-
 ## linted
 `src/chatddx/bench/seen.py:linted`
 
 * `seen: Seen`
 * `digest: str`
 * ∟`list[Finding]`
+
+## missing
+`src/chatddx/bench/seen.py:missing`
+
+* `seen: Seen`
+* `variation: TriedVariation`
+* `carried: Sequence[Carried]`
+* ∟`list[Finding]`
+
+Finds:
+1. `translations.missing`: refused (through `_missing`)
+2. `translations.missing`: "{cases} in {carried.language}, and left out: {refused}" (through `_missing`)
+
+## MODEL
+`src/chatddx/bench/model.py:MODEL`
+
+* `MODEL = "‹model›"`
 
 ## Moved `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Moved`
@@ -586,6 +593,12 @@ Raises:
 * `conn: Connection`
 * `person: Person`
 * `inventory: Inventory`
+
+## Seen.answers
+`src/chatddx/bench/seen.py:Seen.answers`
+
+* `skeleton: Skeleton`
+* ∟`str | None`
 
 ## Seen.at
 `src/chatddx/bench/seen.py:Seen.at`
@@ -816,6 +829,18 @@ Raises:
 
 * `digest: str`
 * ∟`str`
+
+## Seen.translation
+`src/chatddx/bench/seen.py:Seen.translation`
+
+* `variation: TriedVariation`
+* `into: str`
+* `entries: Mapping[str, str] | None = None`
+* ∟`Skeleton`
+
+Raises:
+1. `ValueError`: "{variation.label} has no recipe to translate"
+2. `ValueError`: "{variation.label} is written in {into}"
 
 ## Seen.unscored
 `src/chatddx/bench/seen.py:Seen.unscored`

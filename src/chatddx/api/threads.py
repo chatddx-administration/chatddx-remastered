@@ -17,6 +17,7 @@ from chatddx.bench import (
     Written,
     word_of,
 )
+from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog import read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
@@ -28,7 +29,7 @@ from chatddx.factors.request import (
     Compilation,
     Purpose,
     Recipe,
-    Translations,
+    translated,
 )
 from chatddx.factors.trial import suggest_seeds
 
@@ -87,9 +88,7 @@ def _translated(bench: Bench, edit: catalog.Edit) -> list[str]:
     if edit.compilation is None:
         return []
     recipe = resolve(bench.store.get, edit.compilation, Compilation).recipe
-    if recipe.translations is None:
-        return []
-    return list(resolve(bench.store.get, recipe.translations, Translations).into)
+    return list(translated(recipe, bench.store.get))
 
 
 @router.get("/threads")
@@ -264,6 +263,16 @@ def variation(
         ],
         reach=[_reach_of(r) for r in bench.reach(varied, families)],
     )
+
+
+@router.post("/threads/{thread}/translation")
+def translation(
+    bench: BenchDep, thread: int, given: schemas.Translating
+) -> dict[str, JsonValue]:
+    with refused():
+        varied = bench.variation(thread, given.given(), given.head)
+        made = bench.translation(varied, given.into, given.entries)
+    return made.render(model=MODEL, seed=None, fills=PLACEHOLDERS)
 
 
 def made(

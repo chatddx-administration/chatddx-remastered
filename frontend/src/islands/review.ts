@@ -1,4 +1,5 @@
 import { mount } from "svelte";
+import { remembered } from "$lib/drawers";
 import AppendixEditor from "$lib/editors/AppendixEditor.svelte";
 import Answer from "$lib/review/Answer.svelte";
 import Expected from "$lib/review/Expected.svelte";
@@ -16,28 +17,13 @@ function unfolded(at: HTMLDetailsElement, body: HTMLElement, show: () => void): 
   at.addEventListener("toggle", opened);
 }
 
-// Convenience: kept per viewer, and the page works the same when storage is refused.
-function remembered(drawer: HTMLDetailsElement): void {
-  const key = `review.${drawer.dataset.drawer ?? ""}`;
-  try {
-    if (localStorage.getItem(key) === "open") drawer.open = true;
-  } catch {
-    return;
-  }
-  drawer.addEventListener("toggle", () => {
-    try {
-      localStorage.setItem(key, drawer.open ? "open" : "closed");
-    } catch {
-      /* storage refused */
-    }
-  });
-}
-
 const held = document.getElementById("review-props");
 if (held) {
   const review = JSON.parse(held.textContent ?? "null") as Review;
 
-  for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) remembered(drawer);
+  for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) {
+    remembered(drawer, "review");
+  }
   const record = document.querySelector<HTMLDetailsElement>('details[data-drawer="record"]');
   if (record && location.hash === "#record") {
     record.open = true;

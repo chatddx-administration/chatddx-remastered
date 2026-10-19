@@ -366,25 +366,11 @@ most tool rounds one item may take. Its guidance goes where the instructions or 
 instructions, following the output's guidance.
 
 ### Translations
-Principal author: researchers (translators).
-
-Translations map source texts to their translations, the way gettext does, into one language or several. For each
-language, each entry is a text exactly as a chunk holds it, whitespace included, and its translation. One chunk holds
-every language a configuration is translated into, so adding a language is a new version of it.
-
-A configuration is written in one language, its own, and its translations carry it into others. A recipe may name
-translations, and compiling it into one of their languages passes every text it holds through that language's
-entries: the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
-the descriptions of tools and of the answer function, the titles and descriptions in schemas, and the appendix
-layout. Compiled as written, the recipe leaves its translations unread. Cases aren't translated, appendices included.
-What defines the answer's structure, such as property names and allowed values, is not translated, so the answer's
-structure and its scoring don't change. A recipe without translations into the language, or a text without a
-translation there, fails the compilation, which lists every missing text: nothing is guessed, and languages never mix.
-
-Translations name the languages they translate into, as tags such as `sv` or `pt-BR`. A request's language is still
-implicit in its text, and no language tag reaches the model; the languages of the texts a configuration is written in
-are recorded in the catalog (docs/catalog.md, "Languages"). The skeleton holds the translated text, and its
-compilation keeps the recipe, which names the translations, and the language it was compiled into.
+A recipe's translations are a chunk of its own, `chunk.translations`, which docs/bench.md, "Translations", describes.
+Here they are what compiling into a language reads: `translated` gives what a recipe's translations hold, by language,
+and `untranslated` the texts of the recipe they leave without an entry in one, every text in a language they don't go
+into. Compiling into a language refuses one they don't go into, and one they leave a text untranslated in, listing
+every such text.
 
 ### Recipe and compilation
 Principal author: researchers.

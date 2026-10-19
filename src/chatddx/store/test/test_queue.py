@@ -188,7 +188,6 @@ def test_the_database_keeps_a_job_to_how_it_stands(
     assert row == (False,)
 
 
-@pytest.mark.slow
 def test_statuses_match_the_database_check(admin: Connection) -> None:
     found = [
         str(d)

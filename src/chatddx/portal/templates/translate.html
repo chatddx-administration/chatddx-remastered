@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "macros.html" import drawer, opened, pane, rail, upright %}
+
+{% set link = "text-primary hover:underline" %}
+
+{% macro named(t) -%}
+{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
+{%- endmacro %}
+
+{% macro mark(language, missing) -%}
+<span class="inline-flex items-center gap-1 rounded-full px-1.5 text-[0.7rem] {{ 'bg-success/10 text-success' if not missing else 'bg-warning/10 text-warning' }}">{{ language }} {{ "✓" if not missing else missing }}<span class="sr-only">{{ ", complete" if not missing else " missing" }}</span></span>
+{%- endmacro %}
+
+{% block title %}{{ "Translate · " ~ named(configuration) if configuration else "Translate" }} · ChatDDX{% endblock %}
+{% block main %}
+{% if not configuration %}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <p class="text-muted-foreground">No configuration to translate.</p>
+</div>
+{% else %}
+{% set here = "/translate/" ~ configuration.id %}
+<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_auto]">
+
+  {% call drawer("configurations", "Configurations") %}
+  <summary class="{{ rail }}">
+    <span class="{{ upright }}">Configurations <span class="font-normal text-muted-foreground">{{ listed | length }}</span></span>
+  </summary>
+  <div class="{{ opened }} xl:w-64">
+    <ol class="space-y-0.5 text-sm">
+      {% for t, marks in listed %}
+      <li>
+        <a href="/translate/{{ t.id }}{{ '?into=' ~ into if into else '' }}"{% if t.id == configuration.id %} aria-current="page"{% endif %}
+           class="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if t.id == configuration.id else 'hover:bg-muted' }}">
+          <span class="min-w-0 flex-1 truncate">{{ named(t) }}</span>
+          {% for language, missing in marks.items() %}{{ mark(language, missing) }}{% endfor %}
+        </a>
+      </li>
+      {% else %}
+      <li class="text-muted-foreground">None.</li>
+      {% endfor %}
+    </ol>
+    <p class="mt-4 text-xs leading-relaxed text-muted-foreground">Each language its translations go into, or a case you see is in: ✓ when every text is translated, else how many aren't.</p>
+    {% if judges %}
+    <h2 class="mb-1 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Judges</h2>
+    <p class="mb-2 text-xs text-muted-foreground">A judge runs in no language, so its translations aren't used.</p>
+    <ol class="space-y-0.5 text-sm">
+      {% for t in judges %}
+      <li><a class="block truncate rounded-md px-2 py-1 hover:bg-muted" href="/configurations/{{ t.id }}">{{ named(t) }}</a></li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </div>
+  {% endcall %}
+
+  {% call pane("Texts") %}
+  <header class="mb-4">
+    <h1 class="text-xl font-bold tracking-tight">{{ named(configuration) }}</h1>
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      {% if recipe and recipe.purpose != "judge" %}
+      <span>{{ "written in " ~ own if own else "written in no language known: its texts' chunks have none, or not the same one" }}</span>
+      <span>·</span>
+      {% if translations %}
+      <span>translations: {% if translations.thread %}<a class="{{ link }}" href="/threads/{{ translations.thread }}">{{ translations.title }}</a>{% else %}{{ translations.title }}{% endif %}</span>
+      {% else %}
+      <span>no translations</span>
+      {% endif %}
+      <span>·</span>
+      {% endif %}
+      <a class="{{ link }}" href="/configurations/{{ configuration.id }}{{ '?head=' ~ head if head else '' }}">its page</a>
+    </p>
+    {% if recipe and recipe.purpose != "judge" %}
+    {% set new = into and into not in going and into not in cased %}
+    <nav class="mt-3 flex flex-wrap items-center gap-1 text-xs" aria-label="Languages">
+      <span class="mr-1 text-muted-foreground">Into</span>
+      {% for language in going + cased + ([into] if new else []) %}
+      {% set kind = "its translations go into it" if language in going else ("cases you see are in it" if language in cased else "a language it isn't translated into yet") %}
+      <a href="{{ here }}?into={{ language | urlencode }}{{ '&head=' ~ head if head else '' }}"{% if language == into %} aria-current="page"{% endif %} title="{{ kind }}"
+         class="rounded-full border px-2.5 py-0.5 {{ 'border-dashed' if language not in going else '' }} {{ 'border-primary/30 bg-primary/10 text-primary' if language == into else 'border-border text-muted-foreground hover:text-foreground' }}">{{ language }}<span class="sr-only">, {{ kind }}</span></a>
+      {% endfor %}
+      <form method="get" action="{{ here }}" class="ml-2 inline-flex items-center gap-1">
+        {% if head %}<input type="hidden" name="head" value="{{ head }}">{% endif %}
+        <label class="sr-only" for="another">Another language</label>
+        <input id="another" name="into" required placeholder="another, such as de" class="h-7 w-36 rounded-md border border-input bg-transparent px-2">
+        <button class="h-7 rounded-md border border-border px-2 hover:bg-muted">Translate into it</button>
+      </form>
+    </nav>
+    {% if going or cased %}<p class="mt-1.5 text-[0.7rem] text-muted-foreground">Solid, a language its translations go into; dashed, one only the cases you see are in.</p>{% endif %}
+    {% for said in regional %}<p class="mt-1.5 text-xs text-warning">{{ said }}</p>{% endfor %}
+    {% endif %}
+  </header>
+
+  {% if recipe is none %}
+  <p class="text-sm text-muted-foreground">It is written by hand: it has no recipe to translate.</p>
+  {% elif recipe.purpose == "judge" %}
+  <p class="text-sm text-muted-foreground">It is a judge's: a judge runs in no language, so its translations aren't used.</p>
+  {% elif not into %}
+  <p class="text-sm text-muted-foreground">Nothing to translate it into yet: it has no translations, and no case you see is in a language other than its own. Name one above to start.</p>
+  {% else %}
+  <div id="translate-texts">
+    <p class="text-sm text-muted-foreground">Its texts are shown and translated with scripts{% if translations and translations.thread %}; without them, <a class="{{ link }}" href="/threads/{{ translations.thread }}">its translations' page</a> lists their entries{% endif %}.</p>
+  </div>
+  {% endif %}
+  {% endcall %}
+
+  {% call drawer("request", "Request") %}
+  <summary class="{{ rail }}">
+    <span class="{{ upright }}">Request{% if into %} <span class="font-normal text-muted-foreground">into {{ into }}</span>{% endif %}</span>
+  </summary>
+  <div class="{{ opened }} xl:w-[40rem]">
+    {% if props %}
+    <div id="translate-request"><p class="text-sm text-muted-foreground">The request is shown with scripts.</p></div>
+    {% else %}
+    <p class="text-sm text-muted-foreground">Nothing translated.</p>
+    {% endif %}
+  </div>
+  {% endcall %}
+</div>
+{% if props %}<script type="application/json" id="translate-props">{{ props | tojson }}</script>{% endif %}
+{% endif %}
+{% endblock %}

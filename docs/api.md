@@ -78,10 +78,6 @@ replaced is compiled against the facts about its engine's model as they are stor
 one run moments later can differ if the configuration or the facts moved in between; each run records the skeleton it
 ran, and its compilation the facts.
 
-A configuration sent in another language than its own is its recipe compiled into that language, against the facts
-its own compilation names when nothing is replaced, so that the translation differs from it by its texts alone
-(`docs/bench.md`, "The languages it runs in"); its compilation is stored when a run is started on it.
-
 A look at a variation gives:
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
@@ -91,10 +87,7 @@ A look at a variation gives:
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   an endpoint, for the model.
-- the languages its cases are sent in, over the same cases: for each, its families, whether it is translated, and
-  the skeleton they are sent as, or why they can't be and are left out; those sent as written first. A judge
-  configuration, and a look over no case, has none. Translations that can't carry the variation into a case's
-  language don't refuse the look: they leave that language's cases out, and say why.
+- Translations (`docs/bench.md`, "Translations")
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
 (`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in the language each trial is
@@ -107,16 +100,19 @@ or a recommended sampling that the facts about the model refuse, or that a model
 out; an endpoint named that serves another model; or a parameter the request doesn't know, so that a misspelt part is
 refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
+## Translations
+See docs/bench.md, "Translations".
+
 ## Checking a component
 A component of a kind a person writes is checked as a write would store it, and nothing is written: its rules, its
 references, which must be stored, the rules that take several components, and a scorer's code and parameters. It
-gives back the digest it would have and what the lints say of it, or is refused as the write would be. An edge checks
+gives back the digest it would have and what the lints say of it, or is refused as the write would be. A client checks
 what a person types as they type it.
 
 ## Picking
 Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view
 takes (docs/factors.md, "View"), picks what it does in the document's order, or says why it doesn't read. Nothing is
-read from the store and nothing is written, so an edge shows what a view would pick from an expectation as it is
+read from the store and nothing is written, so a client shows what a view would pick from an expectation as it is
 typed, with the same selection the scoring pass makes.
 
 ## Forking and editing
@@ -187,7 +183,7 @@ A person is scored against their own expectations only, so they take the shared 
 ### Starting one
 Runs are started within their request, so whatever refuses them does so before anything is sent.
 
-A start is a run per language its cases are sent in (`docs/bench.md`, "The languages it runs in"): the cases in the
+A start is a run per language its cases are sent in (`docs/bench.md`, "Translations"): the cases in the
 configuration's own language, and those in none, as written, and those in each language its translations cover
 translated, each a run of its own. The cases of a language they can't carry it into are left out, and the answer says
 which and why; a start that can send none of its cases is refused.
@@ -315,7 +311,7 @@ of an expectation's data the request gives, the answer as a placeholder, and the
 which the scoring pass refuses a judge for reading. Nothing is sent and nothing stored, and nothing in it is sensitive.
 
 ## Sensitive content
-What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
+What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for clients
 can gate those few when clearance has one (agents/wip-clearance.md):
 - a family's vignette;
 - a run's items;

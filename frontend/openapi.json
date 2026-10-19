@@ -729,6 +729,70 @@
         }
       }
     },
+    "/api/threads/{thread}/translation": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Translation",
+        "operationId": "translation_api_threads__thread__translation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Translating"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "title": "Response Translation Api Threads  Thread  Translation Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/forks": {
       "post": {
         "tags": [
@@ -6284,6 +6348,78 @@
           "deleted"
         ],
         "title": "ThreadDetail"
+      },
+      "Translating": {
+        "properties": {
+          "instructions": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "few_shot": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "output": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "passthrough": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "toolset": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelDigest"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head",
+            "description": "the edit it varies, by id: the configuration's head unless given"
+          },
+          "into": {
+            "type": "string",
+            "title": "Into",
+            "description": "the language it is translated into, such as 'sv'"
+          },
+          "entries": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entries",
+            "description": "the translations into it as typed, each text and its translation: its translations' own unless given"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "into"
+        ],
+        "title": "Translating"
       },
       "Tried": {
         "properties": {

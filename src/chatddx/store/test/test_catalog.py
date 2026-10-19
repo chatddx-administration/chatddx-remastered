@@ -41,6 +41,7 @@ from chatddx.factors.request import (
     Slot,
     Translations,
     texts,
+    untranslated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scoring
 from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
@@ -200,7 +201,6 @@ def test_forks(conn: Connection) -> None:
         _ = catalog.create(ids["trial"], alice.id, forked_from=origin.id)
 
 
-@pytest.mark.slow
 def test_a_fork_s_changes_are_reapplied_on_request(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     rows = Rows(conn)
@@ -681,7 +681,6 @@ def test_families(conn: Connection) -> None:
     )
 
 
-@pytest.mark.slow
 def test_behind_looks_through_cases(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     rows = Rows(conn)
@@ -906,7 +905,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     in_language(base.output, "en")
     assert language_of(rows, plan.skeleton) == "en"
 
-    needed = [t for part in texts(base, reg.get).values() for t in part]
+    needed = untranslated(base, reg.get, "sv")
     swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     translated = compiled_recipe(
         store, reg, base.model_copy(update={"translations": swedish}), "sv"
@@ -915,6 +914,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     assert titles.title_of(rows, translated.skeleton).endswith(
         f" · translations into sv, {len(needed)} texts · "
         + titles.title_of(rows, base.model)
+        + ", in sv"
     )
     with pytest.raises(ValueError, match="translations components have no language"):
         in_language(swedish, "sv")

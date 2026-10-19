@@ -84,7 +84,6 @@ def scorer(plan: Plan, name: str) -> Scorer:
     ("recipe", "scored_by"),
     [(LINES, "lines"), (NATIVE, "answer"), (TOOL_ANSWER, "list")],
 )
-@pytest.mark.slow
 def test_a_run_is_scored_through_every_view_of_its_scorer(
     conn: Connection,
     inventory: Inventory,
@@ -114,7 +113,6 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_cases_without_an_expectation_get_no_value_and_are_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -218,7 +216,6 @@ def scoring_of(plan: Plan, made: Trial, by: Scorer) -> Scoring:
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_judged_view_is_scored_from_its_judge_s_calls(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -278,7 +275,6 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_judge_call_that_names_another_model_is_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -361,7 +357,6 @@ def test_a_judge_is_refused_before_anything_is_written(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_halt_during_a_judge_s_calls_keeps_the_seeds_it_has(
     conn: Connection,
     inventory: Inventory,

@@ -231,9 +231,9 @@ What a component holds is described by what tells it apart from others of its ki
 shown by their titles in turn.
 
 A configuration is described by its recipe's parts, translations, toolset and model included, the model last, when a
-compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq". A judge's recipe
-says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start
-of its digest: "generation configuration 1a2b3c".
+compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq"; one compiled into a
+language says so last: "…, in sv". A judge's recipe says so first. Without a stored compilation, as for a hand-written
+skeleton, it is shown by its purpose and the start of its digest: "generation configuration 1a2b3c".
 
 Each kind is described by:
 
@@ -246,7 +246,7 @@ Each kind is described by:
 | Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
 | Chunk (toolset) | Its tools. | `with web_search` |
 | Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
-| Translations chunk | The languages it translates into, and its size, the texts of the language with the most. | `translations into de, sv, 12 texts` |
+| Translations chunk | Languages codes, its size and the texts of the language with the most. | `translations into de, sv, 12 texts` |
 | Tool | Its name. | `web_search` |
 | Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
 | Expectation | Its case. | `expectation for Dutchfall11w` |

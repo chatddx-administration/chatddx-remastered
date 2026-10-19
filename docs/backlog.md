@@ -34,7 +34,7 @@ in agents/ tracks is that plan's, not this document's.
   - [Vignette identity: renames, repairs and rebinding](#vignette-identity-renames-repairs-and-rebinding)
   - [Titles](#titles)
   - [Edit history: who, when and why](#edit-history-who-when-and-why)
-  - [Following keeps a fork's renamed view](#following-keeps-a-forks-renamed-view)
+  - [Following a part that moved on](#following-a-part-that-moved-on)
   - [Languages](#languages)
   - [Translating JSON few-shot answers](#translating-json-few-shot-answers)
   - [Values the canonical form can't keep](#values-the-canonical-form-cant-keep)
@@ -445,13 +445,10 @@ or was renamed in a data set.
   names the new one.
 
 ### Titles
-Titles that take fewer queries, pair no versions, are short for a variation, and say a translated skeleton's language.
-That titles change with names and aren't unique is by design; an export freezes them ("Export and publication").
+Titles that take fewer queries, pair no versions, and are short for a variation.
 
 Decided: a skeleton compiled from a variation of a configuration is titled by the variation's label, as its run is.
 
-- **A translated skeleton's title doesn't say its language.** It has no thread, so it is titled by its compilation's
-  recipe, as the configuration's own skeleton is.
 - **Titles take a query for every reference they visit,** are rebuilt from names that change, and aren't unique.
 - Titles take a query for every reference they visit, are rebuilt from names that change, and aren't unique.
 - **An unnamed fork's title can pair two versions.** When the origin has no name and has moved on, the title describes
@@ -476,6 +473,14 @@ references.
 - **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
 - Why an edit was made isn't stored.
 
+### Following a part that moved on
+A configuration offered the new version of a chunk of its recipe, as it is offered its facts' and its model's.
+
+- **Only the facts and the model are followed.** The catalog lists every part of a configuration's recipe whose
+  thread has moved on (`src/chatddx/catalog/threads.py:behind`), but the bench follows `/facts` and `/recipe/model`
+  only (`src/chatddx/bench/following.py:_moved`), so a new version of a chunk, a translator's translations among them,
+  reaches a configuration only by a variation that picks it, saved.
+
 ### Following keeps a fork's renamed view
 Following an origin keeps the label of a view the fork renamed, though its scorer is the origin's.
 
@@ -483,8 +488,8 @@ Following an origin keeps the label of a view the fork renamed, though its score
   renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
 
 ### Languages
-Where a compiled skeleton's language comes from, said and kept; judges checked for one, as a notice; what a person may
-correct; a case of a regional tag of its configuration's language; and translations an edit detached.
+Where a compiled skeleton's language comes from, said and kept; judges checked for one, as a notice, and judged in one;
+what a person may correct; and a case of a regional tag of its configuration's language.
 
 Decided: a person may correct the language of a text only their own threads hold; anything else stays curation's.
 
@@ -500,9 +505,10 @@ Decided: a person may correct the language of a text only their own threads hold
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
 - A case tagged `en-GB` on an `en` configuration is left out as untranslatable (`Seen.languages` compares tags
   whole); before, it ran with `language.mixed`.
-- **Translations are keyed by their source text, for every text now.** Editing an instruction detaches its
-  translations, and the next start leaves those cases out, said in the look and in the answer. Manageable as is; a
-  lint on a configuration whose translations no longer cover a text of its own would close it.
+- **A judge's translations are never used.** A judge configuration runs in no language (docs/bench.md, "The languages
+  it runs in"), and nothing compiles one into a language, so the sample's Swedish of `output.verdict` and
+  `output.grade` is unreachable. A judge in a language would have its configuration compiled into it, and pin that
+  skeleton; it meets "Olof's work" (how a Swedish note is read against an English answer).
 
 ### Translating JSON few-shot answers
 A few-shot answer in JSON translated by its texts, rather than whole and by hand.
@@ -630,8 +636,8 @@ that sets a part is agents/wip-portal.md's ("Comparing variations").
 
 - **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
   cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
-  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance, the texts of
-  `lines-guided` translated into sv, the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
+  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance,
+  the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
   tested on synthetic registries, and two of the judge tests in src/chatddx/scorers/test/test_scorers.py use a
   synthetic judge.
 - **`set` and `--again` have no test**, and no scripted run sets a part.

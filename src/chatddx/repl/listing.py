@@ -10,8 +10,7 @@ from chatddx.bench import Bench
 from chatddx.catalog import Subject, read, threads, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import short
-from chatddx.factors.base import resolve
-from chatddx.factors.request import RECIPE_PARTS, Recipe, Translations
+from chatddx.factors.request import RECIPE_PARTS, Recipe, translated
 
 from .render import LABEL, REFUSED, plural
 from .shell import Repl
@@ -78,9 +77,7 @@ def _title(bench: Bench) -> Callable[[str | None], str]:
 
 
 def _translated(bench: Bench, recipe: Recipe | None) -> list[str]:
-    if recipe is None or recipe.translations is None:
-        return []
-    return list(resolve(bench.store.get, recipe.translations, Translations).into)
+    return [] if recipe is None else list(translated(recipe, bench.store.get))
 
 
 def _grouped(repl: Repl, made: list[_Made]) -> None:

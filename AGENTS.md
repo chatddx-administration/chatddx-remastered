@@ -26,7 +26,7 @@ This document contains project-wide instructions written by humans for agents.
 ## Committing
 Before commit:
 * Remove all docstrings and comments that don't pass doc rule 2 and 3 respectively.
-* run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark slow tests accordingly.
+* run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark the ones that stand out.
 * Typecheck and test frontend as normal.
 * After a change to the API, run:
   - `chatddx openapi > frontend/openapi.json`
@@ -34,19 +34,28 @@ Before commit:
 
 ## Development stages
 
-1. Felt - Not mentioned anywhere but still present somehow
+A thing under development is in one of the following stages:
+1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
-4. Named - `<thing>` now refers to it and can be grepped
-5. Itemized - Referred to as an item in `docs/backlog.md`
-6. Planned - Referred to as a plan in `agents/plan-<thing>.md`
+4. Named - Greppable and referred to as `<thing>`
+5. Itemized - Has one or more items in `docs/backlog.md`
+6. Planned - Has a concept of a plan in `agents/plan-<thing>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
 8. Solidified - Dependable and documented in `docs/<thing>.md` and `docs/reference/<thing>.md`
 9. Cemented - TBD
 10. Protected - TBD
 
-- Step 5 and above: docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at a time.
-- Step 8 and above: guarded by rule 1 and `chatddx reference`
+Things can bounce around freely across these stages but is only in one stage at once.
+Docs are never edited and reworked in the same commit: Move verbatim, commit,
+then edit or insert suggestions if permitted.
+
+### Step 5 and above
+docs *move*: backlog -> plan -> wip -> doc
+A thing is never explained in more than one doc at a time.
+
+### Step 8 and above
+Guarded by rule 1 and `chatddx reference`
 
 ## Documentation rules
 
@@ -54,6 +63,9 @@ Before commit:
 In all docs except `agents/*`, agents are only allowed to insert suggestions.
 `docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `<settings.REFERENCE_TAG>: ADD`,
 `REPLACE` or `REMOVE` in the template below, above each change in the code's public names, and a human applies it.
+
+Verbatim moves as a consequence of a stage change ("Development stages") are allowed, the rules at the destination
+applies afterwards.
 
 A suggestion is inserted as a fenced code-block immediately above the subject to change.
 The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.

@@ -10,7 +10,6 @@ from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 
 
-@pytest.mark.slow
 def test_the_catalog_refuses_a_person_a_second_expectation_of_a_case(
     conn: Connection,
 ) -> None:

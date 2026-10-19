@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from pydantic import JsonValue, ValidationError
 
-from chatddx.factors.base import Code, Component, StructuralError, language_tag, resolve
+from chatddx.factors.base import Code, Component, StructuralError, language_tag
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     LocalEngine,
@@ -36,6 +36,7 @@ from chatddx.factors.request import (
     compiled,
     landings,
     own_texts,
+    translated,
 )
 from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
 from chatddx.factors.trial import CanarySet
@@ -294,9 +295,7 @@ def plan_factors(
                 layout = AppendixLayout.model_validate(raw.get("appendix_layout", {}))
             except ValidationError as e:
                 raise ValueError(f"recipe.{name}: {e}") from None
-            return {
-                t for t in (layout.before, layout.between, layout.after) if t.strip()
-            }
+            return set(own_texts(layout, plan.registry.get))
         if table not in TEXT_TABLES - {"translations"} and table != "recipe":
             raise ValueError(f"{record!r} names no record of texts")
         if (r := planned.get((table, name))) is None:
@@ -502,8 +501,8 @@ def plan_factors(
             plan.skipped.append(f"{what}: {e}, for {model.kind} {model.name}")
             return None
         skeleton, compilation = compiled(recipe, get, compiler, about)
-        if what.startswith("recipe ") and recipe.translations is not None:
-            for language in resolve(get, recipe.translations, Translations).into:
+        if what.startswith("recipe "):
+            for language in translated(recipe, get):
                 try:
                     _ = compile_request(recipe, get, about, language)
                 except StructuralError as e:
