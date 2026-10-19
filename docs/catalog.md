@@ -230,20 +230,10 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
-```
-AGENT: REPLACE
-A skeleton compiled into a language is now titled with it (src/chatddx/catalog/titles.py:_derive), as
-agents/wip-translators-view.md's step 4 brought over from docs/backlog.md, "Titles". Replaces the paragraph.
----
 A configuration is described by its recipe's parts, translations, toolset and model included, the model last, when a
 compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq"; one compiled into a
 language says so last: "…, in sv". A judge's recipe says so first. Without a stored compilation, as for a hand-written
 skeleton, it is shown by its purpose and the start of its digest: "generation configuration 1a2b3c".
-```
-A configuration is described by its recipe's parts, translations, toolset and model included, the model last, when a
-compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq". A judge's recipe
-says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start
-of its digest: "generation configuration 1a2b3c".
 
 Each kind is described by:
 
