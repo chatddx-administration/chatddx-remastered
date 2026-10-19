@@ -61,6 +61,7 @@ export async function saved(
   name: string,
   component: Component,
   views?: Labelled,
+  language?: string | null,
 ): Promise<Saved> {
   const at = {
     thread: editing.mode === "new" ? null : (editing.thread ?? 0),
@@ -68,6 +69,10 @@ export async function saved(
     mine: editing.mode === "edit",
     name: name.trim(),
   };
-  const got = await written(at, { component, ...(views ? { labels: { views } } : {}) });
+  const got = await written(at, {
+    component,
+    ...(views ? { labels: { views } } : {}),
+    ...(language ? { language } : {}),
+  });
   return "problem" in got ? got : { to: `/threads/${got.thread}`, thread: got.thread, cases: got.cases };
 }

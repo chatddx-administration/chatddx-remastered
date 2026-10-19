@@ -26,12 +26,24 @@ def configurations(
     request: Request, bench: BenchDep, purpose: Purpose = "generation"
 ) -> Response:
     found = api.threads(bench, "configuration", purpose=purpose)
+    endpoints = api_world.endpoints(bench)
+    props: dict[str, Any] = {
+        "purpose": purpose,
+        "me": bench.person.login,
+        "optional": list(OPTIONAL_PARTS),
+        "choices": {
+            p: [t.model_dump(mode="json") for t in _choices(bench, p, endpoints)]
+            for p in RECIPE_PARTS
+        },
+    }
     return page(
         request,
         "configurations.html",
         person=bench.person,
         configurations=sorted(found, key=lambda t: (t.name or t.title).lower()),
         purpose=purpose,
+        props=props,
+        island="recipe",
     )
 
 

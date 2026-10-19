@@ -209,6 +209,13 @@ type ComponentBody = Annotated[
         + "body, kind included"
     ),
 ]
+type RecipeBody = Annotated[
+    dict[str, JsonValue],
+    Field(
+        description="a recipe's parts by digest, its purpose and its appendix layout, "
+        + "as a configuration's recipe reads"
+    ),
+]
 type Language = Annotated[
     str | None,
     Field(description="the language of the text the component holds, such as 'sv'"),

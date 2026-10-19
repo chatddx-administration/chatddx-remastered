@@ -8,12 +8,14 @@ from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
-from chatddx.factors.request import Translations
+from chatddx.factors.request import CHUNK_PARTS, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema
 
 from .pages import BenchDep, page, within
 
 WORDS = [w for w in KINDS if w != "configuration"]
+# Policy: A translations chunk is begun on /translate, beside what it translates.
+CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
 
 router = APIRouter()
 
@@ -39,8 +41,32 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
         word=kind,
         threads=_listed(bench, api.threads(bench, kind)),
         written=bool(set(KINDS[kind]) & WRITTEN),
+        begun=kind in CHUNKS,
         deleted=deleted,
         word_of=word_of,
+    )
+
+
+@router.get("/library/new")
+def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
+    if kind not in CHUNKS:
+        raise HTTPException(
+            404, f"no {kind} is begun here: the chunks are {', '.join(CHUNKS)}"
+        )
+    editor = {
+        "mode": "new",
+        "name": "",
+        "body": None,
+        "language": None,
+        **_chunk(bench, f"chunk.{kind}"),
+    }
+    return page(
+        request,
+        "begun.html",
+        person=bench.person,
+        word=kind,
+        editor=editor,
+        island="thread",
     )
 
 
@@ -124,8 +150,27 @@ def _editor(
             }
         case Translations():
             return {**given, "kind": "translations", "into": held.into}
+        case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
+            return {
+                **given,
+                **_chunk(bench, held.kind_name),
+                "body": held.model_dump(mode="json"),
+                "language": shown.language,
+            }
         case _:
             return None
+
+
+def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
+    tools: dict[str, str] = {}
+    if kind == "chunk.toolset":
+        for t in _listed(bench, api.threads(bench, "tool")):
+            _ = tools.setdefault(t.head.digest, t.name or t.title)
+    return {
+        "kind": "chunk",
+        "chunk": kind,
+        "tools": [{"digest": d, "name": name} for d, name in tools.items()],
+    }
 
 
 def _back(thread: int, next: str | None) -> RedirectResponse:

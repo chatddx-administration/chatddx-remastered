@@ -28,5 +28,10 @@
   <p class="text-sm text-muted-foreground">None.</p>
   {% endif %}
   {% endcall %}
+
+  {% call section("A new one, from a recipe", "new") %}
+  <div id="recipe-view"><p class="text-sm text-muted-foreground">Making one takes scripts.</p></div>
+  <script type="application/json" id="recipe-props">{{ props | tojson }}</script>
+  {% endcall %}
 </div>
 {% endblock %}

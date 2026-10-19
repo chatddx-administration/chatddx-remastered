@@ -3,6 +3,7 @@ from pydantic import JsonValue
 
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
 from chatddx.factors.kinds import BY_KIND
+from chatddx.factors.request import Recipe
 from chatddx.factors.select import select
 from chatddx.inventory import EndpointSpec
 from chatddx.scorers.scorer import NO_PARAMS
@@ -102,6 +103,16 @@ def kinds(_: BenchDep) -> list[schemas.Kind]:
 def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
     with refused(LookupError):
         checked = bench.check(component_of(given))
+    return schemas.Checked(
+        digest=checked.digest,
+        findings=[schemas.Finding.of(f) for f in checked.findings],
+    )
+
+
+@router.post("/recipes/check")
+def check_recipe(bench: BenchDep, given: schemas.RecipeBody) -> schemas.Checked:
+    with refused(LookupError):
+        checked = bench.check(Recipe.model_validate(given))
     return schemas.Checked(
         digest=checked.digest,
         findings=[schemas.Finding.of(f) for f in checked.findings],

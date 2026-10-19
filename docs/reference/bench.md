@@ -43,10 +43,23 @@ Raises:
 ## Bench.check
 `src/chatddx/bench/components.py:check`
 
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `component: Component | Recipe`
+```
 * `component: Component`
 * ∟`Checked`
 
 Raises:
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+1. `ValueError`: "{digest} isn't a stored {what}" (through `_stored_parts`)
+2. `ValueError`: "a person doesn't write {kind} components"
+```
 1. `ValueError`: "a person doesn't write {kind} components"
 
 ## Bench.edit
@@ -133,6 +146,12 @@ Raises:
 3. `ValueError`: "only a scorer's views and resources have labels" (through `_written`)
 4. `ValueError`: "{new.case} isn't a case of the family {old.case} is of" (through `_written`)
 5. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+6. `ValueError`: "{digest} isn't a stored {what}" (through `_stored_parts`)
+```
 6. `ValueError`: "{digest} isn't a stored {what}"
 
 ## Bench.proposal

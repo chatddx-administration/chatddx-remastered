@@ -1,4 +1,4 @@
-# Refine: plan
+# Refine: work in progress
 
 A page in the portal where a researcher evolves configurations: a configuration and its lineage, the variations being
 tried over it, run on the same cases at the same engine, and their scores side by side, so that the successful are
@@ -16,8 +16,8 @@ case (`agents/wip-olofs-view.md`) and `/translate` to a configuration's language
    from Refine. The order of the steps is suggested, and the agent's to change (see "Steps").
 3. **Decided: a set is held to one language**, so that a variation's start over it is one run, never a run per
    language (see "What the docs hold it to").
-4. **Nothing is built.** Step 1 is `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and
-   C2 ("Comparing variations").
+4. **Step 1 is built** (see "Built"); what it leaves is in "What step 1 leaves". Step 1 is `agents/wip-portal.md`'s 5c
+   ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
 
 ## What the researcher is here to do
 From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned"):
@@ -34,8 +34,8 @@ From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned
 | To do | Built below the page | In the portal now | Missing |
 |---|---|---|---|
 | Try a variation | the look, `GET /api/threads/{id}/variation` | `/configurations/{id}`, `Variation.svelte`: a picker per part, lints, reach, the request | nothing |
-| Hand-edit a chunk | new, fork, edit; `POST /api/components/check` | a chunk's thread page, read only; `TextSegments.svelte` for a judge's texts | an editor per part (step 1) |
-| A configuration from a recipe | `POST /api/threads` with `recipe` | none | a form (step 1) |
+| Hand-edit a chunk | new, fork, edit; `POST /api/components/check` | an editor per kind on its thread's page, and a new one from the Library (step 1) | nothing |
+| A configuration from a recipe | `POST /api/threads` with `recipe`; `POST /api/recipes/check` | a form on `/configurations` (step 1) | nothing |
 | A look over a chunk as typed | parts are taken by digest only; translations as typed are the one exception (`Translating.entries`, `POST /api/threads/{id}/translation`) | none | a part given whole (step 4) |
 | Run variations | `POST /api/runs`, the worker | one variation at a time, from its page | several, over one set (step 3) |
 | Read their scores | `GET /api/runs/{id}/scores`, a run at a time | a run's page | runs side by side (step 2) |
@@ -238,6 +238,49 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   with who wrote the version and when. Who changed an entry, a label or a language, and when, are shown where they
   are shown now.
 - **Tests**: the catalog's and the bench's for following a chunk and for notes; the API's; the page's.
+
+## Built
+
+### Step 1: the chunk editors, and a configuration from a recipe
+- **The API**, suggested to `docs/api.md` as an `AGENT` block: `POST /api/recipes/check`
+  (`src/chatddx/api/world.py:check_recipe`), a recipe checked as making a configuration of it would make it, with
+  nothing written: each part a stored chunk of that part and the model a stored model
+  (`src/chatddx/bench/components.py:_stored_parts`, which `new` shares), compiled against the facts about its model
+  now, giving the digest of the skeleton and its lints. `Bench.check` takes a recipe. A route of its own rather than
+  `POST /api/components/check` taking one, since a recipe has no kind to tell it from a component by.
+- **An editor per chunk kind** (`frontend/src/lib/editors/ChunkEditor.svelte`, a form per kind in
+  `frontend/src/lib/editors/chunk/`) on the thread's page of every chunk but a translations chunk
+  (`src/chatddx/portal/threads.py:_editor`, `_chunk`), as planned, with these differences:
+  - `TextSegments.svelte` is imported from `lib/scorer/`, where the judge's texts have it, rather than moved;
+  - a settings table, shared by passthrough and reasoning (`SettingsTable.svelte`), reads a value as JSON where it is
+    JSON and else as a text, and shows a text that would read as JSON quoted;
+  - a toolset's tools are offered one per digest, the person's own name first, since a giftbag's forks share their
+    origins' digests;
+  - **As JSON**, beside every form, edits the whole chunk, for what a form doesn't say.
+
+  A text kind's language is offered from the head's, and sent with the save (`writing.ts:saved` takes a language). A
+  number or a schema that doesn't read is sent as typed, and the check refuses it with why (`chunks.ts:numberOf`).
+- **A new chunk** from the Library: **Write a new one** on each chunk kind's tab but translations', to
+  `/library/new?kind=…` (`threads.py:beginning`, `templates/begun.html`), an empty form of the kind
+  (`chunks.ts:blank`), saved as a new thread.
+- **A new configuration from a recipe**, on `/configurations` for the purpose shown
+  (`frontend/src/islands/Recipe.svelte`, `frontend/src/lib/editors/recipe.ts`): a picker per part, each offered as the
+  variation's pickers offer them (`frontend/src/lib/variation/logic.ts:choicesOf`), the appendix layout folded, checked
+  once its required parts are picked, and saved by name, leading to its page.
+- **Tests**: `src/chatddx/api/test/test_kinds.py`, a recipe checked and refused;
+  `src/chatddx/portal/test/test_library.py`, a chunk's editor props, the Library's new chunk, and the recipe form's
+  props; vitest for `chunks.ts` and `recipe.ts`; `test_browser.py`, alice's prompt changed on its page, a sampling
+  chunk written from the Library, and a configuration made from a recipe of both; and by hand on the sample World in
+  Chromium, each kind's form holding its chunk as it is ("Nothing to save: it holds this already").
+
+#### What step 1 leaves
+- **A newline as a stop sequence** isn't typed in the sampling form, which takes one a line; **As JSON** takes it.
+- **An insert's before and after texts** aren't shown by the text editor, as for a judge's texts; **As JSON** shows
+  them.
+- **The recipe form's prompt picker** lists every prompt, whatever its purpose; the check refuses one made for the
+  other.
+- **A recipe that compiles to a skeleton a configuration holds already** isn't said so by the form.
+- **A toolset's tool at an earlier version** is kept and shown by its digest; the tools offered are the latest.
 
 ## Open
 - **Others' runs**: a person compares their own runs only. A collaborator's runs of a shared configuration aren't

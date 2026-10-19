@@ -27,7 +27,17 @@ from .variation import TriedVariation
 _UNLABELLED = "only a scorer's views and resources have labels"
 
 
-def check(seen: Seen, component: Component) -> Checked:
+def check(seen: Seen, component: Component | Recipe) -> Checked:
+    if isinstance(component, Recipe):
+        _stored_parts(seen, component)
+        registry, compilation = compiled(seen, component)
+        findings = lints(
+            registry,
+            seen.facts,
+            [compilation.skeleton],
+            partial(language_of, seen.rows),
+        )
+        return Checked(compilation.skeleton, findings)
     kind = component.kind_name
     if kind not in WRITTEN:
         raise ValueError(f"a person doesn't write {kind} components")
@@ -58,11 +68,7 @@ def new(
             seen, component, None, name=name, language=language, labels=labels
         )
     _configured(language, labels)
-    for part in RECIPE_PARTS:
-        digest = getattr(component, part)
-        if digest is not None and seen.rows.kind(digest) not in KINDS[part]:
-            what = "model" if part == "model" else f"chunk of {part}"
-            raise ValueError(f"{digest} isn't a stored {what}")
+    _stored_parts(seen, component)
     registry, compilation = compiled(seen, component)
     with seen.conn.transaction():
         _ = seen.store.add(registry, [compilation.digest])
@@ -73,6 +79,14 @@ def new(
             name=name,
         )
     return Written(edit, "created", linted(seen, compilation.skeleton))
+
+
+def _stored_parts(seen: Seen, recipe: Recipe) -> None:
+    for part in RECIPE_PARTS:
+        digest = getattr(recipe, part)
+        if digest is not None and seen.rows.kind(digest) not in KINDS[part]:
+            what = "model" if part == "model" else f"chunk of {part}"
+            raise ValueError(f"{digest} isn't a stored {what}")
 
 
 def fork(

@@ -123,6 +123,18 @@ Raises:
 
 * `bench: BenchDep`
 * `given: schemas.ComponentBody`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+* ∟`schemas.Checked`
+
+## check_recipe `@router.post("/recipes/check")`
+`src/chatddx/api/world.py:check_recipe`
+
+* `bench: BenchDep`
+* `given: schemas.RecipeBody`
+```
 * ∟`schemas.Checked`
 
 ## Checked `(_Schema)`
@@ -1000,6 +1012,16 @@ Raises:
 * `missing: list[int]`
 * `choosing: list[int]`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## RecipeBody
+`src/chatddx/api/schemas.py:RecipeBody`
+
+* `RecipeBody`
+
+```
 ## refused `@contextmanager`
 `src/chatddx/api/state.py:refused`
 

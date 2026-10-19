@@ -623,8 +623,8 @@ From "What the portal shows", not on the pages yet:
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
   have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is
-  `agents/wip-refine.md`'s (step 1).
+  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is built by
+  `agents/wip-refine.md` (step 1).
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case

@@ -594,3 +594,61 @@ def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
     [swedish_cases] = [c for c in look["languages"] if c["language"] == "sv"]
     assert (swedish_cases["translated"], swedish_cases["refused"]) == (True, None)
     assert errors == []
+
+
+def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_configuration(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def mine(kind: str, name: str) -> dict[str, Any]:
+        query: dict[str, str | float | bool] = {"kind": kind, "name": name}
+        listed = page.request.get("/api/threads", params={**query, "owner": "alice"})
+        return listed.json()[0]
+
+    case = mine("prompt", "case")
+    _ = page.goto(f"/threads/{case['id']}")
+    edit = page.locator("#edit")
+    edit.get_by_label("Its text, text 1").fill("The case:\n")
+    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
+    expect(edit.get_by_text("Nothing to say of it.")).to_be_visible()
+    edit.get_by_role("button", name="Save").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    prompt = mine("prompt", "case")["head"]["digest"]
+    held = page.request.get(f"/api/components/{prompt}").json()["body"]
+    assert held["segments"] == [
+        "The case:\n",
+        {"slot": "vignette"},
+        {"slot": "appendices"},
+    ]
+
+    _ = page.goto("/library?kind=sampling")
+    page.get_by_role("link", name="Write a new one").click()
+    page.get_by_label("Start from the sampling").uncheck()
+    page.get_by_label("temperature").fill("0.3")
+    page.get_by_label("Name").fill("warm")
+    expect(page.get_by_text("Writes “warm”, a new thread of your own.")).to_be_visible()
+    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
+    warm = mine("sampling", "warm")["head"]["digest"]
+    assert (
+        page.request.get(f"/api/components/{warm}").json()["body"]["temperature"] == 0.3
+    )
+
+    _ = page.goto("/configurations")
+    made = page.get_by_role("form", name="A new configuration")
+    _ = made.get_by_label("prompt, required").select_option(prompt)
+    _ = made.get_by_label("output, required").select_option(label=LINES)
+    _ = made.get_by_label("sampling, required").select_option(warm)
+    model = _endpoint(page, QWEN)["serves"]
+    _ = made.get_by_label("model, required").select_option(model)
+    expect(made.get_by_text("It compiles to")).to_be_visible()
+    made.get_by_label("Name").fill("lines-warm")
+    made.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/configurations/\d+$"))
+    configuration = mine("configuration", "lines-warm")
+    recipe = page.request.get(f"/api/threads/{configuration['id']}").json()["recipe"]
+    assert (recipe["prompt"], recipe["sampling"]) == (prompt, warm)
+    assert errors == []

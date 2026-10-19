@@ -1631,6 +1631,60 @@
         ]
       }
     },
+    "/api/recipes/check": {
+      "post": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Check Recipe",
+        "operationId": "check_recipe_api_recipes_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object",
+                "title": "Given",
+                "description": "a recipe's parts by digest, its purpose and its appendix layout, as a configuration's recipe reads"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/scorer-code": {
       "get": {
         "tags": [
