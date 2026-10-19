@@ -1,13 +1,15 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { marked, missingOf, type Translating } from "./translate";
+  import type { Live } from "./live.svelte";
+  import { marked, type Translating } from "./translate";
 
-  let { translating }: { translating: Translating } = $props();
+  let { translating, live }: { translating: Translating; live: Live } = $props();
   const given = untrack(() => translating);
+  const now = untrack(() => live);
 
-  const missing = missingOf(given.texts);
+  const missing = $derived([...new Set(given.texts.filter((t) => !now.typed[t.text]).map((t) => t.text))]);
   const written = given.written.messages ?? [];
-  const sent = given.request.messages ?? [];
+  const sent = $derived(now.request.messages ?? []);
   function rest(request: Translating["request"]): string {
     const { messages: _, ...others } = request;
     return JSON.stringify(others, null, 2);
@@ -39,6 +41,6 @@
   <summary class="cursor-pointer text-xs text-muted-foreground">The rest of the request</summary>
   <div class="mt-2 grid grid-cols-2 gap-3">
     <pre class="overflow-x-auto rounded-lg bg-muted/60 p-2 font-mono text-[0.7rem] leading-relaxed">{rest(given.written)}</pre>
-    <pre class="overflow-x-auto rounded-lg bg-muted/60 p-2 font-mono text-[0.7rem] leading-relaxed">{rest(given.request)}</pre>
+    <pre class="overflow-x-auto rounded-lg bg-muted/60 p-2 font-mono text-[0.7rem] leading-relaxed">{rest(now.request)}</pre>
   </div>
 </details>

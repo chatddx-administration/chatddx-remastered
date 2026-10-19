@@ -34,9 +34,10 @@ def translate(
     varied = bench.variation(thread, None, head)
     recipe = varied.recipe
     families = {f.language for f in api_families.families(bench) if f.language}
+    shown = api.thread(bench, thread)
     context: dict[str, Any] = {
         "person": bench.person,
-        "configuration": api.thread(bench, thread),
+        "configuration": shown,
         "head": head,
         "listed": [
             (t, _marks(bench, t, families)) for t in _listed(bench, "generation")
@@ -65,6 +66,23 @@ def translate(
         "request": made.request,
         "bodies": _bodies(bench, recipe),
         "parts": _parts(bench, recipe),
+        "head": head,
+        "configuration": {
+            "thread": thread,
+            "head": varied.configuration.id,
+            "latest": varied.configuration.id == shown.head.id,
+            "mine": shown.owner == bench.person.login,
+            "owner": shown.owner,
+            "name": shown.name or shown.title,
+            "translations": recipe.translations,
+        },
+        "translations": None
+        if recipe.translations is None
+        else {
+            **_held(bench, recipe.translations),
+            "digest": recipe.translations,
+            "body": bench.store.get(recipe.translations).model_dump(mode="json"),
+        },
     }
     return page(
         request,
@@ -123,9 +141,21 @@ def _parts(bench: Bench, recipe: Recipe) -> dict[str, dict[str, Any]]:
 def _held(bench: Bench, digest: str) -> dict[str, Any]:
     held = bench.holder(digest)
     if held is None:
-        return {"title": bench.title(digest), "thread": None}
+        return {
+            "title": bench.title(digest),
+            "thread": None,
+            "head": None,
+            "mine": False,
+            "owner": None,
+        }
     edit, about = held
-    return {"title": about.name or bench.title(digest), "thread": edit.thread}
+    return {
+        "title": about.name or bench.title(digest),
+        "thread": edit.thread,
+        "head": edit.id,
+        "mine": about.owner == bench.person.id,
+        "owner": None if about.owner is None else bench.login(about.owner),
+    }
 
 
 def _translations(bench: Bench, recipe: Recipe) -> dict[str, Any] | None:

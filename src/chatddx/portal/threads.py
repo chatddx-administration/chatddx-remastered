@@ -8,6 +8,7 @@ from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
+from chatddx.factors.request import Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema
 
 from .pages import BenchDep, page, within
@@ -121,6 +122,8 @@ def _editor(
                 "json_schema": schema.json_schema,
                 "data": held.data,
             }
+        case Translations():
+            return {**given, "kind": "translations", "into": held.into}
         case _:
             return None
 

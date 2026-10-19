@@ -16,9 +16,9 @@ export type Texts = {
   parts: Record<"instructions" | "prompt" | "output", Chunk | null>;
 };
 export type Part = keyof Texts["parts"];
-type Written = { digest: string; thread: number; head: number } | { problem: string };
+export type Written = { digest: string; thread: number; head: number } | { problem: string };
 
-async function written(
+export async function written(
   at: { thread: number | null; head?: number; mine?: boolean; name: string },
   body: Record<string, unknown>,
 ): Promise<Written> {

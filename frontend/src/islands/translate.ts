@@ -2,6 +2,7 @@ import { mount } from "svelte";
 import { remembered } from "$lib/drawers";
 import Request from "$lib/translate/Request.svelte";
 import Texts from "$lib/translate/Texts.svelte";
+import { live } from "$lib/translate/live.svelte";
 import type { Translating } from "$lib/translate/translate";
 
 const held = document.getElementById("translate-props");
@@ -10,6 +11,7 @@ if (held) {
   for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) {
     remembered(drawer, "translate");
   }
+  const shared = live(translating);
   for (const [id, component] of [
     ["translate-texts", Texts],
     ["translate-request", Request],
@@ -17,6 +19,6 @@ if (held) {
     const target = document.getElementById(id);
     if (!target) continue;
     target.replaceChildren();
-    mount(component, { target, props: { translating } });
+    mount(component, { target, props: { translating, live: shared } });
   }
 }

@@ -525,3 +525,72 @@ def test_what_a_judge_is_asked_is_rewritten_and_asked_through_a_judge_of_one_s_o
         verdict["head"]["digest"]
     ] * 2
     assert errors == []
+
+
+def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def thread(kind: str, name: str) -> dict[str, Any]:
+        query: dict[str, str | float | bool] = {
+            "kind": kind,
+            "name": name,
+            "owner": "alice",
+        }
+        return page.request.get("/api/threads", params=query).json()[0]
+
+    clinician = thread("instructions", "clinician")
+    body = page.request.get(f"/api/components/{clinician['head']['digest']}").json()
+    text = body["body"]["text"]
+    text[0] = text[0].replace("your assessment.", "your assessment and plan.")
+    changed = {"head": clinician["head"]["id"], "component": body["body"]}
+    edited = page.request.post(
+        f"/api/threads/{clinician['id']}/edits", data={**changed, "language": "en"}
+    )
+    assert edited.status == 201, edited.json()
+    guided = thread("configuration", LINES_GUIDED)
+    parts = {"instructions": edited.json()["digest"]}
+    moved = page.request.post(
+        f"/api/threads/{guided['id']}/edits",
+        data={"head": guided["head"]["id"], "parts": parts},
+    )
+    assert moved.status == 201, moved.json()
+
+    _ = page.goto(f"/translate/{guided['id']}?into=sv")
+    expect(page.get_by_text("· 1 missing")).to_be_visible()
+    page.get_by_role("button", name="Start from its translation").click()
+    expect(
+        page.get_by_text("Started from a similar text's translation")
+    ).to_be_visible()
+    swedish = page.get_by_label("Its translation").first
+    expect(swedish).to_have_value(
+        "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning."
+    )
+    swedish.fill(
+        "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning "
+        + "och plan."
+    )
+    expect(page.get_by_text("· every text translated")).to_be_visible()
+    expect(page.get_by_text("Started from a similar text's translation")).to_have_count(
+        0
+    )
+    request = page.get_by_role("group", name="Request")
+    expect(request).to_contain_text("din bedömning och plan.")
+    expect(
+        page.get_by_text(
+            re.compile(r"^Saves .*guided.*, and a new version of your lines-guided")
+        )
+    ).to_be_visible()
+    with page.expect_navigation():
+        page.get_by_role("button", name="Save").click()
+    expect(page.get_by_text("· every text translated")).to_be_visible()
+    expect(page.get_by_text(re.compile(r"^Not used by it: 1,"))).to_be_visible()
+
+    look = page.request.get(
+        f"/api/threads/{guided['id']}/variation", params={"tag": "swedish"}
+    ).json()
+    [swedish_cases] = [c for c in look["languages"] if c["language"] == "sv"]
+    assert (swedish_cases["translated"], swedish_cases["refused"]) == (True, None)
+    assert errors == []

@@ -41,6 +41,7 @@ def listed(page: str, thread: int) -> str:
     return item.split("</a>", 1)[0]
 
 
+@pytest.mark.slow
 def test_translate_opens_the_person_s_first_configuration(signed: TestClient) -> None:
     found = signed.get(
         "/api/threads", params={"kind": "configuration", "owner": "alice"}
@@ -79,7 +80,7 @@ def test_a_text_without_a_translation_is_said_missing(signed: TestClient) -> Non
     [text] = props(page)["texts"]
 
     assert (text["part"], text["translation"]) == ("output", None)
-    assert "1 text missing" in page and "no translations" in page
+    assert "· 1 missing" in page and "no translations" in page
     assert "sv 1" in listed(page, lines["id"])
     assert escape(text["text"]) in props(page)["request"]["messages"][0]["content"]
 
@@ -123,3 +124,37 @@ def test_a_translation_into_its_own_language_or_no_tag_is_refused(
         got = signed.get(f"/translate/{guided['id']}", params={"into": into})
         assert got.status_code == 422
     assert signed.get("/translate/999999").status_code == 404
+
+
+@pytest.mark.slow
+def test_the_page_is_given_where_a_save_goes(signed: TestClient) -> None:
+    guided = configuration(signed, LINES_GUIDED)
+    held = props(shown(signed, f"/translate/{guided['id']}"))
+    given = held["configuration"]
+    assert (given["thread"], given["head"], given["latest"], given["mine"]) == (
+        guided["id"],
+        guided["head"]["id"],
+        True,
+        True,
+    )
+    detail = signed.get(f"/api/threads/{guided['id']}").json()
+    translations = held["translations"]
+    assert given["translations"] == translations["digest"]
+    assert translations["digest"] == detail["recipe"]["translations"]
+    assert translations["body"]["kind"] == "chunk.translations"
+    assert "sv" in translations["body"]["into"]
+
+
+@pytest.mark.slow
+def test_a_translations_thread_s_page_edits_its_entries(signed: TestClient) -> None:
+    query = {"kind": "translations", "owner": "alice"}
+    [guided] = signed.get("/api/threads", params=query).json()
+    page = shown(signed, f"/threads/{guided['id']}")
+    held = page.split('<script type="application/json" id="thread-props">', 1)[1]
+    editor = json.loads(held.split("</script>", 1)[0])["editor"]
+    body = signed.get(f"/api/components/{guided['head']['digest']}").json()["body"]
+    assert (editor["kind"], editor["mode"], editor["into"]) == (
+        "translations",
+        "edit",
+        body["into"],
+    )

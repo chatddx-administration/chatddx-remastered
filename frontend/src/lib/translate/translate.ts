@@ -1,17 +1,33 @@
+import { diffWords } from "diff";
 import type { Schemas } from "$lib/api/client";
+import type { Words } from "$lib/thread/diff";
 
+export type Entries = Record<string, string>;
 export type Body = { part: string; body: Record<string, unknown> };
-export type Part = { title: string; thread: number | null };
+export type Part = { title: string; thread: number | null; head: number | null; mine: boolean; owner: string | null };
 export type Request = Record<string, unknown> & { messages?: { role: string; content: string }[] };
+export type Held = Part & { digest: string; body: { kind: "chunk.translations"; into: Record<string, Entries> } };
+export type Configuration = {
+  thread: number;
+  head: number;
+  latest: boolean;
+  mine: boolean;
+  owner: string | null;
+  name: string;
+  translations: string | null;
+};
 export type Translating = {
   into: string;
   language: string | null;
   texts: Schemas["TranslatedText"][];
-  unused: Record<string, string>;
+  unused: Entries;
   written: Request;
   request: Request;
   bodies: Body[];
   parts: Record<string, Part>;
+  head: number | null;
+  configuration: Configuration;
+  translations: Held | null;
 };
 
 type Step = string | number;
@@ -141,4 +157,69 @@ export function marked(content: string, missing: string[]): Run[] {
 
 export function missingOf(texts: Schemas["TranslatedText"][]): string[] {
   return [...new Set(texts.filter((t) => t.translation === null).map((t) => t.text))];
+}
+
+export type Offer = { text: string; translation: string; words: Words };
+
+// Policy: an entry under half of whose words are the text's is too far off to start from.
+const NEAR = 0.5;
+
+export function closest(text: string, unused: Entries): Offer | null {
+  let best: (Offer & { score: number }) | null = null;
+  for (const [was, translation] of Object.entries(unused)) {
+    const parts = diffWords(was, text);
+    const kept = parts.filter((p) => !p.added && !p.removed).reduce((n, p) => n + p.value.length, 0);
+    const score = kept / Math.max(was.length, text.length, 1);
+    if (score >= NEAR && (best === null || score > best.score)) {
+      const words = parts.map((p) => ({ value: p.value, added: !!p.added, removed: !!p.removed }));
+      best = { text: was, translation, words, score };
+    }
+  }
+  return best && { text: best.text, translation: best.translation, words: best.words };
+}
+
+export function entriesOf(typed: Entries, kept: Entries): Entries {
+  const found: Entries = { ...kept };
+  for (const [text, translation] of Object.entries(typed)) {
+    if (translation) found[text] = translation;
+    else delete found[text];
+  }
+  return found;
+}
+
+export function translationsOf(held: Held | null, into: string, entries: Entries): Held["body"] | null {
+  const languages = { ...(held?.body.into ?? {}) };
+  if (Object.keys(entries).length) languages[into] = entries;
+  else delete languages[into];
+  return Object.keys(languages).length ? { kind: "chunk.translations", into: languages } : null;
+}
+
+function writes(at: { mine: boolean; owner: string | null }, name: string, latest = true): string {
+  if (at.mine && latest) return `a new version of your ${name}`;
+  return `a fork of ${at.owner ? `${at.owner}'s ` : ""}${name} as your own`;
+}
+
+export type Unchanged = { translations: boolean; configuration: boolean };
+
+export function savedTo(held: Held | null, configuration: Configuration, unchanged: Unchanged): string {
+  const said: string[] = [];
+  if (!unchanged.translations) {
+    said.push(held?.thread != null ? writes(held, held.title) : `new translations of your own, ${configuration.name}`);
+  }
+  if (!unchanged.configuration) {
+    const what = writes(configuration, configuration.name, configuration.latest);
+    said.push(unchanged.translations ? what : `${what}, holding them`);
+  }
+  return said.length ? `Saves ${said.join(", and ")}.` : "Nothing to save: it holds these already.";
+}
+
+export type Left = Record<string, string[]>;
+
+export function leftOut(into: Record<string, Entries>, left: Left): Record<string, Entries> {
+  const found: Record<string, Entries> = {};
+  for (const [language, entries] of Object.entries(into)) {
+    const kept = Object.entries(entries).filter(([text, t]) => t && !(left[language] ?? []).includes(text));
+    if (kept.length) found[language] = Object.fromEntries(kept);
+  }
+  return found;
 }

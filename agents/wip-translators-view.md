@@ -13,7 +13,7 @@ translations with a version of the configuration that holds them. It is to confi
    What is missing is a way to see which texts a configuration holds and which of them its translations leave out,
    an editor for a translations chunk (5c's, `agents/wip-portal.md`, "Authoring"), and the page around them.
 2. **Decided: the takes on T1 to T11** (see "The landscape"), and F1 (a) (see "Found on the way").
-3. **Steps 1 and 2 are built** (see "Built"); steps 3 and 4 are next (see "Steps").
+3. **Steps 1 to 3 are built** (see "Built"); step 4 is next (see "Steps").
 
 ## What the translator is here to do
 - **See what a configuration holds to translate**: its instructions, few-shot examples, prompt, the output's guidance
@@ -185,8 +185,8 @@ texts of `lines-guided` translated into sv, which step 1's tests read).
 1. **What a configuration is in a language**, built (see "Built"): the route of T6, the lint of T4, and F1.
 2. **The page, read only**, built (see "Built"): `/translate/{configuration}`, the configurations' drawer with their
    marks, the texts in their places, the unused entries, and the request both ways.
-3. **Writing**: the entries' editor, the closest unused entry offered, checked as typed, and saving as T5 (a); the
-   translations chunk's thread page uses the same editor.
+3. **Writing**, built (see "Built"): the entries' editor, the closest unused entry offered, checked as typed, and
+   saving as T5 (a); the translations chunk's thread page uses the same editor.
 4. **A new language**, the languages offered (T8), and a translated skeleton titled with its language.
 
 Tests, as the review's: the pages by `TestClient` on `ran`; the routes in the API's tests; vitest for the page's logic;
@@ -249,3 +249,36 @@ its instructions, carried over from its unused entry, saved, and the variation p
   `plan` shows `sv 34`.
 - **A chunk shared by several configurations**: what is unused is unused by the configuration shown, and may be another
   one's; the sample's `sample` shows 50 to `free-text-guided`, folded.
+
+### Step 3: writing
+- **The texts, edited in place** (`frontend/src/lib/translate/Texts.svelte`, a row each by `Entry.svelte`): each
+  translation a field that grows with what it holds, an empty one marked; and how many are missing, as typed.
+- **The closest unused entry** (T4 b, `translate.ts:closest`): a missing text is offered the unused entry of the text
+  most like it, at least half its words in common, with what differs word by word; starting from it fills the field and
+  says to check it, until the field is changed.
+- **Unused entries are kept** unless left out, each with **Leave it out**, as another configuration may use them.
+- **Checked as typed**, a moment after each change: the translations as they would be saved, by
+  `POST /api/components/check` (`translate.ts:entriesOf`, `translationsOf`: what is typed, the unused kept, and the
+  chunk's other languages as they are), and the request translated with what is typed, by
+  `POST /api/threads/{thread}/translation`, which the request drawer follows (`live.svelte.ts`).
+- **Saving** (T5 a, `frontend/src/lib/translate/saving.ts:saved`), by `rewriting.ts:written`, now shared: the
+  translations as a version of the person's own, a fork of another's, or a new thread named after the configuration
+  when none holds them; then the configuration holding them, as a version of the person's own at its latest, else a
+  fork from the edit shown; a part already held isn't written again. The line says where both go
+  (`translate.ts:savedTo`), and the page reloads into what was saved.
+- **A translations chunk's page** edits its entries, language by language, each kept or left out, checked as typed
+  and saved as any thread is (`frontend/src/lib/translate/TranslationsEditor.svelte`; `src/chatddx/portal/threads.py`).
+- **Tests**: `test_translating.py`, what the page and a translations thread's page are given to save with;
+  `translate.test.ts`, the closest entry, what is saved and where it goes; and `test_browser.py`, `lines-guided`'s
+  instructions edited, their Swedish started from the unused entry, changed, saved, and its Swedish cases sent
+  translated again.
+
+#### What step 3 leaves
+- **Saving is two writes, not one**: if the configuration's is refused after the translations', their version stays,
+  the person's own and unused, as a judge's texts do (`agents/wip-olofs-view.md`, "What step 6 leaves").
+- **A conflict is said, not resolved**: when a thread has moved on since the page loaded, saving is refused and what
+  was typed stays on the page, but nothing offers the version after the latest, as `Saving` does for one thread.
+- **A JSON few-shot answer** is one entry, edited as text: nothing checks yet that its keys and fixed values are its
+  source's (T9 a).
+- **A new language** is step 4's: the editor writes into the languages offered.
+
