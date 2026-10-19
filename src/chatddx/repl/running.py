@@ -5,7 +5,7 @@ from typing import Any, Self
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import Bench, Carried, Graded, Started, TriedVariation
+from chatddx.bench import Bench, Carried, Endpoint, Graded, Started, TriedVariation
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem, RunStarted
 from chatddx.runner import (
@@ -50,7 +50,7 @@ def seed(repl: Repl, value: str | None = None) -> None:
         repl.seed = held
 
     repl.console.print(f"seed: #{repl.seed}")
-    variation = repl.cell.variation
+    variation = repl.variation
 
     if variation is not None and repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
@@ -63,10 +63,11 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     if chosen is None or whole is None:
         return
 
-    variation, endpoint = whole
+    variation, at = whole
+    handle = repl.handle(at)
     bench = repl.bench
     family, case = bench.case_titled(name)
-    started = _started(repl, variation, endpoint, [case], chosen)
+    started = _started(repl, variation, at, [case], chosen)
 
     if started is None:
         return
@@ -76,7 +77,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     assert skeleton is not None
     shown = family.name if case == family.case else bench.title(case)
     sent = _sent_in(carried, False)
-    title = f"trial: {variation.label} × {endpoint} × {shown}{sent} (seed {chosen})"
+    title = f"trial: {variation.label} × {handle} × {shown}{sent} (seed {chosen})"
     repl.console.print(Text(title, style="bold"))
     transcript = Transcript(repl.console)
     ended: list[RunItem] = []
@@ -113,7 +114,8 @@ def tagged(repl: Repl, *tags: str) -> None:
     if whole is None:
         return
 
-    variation, endpoint = whole
+    variation, at = whole
+    title = f"trial: {variation.label} × {repl.handle(at)} × "
     bench = repl.bench
     families = bench.families(tags)
     any_of = " or ".join(tags)
@@ -122,7 +124,7 @@ def tagged(repl: Repl, *tags: str) -> None:
         repl.error(f"no case tagged {any_of} for {bench.person.login}")
         return
 
-    started = _started(repl, variation, endpoint, [f.case for f in families], repl.seed)
+    started = _started(repl, variation, at, [f.case for f in families], repl.seed)
 
     if started is None:
         return
@@ -133,7 +135,6 @@ def tagged(repl: Repl, *tags: str) -> None:
 
     for carried, running in started.runs:
         tagged_as = f"tagged {any_of}{_sent_in(carried, len(started.runs) > 1)}"
-        title = f"trial: {variation.label} × {endpoint} × "
         stopped = _tagged(
             repl, carried, running, names, width, stopped, title, tagged_as
         )
@@ -253,21 +254,21 @@ def _seed_of(repl: Repl, value: str) -> int | None:
     return int(value)
 
 
-def _whole(repl: Repl) -> tuple[TriedVariation, str] | None:
-    cell = repl.cell
-    if cell.variation is None:
-        repl.error("the cell has no configuration: use CONFIGURATION")
+def _whole(repl: Repl) -> tuple[TriedVariation, Endpoint] | None:
+    variation = repl.variation
+    if variation is None:
+        repl.error("the repl holds no configuration: use CONFIGURATION")
         return None
-    return cell.variation, repl.bench.at(cell.variation, cell.named).name
+    return variation, repl.bench.at(variation, model=repl.under)
 
 
 def _started(
-    repl: Repl, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
+    repl: Repl, variation: TriedVariation, at: Endpoint, cases: list[str], seed: int
 ) -> Started | None:
     if repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
     try:
-        return repl.bench.start(variation, endpoint, cases, (seed,))
+        return repl.bench.start(variation, at.name, cases, (seed,))
     except Refused as e:
         repl.error(f"refused: {e}")
         return None

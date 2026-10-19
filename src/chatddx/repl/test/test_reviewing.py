@@ -26,7 +26,7 @@ def test_runs_says_when_there_are_none(say: Say):
 @pytest.mark.slow
 def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     _ = say(
-        f"cell {LINES} {QWEN}",
+        f"use {LINES}",
         "run noted",
         f"use {NATIVE}",
         "run crlf",
@@ -47,7 +47,7 @@ def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_replay_shows_a_run_again_as_it_streamed(say: Say):
-    live = say(f"cell {LINES} {QWEN}", "run noted").splitlines()
+    live = say(f"use {LINES}", "run noted").splitlines()
     replayed = say("replay").splitlines()
 
     start = next(i for i, line in enumerate(live) if line.startswith("trial:"))
@@ -67,7 +67,7 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_replay_shows_a_run_of_several_cases_again_by_its_lines(say: Say):
-    _ = say(f"cell {NATIVE} {QWEN}", "run tag targets")
+    _ = say(f"use {NATIVE}", "run tag targets")
     targets = tagged("targets")
 
     replayed = say("replay")
@@ -80,7 +80,7 @@ def test_replay_shows_a_run_of_several_cases_again_by_its_lines(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted", "run crlf")
+    _ = say(f"use {LINES}", "run noted", "run crlf")
     first = bench.runs()[-1]
 
     assert "× noted (seed 7)" in say(f"replay {str(first.run)[:8]}")
@@ -92,7 +92,7 @@ def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
 def test_replay_says_when_the_request_would_render_otherwise_now(
     bench: Bench, world: Inventory, tmp_path: Path, say: Say
 ):
-    _ = say(f"cell {LINES} {QWEN}", "run noted")
+    _ = say(f"use {LINES}", "run noted")
     moved = tmp_path / "vignettes"
     _ = shutil.copytree(TEST / "vignettes", moved)
     _ = (moved / "noted.txt").write_text("another vignette")
@@ -125,7 +125,7 @@ def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted", "run noted 8")
+    _ = say(f"use {LINES}", "run noted", "run noted 8")
 
     written = say("show case noted")
 
@@ -142,7 +142,7 @@ def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_show_case_sums_up_only_its_own_items(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted", "run tag targets")
+    _ = say(f"use {LINES}", "run noted", "run tag targets")
 
     written = say("show case noted")
 
@@ -153,7 +153,7 @@ def test_show_case_sums_up_only_its_own_items(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_show_finds_the_runs_through_what_compiled_or_scored_them(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted")
+    _ = say(f"use {LINES}", "run noted")
 
     assert "1 run of yours with it" in say("show output")
     assert "1 run of yours with it" in say("show prompt case")
@@ -211,7 +211,7 @@ def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_run_of_several_cases_is_replayed_and_tabled_by_case(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run tag targets")
+    _ = say(f"use {LINES}", "run tag targets")
 
     written = say("replay").splitlines()
 

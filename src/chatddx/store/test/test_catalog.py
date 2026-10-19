@@ -703,6 +703,7 @@ def test_behind_looks_through_cases(conn: Connection) -> None:
     ]
 
 
+@pytest.mark.slow
 def test_renamed_vignettes_are_repaired(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     rows = Rows(conn)

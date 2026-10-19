@@ -234,9 +234,9 @@ endpoints, and Refine's set in those terms.
   under the handle, accessible.
 - **`/runs/compare`**: runs show their handle; runs under one handle on different engines are said to be grouped
   under it rather than like for like.
-- **Kept**: the repl and scripted runs name endpoints, as they are developers' and the fake's (`docs/repl.md`,
-  `docs/scripted.md`). A person's judge picks a handle and pins its latest engine, until "Judges name a model"
-  (`docs/backlog.md`) changes the judge's kind.
+- **Kept**: scripted runs name endpoints, as they are the fake's (`docs/scripted.md`); the repl was kept so too, and
+  then brought to handles (see "Built", step 2b). A person's judge picks a handle and pins its latest engine, until
+  "Judges name a model" (`docs/backlog.md`) changes the judge's kind.
 - **Tests**: the inventory check's finding; loading by handle; the bench's resolving, refusals and running again;
   the API's look, start, runs and models; the portal's pages; the import's naming; vitest for the variation page's
   logic without endpoints.
@@ -412,12 +412,20 @@ behind one `said`; a column that can't be worked out matched as any, finding not
 - **Tests**: `test_serving.py`, the check's finding; `test_judges.py`, `test_plan.py`, judges and configurations by
   handle; `test_o11n.py`, a handle on two hosts; `test_seen.py`, running again; `test_world.py`, the handles and a
   shared model's; the API's, the portal's and the repl's tests without endpoints; vitest for the variation's address.
+- **The repl**, after step 2b (`src/chatddx/repl/`), suggested to `docs/repl.md` as `AGENT` blocks: the cell is
+  dropped. The shell holds a variation (`Repl.variation`) that runs under its model's handle, at the endpoint the
+  handle resolves to, and `under MODEL`, the API's `under`, names the handle a hand-written configuration runs under
+  (`Repl.under`), kept while hand-written configurations are used. `on` and `cell` are gone, so the model changes by
+  `set model` only, which compiles first and refuses a model that refuses a pick. A change says
+  `variation: LABEL × HANDLE`, or why it can't run, and lints only what can run; the prompt reads nothing from the
+  store; runs are titled by handle, as `Seen.described` titles them; `reasoning` heads each model by the handles served
+  under it. The test that held every package but the repl to the word "cell" went with it. Tests:
+  `src/chatddx/repl/test/`, a hand-written configuration run under a handle among them.
 
 #### What step 2b leaves
 - **A person's judge pins an engine**, the handle's latest when it is written, until "Judges name a model"
   (`docs/backlog.md`) changes the judge's kind.
-- **The repl and scripted runs** name endpoints; the repl's cell shows its endpoint while its runs are described by
-  their handles.
+- **Scripted runs** name endpoints.
 - **A retired handle reads as ops' error**: no endpoint serving its weights is said alike either way.
 - **A set over several languages** is neither said nor refused: its columns' runs in different languages share no
   items, which the comparison's items show; step 3 refuses a start over it.

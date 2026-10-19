@@ -3,17 +3,29 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.repl.test.helpers import Say, line_of, pattern, row, tagged, targets_of
+from chatddx.inventory import Inventory
+from chatddx.repl.test.helpers import (
+    Say,
+    by_hand,
+    cells,
+    line_of,
+    pattern,
+    row,
+    tagged,
+    targets_of,
+)
 from chatddx.store import Catalog
 from chatddx.test.world import (
     CASES,
-    GPT_OSS,
+    GPT_OSS_ARTIFACT,
     LINES,
     LINES_GUIDED,
-    MISTRAL,
+    MISTRAL_ARTIFACT,
     MISTRAL_MODEL,
     NATIVE,
     QWEN,
+    QWEN_ARTIFACT,
+    QWEN_BARE_ARTIFACT,
     QWEN_MODEL,
     TEST,
 )
@@ -29,6 +41,7 @@ INTENTS = [
     "xhigh",
     "budget",
 ]
+HANDLES = (QWEN_ARTIFACT, QWEN_BARE_ARTIFACT, GPT_OSS_ARTIFACT, MISTRAL_ARTIFACT)
 
 
 def row_names(table: str) -> list[str]:
@@ -40,16 +53,17 @@ def row_names(table: str) -> list[str]:
     return [cell.removeprefix("▸ ") for cell in cells if cell]
 
 
-def test_show_needs_something_in_the_cell(say: Say):
-    assert "the cell is empty: use CONFIGURATION, on ENDPOINT" in say("show")
+def test_show_needs_a_configuration(say: Say):
+    assert "the repl holds no configuration: use CONFIGURATION" in say("show")
 
 
 @pytest.mark.slow
 def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "show")
+    written = say(f"use {LINES}", "show")
     sv = [id for id, case in CASES.items() if case.language == "sv"]
 
-    assert f"cell: {LINES} × {QWEN}" in written
+    assert f"variation: {LINES} × {QWEN_ARTIFACT}" in written
+    assert f"{QWEN}  " in line_of(written, "endpoint")
     assert "recommended sampling, for reasoning on" in line_of(written, "sampling")
     assert '"temperature": 0.6' in written
     assert "text output" in line_of(written, "output")
@@ -66,7 +80,7 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
 
 @pytest.mark.slow
 def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "set reasoning off", "show")
+    written = say(f"use {LINES}", "set reasoning off", "show")
 
     assert f"off (set; {LINES} has —)" in written
     assert "reasoning off" in line_of(written, "reasoning")
@@ -74,14 +88,14 @@ def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
 
 
 def test_show_says_what_the_lints_say_of_the_pair(say: Say):
-    written = say(f"cell native-tools {QWEN}", "show")
+    written = say("use native-tools", "show")
 
     assert "[warning] vllm.native_tools_uncallable" in written
     assert "with lookup, broken" in line_of(written, "toolset")
 
 
 def test_show_leaves_the_output_s_schema_to_show_output(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}", "show")
+    written = say(f"use {NATIVE}", "show")
 
     assert "‹the output's schema›" in written
     assert "#/$defs/diagnosis" not in written
@@ -90,15 +104,15 @@ def test_show_leaves_the_output_s_schema_to_show_output(say: Say):
 
 @pytest.mark.slow
 def test_show_says_the_seed_isn_t_sent_when_sampling_is_greedy(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "set sampling greedy", "show")
+    written = say(f"use {LINES}", "set sampling greedy", "show")
 
     assert "greedy: the seed isn't sent" in written
     assert '"seed"' not in written
 
 
 @pytest.mark.slow
-def test_show_says_which_cases_each_scorer_can_hold_the_cell_to(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}", "show")
+def test_show_says_which_cases_each_scorer_can_hold_the_variation_to(say: Say):
+    written = say(f"use {NATIVE}", "show")
     without = [id for id in CASES if "dont_miss" not in targets_of(id)]
 
     assert f"of {len(CASES)} cases" in written
@@ -116,7 +130,7 @@ def test_show_says_which_cases_each_scorer_can_hold_the_cell_to(say: Say):
 
 @pytest.mark.slow
 def test_show_tag_counts_only_the_cases_with_any_of_the_tags(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}", "show tag targets")
+    written = say(f"use {NATIVE}", "show tag targets")
     targets = tagged("targets")
 
     assert f"of {len(targets)} cases tagged targets" in written
@@ -160,7 +174,7 @@ def test_show_case_says_when_scoring_has_expectations_to_choose_from(
 
     assert "has expectations to choose from" in line_of(written, "expectation")
 
-    written = say(f"cell {NATIVE} {QWEN}", "show tag targets")
+    written = say(f"use {NATIVE}", "show tag targets")
 
     assert "to choose from: noted" in row(written, "answer", "differential")
 
@@ -176,8 +190,8 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     assert "none of yours" in line_of(written, "expectation")
 
 
-def test_show_without_a_name_shows_the_cell_s(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "show output")
+def test_show_without_a_name_shows_the_variation_s(say: Say):
+    written = say(f"use {LINES}", "show output")
 
     assert "output lines  " in written
     assert "List the plausible diagnoses" in line_of(written, "guidance")
@@ -190,8 +204,8 @@ def test_show_without_a_name_shows_the_cell_s(say: Say):
     assert line_of(written, "cleared for").split()[2:] == ["test", "typed"]
 
 
-def test_show_configuration_says_when_the_cell_s_is_unsaved(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "set reasoning off", "show configuration")
+def test_show_configuration_says_when_the_variation_is_unsaved(say: Say):
+    written = say(f"use {LINES}", "set reasoning off", "show configuration")
 
     assert f"configuration {LINES}+reasoning=off, unsaved" in written
     assert "enable_thinking" in written
@@ -211,34 +225,63 @@ def test_show_writes_what_is_json_as_json(say: Say):
 
 def test_show_says_what_it_can_t_show(say: Say):
     assert "no kind 'frobnicate'" in say("show frobnicate")
-    assert "no case in the cell: show case NAME" in say("show case")
+    assert "the repl holds no case: show case NAME" in say("show case")
     assert "no case 'nope' for alice" in say("show case nope")
-    assert "the cell has no configuration: show output NAME" in say("show output")
-    assert "the cell has no configuration or endpoint: show engine NAME" in say(
-        "show engine"
+    assert "the repl holds no configuration: show output NAME" in say("show output")
+    assert "the repl holds no configuration: show engine NAME" in say("show engine")
+    assert "the repl holds no scorer: show scorer NAME" in say("show scorer")
+    assert f"{LINES} has no reasoning" in say(f"use {LINES}", "show reasoning")
+
+
+def test_show_says_why_a_variation_can_t_run_and_has_no_lints_then(
+    bench: Bench, say: Say
+):
+    by_hand(bench)
+    written = say("use by hand", "show", "show engine")
+
+    assert "by hand names no model: name the one to run it under" in written
+    assert ["lints"] not in cells(written)
+    assert "‹model›" in written
+
+    written = say(f"under {QWEN_ARTIFACT}", "show")
+
+    assert f"variation: by hand × {QWEN_ARTIFACT}" in written
+    assert ["lints"] in cells(written)
+
+
+def test_show_endpoint_says_when_its_engine_isn_t_stored(
+    bench: Bench, world: Inventory, say: Say
+):
+    ghost = world.endpoints[QWEN].model_copy(update={"engine": "sha256:" + "0" * 64})
+    bench.inventory = world.model_copy(
+        update={"endpoints": {**world.endpoints, "ghost@nowhere": ghost}}
     )
-    assert "no scorer in the cell: show scorer NAME" in say("show scorer")
-    assert "the cell has no reasoning" in say(f"cell {LINES} {QWEN}", "show reasoning")
+    written = say("show endpoint ghost@nowhere", f"use {LINES}")
+
+    assert (
+        "endpoint 'ghost@nowhere' serves engine 000000, which isn't in the store"
+        in written
+    )
+    assert f"variation: {LINES} × {QWEN_ARTIFACT}" in written
 
 
 def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     written = say("reasoning")
 
     assert row_names(written) == INTENTS
-    assert written.count(QWEN) == 1
-    assert written.count(GPT_OSS) == 1
-    assert written.count(MISTRAL) == 1
+    for handle in HANDLES:
+        assert written.count(f"┃ {handle} ") == 1
     assert "its nearest: always reasons" in written
     assert f"refused: {MISTRAL_MODEL} doesn't reason" in written
     assert "thinking_token_budget=N" in written
-    assert "the cell has no configuration asking for a level" in written
+    assert "no configuration in use asks for a level" in written
 
 
-def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "reasoning")
+def test_the_reasoning_table_marks_the_variation_s_level_and_handle(say: Say):
+    written = say(f"use {LINES}", "reasoning")
 
     assert "│ ▸ default" in written
-    assert f"▸ {QWEN}" in written
+    assert f"┃ ▸ {QWEN_ARTIFACT} " in written
 
     written = say("set reasoning off", "reasoning")
 
@@ -246,7 +289,7 @@ def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
     assert "│ ▸ default" not in written
 
 
-def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
+def test_scorers_say_whether_the_variation_s_output_offers_each_view(say: Say):
     written = say("scorers")
 
     assert "reciprocal_rank" in row(written, "answer")
@@ -254,7 +297,7 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     assert "verdict, judged by verdict" in row(written, "note-comment")
     assert "points, judged by graded" in row(written, "note-graded")
 
-    written = say(f"cell {LINES} {QWEN}", "scorers")
+    written = say(f"use {LINES}", "scorers")
 
     assert "doesn't offer it" in row(written, "answer")
     assert "offers it" in row(written, "lines")

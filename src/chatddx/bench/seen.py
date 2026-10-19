@@ -296,8 +296,8 @@ class Seen:
             return None, False
         return handle, self.latest(handle) == engine
 
-    # Policy: Only the repl and scripted runs name an endpoint; a researcher names a
-    # handle, and only for a hand-written configuration.
+    # Policy: Only scripted runs name an endpoint; a researcher names a handle, and only
+    # for a hand-written configuration.
     def at(
         self,
         variation: TriedVariation,

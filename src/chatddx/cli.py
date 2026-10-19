@@ -549,8 +549,8 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     shell = commands.add_parser(
         "repl",
-        help="the chatddx shell: choose a configuration and an endpoint, see what would "
-        + "be sent, and run and score it",
+        help="the chatddx shell: choose a configuration, see what would be sent, and "
+        + "run it under its model's handle and score it",
     )
     _ = shell.add_argument("login", help="who you are in the shell")
     _ = shell.add_argument(

@@ -394,6 +394,10 @@ check before the other has written.
 
 ## Terms
 
+```
+AGENT: remove
+The Cell row: the repl's cell is dropped, and the repl holds a variation, run under its model's handle.
+```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |

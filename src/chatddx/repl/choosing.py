@@ -1,48 +1,34 @@
 from rich.text import Text
 
-from chatddx.bench import TriedVariation
 from chatddx.catalog.titles import short
-from chatddx.factors.base import StructuralError
 from chatddx.factors.request import RECIPE_PARTS
 
-from .render import LATER
-from .shell import NONE, Cell, Repl
+from .shell import NONE, Repl
 
 
 def use(repl: Repl, name: str) -> None:
     variation = repl.bench.variation(name)
-    repl.cell = repl.cell.trying(_served(repl, repl.cell, variation))
-    _changed(repl)
+    repl.variation = variation
+    if variation.recipe is not None:
+        repl.under = None
+    repl.say_changed(variation)
 
 
-def on(repl: Repl, name: str) -> None:
-    cell = repl.cell.on(repl.bench.endpoint(name))
-    if cell.variation is not None:
-        cell = cell.trying(_served(repl, cell, cell.variation))
-    repl.cell = cell
-    _changed(repl)
+def under(repl: Repl, name: str) -> None:
+    variation = repl.variation
 
+    if variation is None:
+        repl.error("the repl holds no configuration to run under it: use CONFIGURATION")
+        return
 
-def cell(repl: Repl, configuration: str, endpoint: str) -> None:
-    on_it = Cell().on(repl.bench.endpoint(endpoint))
-    variation = repl.bench.variation(configuration)
-    repl.cell = on_it.trying(_served(repl, on_it, variation))
-    _changed(repl)
+    if variation.recipe is not None:
+        repl.error(
+            f"{variation.label} runs under its model's handle: set model {name} instead"
+        )
+        return
 
-
-def _served(repl: Repl, cell: Cell, variation: TriedVariation) -> TriedVariation:
-    if cell.endpoint is None or variation.recipe is None:
-        return variation
-    model = cell.endpoint.model
-    return variation.set("model", model.digest, repl.bench.title(model.digest))
-
-
-# The cell takes the model even where it refuses a pick, so that a set mends it.
-def _changed(repl: Repl) -> None:
-    try:
-        repl.say_changed()
-    except StructuralError as e:
-        repl.console.print(Text(f"{e}: set another in its place", style=LATER))
+    repl.under = repl.bench.handle_named(name).name
+    repl.say_changed(variation)
 
 
 def set_(repl: Repl, part: str, name: str) -> None:
@@ -50,34 +36,30 @@ def set_(repl: Repl, part: str, name: str) -> None:
         repl.error(f"no part '{part}': {', '.join(RECIPE_PARTS)}")
         return
 
-    variation = repl.cell.variation
+    variation = repl.variation
 
     if variation is None:
-        repl.error("the cell has no configuration to set it in: use CONFIGURATION")
+        repl.error("the repl holds no configuration to set it in: use CONFIGURATION")
         return
 
     digest = None if name == NONE else repl.bench.thread(name, part)[0].digest
     changed = variation.set(part, digest, name)
     _ = repl.bench.skeleton(changed)
-    cell = repl.cell.trying(changed)
-    at = cell.endpoint
-    if part == "model" and at is not None and at.model.digest != digest:
-        cell = cell.on(None)
-    repl.cell = cell
-    repl.say_changed()
+    repl.variation = changed
+    repl.say_changed(changed)
 
 
 def save(repl: Repl, name: str) -> None:
-    variation = repl.cell.variation
+    variation = repl.variation
 
     if variation is None:
-        repl.error("the cell has no configuration to save: use CONFIGURATION")
+        repl.error("the repl holds no configuration to save: use CONFIGURATION")
         return
 
     saved = repl.bench.save(variation, name)
-    repl.cell = repl.cell.trying(repl.bench.variation(saved.edit.thread))
+    repl.variation = repl.bench.variation(saved.edit.thread)
     repl.forget()
     repl.console.print(
         Text(f"saved as {name}: {saved.what} {short(saved.edit.digest)}")
     )
-    repl.say_cell()
+    _ = repl.say_variation(repl.variation)

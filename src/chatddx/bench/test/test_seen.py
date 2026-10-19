@@ -391,6 +391,7 @@ def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> 
         _ = bench.save(variation, "twice")
 
 
+@pytest.mark.slow
 def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     bench: Bench,
 ) -> None:

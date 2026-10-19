@@ -14,6 +14,12 @@ needs are there from the start rather than added later.
   no person: a component by its digest, the endpoints, and the models by their handles.
 - **What a person sees is a convenience, not protection.** It decides what is relevant to show them. Protection is
   clearance, which the runner's gate enforces, and the database's grants (agents/wip-clearance.md).
+```
+AGENT: replace
+The repl's cell is dropped, and the test that held every package but the repl to the word went with it.
+---
+- **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score.
+```
 - **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score. The
   repl's "cell" is the repl's alone, and a test holds every package but the repl to that.
 

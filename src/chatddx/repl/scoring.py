@@ -76,11 +76,11 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
 
 
 def scorers(repl: Repl) -> None:
-    bench, variation = repl.bench, repl.cell.variation
+    bench, variation = repl.bench, repl.variation
     schema = None if variation is None else bench.skeleton(variation).output_schema
     table = Table(box=None, header_style="bold")
 
-    for column in ("scorer", "view", "metric", "reads", "held to", "owner", "the cell"):
+    for column in ("scorer", "view", "metric", "reads", "held to", "owner", "in use"):
         table.add_column(column)
 
     for edit, about, scorer in sorted(bench.scorers(), key=lambda s: _named(bench, s)):

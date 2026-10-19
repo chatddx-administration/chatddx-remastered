@@ -18,6 +18,10 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * `repl: Repl`
 * ∟`None`
+```
+SIGN-OFF: REMOVE
+remove the 36 lines below
+```
 
 ## Cell `@dataclass(frozen=True)`
 `src/chatddx/repl/shell.py:Cell`
@@ -244,6 +248,10 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * `NONE = "none"`
 
+```
+SIGN-OFF: REMOVE
+remove the 7 lines below
+```
 ## on
 `src/chatddx/repl/choosing.py:on`
 
@@ -281,6 +289,13 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 `src/chatddx/repl/shell.py:Repl`
 
 * `bench: Bench`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `variation: TriedVariation | None`
+* `under: str | None`
+```
 * `cell: Cell`
 * `seed: int`
 * `failed: bool`
@@ -324,11 +339,26 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * ∟`None`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Repl.handle
+`src/chatddx/repl/shell.py:Repl.handle`
+
+* `at: Endpoint`
+* ∟`str`
+
+```
 ## Repl.prompt `@property`
 `src/chatddx/repl/shell.py:Repl.prompt`
 
 * ∟`str`
 
+```
+SIGN-OFF: REMOVE
+remove the 5 lines below
+```
 ## Repl.say_cell
 `src/chatddx/repl/shell.py:Repl.say_cell`
 
@@ -337,6 +367,12 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 ## Repl.say_changed
 `src/chatddx/repl/shell.py:Repl.say_changed`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+* `variation: TriedVariation`
+```
 * ∟`None`
 
 ## Repl.say_findings
@@ -346,9 +382,23 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 * `tally: bool = False`
 * ∟`None`
 
+```
+SIGN-OFF: REPLACE
+replace the 2 lines below with these
+---
+## Repl.say_variation
+`src/chatddx/repl/shell.py:Repl.say_variation`
+```
 ## Repl.where
 `src/chatddx/repl/shell.py:Repl.where`
 
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `variation: TriedVariation`
+* ∟`Endpoint | None`
+```
 * ∟`str | None`
 
 ## replay
@@ -608,6 +658,18 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 * `style: str = ""`
 * ∟`None`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## under
+`src/chatddx/repl/choosing.py:under`
+
+* `repl: Repl`
+* `name: str`
+* ∟`None`
+
+```
 ## UNTARGETED
 `src/chatddx/repl/render.py:UNTARGETED`
 
