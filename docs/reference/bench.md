@@ -414,21 +414,6 @@ Raises:
 * `view: int`
 * ∟`str`
 
-```
-SIGN-OFF: REMOVE
-remove the 11 lines below
-```
-## incomplete
-`src/chatddx/bench/seen.py:incomplete`
-
-* `seen: Seen`
-* `variation: TriedVariation`
-* `carried: Sequence[Carried]`
-* ∟`list[Finding]`
-
-Finds:
-1. `translations.incomplete`: "its translations into {language} leave {count} untranslated: {listed}"
-
 ## keep_compilation
 `src/chatddx/bench/configurations.py:keep_compilation`
 
@@ -475,30 +460,12 @@ Raises:
 * `edit: Edit`
 * ∟`dict[int, str]`
 
-```
-SIGN-OFF: REMOVE
-remove the 10 lines below
-```
-## left_out
-`src/chatddx/bench/seen.py:left_out`
-
-* `carried: Carried`
-* `subject: str`
-* ∟`Finding`
-
-Finds:
-1. `translations.missing`: "{cases} in {carried.language}, and left out: {carried.refused}"
-
 ## linted
 `src/chatddx/bench/seen.py:linted`
 
 * `seen: Seen`
 * `digest: str`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 ## missing
 `src/chatddx/bench/seen.py:missing`
@@ -511,7 +478,6 @@ add these lines here
 Finds:
 1. `translations.missing`: refused (through `_missing`)
 2. `translations.missing`: "{cases} in {carried.language}, and left out: {refused}" (through `_missing`)
-```
 
 ## MODEL
 `src/chatddx/bench/model.py:MODEL`
@@ -870,13 +836,7 @@ Raises:
 * `variation: TriedVariation`
 * `into: str`
 * `entries: Mapping[str, str] | None = None`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * ∟`Skeleton`
-```
-* ∟`Translation`
 
 Raises:
 1. `ValueError`: "{variation.label} has no recipe to translate"
@@ -919,18 +879,6 @@ Raises:
 * `kept: dict[str, int]`
 * `choosing: dict[str, list[int]]`
 * `missing: list[str]`
-```
-SIGN-OFF: REMOVE
-remove the 8 lines below
-```
-
-## Translation `@dataclass(frozen=True)`
-`src/chatddx/bench/model.py:Translation`
-
-* `language: str | None`
-* `texts: dict[str, list[tuple[str, str | None]]]`
-* `unused: dict[str, str]`
-* `skeleton: Skeleton`
 
 ## trial
 `src/chatddx/bench/seen.py:trial`

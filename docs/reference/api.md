@@ -1558,17 +1558,6 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
-```
-SIGN-OFF: REMOVE
-remove the 7 lines below
-```
-## TranslatedText `(_Schema)`
-`src/chatddx/api/schemas.py:TranslatedText`
-
-* `part: str`
-* `text: str`
-* `translation: str | None = Field(description="null while it has none")`
-
 ## Translating `(Parts)`
 `src/chatddx/api/schemas.py:Translating`
 
@@ -1576,33 +1565,13 @@ remove the 7 lines below
 * `into: str = Field(description="the language it is translated into, such as 'sv'")`
 * `entries: dict[str, str] | None = Field(…)`
 
-```
-SIGN-OFF: REMOVE
-remove the 10 lines below
-```
-## Translation `(_Schema)`
-`src/chatddx/api/schemas.py:Translation`
-
-* `label: str = Field(description="its name, and the chunks it replaces")`
-* `language: str | None = Field(…)`
-* `texts: list[TranslatedText] = Field(…)`
-* `unused: dict[str, str] = Field(…)`
-* `written: dict[str, JsonValue] = Field(description="its request as written")`
-* `request: dict[str, JsonValue] = Field(…)`
-
 ## translation `@router.post("/threads/{thread}/translation")`
 `src/chatddx/api/threads.py:translation`
 
 * `bench: BenchDep`
 * `thread: int`
 * `given: schemas.Translating`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * ∟`dict[str, JsonValue]`
-```
-* ∟`schemas.Translation`
 
 ## Tried `(_Schema)`
 `src/chatddx/api/schemas.py:Tried`
