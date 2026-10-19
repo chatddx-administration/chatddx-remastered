@@ -15,6 +15,10 @@ This document contains project-wide instructions written by humans for agents.
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 * `pnpm --dir frontend check` typechecks frontend
 
+## Errors
+Errors for developers and ops should crash raw at earliest convenience.
+Errors for clinicians and researchers should tell them what to do.
+
 ## Testing
 * Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s.
   `-n 4` (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
