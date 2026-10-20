@@ -262,6 +262,11 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
     (`src/chatddx/tools/web_search.py:23`). The NixOS module unsets them for its services
     (`agents/wip-deploy.md`, "The NixOS module"). Take: the client opens without proxies, rather than every deployment
     keeping them out of its environment.
+13. **Raw errors** go to stderr and the edge as they are, sensitive or not. Errors for developers and ops are
+    propagated raw (`agents/wip-error-handling.md`, "The model", class 2), and the user decided they go to the edge
+    anyway for now, though an engine's error, a judge's, or any exception raised while a vignette or a completion is
+    in hand may quote it. Untracked elsewhere: holding them back from the edge. The user suggests a `@sensitive`
+    decorator on every function that may handle sensitive content, so that its errors are handled otherwise.
 
 ## When to build it
 Nothing built so far waits on it:
