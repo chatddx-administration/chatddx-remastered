@@ -1,61 +1,77 @@
 # Agent instructions
+
 This document contains project-wide instructions written by humans for agents.
 
 ## Environment
-* `set -a; . ./.env-container; set +a`.
-* `store` uses PostgreSQL 16:
+
+- `set -a; . ./.env-container; set +a`.
+- `store` uses PostgreSQL 16:
   - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
   - pg_hba.conf: local all all peer map=chatddx
   - Setup database and roles with `src/chatddx/store/setup.sql`
-* Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
-* `pnpm --dir frontend build` builds frontend.
-* `chatddx.settings` is the project-wide source of truth.
+- Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is
+  needed.
+- `pnpm --dir frontend build` builds frontend.
+- `chatddx.settings` is the project-wide source of truth.
 
 ## Typechecking
-* Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
-* `pnpm --dir frontend check` typechecks frontend
+
+- Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
+- `pnpm --dir frontend check` typechecks frontend
 
 ## Errors
+
 There are four ways an error can announce itself, the guiding principles are:
+
 - fail asap
 - dodge handling
 
 ### 1. Crash at boot
+
 Runtime errors that can be known at boot should have a check that crashes boot when failing.
 
 ### 2. Runtime write to stderr and the edge
+
 Errors for developers and ops (including unexpected errors) writes raw templated messages to generic channels.
 
 ### 3. Part of the UX runtime
+
 Errors for clinicians and researchers should tell them what to do.
 
 ### 4. Silent
+
 Not a thing.
 
 ## Testing
-* Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s.
-  `-n 4` (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
-* Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
+
+- Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s. `-n 4`
+  (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
+- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
   `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
-* A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
-* `pnpm --dir frontend test` tests frontend
+- A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
+- `pnpm --dir frontend test` tests frontend
 
 ## Committing
+
 If change in docs (changes in docs/* or agents/*):
-* No checks needed
+
+- No checks needed
 
 If change in code
-* Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively.
-* run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark the ones that stand out.
-* Typecheck and test frontend as normal.
+
+- Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively.
+- run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark the ones that stand out.
+- Typecheck and test frontend as normal.
 
 After a change to any module's surface, run:
-  - `chatddx openapi > frontend/openapi.json`
-  - `chatddx reference`
+
+- `chatddx openapi > frontend/openapi.json`
+- `chatddx reference`
 
 ## Development stages
 
 A thing under development is in one of the following stages:
+
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
@@ -67,23 +83,26 @@ A thing under development is in one of the following stages:
 9. Cemented - TBD
 10. Protected - TBD
 
-Things can bounce around freely across these stages but is only in one stage at once.
-Docs are never edited and reworked in the same commit: Move verbatim, commit,
-then edit or insert suggestions if permitted.
+Things can bounce around freely across these stages but is only in one stage at once. Docs are never edited and reworked
+in the same commit: Move verbatim, commit, then edit or insert suggestions if permitted.
 
 ### Stage 5 and above
-docs *move* between backlog, plan, wip and doc, so a thing is never explained in more than one doc at a time.
+
+docs _move_ between backlog, plan, wip and doc, so a thing is never explained in more than one doc at a time.
 
 ### Stage 8 and above
+
 Guarded by rule 1 and `chatddx reference`.
 
 ## Documentation rules
 
 ### 1. Humans write, agents suggest.
+
 In all docs, except `agents/*` and stage change moves, agents are only allowed to insert suggestions.
 
-A suggestion is inserted as a fenced code-block immediately above the subject to change.
-The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
+A suggestion is inserted as a fenced code-block immediately above the subject to change. The backticks are part of the
+template, use 4 backticks as envelope if the suggestion contains a code-block.
+
 ```
 AGENT: <verb>
 <short explanation>
@@ -94,14 +113,16 @@ AGENT: <verb>
 `docs/reference/*` is generated by `chatddx reference` and works as a sign-off mechanism when a public surface changes.
 
 ### 2. Docs refer to the code, the code speaks for itself.
-The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop,
-describe the landscape and provide options.
+
+The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
+provide options.
 
 - The module-scoped documentation is in `docs/modules/<module>.md`.
 - The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
 - References from code to docs are never allowed.
 
 ### 3. When and how to write a comment.
+
 - A) Every line of comment imposes a readability tax.
 - B) A future reader can be saved work by knowing about non-evident details.
 - When B is considerable enough to offset A, a comment is justified.
@@ -134,11 +155,13 @@ def serving(
 ```
 
 ### 4. When and how to write a docstring
-Public solidified entry points may have a docstring that describes their cost and utility.
-The cost is the resources it invokes, locks it holds and complexity of its operations.
-The utility is derived from its responsibilty without any assumptions about the caller.
+
+Public solidified entry points may have a docstring that describes their cost and utility. The cost is the resources it
+invokes, locks it holds and complexity of its operations. The utility is derived from its responsibilty without any
+assumptions about the caller.
 
 It should be written as a continuation of its signature, raises and findings and only fill in the blanks:
+
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
 - When B is considerable enough to offset A, a docstring is justified.
@@ -146,9 +169,11 @@ It should be written as a continuation of its signature, raises and findings and
 Docstrings are reported by `chatddx reference` for sign-off.
 
 ### 5. Don't reference branch commits
+
 They'll be squashed.
 
 ### 6. Placeholder username
-* For placeholder usernames in docs and tests, use
+
+- For placeholder usernames in docs and tests, use
   1. alice, bob, carol...
   2. semantic names (archive, guest, nobody, other, collaborator-one, admin).
