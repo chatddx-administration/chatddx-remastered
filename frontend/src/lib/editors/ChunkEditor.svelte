@@ -1,15 +1,11 @@
 <script lang="ts" module>
   import type { Schemas } from "$lib/api/client";
   import type { Body } from "./chunks";
-  import type { Mode } from "./writing";
+  import type { Editing } from "./writing";
 
-  export type ChunkEditing = {
+  export type ChunkEditing = Editing & {
     kind: "chunk";
     chunk: string;
-    mode: Mode;
-    thread?: number;
-    head?: number;
-    name: string;
     body: Body | null;
     language: string | null;
     languaged: boolean;
@@ -30,9 +26,8 @@
   import SamplingForm from "./chunk/SamplingForm.svelte";
   import ToolsetForm from "./chunk/ToolsetForm.svelte";
   import { blank, jsonOf } from "./chunks";
-  import Findings from "./Findings.svelte";
   import Saving from "./Saving.svelte";
-  import { type Checked, checked, type Component } from "./writing";
+  import type { Component } from "./writing";
 
   let { editor, digest = null }: { editor: ChunkEditing; digest?: string | null } = $props();
   const given = untrack(() => editor);
@@ -41,8 +36,6 @@
   let language = $state(given.language ?? "");
   let asJson = $state(false);
   let json = $state("");
-  let found = $state<Checked | null>(null);
-  let asked = 0;
 
   const read = $derived(asJson ? jsonOf(json) : null);
   const forms: Record<string, typeof InstructionsForm> = {
@@ -77,16 +70,6 @@
   $effect(() => {
     if (asJson && read && "value" in read && typeof read.value === "object" && read.value !== null) set(read.value as Body);
   });
-
-  $effect(() => {
-    const sent = ++asked;
-    const now = JSON.parse(JSON.stringify(body)) as Component;
-    const timer = setTimeout(async () => {
-      const got = await checked(now);
-      if (sent === asked) found = got;
-    }, 350);
-    return () => clearTimeout(timer);
-  });
 </script>
 
 <div class="space-y-3">
@@ -113,12 +96,11 @@
       <input class="{FIELD} font-mono" bind:value={language} autocomplete="off" /></label
     >
   {/if}
-  <Findings {found} />
   <Saving
     editing={given}
     {component}
+    {digest}
     language={() => (given.languaged && language.trim() ? language.trim() : null)}
-    unchanged={found !== null && "digest" in found && found.digest === digest}
-    blocked={found === null || "problem" in found || (read !== null && "problem" in read)}
+    blocked={read !== null && "problem" in read}
   />
 </div>

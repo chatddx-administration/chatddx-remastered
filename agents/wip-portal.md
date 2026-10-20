@@ -238,12 +238,12 @@ share its pieces.
   (`POST /api/components/check`, its lints on the handle's latest engine) and saved as a version of the person's own
   or a fork, as every thread's editor saves. A judge asked through an earlier version of a configuration, or under
   weights no handle holds now, keeps that as a choice of its own, "as it is asked now" and "the weights it holds".
-  Weights behind their handle say "pick HANDLE to follow it", and a handle that doesn't resolve says why, as ops'
-  error, and to pick another; both from the server (`behind`, `problem`).
+  What refuses it as it is held, as weights behind their handle or a handle that doesn't resolve, is said as
+  `Seen.judged` says it, with "pick a model it can be asked under", until another model is picked (`problem`).
 - **Begun from the Library**: **Write a new one** under judges, `/library/new?kind=judge`, the same editor with
   nothing in it.
-- **Shared with Review**: the fields are `frontend/src/lib/scorer/JudgeFields.svelte`, which the composer's new judge
-  uses too, and what they offer comes from `src/chatddx/portal/judges.py:judge_choices`, the judge configurations
+- **Shared with Review**: the composer's new judge is this editor, begun in place and handed back to the view rather
+  than navigated to, and what it offers comes from `src/chatddx/portal/scoring.py:judge_choices`, the judge configurations
   the person sees with the weights each was made for, and the handles that resolve. Picking a configuration moves the
   model to the one it was made for, when it is offered, and a new judge starts there (`judging.ts:madeFor`).
 - **A scorer keeps the version it names**: the editor says that the scorers asking a judge keep asking the version
@@ -263,7 +263,8 @@ share its pieces.
   composes them: each view's label, what it reads of what is expected and of the answer, line by line or not, its
   metric, and, for a judged one, its judge, a new judge written in place, and its params. Checked as typed, its lints
   included, and saved with its labels as a version of the person's own or a fork; a change of labels alone is a new
-  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship has no editor.
+  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship is a developer's error and
+  crashes its page (`src/chatddx/portal/scoring.py:code_of`).
 - **Begun from the Library**: **Write a new one** under scorers, `/library/new?kind=scorer`, starting from the shipped
   code, the first expectation schema and one view.
 - **Shared with Review**: the views' form is `frontend/src/lib/scorer/ScorerViews.svelte`, which Review's composer
@@ -281,6 +282,23 @@ share its pieces.
 - **Selectors that filter a list by what is written in it**, as `notes where author is carol › comment`, are offered
   only beside an expectation that holds them; on a scorer's page they show as typed.
 - **A judge's texts** are changed beside a case, on the Review page, or on the judge configuration's own page.
+
+#### Reduced
+After step 2, by the user's pick of what steps 1 and 2 and the judges' handles had added (`agents/reduce.md`):
+- **Pruned**: a scorer of code that isn't shipped no longer hides its editor or the composer, but crashes, as a
+  developer's error (`code_of`, which Review's composer and views use too); the judge editor's `behind`, its hint
+  now `Seen.judged`'s refusal.
+- **Consolidated**: the check as typed is `Saving`'s, which shows its findings and works out what is unchanged
+  (`digest`, and `same` for the labels) and what blocks a save, in place of a copy per editor; the composer's new
+  judge is the judge editor, saved through `Saving` and `writing.ts:written` (`made`), so `JudgeForm` is gone; the
+  editors' props are `writing.ts:Editing` and theirs; `scoring.py`'s judges sorted by `own_first`, the titles no
+  longer merged with the judges' names on the server as the page merges them, and a holder's thread, version, owner
+  and name read once (`_holder`); the views' fields are `FIELD`; the judge fields' options are `judging.ts:Option`.
+- **Kept**: who is editing (`me`) stays given by each editor's props: given once by `_editor` it would be given by
+  the Library's beginning and Review's composer too, as many places as now.
+- **Left to decide**: the ops' errors met on the way from a judge to its engine, caught and said or swallowed in
+  `scoring.py:_judges`, `api/scores.py:judge_asked`, `seen.py:judging`, `_applies` and `unscored`, and in step 2b's
+  `latest`, `under`, `/api/models`, the look, Refine and the repl, against the error policy (`AGENTS.md`, "Errors").
 
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept

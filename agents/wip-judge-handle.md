@@ -41,7 +41,7 @@ Decided: judges name a handle, as the take moved here from the backlog has it (s
 - **Curation**: a data set's judge takes its handle's weights, refused as the World's when it names a model or an
   engine; `Plan.engines` keeps the engine each judge is linted on as the data set loads.
 - **Edges**: `POST /api/judges/asked` renders the handle's latest engine's name, else `‹model›`; the portal's judge
-  form sends the handle's weights (`frontend/src/lib/scorer/JudgeForm.svelte`); scripted runs start a fake at each
+  form sends the handle's weights (`frontend/src/lib/scorer/JudgeEditor.svelte`); scripted runs start a fake at each
   judge's handle's endpoint.
 - **Docs**: the reference's sign-off, and `AGENT` suggestions in `docs/factors.md`, `docs/facts.md`, `docs/api.md`,
   `docs/bench.md`, `docs/runner.md`, `docs/chatddx.md`, `docs/catalog.md` and `docs/inventory.md`.

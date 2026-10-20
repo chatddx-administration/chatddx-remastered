@@ -2,8 +2,9 @@
   import { type Snippet, untrack } from "svelte";
   import type { Schemas } from "$lib/api/client";
   import type { Schema } from "$lib/schema/form";
-  import JudgeForm, { type JudgeChoice } from "./JudgeForm.svelte";
-  import { type Judging, type Serving, startingParams, verdictAt } from "./judging";
+  import { FIELD } from "$lib/utils";
+  import JudgeEditor from "./JudgeEditor.svelte";
+  import { type JudgeChoice, type Judging, type Serving, startingParams, verdictAt } from "./judging";
   import type { ScorerView } from "./scorers";
   import type { Choice } from "./selectors";
   import SelectorPicker from "./SelectorPicker.svelte";
@@ -100,7 +101,7 @@
     <li class="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2.5">
       <div class="flex items-center gap-2">
         <input
-          class="h-8 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 font-medium"
+          class="{FIELD} min-w-0 flex-1 font-medium"
           aria-label="Its label"
           bind:value={labels[at]}
         />
@@ -132,7 +133,7 @@
           <span class="text-muted-foreground" aria-hidden="true">Compared by</span>
           <select
             aria-label="Compared by"
-            class="h-8 rounded-md border border-input bg-transparent px-2"
+            class={FIELD}
             title={metric?.measures ?? ""}
             value={view.metric}
             onchange={(e) => metricked(view, e.currentTarget.value)}
@@ -147,7 +148,7 @@
             <span class="text-muted-foreground" aria-hidden="true">Judge</span>
             <select
               aria-label="Judge"
-              class="h-8 max-w-56 rounded-md border border-input bg-transparent px-2"
+              class="{FIELD} max-w-56"
               value={writing === at ? "new" : (view.judge ?? "")}
               onchange={(e) => {
                 const picked = e.currentTarget.value;
@@ -183,7 +184,7 @@
               <input
                 type="number"
                 step={param.type === "integer" ? 1 : "any"}
-                class="h-8 w-20 rounded-md border border-input bg-transparent px-2"
+                class="{FIELD} w-20"
                 value={typeof view.params?.[name] === "number" ? view.params[name] : ""}
                 oninput={(e) => (view.params = { ...view.params, [name]: Number(e.currentTarget.value) })}
               />
@@ -193,17 +194,22 @@
         {@render inline?.(at)}
       </div>
       {#if writing === at}
-        <JudgeForm
-          {me}
-          {judging}
-          {models}
-          made={(j) => {
-            judges.push(j);
-            writing = null;
-            judged(view, j);
-          }}
-          left={() => (writing = null)}
-        />
+        <section class="space-y-2 rounded-lg border border-dashed border-border p-2.5" aria-label="A new judge">
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-medium">A new judge</p>
+            <button type="button" class="ml-auto rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={() => (writing = null)}
+              >Not now</button
+            >
+          </div>
+          <JudgeEditor
+            editor={{ kind: "judge", mode: "new", name: "", body: null, configuration: null, handle: null, problem: null, judging, models, me }}
+            made={(j) => {
+              judges.push(j);
+              writing = null;
+              judged(view, j);
+            }}
+          />
+        </section>
       {/if}
       {#if metric?.judged && view.judge}
         {@render below?.(view, at, judge)}

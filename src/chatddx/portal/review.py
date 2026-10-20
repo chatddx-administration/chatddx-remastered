@@ -26,7 +26,7 @@ from chatddx.scorers.shipped import unit_of
 from .families import appended, built, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN
-from .scoring import blank, scorer_choices
+from .scoring import blank, code_of, scorer_choices
 
 ANSWERS = 50
 OPEN = ("queued", "under way")
@@ -424,12 +424,7 @@ def _views(
     bench: Bench, held: Held, expected: schemas.Expected | None
 ) -> list[dict[str, Any]]:
     _, scorer, labels = held
-    measures = {
-        m.name: m.measures
-        for code in api_world.scorer_code(bench)
-        if code.entry_point == scorer.entry_point
-        for m in code.metrics
-    }
+    measures = {m.name: m.measures for m in code_of(bench, scorer.entry_point).metrics}
     picks = (
         []
         if expected is None or expected.data is None
@@ -486,10 +481,9 @@ def _composing(
     ran: list[tuple[schemas.Run, schemas.RunDetail]],
     case: str,
 ) -> dict[str, Any] | None:
-    shipped = api_world.scorer_code(bench)
-    if schema is None or not shipped:
+    if schema is None:
         return None
-    [code, *_] = shipped
+    code = code_of(bench, None if held is None else held[1].entry_point)
     scorer = None
     judged: tuple[str, ...] = ()
     if held is not None:

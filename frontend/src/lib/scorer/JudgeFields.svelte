@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { FIELD } from "$lib/utils";
-  import type { Choice } from "./judging";
+  import type { Option } from "./judging";
 
   let {
     configurations,
@@ -12,8 +12,8 @@
     weights = $bindable(),
     seeds = $bindable(),
   }: {
-    configurations: Choice[];
-    models: Choice[];
+    configurations: Option[];
+    models: Option[];
     made: Record<string, string>;
     hint?: string | null;
     configuration: string;

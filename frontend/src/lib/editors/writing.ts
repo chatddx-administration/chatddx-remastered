@@ -19,9 +19,7 @@ export async function checked(component: Component): Promise<Checked> {
   return got.data ? got.data : { problem: why(got.error) };
 }
 
-export type Saved =
-  | { to: string; thread: number; cases: Record<string, string> }
-  | { problem: string; moved: number | null };
+export type Saved = (Extract<Written, { digest: string }> & { to: string }) | Extract<Written, { problem: string }>;
 
 export type Labelled = (string | null)[];
 
@@ -74,5 +72,5 @@ export async function saved(
     ...(views ? { labels: { views } } : {}),
     ...(language ? { language } : {}),
   });
-  return "problem" in got ? got : { to: `/threads/${got.thread}`, thread: got.thread, cases: got.cases };
+  return "problem" in got ? got : { ...got, to: `/threads/${got.thread}` };
 }

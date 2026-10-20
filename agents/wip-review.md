@@ -379,10 +379,10 @@ the pattern is typed, a scorer saved, and its score.
   (`frontend/src/lib/scorer/judging.ts:startingParams`): its verdict at the first field that isn't text, and the
   most points at that field's maximum. The verdict's field is picked from the judge's output schema (`verdictAt`),
   other params are typed.
-- **A new judge** (`frontend/src/lib/scorer/JudgeForm.svelte`), from **a new judge…** in a view's judge picker: a
-  name, a judge configuration the person sees, the model it is asked under, a handle whose weights the judge pins,
-  and its seeds (`seedsOf`), checked as typed and saved as a judge of the person's own (`POST /api/threads`), then
-  picked for the view. A judge's texts are step 6.
+- **A new judge** (`frontend/src/lib/scorer/JudgeEditor.svelte`, begun in place), from **a new judge…** in a view's
+  judge picker: a judge configuration the person sees, the model it is asked under, a handle whose weights the judge
+  pins, its seeds (`seedsOf`) and a name, checked as typed and saved as a judge of the person's own, then picked for
+  the view. A judge's texts are step 6.
 - **What its judge is asked** (`frontend/src/lib/scorer/JudgeAsked.svelte`), folded under a judged view: the judge's
   messages, the expectation filled as the view picks it and following what is typed, the answer as `‹completion›`.
 - **Scored through the worker** (L5 b): a judged view isn't tried; saving the scorer leaves the case's runs to score

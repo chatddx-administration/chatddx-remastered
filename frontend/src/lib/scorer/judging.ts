@@ -1,4 +1,5 @@
 import type { Schema } from "$lib/schema/form";
+import type { Texts } from "./rewriting";
 import { choices } from "./selectors";
 
 export type Judging = {
@@ -10,10 +11,23 @@ export type Judging = {
   weights: string | null;
 };
 export type Serving = { name: string; weights: string };
-export type Choice = { key: string; value: string; label: string };
+export type JudgeChoice = {
+  digest: string;
+  thread: number;
+  name: string;
+  owner: string | null;
+  configuration: string;
+  model: string | null;
+  seeds: number[];
+  output_schema: Schema | null;
+  head?: number;
+  body?: Record<string, unknown>;
+  texts?: Texts | null;
+};
+export type Option = { key: string; value: string; label: string };
 export type Holding = { skeleton: string; configuration: string; weights: string; handle: string | null };
 
-export function configurationChoices(judging: Judging[], me: string, held: Holding | null = null): Choice[] {
+export function configurationChoices(judging: Judging[], me: string, held: Holding | null = null): Option[] {
   const listed = judging.map((j) => ({
     key: String(j.thread),
     value: j.digest,
@@ -23,7 +37,7 @@ export function configurationChoices(judging: Judging[], me: string, held: Holdi
   return [{ key: "held", value: held.skeleton, label: `${held.configuration}, as it is asked now` }, ...listed];
 }
 
-export function modelChoices(models: Serving[], held: Holding | null = null): Choice[] {
+export function modelChoices(models: Serving[], held: Holding | null = null): Option[] {
   const listed = models.map((m) => ({ key: m.name, value: m.weights, label: m.name }));
   if (!held || listed.some((c) => c.value === held.weights)) return listed;
   const label = held.handle ? `${held.handle}, the weights it holds` : "the weights it holds";
@@ -35,12 +49,6 @@ export function madeFor(judging: Judging[], models: Serving[]): Record<string, s
   return Object.fromEntries(
     judging.flatMap((j) => (j.weights && offered.has(j.weights) ? [[j.digest, j.weights]] : [])),
   );
-}
-
-export function modelHint(handle: string | null, behind: boolean, problem: string | null): string | null {
-  if (problem) return `${problem}. Pick a model it can be asked under.`;
-  if (behind && handle) return `Its weights are behind ${handle}, which holds other weights now: pick ${handle} to follow it.`;
-  return null;
 }
 
 export function seedsOf(text: string): number[] | string {

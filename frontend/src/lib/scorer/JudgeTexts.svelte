@@ -3,7 +3,7 @@
   import { api } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
-  import type { JudgeChoice } from "./JudgeForm.svelte";
+  import type { JudgeChoice } from "./judging";
   import { type Part, rewritten, type Texts } from "./rewriting";
   import TextSegments from "./TextSegments.svelte";
   import { asked, type Seg, segmentsOf, textOf } from "./texts";

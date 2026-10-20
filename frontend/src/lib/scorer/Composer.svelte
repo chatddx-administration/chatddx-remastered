@@ -21,13 +21,12 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { api, type Schemas, why } from "$lib/api/client";
-  import Findings from "$lib/editors/Findings.svelte";
   import Saving from "$lib/editors/Saving.svelte";
-  import { type Checked, checked, type Component } from "$lib/editors/writing";
+  import type { Component } from "$lib/editors/writing";
   import type { Schema } from "$lib/schema/form";
   import { said, valued, withScorer } from "$lib/review/review";
   import JudgeAsked from "./JudgeAsked.svelte";
-  import type { JudgeChoice } from "./JudgeForm.svelte";
+  import type { JudgeChoice } from "./judging";
   import JudgeTexts from "./JudgeTexts.svelte";
   import ScorerViews from "./ScorerViews.svelte";
   import { answeredChoices, type ScorerView } from "./scorers";
@@ -57,23 +56,12 @@
   let mode = $state<"edit" | "fork" | "new">(start ? start.mode : "new");
   let body = $state<ScorerBody>(structuredClone(start?.body ?? given.blank));
   let labels = $state<string[]>(start ? [...start.labels] : given.blank.views.map((_, i) => `view ${i}`));
-  let found = $state<Checked | null>(null);
   let tried = $state<Schemas["Tried"][] | null>(null);
   let problem = $state<string | null>(null);
-  let checks = 0;
   let tries = 0;
 
   const asked = $derived(choices(schema, data, "the whole expectation"));
   const answered = answeredChoices(given.outputs);
-
-  const unchanged = $derived(
-    mode === "edit" &&
-      start !== null &&
-      found !== null &&
-      "digest" in found &&
-      found.digest === start.digest &&
-      JSON.stringify(labels) === JSON.stringify(start.labels),
-  );
 
   function component(): Component {
     return $state.snapshot(body) as never;
@@ -97,16 +85,6 @@
 
   $effect(() => {
     changed($state.snapshot(body.views) as ScorerView[], $state.snapshot(labels), titles);
-  });
-
-  $effect(() => {
-    const sent = component();
-    const at = ++checks;
-    const timer = setTimeout(async () => {
-      const got = await checked(sent);
-      if (at === checks) found = got;
-    }, 350);
-    return () => clearTimeout(timer);
   });
 
   $effect(() => {
@@ -205,7 +183,6 @@
   </ScorerViews>
 
   {#if problem}<p class="mt-2 text-destructive">{problem}</p>{/if}
-  <div class="mt-2"><Findings {found} /></div>
   {#key mode}
     <Saving
       editing={{
@@ -215,8 +192,8 @@
         name: mode === "new" ? "" : (start?.name ?? ""),
       }}
       {component}
-      {unchanged}
-      blocked={found !== null && "problem" in found}
+      digest={start?.digest}
+      same={JSON.stringify(labels) === JSON.stringify(start?.labels)}
       labels={() => $state.snapshot(labels)}
       to={(saved) => withScorer(back, saved.thread)}
     />

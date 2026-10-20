@@ -42,6 +42,13 @@ def judge_choices(bench: Bench) -> dict[str, list[dict[str, Any]]]:
     }
 
 
+def code_of(bench: Bench, entry_point: str | None = None) -> schemas.ScorerCode:
+    shipped = api_world.scorer_code(bench)
+    if entry_point is None:
+        return shipped[0]
+    return {c.entry_point: c for c in shipped}[entry_point]
+
+
 def blank(code: schemas.ScorerCode, schema: str) -> dict[str, Any]:
     unjudged = [m.name for m in code.metrics if not m.judged]
     return {
@@ -56,24 +63,19 @@ def blank(code: schemas.ScorerCode, schema: str) -> dict[str, Any]:
 def scorer_choices(
     bench: Bench, code: schemas.ScorerCode, judged: Iterable[str] = ()
 ) -> dict[str, Any]:
-    judges = _judges(bench)
-    titles = {j: bench.title(j) for j in judged}
     return {
         "metrics": [m.model_dump(mode="json") for m in code.metrics],
         "outputs": _outputs(bench),
-        "judges": judges,
-        "titles": titles | {j["digest"]: j["name"] for j in judges},
+        "judges": _judges(bench),
+        "titles": {j: bench.title(j) for j in judged},
         "me": bench.person.login,
         **judge_choices(bench),
     }
 
 
 def _judges(bench: Bench) -> list[dict[str, Any]]:
-    login = bench.person.login
     found: list[dict[str, Any]] = []
-    for t in sorted(
-        api.threads(bench, "judge"), key=lambda t: (t.owner != login, t.name or t.title)
-    ):
+    for t in own_first(bench, api.threads(bench, "judge")):
         judge = resolve(bench.store.get, t.head.digest, Judge)
         try:
             handle = bench.handle(judge.model).name
@@ -108,40 +110,34 @@ def _texts(bench: Bench, judge: Judge) -> dict[str, Any] | None:
     if recipe is None:
         return None
     return {
-        "configuration": None
-        if held is None
-        else {
-            "thread": held[0].thread,
-            "head": held[0].id,
-            "mine": held[1].owner == bench.person.id,
-            "name": held[1].name or bench.title(held[0].digest),
-        },
+        "configuration": _holder(bench, judge.skeleton),
         "recipe": recipe.model_dump(mode="json"),
         "parts": {
-            part: None if digest is None else _chunk(bench, digest)
+            part: None if digest is None else _part(bench, digest)
             for part in ("instructions", "prompt", "output")
             for digest in [getattr(recipe, part)]
         },
     }
 
 
-def _chunk(bench: Bench, digest: str) -> dict[str, Any]:
-    held = bench.holder(digest)
-    given: dict[str, Any] = {
-        "digest": digest,
-        "body": bench.store.get(digest).model_dump(mode="json"),
-        "name": bench.title(digest),
-    }
+def _part(bench: Bench, digest: str) -> dict[str, Any]:
+    given = {"digest": digest, "body": bench.store.get(digest).model_dump(mode="json")}
+    held = _holder(bench, digest)
     if held is None:
-        return {**given, "thread": None}
+        return {**given, "name": bench.title(digest), "thread": None}
+    return {**given, **held, "language": api.thread(bench, held["thread"]).language}
+
+
+def _holder(bench: Bench, digest: str) -> dict[str, Any] | None:
+    held = bench.holder(digest)
+    if held is None:
+        return None
     edit, about = held
     return {
-        **given,
         "thread": edit.thread,
         "head": edit.id,
         "mine": about.owner == bench.person.id,
-        "name": about.name or given["name"],
-        "language": api.thread(bench, edit.thread).language,
+        "name": about.name or bench.title(digest),
     }
 
 

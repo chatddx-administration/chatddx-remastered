@@ -1,7 +1,6 @@
 import type { Schemas } from "$lib/api/client";
 import type { Schema } from "$lib/schema/form";
-import type { JudgeChoice } from "./JudgeForm.svelte";
-import type { Judging, Serving } from "./judging";
+import type { JudgeChoice, Judging, Serving } from "./judging";
 import { type Choice, choices } from "./selectors";
 
 export type ScorerView = {

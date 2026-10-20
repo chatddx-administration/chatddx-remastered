@@ -441,11 +441,11 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
         )
         judge = composer.get_by_role("combobox", name="Judge")
         _ = judge.select_option("new")
-        written = page.get_by_role("form", name="A new judge")
+        written = page.get_by_role("region", name="A new judge")
         written.get_by_label("Name").fill("strict")
         _ = written.get_by_label("Asked under the model").select_option(QWEN_ARTIFACT)
         written.get_by_label("Seeds, a call each").fill("1, 2")
-        written.get_by_role("button", name="Save the judge").click()
+        written.get_by_role("button", name="Save").click()
         expect(written).to_have_count(0)
         expect(judge.locator("option:checked")).to_contain_text("strict")
         expect(composer.get_by_role("combobox", name="Its verdict at")).to_have_value(

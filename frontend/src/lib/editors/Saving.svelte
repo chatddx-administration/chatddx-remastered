@@ -3,43 +3,73 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
-  import { type Component, type Editing, type Labelled, type Saved, said, saved } from "./writing";
+  import Findings from "./Findings.svelte";
+  import { type Checked, checked, type Component, type Editing, type Labelled, type Saved, said, saved } from "./writing";
+
+  type Wrote = Extract<Saved, { to: string }>;
 
   let {
     editing,
     component,
-    unchanged,
-    blocked,
+    digest = null,
+    same = true,
+    blocked = false,
     after,
     to,
+    made,
     labels,
     language,
   }: {
     editing: Editing;
-    component: () => Component;
-    unchanged: boolean;
-    blocked: boolean;
+    component: () => Component | null;
+    digest?: string | null;
+    same?: boolean;
+    blocked?: boolean;
     after?: (cases: number) => string;
-    to?: (saved: Extract<Saved, { to: string }>) => string;
+    to?: (saved: Wrote) => string;
+    made?: (saved: Wrote, name: string) => void;
     labels?: () => Labelled;
     language?: () => string | null;
   } = $props();
 
   let name = $state(untrack(() => editing.name));
   let head = $state(untrack(() => editing.head));
+  let found = $state<Checked | null>(null);
   let busy = $state(false);
   let problem = $state<string | null>(null);
   let note = $state<string | null>(null);
+  let asked = 0;
 
+  const unchanged = $derived(
+    editing.mode === "edit" && same && found !== null && "digest" in found && found.digest === digest,
+  );
+  const unready = $derived(component() === null || found === null || "problem" in found);
   const nameless = $derived(editing.mode !== "edit" && !name.trim());
+
+  $effect(() => {
+    const sent = $state.snapshot(component());
+    const at = ++asked;
+    if (sent === null) return;
+    const timer = setTimeout(async () => {
+      const got = await checked(sent as Component);
+      if (at === asked) found = got;
+    }, 350);
+    return () => clearTimeout(timer);
+  });
 
   async function save(event: SubmitEvent): Promise<void> {
     event.preventDefault();
+    const sent = component();
+    if (sent === null) return;
     busy = true;
     problem = null;
-    const got = await saved({ ...editing, head }, name, component(), labels?.(), language?.());
+    const got = await saved({ ...editing, head }, name, sent, labels?.(), language?.());
     busy = false;
     if ("to" in got) {
+      if (made) {
+        made(got, name.trim());
+        return;
+      }
       const where = to ? to(got) : got.to;
       const cases = Object.keys(got.cases).length;
       if (cases && after) {
@@ -56,18 +86,21 @@
   }
 </script>
 
-<form class="mt-4 space-y-3" onsubmit={save}>
-  {#if editing.mode !== "edit"}
-    <label class="grid max-w-md gap-1 text-sm">
-      <span class="font-medium">Name</span>
-      <Input bind:value={name} autocomplete="off" />
-    </label>
-  {/if}
-  <p class="text-sm" aria-live="polite">{said(editing, name, unchanged)}</p>
-  {#if problem}<p class="text-sm text-destructive">{problem}</p>{/if}
-  {#if note}<p class="text-sm text-success">{note}</p>{/if}
-  <Button type="submit" disabled={busy || blocked || nameless || (editing.mode === "edit" && unchanged)}>
-    {#if busy}<LoaderCircleIcon class="animate-spin" />{/if}
-    Save
-  </Button>
-</form>
+<div class="mt-3 space-y-3">
+  <Findings {found} />
+  <form class="space-y-3" onsubmit={save}>
+    {#if editing.mode !== "edit"}
+      <label class="grid max-w-md gap-1 text-sm">
+        <span class="font-medium">Name</span>
+        <Input bind:value={name} autocomplete="off" />
+      </label>
+    {/if}
+    <p class="text-sm" aria-live="polite">{said(editing, name, unchanged)}</p>
+    {#if problem}<p class="text-sm text-destructive">{problem}</p>{/if}
+    {#if note}<p class="text-sm text-success">{note}</p>{/if}
+    <Button type="submit" disabled={busy || blocked || unready || nameless || (editing.mode === "edit" && unchanged)}>
+      {#if busy}<LoaderCircleIcon class="animate-spin" />{/if}
+      Save
+    </Button>
+  </form>
+</div>

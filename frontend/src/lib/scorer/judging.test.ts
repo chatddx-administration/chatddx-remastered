@@ -6,7 +6,6 @@ import {
   type Judging,
   madeFor,
   modelChoices,
-  modelHint,
   seedsOf,
   startingParams,
   verdictAt,
@@ -68,19 +67,12 @@ describe("what a judge's fields offer", () => {
     expect(madeFor(judging, models)).toEqual({ "sha256:a": "sha256:q" });
   });
 
-  it("keeps weights no handle holds now, and says how to mend them", () => {
+  it("keeps weights no handle holds now", () => {
     expect(modelChoices(models, held)).toEqual([{ key: "qwen3-8b", value: "sha256:q", label: "qwen3-8b" }]);
     expect(modelChoices(models, { ...held, weights: "sha256:old" })[0]).toEqual({
       key: "held",
       value: "sha256:old",
       label: "qwen3-8b, the weights it holds",
     });
-    expect(modelHint("qwen3-8b", true, null)).toBe(
-      "Its weights are behind qwen3-8b, which holds other weights now: pick qwen3-8b to follow it.",
-    );
-    expect(modelHint(null, false, "no endpoint serves model x, which is ops' to mend")).toBe(
-      "no endpoint serves model x, which is ops' to mend. Pick a model it can be asked under.",
-    );
-    expect(modelHint("qwen3-8b", false, null)).toBeNull();
   });
 });

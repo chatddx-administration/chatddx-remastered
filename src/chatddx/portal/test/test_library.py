@@ -136,13 +136,12 @@ def test_a_judge_s_page_edits_its_configuration_handle_and_seeds(
     models = {m["name"]: m["weights"] for m in signed.get("/api/models").json()}
     query = {"kind": "configuration", "purpose": "judge"}
     judging = signed.get("/api/threads", params=query).json()
-    held = ("mode", "kind", "body", "handle", "behind", "problem", "me")
+    held = ("mode", "kind", "body", "handle", "problem", "me")
     assert {k: editor[k] for k in held} == {
         "mode": "fork",
         "kind": "judge",
         "body": body,
         "handle": QWEN_ARTIFACT,
-        "behind": False,
         "problem": None,
         "me": "alice",
     }
@@ -170,9 +169,10 @@ def test_a_judge_s_page_edits_its_configuration_handle_and_seeds(
     handle = thread(signed, "model", QWEN_ARTIFACT, "archive")
     _ = Catalog(conn).edit(handle["id"], weights, alice.id)
     behind = thread_props(shown(signed, page))["editor"]
-    assert (behind["handle"], behind["behind"]) == (QWEN_ARTIFACT, True)
-    assert behind["problem"] == (
-        f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend"
+    assert (behind["handle"], behind["problem"]) == (
+        QWEN_ARTIFACT,
+        f"verdict: its model is behind {QWEN_ARTIFACT}, which holds other weights "
+        + "now: follow it first",
     )
 
 

@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
-from chatddx.api import schemas, threads as api, world as api_world
+from chatddx.api import schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.catalog import LANGUAGE_KINDS
@@ -13,7 +13,7 @@ from chatddx.factors.request import CHUNK_PARTS, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
 
 from .pages import BenchDep, own_first, page, within
-from .scoring import blank, judge_choices, scorer_choices
+from .scoring import blank, code_of, judge_choices, scorer_choices
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
@@ -56,10 +56,6 @@ def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
             held = _judge(bench, None)
         case "scorer":
             held = _scorer(bench, None, None)
-            if held is None:
-                raise HTTPException(
-                    404, "a scorer reads an expectation schema, and you see none"
-                )
         case _:
             held = {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
     editor = {"mode": "new", "name": ""} | held
@@ -156,8 +152,7 @@ def _editor(
         case Judge():
             return {**given, **_judge(bench, held)}
         case Scorer():
-            found = _scorer(bench, held, shown.head.digest)
-            return None if found is None else {**given, **found}
+            return {**given, **_scorer(bench, held, shown.head.digest)}
         case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
             return {
                 **given,
@@ -181,12 +176,11 @@ def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
 
 
 def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
-    handle, behind, problem = None, False, None
+    handle, problem = None, None
     if held is not None:
         try:
-            found = bench.handle(held.model)
-            handle, behind = found.name, found.weights != held.model
-            _ = bench.served(found)
+            handle = bench.handle(held.model).name
+            _ = bench.judged(held)
         except ValueError as e:
             problem = str(e)
     return {
@@ -194,32 +188,24 @@ def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
         "body": None if held is None else held.model_dump(mode="json"),
         "configuration": None if held is None else bench.title(held.skeleton),
         "handle": handle,
-        "behind": behind,
         "problem": problem,
         **judge_choices(bench),
         "me": bench.person.login,
     }
 
 
-def _scorer(
-    bench: Bench, held: Scorer | None, labelled: str | None
-) -> dict[str, Any] | None:
-    code = next(
-        (
-            c
-            for c in api_world.scorer_code(bench)
-            if held is None or c.entry_point == held.entry_point
-        ),
-        None,
-    )
+def _scorer(bench: Bench, held: Scorer | None, labelled: str | None) -> dict[str, Any]:
+    code = code_of(bench, None if held is None else held.entry_point)
     read = [
         (t.head.digest, t.name or t.title)
         for t in own_first(bench, api.threads(bench, "expectation_schema"))
     ]
     if held is not None and held.expectation_schema not in {d for d, _ in read}:
         read.append((held.expectation_schema, bench.title(held.expectation_schema)))
-    if code is None or not read:
-        return None
+    if not read:
+        raise HTTPException(
+            404, "a scorer reads an expectation schema, and you see none"
+        )
     body = blank(code, read[0][0]) if held is None else held.model_dump(mode="json")
     named = {} if labelled is None else bench.labels(labelled)
     return {
