@@ -169,6 +169,15 @@ Translations map source texts to their translations, much as gettext does, into 
 version of it. Vignettes aren't translated, so comparing languages is comparing case sets.
 
 A configuration is written in one language and its translations carry it into others. A recipe may name translations,
+```
+AGENT: replace
+The code says "answer tool" (src/chatddx/factors/request.py:ToolOutput; agents/glossary.md, "Decided", 10).
+---
+and compiling it into one of their languages passes every text it holds through that language's entries:
+the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
+the descriptions of tools and of the answer tool, the titles and descriptions in schemas, and the appendix
+layout.
+```
 and compiling it into one of their languages passes every text it holds through that language's entries:
 the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
 the descriptions of tools and of the answer function, the titles and descriptions in schemas, and the appendix

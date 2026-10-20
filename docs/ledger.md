@@ -57,8 +57,23 @@ finish record itself is outside the seal (docs/backlog.md, "Export and publicati
 ### Sensitive records
 The vignette and content produced from it are *sensitive*. Each record type says whether it may hold any, and a
 new type is assumed to unless it says otherwise. Three types do:
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+- run items: their responses hold the answers, the arguments the model passed to tools, and an engine's refusal,
+  which may echo the request; their tool rounds hold what the tools returned;
+```
 - run items: their responses hold the completions, the arguments the model passed to tools, and an engine's refusal,
   which may echo the request; their tool rounds hold what the tools returned;
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+- score items: their judge responses grade answers and may quote them, and the scorer's detail may hold anything;
+```
 - score items: their judge responses grade completions and may quote them, and the scorer's detail may hold anything;
 - a score's finish: its findings can quote the answer, as `answer.invalid` names the value the schema refused.
 

@@ -1,5 +1,14 @@
 # Catalog
 
+```
+AGENT: replace
+The catalog is more than a handle; a handle is a model's (agents/glossary.md, "Decided", 7).
+---
+The catalog is how people name, keep and find what the store holds: names for components, families of cases, runs and
+scores; versions of a component in order; who owns what and who it is shared with, what was deleted and the language of
+texts.
+None of it changes an output or a score: no component refers to the catalog, so no digest depends on it.
+```
 The catalog gives people handles to factors: Names for components, families of cases, runs and scores; versions
 of a component in order; who owns what and who it is shared with, what was deleted and the language of texts.
 None of it changes an output or a score: no component refers to the catalog, so no digest depends on it.
@@ -31,6 +40,13 @@ all. The rules that two writers at once could break are repeated by the database
 (docs/backlog.md, "Concurrent writers").
 
 ## Threads and edits
+```
+AGENT: replace
+The catalog is more than a handle; a handle is a model's (agents/glossary.md, "Decided", 7).
+---
+A *thread* is a sequence of *edits*, the versions of a component that people edit.
+The latest edit is the thread's *head*, its current version; the others are its history, in order.
+```
 A *thread* is a sequence of *edits* and work a handle on a component that people edit.
 The latest edit is the thread's *head*, its current version; the others are its history, in order.
 

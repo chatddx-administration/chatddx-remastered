@@ -217,6 +217,14 @@ interpreted:
 - inserts, filled at compile time;
 - slots, filled at send time by plain concatenation, so clinical text is never interpreted.
 
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+There are no validation retries: a run stores the raw response, and parsing it belongs to scoring. Transport retries
+are a separate matter, declared per run (see "Execution") and counted per call.
+```
 There are no validation retries: a run stores the raw completion, and parsing it belongs to scoring. Transport retries
 are a separate matter, declared per run (see "Execution") and counted per call.
 
@@ -348,6 +356,14 @@ asked for or a text they leave untranslated, a guidance placed in both the instr
 function named like one of the toolset's tools, an intent the facts refuse or know nothing of, an intent on a model
 with no facts, and facts about another model than the recipe's.
 
+```
+AGENT: replace
+The code says "answer tool" (src/chatddx/factors/request.py:ToolOutput; agents/glossary.md, "Decided", 10).
+---
+With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
+when it stops calling tools. Under a tool contract, the answer tool is offered last, every response calls a tool,
+and calling the answer tool ends the item.
+```
 With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
 when it stops calling tools. Under a tool contract, the answer function is offered last, every response calls a tool,
 and calling the answer function ends the item.
@@ -400,6 +416,15 @@ Rendering produces the request that is sent:
 3. The seed is added, unless sampling is greedy.
 4. The response is asked to carry the prompt's token ids, so a run can fingerprint what the model was actually given.
 
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
+reassembles the response it records; the request it fingerprints is the request as rendered, without the streaming
+options.
+```
 What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
 reassembles the completion it records; the request it fingerprints is the request as rendered, without the streaming
 options.
@@ -409,6 +434,15 @@ A response that calls tools gets another request: the last one, plus the assista
 calls, without its reasoning) and one answer per call, in the calls' order. Its settings stay, the seed included; its
 body, and so its fingerprint, is its own.
 
+```
+AGENT: replace
+The code says "answer tool" (src/chatddx/factors/request.py:ToolOutput; agents/glossary.md, "Decided", 10).
+---
+The loop belongs to the runner. It ends when a response calls no tool, calls the answer tool, or has no whole answer
+(an error or a cutoff), or after the round limit. A tool is called with the call's arguments and returns text. A call
+that names no offered tool, arguments that don't fit the tool's parameters, and a tool that fails are each answered with
+an error for the model to read.
+```
 The loop belongs to the runner. It ends when a response calls no tool, calls the answer function, or has no whole answer
 (an error or a cutoff), or after the round limit. A tool is called with the call's arguments and returns text. A call
 that names no offered tool, arguments that don't fit the tool's parameters, and a tool that fails are each answered with
@@ -542,6 +576,15 @@ Building an expectation doesn't check its data against its schema. Lints do (see
 to do with data that fails.
 
 ### Scorer
+```
+AGENT: replace
+A scorer's resources are strings, and the gap is the backlog's ("Shipped code: scorers and tools";
+agents/glossary.md, "Decided", 8).
+---
+Principal authors: developers, who write the scoring code and ship it with the project, and researchers, who write the
+views, the free parameters where the code publishes a schema for them, the labels and the resources, and pick the
+code and the expectation schema.
+```
 Principal authors: developers, who write the scoring code and ship it with the project, and researchers, who write the
 views, the free parameters where the code publishes a schema for them, and the labels, and pick the code, the
 expectation schema and the resources.
@@ -549,6 +592,13 @@ expectation schema and the resources.
 - the entry point of the scoring code chatddx ships, and the version of it it pins;
 - the expectation schema it consumes;
 - an ordered list of views;
+```
+AGENT: replace
+A scorer's resources are strings, and the gap is the backlog's ("Shipped code: scorers and tools";
+agents/glossary.md, "Decided", 8).
+---
+- ordered resources: strings, such as the name of a synonym table or an ontology release;
+```
 - ordered resources, such as synonym tables or ontology releases, pinned by digest;
 - free parameters.
 
@@ -564,6 +614,16 @@ The scoring function sees one view at a time: what the view picks from the answe
 what it picks from the expectation, and the parameters. It returns a value, or none, and a detail. Its interface is
 versioned.
 
+```
+AGENT: replace
+The code says "answer tool" (src/chatddx/factors/request.py:ToolOutput; agents/glossary.md, "Decided", 10).
+---
+The answer is read from the item's last response by the skeleton's contract: a native answer is the content as JSON, a
+tool answer the answer tool's arguments, and a text answer the content, or, when the output has a schema, the JSON
+in it. A native or tool answer cut short is salvaged: read with what it holds up to its last complete value, a string
+it stopped in closed, and its structure closed; JSON that breaks before its end isn't salvaged. An answer that can't
+be read is no answer.
+```
 The answer is read from the item's last response by the skeleton's contract: a native answer is the content as JSON, a
 tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
 in it. A native or tool answer cut short is salvaged: read with what it holds up to its last complete value, a string

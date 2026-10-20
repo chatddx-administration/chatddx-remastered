@@ -322,6 +322,15 @@ A stream that can't miss a row or an event, and a notification queue that a list
   run while the worker writes it doesn't.
 - **What isn't a row is told only to those listening**, so a stream that joins after a scoring started misses
   `run.scoring`. Notes along the way are told with the finish row that holds them, not as they happen.
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+- **`NOTIFY`'s queue**: a payload waits in the database's notification queue, kept on disk, until every listener has
+  read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
+  database that holds the ledger's responses already.
+```
 - **`NOTIFY`'s queue**: a payload waits in the database's notification queue, kept on disk, until every listener has
   read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.

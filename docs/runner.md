@@ -76,12 +76,32 @@ comes up. The bench uses the difference (see "What applies to a run").
 The secret goes only into the request's `Authorization` header. No stored row holds it.
 
 ## Calls
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+A call is one exchange with an engine: one request, sent in one or more attempts, and what came back
+(docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken before the streaming options are added,
+and the streamed chunks are added up to the response an unstreamed request would have had. Streaming is only how a
+call travels; what is stored is the same either way. The prompt's token ids leave the response and become its
+fingerprint. HTTP is the standard library's.
+```
 A call is one exchange with an engine: one request, sent in one or more attempts, and what came back
 (docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken before the streaming options are added,
 and the streamed chunks are added up to the completion an unstreamed request would have had. Streaming is only how a
 call travels; what is stored is the same either way. The prompt's token ids leave the response and become its
 fingerprint. HTTP is the standard library's.
 
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+A call is tried again only when the request didn't get through: a connection that failed, a 429 or a 5xx, after a
+pause that doubles each time, up to the execution's retries. Once a stream has started, what comes is the answer, and
+it isn't tried again. An engine's refusal keeps its body as the call's response, as an answer is kept.
+```
 A call is tried again only when the request didn't get through: a connection that failed, a 429 or a 5xx, after a
 pause that doubles each time, up to the execution's retries. Once a stream has started, what comes is the answer, and
 it isn't tried again. An engine's refusal keeps its body as the call's response, as a completion would be kept.
@@ -156,6 +176,15 @@ Finishing writes the finish record with those findings and returns what checking
 A judged view's metric reads the verdicts of the view's judge, one per seed (docs/factors.md, "Judge"):
 - **Where its calls go.** a judge's model is picked by handle; its calls go to the handle's endpoint at its latest
   engine, which the scoring pins, and a handle that doesn't resolve refuses the scoring as ops' error.
+```
+AGENT: replace
+A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
+(agents/glossary.md, "Decided", 9).
+---
+- **What it reads.** The answer and the expectation, as the view picks them, in its completion and
+  expectation slots. A judge whose skeleton reads the
+  vignette or the appendices is refused: no vignette goes to a judge.
+```
 - **What it reads.** The completion and the expectation, as the view picks them. A judge whose skeleton reads the
   vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the
