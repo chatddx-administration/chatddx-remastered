@@ -23,7 +23,7 @@ case (`agents/wip-review.md`) and `/translate` to a configuration's languages (`
    "Target stack"; `docs/inventory.md`, "Endpoints"). Step 2b brings the project and the page there (see "Steps").
 
 ## What the researcher is here to do
-From `docs/chatddx.md` ("Intended evolution of configurations", "Roles mentioned"):
+From `docs/chatddx.md` ("Intended evolution of configurations") and `agents/glossary.md` ("Roles"):
 - **Hand-edit chunks**: instructions, few-shot examples, prompts, outputs, sampling, reasoning, passthrough and
   toolsets. Translations are the translator's (`agents/wip-translators-view.md`), tools the developers'.
 - **Try variations**: a configuration with parts replaced, seen before it runs.

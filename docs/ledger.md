@@ -196,6 +196,14 @@ items, judges or seeds that don't exist. Everything else is a warning, of four k
 - **Sealed**: nothing changed after the log was finished.
 
 ## Findings
+```
+AGENT: replace
+The second sentence: the runner and the scoring pass note infos too (src/chatddx/runner/run.py:_resumed,
+src/chatddx/runner/score.py:Grading._grade).
+---
+Checking a run or a score finds only warnings; the runner and the scoring pass may also note an info, `run.resumed`
+or `answer.salvaged`.
+```
 A finding (docs/factors.md, "Errors and findings") says what it is about: an item, a tool, a scorer, the run or the
 score. All of the ledger's findings are warnings. They come from
 - the runner and the scoring pass, while they run, kept in the finish record (see "Run finish" and "Score finish");

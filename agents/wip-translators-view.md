@@ -70,7 +70,7 @@ The address keeps what is picked: `/translate/{configuration}?into=sv&head=EDIT`
 Questions that change what is built, each with its options. Decided: the take on each.
 
 ### T1. Who translates
-`docs/chatddx.md` ("Roles mentioned") names no translators; `docs/factors.md` ("Translations") names researchers, as
+`agents/glossary.md` ("Roles") names no translators; `docs/factors.md` ("Translations") names researchers, as
 translators, the principal authors of translations.
 - **(a)** Researchers, as `docs/factors.md` says; Z1 later says which panes a role sees.
 - **(b)** A Translators role, suggested to `docs/chatddx.md` for a human to write.

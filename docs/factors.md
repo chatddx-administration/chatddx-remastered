@@ -415,6 +415,12 @@ that names no offered tool, arguments that don't fit the tool's parameters, and 
 an error for the model to read.
 
 ## Engines
+```
+AGENT: replace
+The first sentence's reference: "Roles mentioned" moved to agents/glossary.md ("Roles").
+---
+An engine is where requests are sent, written by ops (agents/glossary.md, "Roles"), who map each model handle,
+```
 An engine is where requests are sent, written by ops (docs/chatddx.md, "Roles mentioned"), who map each model handle,
 such as `qwen3-8b`, to one engine and one endpoint; a handle always means its latest engine (docs/inventory.md).
 Researchers pick a recipe's model and a judge's by handle, and see no engines, endpoints or proper model names. Every

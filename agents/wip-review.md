@@ -98,7 +98,7 @@ The address keeps what is picked, as the variation's page does: `/review/{family
 Questions that change what is built, each with its options. Decided: the take on each.
 
 ### L1. Roles
-`docs/chatddx.md` ("Roles mentioned") names clinicians as the authors of appendices and expectations, and researchers
+`agents/glossary.md` ("Roles") names clinicians as the authors of appendices and expectations, and researchers
 as the authors of judges and of "a scorer's views, free parameters and labels"; its requirements say the same. A
 person may hold several roles, and nothing checks roles yet (`agents/wip-portal.md`, W10; Z1), so nothing refuses
 Olof composing a scorer. But a page built for a clinician that composes scorers and judges either has Olof acting as
