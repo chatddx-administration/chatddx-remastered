@@ -2,18 +2,18 @@
 engine = "sha256:da96724f04176f3f979fe853c7cf7e6c8a9ea865853e3453c479e98ea8ae0c90"
 url = "http://127.0.0.1:12099/v1/"
 host = "fake"
-max_jobs = 4
+capacity = 4
 
 [endpoint."gpt-oss-20b@fake"]
 engine = "sha256:7033068c2419408202120bcc7ea5a33fbdbd074b6e378726ebb1856596c8e251"
 url = "http://127.0.0.1:12100/v1/"
 host = "fake"
-max_jobs = 4
+capacity = 4
 
 [endpoint."mistral-small@remote"]
 engine = "sha256:a130056002714b94daebc3993f806bf1cc6ad178a0d0f9c445b8686dd933421e"
 url = "http://127.0.0.1:12101/v1/"
-max_jobs = 2
+capacity = 2
 credential = "CHATDDX_SAMPLE_KEY"
 
 [host.fake]

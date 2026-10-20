@@ -25,17 +25,17 @@ class EndpointSpec(Frozen):
     engine: Digest
     url: HttpUrl
     host: str | None = None
-    max_jobs: int = Field(default=1, ge=1)
+    capacity: int = Field(default=1, ge=1)
     credential: str | None = None
     canaries: Digest | None = None
     execution: Execution = Field(default_factory=Execution)
 
     @model_validator(mode="after")
-    def _within_max_jobs(self) -> Self:
-        if self.execution.concurrency > self.max_jobs:
+    def _within_capacity(self) -> Self:
+        if self.execution.concurrency > self.capacity:
             raise ValueError(
                 f"the execution sends {self.execution.concurrency} requests at once, "
-                + f"and max_jobs takes {self.max_jobs}"
+                + f"and the capacity is {self.capacity}"
             )
         return self
 

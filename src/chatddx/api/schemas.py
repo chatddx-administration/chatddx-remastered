@@ -527,7 +527,7 @@ class Endpoint(_Schema):
     serves: str | None = Field(description="the model its engine serves, by digest")
     url: str
     host: str | None
-    max_jobs: int
+    capacity: int
     credential: str | None
     cleared_for: list[str]
     takes_typed: bool = Field(
@@ -704,7 +704,7 @@ class NewRun(Seeds):
     concurrency: int | None = Field(
         None,
         ge=1,
-        description="how many requests at once, up to the endpoint's max_jobs: the "
+        description="how many requests at once, up to the endpoint's capacity: the "
         + "endpoint's when not given",
     )
     order: Order | None = Field(

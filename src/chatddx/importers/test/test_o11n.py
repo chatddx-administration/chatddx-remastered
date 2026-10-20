@@ -142,7 +142,7 @@ def test_a_server_s_report_becomes_its_model_engine_endpoint_and_host() -> None:
     assert e.argv == tuple(server()["extra_args"])
     assert e.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
     assert str(i.endpoint.url) == "http://pelle.kompismoln.se:12009/v1/"
-    assert (i.endpoint.engine, i.endpoint.host, i.endpoint.max_jobs) == (
+    assert (i.endpoint.engine, i.endpoint.host, i.endpoint.capacity) == (
         e.digest,
         "pelle",
         1,
@@ -163,7 +163,7 @@ def test_its_capacity_is_the_server_s_max_num_seqs_however_it_is_spelled() -> No
         (["--max-num-seqs=2", "--max-num-seqs", "6"], 6),
     ]:
         i = imported(report({"q": server(extra_args=extra)}), "q")
-        assert i.endpoint.max_jobs == jobs
+        assert i.endpoint.capacity == jobs
 
 
 def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served(
@@ -209,7 +209,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         *server()["extra_args"],
     )
     assert startup.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
-    assert inventory.endpoint("gpt-oss-20b@malborg").max_jobs == 4
+    assert inventory.endpoint("gpt-oss-20b@malborg").capacity == 4
     sample = tmp_path / "sample"
     sample.mkdir()
     _ = (sample / "factors.toml").write_text(

@@ -79,7 +79,7 @@ def test_a_run_has_one_job_open_at_a_time(
         _ = queue.end(again.id, worker, "queued")
 
 
-def test_claims_go_in_turn_within_each_endpoint_s_max_jobs(
+def test_claims_go_in_turn_within_each_endpoint_s_capacity(
     conn: Connection, alice: Person, runs: Callable[[], UUID]
 ) -> None:
     queue = Queue(conn)
@@ -87,12 +87,12 @@ def test_claims_go_in_turn_within_each_endpoint_s_max_jobs(
     first = queue.put(alice.id, runs(), "e", 2, False)
     second = queue.put(alice.id, runs(), "e", 1, False)
     elsewhere = queue.put(alice.id, runs(), "f", 1, False)
-    max_jobs = {"e": 2, "f": 1}
+    capacity = {"e": 2, "f": 1}
 
-    claimed = [queue.claim(worker, max_jobs, LOST) for _ in range(3)]
+    claimed = [queue.claim(worker, capacity, LOST) for _ in range(3)]
     assert [c and c.id for c in claimed] == [first.id, elsewhere.id, None]
     assert queue.end(first.id, worker, "finished")
-    taken = queue.claim(worker, max_jobs, LOST)
+    taken = queue.claim(worker, capacity, LOST)
     assert taken is not None and taken.id == second.id
     assert queue.standing(alice.id, LOST) == Standing(
         paused=False, queued=0, under_way=2, workers=1

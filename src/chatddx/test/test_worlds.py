@@ -42,7 +42,7 @@ def test_each_endpoint_serves_the_engine_planned_under_its_name(
     each: tuple[World, Plan],
 ) -> None:
     world, plan = each
-    engines = {r.name: r for r in plan.records if r.table.endswith("engine")}
+    engines = {r.name: r for r in plan.stanzas if r.table.endswith("engine")}
     for name, endpoint in world.inventory.endpoints.items():
         engine = engines[name].digest
         assert endpoint.engine == engine, f"endpoint {name!r} serves {engine}"
@@ -73,7 +73,7 @@ def test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would(
             startup = start_up(world.inventory, plan.registry.get, name)
             fakes[endpoint.engine] = Served.of(startup.argv[0], startup.argv[1:])
     engines = list(fakes.values())
-    for r in plan.records:
+    for r in plan.stanzas:
         if r.kind != "skeleton":
             continue
         skeleton = resolve(plan.registry.get, r.digest, Skeleton)
@@ -150,7 +150,7 @@ def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
         ]
         engines = {
             (r.kind, r.name)
-            for r in world_plan(world, data).records
+            for r in world_plan(world, data).stanzas
             if r.kind in ("model.local", "engine.local", "engine.remote")
         }
         assert {n for _, n in engines} >= set(endpoints)

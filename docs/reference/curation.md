@@ -77,6 +77,12 @@ Raises:
 
 * `registry: Registry`
 * `facts: Facts`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `stanzas: list[Planned] = field(default_factory=list)`
+```
 * `records: list[Planned] = field(default_factory=list)`
 * `skipped: list[str] = field(default_factory=list)`
 * `untranslated: list[str] = field(default_factory=list)`
@@ -104,6 +110,13 @@ Raises:
 
 Raises:
 1. `ValueError`: "{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
+```
+SIGN-OFF: REPLACE
+replace the 2 lines below with these
+---
+2. `ValueError`: "{path}: unknown tables {sorted(stray)}" (through `_stanzas`)
+3. `ValueError`: "{path}: {table}.{name}: {said}" (through `_stanzas`)
+```
 2. `ValueError`: "{path}: unknown tables {sorted(stray)}" (through `_records`)
 3. `ValueError`: "{path}: {table}.{name}: {said}" (through `_records`)
 4. `ValueError`: "{path}: an engines file holds only {', '.join(ENGINE_TABLES)} tables, not {', '.join(stray)}"

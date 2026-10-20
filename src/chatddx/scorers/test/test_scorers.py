@@ -392,10 +392,10 @@ TARGETS_SCHEMA = json.loads((DATA / "schemas" / "targets.json").read_text())
 
 def world_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
     plan = read_only_plan()
-    record = plan.named("scorer", name)
-    scorer = plan.registry.get(record.digest)
+    stanza = plan.named("scorer", name)
+    scorer = plan.registry.get(stanza.digest)
     assert isinstance(scorer, Scorer)
-    return scorer, record.labels
+    return scorer, stanza.labels
 
 
 def scored(name: str, answer: JsonValue, targets: JsonValue) -> dict[str, Scored]:
@@ -530,14 +530,14 @@ READS = {
 def test_each_scorer_s_views_pick_from_the_answers_it_reads() -> None:
     plan = read_only_plan()
     read: set[str] = set()
-    for record in plan.records:
-        if record.kind != "skeleton":
+    for stanza in plan.stanzas:
+        if stanza.kind != "skeleton":
             continue
-        skeleton = plan.registry.get(record.digest)
+        skeleton = plan.registry.get(stanza.digest)
         assert isinstance(skeleton, Skeleton)
         if skeleton.purpose == "judge":
             continue
-        configuration = record.name.partition(" (")[0]
+        configuration = stanza.name.partition(" (")[0]
         reader = READS.get(configuration, "lines")
         scorer = plan.registry.get(plan.named("scorer", reader).digest)
         assert isinstance(scorer, Scorer)
@@ -548,7 +548,7 @@ def test_each_scorer_s_views_pick_from_the_answers_it_reads() -> None:
                 if isinstance(item, dict) and "critical" in item:
                     item["critical"] = True
         for view in scorer.views:
-            assert view.output_items(answer), (record.name, view.output)
+            assert view.output_items(answer), (stanza.name, view.output)
         values = score(scorer, function(scorer), answer, TARGETS)
         assert len(values) == len(scorer.views)
         read.add(reader)

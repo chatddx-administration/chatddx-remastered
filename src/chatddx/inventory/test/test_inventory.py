@@ -57,7 +57,7 @@ def test_a_source_s_cleanup_and_an_endpoint_s_canaries_and_execution_are_declare
     engine, probe = "sha256:" + "c" * 64, "sha256:" + "d" * 64
     _ = path.write_text(
         '[source.test]\npath = "vignettes"\ncleanup = ["strip@1", "newlines.lf@1"]\n\n'
-        + f'[endpoint.qwen]\nengine = "{engine}"\nurl = "{URL}"\nmax_jobs = 2\n'
+        + f'[endpoint.qwen]\nengine = "{engine}"\nurl = "{URL}"\ncapacity = 2\n'
         + f'canaries = "{probe}"\n\n'
         + "[endpoint.qwen.execution]\nconcurrency = 2\ntimeout_s = 60\n"
     )

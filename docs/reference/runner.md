@@ -371,6 +371,12 @@ Raises:
 Raises:
 1. `ValueError`: "run {run} is finished"
 2. `ValueError`: "run {run} was sent to no endpoint, so it can't resume"
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+3. `ValueError`: "endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
+```
 3. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
 4. `ValueError`: "endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"
 
@@ -399,6 +405,12 @@ Finds:
 * ∟`"Running"`
 
 Raises:
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+1. `ValueError`: "endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
+```
 1. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
 
 ## Running

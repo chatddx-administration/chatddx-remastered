@@ -51,8 +51,8 @@ def test_appendices_are_refused_where_they_say_the_wrong_thing(
         _ = load_cases(tmp_path)
 
 
-def test_a_canary_set_is_planned_as_a_record() -> None:
-    [probe] = [r for r in world_plan().records if r.table == "canary_set"]
+def test_a_canary_set_is_planned_as_a_stanza() -> None:
+    [probe] = [r for r in world_plan().stanzas if r.table == "canary_set"]
 
     assert (probe.name, probe.kind) == ("probe", "canary_set")
 
@@ -86,7 +86,7 @@ def test_init_data_lands_appendices_the_cases_that_send_them_and_canary_sets(
     assert f"[archive case] whitespace with labs: created {sent.digest[7:13]}" in lines
     assert titles.title_of(rows, sent.digest) == "whitespace with labs"
 
-    [schema] = [r.digest for r in plan.records if r.kind == "expectation_schema"]
+    [schema] = [r.digest for r in plan.stanzas if r.kind == "expectation_schema"]
     expecting = threads.expecting(rows, [sent.digest], schema)[sent.digest]
     [mine] = [e.thread for e, a in expecting if owns(alice.id, a)]
     assert read.about(rows, Subject(thread=mine)).owner == alice.id

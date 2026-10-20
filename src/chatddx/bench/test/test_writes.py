@@ -199,7 +199,6 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
         _ = bench.new(recipe.model_copy(update={"purpose": "judge"}), "x")
 
 
-@pytest.mark.slow
 def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
     skeleton = bench.variation(JUDGE).configuration.digest
     weights = bench.endpoint(QWEN).model.digest

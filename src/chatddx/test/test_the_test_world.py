@@ -19,7 +19,7 @@ SKIPPED = [
 @pytest.mark.slow
 def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     plan = world_plan()
-    assert Counter(r.table for r in plan.records) == {
+    assert Counter(r.table for r in plan.stanzas) == {
         "local_model": 4,
         "remote_model": 1,
         "local_engine": 4,
@@ -53,7 +53,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         len(c.appendices) + sum(1 + (o.targets is not None) for o in c.ordered)
         for c in cases.values()
     )
-    components = len({r.digest for r in plan.records}) + 2 * len(cases) + appended
+    components = len({r.digest for r in plan.stanzas}) + 2 * len(cases) + appended
     assert [line for line in lines if line.startswith("[lint")] == [
         *LINTS,
         f"[lint] {len(LINTS)} findings in {components} components",

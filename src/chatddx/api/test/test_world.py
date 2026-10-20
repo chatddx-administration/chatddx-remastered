@@ -49,10 +49,10 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     for shown in listed:
         name = shown["name"]
         spec = inventory.endpoint(name)
-        assert (shown["engine"], shown["host"], shown["max_jobs"]) == (
+        assert (shown["engine"], shown["host"], shown["capacity"]) == (
             spec.engine,
             spec.host,
-            spec.max_jobs,
+            spec.capacity,
         )
         assert (shown["credential"], shown["cleared_for"], shown["problem"]) == (
             spec.credential,

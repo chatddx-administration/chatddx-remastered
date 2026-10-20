@@ -60,7 +60,7 @@ TABLES: dict[str, type[Component]] = {
     "passthrough": Passthrough,
     "tool": Tool,
     "toolset": Toolset,
-    # After the records whose texts its entries are grouped by.
+    # Dependency: after the stanzas whose texts its entries are grouped by.
     "translations": Translations,
     "expectation_schema": ExpectationSchema,
     "scorer": Scorer,
@@ -71,9 +71,8 @@ ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
 DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)
-# The tables whose records pin shipped code, with what the running code ships.
 SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
-# References outside recipes, by table and field: each names records of another table.
+# Scope: references outside recipes, by table and field; each names stanzas of another table.
 REFERENCES: dict[str, dict[str, str]] = {
     "toolset": {"tools": "tool"},
     "scorer": {"expectation_schema": "expectation_schema"},
@@ -100,14 +99,14 @@ class Planned:
 class Plan:
     registry: Registry
     facts: Facts
-    records: list[Planned] = field(default_factory=list)
+    stanzas: list[Planned] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     untranslated: list[str] = field(default_factory=list)
     compilations: list[str] = field(default_factory=list)
     engines: dict[str, str] = field(default_factory=dict)
 
     def named(self, table: str, name: str) -> Planned:
-        for r in self.records:
+        for r in self.stanzas:
             if (r.table, r.name) == (table, name):
                 return r
         raise LookupError(f"no {table} named {name!r} in the plan")
@@ -185,15 +184,15 @@ def _read(path: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _records(
+def _stanzas(
     path: Path, data: dict[str, Any], tables: Collection[str]
 ) -> dict[str, dict[str, JsonValue]]:
     if stray := set(data) - set(tables):
         raise ValueError(f"{path}: unknown tables {sorted(stray)}")
     found: dict[str, dict[str, JsonValue]] = {}
-    for table, records in cast(dict[str, dict[str, JsonValue]], data).items():
+    for table, stanzas in cast(dict[str, dict[str, JsonValue]], data).items():
         found[table] = {}
-        for name, raw in records.items():
+        for name, raw in stanzas.items():
             if isinstance(raw, dict) and "language" in raw:
                 said = (
                     "a judge's request is its recipe's, as written"
@@ -215,7 +214,7 @@ def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
             language = language_tag(named[1])
         except ValueError as e:
             raise ValueError(f"{path}: {e}") from None
-        texts[language] = _records(path, _read(path), TEXT_TABLES)
+        texts[language] = _stanzas(path, _read(path), TEXT_TABLES)
     return texts
 
 
@@ -228,7 +227,7 @@ def plan_factors(
         raise ValueError(
             f"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
         )
-    found = _records(factors, written, DATA_TABLES)
+    found = _stanzas(factors, written, DATA_TABLES)
     for path in () if world is None else world.engines:
         written = _read(path)
         if stray := sorted(set(written) - set(ENGINE_TABLES)):
@@ -236,14 +235,14 @@ def plan_factors(
                 f"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} "
                 + f"tables, not {', '.join(stray)}"
             )
-        for table, records in _records(path, written, ENGINE_TABLES).items():
+        for table, stanzas in _stanzas(path, written, ENGINE_TABLES).items():
             known = found.setdefault(table, {})
-            if twice := sorted(set(known) & set(records)):
+            if twice := sorted(set(known) & set(stanzas)):
                 raise ValueError(f"{path}: {table} {twice} are named before it too")
-            known.update(records)
+            known.update(stanzas)
     bodies: dict[str, dict[str, tuple[str | None, JsonValue]]] = {
-        table: {name: (None, body) for name, body in records.items()}
-        for table, records in found.items()
+        table: {name: (None, body) for name, body in stanzas.items()}
+        for table, stanzas in found.items()
     }
     if "translations" in bodies:
         raise ValueError(
@@ -252,8 +251,8 @@ def plan_factors(
         )
     translating: dict[str, dict[str, JsonValue]] = {}
     for language, tables in _texts(data).items():
-        for table, records in tables.items():
-            for name, body in records.items():
+        for table, stanzas in tables.items():
+            for name, body in stanzas.items():
                 if table == "translations":
                     translating.setdefault(name, {})[language] = body
                     continue
@@ -269,10 +268,10 @@ def plan_factors(
     plan = Plan(Registry(), facts)
     planned: dict[tuple[str, str], Planned | None] = {}
 
-    def add(table: str, name: str, record: Planned | None) -> None:
-        planned[(table, name)] = record
-        if record is not None:
-            plan.records.append(record)
+    def add(table: str, name: str, stanza: Planned | None) -> None:
+        planned[(table, name)] = stanza
+        if stanza is not None:
+            plan.stanzas.append(stanza)
 
     def base(table: str, name: str, fork_of: object) -> str | None:
         if fork_of is None:
@@ -287,8 +286,8 @@ def plan_factors(
             return None
         return origin.name
 
-    def texts_of(record: str, language: str) -> set[str]:
-        table, _, name = record.partition(".")
+    def texts_of(stanza: str, language: str) -> set[str]:
+        table, _, name = stanza.partition(".")
         if table == "recipe" and name in found.get("recipe", {}):
             raw = found["recipe"][name]
             assert isinstance(raw, dict)
@@ -298,11 +297,11 @@ def plan_factors(
                 raise ValueError(f"recipe.{name}: {e}") from None
             return set(own_texts(layout, plan.registry.get))
         if table not in TEXT_TABLES - {"translations"} and table != "recipe":
-            raise ValueError(f"{record!r} names no record of texts")
+            raise ValueError(f"{stanza!r} names no stanza of texts")
         if (r := planned.get((table, name))) is None:
-            raise ValueError(f"{record!r}: no {table} named {name!r}")
+            raise ValueError(f"{stanza!r}: no {table} named {name!r}")
         if r.language == language:
-            raise ValueError(f"{record} is written in {language}")
+            raise ValueError(f"{stanza} is written in {language}")
         get = plan.registry.get
         return set(own_texts(get(r.digest), get))
 
@@ -312,11 +311,11 @@ def plan_factors(
             case dict():
                 groups = cast(dict[str, object], of)
             case _:
-                raise ValueError(f"{where}: `of` is a table of records and their texts")
+                raise ValueError(f"{where}: `of` is a table of stanzas and their texts")
         entries: dict[str, JsonValue] = {}
-        for record, pairs in groups.items():
+        for stanza, pairs in groups.items():
             try:
-                texts = texts_of(record, language)
+                texts = texts_of(stanza, language)
             except ValueError as e:
                 raise ValueError(f"{where}: {e}") from None
             listed = cast(list[object], pairs) if isinstance(pairs, list) else [pairs]
@@ -329,10 +328,10 @@ def plan_factors(
                         pass
                     case _:
                         raise ValueError(
-                            f"{where}: {record}: each entry is a text and its translation"
+                            f"{where}: {stanza}: each entry is a text and its translation"
                         )
                 if text not in texts:
-                    raise ValueError(f"{where}: {record} holds no text {_short(text)}")
+                    raise ValueError(f"{where}: {stanza} holds no text {_short(text)}")
                 if entries.setdefault(text, translation) != translation:
                     raise ValueError(f"{where}: {_short(text)} is translated two ways")
         return entries
@@ -457,11 +456,11 @@ def plan_factors(
     inventory = None if world is None else world.inventory
     engines = {
         r.digest: r
-        for r in plan.records
+        for r in plan.stanzas
         if r.table in ("local_engine", "remote_engine")
     }
     models = {
-        r.digest: r for r in plan.records if r.table in ("local_model", "remote_model")
+        r.digest: r for r in plan.stanzas if r.table in ("local_model", "remote_model")
     }
 
     def under(handle: str) -> tuple[Planned, Planned] | str:

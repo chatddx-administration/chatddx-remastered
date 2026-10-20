@@ -3388,9 +3388,9 @@
             ],
             "title": "Host"
           },
-          "max_jobs": {
+          "capacity": {
             "type": "integer",
-            "title": "Max Jobs"
+            "title": "Capacity"
           },
           "credential": {
             "anyOf": [
@@ -3437,7 +3437,7 @@
           "serves",
           "url",
           "host",
-          "max_jobs",
+          "capacity",
           "credential",
           "cleared_for",
           "takes_typed",
@@ -5085,7 +5085,7 @@
               }
             ],
             "title": "Concurrency",
-            "description": "how many requests at once, up to the endpoint's max_jobs: the endpoint's when not given"
+            "description": "how many requests at once, up to the endpoint's capacity: the endpoint's when not given"
           },
           "order": {
             "anyOf": [

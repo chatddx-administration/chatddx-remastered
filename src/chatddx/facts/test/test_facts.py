@@ -20,8 +20,8 @@ from chatddx.factors.trial import Trial
 from chatddx.facts import (
     BUNDLED,
     Facts,
-    Intent,
     Landing,
+    Level,
     ModelFacts,
     OutputFacts,
     ReasoningFacts,
@@ -55,7 +55,7 @@ def test_reasoning_levels_land_where_the_facts_say(facts: Facts) -> None:
         level="medium", writes=Writes(effort="medium")
     )
     assert gpt_oss.reasoning.landing("on").level == "medium"
-    nearest: list[tuple[Intent, Intent]] = [
+    nearest: list[tuple[Level, Level]] = [
         ("off", "low"),
         ("minimal", "low"),
         ("xhigh", "high"),
@@ -217,7 +217,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
         )
         return {f.code: f.message for f in check_pairs(reg, facts, [trial])}
 
-    def recommended(model: str, level: Intent) -> dict[str, JsonValue]:
+    def recommended(model: str, level: Level) -> dict[str, JsonValue]:
         return Sampling().over(facts.models[model].recommended(level)).body()
 
     qwen_on, qwen_off = recommended(QWEN, "on"), recommended(QWEN, "off")

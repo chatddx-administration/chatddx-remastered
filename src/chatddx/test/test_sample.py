@@ -27,7 +27,7 @@ def sample_plan() -> Plan:
 
 def test_the_sample_s_texts_are_english_and_translated_into_swedish() -> None:
     sample = sample_plan()
-    assert {(r.table, r.name) for r in sample.records if r.language == "en"} == {
+    assert {(r.table, r.name) for r in sample.stanzas if r.language == "en"} == {
         ("output", name)
         for name in (
             "management-plan",
@@ -46,11 +46,11 @@ def test_the_sample_s_texts_are_english_and_translated_into_swedish() -> None:
         ("prompt", "judge"),
         ("few_shot", "worked-example"),
     }
-    assert not [r for r in sample.records if r.language not in (None, "en")]
+    assert not [r for r in sample.stanzas if r.language not in (None, "en")]
     get = sample.registry.get
     translations = sample.named("translations", "sample")
     assert list(resolve(get, translations.digest, Translations).into) == ["sv"]
-    recipes = {r.name: r for r in sample.records if r.table == "recipe"}
+    recipes = {r.name: r for r in sample.stanzas if r.table == "recipe"}
     assert set(recipes) == {
         "plan",
         "plan-shown",
@@ -76,7 +76,7 @@ def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
     get = sample.registry.get
     translations = sample.named("translations", "sample").digest
     carried: set[str] = set()
-    for r in sample.records:
+    for r in sample.stanzas:
         if r.table != "recipe" or r.compilation is None:
             continue
         held = resolve(get, r.compilation, Compilation)
@@ -90,7 +90,7 @@ def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
         carried.add(r.name)
     assert carried == {
         r.name
-        for r in sample.records
+        for r in sample.stanzas
         if r.table == "recipe" and not r.name.startswith("judge")
     }
 
@@ -234,7 +234,7 @@ def test_the_sample_loads_with_its_world_s_fakes(
 # World can hold at least once.
 def test_the_sample_uses_every_table_a_data_set_and_a_world_hold() -> None:
     plan = sample_plan()
-    assert {r.table for r in plan.records} == {*PLANNED_TABLES, "facts"}
+    assert {r.table for r in plan.stanzas} == {*PLANNED_TABLES, "facts"}
     cases = load_cases(SAMPLE).values()
     assert any(c.appendices for c in cases) and any(c.ordered for c in cases)
     assert {c.language for c in cases} == {"en", "sv"}
