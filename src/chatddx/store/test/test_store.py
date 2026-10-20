@@ -13,7 +13,6 @@ from chatddx.factors.request import Compilation, Skeleton, compile_request
 from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
 from chatddx.factors.trial import Trial
 from chatddx.ledger import (
-    Call,
     CanaryCall,
     ItemKey,
     JudgeCall,
@@ -28,17 +27,7 @@ from chatddx.ledger import (
 )
 from chatddx.store import Store, migrate
 from chatddx.store.store import Connection
-
-
-def call(model: str) -> Call:
-    return Call(
-        request=fp("body"),
-        started_at=NOW,
-        finished_at=NOW,
-        status=200,
-        response={"model": model},
-        prompt_tokens=fp("tokens"),
-    )
+from chatddx.store.test.helpers import call
 
 
 def stored_world(conn: Connection) -> tuple[Store, Registry, dict[str, str]]:

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from chatddx import cli, settings
 from chatddx.portal.assets import MANIFEST, Assets
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.portal.test.helpers import signing_in
 from chatddx.test.world import TEST
 
 FRONTEND = settings.PROJECT_ROOT / "frontend"

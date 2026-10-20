@@ -7,34 +7,14 @@ from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
-from chatddx.conftest import chosen
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.portal.app import app
-from chatddx.store import People
-from chatddx.store.store import Connection
+from chatddx.portal.test.helpers import signing_in
+from chatddx.test.helpers import alice_with_password, autocommitted, curated_template
 from chatddx.test.world import TEST
 
-PASSWORD = "correct horse battery staple"
-
-
-@pytest.fixture
-def template(request: pytest.FixtureRequest) -> str:
-    return chosen(request, "curated")
-
-
-@pytest.fixture
-def autocommit() -> bool:
-    return True
-
-
-@pytest.fixture
-def alice(conn: Connection) -> Person:
-    people = People(conn)
-    found = people.find("alice")
-    assert found is not None
-    people.set_password(found.id, PASSWORD)
-    return found
+__all__ = ["alice_with_password", "autocommitted", "curated_template"]
 
 
 @pytest.fixture
@@ -56,3 +36,10 @@ def served(db: str, built: Path) -> FastAPI:
 def client(served: FastAPI) -> Iterator[TestClient]:
     with TestClient(served, base_url="https://testserver", follow_redirects=False) as c:
         yield c
+
+
+@pytest.fixture
+def signed(client: TestClient, alice: Person) -> TestClient:
+    assert alice.login == "alice"
+    assert signing_in(client).status_code == 303
+    return client

@@ -7,9 +7,8 @@ from chatddx.factors.cases import Case
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Store, fetch_vignette
+from chatddx.test.helpers import TYPED
 from chatddx.test.world import LINES, QWEN
-
-TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 
 
 def test_a_typed_case_is_kept_with_its_case_and_family(bench: Bench) -> None:

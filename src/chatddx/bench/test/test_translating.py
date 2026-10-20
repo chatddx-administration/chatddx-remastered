@@ -12,12 +12,8 @@ from chatddx.factors.request import (
     untranslated,
 )
 from chatddx.identity import Person
+from chatddx.test.helpers import INSTRUCTION
 from chatddx.test.world import LINES, LINES_GUIDED, NATIVE, QWEN
-
-INSTRUCTION = (
-    "You are assisting a physician in an emergency department. Read the case and give "
-    + "your assessment."
-)
 
 
 def swedish(bench: Bench) -> dict[str, str]:

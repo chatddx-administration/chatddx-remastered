@@ -1,40 +1,18 @@
 import json
 import time
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from psycopg.conninfo import make_conninfo
 
-from chatddx import settings
-from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.portal.app import app
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.portal.test.helpers import shown, world_served
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import GPT_OSS, GPT_OSS_ARTIFACT, LINES, OFF, faked
 
-
-@pytest.fixture
-def served(db: str, built: Path, world: Inventory) -> FastAPI:
-    return app(
-        world,
-        make_conninfo(settings.database(), dbname=db),
-        built,
-        worker=True,
-    )
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
+__all__ = ["world_served"]
 
 
 def started(signed: TestClient, **more: Any) -> str:

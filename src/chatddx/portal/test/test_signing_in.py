@@ -2,14 +2,13 @@ import pytest
 import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx2 import Response
 
 from chatddx import cli
 from chatddx.api.people import COOKIE
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.portal.app import app
-from chatddx.portal.test.conftest import PASSWORD
+from chatddx.portal.test.helpers import signing_in
 from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import TEST
@@ -18,13 +17,6 @@ ELSEWHERE = (
     {"Sec-Fetch-Site": "cross-site"},
     {"Origin": "https://elsewhere.example"},
 )
-
-
-def signing_in(
-    client: TestClient, password: str = PASSWORD, next: str = "/", **headers: str
-) -> Response:
-    form = {"login": "alice", "password": password, "next": next}
-    return client.post("/sign-in", data=form, headers=headers)
 
 
 def test_a_page_sends_whoever_isn_t_signed_in_to_sign_in_first(

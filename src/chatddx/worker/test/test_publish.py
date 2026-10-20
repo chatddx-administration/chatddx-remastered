@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from datetime import UTC, datetime
 from uuid import uuid4
 
 import psycopg
@@ -13,10 +12,10 @@ from chatddx.ledger import Call, ItemKey, RunItem
 from chatddx.runner import ItemEnded
 from chatddx.store.notify import Assembler, Events, channel, listen
 from chatddx.store.store import Connection
+from chatddx.test.helpers import NOW
 from chatddx.worker import publish
 from chatddx.worker.publish import Publisher
 
-NOW = datetime(2026, 1, 1, tzinfo=UTC)
 A, B = (f"sha256:{c * 64}" for c in "ab")
 
 

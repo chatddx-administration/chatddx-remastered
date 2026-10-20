@@ -4,22 +4,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.identity import Person
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.portal.test.helpers import shown
+from chatddx.test.helpers import INSTRUCTION
 from chatddx.test.world import JUDGE, LINES, LINES_GUIDED
-
-INSTRUCTION = (
-    "You are assisting a physician in an emergency department. Read the case and give "
-    + "your assessment."
-)
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
 
 
 def configuration(

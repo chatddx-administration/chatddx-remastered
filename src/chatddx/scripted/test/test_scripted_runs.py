@@ -4,19 +4,9 @@ import pytest
 
 from chatddx.bench import Bench
 from chatddx.cli import main
-from chatddx.ledger import RunStarted
-from chatddx.scripted import RUNS, load, ran_before, scripted_runs
-from chatddx.scripted.test.helpers import UNFINISHED, went
+from chatddx.scripted import RUNS, load
+from chatddx.scripted.test.helpers import HELD, UNFINISHED, held, went
 from chatddx.test.world import COMPARED, LINES, NATIVE, TEST, freed
-
-HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
-
-
-# The ran template ran each scripted run.
-def held(bench: Bench, name: str) -> RunStarted:
-    started = ran_before(bench, HELD[name])
-    assert started is not None
-    return started
 
 
 @pytest.mark.parametrize("template", ["ran"], indirect=True)

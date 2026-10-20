@@ -1,12 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.test_variations import thread
-from chatddx.api.test.test_writes import body
+from chatddx.api.test.helpers import body, thread
 from chatddx.scorers import metrics
+from chatddx.test.helpers import SHIPPED
 from chatddx.test.world import CLINICIAN, LINES
 
-SHIPPED = "chatddx.scorers.metrics:score"
 SHIPPED_AT = metrics.score.version
 
 

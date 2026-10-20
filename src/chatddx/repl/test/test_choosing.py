@@ -9,6 +9,7 @@ from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, by_hand, tried
 from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
+from chatddx.test.helpers import added_bob
 from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_ARTIFACT,
@@ -22,10 +23,7 @@ from chatddx.test.world import (
     QWEN_ARTIFACT,
 )
 
-
-@pytest.fixture
-def bob(conn: Connection) -> Person:
-    return People(conn).add("bob", "Bob")
+__all__ = ["added_bob"]
 
 
 # Bob's own fork of the archive's native, as bobs-native, shared with alice when `shared`.

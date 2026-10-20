@@ -2,24 +2,16 @@ from typing import Any
 
 import httpx2
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from psycopg.conninfo import make_conninfo
 
-from chatddx import settings
-from chatddx.api.app import app
-from chatddx.api.test.test_runs import asked, followed, names, told
+from chatddx.api.test.helpers import asked, followed, names, told, world_served
 from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.queue import TAKEN_OUT
 from chatddx.store.store import Connection
 from chatddx.test.world import faked
 
-
-@pytest.fixture
-def served(db: str, world: Inventory) -> FastAPI:
-    conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, conninfo, worker=True)
+__all__ = ["world_served"]
 
 
 def job(signed: TestClient, run: str) -> dict[str, Any]:

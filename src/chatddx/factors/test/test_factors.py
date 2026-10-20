@@ -102,11 +102,9 @@ from chatddx.factors.trial import (
     Trial,
     suggest_seeds,
 )
+from chatddx.test.helpers import registry
 
-
-@pytest.fixture
-def reg() -> Registry:
-    return Registry()
+__all__ = ["registry"]
 
 
 def test_digest_is_stable_and_order_independent(reg: Registry) -> None:

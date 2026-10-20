@@ -6,26 +6,10 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
-from chatddx.identity import Person
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.api.test.helpers import family
+from chatddx.portal.test.helpers import ran_template, shown
 
-
-@pytest.fixture
-def template(ran: str) -> str:
-    return ran
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-def family(signed: TestClient, name: str) -> dict[str, Any]:
-    [found] = signed.get("/api/families", params={"name": name}).json()
-    return found
+__all__ = ["ran_template"]
 
 
 def props(page: str) -> dict[str, Any]:

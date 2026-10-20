@@ -4,15 +4,10 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.curation import Plan
-from chatddx.factors.base import resolve
-from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.scorers.answer import Answer, read
+from chatddx.test.helpers import skeleton
 from chatddx.test.world import LINES, NATIVE, TOOL_ANSWER
-
-
-def skeleton(plan: Plan, recipe: str) -> Skeleton:
-    return resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)
 
 
 def said(content: str | None = None, **message: JsonValue) -> dict[str, JsonValue]:

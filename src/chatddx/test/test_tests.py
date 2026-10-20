@@ -1,5 +1,6 @@
 import ast
 import re
+from collections import defaultdict
 from functools import cache
 from pathlib import Path
 from textwrap import dedent
@@ -17,6 +18,7 @@ GAP = re.compile(r"\S {2,}\S")
 LINES = re.compile(r"\n|\\n")
 # Accommodating for plain words, which name other things too: a kind (judge), a level (off).
 WORD = re.compile(r"[a-z]+")
+SHARING = re.compile(r"(^|\.)(test_\w+|conftest)$")
 
 
 @cache
@@ -116,4 +118,51 @@ def test_a_name_tests_share_is_spelled_once_in_world_py() -> None:
     assert not again, (
         "these spell a name again that chatddx.test.world spells; import it:\n"
         + "\n".join(f"{p.relative_to(SRC)}:{c.lineno}: {c.value!r}" for p, c in again)
+    )
+
+
+def _imported(node: ast.Import | ast.ImportFrom) -> list[str]:
+    if isinstance(node, ast.ImportFrom):
+        return [node.module or ""]
+    return [a.name for a in node.names]
+
+
+def _written(node: ast.stmt) -> bool:
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return not node.name.startswith("test_")
+    if isinstance(node, ast.Assign):
+        return not all(
+            isinstance(t, ast.Name) and t.id.startswith("__") for t in node.targets
+        )
+    return isinstance(node, (ast.AnnAssign, ast.TypeAlias))
+
+
+@pytest.mark.slow
+def test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest() -> None:
+    taken = [
+        f"{path.relative_to(SRC)}:{node.lineno}: {name}"
+        for path, tree in _tests()
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        for name in _imported(node)
+        if SHARING.search(name)
+    ]
+    assert not taken, (
+        "these take from a test or a conftest; move what they share into a "
+        + "test/helpers.py:\n"
+        + "\n".join(taken)
+    )
+
+
+@pytest.mark.slow
+def test_what_tests_share_is_written_once() -> None:
+    written: defaultdict[str, list[str]] = defaultdict(list)
+    for path, tree in _tests():
+        for node in tree.body:
+            if _written(node):
+                written[ast.dump(node)].append(f"{path.relative_to(SRC)}:{node.lineno}")
+    again = [", ".join(where) for where in written.values() if len(where) > 1]
+    assert not again, (
+        "these are written alike more than once; keep one in a test/helpers.py:\n"
+        + "\n".join(again)
     )

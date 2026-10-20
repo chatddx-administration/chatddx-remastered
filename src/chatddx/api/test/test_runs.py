@@ -1,20 +1,31 @@
 import json
 import time
-from collections.abc import Callable
 from typing import Any
 from uuid import UUID, uuid4
 
 import httpx2
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.api import telling
 from chatddx.api.app import app
-from chatddx.api.test.helpers import endpoint
-from chatddx.api.test.test_variations import digest, thread
+from chatddx.api.test.helpers import (
+    UNDER_WAY,
+    Told,
+    asked,
+    digest,
+    endpoint,
+    family,
+    followed,
+    joined,
+    names,
+    sent,
+    thread,
+    told,
+    world_served,
+)
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
@@ -23,7 +34,7 @@ from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.scripted.test.test_scripted_runs import held
+from chatddx.scripted.test.helpers import held
 from chatddx.store import Catalog, People, Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -39,33 +50,7 @@ from chatddx.test.world import (
     faked,
 )
 
-type Told = list[tuple[int | None, str, dict[str, Any]]]
-
-# A fake this slow keeps a run's job under way while a stream asked for at once joins
-# it: one asked for after it has ended is told the ledger's rows alone.
-UNDER_WAY = 0.02
-
-
-@pytest.fixture
-def served(db: str, world: Inventory) -> FastAPI:
-    conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, conninfo, worker=True)
-
-
-def family(signed: TestClient, name: str) -> dict[str, Any]:
-    [found] = signed.get("/api/families", params={"name": name}).json()
-    return found
-
-
-def asked(
-    signed: TestClient, configuration: str = LINES, **more: Any
-) -> dict[str, Any]:
-    return {
-        "configuration": thread(signed, "configuration", configuration)["id"],
-        "families": [family(signed, "crlf")["id"]],
-        "seeds": [7],
-        **more,
-    }
+__all__ = ["world_served"]
 
 
 def engine(signed: TestClient, name: str) -> str:
@@ -76,50 +61,8 @@ def model(signed: TestClient, name: str) -> str:
     return endpoint(signed, name)["serves"]
 
 
-def told(text: str) -> Told:
-    said: Told = []
-    for block in text.strip().split("\n\n"):
-        if block.startswith(":"):
-            continue
-        fields = dict(line.split(": ", 1) for line in block.splitlines())
-        id = int(fields["id"]) if "id" in fields else None
-        said.append((id, fields["event"], json.loads(fields["data"])))
-    return said
-
-
 def rows(said: Told) -> Told:
     return [s for s in said if s[0] is not None]
-
-
-def followed(signed: TestClient, run: str, **headers: str) -> Told:
-    got = signed.get(f"/api/runs/{run}/events", headers=headers)
-    assert got.status_code == 200, got.text
-    assert got.headers["content-type"].startswith("text/event-stream")
-    return told(got.text)
-
-
-# What a stream is told from before its job is claimed, with the owner's queue paused
-# until the stream has said its first row: by then it listens.
-def joined(
-    http: httpx2.Client, listening: str, run: str, unpause: Callable[[], None]
-) -> Told:
-    with http.stream("GET", f"{listening}/api/runs/{run}/events", timeout=30) as got:
-        lines = got.iter_lines()
-        first = next(lines)
-        assert first.startswith("id: ")
-        unpause()
-        return told("\n".join([first, *lines]))
-
-
-def sent(signed: TestClient, body: dict[str, Any]) -> tuple[dict[str, Any], Told]:
-    got = signed.post("/api/runs", json=body)
-    assert got.status_code == 202, got.json()
-    said = followed(signed, got.json()["runs"][0]["run"])
-    return signed.get(got.headers["location"]).json(), said
-
-
-def names(said: Told) -> list[str]:
-    return [name for _, name, _ in said]
 
 
 def finished(signed: TestClient, run: str) -> dict[str, Any]:

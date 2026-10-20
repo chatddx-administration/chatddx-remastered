@@ -2,13 +2,9 @@ from uuid import uuid4
 
 import httpx2
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from psycopg.conninfo import make_conninfo
 
-from chatddx import settings
-from chatddx.api.app import app
-from chatddx.api.test.test_runs import (
+from chatddx.api.test.helpers import (
     UNDER_WAY,
     asked,
     family,
@@ -17,6 +13,7 @@ from chatddx.api.test.test_runs import (
     names,
     sent,
     told,
+    world_served,
 )
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
@@ -27,11 +24,7 @@ from chatddx.store import Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN_ARTIFACT, faked
 
-
-@pytest.fixture
-def served(db: str, world: Inventory) -> FastAPI:
-    conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, conninfo, worker=True)
+__all__ = ["world_served"]
 
 
 @pytest.mark.slow

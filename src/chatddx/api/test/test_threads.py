@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.test_variations import thread
+from chatddx.api.test.helpers import thread
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog

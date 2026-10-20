@@ -15,9 +15,9 @@ from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
 from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
+from chatddx.test.helpers import SHIPPED
 from chatddx.test.world import LINES
 
-SHIPPED = "chatddx.scorers.metrics:score"
 RAISED = metrics.score.version + 1
 
 

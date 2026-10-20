@@ -1,23 +1,16 @@
 import json
-from datetime import UTC, datetime
 from uuid import uuid4
 
 from pydantic import JsonValue
 
 from chatddx.curation import Plan
-from chatddx.factors.base import Fingerprint, resolve
-from chatddx.factors.request import Skeleton
+from chatddx.factors.base import Fingerprint
 from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.outcome import outcome, usage
 from chatddx.runner.send import STOPPED
+from chatddx.test.helpers import NOW, skeleton
 from chatddx.test.world import LINES, NATIVE
-
-NOW = datetime(2026, 1, 1, tzinfo=UTC)
-
-
-def skeleton(plan: Plan, recipe: str) -> Skeleton:
-    return resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)
 
 
 def call(

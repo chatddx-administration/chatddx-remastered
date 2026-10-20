@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from chatddx.fake_vllm.test.test_fake_vllm import body, qwen, reply
+from chatddx.fake_vllm.test.helpers import body, qwen, reply
 
 
 def test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy() -> None:

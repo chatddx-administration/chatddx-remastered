@@ -3,17 +3,13 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.helpers import family
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import load_cases
 from chatddx.store import Catalog
 from chatddx.test.world import DATA
-
-
-def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
-    [found] = signed.get("/api/families", params={"name": name}).json()
-    return found
 
 
 def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[str, Any]:

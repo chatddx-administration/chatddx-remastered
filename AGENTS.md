@@ -41,6 +41,14 @@ Tell clinicians and researchers what's going on and what they can do now.
 - Baseline is `pytest` runs every test and takes ~110s;
 - `pytest -m 'not slow'` takes ~22s.
 - `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
+```
+AGENT: REPLACE
+`src/chatddx/test/test_tests.py` fails a test that takes a helper from a test or a conftest, or writes one again, and
+says where it goes; of the names, it fails a constant of a test's own for one, not the name written out.
+---
+- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
+  `src/chatddx/test/world.py`.
+```
 - Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
   `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
 

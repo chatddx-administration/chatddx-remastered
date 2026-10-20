@@ -4,22 +4,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.identity import Person
-from chatddx.portal.test.test_library import thread_props
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
-    [found] = signed.get("/api/families", params={"name": name}).json()
-    return found
+from chatddx.api.test.helpers import family
+from chatddx.portal.test.helpers import shown, thread_props
 
 
 def editors(page: str) -> list[dict[str, Any]]:

@@ -6,11 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 
 import pytest
-from psycopg import sql
 from pydantic import ValidationError
 
 from chatddx.catalog import Subject, read
-from chatddx.conftest import connect
 from chatddx.curation import Plan
 from chatddx.factors.base import Code, Finding, Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
@@ -49,41 +47,21 @@ from chatddx.runner.events import (
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner
 from chatddx.runner.send import STOPPED, Delta, Halt, send
+from chatddx.runner.test.helpers import CASES, rows, trial
 from chatddx.runner.test.tools import component
 from chatddx.store import Rows, Store
 from chatddx.store.store import Connection
+from chatddx.test.helpers import connect
 from chatddx.test.world import (
     GPT_OSS,
     LINES,
     NATIVE_TOOLS,
     QWEN,
-    TEST,
     TOOL_ANSWER,
     faked,
     free_world,
 )
 from chatddx.tools.shipped import TOOLS, ShippedTool
-
-CASES = ("crlf", "svenska")
-
-
-def trial(
-    plan: Plan,
-    skeleton: str = LINES,
-    cases: tuple[str, ...] = CASES,
-    seeds: tuple[int, ...] = (7, 8),
-    engine: str = QWEN,
-) -> Trial:
-    source = DirectorySource(name="test", path=TEST / "vignettes")
-    refs = [plan.registry.add(c) for c in source.cases() if c.vignette.id in cases]
-    made = Trial(
-        skeleton=plan.named("recipe", skeleton).digest,
-        engine=plan.named("local_engine", engine).digest,
-        cases=tuple(refs),
-        seeds=seeds,
-    )
-    _ = plan.registry.add(made)
-    return made
 
 
 @dataclass
@@ -110,14 +88,6 @@ def elsewhere(f: Callable[[], None]) -> None:
 def reasoning(ended: ItemEnded) -> str:
     response = cast(Any, ended.item.call.response)
     return response["choices"][0]["message"]["reasoning"]
-
-
-def rows(db: str, table: str) -> int:
-    query = sql.SQL("SELECT count(*) FROM ledger.{}").format(sql.Identifier(table))
-    with connect(db) as c:
-        row = c.execute(query).fetchone()
-    assert row is not None
-    return int(row[0])
 
 
 @pytest.mark.usefixtures("fake")

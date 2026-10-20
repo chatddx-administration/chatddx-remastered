@@ -34,13 +34,10 @@ from chatddx.store.notify import (
     tell,
 )
 from chatddx.store.store import Connection
+from chatddx.store.test.helpers import call
+from chatddx.test.helpers import autocommitted
 
-from .test_store import call
-
-
-@pytest.fixture
-def autocommit() -> bool:
-    return True
+__all__ = ["autocommitted"]
 
 
 @pytest.fixture

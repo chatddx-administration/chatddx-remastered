@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.test_variations import thread
+from chatddx.api.test.helpers import thread
 from chatddx.test.world import LINES
 
 
