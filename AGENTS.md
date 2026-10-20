@@ -14,34 +14,6 @@ This document contains project-wide instructions written by humans for agents.
 - `pnpm --dir frontend build` builds frontend.
 - `chatddx.settings` is the project-wide source of truth.
 
-## Typechecking
-
-- Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
-- `pnpm --dir frontend check` typechecks frontend
-
-## Errors
-
-There are four ways an error can announce itself, the guiding principles are:
-
-- fail asap
-- dodge handling
-
-### 1. Crash at boot
-
-Runtime errors that can be known at boot should have a check that crashes boot when failing.
-
-### 2. Runtime write to stderr and the edge
-
-Errors for developers and ops (including unexpected errors) writes raw templated messages to generic channels.
-
-### 3. Part of the UX runtime
-
-Errors for clinicians and researchers should tell them what to do.
-
-### 4. Silent
-
-Not a thing.
-
 ## Testing
 
 - Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s. `-n 4`
@@ -51,22 +23,61 @@ Not a thing.
 - A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
 - `pnpm --dir frontend test` tests frontend
 
-## Committing
+## Handling errors and warnings
 
-If change in docs (changes in docs/* or agents/*):
+Errors and warnings beyond the scope of the current task should remain, never hide them.
 
-- No checks needed
+### 0. Ignore completely
 
-If change in code
+Consider dodging handling completely before deciding what to do with it, developers and ops may want those stacktraces.
 
-- Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively.
-- run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark the ones that stand out.
-- Typecheck and test frontend as normal.
+### 1. Crash at boot
 
-After a change to any module's surface, run:
+First choice: If a runtime error can be known at boot, it should crash boot.
 
-- `chatddx openapi > frontend/openapi.json`
-- `chatddx stamp`
+### 2a. Raw writes to stderr and/or edges
+
+For developers and ops, minimize tampering with the message and maximize simplicity in handling.
+
+### 2b. Part of the UX runtime
+
+Tell clinicians and researchers what's going on and what they can do now.
+
+## Testing
+
+### Python
+
+- Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s. `-n 4`
+  (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
+- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
+  `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
+- A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
+
+### TypeScript
+
+- `pnpm --dir frontend test` tests frontend
+
+## Pre-commit checklist
+
+If docs have changed (docs/*):
+
+- Ensure no broken references with `python scripts/refcheck.py`
+- If only docs have changed, skip the rest of the checks and commit
+
+Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
+
+If package has changed (src/chatddx/*):
+
+- Crosscheck `chatddx openapi > frontend/openapi.json` with `chatddx stamp`, flag when one change but not the other.
+- Run `ruff check` and `basedpyright`
+- Run `pytest -p chatddx.test.budget` without `-n 4`, flip when it feels right.
+
+If frontend has changed (frontend/*):
+
+- Run `pnpm --dir frontend check`
+- Run `pnpm --dir frontend test`
+
+Commit.
 
 ## Development stages
 
@@ -79,26 +90,14 @@ A thing under development is in one of the following stages:
 5. Itemized - Has one or more items in `docs/backlog.md`
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
-```
-AGENT: REPLACE
-`docs/reference/` is `docs/surfaces/` now.
----
-8. Solidified - Dependable module documented in `docs/modules/<name>.md` and `docs/surfaces/<name>.md`
-```
-8. Solidified - Dependable module documented in `docs/modules/<name>.md` and `docs/reference/<name>.md`
-9. Cemented - TBD
-10. Protected - TBD
+8. Solidified:
+   - Docs under rule-1 in `docs/modules/<name>.md`
+   - Surface stamped in `docs/surfaces/<name>.md`
+9. Cemented: TBD
+10. Protected: TBD
 
-Things can bounce around freely across these stages but is only in one stage at once. Docs are never edited and reworked
-in the same commit: Move verbatim, commit, then edit or insert suggestions if permitted.
-
-### Stage 5 and above
-
-docs _move_ between backlog, plan, wip and doc, so a thing is never explained in more than one doc at a time.
-
-### Stage 8 and above
-
-Guarded by rule 1 and `chatddx stamp`.
+Things can bounce around freely across these stages but is only in one stage at once. Docs are never moved and reworked
+in the same commit: Move verbatim, commit, then insert suggestions or edit if permitted.
 
 ## Documentation rules
 
@@ -116,13 +115,7 @@ AGENT: <verb>
 <optional suggestion for new content>
 ```
 
-```
-AGENT: REPLACE
-`docs/reference/` is `docs/surfaces/` now.
----
 `docs/surfaces/*` is generated by `chatddx stamp` and is stamped by a human when a public surface changes.
-```
-`docs/reference/*` is generated by `chatddx stamp` and is stamped by a human when a public surface changes.
 
 ### 2. Docs refer to the code, the code speaks for itself.
 
@@ -172,11 +165,11 @@ Public solidified entry points may have a docstring that describes their cost an
 invokes, locks it holds and complexity of its operations. The utility is derived from its responsibilty without any
 assumptions about the caller.
 
-It should be written as a continuation of its signature, raises and findings and only fill in the blanks:
+It should be written as a direct continuation of its signature, raises and findings and only fill in the blanks:
 
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
-- When B is considerable enough to offset A, a docstring is justified.
+- When B outweighs A, a docstring by that amount is justified.
 
 Docstrings are reported by `chatddx stamp` for a stamp.
 

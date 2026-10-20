@@ -87,13 +87,7 @@ Decided, built:
   bytes are read back. A kind defined only in a test is no longer read back, and no longer needs undoing.
 - `src/chatddx/store/test/test_catalog.py:test_kinds_and_fields_match_the_database` compares `THREAD_KINDS` with
   `BY_KIND`.
-```
-AGENT: REPLACE
-`docs/reference/` is `docs/surfaces/` now.
----
 - Described in `docs/surfaces/factors.md`.
-```
-- Described in `docs/reference/factors.md`.
 
 Why the tag stays: the class is visible in Python, but not in the stored bytes. `kind` does three jobs:
 

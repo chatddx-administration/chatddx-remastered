@@ -6,14 +6,6 @@ texts.
 
 None of it changes an output or a score: no component refers to the catalog, so no digest depends on it.
 
-```
-AGENT: REPLACE
-`docs/reference/` is `docs/surfaces/` now.
----
-Fields, classes, functions and errors are in docs/surfaces/catalog.md.
-```
-Fields, classes, functions and errors are in docs/reference/catalog.md.
-
 The catalog refers to
 
 - factor components by digest

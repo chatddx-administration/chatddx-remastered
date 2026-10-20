@@ -7,16 +7,6 @@ documented elsewhere: the runner and the scoring pass (docs/modules/runner.md), 
 (docs/modules/factors.md), names, owners and titles (docs/modules/catalog.md), endpoints and clearance
 (docs/modules/inventory.md), and model facts and their lints (docs/modules/facts.md).
 
-```
-AGENT: REPLACE
-`docs/reference/` is `docs/surfaces/` now.
----
-This document describes what the shell does and why. Its names and what they raise are in docs/surfaces/repl.md, and
-its commands in `src/chatddx/repl/commands.py:COMMANDS`.
-```
-This document describes what the shell does and why. Its names and what they raise are in docs/reference/repl.md, and
-its commands in `src/chatddx/repl/commands.py:COMMANDS`.
-
 ## Starting
 
 Lines are read with readline, which keeps a history (`~/.chatddx_history`, or `--history`) and completes with Tab (see
