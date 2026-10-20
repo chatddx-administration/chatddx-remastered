@@ -1,6 +1,6 @@
 # `chatddx.catalog`
 
-Written by `chatddx reference` from `src/chatddx/catalog/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/catalog/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## About `(_Frozen)`
 `src/chatddx/catalog/model.py:About`

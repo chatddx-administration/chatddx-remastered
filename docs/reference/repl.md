@@ -1,6 +1,6 @@
 # `chatddx.repl`
 
-Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/repl/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## ANSWERED
 `src/chatddx/repl/render.py:ANSWERED`

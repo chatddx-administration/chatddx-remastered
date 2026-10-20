@@ -23,9 +23,7 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
-# Compromise: a tag pending in a reference under another phrase is read as text.
-REFERENCE_TAG = "SIGN-OFF"
-REFERENCED = (
+STAMPED = (
     "api",
     "bench",
     "catalog",

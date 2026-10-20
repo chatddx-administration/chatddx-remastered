@@ -1,6 +1,6 @@
 # `chatddx.inventory`
 
-Written by `chatddx reference` from `src/chatddx/inventory/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/inventory/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## AnySource
 `src/chatddx/inventory/inventory.py:AnySource`

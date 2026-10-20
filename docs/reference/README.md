@@ -1,8 +1,8 @@
 # Reading a reference
 
-Each file here is written by `chatddx reference` from a package of `settings.REFERENCED`: an entry for each public
-name, sorted alphabetically whatever its case, so that a class's members follow it. An entry's heading is the name,
-with its decorators, type parameters and bases; below it is where the code is.
+Each file here is written by `chatddx stamp` from a package of `settings.STAMPED`: an entry for each public name,
+sorted alphabetically whatever its case, so that a class's members follow it. An entry's heading is the name, with its
+decorators, type parameters and bases; below it is where the code is.
 
 - The bullets are a function's parameters or a class's fields, and `∟` the return type. `*`: the parameters after it
   are keyword-only; `/`: those before it are positional-only. A function a class binds as an attribute is its method:
@@ -13,5 +13,6 @@ with its decorators, type parameters and bases; below it is where the code is.
   written, and from `<exception>` when it is the exception caught.
 - Finds: each `Finding` the function makes, as `code`: message, followed as Raises are; a warning unless it says
   info.
-- A fenced block that opens with `SIGN-OFF: ADD`, `REPLACE` or `REMOVE` is a change in the code not yet signed off.
-  Doing what it says, and taking the block away, is the sign-off.
+- A change in the code waits for a stamp as a git conflict: the lines between `<<<<<<< signed` and `=======` are as
+  last stamped, and those between `=======` and `>>>>>>> @stamp` are what the code says now. Keeping the latter, and
+  taking the rest away, as a conflict tool's "theirs" does, is the stamp.

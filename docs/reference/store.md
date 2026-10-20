@@ -1,6 +1,6 @@
 # `chatddx.store`
 
-Written by `chatddx reference` from `src/chatddx/store/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## Assembler
 `src/chatddx/store/notify.py:Assembler`

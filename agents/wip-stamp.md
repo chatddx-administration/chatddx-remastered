@@ -1,13 +1,13 @@
-# Reference
+# Stamp
 
-`chatddx reference` writes `docs/reference/<package>.md` for each package in `settings.REFERENCED` from the code
-(`src/chatddx/reference/`): each public name's signature, what it raises and what it finds.
-`settings.REFERENCED` holds the solidified packages, those with a `docs/<package>.md`, and the reference replaces their
-`docs/<package>-api.md`. What those held that isn't Python (schemas, commands, file formats, conventions, tests) is
-dropped; their tables of finding codes are the references' Finds.
+`chatddx stamp` writes `docs/reference/<package>.md` for each package in `settings.STAMPED` from the code
+(`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
+last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/<package>.md`, and the reference
+replaces their `docs/<package>-api.md`. What those held that isn't Python (schemas, commands, file formats, conventions,
+tests) is dropped; their tables of finding codes are the references' Finds.
 
 ## Where it stands among the common ways
-- Reading the code: griffe (`src/chatddx/reference/code.py:Code`), the static loader behind mkdocstrings and
+- Reading the code: griffe (`src/chatddx/stamp/code.py:Code`), the static loader behind mkdocstrings and
   `griffe check`, gives the names, what they are, their members, imports and line ranges. Their text, as the code
   spells it, is taken from the AST, since griffe respells it (`Literal['current']` for `Literal["current"]`).
 - Rendering: its own, for the format below. griffe2md, the common renderer, writes about 490 lines for identity and
@@ -15,26 +15,33 @@ dropped; their tables of finding codes are the references' Finds.
 - What is raised: what pydoclint and ruff's DOC501 check a docstring's "Raises" against, a function's own `raise`
   statements, and with them its private helpers'.
 - The workflow: Microsoft's API Extractor commits its API report the same way, and fails a build while it is behind.
+- What changed: a git conflict, the format editors and their conflict tools already read, so that one key, a conflict
+  tool's "theirs", applies a stamp and undo and redo flip between the two sides.
+- The name: `stamp`, since `reference` is also SQL's, the curation plan's (`REFERENCES`) and the factors' (`RefTo`), and
+  `signoff` is also git's (`Signed-off-by`).
 - griffe is in the `docs` dependency group: a deployed chatddx goes without it.
 
 ## The workflow
-- Before a commit, an agent runs `chatddx reference`, as it does `chatddx openapi`. `--check` writes nothing and fails
+- Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`. `--check` writes nothing and fails
   while a reference is behind the code, and so does
-  `src/chatddx/reference/test/test_reference.py:test_each_reference_is_as_chatddx_reference_writes_it`.
-- A reference that doesn't exist yet is written whole, and signed off as a whole in review.
-- After that, a change in the code is tagged above the lines it changes, in the template of AGENTS.md, rule 1, with
-  `SIGN-OFF: ADD`, `REPLACE` or `REMOVE`; the phrase is `settings.REFERENCE_TAG`, since `REFERENCE` is also SQL's, and
-  is changed only while no tag is pending. A human applies a tag by hand, which is their sign-off: the tag goes, and
-  so do the lines it replaces or removes. Tags left unapplied are worked out anew on the next run from what is
-  applied, so they neither pile up nor go stale, and a line edited by hand is tagged back to what the code says.
-- Only the entries are tagged. What comes before the first, the title and a line saying how to read it, is the
+  `src/chatddx/stamp/test/test_stamp.py:test_each_reference_is_as_chatddx_stamp_writes_it`.
+- A reference that doesn't exist yet is written whole, and stamped as a whole in review.
+- After that, a change in the code is written in place of the lines it changes as a git conflict
+  (`src/chatddx/stamp/markers.py:stamped`): `<<<<<<< signed`, the lines as last stamped, `=======`, what the code says
+  now, `>>>>>>> @stamp`. A human takes the code's side, which is their stamp. Stamps left pending are worked out anew
+  on the next run from the signed sides, so they neither pile up nor go stale, and a line edited by hand is stamped
+  back to what the code says. A conflict marker that isn't a stamp's, from a merge, is refused.
+- `.prettierignore` leaves `docs/reference/` out, since prettier reads a stamp as markdown: `=======` underlines the
+  line above it as a heading, `>>>>>>>` is a quote seven deep. The root `.prettierrc` is there for conform.nvim, which
+  runs prettier where it finds one, the only place prettier reads `.prettierignore` from.
+- Only the entries are stamped. What comes before the first, the title and a line saying how to read it, is the
   generator's own and written as it is, and so is `docs/reference/README.md`, the legend
-  (`src/chatddx/reference/page.py:LEGEND`): they change with the generator, in its commits, and aren't signed off.
+  (`src/chatddx/stamp/page.py:LEGEND`): they change with the generator, in its commits, and aren't stamped.
 
 ## What a reference holds
 Its header points to the legend, `docs/reference/README.md`, which says how to read it: what `∟`, `*`, `/`, "through"
 and a quoted message mean, that a bound method leaves out its instance, that a public callee's raises are in its own
-entry, and what a pending tag is.
+entry, and what a pending stamp is.
 
 One entry for each name defined at the top of the package's modules, tests left out, that doesn't start with `_`, and
 one for each public method, property and `__init__` of its classes, as `Class.name`, all sorted alphabetically whatever
@@ -79,7 +86,7 @@ Raises:
 - A class says what its validators raise, in a `ValidationError`, and what `__post_init__` raises.
 
 ## What it says is found
-"Finds:" follows "Raises:", and is walked the same way (`src/chatddx/reference/trace.py:Trace`): each
+"Finds:" follows "Raises:", and is walked the same way (`src/chatddx/stamp/trace.py:Trace`): each
 `chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them,
 each once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the
 level is said when it isn't a warning, `(info, through `_pair`)`. It replaces the tables of finding codes the API docs

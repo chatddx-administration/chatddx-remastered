@@ -1,6 +1,6 @@
 # `chatddx.bench`
 
-Written by `chatddx reference` from `src/chatddx/bench/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/bench/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## add_compilations
 `src/chatddx/bench/seen.py:add_compilations`

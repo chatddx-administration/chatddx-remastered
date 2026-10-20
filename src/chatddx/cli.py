@@ -380,22 +380,22 @@ def _openapi(_: argparse.Namespace) -> None:
     print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
-def _reference(args: argparse.Namespace) -> None:
-    # Compromise: griffe, which chatddx.reference reads the code with, is a development
+def _stamp(args: argparse.Namespace) -> None:
+    # Compromise: griffe, which chatddx.stamp reads the code with, is a development
     # dependency, which a deployed chatddx goes without.
-    from chatddx import reference
+    from chatddx import stamp
 
-    held = reference.regenerated(args.package or settings.REFERENCED)
+    held = stamp.regenerated(args.package or settings.STAMPED)
     stale = {p: t for p, t in held.items() if not p.exists() or p.read_text() != t}
     if args.check and stale:
         named = ", ".join(str(p.relative_to(settings.PROJECT_ROOT)) for p in stale)
-        raise SystemExit(f"reference: {named} behind the code: run chatddx reference")
+        raise SystemExit(f"stamp: {named} behind the code: run chatddx stamp")
     for path, text in held.items():
         if not args.check and path in stale:
             path.parent.mkdir(parents=True, exist_ok=True)
             _ = path.write_text(text)
         print(
-            f"{path.relative_to(settings.PROJECT_ROOT)}: {reference.pending(text, settings.REFERENCE_TAG)} tags pending"
+            f"{path.relative_to(settings.PROJECT_ROOT)}: {stamp.pending(text)} stamps pending"
         )
 
 
@@ -652,22 +652,22 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     openapi.set_defaults(run=_openapi)
 
-    referenced = commands.add_parser(
-        "reference",
-        help="write docs/reference/<package>.md from the code, tagging what changed for "
-        + "review: ADD, REPLACE or REMOVE",
+    stamping = commands.add_parser(
+        "stamp",
+        help="write docs/reference/<package>.md from the code, marking what changed as "
+        + "a git conflict for a human to stamp",
     )
-    _ = referenced.add_argument(
+    _ = stamping.add_argument(
         "--check",
         action="store_true",
         help="write nothing, and fail when a reference is behind the code",
     )
-    _ = referenced.add_argument(
+    _ = stamping.add_argument(
         "package",
         nargs="*",
-        help="the packages, such as bench (settings.REFERENCED)",
+        help="the packages, such as bench (settings.STAMPED)",
     )
-    referenced.set_defaults(run=_reference)
+    stamping.set_defaults(run=_stamp)
 
     fake = commands.add_parser(
         "fake-vllm",

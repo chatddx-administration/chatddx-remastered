@@ -1,6 +1,6 @@
 # `chatddx.identity`
 
-Written by `chatddx reference` from `src/chatddx/identity/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/identity/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## collaborates
 `src/chatddx/identity/identity.py:collaborates`

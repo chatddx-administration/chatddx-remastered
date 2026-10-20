@@ -1,0 +1,2 @@
+# Accommodating for conform.nvim, which runs prettier in the nearest directory holding a prettier config, and for
+# prettier, which reads .prettierignore only from where it runs.

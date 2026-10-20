@@ -1,13 +1,10 @@
-import re
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
 
 from chatddx import settings
-from chatddx.reference import Code, Trace, page, regenerated, tagged, untagged
-
-TAG = "SIGN-OFF"
+from chatddx.stamp import Code, Trace, page, regenerated, signed, stamped
 
 
 def written(tmp_path: Path, files: dict[str, str]) -> str:
@@ -30,19 +27,13 @@ def entry(page: str, heading: str) -> list[str]:
 
 
 def applied(text: str) -> str:
-    lines = text.splitlines()
     kept: list[str] = []
-    i = 0
-    while i < len(lines):
-        if lines[i].startswith("```") and lines[i + 1].startswith(f"{TAG}: "):
-            end = lines.index(lines[i], i + 2)
-            found = re.search(r"the (\d+) lines below|the line below", lines[i + 2])
-            below = 0 if found is None else int(found.group(1) or 1)
-            kept += lines[i + 4 : end] if lines[i + 3 : i + 4] == ["---"] else []
-            i = end + 1 + below
-            continue
-        kept.append(lines[i])
-        i += 1
+    dropping = False
+    for line in text.splitlines():
+        if line in ("<<<<<<< signed", "======="):
+            dropping = line == "<<<<<<< signed"
+        elif line != ">>>>>>> @stamp" and not dropping:
+            kept.append(line)
     return "\n".join(kept) + "\n"
 
 
@@ -444,77 +435,75 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
 
 
 def test_a_first_reference_is_written_whole() -> None:
-    assert tagged(None, "# a\n\n## b\n", TAG) == "# a\n\n## b\n"
+    assert stamped(None, "# a\n\n## b\n") == "# a\n\n## b\n"
 
 
-def test_what_changed_is_tagged_above_the_lines_it_changes() -> None:
-    assert tagged("## e\na\nb\nc\n", "## e\nA\nb\nd\n", TAG) == dedent(
+def test_what_changed_is_stamped_in_its_place_as_a_git_conflict() -> None:
+    assert stamped("## e\na\nb\nc\n", "## e\nA\nb\nd\n") == dedent(
         """\
         ## e
-        ```
-        SIGN-OFF: REPLACE
-        replace the line below with these
-        ---
+        <<<<<<< signed
+        a
+        =======
         A
-        ```
-        a
+        >>>>>>> @stamp
         b
-        ```
-        SIGN-OFF: REPLACE
-        replace the line below with these
-        ---
-        d
-        ```
+        <<<<<<< signed
         c
+        =======
+        d
+        >>>>>>> @stamp
         """
     )
-    assert tagged("## e\na\nb\n", "## e\nb\nc\n", TAG) == dedent(
+    assert stamped("## e\na\nb\n", "## e\nb\nc\n") == dedent(
         """\
         ## e
-        ```
-        SIGN-OFF: REMOVE
-        remove the line below
-        ```
+        <<<<<<< signed
         a
+        =======
+        >>>>>>> @stamp
         b
-        ```
-        SIGN-OFF: ADD
-        add these lines here
-        ---
+        <<<<<<< signed
+        =======
         c
-        ```
+        >>>>>>> @stamp
         """
     )
 
 
-def test_what_comes_before_the_first_entry_is_written_as_it_is_and_not_tagged() -> None:
+def test_what_comes_before_the_first_entry_is_written_as_it_is_and_not_stamped() -> (
+    None
+):
     old = "# a\n\nread it so\n\n## e\nb\n"
-    assert tagged(old, "# a\n\nread it otherwise\n\n## e\nb\n", TAG) == (
+    assert stamped(old, "# a\n\nread it otherwise\n\n## e\nb\n") == (
         "# a\n\nread it otherwise\n\n## e\nb\n"
     )
 
 
-def test_tagging_again_gives_the_same_tags_and_applying_them_none() -> None:
+def test_stamping_again_gives_the_same_stamps_and_applying_them_none() -> None:
     old, new = "## e\na\nb\nc\nd\ne\n", "## e\na\nx\ny\nc\ne\nf\n"
-    once = tagged(old, new, TAG)
-    assert tagged(once, new, TAG) == once
-    assert untagged(once, TAG) == old.splitlines()
+    once = stamped(old, new)
+    assert stamped(once, new) == once
+    assert signed(once) == old.splitlines()
     assert applied(once) == new
-    assert tagged(applied(once), new, TAG) == new
+    assert stamped(applied(once), new) == new
 
 
-def test_a_tag_holding_a_fence_is_fenced_with_more_backticks() -> None:
-    found = tagged("## e\n", "## e\n```\nb\n```\n", TAG)
-    assert found.splitlines()[1] == "````"
-    assert applied(found) == "## e\n```\nb\n```\n"
+def test_a_line_that_is_a_divider_outside_a_stamp_is_text() -> None:
+    assert signed("## e\n=======\n") == ["## e", "======="]
 
 
-def test_an_unclosed_tag_is_refused() -> None:
-    with pytest.raises(ValueError, match="line 1: a SIGN-OFF tag isn't closed"):
-        _ = untagged("```\nSIGN-OFF: ADD\nadd these lines here\n", TAG)
+def test_a_conflict_that_isn_t_a_stamp_is_refused() -> None:
+    with pytest.raises(ValueError, match="line 2: a conflict marker that isn't"):
+        _ = signed("## e\n<<<<<<< HEAD\na\n=======\nb\n>>>>>>> main\n")
+
+
+def test_an_unclosed_stamp_is_refused() -> None:
+    with pytest.raises(ValueError, match="line 1: a stamp isn't closed"):
+        _ = signed("<<<<<<< signed\na\n=======\nb\n")
 
 
 @pytest.mark.slow
-def test_each_reference_is_as_chatddx_reference_writes_it() -> None:
-    for path, text in regenerated(settings.REFERENCED).items():
-        assert path.read_text() == text, "chatddx reference"
+def test_each_reference_is_as_chatddx_stamp_writes_it() -> None:
+    for path, text in regenerated(settings.STAMPED).items():
+        assert path.read_text() == text, "chatddx stamp"
