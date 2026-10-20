@@ -31,80 +31,22 @@ Ledger records are written as they happen with those that belong together in a s
 
 Heads-up: A record whose place is taken is refused.
 
-```
-AGENT: dedupe
-From "and each write notifies the run's channel": docs/modules/store.md ("Notifications") suits it best; also
-in docs/modules/ledger.md ("Storage").
----
-```
-Each is numbered as it is written, and each write notifies the run's channel, so that a run's rows, its scores'
-included, are read back in that order. A run's or a score's log is read back whole, and validated as it is read. Runs
-and scores are listed newest first: those of a run, or those asked for; and the store tells which runs have finished.
-
 ### Texts
 
-The texts of database sources (docs/modules/inventory.md, "Sources") are kept as people typed them, each under a new id,
-and never changed. The writer adds and reads them; only the admin deletes one, to purge spam; the reader can't read
-them, since they are vignettes.
+The texts of database sources (docs/modules/inventory.md, "Sources") are kept as people typed them, each under a new id.
+The writer adds and reads them; only the admin deletes one, to purge spam; the reader can't read them, since they are
+vignettes.
 
 ### People
 
-```
-AGENT: dedupe
-"never removes them" and "disabling a person ends their sessions": docs/modules/identity.md ("People") suits
-them best, with ("Authentication").
----
-```
 People, their passwords and their sessions are identity's (docs/modules/identity.md). The store adds people and changes
-them, but never removes them; it checks passwords and keeps sessions, removing those expired whenever one opens, and
-disabling a person ends their sessions.
+them. It checks passwords and keeps sessions, removing those expired whenever one opens, and disabling a person ends
+their sessions.
 
 ### The catalog
 
 The catalog decides what its rows mean (docs/modules/catalog.md). The store reads the rows it asks for and writes what
 it decided, all of one change at once. Whoever reads the catalog asks the catalog, over the rows the store reads.
-
-### The Queue
-
-```
-AGENT: dedupe
-From "Workers claims the next queued job": repeats docs/modules/worker.md ("Claiming"), which suits it best;
-its last clause is said again below, "Claims take turns".
----
-```
-The Queue is a list of Jobs that points at their started run. Workers claims the next queued job by locking its row, so
-two workers never take the same one, and claims take turns, so that the runs on an endpoint keep to its capacity between
-them.
-
-```
-AGENT: dedupe
-Also in docs/modules/store.md ("Store"), which suits it best, and docs/modules/worker.md ("A job").
----
-```
-Heads-up: The worker's queue is state, not factors or records, and is updated in place.
-
-```
-AGENT: dedupe
-From "Queuing, halting": docs/modules/store.md ("Notifications") suits it best; also, from the worker's side,
-in docs/modules/worker.md ("Working a job").
----
-```
-```
-AGENT: dedupe
-Its first sentence repeats docs/modules/worker.md ("Claiming"), which suits it best, and the paragraph above.
----
-```
-Claims take turns, so that the runs on an endpoint keep to its capacity between them. Queuing, halting, pausing, ending
-and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
-
-```
-AGENT: dedupe
-Also in docs/modules/worker.md ("A job"), which suits it best, being the worker's,
-and docs/migrations.md ("worker").
----
-```
-A job keeps the scorers it has finished, so that one queued again mid-scoring, as a stopping worker leaves it, scores
-what is left.
 
 ### Notifications
 
@@ -137,11 +79,11 @@ the app connects as the writer and not as the admin.
 At tier 0 there are no grants, so a tier-0 deployment has to connect as the admin. Tier-2 triggers bind the admin too,
 and only a superuser who disables triggers gets around them.
 
-| Role   | Used by                          | Created by    | May                                                                                               |
-| ------ | -------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| Admin  | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles.                                         |
-| Writer | The app.                         | Setup script. | Read and add to factors, ledger and catalog; create, read and update people and the worker queue. |
-| Reader | Nothing yet.                     | Tier 1.       | Read the factors, the catalog and people, but not passwords.                                      |
+| Role   | Used by                          | Created by    | May                                                      |
+| ------ | -------------------------------- | ------------- | -------------------------------------------------------- |
+| Admin  | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles |
+| Writer | The app.                         | Setup script. | Read and add to factors, ledger and catalog.             |
+| Reader | Nothing yet.                     | Tier 1.       | Read the factors, the catalog and people.                |
 
 The reader can't read the ledger or sessions.
 

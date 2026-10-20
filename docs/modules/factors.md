@@ -8,17 +8,8 @@ There is a catch-22: grouping well requires knowing _how_ each choice affects th
 research is trying to find out. So we start from a flexible set of factors based on reasonable guesses and refine it as
 we learn.
 
-```
-AGENT: dedupe
-From "an environment that can be rebuilt exactly": repeats docs/chatddx.md ("Purpose"), which suits it best.
----
-```
-Factors are the building blocks of the chatddx rig: an environment that can be rebuilt exactly, and shown to be the
-same, for scientific rigor. This document describes what each factor is for and how factors combine. Names, fields, and
-errors are in docs/reference/factors.md.
-
-Factors depend on nothing else in chatddx; the model facts, the catalog, the ledger and the store build on them.
-Principal authors are the roles in docs/modules/identity.md.
+Factors are the building blocks of the chatddx rig and depend on nothing else in chatddx; the model facts, the catalog,
+the ledger and the store build on them. Principal authors are the roles in docs/modules/identity.md.
 
 ## What a factor is
 
@@ -33,16 +24,9 @@ Being a factor and being a component are separate questions. A factor is held in
 
 1. **Pinned**: chosen in advance and fixed by digest: a trial or a scoring, and every component it references. Prompts,
    sampling, engines, model weights, cases, seeds, expectations and scorers are pinned.
-```
-AGENT: dedupe
-From "Set beside the code the scorer pins": docs/modules/ledger.md ("Score start") suits it best, as start
-records and their checks are the ledger's.
----
-```
 2. **Recorded**: set or known when a run or a score starts, and written into its start record, which is sealed with the
    rest of its log (docs/modules/ledger.md): the execution settings (see "Execution"), the version of the rig that sent
-   the requests, and the scorer code that actually ran. Set beside the code the scorer pins, the last shows whether what
-   ran is what should have run, and checking a score warns when they differ.
+   the requests, and the scorer code that actually ran.
 3. **Observed**: set by nobody, and only detected afterwards. These are the parts of the world outside our control: a
    remote engine that changes without notice, a tool such as a web search that answers differently from day to day, a
    vignette edited at its source, GPU arithmetic that isn't deterministic. Fingerprints, returned model names, drift
@@ -53,57 +37,24 @@ runs of the same trial are interchangeable only when those agree too (docs/backl
 
 ### Not factors
 
-- Records of what happened (runs, scores, calls): [docs/modules/ledger.md]. They hold the recorded factors and the
+- Records of what happened (runs, scores, calls): docs/modules/ledger.md. They hold the recorded factors and the
   evidence of the observed ones, but they aren't factors themselves.
-- People, roles, authentication and authorization: [docs/modules/identity.md].
-- Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/modules/catalog.md].
-- Sensitivity and vetting: [agents/wip-clearance.md].
-```
-AGENT: dedupe
-The next item, "Knowledge about models", says it again; docs/modules/factors.md ("Model facts") suits it best;
-also in docs/modules/factors.md ("Components but not factors") and docs/modules/facts.md ("Facts").
----
-```
-- Facts from model cards: [docs/modules/facts.md].
-- Inventory: [docs/modules/inventory.md].
-```
-AGENT: dedupe
-From "the skeleton holds what they did": docs/modules/factors.md ("Model facts") suits it best; also in
-docs/modules/factors.md ("Components but not factors") and docs/modules/facts.md ("Facts").
----
-```
-- Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
-  (docs/modules/facts.md). Facts work out what a recipe's intents send when it is compiled, and check skeletons against
-  engines; the skeleton holds what they did, so no factor's digest depends on them (see "Components but not factors").
+- People, roles, authentication and authorization: docs/modules/identity.md.
+- Names, labels, languages, tags, descriptions, owners, collaborators and version history: docs/modules/catalog.md.
+- Sensitivity and vetting: agents/wip-clearance.md.
+- Facts from model cards: docs/modules/facts.md.
+- Inventory: docs/modules/inventory.md.
 
 #### Components but not factors
 
 Most components are factors, these are the exceptions:
 
-```
-AGENT: dedupe
-From "fixed probe requests": also in docs/modules/factors.md ("Canary sets"), which suits it best; "without
-changing any output" is only here.
----
-```
 - Canary sets are _instruments_: fixed probe requests that measure observed factors without changing any output (see
   "Canary sets").
 
-```
-AGENT: dedupe
-From "each says how a skeleton was made": docs/modules/factors.md ("Compilation") suits it best; the pointer
-here can stay.
----
-```
 - Compilations are _provenance_: each says how a skeleton was made, and no component refers to one, so they change no
   digest and no output (see "Compilation").
 
-```
-AGENT: dedupe
-From "Only a compilation refers to them": docs/modules/factors.md ("Model facts") suits it best; also in
-docs/modules/factors.md ("Not factors") and docs/modules/facts.md ("Facts").
----
-```
 - Model facts are _knowledge_: what is known about a model, which compiling a recipe's intents reads (see "Model
   facts"). Only a compilation refers to them, so they change no factor's digest.
 
@@ -127,31 +78,15 @@ The canonical form keeps what means something and drops what doesn't:
 - Adding a field whose default keeps the old behavior changes no existing digest, since values equal to their defaults
   are left out.
 
-```
-AGENT: dedupe
-From "A component changed in any way": docs/modules/factors.md ("What a factor is") suits it best; that it
-follows its kind's rules is this place's own.
----
-```
 What is stored is the truth. A component read back keeps the digest it was stored under, even where today's code would
 write it differently; the difference is reported, never quietly corrected. A component changed in any way is built anew,
 follows its kind's rules, and gets its own digest.
 
 ### Versions
 
-```
-AGENT: replace
-Its "so after a bump the store can't return components of the old version, nor load a closure that holds one"
-repeats docs/backlog.md ("Old versions readable"), which it cites and which holds the gap.
----
 Each component type has a schema version. Adding a field with a backward-compatible default needs no new version;
 changing an existing field's meaning or default does. Bytes written under another version are refused rather than
 guessed at (docs/backlog.md, "Old versions readable").
-```
-Each component type has a schema version. Adding a field with a backward-compatible default needs no new version;
-changing an existing field's meaning or default does. Bytes written under another version are refused rather than
-guessed at, so after a bump the store can't return components of the old version, nor load a closure that holds one
-(docs/backlog.md, "Old versions readable").
 
 ### Kinds
 
@@ -187,21 +122,6 @@ unknown kind or version.
 A _finding_ is a warning, or an info, about something valid but risky, or about something observed that doesn't match
 what was declared. It says what it concerns.
 
-### Registries and bundles
-
-A registry holds components by digest, in memory, accepts stored bytes only when they match their digest, and can list a
-set of components together with everything they reference.
-
-```
-AGENT: dedupe
-From "and reports each component": docs/modules/factors.md ("Canonical form and digest") suits it best, as it
-holds on any read.
----
-```
-A bundle is a self-contained package that can be verified offline: some root digests, the stored form of everything they
-reference, and the version of the code that wrote it. Loading a bundle verifies every digest and every reference, and
-reports each component that today's code would write differently; the stored form still decides its digest.
-
 ### Fingerprints
 
 A fingerprint is a hash of content that must not be stored, such as a vignette. It is a plain hash by default, or a
@@ -221,12 +141,6 @@ changed too, and every trial over one.
 
 ### Storage
 
-```
-AGENT: dedupe
-Down to "Reading verifies every digest.": docs/modules/store.md ("Components") suits it best, with ("Store");
-what can be stored and the bundle are this section's own, the tables docs/migrations.md's.
----
-```
 Components are stored in one table for all kinds, plus one row per reference so that every reference gets a foreign key
 (docs/modules/store.md; tables in docs/migrations.md, "factor"). Stored components are never changed or deleted.
 Anything a component can hold can be stored: a component the store couldn't hold can't be built.
@@ -258,28 +172,12 @@ Text cleanup is not part of the case. The trial chooses it (see "Trial").
 
 Principal author: clinicians.
 
-```
-AGENT: dedupe
-From "and text cleanup doesn't touch them": docs/modules/factors.md ("Text cleanup") suits it best; also in
-docs/modules/factors.md ("Appendix"), "nothing cleans it afterwards".
----
-```
 An appendix is a block of plain text, written in the portal and bound to one vignette. It is the only way to add
 information to a vignette; edits anchored inside the vignette were considered and ruled out as too complex. Appendices
-are not sensitive. They are stored and sent exactly as written, and text cleanup doesn't touch them.
+are not sensitive. They are stored and sent exactly as written.
 
-An appendix can't be reused across vignettes, but it can appear in several cases of the same vignette: for example a
-case with a lab appendix and one without. A case's appendices go in a fixed order, which is part of the case. At send
-time they are joined into one text by the skeleton's appendix layout (see "Skeleton").
-
-```
-AGENT: dedupe
-From "nothing cleans it afterwards": docs/modules/factors.md ("Text cleanup") suits it best; also in
-docs/modules/factors.md ("Appendix"), "text cleanup doesn't touch them".
----
-```
 Browsers submit CRLF line endings, so line endings are normalized to LF before an appendix is digested, whichever edge
-writes it; nothing cleans it afterwards.
+writes it.
 
 ### Text cleanup
 
@@ -328,28 +226,11 @@ Chunks affect each other only in a few fixed ways, all decided in code:
 - The toolset's guidance does the same, after the output's.
 - A toolset adds tools to the request, which changes how the output contract is expressed (see "Recipe and
   compilation").
-```
-AGENT: dedupe
-Also in docs/modules/bench.md ("Translations"), which suits it best and lists the texts; this doc's
-"Translations", which this points to, defers there.
----
-```
 - Compiled into a language, translations replace every text the other chunks and the appendix layout bring (see
   "Translations").
-```
-AGENT: dedupe
-docs/modules/factors.md ("Sampling") suits it best, with what greedy drops and why.
----
-```
 - Greedy sampling drops the settings that only matter when sampling, and no seed is sent.
-```
-AGENT: replace
-Kept at docs/modules/facts.md ("Compiling intents"); this item keeps its summary and points there.
----
 - A reasoning level and a recommended sampling send what the facts about the recipe's model say (docs/modules/facts.md,
   "Compiling intents").
-```
-- A reasoning level and a recommended sampling send what the facts about the recipe's model say.
 - A recommended sampling follows the reasoning level the recipe asks for, where it lands, or the model's default level
   when the reasoning chunk asks for none or the recipe has none.
 
@@ -415,23 +296,11 @@ is sent.
 
 Principal author: researchers.
 
-```
-AGENT: replace
-Kept at docs/modules/facts.md ("Compiling intents"), which owns landing, nearests and refusals; what the chunk
-holds and a recipe without one stay.
----
 A reasoning chunk holds the reasoning effort, a thinking-token budget and arguments for the chat template, or asks for a
 reasoning level (off, on, minimal, low, medium, high, xhigh, or the model's default), an intent, with at most a
 thinking-token budget beside it. Compiling works out what a level sends, and what doesn't compile, from the facts about
 the recipe's model (docs/modules/facts.md, "Reasoning" and "Compiling intents"). A recipe without a reasoning chunk
 leaves reasoning to the model.
-```
-A reasoning chunk holds the reasoning effort, a thinking-token budget and arguments for the chat template, or asks for a
-reasoning level (off, on, minimal, low, medium, high, xhigh, or the model's default), an intent, with at most a
-thinking-token budget beside it. Compiling works out what a level sends from the facts about the recipe's model: the
-effort and chat template arguments of the level it lands on, which may be another, its nearest, when the model can't be
-asked for the first (docs/modules/facts.md, "Reasoning"). A level the model refuses, or a budget it refuses or isn't
-known to take, doesn't compile. A recipe without a reasoning chunk leaves reasoning to the model.
 
 ### Passthrough
 
@@ -458,27 +327,13 @@ it returns is what the model reads next: a new version is a new tool, so a new s
 returned is still recorded per run, with the version it ran at, since a tool such as a web search can answer differently
 from day to day: an observed factor.
 
-```
-AGENT: replace
-A scorer's refusal is said in "Scorer" below, where the insert moves "Naming an entry point picks among the
-shipped ones"; the tool's stays.
----
 Only code the running chatddx ships can be run, at the version pinned: a tool that pins an entry point it doesn't ship,
 or another version, is refused, as a scorer is (see "Scorer").
-```
-Only code the running chatddx ships can be run, at the version pinned: a tool or a scorer that pins an entry point it
-doesn't ship, or another version, is refused. Naming an entry point picks among the shipped ones, so a scorer written by
-anyone runs only code developers shipped.
 
 ### Toolset
 
 Principal author: researchers.
 
-```
-AGENT: dedupe
-From "Its guidance goes where": docs/modules/factors.md ("How chunks affect each other") suits it best.
----
-```
 A toolset offers tools to the model. It holds the tools, with distinct names; optional guidance, in plain text; and the
 most tool rounds one item may take. Its guidance goes where the instructions or the prompt place it, or else after the
 instructions, following the output's guidance.
@@ -498,45 +353,14 @@ Principal author: researchers.
 A recipe is not a component. It holds a purpose and an appendix layout, a prompt, an output, a sampling chunk and a
 model, and optionally instructions, few-shot examples, reasoning, a passthrough, translations and a toolset.
 
-```
-AGENT: replace
-Kept at docs/modules/facts.md ("Compiling intents"), which says what an intent can't compile on; "facts about
-another model than the recipe's" stays, as only this says it.
----
 Compiling a recipe gives a skeleton, of the recipe as written or translated into one of its translations' languages. It
 reads the facts about the recipe's model for the chunks that ask for an intent, and fails on a missing or wrongly typed
-chunk or model, a prompt whose purpose differs from the recipe's, translations that don't go into the language asked for
-or a text they leave untranslated, a guidance placed in both the instructions and the prompt, an answer function named
-like one of the toolset's tools, an intent that doesn't compile (docs/modules/facts.md, "Compiling intents"), and facts
-about another model than the recipe's.
-```
-```
-AGENT: dedupe
-Its "a prompt whose purpose…" and "a guidance placed in both…" are in docs/modules/factors.md ("Prompt"), and
-"translations that don't go…" in ("Translations"), which suit them best; docs/modules/bench.md ("Translations") too.
----
-```
-Compiling a recipe gives a skeleton, of the recipe as written or translated into one of its translations' languages. It
-reads the facts about the recipe's model for the chunks that ask for an intent, and fails on a missing or wrongly typed
-chunk or model, a prompt whose purpose differs from the recipe's, translations that don't go into the language asked for
-or a text they leave untranslated, a guidance placed in both the instructions and the prompt, an answer function named
-like one of the toolset's tools, an intent the facts refuse or know nothing of, an intent on a model with no facts, and
-facts about another model than the recipe's.
+chunk or model, an intent that doesn't compile (docs/modules/facts.md, "Compiling intents"), and facts about another
+model than the recipe's.
 
 With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
 when it stops calling tools. Under a tool contract, the answer tool is offered last, every response calls a tool, and
 calling the answer tool ends the item.
-
-```
-AGENT: dedupe
-Up to "frozen in the skeleton". Also in docs/modules/factors.md ("Compilation"), which suits it best and is cited.
----
-```
-The recipe is kept only in the compilation, next to the compiler's version, the facts compiled against and the language
-compiled into (see "Compilation"). Trials reference the skeleton, not the recipe, so neither the compiler's code nor the
-facts are a separate factor: whatever they did is frozen in the skeleton. A skeleton holds no model: the model changes
-it only through its facts, so a recipe compiles to one skeleton per language for every engine of its model, and, without
-intents, for every model. What a run of it was sent to is its trial's engine.
 
 ### Compilation
 
@@ -552,16 +376,6 @@ judges reference the skeleton, which holds whatever the compiler did. The same r
 against the same facts into the same language always gives the same compilation. Different recipes can give the same
 skeleton (see "How chunks affect each other"), two recipes that differ only in a model they ask no intent of among them,
 so a skeleton may have several compilations, and a hand-written one has none.
-
-```
-AGENT: dedupe
-From "Nothing checks that the recipe compiles": docs/backlog.md ("Compilations checked") suits it best, as a
-gap; what is checked instead is this place's own.
----
-```
-A bundle carries a compilation when it is one of the roots, and the chunks, the model and the facts then come with it,
-so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that the
-compilation's facts are about the recipe's model, and that the recipe's translations go into the language it names.
 
 ### Skeleton
 
@@ -588,45 +402,15 @@ Rendering produces the request that is sent:
 3. The seed is added, unless sampling is greedy.
 4. The response is asked to carry the prompt's token ids, so a run can fingerprint what the model was actually given.
 
-```
-AGENT: dedupe
-From "The runner streams every request": repeats docs/modules/runner.md ("Calls"), which suits it best.
----
-```
-What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
-reassembles the response it records; the request it fingerprints is the request as rendered, without the streaming
-options.
-
 ### Tool rounds
 
 A response that calls tools gets another request: the last one, plus the assistant's message (its content and tool
 calls, without its reasoning) and one answer per call, in the calls' order. Its settings stay, the seed included; its
 body, and so its fingerprint, is its own.
 
-```
-AGENT: replace
-When the rounds end and how a bad call is answered is the runner's loop, as this says; the runner records a
-cutoff as the call's error.
----
 The loop belongs to the runner (docs/modules/runner.md, "Tool rounds").
-```
-The loop belongs to the runner. It ends when a response calls no tool, calls the answer tool, or has no whole answer (an
-error or a cutoff), or after the round limit. A tool is called with the call's arguments and returns text. A call that
-names no offered tool, arguments that don't fit the tool's parameters, and a tool that fails are each answered with an
-error for the model to read.
 
 ## Engines
-
-```
-AGENT: dedupe
-From "who map each model handle": also in docs/modules/inventory.md ("Endpoints"), which suits it best, and
-docs/modules/bench.md ("The model").
----
-```
-An engine is where requests are sent, written by ops (docs/glossary.md, "Roles"), who map each model handle, such as
-`qwen3-8b`, to one engine and one endpoint; a handle always means its latest engine (docs/modules/inventory.md).
-Researchers pick a recipe's model and a judge's by handle, and see no engines, endpoints or proper model names. Every
-engine speaks the same API: OpenAI-compatible chat completions.
 
 ### Local model
 
@@ -650,34 +434,6 @@ A local engine is a vLLM server we run. It declares:
 - the exact arguments vLLM is started with, and its environment, minus what the host sets to find the model, the GPU and
   CUDA.
 
-```
-AGENT: dedupe
-From "The arguments that only tune the server". Also in docs/backlog.md ("What reaches vLLM: argv and passthrough"),
-which suits it best while it is "Decided" and unbuilt: its item says every argument is still in the digest.
----
-```
-The start-up script owns the model's identity: the weights, the served name, the chat template, the tokenizer and the
-revision, and where the server listens, which is the endpoint's. Every other argument that changes what is computed
-belongs in the engine, where its digest pins it, and nothing may get around that: not an argument that sets what the
-script owns, however it is spelled or shortened; not one that reads arguments from a file; and not one that would stop
-vLLM from starting. The arguments that only tune the server are the endpoint's, recorded with each run.
-
-```
-AGENT: dedupe
-From "Knowledge that changes between vLLM versions": also in docs/modules/factors.md ("Lints"), which suits it
-best with the reason.
----
-```
-The served model name is the engine's digest, so every response names the exact engine it came from. Batch invariance is
-declared through the environment. Knowledge that changes between vLLM versions lives in lints, not in the engine.
-
-With the template file in hand, a host can check it against the declared hash, and flag a template that reads the
-current date, since that makes the prompt depend on when a run happens.
-
-Hardware and runtime are part of the engine rather than components of their own. So they can't be listed, picked or
-reused on their own, for example in the portal or as database foreign keys: the same GPU or closure is repeated in every
-engine that uses it, and finding the engines that share a closure means scanning them all.
-
 ### Remote engine
 
 Principal author: ops.
@@ -694,32 +450,6 @@ engine.
 Principal author: developers, for the bundled facts; whoever adds a model they don't know, for a World's
 (docs/modules/inventory.md, "Worlds").
 
-```
-AGENT: dedupe
-From "by the model's name": docs/modules/facts.md ("Where facts come from"), cited already, suits it best.
----
-```
-Model facts are what is known about one model that a request doesn't say (docs/modules/facts.md), by the model's name: a
-`model.local` component's repository or a `model.remote` component's `name`.
-
-```
-AGENT: dedupe
-From "and a configuration compiled against the old one". Also in docs/modules/catalog.md ("What has moved on"),
-which suits it best, docs/modules/bench.md ("Following facts") and docs/modules/facts.md ("Facts").
----
-```
-```
-AGENT: dedupe
-Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/catalog.md ("Threads and edits"),
-docs/modules/curation.md ("Facts and the engine"), docs/modules/curation.md ("The World"). From "init-data writes".
----
-```
-They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
-init-data writes them from facts files, a thread per model (docs/modules/curation.md); correcting a fact is a new
-version of its thread, and a configuration compiled against the old one is then behind where the new one changes what it
-sends (docs/modules/catalog.md, "What has moved on"), until its owner follows them (docs/modules/bench.md,
-"Following facts").
-
 ## Trials
 
 ### Trial
@@ -733,13 +463,6 @@ A trial is one experimental condition (the smallest unit of a scientific intent)
 - the cases;
 - the text-cleanup steps;
 - the seeds.
-
-```
-AGENT: dedupe
-Also in docs/modules/factors.md ("What a factor is"), which suits it best, and docs/backlog.md ("Aggregation").
----
-```
-A trial pins the factors chosen in advance; each of its runs adds recorded and observed ones.
 
 #### Send order and de-duplication
 
@@ -773,16 +496,6 @@ This suits batch-invariant engines, but the settings change outputs on engines t
 affect how requests are batched and so the arithmetic (docs/backlog.md, "Aggregation"). Timeout and retries also decide
 whether a request gets an answer at all.
 
-```
-AGENT: dedupe
-Best kept in docs/modules/ledger.md ("Run") and docs/modules/ledger.md ("Score"), item "Conducted as declared";
-"Timeouts aren't checked" is docs/backlog.md ("Each attempt recorded"), which suits a gap best.
----
-```
-A run's calls, and a score's judge calls, show whether the settings were followed: checks warn when a call took more
-attempts than its retries allow, when items were sent out of order, or when more calls were in flight than allowed
-(docs/modules/ledger.md, "Run" and "Score"). Timeouts aren't checked.
-
 ## Scoring
 
 ### Expectation schema
@@ -796,15 +509,7 @@ by default).
 
 Principal author: clinicians.
 
-```
-AGENT: dedupe
-From "Because it is keyed by the case": repeats docs/modules/factors.md ("Case"), which suits it best, as
-docs/modules/curation.md and docs/modules/bench.md point there for it.
----
-```
-An expectation is the reference answer for one case, written in the portal against an expectation schema. Because it is
-keyed by the case, appendices included, the same vignette can have different expectations under different appendices.
-Expectations are not sensitive.
+An expectation is the reference answer for one case, written in the portal against an expectation schema.
 
 Building an expectation doesn't check its data against its schema. Lints do (see "Lints"), and the scorer decides what
 to do with data that fails.
@@ -824,13 +529,9 @@ and the expectation schema.
 Views and resources are referred to by position; their labels live in the catalog, with the edit of the scorer's thread
 they were written with.
 
-```
-AGENT: insert
-Add at the end of this paragraph, from "Tool" above and docs/modules/bench.md ("Scorers"), which then point here.
----
 Naming an entry point picks among the shipped ones, so a scorer written by anyone, as one written over the API, runs
 only code developers shipped (src/chatddx/scorers/shipped.py, src/chatddx/rig.py:entry).
-```
+
 The scoring code publishes its version and its metrics, each with what it measures and a JSON Schema for the parameters
 a view gives it, and optionally a schema for the parameters every view shares. A scorer is refused when its code isn't
 shipped at the version it pins, when a view names a metric the code doesn't publish, or when parameters don't fit the
@@ -880,44 +581,10 @@ Every scorer selects the same way, through its views.
 Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
 pick the model, by its handle, and the fill rule.
 
-```
-AGENT: dedupe
-From "Its calls go to the handle's endpoint": also in docs/modules/runner.md ("Judges", "Where its calls go"),
-which suits it best, and docs/modules/inventory.md ("Judges").
----
-```
-A judge is an LLM used as a metric: a judge skeleton, the weights picked by handle, its own seeds, and a fill rule. Its
-calls go to the handle's endpoint, at its latest engine, which the scoring pins.
-
-```
-AGENT: replace
-The refusal, and that it comes before anything is written, are docs/modules/runner.md ("The gate")'s; the
-rule stays in the paragraph below.
----
 Vignettes will probably never go to a judge (docs/modules/runner.md, "The gate").
-```
-Vignettes will probably never go to a judge: the scoring pass refuses a judge whose skeleton reads them, before anything
-is written.
 
 A judge is given a view's picks: its fill rule fills the `completion` and `expectation` slots. Purpose `judge` still
 allows the `vignette` and `appendices` slots, but a judge whose skeleton has either is refused.
-
-```
-AGENT: dedupe
-From "Because a judge prompt can contain case text": repeats docs/chatddx.md ("The clearance pipeline"),
-which suits it best; only this place gives the reason.
----
-```
-```
-AGENT: dedupe
-Its "and recorded per score item" repeats docs/modules/ledger.md ("Judge calls"), which suits it best.
----
-```
-Judge requests are rendered like generation requests, once per seed, and recorded per score item. Their scores are
-reproducible on a best-effort basis. Given the scorer's reading of an answer, a judge request can be rebuilt from stored
-data and checked against what its call recorded; the reading belongs to the scorer's code, so the rig can't do that
-check on its own. Because a judge prompt can contain case text, judge engines fall under the same clearance rule as
-generation engines (agents/wip-clearance.md).
 
 ### Scoring
 
@@ -957,14 +624,3 @@ They look at:
   of one model, and a skeleton worked out from no facts, pair with any; a skeleton with no compilation at hand isn't
   checked.
 - With languages known, trials whose cases are in another language than the request, or in an unknown one.
-
-```
-AGENT: dedupe
-"a chat template that doesn't match its hash or reads the date": also in
-docs/modules/factors.md ("Local engine"), which suits it best, saying why the date matters.
----
-```
-Checks against the model facts belong to the facts (docs/modules/facts.md). Other findings come from the steps that
-observe them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a
-component that a bundle holds in a form today's code wouldn't write. Each finding is made where it is found, as
-`Finding(…)`.

@@ -1,11 +1,5 @@
 # Identity
 
-```
-AGENT: dedupe
-From "which the bench, the operational layer, applies": docs/modules/identity.md ("Authorization") suits it
-best; also docs/modules/bench.md ("Bench").
----
-```
 Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of what
 chatddx does is done as a person, and `identity` is its declarative layer: its rules are data and pure functions with no
 store access (src/chatddx/identity/), which the bench, the operational layer, applies to what is in the store and the
@@ -24,15 +18,6 @@ display.
 
 People are never deleted, since what they wrote refers to them. A person who leaves is made inactive, which ends their
 sessions and keeps them from signing in.
-
-```
-AGENT: dedupe
-docs/modules/store.md ("Roles and connections") suits it best, beside the other roles; the reasons, names not
-sensitive and passwords and sessions secrets, are this paragraph's own.
----
-```
-Names aren't sensitive so the reader may read people. Passwords and sessions are secrets rather than sensitive data, and
-it reads neither.
 
 ## Roles
 
@@ -82,14 +67,6 @@ People are managed by command, connecting as `DB_USER`:
 - `chatddx person add LOGIN NAME [--role ROLE …]` adds a person;
 - `chatddx person password LOGIN` sets their password, asked for twice, and refuses an empty one;
 - `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/modules/curation.md).
-
-```
-AGENT: dedupe
-"can be acted as from the repl": docs/modules/identity.md ("Authentication") suits it best; that a person
-without a password can't sign in to the API is this place's own.
----
-```
-A person without a password can't sign in to the API, but can be acted as from the repl.
 
 ## Keycloak
 

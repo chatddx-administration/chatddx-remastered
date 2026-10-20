@@ -23,13 +23,6 @@ The archive is never wiped.
 
 ## Data sets
 
-```
-AGENT: insert
-Add to the end of this paragraph the one thing docs/modules/inventory.md ("Worlds") says of a data set
-that this section doesn't, as its tree would point here.
----
-This repository's data sets keep them in `schemas/`.
-```
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases in
 `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
@@ -37,30 +30,10 @@ A data set says what the model reads, the language each text is written in, and 
 can't hold, engines, which engine judges and which engine its configurations are made for, is its World's
 (docs/modules/inventory.md, "Worlds").
 
-```
-AGENT: dedupe
-From "`data` is init-data's `--data`": also in docs/modules/curation.md ("Loading"), which suits it best.
----
-```
-```
-AGENT: replace
-What a World is, and that its `_` directories are chatddx's own, is the inventory's; kept here: `_data/` and
-`World.load`.
----
 A World may carry one beside its vignettes, in `_data/`, which is chatddx's own and so no part of the World
 (docs/modules/inventory.md, "Worlds"): `World.load` doesn't read it. `data` is init-data's `--data`, which loads it
-unless it names another.
-```
-A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
-chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
-`data` is init-data's `--data`, which loads it unless it names another.
+unless it names another. Output-types and tool signatures are kept in `schemas/`.
 
-```
-AGENT: dedupe
-This and the next paragraph: also in docs/modules/inventory.md ("Worlds"), which suits it best. Kompismoln's
-`--data` is said only here.
----
-```
 The sample World carries the sample (worlds/sample/_data/), Kompismoln's World loads it with
 `--data worlds/sample/_data`.
 
@@ -76,56 +49,21 @@ On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model a
   `local_model` stanza, and a remote engine's model, a `remote_model` stanza; and a recipe's parts name stanzas, not
   digests.
-```
-AGENT: dedupe
-From "the World binds a data set's judge": also in docs/modules/inventory.md ("Judges"), which suits the
-binding best; the skip of a handle that doesn't resolve is this item's own.
----
-```
-- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds a data set's judge to
-  a handle, whose latest engine judges, and its recipe is compiled for the handle's model; a handle that doesn't resolve
-  skips the judge and its scorers, reported as ops' error.
+- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
-- **Forks.** `fork_of` names a stanza of the same kind that this one is a fork of. It is loaded as a fork of that
-  stanza's thread, so the catalog knows what it varies (docs/modules/catalog.md, "Forks"). It inherits no fields. A
-  stanza whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A
-  thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from
-  the data's.
-```
-AGENT: replace
-What shipped code a tool or a scorer may name, and what its views may ask of it, is the component's rule.
----
+- **Forks.** `fork_of` names a stanza of the same kind that this one is a fork of.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its code, and a scorer's views, are
   held to what is shipped (docs/modules/factors.md, "Tool" and "Scorer").
-```
-- **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
-  ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped, at
-  the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
-```
-AGENT: replace
-Kept at docs/modules/catalog.md ("Scorer labels"), which owns labels and says what renaming a view does.
----
 - **Catalog entries.** `tags` and `description` are entries on the stanza's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with (docs/modules/catalog.md, "Scorer labels"). A tool's `description` is also a
   field, the one the model reads.
-```
-- **Catalog entries.** `tags` and `description` are entries on the stanza's thread, and a scorer view's `label` is a
-  label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's `description`
-  is also a field, the one the model reads.
 - **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked out
   from the facts when a recipe is compiled (docs/modules/factors.md, "Reasoning" and "Sampling"). A `from_facts` stanza
   is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or a
   `recommended` sampling".
 - **Translations by stanza.** A translations stanza's entries may be written in `of`, grouped by the stanza whose texts
-  they translate, any stanza of texts (instructions, few-shot, prompt, output, toolset) or a recipe, for its appendix
-  layout, each entry a `text` and its `translation`: `[[translations.sample.of."instructions.clinician"]]`. Loading
-  makes them the chunk's entries into the texts file's language, and refuses a stanza that isn't one of texts
-  ("'sampling.greedy' names no stanza of texts"), one the data set doesn't have ("'output.nope': no output named
-  'nope'"), one written in the file's own language ("output.plan is written in en"), a text its stanza doesn't hold, so
-  an entry no text uses any more is found, an entry that isn't a text and its translation, and a text translated two
-  ways. A text that several stanzas hold is written once, under any of them. A text left untranslated doesn't stop the
-  loading (see "Texts").
+  they translate, any stanza of texts (instructions, few-shot, prompt, output, toolset) or a recipe.
 
 A name is defined once per kind: a text is written in one texts file, and only a translations stanza's name comes back
 in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `local_model`, `remote_model`,
@@ -134,38 +72,12 @@ a recipe that names one is refused.
 
 ### Texts
 
-```
-AGENT: dedupe
-From "a translations chunk says its languages itself". Also in docs/modules/catalog.md ("Languages"), which suits
-it best, and docs/modules/bench.md ("Languages").
----
-```
-What the model reads is written in a language, and a texts file's name gives it: every text stanza in `texts-sv.toml` is
-written in Swedish, every translations stanza there translates into Swedish, and no stanza says its own language. A
-chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool description, or
-schema prose says something, so a prompt of slots alone, or an output without guidance or schema, holds none. A chunk
-that holds text is written in a texts file, and one that holds none in `factors.toml`, where it serves every language.
-Loading writes each text's language on its digest, and names it plainly, such as `management-plan`; a translations chunk
-says its languages itself, and is given none.
-
 A text is written in one language and translated into the others. A text stanza in two texts files, or in `factors.toml`
 and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is written in one
 language, and translated into others". A translations stanza is written in the texts file of the language it translates
 into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused. Translations stanzas of
 one name in several texts files are one chunk, into each file's language (docs/modules/factors.md, "Translations"):
 `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
-
-```
-AGENT: dedupe
-From "Loading compiles it": docs/modules/curation.md ("Loading", "Plan") suits it best, where the message
-is shown; the pointer here can stay.
----
-```
-A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have is
-refused ("recipe.plan: no output named 'plans'"). It is written in its texts' language, and runs in that language as
-written, and in each its translations carry it into, translated (docs/modules/catalog.md, "Languages"). Loading compiles
-it into each language its translations name, and says each it can't carry it into, and why (see "Loading"); the recipe
-is made all the same.
 
 The sample is written in English, in `texts-en.toml`. Its `texts-sv.toml` holds only `translations.sample`, into
 Swedish: `free-text-guided`'s instructions and worked example, and every text the outputs and the toolset hold, schemas
@@ -175,17 +87,6 @@ the judges' into Swedish.
 
 ### Cases
 
-```
-AGENT: dedupe
-From "Line endings are made LF": docs/modules/factors.md ("Appendix") suits it best; also
-docs/modules/bench.md ("Appendices and cases").
----
-```
-A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
-apart by its vignette, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices`
-in order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/modules/factors.md,
-"Case"). Line endings are made LF before an appendix is digested, as every edge does.
-
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
 file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish.
@@ -194,63 +95,16 @@ Splitting by language rather than tagging each case keeps a language's cases tog
 compared together: a case runs in the language it was written in, under the configuration translated into it where that
 isn't the configuration's own (docs/modules/catalog.md, "Languages"). Notes in the targets keep a language of their own.
 
-### Facts and the engine
-
-```
-AGENT: dedupe
-Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/catalog.md ("Threads and edits"),
-docs/modules/factors.md ("Model facts"), docs/modules/curation.md ("The World"). From "The facts about each".
----
-```
-Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a reasoning
-level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind `facts`,
-named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for the model under the handle the World names
-for configurations, its intents compiled against its facts (docs/modules/facts.md, "Compiling intents").
-
-A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
-sampling, and a recipe is skipped and reported when the facts refuse it on that model, when the World names no handle
-for configurations, or when that handle doesn't resolve to one endpoint, which is ops' to mend. Engines and facts are
-planned first for this reason. A researcher swaps the model at the bench, as any other part (docs/modules/bench.md).
-
 ## The World
 
-```
-AGENT: replace
-What each file holds is the inventory's, which this cites already; kept here: what loading does with each.
----
 A World is a directory (docs/modules/inventory.md, "Worlds"). Loading reads its `inventory.toml`, and takes its
 `engines.toml` with the data set's factors and its `facts.toml` with the bundled facts. So the sample World's fake
 engines are loaded only with the sample World, and a World that serves a model of its own brings what is known about it,
 which loading stores for the models its engines serve.
-```
-```
-AGENT: dedupe
-Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/catalog.md ("Threads and edits"),
-docs/modules/factors.md ("Model facts"), docs/modules/curation.md ("Facts and the engine"). From "its `facts.toml`".
----
-```
-A World is a directory (docs/modules/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the
-cases' vignettes, the handles its judges are bound to and the handle its configurations are made for, and takes its
-`engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors, and its
-`facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake engines
-are loaded only with the sample World, and a World that serves a model of its own brings what is known about it, which
-loading stores for the models its engines serve.
 
-```
-AGENT: dedupe
-Its first sentence repeats docs/modules/inventory.md ("Worlds"), which suits it best; also
-docs/modules/repl.md ("Starting").
----
-```
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
-```
-AGENT: dedupe
-From "A loading ends with": docs/modules/curation.md ("Loading", "The World.") suits it best; also
-docs/modules/inventory.md ("Reaching an engine"), where what the check reports would fit.
----
-```
 Before it commits, a loading checks what a process checks as it starts (src/chatddx/bench/handles.py:broken): weights
 held by several model threads, or served at several endpoints, refuse it, and nothing is written. A loading ends with
 the inventory checked against the engines just planned, all at once: what starting or reaching each endpoint would
@@ -262,24 +116,11 @@ refuse, and what is likely a slip (src/chatddx/inventory/check.py).
 World's `_data/` unless `--data` names another, for the archive, and shares it with USER, who is added when missing. It
 connects as the writer and does everything in one transaction. It prints a line for each thing it comes to.
 
-```
-AGENT: replace
-Which handle a recipe is made for, and what is skipped, is docs/modules/curation.md ("Facts and the engine"),
-which suits it best; this step points there.
----
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references resolved,
    the facts about each served model the facts know, recipes made once and compiled for the engine the World names for
    configurations (see "Facts and the engine"), and into each language their translations name, judges' recipes compiled
    for their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
    written. A recipe its translations can't carry into a language is made all the same, and said after the stanzas:
-   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data set
-   gives one.
-```
-1. **Plan.** The data set and the World's engines are planned into components, without the store: references resolved,
-   the facts about each served model the facts know, recipes made once and compiled for the engine the World names for
-   configurations, and into each language their translations name, judges' recipes compiled for their own engines, texts
-   and entry points checked. A data set that can't be planned is refused before anything is written. A recipe its
-   translations can't carry into a language is made all the same, and said after the stanzas:
    `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data set
    gives one.
 2. **Stanzas.** Each planned stanza becomes a thread named after it. A stanza the archive already has, by kind and name,
@@ -332,46 +173,3 @@ with `--giftbag` gives it back, restoring the deleted forks rather than forking 
 entry per gift and per share and no thread.
 
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
-
-## Tests
-
-src/chatddx/curation/test/.
-
-```
-AGENT: dedupe
-Its first sentence: also in docs/modules/inventory.md ("Worlds"), which suits it best, and
-docs/modules/curation.md ("Data sets").
----
-```
-- The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its stanzas
-  exercises something a test reads. Its paths, the names tests share and the helpers they import are in
-  src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
-- What `curated` loads holds no mistakes: its only skips, lints and findings are the ones the World is built to give.
-  Only `test_the_test_world.py` writes counts, skip lines or lint lines out; other tests derive them from the plan, the
-  cases or the inventory. Broken data, such as an invalid expectation, an unreachable view, a misplaced clearance or a
-  vignette that isn't UTF-8, is an edit a test makes to a copy of the World (`copied` and `edit` in
-  src/chatddx/test/world.py).
-- The test World's remote endpoint, `unknown@remote`, names `CHATDDX_TEST_REMOTE` as its credential. Tests run with it
-  unset to see the gate refuse the endpoint for its secret (src/chatddx/bench/test/test_seen.py,
-  src/chatddx/runner/test/test_score.py).
-- `test_plan.py` plans data sets and needs no database.
-- `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole, with a
-  stand-in source whose vignettes are a line of text each (src/chatddx/curation/test/cases.py). A test that tells what a
-  first load says, or loads data edited first, loads it into a copy of the migrated, empty store; the rest start from a
-  copy of `loaded`, alice and the archive after one such load (src/chatddx/curation/test/conftest.py). The command tests
-  read the test World itself, or a copy they edit.
-- `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands them
-  and a canary set from the test World.
-
-The Worlds' content is tested beside the names tests share, in src/chatddx/test/:
-
-- `test_the_test_world.py` pins what the test World plans, skips and lints, and the quirks its vignettes carry.
-- `test_worlds.py` checks every World in `worlds/`: each endpoint serves the engine planned under its name, init-data
-  binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake vLLM answers
-  each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what it writes
-  holds to each data set's schemas.
-- `test_sample.py` holds what is true of the sample alone, and that it uses every table a data set and a World can hold
-  at least once, as the example new Worlds follow.
-
-The first two read the test World and every World; `test_sample.py` reads the sample, loaded once for it and
-test_sample_world.py (src/chatddx/conftest.py, `sampled`).

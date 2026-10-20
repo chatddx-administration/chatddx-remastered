@@ -27,27 +27,13 @@ Starting a run refuses, before anything is written:
 - a concurrency above the endpoint's capacity;
 - phases to send canaries at without a canary set.
 
-```
-AGENT: dedupe
-From "The start record holds": repeats docs/modules/ledger.md ("Run start"), which suits it best.
----
-```
 Then it stores the trial with everything it refers to, and the canary set, writes the run's start record and the run's
-owner entry in the catalog. The start record holds the version of the rig, the execution settings, the canary set and
-its phases, the code each tool ran with, and the endpoint by name and address.
+owner entry in the catalog.
 
 ### Sending
 
-```
-AGENT: dedupe
-From "its vignette fetched from its source": also in docs/modules/factors.md ("Preparing a case") and
-("Rendering"), which suit it best and this already points to.
----
-```
 The items are sent in the execution's order (docs/modules/factors.md, "Execution"). Each is prepared as
-docs/modules/factors.md, "Preparing a case", has it: its vignette fetched from its source, checked for drift and
-cleaned, its appendices joined, and the request rendered for the model the engine is served under and the replicate's
-seed. A case that can't be read is a finding, and the run goes on without it.
+docs/modules/factors.md, "Preparing a case", has it.
 
 A call streams on the wire only (see "Calls"). When the skeleton has tools, the item goes on in rounds (see "Tool
 rounds"). Each item is written as soon as its last call is done, so a run that stops leaves every item it finished.
@@ -96,45 +82,15 @@ The secret goes only into the request's `Authorization` header. No stored row ho
 
 ## Calls
 
-```
-AGENT: dedupe
-From "The prompt's token ids leave the response": also in docs/modules/ledger.md ("Call"), which suits it best,
-and ("Sensitive records").
----
-```
 A call is one exchange with an engine: one request, sent in one or more attempts, and what came back
 (docs/modules/ledger.md, "Call"). Every call streams: the request's fingerprint is taken before the streaming options
 are added, and the streamed chunks are added up to the response an unstreamed request would have had. Streaming is only
-how a call travels; what is stored is the same either way. The prompt's token ids leave the response and become its
-fingerprint. HTTP is the standard library's.
+how a call travels; what is stored is the same either way.
 
-A call is tried again only when the request didn't get through: a connection that failed, a 429 or a 5xx, after a pause
-that doubles each time, up to the execution's retries. Once a stream has started, what comes is the answer, and it isn't
-tried again. An engine's refusal keeps its body as the call's response, as an answer is kept.
-
-```
-AGENT: replace
-From "after the execution's run": what the runaway cutoff is and keeps is told in docs/modules/factors.md
-("Execution"), which suits it best, where the setting is defined.
----
 A call is cut short, keeping what came, at the execution's runaway cutoff (docs/modules/factors.md, "Execution"), and
 when its timeout has passed since the stream started. The same timeout bounds each wait on the connection, so an engine
 that stalls ends the call too. An engine that goes away before the end of the stream leaves an error on the call, with
 what came. Each is recorded as the call's error; checking the run notes it (docs/modules/ledger.md, "Run").
-```
-A call is cut short, keeping what came, after the execution's run of whitespace tokens in a row (a runaway answer), and
-when its timeout has passed since the stream started. The same timeout bounds each wait on the connection, so an engine
-that stalls ends the call too. An engine that goes away before the end of the stream leaves an error on the call, with
-what came. Each is recorded as the call's error; checking the run notes it (docs/modules/ledger.md, "Run").
-
-```
-AGENT: replace
-Said in docs/modules/factors.md ("Execution"), which suits it best: the token limit bounds every answer, the
-cutoff only a runaway, and an execution can turn it off. Nothing is left, so the paragraph goes.
----
-```
-`max_output_tokens` (docs/modules/factors.md, "Sampling") bounds every answer, and is the usual way to. The whitespace
-cutoff only saves the time a runaway burns until its tokens run out, and an execution can turn it off.
 
 ## Tool rounds
 
@@ -167,12 +123,6 @@ A run can be stopped three ways:
 - **A halt** does the same from another thread, as a server's request thread must when its client leaves, and returns
   rather than raises. A halt is given to the send it stops, and one can be given to several in turn.
 
-```
-AGENT: dedupe
-From "A round stopped while its tools run": docs/modules/ledger.md ("Tool rounds"), cited already, suits it
-best, as what is recorded.
----
-```
 A halt ends a stream that waits on a stalled engine at once, by shutting the connection down, and ends the pause between
 attempts. A round stopped while its tools run is kept without its call: the tools that ran, one an interrupt stops while
 it runs recorded as stopped, and no request after them (docs/modules/ledger.md, "Tool rounds"). A halt runs no more
@@ -211,15 +161,8 @@ A judged view's metric reads the verdicts of the view's judge, one per seed (doc
 
 - **Where its calls go.** a judge's model is picked by handle; its calls go to the handle's endpoint at its latest
   engine, which the scoring pins, and a handle that doesn't resolve refuses the scoring as ops' error.
-```
-AGENT: replace
-What a judge is given is docs/modules/factors.md ("Judge")'s, and its refusal is the gate's, listed in
-"The gate" above.
----
+
 - **What it reads.** The view's picks (docs/modules/factors.md, "Judge").
-```
-- **What it reads.** The answer and the expectation, as the view picks them, in its completion and expectation slots. A
-  judge whose skeleton reads the vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the
   expectation and the view picks nothing from that, as when a case has no notes. The item has no value, with the reason
   in its detail.
@@ -238,45 +181,19 @@ isn't deleted and an endpoint here serves it, and that endpoint is cleared for t
 
 ## Findings
 
-```
-AGENT: dedupe
-From "a case that can't be read". Said where each arises, which suits it best: docs/modules/runner.md ("Sending"),
-docs/modules/runner.md ("Resuming"), docs/modules/runner.md ("A score"), docs/modules/runner.md ("Judges").
----
-```
 The runner and the scoring pass note what they see while they work, in the finish record (docs/modules/ledger.md,
 "Findings"): a case that can't be read, a run that resumed, an answer or a verdict that can't be read, and one that
 breaks its schema. Drift of a vignette is noted as preparing a case notes it (docs/modules/factors.md, "Preparing a
 case").
 
-```
-AGENT: dedupe
-Also in docs/modules/factors.md ("Lints"), which suits it best as the general rule, and docs/modules/ledger.md
-("Findings"); only the package is this doc's own.
----
-```
-Each is made where it is found, as `Finding(…)` in `src/chatddx/runner/`.
-
 ## Elsewhere
 
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/modules/scripted.md`.
 - **Capacity across runs**, and a lost run resumed: `docs/modules/worker.md`, "Claiming".
-```
-AGENT: dedupe
-From "no World's endpoint names one yet". Being a gap, it suits the backlog best, which says it too:
-docs/backlog.md ("Canary sets in use", "No World's endpoint names a canary set").
----
-```
 - **Canary sets are each endpoint's**, in the inventory (docs/modules/inventory.md, "Endpoints"); no World's endpoint
   names one yet, though data sets hold them.
 - **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/backlog.md, "Missing tests");
   the judge `remote`'s tests read `unknown@remote`'s. The gate's tests edit the inventory instead
   (`runner/test/test_run.py`).
-```
-AGENT: dedupe
-The second sentence: docs/modules/inventory.md ("Worlds") suits it best, as "Both endpoints are cleared for
-the sample."
----
-```
 - **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
   `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.

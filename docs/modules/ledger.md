@@ -20,13 +20,7 @@ the log's _stages_. A new kind of stage would be a new record in the same log, n
 
 ### What a record holds
 
-A record holds three kinds of content.
-
-| Content     | What it is                                                                                                                                                                        | Where         |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| Plan        | What the run or the score is set to do, written before it starts: its recorded factors.                                                                                           | Start records |
-| Conduct     | What the rig itself did: the requests it sent, when, how many attempts they took, what the tools sent back, the values a scorer gave.                                             | Item records  |
-| Observation | What the world answered: the evidence of the observed factors, such as the responses, the model an engine says it is, the prompt it read, and the vignette as read at its source. | Item records  |
+A record holds three kinds of content: Plan, Conduct and Observation.
 
 A run item holds all three: which item it is comes from the plan, its requests and their times are conduct (the times
 also show how fast the engine answered), and its responses are observations. Finish records add conclusions drawn from
@@ -40,17 +34,7 @@ declared (see "Run" and "Score").
 A record is written out in one fixed way, as a component is (docs/modules/factors.md, "Canonical form and digest"), so
 the same record always gives the same bytes, and a seal over records is as stable as a digest over a component.
 
-```
-AGENT: replace
-The rule and the refusal are docs/modules/factors.md ("Versions")'s, which this paragraph cites; what a bump
-strands is docs/backlog.md ("Old versions readable")'s, which factors cites.
----
 Each record type has a schema version, under the components' rule (docs/modules/factors.md, "Versions").
-```
-Each record type has a schema version, under the components' rule (docs/modules/factors.md, "Versions"): adding a field
-with a backward-compatible default needs no new version; changing an existing field's meaning or default does. Records
-written under another version are refused rather than guessed at, so after a bump the store can't return the old ones
-(docs/backlog.md, "Old versions readable").
 
 Making a required field optional needs no new version either, when every record written before reads the same: run items
 kept version 1 when a tool round's call became optional (see "Tool rounds").
@@ -67,12 +51,6 @@ finish record itself is outside the seal (docs/backlog.md, "Export and publicati
 
 ### Sensitive records
 
-```
-AGENT: dedupe
-The first sentence: docs/chatddx.md ("Vignettes and anything made from them are sensitive") suits it best;
-the record types are this place's own.
----
-```
 The vignette and content produced from it are _sensitive_. Each record type says whether it may hold any, and a new type
 is assumed to unless it says otherwise. Three types do:
 
@@ -84,39 +62,8 @@ is assumed to unless it says otherwise. Three types do:
 Start records, a run's finish and canary calls hold references, settings, times, seals and findings written by code.
 Canary calls answer canaries, which are non-sensitive by definition (docs/modules/factors.md, "Canary sets").
 
-```
-AGENT: dedupe
-Also in docs/modules/ledger.md ("Call"), which suits it best and this already points to, and
-docs/modules/runner.md ("Calls").
----
-```
-Request bodies and the prompt's token ids would carry the case's text too, so neither is stored, only their fingerprints
-(see "Call").
-
 The mark says what a record may hold. Acting on it, by restricting who reads such records or where they go, is up to
 whatever stores or exports them (see "Storage").
-
-### Errors and findings
-
-As with components (docs/modules/factors.md, "Errors and findings"), problems come in two strengths.
-
-```
-AGENT: dedupe
-From "Checking a run or a score stops". Also in docs/modules/ledger.md ("Run") and docs/modules/ledger.md ("Score"),
-which suit it best, saying more of what doesn't fit, and why it stops.
----
-```
-- An _error_ stops the work. A record or log that breaks its own rules can't be built: records of another log, a time
-  that finishes before it starts. Checking a run or a score stops when the records don't fit the components they refer
-  to: items the trial doesn't contain, canary calls it didn't plan, a score of another run.
-```
-AGENT: dedupe
-docs/modules/factors.md ("Errors and findings") suits it best, and this section points there; also in
-docs/chatddx.md ("Findings and errors"). "An _error_ stops the work" above is said there too.
----
-```
-- A _finding_ is a warning about something observed that doesn't match what was declared. It doesn't stop the work (see
-  "Findings").
 
 ## Runs
 
@@ -136,16 +83,6 @@ The start record holds the run's recorded factors:
 - the endpoint its calls went to, by the inventory's name for it and its address (docs/modules/inventory.md,
   "Endpoints").
 
-```
-AGENT: dedupe
-Also in docs/modules/factors.md ("Execution"), which suits it best, docs/backlog.md ("Execution settings as a
-component"), docs/purist-object-layer.md ("Two questions") and ("Homes"); "start a new run…" is only here.
----
-```
-It is not part of the trial's digest. To run a trial again under the same conditions, start a new run with the same
-trial, execution settings and canaries. On a batch-invariant engine a rerun may be bitwise identical; on other engines,
-reproducing a run is best-effort (docs/modules/factors.md, "Local engine" and "Execution").
-
 ### Run items
 
 A run item records a case's replicate and what came back: which case and which replicate, the fingerprint of the
@@ -154,16 +91,8 @@ and the tool rounds that followed, each with its call: one request more than the
 
 ### Tool rounds
 
-```
-AGENT: replace
-The loop is the runner's; this points to factors, which points to the runner.
----
 Each round of the runner's (docs/modules/runner.md, "Tool rounds") records the tools run for the previous response's
 calls and the call that followed, unless the run stopped before it.
-```
-When the skeleton offers tools and a response calls some, the runner runs them and sends another request
-(docs/modules/factors.md, "Tool rounds"). Each round records the tools run for the previous response's calls and the
-call that followed, unless the run stopped before it.
 
 A tool run records the call it answers, the tool, when it ran, and the text sent back to the model, as sent, since it
 shaped the next request. When the tool failed, including a call that names no tool the skeleton offers, it also records
@@ -182,17 +111,8 @@ is done.
 
 ### Run finish
 
-```
-AGENT: replace
-From "Checking a run can be repeated": kept at docs/modules/ledger.md ("Findings"), which says it of runs and
-scores alike.
----
 The finish record closes the run with its time, its seal, and the findings the runner saw while running, such as a
 vignette that changed at its source (see "Findings").
-```
-The finish record closes the run with its time, its seal, and the findings the runner saw while running, such as a
-vignette that changed at its source. Checking a run can be repeated at any time from its records, so what it finds isn't
-stored.
 
 ### Run
 
@@ -221,26 +141,11 @@ The request body isn't stored, since it holds the case's text (docs/modules/fact
 doesn't depend on how a client spells the JSON or orders the request's settings, but it does depend on the order of a
 schema's properties, since that is part of what the model reads.
 
-```
-AGENT: dedupe
-Its first sentence is also in docs/modules/factors.md ("Rendering"), which suits it best.
----
-```
-Rendering asks the engine for the prompt's token ids: the tokens it actually read after applying its chat template. They
-encode the case's text too, so a call takes them out of the response it is given and keeps only their fingerprint.
+They encode the case's text too, so a call takes them out of the response it is given and keeps only their fingerprint.
 Comparing fingerprints would show whether the engine read the same prompt, without storing the text (docs/backlog.md,
 "Drift between runs").
 
 A call's fingerprints aren't keyed (docs/modules/factors.md, "Fingerprints").
-
-```
-AGENT: dedupe
-From "which nothing compares yet": the gap is docs/backlog.md ("Drift between runs", "The system fingerprint is
-kept but never compared"), which suits it best.
----
-```
-The response also says what the engine claims to be: the model name it answered as, which checks compare with the
-declared one, and a system fingerprint, which nothing compares yet.
 
 ## Scores
 
@@ -266,12 +171,6 @@ records the judge, the seed and the call. Judge calls live inside score items, s
 
 ### Score finish
 
-```
-AGENT: dedupe
-From "such as an answer it couldn't read". Also in docs/modules/runner.md ("A score"), which suits it best, being
-the scoring pass's.
----
-```
 The finish record closes the score as a run's does, with the findings the scoring pass saw, such as an answer it
 couldn't read from the run item's last response, or one that breaks the output schema and was scored anyway.
 
@@ -298,59 +197,7 @@ the score. They come from
 - checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them: all
   warnings.
 
-```
-AGENT: dedupe
-Also in docs/modules/factors.md ("Lints"), which suits it best as the general rule, and docs/modules/runner.md
-("Findings"); only the package is this doc's own.
----
-```
-Each finding is made where it is found, as `Finding(…)` in `src/chatddx/ledger/`.
-
 ## Storage
 
-```
-AGENT: replace
-From "one table per kind of record": the tables, the stages' shared table and the copy for queries are in
-docs/migrations.md ("ledger", "Tier 0"), which suits them best as the schema; "source of truth" stays here.
----
 The ledger is a schema of its own (docs/modules/store.md; tables in docs/migrations.md, "ledger"), where a row's record
 as written is the source of truth. Stored records are never changed or deleted.
-```
-The ledger is a schema of its own (docs/modules/store.md; tables in docs/migrations.md, "ledger"): one table per kind of
-record, a log's two stages sharing one. Each row holds the record as written, which is the source of truth, and a copy
-for queries. Stored records are never changed or deleted.
-
-```
-AGENT: dedupe
-docs/modules/store.md ("Records") suits it best, as the store refuses and validates; "what it refers to is
-stored" is this item's own.
----
-```
-- Storing a record checks only what the database can: that it is new, and that what it refers to is stored. A log is
-  validated when it is read back.
-```
-AGENT: dedupe
-From "A run's canary set isn't tied to the run": repeats docs/backlog.md ("Canary sets in use"), which suits
-it best as an open gap; only this place says that the runner stores it with the trial.
----
-```
-- What a record refers to comes first: a run's trial, a score's scoring and an item's case must already be stored, an
-  item needs its log's start record, and a score needs its run's. A run's canary set isn't tied to the run in the
-  database. The runner stores it with the trial; another writer must store it too, or the run can't be checked.
-- Checking a run or a score takes the components it needs from the store.
-```
-AGENT: dedupe
-docs/modules/store.md ("Records") suits it best, as the store numbers and reads rows; also in docs/migrations.md
-("ledger", "Tier 1"), and the last sentence in docs/modules/store.md ("Notifications").
----
-```
-- Every row is numbered as it is written, from one counter across the tables, so that a run's rows, its scores'
-  included, are read back in the order they were written; rows from before the counter are numbered in no particular
-  order. Each write tells those listening for the run that rows have landed (docs/modules/store.md, "Records").
-```
-AGENT: dedupe
-Repeats docs/modules/store.md ("Roles and connections"), which suits it best; the grant is docs/migrations.md's
-("ledger", "Tier 1").
----
-```
-- The reader role can't read the ledger at all, which is the store's answer to "Sensitive records".

@@ -47,17 +47,6 @@ Every kind of component has threads except two:
 - compilations, which record how a skeleton was made and which nobody edits. Skeleton edits point at them (see
   "Recipes").
 
-```
-AGENT: dedupe
-Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/factors.md ("Model facts"),
-docs/modules/curation.md ("Facts and the engine"), docs/modules/curation.md ("The World"). From "The facts about".
----
-```
-That includes the kinds ops and developers write, such as models, engines, the facts about models, expectation schemas
-and canary sets. They are rarely edited, but threads are where names attach for everything except cases. The facts about
-a model are a thread of the archive's, named by the model, which `chatddx init-data` writes from the facts files
-(docs/modules/facts.md); correcting a fact is a new version of it.
-
 The same component may appear in several threads, and more than once in one: reverting is an edit that points back at an
 earlier version.
 
@@ -88,31 +77,11 @@ A _variation_ is a configuration with recipe parts replaced over a version of a 
 "The variation being tried"). It is tried until someone keeps it: as a fork, which then varies from its base (see
 "Forks"), or as a new version of a configuration of their own.
 
-```
-AGENT: replace
-The paragraph before says it ("It is tried until someone keeps it: as a fork…"), the better placed copy.
----
 Trying a variation costs nothing in the catalog, since any component can be run without a thread. Configurations are
 organised by their lineage, the recipe parts they use, what is said about them and their runs, not by their names, which
 are optional.
-```
-Trying a variation costs nothing in the catalog, since any component can be run without a thread. A variation worth
-keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the recipe parts they
-use, what is said about them and their runs, not by their names, which are optional.
 
 ### Recipes
-
-```
-AGENT: dedupe
-From "and the compilation holds the recipe". Also in docs/modules/factors.md ("Compilation"), which suits it best
-and is cited.
----
-```
-A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
-thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its model,
-and the facts about it was worked out from, when it asks them for anything (docs/modules/factors.md, "Compilation"). The
-compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written skeleton has no
-compilation, so its edits name none.
 
 A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe differs
 from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe compiled by other
@@ -145,37 +114,6 @@ For any thread, the catalog lists the references of its head that could be updat
 A model change puts the configuration behind it, and its owner follows it with the facts (docs/modules/bench.md,
 "Following facts").
 
-```
-AGENT: dedupe
-Its "Deleted threads aren't proposed." repeats docs/modules/catalog.md ("Deleting"), which suits it best; also
-docs/modules/bench.md ("What a person sees").
----
-```
-A reference is _behind_ when a live thread that held it has since moved on to another version. A component can be held
-by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
-moved on. Deleted threads aren't proposed.
-
-```
-AGENT: dedupe
-From "Its owner follows them by keeping". Also in docs/modules/bench.md ("Following facts"), which suits it best,
-being where following is. "init-data does so for the archive's" is said only here.
----
-```
-```
-AGENT: dedupe
-From ": one with a literal sampling": docs/modules/factors.md ("Compilation") suits it best, as the
-compilation is what names the facts.
----
-```
-Facts are behind only in a configuration that asks them for something: one with a literal sampling and reasoning names
-none. Its owner follows them by keeping its recipe compiled against the corrected facts, as a new version
-(docs/modules/bench.md, "Following facts"); init-data does so for the archive's.
-
-A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
-against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it doesn't
-ask for or the model's context length, leaves it as it is, since a version compiled against it would hold the same
-skeleton and recipe, and write nothing (see "Recipes").
-
 A case is also behind when its family has a newer binding (see "Families and repairs"). The catalog then offers its
 _replacement_: the same appendix texts, bound to the family's current vignette. Cases without appendices are flagged
 this way too.
@@ -191,39 +129,10 @@ or score, its _subject_. A run or a score has to have started before anything ca
 For each field the latest entry wins, and for tags and collaborators, the latest entry about each tag and each
 collaborator. A subject nothing has been said about has no name, no owner, and nothing else.
 
-| Field        | Holds                                                                        | Removed by                                    | Used for                                   |
-| ------------ | ---------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------ |
-| Name         | a text, not empty                                                            | an entry without a text; the title takes over | titles, and looking threads up             |
-| Description  | a text                                                                       | nothing: it can only be replaced              | people                                     |
-| Tag          | one tag, not empty; a subject has a set of them                              | an entry withdrawing that tag                 | people                                     |
-| Owner        | a person                                                                     | nothing: it can only be replaced              | what a person sees, and looking threads up |
-| Collaborator | a person; a subject has a set of them                                        | an entry withdrawing that person              | what a person sees                         |
-| Deleted      | a flag                                                                       | an entry restoring the subject                | see "Deleting"                             |
-| Language     | a language, only on a family                                                 | nothing: it can only be replaced              | see "Languages"                            |
-| Varied       | an edit of a configuration, only on a run                                    | nothing: it can only be replaced              | see "What a run ran"                       |
-| Replaced     | a part and the chunk or model it was set to, or none; a run has one per part | nothing: it can only be replaced              | see "What a run ran"                       |
-| With         | the first run of the start a run is one of, only on a run                    | nothing: it can only be replaced              | see "What a run ran"                       |
-
-```
-AGENT: dedupe
-The first sentence: the table above, docs/modules/catalog.md ("Entries"), suits it best, saying it per field;
-also docs/modules/catalog.md ("Languages").
----
-```
-Every field but the language, the varied edit, the replaced parts and the run a run was started with can be said about
-any subject. The fields the catalog doesn't use itself are for people and the portal.
-
 ### Names
 
-```
-AGENT: dedupe
-From "which is how `chatddx init-data`". Also in docs/modules/curation.md ("The archive"), which suits it best; the
-two point at each other.
----
-```
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
-"Titles"). Names can still be used to look threads up by kind, name and owner, which is how `chatddx init-data`
-recognises its own stanzas when it runs again (docs/modules/curation.md).
+"Titles"). Names can still be used to look threads up by kind, name and owner.
 
 ### Owners
 
@@ -231,32 +140,12 @@ Whoever creates a thread or a family is its owner, unless they name someone else
 a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
 authorization, this decides what is relevant to show, not who may read it (docs/modules/identity.md, "Authorization").
 
-```
-AGENT: replace
-Kept at docs/modules/bench.md ("What a person is scored against"); the one-per-case rule stays, as the catalog
-holds it.
----
 Expectations are held to what a person owns, not to what they see (docs/modules/bench.md, "What a person is scored
 against"). A person owns at most one live expectation thread per case and expectation schema: a second one, an edit that
 moves another onto that case and schema, an owner entry naming them, or a restore that would make two is refused.
-```
-Expectations are held to what a person owns, not to what they see. A person is scored against their own expectation of a
-case, and one shared with them counts once they fork it, so nothing someone else shares, edits or restores changes what
-they are scored against. A person owns at most one live expectation thread per case and expectation schema: a second
-one, an edit that moves another onto that case and schema, an owner entry naming them, or a restore that would make two
-is refused.
 
 This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
 vignettes" (docs/glossary.md, "Roles").
-
-```
-AGENT: dedupe
-From "the runner and the scoring pass write the owner entry": repeats docs/modules/runner.md ("Starting" and
-"A score"), which suits it best, since the runner writes them.
----
-```
-A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the owner
-entry as they start, and a person's runs are the runs they own.
 
 ### Deleting
 
@@ -268,17 +157,6 @@ include it, marked deleted.
 What answers questions about the past still includes them: a thread's history, its forks, a case's expectations, where a
 component appears, surveys of a source, and repairs, which rebind deleted threads too.
 
-```
-AGENT: dedupe
-From "Wiping a person's data". Also in docs/modules/curation.md ("Wiping"), which suits it best, and the deleted
-forks coming back in docs/modules/curation.md ("Loading").
----
-```
-Deleting is undone by another entry. Wiping a person's data deletes what they own and withdraws them from what is shared
-with them; loading the sample data again restores a deleted fork rather than forking anew.
-
-What the portal hides is open (agents/wip-portal.md, "What the docs ask of it").
-
 ### What a run ran
 
 The ledger records the trial a run ran (docs/modules/ledger.md); what a person called it and what they varied are said
@@ -287,16 +165,6 @@ was built on, and each part replaced over it, by the chunk or model it was set t
 over cases in several languages is a run per language (docs/modules/bench.md), and each run after the first says the
 first, the run it was started _with_, so the runs of one start are found together. A run started from a trial alone, as
 the runner starts one, says none of it. Running again says what the run it repeats varied, and starts alone.
-
-```
-AGENT: dedupe
-From "The database holds": repeats docs/migrations.md ("catalog", "Tier 2"), `0026`, which suits it best. Its
-"a replaced engine to a stored engine" disagrees: `0026` checks for a stored `model.local` or `model.remote`.
----
-```
-So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
-database holds a varied edit to a configuration's, a replaced part's chunk to a stored one of that part, a replaced
-engine to a stored engine, and the run a run was started with to one that has started.
 
 ## Titles
 
@@ -329,41 +197,8 @@ compilation of it is stored: "ddx · case · management-plan · recommended · o
 language says so last: "…, in sv". A judge's recipe says so first. Without a stored compilation, as for a hand-written
 skeleton, it is shown by its purpose and the start of its digest: "generation configuration 1a2b3c".
 
-Each kind is described by:
-
-| Component                             | Described by                                                            | Example                                                                 |
-| ------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Chunk                                 | Its values or the opening words of its text.                            | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"`              |
-| Chunk (recommended sampling)          | That it is recommended, and the values it sets over the recommendation. | `recommended sampling` or `recommended sampling, max_output_tokens 512` |
-| Chunk (reasoning level)               | The level it asks for, and its budget.                                  | `reasoning off` or `default reasoning, budget 2048`                     |
-| Chunk (few-shot)                      | How many messages it has.                                               | `few-shot, 2 messages`                                                  |
-| Chunk (output)                        | Its contract, and its schema's title or properties.                     | `native output: management_plan_v1`                                     |
-| Chunk (toolset)                       | Its tools.                                                              | `with web_search`                                                       |
-| Chunk (passthrough)                   | The options it sets.                                                    | `passthrough: logprobs, top_logprobs`                                   |
-| Translations chunk                    | Languages codes, its size and the texts of the language with the most.  | `translations into de, sv, 12 texts`                                    |
-| Tool                                  | Its name.                                                               | `web_search`                                                            |
-| Appendix                              | The opening words of its text.                                          | `"Lab results: CRP 180 mg/L, lactate 2.8…"`                             |
-| Expectation                           | Its case.                                                               | `expectation for Dutchfall11w`                                          |
-| Model                                 | Its repository.                                                         | `google/gemma-3-12b-it`                                                 |
-| Local engine                          | Its model, server and GPU.                                              | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)`        |
-| Remote engine                         | Its model and provider.                                                 | `gpt-4o from openai`                                                    |
-| Facts                                 | The model they are about.                                               | `facts about Qwen/Qwen3-8B-AWQ`                                         |
-| Trial                                 | Its skeleton, its engine, and how many cases and seeds it has.          | `plan on qwen3-8b@pelle, 20 cases, 1 seed`                              |
-| Scoring                               | Its scorer and how many expectations it has.                            | `scorer chatddx.scorers.metrics:score v2 against 20 expectations`       |
-| Judge                                 | Its skeleton and its model's handle.                                    | `judge grader under qwen3-8b`                                           |
-| Scorer                                | Its entry point and version.                                            | `scorer chatddx.scorers.metrics:score v2`                               |
-| Expectation schema                    | Its title or its properties.                                            | `Targets`                                                               |
-| Canary set                            | How many canaries it has.                                               | `2 canaries`                                                            |
-| Anything with nothing better to go by | Its kind and the start of its digest.                                   | `compilation 1a2b3c`                                                    |
-
-```
-AGENT: dedupe
-From "so an export for publication": docs/backlog.md ("Export and publication") suits it best, as a gap that
-names titles and languages; why titles change is this place's own.
----
-```
 Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change when
-the names they're built from change, so an export for publication should freeze the titles it uses.
+the names they're built from change.
 
 ## Scorer labels
 
@@ -423,16 +258,6 @@ already holds is refused, as in adopting. A repair, all at once:
    change the right answer, but new content can, so after a content change the expectations stay as they are, and what
    has moved on reports their case with its replacement for a clinician to confirm.
 
-```
-AGENT: dedupe
-From "The database holds a family to its source": also in docs/migrations.md ("catalog", "Tier 2"), which suits
-it best with the code that repeats it.
----
-```
-When both the name and the content changed, nothing identifies the family, so there is no repair: the vignette becomes a
-new family by adopting it, and its names are carried over by hand. The database holds a family to its source, and each
-new binding to the previous one's id or content.
-
 ## Languages
 
 The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
@@ -442,12 +267,6 @@ doesn't mix languages (docs/modules/factors.md, "Lints").
 A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
 of two places:
 
-```
-AGENT: dedupe
-From "no other subject takes a language entry": docs/modules/catalog.md ("Entries") suits it best, its table
-saying "only on a family".
----
-```
 - A vignette's language is said about its family; no other subject takes a language entry.
 - A component's language is kept on the component, so it belongs to the text itself: forking a chunk keeps it, and
   changing one component's language touches no other. A new version has no language until someone gives it one; the
@@ -481,25 +300,8 @@ The catalog is a schema of its own (docs/modules/store.md; tables in docs/migrat
 for threads, edits, entries, labels, families, bindings and languages. The writer role writes it and the reader role may
 read all of it. Rows are never changed or deleted.
 
-```
-AGENT: replace
-Its first sentence restates the constraints docs/migrations.md ("catalog") lists with how each is made, which suits
-them best. Keeps the tier 2 sentence, which is about the catalog's rules above.
----
-The database keeps each row to the components and kinds it refers to (docs/migrations.md, "catalog"). At tier 2 it
-repeats the rules above that two writers at once could break.
-```
-```
-AGENT: replace
-From "At tier 2": the rules the database repeats at tier 2 are told in docs/modules/catalog.md ("Rules"),
-which suits them best, beside the rules themselves.
----
-The database keeps an edit on its thread's kind and on a stored component of that kind, a fork on a version of the same
-kind, a skeleton edit's compilation on one of that very skeleton, a label on an edit of a scorer thread, once per part
-and position, written in the edit's transaction by its writer, and a language on a stored component of the kind it
-records. For tier 2, see "Rules".
-```
-The database keeps an edit on its thread's kind and on a stored component of that kind, a fork on a version of the same
-kind, a skeleton edit's compilation on one of that very skeleton, a label on an edit of a scorer thread, once per part
-and position, written in the edit's transaction by its writer, and a language on a stored component of the kind it
-records. At tier 2 it repeats the rules above that two writers at once could break.
+The database keeps
+
+- Each row to the components and kinds it refers to (docs/migrations.md, "catalog"). At tier 2 it repeats the rules
+  above that two writers at once could break.
+- An edit on its thread's kind and on a stored component of that kind, a fork on a version of the same kind.
