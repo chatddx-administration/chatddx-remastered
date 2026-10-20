@@ -1,5 +1,55 @@
 import type { Schema } from "$lib/schema/form";
+import type { Texts } from "./rewriting";
 import { choices } from "./selectors";
+
+export type Judging = {
+  digest: string;
+  thread: number;
+  name: string;
+  owner: string | null;
+  output_schema: Schema | null;
+  weights: string | null;
+};
+export type Serving = { name: string; weights: string };
+export type JudgeChoice = {
+  digest: string;
+  thread: number;
+  name: string;
+  owner: string | null;
+  configuration: string;
+  model: string | null;
+  seeds: number[];
+  output_schema: Schema | null;
+  head?: number;
+  body?: Record<string, unknown>;
+  texts?: Texts | null;
+};
+export type Option = { key: string; value: string; label: string };
+export type Holding = { skeleton: string; configuration: string; weights: string; handle: string | null };
+
+export function configurationChoices(judging: Judging[], me: string, held: Holding | null = null): Option[] {
+  const listed = judging.map((j) => ({
+    key: String(j.thread),
+    value: j.digest,
+    label: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
+  }));
+  if (!held || listed.some((c) => c.value === held.skeleton)) return listed;
+  return [{ key: "held", value: held.skeleton, label: `${held.configuration}, as it is asked now` }, ...listed];
+}
+
+export function modelChoices(models: Serving[], held: Holding | null = null): Option[] {
+  const listed = models.map((m) => ({ key: m.name, value: m.weights, label: m.name }));
+  if (!held || listed.some((c) => c.value === held.weights)) return listed;
+  const label = held.handle ? `${held.handle}, the weights it holds` : "the weights it holds";
+  return [{ key: "held", value: held.weights, label }, ...listed];
+}
+
+export function madeFor(judging: Judging[], models: Serving[]): Record<string, string> {
+  const offered = new Set(models.map((m) => m.weights));
+  return Object.fromEntries(
+    judging.flatMap((j) => (j.weights && offered.has(j.weights) ? [[j.digest, j.weights]] : [])),
+  );
+}
 
 export function seedsOf(text: string): number[] | string {
   const given = text.split(/[\s,]+/).filter(Boolean);

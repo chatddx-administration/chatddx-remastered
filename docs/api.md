@@ -14,8 +14,7 @@ needs are there from the start rather than added later.
   no person: a component by its digest, the endpoints, and the models by their handles.
 - **What a person sees is a convenience, not protection.** It decides what is relevant to show them. Protection is
   clearance, which the runner's gate enforces, and the database's grants (agents/wip-clearance.md).
-- **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score. The
-  repl's "cell" is the repl's alone, and a test holds every package but the repl to that.
+- **The docs' words**: configuration, variation, part, chunk, endpoint, engine, family and case, trial, run, score.
 
 ## Signing in
 A person signs in with a login and a password, and gets a token for a session that lasts 12 hours. The answer also
@@ -87,6 +86,14 @@ A look at a variation gives:
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   a handle (`under`), for the model.
+```
+AGENT: replace
+Several endpoints for one handle's weights stop a process from starting now, so the look no longer says ops' error;
+it says the handle is deleted or no endpoint here serves it (src/chatddx/bench/seen.py:Seen.served).
+---
+- the handle it runs under (`model`), or why it can't run (`problem`): its handle is deleted, or no endpoint here
+  serves it, and another is to be picked; its model is behind its handle; or it names no model and no handle is given.
+```
 - the handle it runs under (`model`), or why it can't run (`problem`): its handle doesn't resolve to one endpoint,
   which is ops' to mend, its model is behind its handle, or it names no model and no handle is given.
 - Translations (`docs/bench.md`, "Translations")
@@ -301,10 +308,10 @@ Only the person's own runs are seen; a collaborator on a run doesn't see it.
 
 ## Scoring
 A run is scored as soon as it is finished by default but a request can ask for it to be left with `"score": false`.
-A judged view is scored as any other, its judge's calls sent to the one endpoint that serves the judge's engine.
-The scores come in `run.scored`, and with the run when it is read: each item's value under each view.
+
+A judged view is scored as any other, its judge's calls sent to the endpoint its handle resolves to, at the engine
+the scoring pins. The scores come in `run.scored`, and with the run when it is read: each item's value under each view.
 Also each view's mean over the items, or why the scorer gave none.
-A judged view's value is the mean over the seeds whose verdicts were read.
 
 A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
 with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows.
@@ -353,6 +360,12 @@ where. The code says what it is:
 | `unprocessable` | 422 | A request that doesn't validate, or names a field it shouldn't; the detail lists where. |
 | `refused` | 422 | What the API, the bench or the gate refuses: the rest of 422. |
 | `over_quota` | 429 | A person who has typed as many cases, or started as many runs, as a day takes; a run of more items than one takes. |
+```
+AGENT: replace
+What isn't caught is answered raw, its type and its message, sensitive or not for now (src/chatddx/api/app.py:_raw).
+---
+| `error` | 500 | An error for developers or ops, raw: its type and message. |
+```
 | `error` | any other | |
 
 The OpenAPI document holds the body as the schema `Error`.

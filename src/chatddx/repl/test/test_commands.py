@@ -1,30 +1,28 @@
-import pytest
-
+from chatddx.bench import Bench
 from chatddx.repl.commands import COMMANDS, complete, handle
 from chatddx.repl.running import case_and_seed
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.helpers import Say, tried
+from chatddx.repl.test.helpers import Say, by_hand, tried
 from chatddx.test.world import (
     CASES,
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     LINES,
     LINES_GUIDED,
     MISTRAL,
     NATIVE,
     QWEN,
+    QWEN_ARTIFACT,
     QWEN_BARE,
     REMOTE,
 )
 
 
-def test_the_prompt_shows_the_cell(repl: Repl, say: Say):
+def test_the_prompt_shows_the_variation_in_use(repl: Repl, say: Say):
     assert repl.prompt == "alice #7> "
 
-    _ = say(f"on {QWEN}")
-    assert repl.prompt == f"alice ×{QWEN} #7> "
-
-    _ = say(f"use {NATIVE}")
-    assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
+    _ = say(f"use {NATIVE}", "set reasoning off")
+    assert repl.prompt == f"alice {NATIVE}+reasoning=off #7> "
 
 
 def test_help_lists_every_command_with_the_words_it_takes(say: Say):
@@ -34,30 +32,30 @@ def test_help_lists_every_command_with_the_words_it_takes(say: Say):
         assert verb in written
 
     assert "set PART CHUNK" in written
-    assert "cell CONFIGURATION ENDPOINT" in written
+    assert "under MODEL" in written
     assert "show [KIND] [NAME...]" in written
     assert "take [from OWNER] [TAG...]" in written
     assert "run tag TAG..." in written
 
 
 def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
-    written = say("use nope", "cell lines nope", "on", "frobnicate", "use 'x")
+    written = say("use nope", "under", "cell lines", "frobnicate", "use 'x")
 
     assert "no configuration 'nope' for alice" in written
-    assert "no endpoint 'nope' in the inventory" in written
-    assert "usage: on ENDPOINT" in written
+    assert "usage: under MODEL" in written
+    assert "no command 'cell': try help" in written
     assert "no command 'frobnicate': try help" in written
     assert "No closing quotation" in written
-    assert repl.cell.variation is None
+    assert repl.variation is None
 
 
-@pytest.mark.slow
-def test_a_name_with_spaces_needs_no_quotes(repl: Repl, say: Say):
-    _ = say(f"cell {NATIVE} {QWEN}")
-    assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
+def test_a_name_with_spaces_needs_no_quotes(repl: Repl, bench: Bench, say: Say):
+    by_hand(bench)
+    _ = say("use by hand")
+    assert repl.prompt == "alice by hand #7> "
 
-    _ = say(f"use '{NATIVE}'")
-    assert tried(repl).name == NATIVE
+    _ = say(f"use {NATIVE}", "use 'by hand'")
+    assert tried(repl).name == "by hand"
 
 
 def test_quit_leaves(repl: Repl):
@@ -73,7 +71,7 @@ def test_quit_takes_no_words(repl: Repl, say: Say):
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
         "configuration": [LINES, LINES_GUIDED, NATIVE],
-        "endpoint": [QWEN, GPT_OSS],
+        "model": [GPT_OSS_ARTIFACT, QWEN_ARTIFACT],
         "part": ["prompt", "reasoning", "sampling"],
         "reasoning": ["off", "on"],
         "set:reasoning": ["off", "on", "none"],
@@ -85,9 +83,9 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
     assert complete(names, "use na") == ["native"]
     assert complete(names, "use lines") == [LINES, LINES_GUIDED]
     assert complete(names, f"use {LINES_GUIDED} ") == []
-    assert complete(names, "cell native q") == [QWEN]
-    assert complete(names, "cell native ") == [QWEN, GPT_OSS]
-    assert complete(names, "on g") == [GPT_OSS]
+    assert complete(names, "under q") == [QWEN_ARTIFACT]
+    assert complete(names, "under ") == [GPT_OSS_ARTIFACT, QWEN_ARTIFACT]
+    assert complete(names, f"under {QWEN_ARTIFACT} ") == []
     assert complete(names, "set r") == ["reasoning"]
     assert complete(names, "set reasoning o") == ["off", "on"]
     assert complete(names, "set reasoning off ") == []

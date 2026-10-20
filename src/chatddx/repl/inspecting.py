@@ -7,7 +7,7 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, Carried, Family, Graded, TriedVariation
+from chatddx.bench import KINDS, Carried, Family, Graded, NotFound, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
@@ -48,10 +48,10 @@ def show(repl: Repl, kind: str | None = None, *names: str) -> None:
     name = " ".join(names) or None
 
     if kind is None:
-        _show_cell(repl)
+        _show_variation(repl)
     elif kind == "tag":
         if names:
-            _show_cell(repl, names)
+            _show_variation(repl, names)
         else:
             repl.error("usage: show tag TAG...")
     elif kind == "case":
@@ -64,12 +64,11 @@ def show(repl: Repl, kind: str | None = None, *names: str) -> None:
         repl.error(f"no kind '{kind}': tag, case, endpoint, {', '.join(KINDS)}")
 
 
-def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
-    bench, cell = repl.bench, repl.cell
-    variation = cell.variation
+def _show_variation(repl: Repl, tags: tuple[str, ...] = ()) -> None:
+    bench, variation = repl.bench, repl.variation
 
-    if not (variation or cell.endpoint):
-        repl.error("the cell is empty: use CONFIGURATION, on ENDPOINT")
+    if variation is None:
+        repl.error("the repl holds no configuration: use CONFIGURATION")
         return
 
     families = bench.families(tags)
@@ -78,35 +77,31 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         repl.error(f"no case tagged {' or '.join(tags)} for {bench.person.login}")
         return
 
-    repl.say_cell()
+    at = repl.say_variation(variation)
+    engine = None if at is None else at.engine
     table = Table(box=None, header_style="bold")
 
     for column in ("part", "chunk", "is"):
         table.add_column(column)
 
-    at = repl.at
     if at is not None:
         served = served_model_name(at.engine, bench.store.get)
         where = f"{bench.title(at.engine)}, served as {served} at {at.spec.url}"
         table.add_row("endpoint", at.name, where)
 
-    if variation:
-        landed = bench.landed(variation)
-        for part in RECIPE_PARTS:
-            held = variation.held(part)
-            component = None if held is None else bench.store.get(held)
-            said = "" if component is None else describe(component, bench.title)
-            table.add_row(
-                part, _chunk(repl, variation, part), _landed(component, said, landed)
-            )
+    landed = bench.landed(variation)
+    for part in RECIPE_PARTS:
+        held = variation.held(part)
+        component = None if held is None else bench.store.get(held)
+        said = "" if component is None else describe(component, bench.title)
+        table.add_row(
+            part, _chunk(repl, variation, part), _landed(component, said, landed)
+        )
 
     repl.console.print(table)
 
-    if not variation:
-        return
-
     skeleton = bench.skeleton(variation)
-    request = bench.request(variation, repl.engine, repl.seed)
+    request = bench.request(variation, engine, repl.seed)
 
     messages = request.pop("messages")
     assert isinstance(messages, list)
@@ -131,8 +126,8 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         for each in carried:
             repl.console.print(_carried(each))
 
-    if repl.engine is not None:
-        findings = bench.findings(variation, repl.engine, repl.seed, carried)
+    if engine is not None:
+        findings = bench.findings(variation, engine, repl.seed, carried)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:
@@ -212,25 +207,23 @@ def _show_scorers(
 
 
 def _show_thread(repl: Repl, word: str, name: str | None) -> None:
-    bench, cell = repl.bench, repl.cell
+    bench, variation = repl.bench, repl.variation
 
     if name is not None:
         edit, about = bench.thread(name, word)
         _show_component(repl, word, name, edit.digest, about)
         return
 
-    variation = cell.variation
-
     if word == "configuration" and variation and variation.parts:
         skeleton = bench.skeleton(variation)
-        header = Text(f"configuration {cell.label}", style="bold")
+        header = Text(f"configuration {variation.label}", style="bold")
         _ = header.append(", unsaved")
         _ = header.append(f"  {short(skeleton.digest)}", style=LABEL)
         repl.console.print(header)
         repl.console.print(_fields(repl, skeleton))
         return
 
-    digest = _in_cell(repl, word)
+    digest = _in_use(repl, word)
 
     if digest is None:
         return
@@ -240,30 +233,28 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
     _show_component(repl, word, bench.title(digest), digest, about)
 
 
-def _in_cell(repl: Repl, word: str) -> str | None:
-    cell = repl.cell
-    variation = cell.variation
-    digest: str | None = None
+def _in_use(repl: Repl, word: str) -> str | None:
+    variation = repl.variation
 
-    if word == "configuration" and variation:
-        digest = variation.configuration.digest
-    elif word == "model" and variation and variation.recipe is not None:
-        digest = variation.held("model")
-    elif word == "model" and repl.at:
-        digest = repl.at.model.digest
-    elif word == "engine" and repl.engine:
-        digest = repl.engine
-    elif word in RECIPE_PARTS and variation:
-        digest = variation.held(word)
-        if digest is None:
-            repl.error(f"the cell has no {word}")
-            return None
-    elif word in ("engine", "model"):
-        repl.error(f"the cell has no configuration or endpoint: show {word} NAME")
-    elif word in RECIPE_PARTS or word == "configuration":
-        repl.error(f"the cell has no configuration: show {word} NAME")
-    else:
-        repl.error(f"no {word} in the cell: show {word} NAME")
+    if word not in (*RECIPE_PARTS, "configuration", "engine"):
+        repl.error(f"the repl holds no {word}: show {word} NAME")
+        return None
+
+    if variation is None:
+        repl.error(f"the repl holds no configuration: show {word} NAME")
+        return None
+
+    if word == "configuration":
+        return variation.configuration.digest
+
+    if word == "engine" or (word == "model" and variation.recipe is None):
+        at = repl.bench.at(variation, model=repl.under)
+        return at.engine if word == "engine" else at.model.digest
+
+    digest = variation.held(word)
+
+    if digest is None:
+        repl.error(f"{variation.label} has no {word}")
 
     return digest
 
@@ -453,7 +444,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
     bench = repl.bench
 
     if name is None:
-        repl.error("no case in the cell: show case NAME")
+        repl.error("the repl holds no case: show case NAME")
         return
 
     family, digest = bench.case_titled(name)
@@ -557,12 +548,13 @@ def _titled(repl: Repl, value: JsonValue) -> JsonValue:
 
 
 def _show_endpoint(repl: Repl, name: str | None) -> None:
-    bench = repl.bench
-    name = name or repl.where()
+    bench, variation = repl.bench, repl.variation
 
     if name is None:
-        repl.error("the cell has no endpoint: show endpoint NAME")
-        return
+        if variation is None:
+            repl.error("the repl holds no configuration: show endpoint NAME")
+            return
+        name = bench.at(variation, model=repl.under).name
 
     spec = bench.inventory.endpoint(name)
     repl.console.print(Text(f"endpoint {name}", style="bold"))
@@ -614,32 +606,32 @@ def _judge_calls(repl: Repl, run: RunStarted, endpoint: str) -> int:
 
 
 def reasoning(repl: Repl) -> None:
-    bench, cell = repl.bench, repl.cell
+    bench = repl.bench
     models = bench.facts.models
-    serving: dict[str, list[str]] = {}
-    where = repl.where()
+    handles: dict[str, set[str]] = {}
 
-    for endpoint in sorted(bench.inventory.endpoints):
+    for endpoint in bench.inventory.endpoints:
         try:
             model = bench.endpoint(endpoint).model
-        except LookupError:
+            handles.setdefault(model.name, set()).add(bench.handle(model.digest).name)
+        except NotFound:
             continue
-        marked = f"▸ {endpoint}" if endpoint == where else endpoint
-        serving.setdefault(model.name, []).append(marked)
 
     at = repl.at
     current = None if at is None else at.model.name
-    asked = _asked(repl, cell.variation)
+    under = None if at is None else repl.handle(at)
+    asked = _asked(repl, repl.variation)
     caption = (
-        "▸ the level the cell's configuration asks for, as its model's facts say"
+        "▸ the level the configuration in use asks for, as its model's facts say"
         if asked is not None and current in models
-        else "the cell has no configuration asking for a level on a model the facts know"
+        else "no configuration in use asks for a level on a model the facts know"
     )
     table = Table(header_style="bold", show_lines=True, caption=caption)
     table.add_column("reasoning")
 
     for model in models:
-        table.add_column("\n".join([model, *serving.get(model, [])]), overflow="fold")
+        held = [f"▸ {h}" if h == under else h for h in sorted(handles.get(model, ()))]
+        table.add_column("\n".join([model, *held]), overflow="fold")
 
     for effort in ("default", *INTENTS):
         cells = [_level(facts, effort) for facts in models.values()]

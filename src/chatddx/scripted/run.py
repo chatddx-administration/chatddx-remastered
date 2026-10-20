@@ -3,11 +3,12 @@ from contextlib import ExitStack, contextmanager
 
 from chatddx.bench import Bench, Carried, TriedVariation
 from chatddx.factors.base import resolve
+from chatddx.factors.scoring import Judge
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import RunStarted
-from chatddx.runner import Halt, RunEvent, Streamed, judge_at
+from chatddx.runner import Halt, RunEvent, Streamed
 
 from .fakes import fake_at
 from .read import ScriptedRun
@@ -84,9 +85,8 @@ def _halting(halt: Halt, after: int | None) -> Callable[[RunEvent], None]:
 
 @contextmanager
 def _judging(bench: Bench, run: RunStarted) -> Generator[None]:
-    trial = resolve(bench.store.get, run.trial, Trial)
     at = {
-        judge_at(bench.inventory, bench.store.get, trial, judge)
+        bench.judged(resolve(bench.store.get, judge, Judge)).name
         for _, _, scorer in bench.scorers(run)
         for judge in scorer.judges
     }

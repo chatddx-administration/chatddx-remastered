@@ -2,9 +2,9 @@ from collections.abc import Callable
 
 from pydantic import JsonValue
 
-from chatddx.bench import TriedVariation
+from chatddx.bench import Bench, TriedVariation
 from chatddx.repl.shell import Repl
-from chatddx.test.world import CASES
+from chatddx.test.world import CASES, LINES
 
 type Say = Callable[..., str]
 
@@ -28,8 +28,13 @@ def pattern(case: str, target: str = "diagnosis") -> str:
 
 
 def tried(repl: Repl) -> TriedVariation:
-    assert repl.cell.variation is not None
-    return repl.cell.variation
+    assert repl.variation is not None
+    return repl.variation
+
+
+def by_hand(bench: Bench) -> None:
+    lines = bench.variation(LINES).configuration
+    _ = bench.catalog.create(lines.digest, bench.person.id, name="by hand")
 
 
 def line_of(written: str, start: str) -> str:

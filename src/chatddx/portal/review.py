@@ -1,4 +1,3 @@
-import json
 from typing import Annotated, Any
 from urllib.parse import urlencode
 from uuid import UUID
@@ -17,17 +16,17 @@ from chatddx.api import (
 )
 from chatddx.api.state import refused
 from chatddx.bench import Ambiguous, Bench, NotFound
-from chatddx.catalog import threads as catalog_threads
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Purpose, Skeleton
-from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
 from .families import appended, built, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN
+from .scoring import blank, code_of, scorer_choices, unshipped
 
 ANSWERS = 50
 OPEN = ("queued", "under way")
@@ -163,7 +162,7 @@ def review(
         pending=pending,
         left=left,
         configurations=_configurations(bench),
-        models=[m.name for m in api_world.models(bench) if m.problem is None],
+        models=[m.name for m in api_world.models(bench)],
         most=settings.ITEMS_PER_RUN,
         at=None if at is None else at + 1,
         previous=previous,
@@ -425,12 +424,8 @@ def _views(
     bench: Bench, held: Held, expected: schemas.Expected | None
 ) -> list[dict[str, Any]]:
     _, scorer, labels = held
-    measures = {
-        m.name: m.measures
-        for code in api_world.scorer_code(bench)
-        if code.entry_point == scorer.entry_point
-        for m in code.metrics
-    }
+    code = None if unshipped(scorer) else code_of(bench, scorer.entry_point)
+    measures = {} if code is None else {m.name: m.measures for m in code.metrics}
     picks = (
         []
         if expected is None or expected.data is None
@@ -487,20 +482,11 @@ def _composing(
     ran: list[tuple[schemas.Run, schemas.RunDetail]],
     case: str,
 ) -> dict[str, Any] | None:
-    shipped = api_world.scorer_code(bench)
-    if schema is None or not shipped:
+    if schema is None or (held is not None and unshipped(held[1])):
         return None
-    [code, *_] = shipped
-    unjudged = [m.name for m in code.metrics if not m.judged]
-    blank = {
-        "kind": "scorer",
-        "entry_point": code.entry_point,
-        "version": code.version,
-        "expectation_schema": schema,
-        "views": [{"metric": unjudged[0] if unjudged else code.metrics[0].name}],
-    }
+    code = code_of(bench, None if held is None else held[1].entry_point)
     scorer = None
-    titles: dict[str, str] = {}
+    judged: tuple[str, ...] = ()
     if held is not None:
         thread, body, labels = held
         scorer = {
@@ -512,126 +498,14 @@ def _composing(
             "body": body.model_dump(mode="json"),
             "labels": labels,
         }
-        titles = {j: bench.title(j) for j in body.judges}
-    judges = _judges(bench)
+        judged = body.judges
     return {
         "scorer": scorer,
-        "blank": blank,
-        "metrics": [m.model_dump(mode="json") for m in code.metrics],
-        "outputs": _outputs(bench),
-        "judges": judges,
-        "titles": titles | {j["digest"]: j["name"] for j in judges},
-        "me": bench.person.login,
-        "judging": [
-            {
-                "digest": t.head.digest,
-                "thread": t.id,
-                "name": t.name or t.title,
-                "owner": t.owner,
-                "output_schema": resolve(
-                    bench.store.get, t.head.digest, Skeleton
-                ).output_schema,
-            }
-            for t in _configurations(bench, "judge")
-        ],
-        "models": [
-            {"name": m.name, "engine": m.engine}
-            for m in api_world.models(bench)
-            if m.engine is not None
-        ],
+        "blank": blank(code, schema),
+        **scorer_choices(bench, code, judged),
         "case": case,
         "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
     }
-
-
-def _judges(bench: Bench) -> list[dict[str, Any]]:
-    login = bench.person.login
-    found: list[dict[str, Any]] = []
-    for t in sorted(
-        api.threads(bench, "judge"), key=lambda t: (t.owner != login, t.name or t.title)
-    ):
-        judge = resolve(bench.store.get, t.head.digest, Judge)
-        handle, _ = bench.under(judge.engine)
-        found.append(
-            {
-                "digest": t.head.digest,
-                "thread": t.id,
-                "head": t.head.id,
-                "body": judge.model_dump(mode="json"),
-                "texts": _texts(bench, judge),
-                "name": t.name or t.title,
-                "owner": t.owner,
-                "configuration": bench.title(judge.skeleton),
-                "model": None if handle is None else handle.name,
-                "seeds": list(judge.seeds),
-                "output_schema": resolve(
-                    bench.store.get, judge.skeleton, Skeleton
-                ).output_schema,
-            }
-        )
-    return found
-
-
-def _texts(bench: Bench, judge: Judge) -> dict[str, Any] | None:
-    held = bench.holder(judge.skeleton)
-    recipe = None if held is None else catalog_threads.recipe(bench.rows, held[0])
-    if recipe is None:
-        made = bench.store.compilations(judge.skeleton)
-        recipe = made[0].recipe if made else None
-    if recipe is None:
-        return None
-    return {
-        "configuration": None
-        if held is None
-        else {
-            "thread": held[0].thread,
-            "head": held[0].id,
-            "mine": held[1].owner == bench.person.id,
-            "name": held[1].name or bench.title(held[0].digest),
-        },
-        "recipe": recipe.model_dump(mode="json"),
-        "parts": {
-            part: None if digest is None else _chunk(bench, digest)
-            for part in ("instructions", "prompt", "output")
-            for digest in [getattr(recipe, part)]
-        },
-    }
-
-
-def _chunk(bench: Bench, digest: str) -> dict[str, Any]:
-    held = bench.holder(digest)
-    given: dict[str, Any] = {
-        "digest": digest,
-        "body": bench.store.get(digest).model_dump(mode="json"),
-        "name": bench.title(digest),
-    }
-    if held is None:
-        return {**given, "thread": None}
-    edit, about = held
-    return {
-        **given,
-        "thread": edit.thread,
-        "head": edit.id,
-        "mine": about.owner == bench.person.id,
-        "name": about.name or given["name"],
-        "language": api.thread(bench, edit.thread).language,
-    }
-
-
-def _outputs(bench: Bench) -> list[dict[str, Any]]:
-    found: dict[str, dict[str, Any]] = {}
-    for t in api.threads(bench, "configuration", purpose="generation"):
-        schema = resolve(bench.store.get, t.head.digest, Skeleton).output_schema
-        held = found.setdefault(
-            json.dumps(schema, sort_keys=True),
-            {
-                "title": schema.get("title") if isinstance(schema, dict) else None,
-                "json_schema": schema,
-                "by": [],
-            },
-        )
-        held["by"].append(t.name or t.title)
-    return list(found.values())
 
 
 def _scorer(scorers: list[Held], picked: int | None, scored: set[str]) -> Held | None:

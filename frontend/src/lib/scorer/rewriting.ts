@@ -1,5 +1,5 @@
 import { written } from "$lib/editors/writing";
-import type { JudgeChoice } from "./JudgeForm.svelte";
+import type { JudgeChoice } from "./judging";
 
 export type Chunk = {
   digest: string;

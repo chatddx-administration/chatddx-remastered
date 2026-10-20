@@ -58,6 +58,7 @@ Raises:
 * `facts: Facts`
 * `digests: Collection[str]`
 * `languages: Languages | None = None`
+* `engines: Mapping[str, str] | None = None`
 * ∟`list[Finding]`
 
 ## reasons

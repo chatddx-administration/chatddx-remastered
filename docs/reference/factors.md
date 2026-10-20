@@ -483,8 +483,9 @@ Raises:
 `src/chatddx/factors/scoring.py:Judge`
 
 * `kind: Literal["judge"] = "judge"`
+* `schema_version: ClassVar[int] = 2`
 * `skeleton: SkeletonRef`
-* `engine: EngineRef`
+* `model: ModelRef`
 * `seeds: Annotated[tuple[int, ...], AfterValidator(distinct)] = Field(min_length=1)`
 * `fill: FillOp = "text@1"`
 
@@ -504,6 +505,12 @@ Raises:
 
 Raises:
 1. `StructuralError`: "the view is judged by {view.judge}, not this judge"
+
+## JudgeEngine `(Frozen)`
+`src/chatddx/factors/scoring.py:JudgeEngine`
+
+* `judge: JudgeRef`
+* `engine: EngineRef`
 
 ## JudgeRef
 `src/chatddx/factors/scoring.py:JudgeRef`
@@ -566,6 +573,7 @@ Raises:
 * `digests: Iterable[str] | None = None`
 * `languages: Languages | None = None`
 * `reasons: Reasons | None = None`
+* `engines: Mapping[str, str] | None = None`
 * ∟`list[Finding]`
 
 Finds:
@@ -583,11 +591,12 @@ Finds:
 12. `vllm.tools_refused`: "vLLM 0.24 refuses tool_choice {_choice(skeleton.body.get('tool_choice'))} without --enable-auto-tool-choice and --tool-call-parser; for harmony and Mistral models it goes out unconstrained instead" (through `_pair`)
 13. `vllm.native_tools_uncallable`: "with tool_choice auto, vLLM 0.24 constrains the whole answer to response_format, so no tool can be called" (through `_pair`)
 14. `vllm.grammar_before_reasoning`: "without --reasoning-parser, vLLM 0.24 constrains the answer from its first token, so a model can't reason first" ({"warning" if reasons else "info"}, through `_pair`)
-15. `{word}.engine_unmatched`: "the skeleton is worked out for {', '.join(sorted(models))}, and the engine serves {serves}" (through `_made_for`)
-16. `language.unknown`: "the request's language is unknown" (info, through `_languages`)
-17. `language.unknown`: "the language of {unknown} of {len(cases)} cases is unknown" (info, through `_languages`)
-18. `language.mixed`: "the request is {request}, but {len(other)} of {len(cases)} cases {verb} {', '.join(sorted(set(other)))}" (through `_languages`)
-19. `judge.greedy_seeds`: "the judge is greedy, so its {len(c.seeds)} seeds send the same request" (through `_judge`)
+15. `trial.engine_unmatched`: "the skeleton is worked out for {worked}, and the engine serves {serves}" (through `_made_for`)
+16. `judge.model_unmatched`: "the skeleton is worked out for {worked}, and the judge's model is {serves}" (through `_made_for`)
+17. `language.unknown`: "the request's language is unknown" (info, through `_languages`)
+18. `language.unknown`: "the language of {unknown} of {len(cases)} cases is unknown" (info, through `_languages`)
+19. `language.mixed`: "the request is {request}, but {len(other)} of {len(cases)} cases {verb} {', '.join(sorted(set(other)))}" (through `_languages`)
+20. `judge.greedy_seeds`: "the judge is greedy, so its {len(c.seeds)} seeds send the same request" (through `_judge`)
 
 ## LocalEngine `(Component)`
 `src/chatddx/factors/engine.py:LocalEngine`
@@ -1210,12 +1219,22 @@ Raises:
 * `kind: Literal["scoring"] = "scoring"`
 * `scorer: ScorerRef`
 * `expectations: tuple[ExpectationRef, ...] = Field(min_length=1)`
+* `engines: tuple[JudgeEngine, ...] = ()`
 
 ## Scoring.cross_check `@override`
 `src/chatddx/factors/scoring.py:Scoring.cross_check`
 
 * `get: Resolver`
 * ∟`list[str]`
+
+## Scoring.engine_of
+`src/chatddx/factors/scoring.py:Scoring.engine_of`
+
+* `judge: str`
+* ∟`str`
+
+Raises:
+1. `StructuralError`: "the scoring pins no engine for judge {judge}"
 
 ## ScoringRef
 `src/chatddx/factors/scoring.py:ScoringRef`

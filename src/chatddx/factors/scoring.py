@@ -16,7 +16,7 @@ from .base import (
     resolve,
 )
 from .cases import CaseRef
-from .engine import EngineRef
+from .engine import EngineRef, ModelRef, model_of
 from .request import EntryPoint, Skeleton, SkeletonRef, SlotName
 from .select import SplitOp, check_selector, parse_selector, reaches, select, split
 
@@ -56,8 +56,9 @@ def fill_text(op: FillOp, items: Sequence[JsonValue]) -> str:
 
 class Judge(Component):
     kind: Literal["judge"] = "judge"
+    schema_version: ClassVar[int] = 2
     skeleton: SkeletonRef
-    engine: EngineRef
+    model: ModelRef
     seeds: Annotated[tuple[int, ...], AfterValidator(distinct)] = Field(min_length=1)
     fill: FillOp = "text@1"
 
@@ -126,15 +127,34 @@ class Scorer(Component):
 ScorerRef = Annotated[Digest, RefTo("scorer")]
 
 
+class JudgeEngine(Frozen):
+    judge: JudgeRef
+    engine: EngineRef
+
+
 class Scoring(Component):
     kind: Literal["scoring"] = "scoring"
     scorer: ScorerRef
     expectations: tuple[ExpectationRef, ...] = Field(min_length=1)
+    engines: tuple[JudgeEngine, ...] = ()
+
+    def engine_of(self, judge: str) -> str:
+        for e in self.engines:
+            if e.judge == judge:
+                return e.engine
+        raise StructuralError(f"the scoring pins no engine for judge {judge}")
 
     @override
     def cross_check(self, get: Resolver) -> list[str]:
         scorer = resolve(get, self.scorer, Scorer)
-        problems: list[str] = []
+        pinned = [e.judge for e in self.engines]
+        if sorted(pinned) != sorted(scorer.judges):
+            return ["the scoring pins an engine for other judges than its scorer's"]
+        problems = [
+            f"engine {e.engine} serves other weights than judge {e.judge}'s"
+            for e in self.engines
+            if model_of(e.engine, get).digest != resolve(get, e.judge, Judge).model
+        ]
         cases: set[str] = set()
         for ref in self.expectations:
             e = resolve(get, ref, Expectation)

@@ -79,7 +79,9 @@ from chatddx.factors.scoring import (
     Expectation,
     ExpectationSchema,
     Judge,
+    JudgeEngine,
     Scorer,
+    Scoring,
     View,
     fill_text,
 )
@@ -650,7 +652,7 @@ def test_malformed_skeleton_bodies_are_validation_errors() -> None:
 
 def test_seeds_are_distinct() -> None:
     with pytest.raises(ValidationError, match="duplicates"):
-        _ = Judge(skeleton="sha256:" + SHA, engine="sha256:" + SHA, seeds=(1, 1))
+        _ = Judge(skeleton="sha256:" + SHA, model="sha256:" + SHA, seeds=(1, 1))
     with pytest.raises(ValidationError, match="duplicates"):
         _ = Trial(
             skeleton="sha256:" + SHA,
@@ -1177,6 +1179,25 @@ def test_compilations_are_provenance(reg: Registry) -> None:
         reg.check([dangling.digest])
 
 
+def test_a_scoring_pins_an_engine_serving_each_judge_s_weights(reg: Registry) -> None:
+    ids = world(reg)
+    scoring = resolve(reg.get, ids["scoring"], Scoring)
+    assert scoring.cross_check(reg.get) == []
+    assert scoring.engine_of(ids["judge"]) == ids["engine"]
+
+    other = reg.add(remote_engine(reg, "openai/gpt-oss-20b"))
+    elsewhere = JudgeEngine(judge=ids["judge"], engine=other)
+    assert scoring.model_copy(update={"engines": (elsewhere,)}).cross_check(
+        reg.get
+    ) == [f"engine {other} serves other weights than judge {ids['judge']}'s"]
+    unpinned = scoring.model_copy(update={"engines": ()})
+    assert unpinned.cross_check(reg.get) == [
+        "the scoring pins an engine for other judges than its scorer's"
+    ]
+    with pytest.raises(StructuralError, match="pins no engine for judge"):
+        _ = unpinned.engine_of(ids["judge"])
+
+
 def test_judges_fill_their_slots_from_a_view(reg: Registry) -> None:
     assert fill_text("text@1", ["Chest pain."]) == "Chest pain."
     assert fill_text("text@1", [["ACS", "PE"]]) == "ACS\nPE"
@@ -1206,7 +1227,7 @@ def test_dangling_and_mistyped_refs(reg: Registry) -> None:
     _ = reg.add(bad)
     with pytest.raises(StructuralError, match="is not one of"):
         reg.check([bad.digest])
-    dangling = Judge(skeleton="sha256:" + SHA, engine=ids["engine"], seeds=(1,))
+    dangling = Judge(skeleton="sha256:" + SHA, model=ids["model"], seeds=(1,))
     _ = reg.add(dangling)
     with pytest.raises(StructuralError, match="is missing"):
         reg.check([dangling.digest])
@@ -1214,7 +1235,7 @@ def test_dangling_and_mistyped_refs(reg: Registry) -> None:
 
 def test_each_component_is_checked_on_its_own(reg: Registry) -> None:
     dangling = reg.add(
-        Judge(skeleton="sha256:" + SHA, engine="sha256:" + SHA, seeds=(1,))
+        Judge(skeleton="sha256:" + SHA, model="sha256:" + SHA, seeds=(1,))
     )
     other = reg.add(
         Appendix(
@@ -1589,8 +1610,11 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
             contract=NativeOutput(),
         )
     )
-    judge = reg.add(Judge(skeleton=judged, engine=remote, seeds=(1,)))
-    assert [f.code for f in lint(reg, [judge])] == ["schema.ref_unverified"]
+    weights = model_of(remote, reg.get).digest
+    judge = reg.add(Judge(skeleton=judged, model=weights, seeds=(1,)))
+    assert [f.code for f in lint(reg, [judge])] == []
+    paired = lint(reg, [judge], engines={judge: remote})
+    assert [f.code for f in paired] == ["schema.ref_unverified"]
 
 
 def test_trials_keep_their_cases_sorted() -> None:
@@ -1743,15 +1767,16 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
 
     def found(engine: str, judged: bool = False) -> list[tuple[str, str]]:
         held = judging if judged else skeleton.digest
+        weights = model_of(engine, reg.get).digest
         paired = (
-            Judge(skeleton=held, engine=engine, seeds=(1,))
+            Judge(skeleton=held, model=weights, seeds=(1,))
             if judged
             else Trial(skeleton=held, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
         return [
             (f.code, f.message)
             for f in lint(reg, [reg.add(paired)])
-            if f.code.endswith(".engine_unmatched")
+            if f.code in ("trial.engine_unmatched", "judge.model_unmatched")
         ]
 
     assert found(gpt_oss) == []
@@ -1766,8 +1791,12 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
     assert found(gemma) == found(ids["engine"]) == []
     for_judge = compilation.model_copy(update={"skeleton": judging})
     _ = reg.add(for_judge)
-    assert [code for code, _ in found(gpt_oss, judged=True)] == [
-        "judge.engine_unmatched"
+    assert found(gpt_oss, judged=True) == [
+        (
+            "judge.model_unmatched",
+            "the skeleton is worked out for google/gemma-3-12b-it, and the judge's "
+            + "model is openai/gpt-oss-20b",
+        )
     ]
     _ = reg.add(compilation.model_copy(update={"facts": None}))
     assert found(gpt_oss) == []

@@ -4564,16 +4564,9 @@
             "description": "the weights it holds now, by digest"
           },
           "engine": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Engine",
-            "description": "its latest engine, when it resolves"
+            "description": "its latest engine"
           },
           "facts": {
             "$ref": "#/components/schemas/JsonValue"
@@ -4582,18 +4575,6 @@
             "type": "boolean",
             "title": "Takes Typed",
             "description": "whether a case typed into the World's database source can run under it: the source isn't sensitive, or its endpoint is cleared for it"
-          },
-          "problem": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Problem",
-            "description": "why it doesn't resolve to one endpoint, which is ops' to mend"
           }
         },
         "additionalProperties": false,
@@ -4603,8 +4584,7 @@
           "weights",
           "engine",
           "facts",
-          "takes_typed",
-          "problem"
+          "takes_typed"
         ],
         "title": "Model"
       },

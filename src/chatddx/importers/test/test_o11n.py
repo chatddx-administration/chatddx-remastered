@@ -431,10 +431,10 @@ def test_a_server_s_name_is_its_model_s_handle_on_every_host() -> None:
     pelle = imported(report(), "qwen3-8b")
     malborg = imported(report(hostname="malborg"), "qwen3-8b")
     assert engines_toml([pelle, malborg]).count("[local_model.qwen3-8b]") == 1
-    assert [(f.subject, f.code) for f in checked([pelle, malborg])][-1] == (
-        "qwen3-8b@malborg",
-        "endpoint.model_shared",
-    )
+    with pytest.raises(
+        ValueError, match="qwen3-8b@malborg, qwen3-8b@pelle serve the same"
+    ):
+        _ = checked([pelle, malborg])
     other = server(model=server()["model"] | {"revision": "b" * 40})
     elsewhere = imported(report({"qwen3-8b": other}, "malborg"), "qwen3-8b")
     with pytest.raises(ValueError, match="qwen3-8b@malborg serves other weights"):

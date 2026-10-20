@@ -14,12 +14,13 @@ from chatddx.ledger import Run
 from chatddx.repl.render import Tally, Transcript, plural
 from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
-from chatddx.repl.test.helpers import Say, cells, tagged
+from chatddx.repl.test.helpers import Say, by_hand, cells, tagged
 from chatddx.runner import Grading, Halt, RunEvent, Running, ScoreEvent, Streamed
 from chatddx.store import Store
 from chatddx.test.world import (
     CASES,
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     LINES,
     LINES_GUIDED,
     NATIVE,
@@ -47,7 +48,7 @@ def test_seed_says_what_isn_t_a_seed(repl: Repl, say: Say):
 
 
 def test_seed_says_a_greedy_configuration_isn_t_sent_it(say: Say):
-    assert "greedy" not in say(f"cell {LINES} {QWEN}", "seed 1")
+    assert "greedy" not in say(f"use {LINES}", "seed 1")
     assert "greedy: the seed isn't sent" in say("set sampling greedy", "seed 2")
 
 
@@ -57,10 +58,10 @@ def ran(bench: Bench) -> list[Run]:
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run noted")
+def test_run_streams_a_run_of_the_variation_and_scores_it(bench: Bench, say: Say):
+    written = say(f"use {LINES}", "run noted")
 
-    assert f"trial: {LINES} × {QWEN} × noted (seed 7)" in written
+    assert f"trial: {LINES} × {QWEN_ARTIFACT} × noted (seed 7)" in written
     assert "[thinking] I am the fake vLLM" in written
     assert re.search(
         r"Fake diagnosis \w\nFake diagnosis \w\nFake diagnosis \w", written
@@ -81,7 +82,7 @@ def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run noted", "run noted")
+    written = say(f"use {LINES}", "run noted", "run noted")
 
     first, again = re.findall(r"recorded as run (\d+) of trial (\w{6})", written)
 
@@ -90,26 +91,22 @@ def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     assert len({r.started.trial for r in ran(bench)}) == 1
 
 
-def test_run_needs_a_configuration_and_an_endpoint_serving_its_model(
+def test_run_needs_a_configuration_whose_handle_is_served_here(
     bench: Bench, world: Inventory, say: Say
 ):
-    assert "the cell has no configuration" in say("run noted")
+    assert "the repl holds no configuration" in say("run noted")
 
-    endpoints = {**world.endpoints, "twin@fake": world.endpoints[QWEN]}
+    endpoints = {n: e for n, e in world.endpoints.items() if n != QWEN}
     bench.inventory = world.model_copy(update={"endpoints": endpoints})
     written = say(f"use {LINES}", "run noted")
-    assert (
-        f"{QWEN}, twin@fake serve model {QWEN_ARTIFACT}, which one endpoint should: "
-        + "ops' to mend"
-        in written
-    )
+    assert f"no endpoint here serves model {QWEN_ARTIFACT}: pick another" in written
     assert ran(bench) == []
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run noted 42", "run noted x")
+    written = say(f"use {LINES}", "run noted 42", "run noted x")
 
     assert "× noted (seed 42)" in written
     assert "a seed is a whole number from 0 to 2147483647, not x" in written
@@ -122,7 +119,7 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}", "run crlf")
+    written = say(f"use {NATIVE}", "run crlf")
 
     assert "\nvalid\n" in written
     assert (
@@ -136,7 +133,7 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
-    written = say(f"cell {TOOL_ANSWER} {QWEN}", "run bom")
+    written = say(f"use {TOOL_ANSWER}", "run bom")
 
     assert '[final_result] {"diagnoses": ["fake diagnoses 1"' in written
     assert "\nvalid\n" in written
@@ -144,7 +141,7 @@ def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
 
 @pytest.mark.usefixtures("fake")
 def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
-    written = say(f"cell native-tools {QWEN}", "run bom")
+    written = say("use native-tools", "run bom")
 
     assert "refused: the configuration's tools would get content from source test" in (
         written
@@ -153,8 +150,26 @@ def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
     assert ran(bench) == []
 
 
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_hand_written_configuration_runs_under_the_handle_named(
+    bench: Bench, say: Say
+):
+    by_hand(bench)
+    written = say("use by hand", "run noted")
+
+    assert "by hand names no model: name the one to run it under" in written
+    assert ran(bench) == []
+
+    written = say(f"under {QWEN_ARTIFACT}", "run noted")
+
+    assert f"trial: by hand × {QWEN_ARTIFACT} × noted (seed 7)" in written
+    [run] = ran(bench)
+    assert run.started.endpoint is not None and run.started.endpoint.name == QWEN
+
+
 def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
-    written = say(f"cell native {GPT_OSS}", "run bom")
+    written = say(f"use {NATIVE}", f"set model {GPT_OSS_ARTIFACT}", "run bom")
 
     assert f"refused: endpoint '{GPT_OSS}' can't be confirmed" in written
     assert ran(bench) == []
@@ -166,7 +181,7 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
 ):
     startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {LINES} {QWEN}", "run noted")
+        written = say(f"use {LINES}", "run noted")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
     assert re.search(r"differential\n  1\. Fake diagnosis \w", written)
@@ -183,7 +198,7 @@ def test_a_structured_answer_cut_short_is_salvaged(
 ):
     startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {NATIVE} {QWEN}", "run bom")
+        written = say(f"use {NATIVE}", "run bom")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
     assert "salvaged: cut short, and read with its structure closed" in written
@@ -198,7 +213,7 @@ def test_run_tag_says_each_finding_once_with_how_often_it_came(
 ):
     startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {NATIVE} {QWEN}", "run tag targets")
+        written = say(f"use {NATIVE}", "run tag targets")
     targets = tagged("targets")
 
     stop = "stopped: nothing but whitespace for 100 tokens"
@@ -215,8 +230,8 @@ def test_run_tag_says_each_finding_once_with_how_often_it_came(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_greedy_cell_runs_without_its_seed(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "set sampling greedy", "run noted")
+def test_a_greedy_variation_runs_without_its_seed(say: Say):
+    written = say(f"use {LINES}", "set sampling greedy", "run noted")
 
     assert "greedy: the seed isn't sent" in written
     assert "recorded as run 1 of trial" in written
@@ -225,14 +240,15 @@ def test_a_greedy_cell_runs_without_its_seed(say: Say):
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_run_tag_runs_the_cell_on_each_case_tagged_a_line_to_each(
+def test_run_tag_runs_the_variation_on_each_case_tagged_a_line_to_each(
     bench: Bench, say: Say
 ):
-    written = say(f"cell {LINES} {QWEN}", "run tag targets")
+    written = say(f"use {LINES}", "run tag targets")
     targets = tagged("targets")
 
     assert (
-        f"trial: {LINES} × {QWEN} × {len(targets)} cases tagged targets (seed 7)"
+        f"trial: {LINES} × {QWEN_ARTIFACT} × {len(targets)} cases tagged targets "
+        + "(seed 7)"
         in written
     )
     assert ["case", "tokens", "outcome"] in cells(written)
@@ -246,15 +262,15 @@ def test_run_tag_runs_the_cell_on_each_case_tagged_a_line_to_each(
 
 
 def test_run_tag_says_what_it_can_t_run(say: Say):
-    assert "the cell has no configuration" in say("run tag targets")
-    assert "usage: run tag TAG..." in say(f"cell {LINES} {QWEN}", "run tag")
+    assert "the repl holds no configuration" in say("run tag targets")
+    assert "usage: run tag TAG..." in say(f"use {LINES}", "run tag")
     assert "no case tagged nowhere for alice" in say("run tag nowhere")
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run tag targets nowhere swedish")
+    written = say(f"use {LINES}", "run tag targets nowhere swedish")
     either = tagged("targets", "swedish")
     swedish = [name for name in either if CASES[name].language == "sv"]
     english = len(either) - len(swedish)
@@ -270,7 +286,7 @@ def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_run_tag_over_several_languages_runs_each(bench: Bench, say: Say):
-    written = say(f"cell {LINES_GUIDED} {QWEN}", "run tag swedish")
+    written = say(f"use {LINES_GUIDED}", "run tag swedish")
     swedish = [name for name in tagged("swedish") if CASES[name].language == "sv"]
     english = len(tagged("swedish")) - len(swedish)
 
@@ -319,7 +335,7 @@ def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
     press_at(monkeypatch, 5)
-    written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
+    written = pressing(say, f"use {LINES}", "run noted")
 
     assert "[thinking] I am the fake" in written
     assert "(stopped)" in written
@@ -337,7 +353,7 @@ def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_run(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
     press_at(monkeypatch, 5)
-    written = pressing(say, f"cell {LINES} {QWEN}", "run tag targets")
+    written = pressing(say, f"use {LINES}", "run tag targets")
 
     [run] = ran(bench)
     [item] = run.items
@@ -353,7 +369,7 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
     press_at(monkeypatch, 5, presses=2)
-    written = pressing(say, f"cell {LINES} {QWEN}", "run tag targets")
+    written = pressing(say, f"use {LINES}", "run tag targets")
     targets = tagged("targets")
 
     [run] = ran(bench)
@@ -382,7 +398,7 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
         send(self, on_event, halt)
 
     monkeypatch.setattr(Grading, "send", pressed)
-    written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
+    written = pressing(say, f"use {LINES}", "run noted")
 
     assert WRITING in written
     assert "not scored: stopped" in written
@@ -414,7 +430,7 @@ def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
         return finish(self)
 
     monkeypatch.setattr(Running, "finish", pressed)
-    written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
+    written = pressing(say, f"use {LINES}", "run noted")
 
     assert "recorded as run 1 of trial" in written
     [run] = ran(bench)
@@ -425,7 +441,7 @@ def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run noted")
+    written = say(f"use {LINES}", "run noted")
 
     judging = [
         line.split() for line in written.splitlines() if line.startswith("judging")
@@ -454,7 +470,7 @@ def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Sa
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run crlf")
+    written = say(f"use {LINES}", "run crlf")
 
     scores = written[written.index("\nscores\n") :]
     assert "note-" not in scores.split("no target")[0]
@@ -471,9 +487,11 @@ def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run whitespace with labs 8")
+    written = say(f"use {LINES}", "run whitespace with labs 8")
 
-    assert f"trial: {LINES} × {QWEN} × whitespace with labs (seed 8)" in written
+    assert f"trial: {LINES} × {QWEN_ARTIFACT} × whitespace with labs (seed 8)" in (
+        written
+    )
     [run] = ran(bench)
     _, case = bench.case_titled("whitespace with labs")
     assert [item.key.case for item in run.items] == [case]
@@ -483,7 +501,7 @@ def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_scores_say_an_offset_with_its_unit_and_their_details_as_text(say: Say):
-    written = say(f"cell {LINES} {QWEN}", "run matched")
+    written = say(f"use {LINES}", "run matched")
 
     assert ["whole", "text", "@0", "Fake", "diagnosis", "B"] in cells(written)
     assert ["differential", "1", "1.", "Fake", "diagnosis", "B"] in cells(written)

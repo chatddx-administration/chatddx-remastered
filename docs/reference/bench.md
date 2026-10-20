@@ -296,6 +296,13 @@ Raises:
 Raises:
 1. `ValueError`: "an appendix is bound to the current vignette of a case you see"
 
+## broken
+`src/chatddx/bench/handles.py:broken`
+
+* `rows: Rows`
+* `inventory: Inventory`
+* ∟`list[str]`
+
 ## Carried `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Carried`
 
@@ -428,6 +435,15 @@ Raises:
 * `name: str`
 * `thread: int`
 * `weights: str`
+* `deleted: bool = False`
+
+## judging
+`src/chatddx/bench/seen.py:judging`
+
+* `seen: Seen`
+* `judge: Judge`
+* `registry: Registry`
+* ∟`dict[str, str]`
 
 ## keep_compilation
 `src/chatddx/bench/configurations.py:keep_compilation`
@@ -715,7 +731,7 @@ Raises:
 * ∟`Handle`
 
 Raises:
-1. `ValueError`: "{self.title(weights)} is under {under}, and weights are under one: ops' to mend"
+1. `LookupError`: "{short(weights)} is held by {len(held)} model threads, not one"
 
 ## Seen.handle_named
 `src/chatddx/bench/seen.py:Seen.handle_named`
@@ -729,6 +745,15 @@ Raises:
 * `digest: str`
 * `recipe: Recipe | None = None`
 * ∟`tuple[Edit, About] | None`
+
+## Seen.judged
+`src/chatddx/bench/seen.py:Seen.judged`
+
+* `judge: Judge`
+* ∟`Endpoint`
+
+Raises:
+1. `ValueError`: "{self.title(judge.digest)}: its model is behind {handle.name}, which holds other weights now: follow it first"
 
 ## Seen.labels
 `src/chatddx/bench/seen.py:Seen.labels`
@@ -832,7 +857,8 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
-1. `ValueError`: str(e) (from `LookupError`)
+1. `ValueError`: "model {handle.name} is deleted: pick another"
+2. `ValueError`: "no endpoint here serves model {handle.name}: pick another"
 
 ## Seen.shared
 `src/chatddx/bench/seen.py:Seen.shared`

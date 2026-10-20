@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import JsonValue
 
 from chatddx.bench import NotFound
-from chatddx.bench.model import PLACEHOLDERS
+from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton, SlotName
@@ -145,9 +145,9 @@ def judge_asked(bench: BenchDep, given: schemas.Asking) -> schemas.Asked:
         **PLACEHOLDERS,
         "expectation": fill_text(judge.fill, picked),
     }
-    request = skeleton.render(
-        model=served_model_name(judge.engine, bench.store.get),
-        seed=judge.seeds[0],
-        fills=fills,
-    )
+    try:
+        model = served_model_name(bench.judged(judge).engine, bench.store.get)
+    except ValueError:
+        model = MODEL
+    request = skeleton.render(model=model, seed=judge.seeds[0], fills=fills)
     return schemas.Asked(request=request, picked=picked)

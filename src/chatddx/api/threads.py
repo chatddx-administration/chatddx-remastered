@@ -12,6 +12,7 @@ from chatddx.bench import (
     Carried,
     Endpoint,
     Moved,
+    NotFound,
     Proposed,
     Reach,
     TriedVariation,
@@ -167,7 +168,7 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
 def _at(bench: Bench, varied: TriedVariation, model: str | None) -> Endpoint | str:
     try:
         return bench.at(varied, model=model)
-    except (LookupError, ValueError) as e:
+    except (NotFound, ValueError) as e:
         if model is not None and varied.recipe is None:
             raise HTTPException(422, str(e)) from None
         return str(e)

@@ -1,5 +1,5 @@
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 
 from jsonschema import ValidationError, validators
 from jsonschema.exceptions import SchemaError, relevance
@@ -299,11 +299,15 @@ def _languages(c: Trial, languages: Languages) -> Iterable[Finding]:
 
 
 def _pair(
-    c: Trial | Judge, registry: Registry, reasons: Reasons | None
+    subject: str,
+    skeleton: str,
+    engine: str,
+    registry: Registry,
+    reasons: Reasons | None,
 ) -> Iterable[Finding]:
-    skeleton = resolve(registry.get, c.skeleton, Skeleton)
-    by_default = None if reasons is None else reasons(c.engine)
-    yield from _runtime(c.digest, skeleton, registry.get(c.engine), by_default)
+    found = resolve(registry.get, skeleton, Skeleton)
+    by_default = None if reasons is None else reasons(engine)
+    yield from _runtime(subject, found, registry.get(engine), by_default)
 
 
 def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
@@ -316,16 +320,24 @@ def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
     if not made or None in made:
         return
     models = {resolve(registry.get, f, ModelFacts).model for f in made if f}
-    serves = model_of(c.engine, registry.get).name
+    serves = model_of(c.engine if isinstance(c, Trial) else c.model, registry.get).name
     if serves in models:
         return
-    word = "trial" if isinstance(c, Trial) else "judge"
-    yield Finding(
-        code=f"{word}.engine_unmatched",
-        message=f"the skeleton is worked out for {', '.join(sorted(models))}, and the "
-        + f"engine serves {serves}",
-        subject=c.digest,
-    )
+    worked = ", ".join(sorted(models))
+    if isinstance(c, Trial):
+        yield Finding(
+            code="trial.engine_unmatched",
+            message=f"the skeleton is worked out for {worked}, and the engine serves "
+            + serves,
+            subject=c.digest,
+        )
+    else:
+        yield Finding(
+            code="judge.model_unmatched",
+            message=f"the skeleton is worked out for {worked}, and the judge's model "
+            + f"is {serves}",
+            subject=c.digest,
+        )
 
 
 def _judge(c: Judge, registry: Registry) -> Iterable[Finding]:
@@ -342,6 +354,7 @@ def lint(
     digests: Iterable[str] | None = None,
     languages: Languages | None = None,
     reasons: Reasons | None = None,
+    engines: Mapping[str, str] | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
     known: Validators = {}
@@ -360,12 +373,14 @@ def lint(
             case Expectation() as c:
                 findings.extend(_expectation(c, registry, known))
             case Trial() as c:
-                findings.extend(_pair(c, registry, reasons))
+                findings.extend(_pair(d, c.skeleton, c.engine, registry, reasons))
                 findings.extend(_made_for(c, registry))
                 if languages is not None:
                     findings.extend(_languages(c, languages))
             case Judge() as c:
-                findings.extend(_pair(c, registry, reasons))
+                if engines is not None and d in engines:
+                    engine = engines[d]
+                    findings.extend(_pair(d, c.skeleton, engine, registry, reasons))
                 findings.extend(_made_for(c, registry))
                 findings.extend(_judge(c, registry))
             case _:

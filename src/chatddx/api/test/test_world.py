@@ -4,11 +4,19 @@ from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
+from chatddx.api.test.conftest import bearer
 from chatddx.api.test.helpers import endpoint
+from chatddx.bench.handles import broken
+from chatddx.catalog.titles import short
+from chatddx.factors.engine import model_of
+from chatddx.identity import Person
 from chatddx.inventory import EndpointSpec, Inventory
+from chatddx.store import Catalog, Rows, Store
+from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_ARTIFACT,
+    LINES,
     MISTRAL,
     MISTRAL_ARTIFACT,
     QWEN,
@@ -106,34 +114,49 @@ def test_models_are_their_handles_each_with_its_latest_engine_and_facts(
         (UNKNOWN_MODEL, REMOTE),
     ):
         held, served = models.pop(handle), endpoints[at]
-        assert (held["weights"], held["engine"], held["problem"]) == (
-            served["serves"],
-            served["engine"],
-            None,
-        )
+        assert (held["weights"], held["engine"]) == (served["serves"], served["engine"])
         assert held["takes_typed"] == served["takes_typed"]
         assert (held["facts"] is None) == (handle == UNKNOWN_MODEL)
     assert models == {}
 
 
-def test_weights_served_at_two_endpoints_are_ops_to_mend(
+def test_a_model_no_endpoint_here_serves_is_none_to_run_under(
     served: FastAPI, signed: TestClient
 ) -> None:
     held = served.state.chatddx
-    twin = held.inventory.endpoint(QWEN).model_copy(
-        update={"url": HttpUrl("http://127.0.0.1:1/v1/")}
-    )
-    endpoints = {**held.inventory.endpoints, "twin@fake": twin}
+    endpoints = {n: e for n, e in held.inventory.endpoints.items() if n != QWEN}
     served.state.chatddx = AppState(
         held.conninfo,
         held.inventory.model_copy(update={"endpoints": endpoints}),
         held.listener,
     )
-    [qwen] = [m for m in signed.get("/api/models").json() if m["name"] == QWEN_ARTIFACT]
-    assert (qwen["engine"], qwen["problem"]) == (
-        None,
-        f"{QWEN}, twin@fake serve model {QWEN_ARTIFACT}, which one endpoint should: "
-        + "ops' to mend",
+    assert QWEN_ARTIFACT not in {m["name"] for m in signed.get("/api/models").json()}
+
+
+def test_a_world_broken_under_a_running_app_is_answered_raw(
+    served: FastAPI, conn: Connection, alice: Person
+) -> None:
+    inventory = served.state.chatddx.inventory
+    weights = model_of(inventory.endpoint(QWEN).engine, Store(conn).get).digest
+    _ = Catalog(conn).create(weights, alice.id, name="twin")
+    assert broken(Rows(conn), inventory) == [
+        f"model threads {QWEN_ARTIFACT}, twin hold weights {short(weights)}, which one "
+        + "model thread should"
+    ]
+    with TestClient(
+        served, base_url="https://testserver", raise_server_exceptions=False
+    ) as raw:
+        raw.headers.update(bearer(conn, alice))
+        query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+        [lines] = raw.get("/api/threads", params=query).json()
+        got = raw.get(f"/api/threads/{lines['id']}/variation")
+    assert (got.status_code, got.json()) == (
+        500,
+        {
+            "code": "error",
+            "detail": f"LookupError: {short(weights)} is held by 2 model threads, "
+            + "not one",
+        },
     )
 
 

@@ -43,31 +43,29 @@ COMMANDS: dict[str, Command] = {
     "cases": Command((), "list the cases you can run", listing.cases),
     "use": Command(
         ("CONFIGURATION",),
-        "put a configuration in the cell: yours, one shared with you, or OWNER/NAME",
+        "use a configuration: yours, one shared with you, or OWNER/NAME",
         choosing.use,
         rest=0,
     ),
-    "on": Command(
-        ("ENDPOINT",),
-        "put an endpoint in the cell, and the model it serves in the cell's "
-        + "configuration",
-        choosing.on,
-    ),
-    "cell": Command(
-        ("CONFIGURATION", "ENDPOINT"), "put both in the cell", choosing.cell, rest=0
+    "under": Command(
+        ("MODEL",),
+        "run a hand-written configuration under a model's handle; one with a model "
+        + "part runs under its model's",
+        choosing.under,
+        rest=0,
     ),
     "set": Command(
         ("PART", "CHUNK"),
-        "put another chunk, or model, in a part of the cell's configuration; none "
+        "put another chunk, or model, in a part of the configuration in use; none "
         + "takes an optional part out",
         choosing.set_,
         rest=1,
     ),
     "show": Command(
         ("[KIND]", "[NAME...]"),
-        "show the cell, its request, what the lints say and the cases each scorer "
-        + "can hold it to (tag TAG...: those with any TAG); or a KIND, the cell's or "
-        + "NAME, and your runs with it",
+        "show the configuration in use, its request, what the lints say and the "
+        + "cases each scorer can hold it to (tag TAG...: those with any TAG); or a "
+        + "KIND, its or NAME, and your runs with it",
         inspecting.show,
     ),
     "reasoning": Command(
@@ -75,25 +73,26 @@ COMMANDS: dict[str, Command] = {
     ),
     "run": Command(
         ("CASE", "[SEED]"),
-        "run a case on the cell, with SEED or the seed the repl holds, and score it; "
-        + "a case that sends appendices is FAMILY with APPENDIX, ...",
+        "run a case on the configuration in use, with SEED or the seed the repl "
+        + "holds, and score it; a case that sends appendices is FAMILY with "
+        + "APPENDIX, ...",
         running.run,
         grouped=running.case_and_seed,
     ),
     "run tag": Command(
         ("TAG...",),
-        "run the cell on each case with any TAG, a run per language, then score them "
-        + "(Ctrl-C stops)",
+        "run the configuration in use on each case with any TAG, a run per "
+        + "language, then score them (Ctrl-C stops)",
         running.tagged,
     ),
     "seed": Command(
         ("[SEED]",),
-        "draw a fresh seed for the cell's runs; SEED holds it",
+        "draw a fresh seed for the runs; SEED holds it",
         running.seed,
     ),
     "save": Command(
         ("NAME",),
-        "save the cell's configuration as your own, as NAME",
+        "save the configuration in use as your own, as NAME",
         choosing.save,
         rest=0,
     ),
@@ -114,8 +113,8 @@ COMMANDS: dict[str, Command] = {
     ),
     "scorers": Command(
         (),
-        "list the scorers, what each view reads, and whether the cell's output "
-        + "offers it",
+        "list the scorers, what each view reads, and whether the output of the "
+        + "configuration in use offers it",
         scoring.scorers,
     ),
     "take": Command(

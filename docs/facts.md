@@ -88,7 +88,7 @@ the endpoint the World names for configurations; one the facts about its model r
 is a served model the facts don't know.
 
 ## Checking pairs
-A trial or a judge pairs a skeleton with an engine, whose model may have facts. Checking the pairs warns when the
+A trial pairs a skeleton with an engine, and a judge pairs one with weights, whose model may have facts. Checking the
 skeleton was written for another model than the one it is paired with, or asks the model for something its facts
 refuse:
 - Its reasoning settings match none of the ways the model is known to be asked for a level, so they were written for

@@ -326,20 +326,6 @@ A stream that can't miss a row or an event, and a notification queue that a list
   read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.
 
-### Judges name a model
-A judge names a model, as a recipe does, rather than an engine: its calls go to the endpoint serving that model,
-picked as a run's endpoint is (see "Picking an endpoint for a model"), and the engine they went to is pinned with the
-score, as a trial pins a run's. It changes the judge's kind, so it is cheapest before real scores are stored.
-
-Decided: a judge's model is picked by handle, and its engine is the handle's latest.
-
-Take: judges name model handles, as recipes do. The section becomes "Judges name a handle":
-
-A judge's model is picked by its handle, such as `qwen3-8b`, as a recipe's is: the judge pins the weights, and its
-calls go to the endpoint ops map the handle to, at its latest engine, which the scoring pins. A handle that doesn't
-resolve to one endpoint refuses the scoring as ops' error, and a judge whose weights the handle no longer holds is
-behind, and doesn't judge under it until followed.
-
 ### Concurrent writers
 The rules hold with two writers at once: adopting a vignette, taking an expectation and saving a name.
 
@@ -550,8 +536,6 @@ carrying it fixes the API's `item.delta` and the portal's live view too.
   `GET /api/runs?with=` and a run's page in the portal do (`Bench.runs(started_with=…)`).
 - **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
   when it starts, so their width could be too.
-- `repl/shell.py:Repl.prompt` reads the store on every render, to derive the endpoint, where the prompt read nothing
-  before; a connection dropped surfaces at the prompt, outside `handle`'s catch.
 
 ### Unknown query parameters
 Routes refuse what they don't declare.
@@ -709,6 +693,14 @@ The slots and turns wait for endpoints that are shared and busy; the lost endpoi
 - Decided: queue order, as built, then turns per owner at each endpoint once people wait on each other. Turns aren't
   built.
 - **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
+```
+AGENT: replace
+"no longer resolves to one endpoint" reads as deleted, or served by no endpoint here, since several are ruled out
+as a process starts.
+---
+- **A job whose handle moved on** to another engine while it was queued fails at the gate and says to run it
+  again; one whose handle was deleted, or that no endpoint here serves any more, fails saying to pick another.
+```
 - **A job whose handle moved on** to another engine while it was queued fails at the gate and says to run it
   again; one whose handle no longer resolves to one endpoint fails as ops' error.
 
@@ -823,7 +815,7 @@ special case.
 
 ### The sample's judge
 Olof's work, not a PR: his prompt replaces the sample's draft judge, measured by his grades of real answers, and his
-notes revise the targets. agents/wip-olofs-view.md builds the page he writes it on, and holds grading by hand as an open
+notes revise the targets. agents/wip-judge-handle.md builds the page he writes it on, and holds grading by hand as an open
 design.
 
 - **The sample's judge** is a draft over Olof's notes until his prompt replaces it, as an edit. His prompt settles

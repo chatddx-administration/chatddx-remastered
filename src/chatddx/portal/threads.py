@@ -10,13 +10,15 @@ from chatddx.catalog import LANGUAGE_KINDS
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import CHUNK_PARTS, Translations
-from chatddx.factors.scoring import Expectation, ExpectationSchema
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
 
 from .pages import BenchDep, own_first, page, within
+from .scoring import blank, code_of, judge_choices, scorer_choices, unshipped
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
 CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
+BEGUN = [*CHUNKS, "judge", "scorer"]
 
 router = APIRouter()
 
@@ -37,7 +39,7 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
         word=kind,
         threads=own_first(bench, api.threads(bench, kind)),
         written=bool(set(KINDS[kind]) & WRITTEN),
-        begun=kind in CHUNKS,
+        begun=kind in BEGUN,
         deleted=deleted,
         word_of=word_of,
     )
@@ -45,17 +47,18 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
 
 @router.get("/library/new")
 def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
-    if kind not in CHUNKS:
+    if kind not in BEGUN:
         raise HTTPException(
-            404, f"no {kind} is begun here: the chunks are {', '.join(CHUNKS)}"
+            404, f"no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"
         )
-    editor = {
-        "mode": "new",
-        "name": "",
-        "body": None,
-        "language": None,
-        **_chunk(bench, f"chunk.{kind}"),
-    }
+    match kind:
+        case "judge":
+            held = _judge(bench, None)
+        case "scorer":
+            held = _scorer(bench, None, None)
+        case _:
+            held = {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
+    editor = {"mode": "new", "name": ""} | held
     return page(
         request,
         "begun.html",
@@ -86,6 +89,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
     proposal = None
     if mine and origin is not None and not shown.deleted:
         proposal = api.follows(bench, thread).origin
+    last = bodies[shown.head.digest]
     held: dict[str, Any] = {
         "word": word_of(shown.kind),
         "versions": [
@@ -97,6 +101,9 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
         ],
         "titles": titles,
         "editor": None if shown.deleted else _editor(bench, shown, mine),
+        "unshipped": unshipped(last)
+        if isinstance(last, Scorer) and not shown.deleted
+        else None,
     }
     return page(
         request,
@@ -105,7 +112,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
         thread=shown,
         word=word_of(shown.kind),
         versions=versions,
-        head=bodies[shown.head.digest].model_dump(mode="json"),
+        head=last.model_dump(mode="json"),
         origin=origin,
         mine=mine,
         proposal=proposal,
@@ -146,6 +153,10 @@ def _editor(
             }
         case Translations():
             return {**given, "kind": "translations", "into": held.into}
+        case Judge():
+            return {**given, **_judge(bench, held)}
+        case Scorer() if unshipped(held) is None:
+            return {**given, **_scorer(bench, held, shown.head.digest)}
         case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
             return {
                 **given,
@@ -165,6 +176,57 @@ def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
         "languaged": kind in LANGUAGE_KINDS,
         "tools": [t.model_dump(mode="json") for t in tools],
         "me": bench.person.login,
+    }
+
+
+def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
+    handle, problem = None, None
+    if held is not None:
+        try:
+            handle = bench.handle(held.model).name
+            _ = bench.judged(held)
+        except ValueError as e:
+            problem = str(e)
+    return {
+        "kind": "judge",
+        "body": None if held is None else held.model_dump(mode="json"),
+        "configuration": None if held is None else bench.title(held.skeleton),
+        "handle": handle,
+        "problem": problem,
+        **judge_choices(bench),
+        "me": bench.person.login,
+    }
+
+
+def _scorer(bench: Bench, held: Scorer | None, labelled: str | None) -> dict[str, Any]:
+    code = code_of(bench, None if held is None else held.entry_point)
+    read = [
+        (t.head.digest, t.name or t.title)
+        for t in own_first(bench, api.threads(bench, "expectation_schema"))
+    ]
+    if held is not None and held.expectation_schema not in {d for d, _ in read}:
+        read.append((held.expectation_schema, bench.title(held.expectation_schema)))
+    if not read:
+        raise HTTPException(
+            404, "a scorer reads an expectation schema, and you see none"
+        )
+    body = blank(code, read[0][0]) if held is None else held.model_dump(mode="json")
+    named = {} if labelled is None else bench.labels(labelled)
+    return {
+        "kind": "scorer",
+        "body": body,
+        "labels": [named.get(i, f"view {i}") for i in range(len(body["views"]))],
+        "schemas": [
+            {
+                "digest": digest,
+                "name": name,
+                "json_schema": resolve(
+                    bench.store.get, digest, ExpectationSchema
+                ).json_schema,
+            }
+            for digest, name in read
+        ],
+        **scorer_choices(bench, code, () if held is None else held.judges),
     }
 
 

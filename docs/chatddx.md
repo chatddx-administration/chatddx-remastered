@@ -105,181 +105,7 @@ A configuration is a request kept on a skeleton thread, each version with the re
 variation is one with recipe parts replaced over one of its versions. A variation being tried is just a digest;
 saving it makes it a configuration of its own, a fork, or a new version of one of the person's own.
 
-Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
-Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
- - `src/chatddx/catalog/threads.py:behind`
- - `catalog.thread.forked_from`
-
-"Delete" in this case is a `deleted` flag in the `catalog` layer since true deletions are blocked on database level
-(see tier 2 in `docs/store.md`).
-
-`src/chatddx/catalog/threads.py:divergence` and `proposal` (what a fork varies,
-and re-applying it when its origin moves), and `catalog.edit.based_on`.
-
-## Target stack
-- **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
-
-The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer`, `--revision`, `--host` and `--port` (`engine.py: OWNED_FLAGS`).
-
-No comparison across hardware under one model-handle: ops never expose a handle, such as `qwen3-8b`, on two hardware
-classes, so each handle is in one cage. A researcher varies the model by its handle and may compare handles; the
-engines are ops'.
-
-- **Remote inference.** An A100 serving Gemma behind an OpenAI-compatible API. More may follow. We don't control the engine and it can change without notice, so some uncertainty is accepted.
-  - The endpoint is vetted for sensitive cases.
-  - It honors `seed` and returns model identifiers.
-  - A remote model is a handle as a local one is, and what changes unseen behind it stays under its latest
-    engine, observed rather than pinned.
-
-Returns model identifiers: the run check compares the returned `model` with the declared one (`ledger.run:check_run`). `system_fingerprint` is kept in the raw response but not checked.
-
-- **Orchestrator.** Runs in Kubernetes, writes the start-ups and hosts the portal. A postgres database stores user-managed data: factors, records and the catalog are append-only.
-
-## Compromises
-The code doesn't declare how reproducible a run is. It is *observed*:
- - an engine with batch invariance in its `env` may be bitwise reproducible;
- - otherwise best-effort.
-
-Canaries, prompt-token fingerprints and comparing completions show which one applies.
-
-- **Frictionless development.** A mismatch between what is declared and what is observed produces a warning, never a crash. Examples:
- - `attestation.model`: returned model ≠ declared;
- - `attestation.prompt_tokens`: prompt tokens have no fingerprint;
- - `run.incomplete`;
- - `ledger.seal`: rows changed after sealing;
- - `engine.chat_template`, `engine.chat_template_date`;
- - `bundle.recanonicalized`;
- - `case.drift`
- - `tools.unanswered`
- - `tools.stopped`
- - `judge.incomplete`
- - `score.incomplete`
- - `execution.retries`
- - `execution.order`
- - `execution.concurrency`
- - `score.scorer_code` (`ledger/score.py:check_score`)
- - plus the lints in `lint.py`.
-
-The runner warns; it does not refuse. Only structurally malformed specs and records raise errors:
-
-The one exception to "warnings, not crashes": vignette's and anything made from it going where it isn't
-cleared to go is a hard block: an engine, judge engines included, a tool's third party, the store, an edge or an
-export.
-
-Other compromises decided during reconciliation:
- - plain sha256 fingerprints instead of HMAC
- - execution settings are not part of trial identity
- - the remote engine's chat template is not pinned
- - greedy trials still hash their seeds
-
-HMAC was considered for identity and drift protection of the vignettes, but plain sha256 is the default due to:
-- the clinicians working on plaintext anyway;
-- anyone holding a case can verify its hash, which helps delivering the cage;
-- there are no keys to manage.
-- `Fingerprint.of` already supports `hmac-sha256` given a key and its id, so a source can switch without a schema change.
-
-Accepted risks: confirming that a known text is in the study, brute-forcing of short values, whether a hash of pseudonymised health data counts as personal data (GDPR) is for the data protection officer.
-
-## Orchestrator dependencies
-  - Requests/response-handling: Hand-made and, to the extent it actually helps, pydantic-ai.
-  - Scoring: text-matching functions and LLM judges.
-  - pydantic 2.13.5 and Python 3.13+.
-
-## Intended dataflow
-The factors and the ledger does not dictate a concrete process, it supplies the pieces that some runner chains
-together in whatever way they deem fit. There is however an intended flow of data behind the pieces, which is
-described below.
-
-### Before a run
-1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions,
-   FewShot, Reasoning, Passthrough, Translations and Toolset are optional; and it names a model, LocalModel or
-   RemoteModel. A Reasoning chunk may ask for a level, and a Sampling chunk for the sampling the model's makers
-   recommend, rather than say what is sent.
-
-2. The Recipe is compiled into a Skeleton against the facts about its model and into a language its translations cover.
-   The Skeleton is stored as a frozen factor, holding:
-   - A Compilation notes which recipe produced which skeleton, against which facts, and into which language.
-
-   A skeleton holds no model: a recipe compiles to one skeleton for every engine of its model, and, without intents,
-   for every model; a trial's engine says which model a run of it was sent to.
-
-3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
-   references.
-
-4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
-   seeds. A trial of a configuration with a recipe takes the latest engine of the handle its model is under, and its
-   run goes to the handle's endpoint; a recipe whose weights the handle no longer holds is behind its model, and
-   doesn't run under the handle until followed. Cases of a language its translations don't cover are left out.
-
-### Per run
-1. The runner records a RunStarted row which holds the trial, the execution settings (Execution), the canary set, and the version of the rig code.
-2. Execution.schedule(cases, len(seeds)) gives the list of (case, replicate) pairs in the declared order
-
-#### Per (case, replicate)
-1. Load the trial, its skeleton, engine and Case, then that case's appendices, all through Registry.get.
-2. Fetch the vignette's raw bytes from its source by id (`Source.fetch`; sources are declared in the inventory).
-3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
-4. cleans the vignette
-5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
-6. Pick the model name from the engine: `served_model_name(trial.engine, get)`, a local engine's digest, a remote
-   engine's model's name.
-7. Pick the seed: `trial.seeds[replicate]`.
-8. Render the request: skeleton.render(model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
-  - replaces each slot with its text by plain concatenation, with no templating
-  - adds model, messages and the skeleton's body;
-  - adds seed only if the sampling isn't greedy;
-  - adds return_token_ids: true.
-9. Send the request to the engine's /v1/chat/completions.
-  - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
-  - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
-    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (`docs/backlog.md`,
-    "Drift between runs").
-10. When the skeleton offers tools and the response calls some, run them and send the next request: the last one,
-  the assistant's message and the tools' results, until a response calls none or the skeleton's round limit
-  (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.
-
-### After the run
-1. After each response, the Call made of it takes prompt_token_ids out of the response and keeps their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
-2. At the end, Run(...).finish() produces a RunFinished row with the seal. check_run then compares what the run declared with what came back.
-
-### Scoring records
-1. Write a ScoreStarted row naming:
-  - the run it scores;
-  - the Scoring;
-  - the rig's code version;
-  - the version of the scorer's entry point actually running (scorer_version).
-  - the execution settings of its judge calls
-2. Match each run item to its expectation. The item key's case is looked up among the scoring's expectations, whose
-   case field is the same case reference. The scoring pass does it, and gives an item whose case has none no value.
-
-3. Get the model's output out of the raw response. Parsing belongs to the scorer (content, tool-call arguments,
-   JSON extraction, best-effort handling when validation fails). `chatddx.scorers.answer.read` does this, from the
-   item's last call, before the scorer's entry point is called.
-4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
-5. If the view names a Judge:
-  - Build the judge request with the judge's Skeleton's render() (purpose "judge").
-    Its slots are filled with the completion and the expectation, as the view picks them;
-    a judge that reads the case or the appendices is refused.
-  - Send it to the judge's engine, once per seed in Judge.seeds.
-  - Record each call as a JudgeCall: which judge, which seed index, and the call itself.
-6. Write one ScoreItem per (run item, view):
-  - the item key;
-  - the view's position;
-  - value (a number, or empty if it couldn't be scored);
-  - optional detail;
-  - the judge calls.
-7. Close the log. Score.finish() computes the seal over the started row and all item rows, then write the ScoreFinished row with any warnings.
-8. Check it (`ledger.score:check_score`):
- - raises if the score belongs to another run;
- - raises if a view position is out of range;
- - raises if an item isn't in the run;
- - warns if rows changed after sealing.
- - raises for duplicate score items
- - raises for a judge call whose judge isn't its item's view's judge
- - raises if a seed index out of range or one used twice in an item;
- - warns `judge.incomplete`, `score.incomplete`, `score.run_unfinished` and `score.no_expectation`
-
-The "scored results" are just those ScoreItem rows.
+Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies.
 
 ## Vignettes and anything made from them are sensitive
 The vignette and content produced from it: fills, requests, completions, tool arguments and results, judge requests and
@@ -287,19 +113,13 @@ responses, an engine's error that echoes a request; are all sensitive. Every par
 must label it "sensitive".
 
 ## The clearance pipeline
-Sensitive content may go only where it is cleared to go, so sending it to an engine
-that isn't cleared, judge engines included, must be refused, and so must storing it, showing it at an edge, handing it
-to a tool's third party or exporting it where it isn't. Clearance has a dedicated pipeline (agents/wip-clearance.md)
-and the factors do not enforce it. The runner's gate guards the engines and the tools today; the other destinations are
-cleared as the pipeline comes.
+Sensitive content may go only where it is cleared to go, so sending it to an engine that isn't cleared, judge engines
+included, must be refused, and so must storing it, showing it at an edge, handing it to a tool's third party or
+exporting it where it isn't.
 
 ## Findings and errors
-A finding (`src/chatddx/factors/base.py: Finding`) has a level (`warning` by default, or `info`), a code, a message and optionally the subject it concerns. Findings are how "warnings, not crashes" is implemented: anything declared that doesn't match what was observed, and anything risky, becomes a finding. The run and score checks return their findings, and a finished row holds the findings the runner or scorer saw while working, such as `case.drift`; the run and score checks can be repeated from the stored rows at any time, so their findings aren't stored.
-
-Structurally malformed input raises instead. Constructing a component, canary or record that breaks its own rules raises pydantic's `ValidationError`: for example flags the start-up script owns in `argv`, slots unsuitable for the purpose, a skeleton body at odds with its contract, runtime keys in a body, duplicate seeds or cases, a shuffle seed without shuffled order, or a stage log out of order. Problems that need other components or records to see raise `StructuralError`: a digest that doesn't match its bytes, an unknown kind or schema version, a missing or wrongly typed reference, a failed `cross_check`, a recipe whose prompt purpose differs from its own or whose passthrough overrides a managed key, and the run and score checks' own violations (items outside the trial, unplanned canary calls, a score of another run, views, items, judges or seeds that don't exist).
-
-The one hard block is clearance (see "Vignettes and anything made from them are sensitive").
-
-Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; for the
-`facts.*` codes, `docs/facts.md`, "Checking pairs"; and for the engine import's, `docs/inventory.md`, "Importing from
-a host".
+A finding has a level (`warning` by default, or `info`), a code, a message and optionally the subject it concerns.
+It is anything declared that doesn't match what was observed, and anything risky, becomes a finding. The run and
+score checks return their findings, and a finished row holds the findings the runner or scorer saw while working,
+such as `case.drift`; the run and score checks can be repeated from the stored rows at any time, so their findings
+aren't stored.

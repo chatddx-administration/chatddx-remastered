@@ -146,10 +146,10 @@ answers is the title as written (`Seen.answers`): a translated skeleton's is its
 translates its title too.
 
 ### The model
-The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
-from the facts about it. A run goes under the handle the model's weights are under, to the one endpoint serving its
-weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`); none or several is ops' error, said to the person,
-and a look that can't run says why and has no findings. The engine is the trial's: the handle's latest.
+What depends on the model is worked out from the facts about it. A run goes under the handle the model's weights are
+under, deleted or not, to the endpoint serving its weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`).
+A deleted handle, and one no endpoint here serves, as another World's, are said to the person, to pick another; a
+look that can't run says why and has no findings. The engine is the trial's: the handle's latest.
 
 A reasoning level and a recommended sampling are intents rather than settings: compiling
 resolves them with the facts about the model as they are stored then (docs/facts.md), lands each level where
@@ -350,8 +350,9 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   ran, its case or how many, the language it was translated into, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
-- **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
-  without one are left out, and a run whose cases have none has no scoring under that scorer.
+- **A run's scoring** is built from the expectation each of its cases is scored against, and with each judge's handle's
+  latest engine. Cases without one are left out, and a run whose cases have none has no scoring under that scorer.
+  A judge whose weights its handle no longer holds is behind, and refuses the scoring: "follow it first".
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
   to the one endpoint serving its judge's model, as the bench names none (docs/runner.md, "Judges"). The scoring
@@ -415,4 +416,3 @@ check before the other has written.
 | Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-| Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |

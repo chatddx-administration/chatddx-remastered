@@ -1,12 +1,8 @@
 <script lang="ts" module>
-  import type { Mode } from "./writing";
+  import type { Editing } from "./writing";
 
-  export type ExpectationEditing = {
+  export type ExpectationEditing = Editing & {
     kind?: "expectation";
-    mode: Mode;
-    thread?: number;
-    head?: number;
-    name: string;
     case: string;
     schema: string;
     json_schema: Record<string, unknown>;
@@ -18,9 +14,8 @@
   import { type Snippet, untrack } from "svelte";
   import { blank, kept } from "$lib/schema/form";
   import SchemaField from "$lib/schema/SchemaField.svelte";
-  import Findings from "./Findings.svelte";
   import Saving from "./Saving.svelte";
-  import { type Checked, checked, type Component, type Saved } from "./writing";
+  import type { Component, Saved } from "./writing";
 
   let {
     editor,
@@ -44,23 +39,10 @@
 
   let open = $state(untrack(() => opened) ?? given.mode !== "new");
   let data = $state(given.data ?? blank(root, root));
-  let found = $state<Checked | null>(null);
-  let asked = 0;
 
   function component(): Component {
     return { kind: "expectation", case: given.case, expectation_schema: given.schema, data: kept(data, root, root) as never };
   }
-
-  $effect(() => {
-    if (!open) return;
-    JSON.stringify(data);
-    const sent = ++asked;
-    const timer = setTimeout(async () => {
-      const got = await checked(component());
-      if (sent === asked) found = got;
-    }, 350);
-    return () => clearTimeout(timer);
-  });
 
   $effect(() => {
     if (changed) changed(kept(data, root, root));
@@ -76,13 +58,6 @@
 {:else}
   <div class="space-y-3">
     <SchemaField schema={root} {root} value={data} set={(v) => (data = v)} {beside} {quiet} />
-    <Findings {found} />
-    <Saving
-      editing={given}
-      {component}
-      unchanged={found !== null && "digest" in found && found.digest === digest}
-      blocked={found !== null && "problem" in found}
-      {to}
-    />
+    <Saving editing={given} {component} {digest} {to} />
   </div>
 {/if}

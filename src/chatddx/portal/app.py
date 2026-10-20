@@ -37,7 +37,7 @@ def app(
         StaticFiles(directory=made.state.assets.root, check_dir=False),
         name="static",
     )
-    for error in (*api.STATUSES, HTTPException, RequestValidationError):
+    for error in (*api.STATUSES, HTTPException, RequestValidationError, Exception):
         made.add_exception_handler(error, pages.paged(made.exception_handlers[error]))
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
     for router in (

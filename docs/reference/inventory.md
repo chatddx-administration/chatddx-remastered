@@ -7,6 +7,17 @@ Written by `chatddx reference` from `src/chatddx/inventory/`; how to read it is 
 
 * `AnySource`
 
+## broken
+`src/chatddx/inventory/check.py:broken`
+
+* `inventory: Inventory`
+* `get: Resolver`
+* ∟`list[str]`
+
+Finds:
+1. `endpoint.engine_unknown`: str(e) (from `StructuralError`, through `_engine`)
+2. `endpoint.not_engine`: "{digest} is a {engine.kind_name}, not an engine" (through `_engine`)
+
 ## check
 `src/chatddx/inventory/check.py:check`
 
@@ -19,10 +30,9 @@ Finds:
 2. `endpoint.not_engine`: "{digest} is a {engine.kind_name}, not an engine" (through `_engine`)
 3. `endpoint.unstartable`: str(e) (from `LookupError`, through `_endpoint`)
 4. `endpoint.remote_host`: "it serves a remote engine, which no host of ours runs, but names host {host!r}" (through `_endpoint`)
-5. `endpoint.model_shared`: "endpoint {names[0]!r} serves its model's weights too, so the handle they are under resolves to neither: ops' to mend"
-6. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
-7. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
-8. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
+5. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
+6. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
+7. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
 
 ## DatabaseSource `(Source)`
 `src/chatddx/inventory/sources.py:DatabaseSource`

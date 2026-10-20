@@ -80,8 +80,9 @@ def test_the_frontend_s_openapi_document_is_the_api_s(
 
 
 def test_chatddx_run_watch_builds_the_frontend_while_it_serves(
-    monkeypatch: pytest.MonkeyPatch,
+    db: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setenv("DB_NAME", db)
     ran: list[list[str]] = []
 
     class Watching:

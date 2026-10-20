@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from chatddx.cli import main
-from chatddx.test.world import LINES, QWEN, TEST
+from chatddx.test.world import LINES, QWEN_ARTIFACT, TEST
 
 
 def test_the_shell_reads_lines_from_a_pipe_and_keeps_them(
@@ -14,16 +14,16 @@ def test_the_shell_reads_lines_from_a_pipe_and_keeps_them(
     capsys: pytest.CaptureFixture[str],
 ):
     monkeypatch.setenv("DB_NAME", db)
-    lines = [f"cell {LINES} {QWEN}", "seed 42", "set reasoning off", "quit"]
+    lines = [f"use {LINES}", "seed 42", "set reasoning off", "quit"]
     monkeypatch.setattr("sys.stdin", io.StringIO("\n".join(lines) + "\n"))
     history = tmp_path / "history"
 
     main(["repl", "alice", "--world", str(TEST), "--history", str(history)])
 
     out = capsys.readouterr().out
-    assert f"cell: {LINES} × {QWEN}" in out
-    assert f"alice {LINES}×{QWEN} #42> set reasoning off" in out
-    assert f"cell: {LINES}+reasoning=off × {QWEN}" in out
+    assert f"variation: {LINES} × {QWEN_ARTIFACT}" in out
+    assert f"alice {LINES} #42> set reasoning off" in out
+    assert f"variation: {LINES}+reasoning=off × {QWEN_ARTIFACT}" in out
     assert history.exists()
 
 

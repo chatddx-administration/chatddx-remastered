@@ -170,10 +170,8 @@ after it, aren't scored, and checking the score counts them missing.
 
 ### What applies to a run
 A scorer applies to a run when its views can reach the run's answers (docs/ledger.md, "Score"), a view of the whole
-answer reaching only a text answer, and the World lets each of its judges run: no judge reads the case, an endpoint
-serves its engine, and that endpoint is cleared for the run's sources. A scorer the World bars is left out, so it isn't
-left to score for as long as the World is as it is. What may pass later (a secret not set, an endpoint not answering)
-keeps it outstanding, and scoring says why.
+answer reaching only a text answer, and the World lets each of its judges run: no judge reads the case, its handle
+isn't deleted and an endpoint here serves it, and that endpoint is cleared for the run's sources.
 
 ## Findings
 The runner and the scoring pass note what they see while they work, in the finish record (docs/ledger.md,

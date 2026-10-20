@@ -441,11 +441,11 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
         )
         judge = composer.get_by_role("combobox", name="Judge")
         _ = judge.select_option("new")
-        written = page.get_by_role("form", name="A new judge")
+        written = page.get_by_role("region", name="A new judge")
         written.get_by_label("Name").fill("strict")
         _ = written.get_by_label("Asked under the model").select_option(QWEN_ARTIFACT)
         written.get_by_label("Seeds, a call each").fill("1, 2")
-        written.get_by_role("button", name="Save the judge").click()
+        written.get_by_role("button", name="Save").click()
         expect(written).to_have_count(0)
         expect(judge.locator("option:checked")).to_contain_text("strict")
         expect(composer.get_by_role("combobox", name="Its verdict at")).to_have_value(
@@ -649,4 +649,85 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
     configuration = mine("configuration", "lines-warm")
     recipe = page.request.get(f"/api/threads/{configuration['id']}").json()["recipe"]
     assert (recipe["prompt"], recipe["sampling"]) == (prompt, warm)
+    assert errors == []
+
+
+def test_a_judge_is_forked_and_changed_on_its_thread_s_page(page: Page) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def judge(owner: str) -> list[dict[str, Any]]:
+        query: dict[str, str | float | bool] = {"kind": "judge", "owner": owner}
+        return page.request.get("/api/threads", params=query).json()
+
+    [graded] = [t for t in judge("archive") if t["name"] == "graded"]
+    _ = page.goto(f"/threads/{graded['id']}")
+    edit = page.locator("#edit")
+    expect(edit.get_by_role("heading", name="Make it yours")).to_be_visible()
+    edit.get_by_label("Seeds, a call each").fill("3")
+    edit.get_by_label("Name").fill("strict")
+    expect(
+        edit.get_by_text("Saves it as “strict”, a fork of your own.")
+    ).to_be_visible()
+    expect(edit.get_by_text("Nothing to say of it.")).to_be_visible()
+    with page.expect_navigation():
+        edit.get_by_role("button", name="Save").click()
+    [strict] = judge("alice")
+    assert page.url.endswith(f"/threads/{strict['id']}")
+
+    edit = page.locator("#edit")
+    expect(edit.get_by_role("heading", name="Change it")).to_be_visible()
+    _ = edit.get_by_label("Asked under the model").select_option(label=GPT_OSS_ARTIFACT)
+    expect(edit.get_by_text("judge.model_unmatched")).to_be_visible()
+    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
+    edit.get_by_role("button", name="Save").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    [strict] = judge("alice")
+    held = page.request.get(f"/api/components/{strict['head']['digest']}").json()
+    models = {m["name"]: m["weights"] for m in page.request.get("/api/models").json()}
+    assert (held["body"]["seeds"], held["body"]["model"]) == (
+        [3],
+        models[GPT_OSS_ARTIFACT],
+    )
+    assert errors == []
+
+
+def test_a_scorer_is_forked_and_changed_on_its_thread_s_page(page: Page) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def scorers(owner: str) -> list[dict[str, Any]]:
+        query: dict[str, str | float | bool] = {"kind": "scorer", "owner": owner}
+        return page.request.get("/api/threads", params=query).json()
+
+    [lines] = [t for t in scorers("archive") if t["name"] == "lines"]
+    _ = page.goto(f"/threads/{lines['id']}")
+    edit = page.locator("#edit")
+    expect(edit.get_by_role("heading", name="Make it yours")).to_be_visible()
+    edit.get_by_label("Its label").first.fill("first")
+    edit.get_by_label("Name").fill("my lines")
+    expect(
+        edit.get_by_text("Saves it as “my lines”, a fork of your own.")
+    ).to_be_visible()
+    expect(edit.get_by_role("button", name="Save")).to_be_enabled()
+    with page.expect_navigation():
+        edit.get_by_role("button", name="Save").click()
+    [mine] = scorers("alice")
+    assert page.url.endswith(f"/threads/{mine['id']}")
+
+    edit = page.locator("#edit")
+    expect(edit.get_by_role("heading", name="Change it")).to_be_visible()
+    edit.get_by_role("button", name="Move it down").first.click()
+    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
+    expect(edit.get_by_role("button", name="Save")).to_be_enabled()
+    edit.get_by_role("button", name="Save").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    [mine] = scorers("alice")
+    held = page.request.get(f"/api/components/{mine['head']['digest']}").json()
+    assert [v["metric"] for v in held["body"]["views"]] == [
+        "reciprocal_rank",
+        "first_mention",
+        "mentions",
+    ]
+    assert mine["head"]["labels"]["views"] == ["differential", "first", "dont-miss"]
     assert errors == []

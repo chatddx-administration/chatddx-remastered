@@ -38,6 +38,7 @@ from chatddx.factors.scoring import (
     Expectation,
     ExpectationSchema,
     Judge,
+    JudgeEngine,
     Scorer,
     Scoring,
     View,
@@ -157,7 +158,8 @@ def world(reg: Registry) -> dict[str, str]:
             contract=TextOutput(),
         )
     )
-    judge = reg.add(Judge(skeleton=judge_skeleton, engine=engine, seeds=(7,)))
+    model = resolve(reg.get, engine, LocalEngine).model
+    judge = reg.add(Judge(skeleton=judge_skeleton, model=model, seeds=(7,)))
     scoring = reg.add(
         Scoring(
             scorer=reg.add(
@@ -177,6 +179,7 @@ def world(reg: Registry) -> dict[str, str]:
                 )
             ),
             expectations=(expectation,),
+            engines=(JudgeEngine(judge=judge, engine=engine),),
         )
     )
     return {
@@ -186,5 +189,5 @@ def world(reg: Registry) -> dict[str, str]:
         "scoring": scoring,
         "judge": judge,
         "engine": engine,
-        "model": resolve(reg.get, engine, LocalEngine).model,
+        "model": model,
     }

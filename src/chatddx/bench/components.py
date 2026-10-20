@@ -20,6 +20,7 @@ from .seen import (
     check_kind,
     check_scorer,
     compiled,
+    judging,
     linted,
     worded,
 )
@@ -29,6 +30,7 @@ _UNLABELLED = "only a scorer's views and resources have labels"
 
 
 def check(seen: Seen, component: Component | Recipe) -> Checked:
+    engines: dict[str, str] = {}
     match component:
         case Recipe():
             _stored_parts(seen, component)
@@ -44,9 +46,11 @@ def check(seen: Seen, component: Component | Recipe) -> Checked:
         case Judge():
             registry, digest = _registered(seen, component)
             add_compilations(seen, registry, component.skeleton)
+            engines = judging(seen, component, registry)
         case _:
             registry, digest = _registered(seen, component)
-    findings = lints(registry, seen.facts, [digest], partial(language_of, seen.rows))
+    languages = partial(language_of, seen.rows)
+    findings = lints(registry, seen.facts, [digest], languages, engines)
     return Checked(digest, findings)
 
 

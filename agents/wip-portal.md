@@ -26,8 +26,9 @@ it.
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
-   5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
-   in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
+   5 left (see "Open"). A clinician's page around one case, Review, which builds a scorer's composer with its judges
+   and part of 5c, is in `agents/wip-review.md`, and 5d's editors on the threads' pages are planned under
+   "Authoring"; a translator's page around one configuration, which builds 5c's editor of
    translations, in `agents/wip-translators-view.md`; and a researcher's page around a configuration's lineage,
    Refine, which builds 5c and C1 and C2 of "Comparing variations", in `agents/wip-refine.md`.
 7. **Decided: researchers see model handles, never endpoints** (`agents/wip-refine.md`, step 2b). What is built below
@@ -216,6 +217,88 @@ Decided (phase 5), from the options W1 to W11:
 - **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
 - **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
   flow: an appendix, its case, the expectation, and the variation's reach counting it.
+
+### 5d: scorers and judges
+Decided: scorers and judges are made editable on their threads' pages first, `/threads/{id}` under the Library, which
+shows the data model's raw wiring, a page per thread whatever its kind, as the chunks', the expectations' and the
+translations' are. A page of their own for scorers and judges is to follow, proposed by the user and not planned yet.
+Review's composer stays where a scorer is composed around a case (`agents/wip-review.md`), and the threads' pages
+share its pieces.
+
+1. **A judge's editor** on its thread's page: the judge configuration it is asked through, the handle it is asked
+   under and its seeds, checked as typed and saved as a version or a fork of the person's own, with the fields the
+   composer's new judge has. A judge whose weights are behind its handle says so, and picking the handle follows it.
+2. **A scorer's editor** on its thread's page: its views, labels and judges as the composer composes them, without a
+   case to try them on.
+3. **A page for scorers and judges**: what it shows, and how it joins Review, is open.
+
+#### Built: step 1, a judge's editor
+- **On its thread's page** (`src/chatddx/portal/threads.py:_judge`, `frontend/src/lib/scorer/JudgeEditor.svelte`):
+  the judge configuration it is asked through, the handle it is asked under and its seeds, checked as typed
+  (`POST /api/components/check`, its lints on the handle's latest engine) and saved as a version of the person's own
+  or a fork, as every thread's editor saves. A judge asked through an earlier version of a configuration, or under
+  weights no handle holds now, keeps that as a choice of its own, "as it is asked now" and "the weights it holds".
+  What refuses it as it is held, as weights behind their handle or a handle that doesn't resolve, is said as
+  `Seen.judged` says it, with "pick a model it can be asked under", until another model is picked (`problem`).
+- **Begun from the Library**: **Write a new one** under judges, `/library/new?kind=judge`, the same editor with
+  nothing in it.
+- **Shared with Review**: the composer's new judge is this editor, begun in place and handed back to the view rather
+  than navigated to, and what it offers comes from `src/chatddx/portal/scoring.py:judge_choices`, the judge configurations
+  the person sees with the weights each was made for, and the handles that resolve. Picking a configuration moves the
+  model to the one it was made for, when it is offered, and a new judge starts there (`judging.ts:madeFor`).
+- **A scorer keeps the version it names**: the editor says that the scorers asking a judge keep asking the version
+  they ask until they are changed.
+- **Tests**: `test_library.py`, a judge's editor's props, forked, edited, behind its handle, and begun from the
+  Library; vitest for what the fields offer (`judging.test.ts`); `test_browser.py`, `graded` forked with a seed of its
+  own, then put under `gpt-oss-20b`, saying `judge.model_unmatched`, and saved as its second version.
+
+#### What step 1 leaves
+- **Which scorers ask a judge** isn't shown on its page, nor offered to be changed with it: the page for scorers and
+  judges (step 3) is where they meet.
+- **The fill rule** isn't offered: `text@1` is the only one.
+
+#### Built: step 2, a scorer's editor
+- **On its thread's page** (`src/chatddx/portal/threads.py:_scorer`, `frontend/src/lib/scorer/ScorerEditor.svelte`):
+  the expectation schema it is held to, picked from those the person sees, and its views as Review's composer
+  composes them: each view's label, what it reads of what is expected and of the answer, line by line or not, its
+  metric, and, for a judged one, its judge, a new judge written in place, and its params. Checked as typed, its lints
+  included, and saved with its labels as a version of the person's own or a fork; a change of labels alone is a new
+  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship, at its version, has no editor:
+  its page says so and to write a new one (`src/chatddx/portal/scoring.py:unshipped`), as shipped code isn't kept
+  forever (`agents/wip-error-handling.md`).
+- **Begun from the Library**: **Write a new one** under scorers, `/library/new?kind=scorer`, starting from the shipped
+  code, the first expectation schema and one view.
+- **Shared with Review**: the views' form is `frontend/src/lib/scorer/ScorerViews.svelte`, which Review's composer
+  now renders too, adding what belongs beside a case through snippets: the values tried on the case's answers, what a
+  judge is asked, and changing what it is asked. What both are offered comes from
+  `src/chatddx/portal/scoring.py:scorer_choices` (it was `judges.py`, and takes the composer's helpers from
+  `review.py`); the answer's choices are `scorers.ts:answeredChoices`.
+- **Tests**: `test_library.py`, a scorer's editor's props, forked and edited, and begun from the Library; vitest for
+  `answeredChoices`; `test_browser.py`, `lines` forked with a label changed, then a view moved down, saved as its
+  second version with its labels following.
+
+#### What step 2 leaves
+- **Nothing to try a view on**: without a case, no values are tried and no judge is asked; the editor says to compose
+  it beside a case on the Review page for that.
+- **Selectors that filter a list by what is written in it**, as `notes where author is carol › comment`, are offered
+  only beside an expectation that holds them; on a scorer's page they show as typed.
+- **A judge's texts** are changed beside a case, on the Review page, or on the judge configuration's own page.
+
+#### Reduced
+After step 2, by the user's pick of what steps 1 and 2 and the judges' handles had added (`agents/reduce.md`):
+- **Pruned**: the judge editor's `behind`, its hint now `Seen.judged`'s refusal. A scorer of code that isn't shipped
+  crashed for a while, as a developer's error, until shipped code was decided not to be kept forever: its page says
+  so now, and Review leaves it out of the composer (`agents/wip-error-handling.md`).
+- **Consolidated**: the check as typed is `Saving`'s, which shows its findings and works out what is unchanged
+  (`digest`, and `same` for the labels) and what blocks a save, in place of a copy per editor; the composer's new
+  judge is the judge editor, saved through `Saving` and `writing.ts:written` (`made`), so `JudgeForm` is gone; the
+  editors' props are `writing.ts:Editing` and theirs; `scoring.py`'s judges sorted by `own_first`, the titles no
+  longer merged with the judges' names on the server as the page merges them, and a holder's thread, version, owner
+  and name read once (`_holder`); the views' fields are `FIELD`; the judge fields' options are `judging.ts:Option`.
+- **Kept**: who is editing (`me`) stays given by each editor's props: given once by `_editor` it would be given by
+  the Library's beginning and Review's composer too, as many places as now.
+- **Then decided**: the ops' errors met on the way from a judge to its engine, by the model in
+  `agents/wip-error-handling.md` ("Built: step 1").
 
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
@@ -448,7 +531,7 @@ Phase 2, as takes:
 - **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
   titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
 - **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
-  Families and Endpoints, Library since phase 5, Review (`agents/wip-olofs-view.md`) and Translate
+  Families and Endpoints, Library since phase 5, Review (`agents/wip-review.md`) and Translate
   (`agents/wip-translators-view.md`). An island's imported chunks are preloaded
   (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
@@ -630,9 +713,9 @@ From "What the portal shows", not on the pages yet:
 
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
-  have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2), and the rest of 5c is built by
-  `agents/wip-refine.md` (step 1).
+  have pages, with what is said, versions, forks and following; the translations' editor is
+  `agents/wip-translators-view.md`'s (T2), the rest of 5c is built by `agents/wip-refine.md` (step 1), and scorers'
+  and judges' editors are "5d: scorers and judges".
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case

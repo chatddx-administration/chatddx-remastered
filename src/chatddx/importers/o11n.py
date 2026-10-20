@@ -19,7 +19,7 @@ from chatddx.factors.engine import (
     check_chat_template,
 )
 from chatddx.factors.lint import lint
-from chatddx.inventory import EndpointSpec, HostSpec, Inventory, check
+from chatddx.inventory import EndpointSpec, HostSpec, Inventory, broken, check
 
 # What o11n.vllm's report says about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).
@@ -351,4 +351,7 @@ def checked(imports: Sequence[Imported]) -> list[Finding]:
     for i in imports:
         _ = registry.add(i.model)
         _ = registry.add(i.engine)
-    return check(_inventory(imports), registry.get)
+    inventory = _inventory(imports)
+    if found := broken(inventory, registry.get):
+        raise ValueError("; ".join(found))
+    return check(inventory, registry.get)

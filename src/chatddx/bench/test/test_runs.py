@@ -2,6 +2,7 @@ import pytest
 
 from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
+from chatddx.bench.handles import broken
 from chatddx.bench.test.helpers import varying
 from chatddx.catalog import Entry, EntryField, Subject, read
 from chatddx.catalog.language import language_of
@@ -120,8 +121,9 @@ def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
     endpoints = dict(world.endpoints)
     endpoints["twin@fake"] = endpoints[GPT_OSS]
     twice = Bench(conn, alice, world.model_copy(update={"endpoints": endpoints}))
-    with pytest.raises(ValueError, match=f"{GPT_OSS}, twin@fake serve model"):
-        _ = twice.start(swapped, None, cases, (7,))
+    assert broken(twice.rows, twice.inventory) == [
+        f"endpoints {GPT_OSS}, twin@fake serve the same weights, which one endpoint should"
+    ]
     twin = twice.at(swapped, "twin@fake")
     assert (twin.name, twin.engine) == ("twin@fake", engine)
 
@@ -272,12 +274,12 @@ def test_a_start_one_of_whose_runs_the_gate_refuses_begins_none(
         get: Resolver,
         endpoint: str,
         trial: Trial,
-        judge: Judge | None = None,
+        judged: tuple[Judge, str] | None = None,
     ):
         calls.append(trial.digest)
         if len(calls) == 2:
             raise Refused("the second is refused")
-        return admitted(inventory, get, endpoint, trial, judge)
+        return admitted(inventory, get, endpoint, trial, judged)
 
     monkeypatch.setattr("chatddx.runner.run.admit", admit)
     with pytest.raises(Refused, match="the second is refused"):

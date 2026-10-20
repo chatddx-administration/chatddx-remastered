@@ -259,7 +259,7 @@ Each kind is described by:
 | Facts | The model they are about. | `facts about Qwen/Qwen3-8B-AWQ` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Scoring | Its scorer and how many expectations it has. | `scorer chatddx.scorers.metrics:score v2 against 20 expectations` |
-| Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
+| Judge | Its skeleton and its model's handle. | `judge grader under qwen3-8b` |
 | Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v2` |
 | Expectation schema | Its title or its properties. | `Targets` |
 | Canary set | How many canaries it has. | `2 canaries` |

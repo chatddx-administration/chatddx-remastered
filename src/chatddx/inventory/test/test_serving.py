@@ -18,6 +18,7 @@ from chatddx.inventory import (
     EndpointSpec,
     HostSpec,
     Inventory,
+    broken,
     check,
     start_up,
 )
@@ -254,8 +255,6 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
         ("gemma", "endpoint.remote_host", "warning"),
         ("ghost", "endpoint.engine_unknown", "warning"),
         ("model", "endpoint.not_engine", "warning"),
-        ("again@pelle", "endpoint.model_shared", "warning"),
-        ("nowhere", "endpoint.model_shared", "warning"),
         ("again@pelle", "endpoint.shared_url", "warning"),
         ("pelle", "host.unpinned", "info"),
         ("gemma", "cleared.not_sensitive", "info"),
@@ -263,10 +262,6 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     messages = {(f.subject, f.code): f.message for f in check(inventory, reg.get)}
     assert messages[("qwen@pelle", "endpoint.unstartable")] == (
         f"host 'pelle' doesn't say where it keeps chat template {TEMPLATE}"
-    )
-    assert messages[("nowhere", "endpoint.model_shared")] == (
-        "endpoint 'qwen@pelle' serves its model's weights too, so the handle they are "
-        + "under resolves to neither: ops' to mend"
     )
     assert messages[("again@pelle", "endpoint.shared_url")] == (
         f"{url} is also the address of endpoint 'qwen@pelle'"
@@ -278,3 +273,7 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     assert messages[("ghost", "endpoint.engine_unknown")] == (
         f"sha256:{'c' * 64} is not in the registry"
     )
+    assert broken(inventory, reg.get) == [
+        "endpoints again@pelle, nowhere, qwen@pelle serve the same weights, which one "
+        + "endpoint should"
+    ]

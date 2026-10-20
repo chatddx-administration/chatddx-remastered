@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
+from chatddx.bench.handles import broken
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.write import ARCHIVE
 from chatddx.factors.base import resolve
@@ -50,9 +51,10 @@ from chatddx.scripted import (
     run as run_scripted,
     scripted_runs,
 )
+from chatddx.store import Rows
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
-from chatddx.store.store import Store
+from chatddx.store.store import Connection, Store
 from chatddx.worker import Worker
 
 
@@ -105,6 +107,14 @@ def _world(command: str, path: Path | None) -> World:
         raise SystemExit(f"{command}: {e}") from None
 
 
+def _held(command: str, world: World, conn: Connection) -> None:
+    if found := broken(Rows(conn), world.inventory):
+        raise SystemExit(
+            f"{command}: {world.path}, as loaded:\n"
+            + "\n".join(f"  {f}" for f in found)
+        )
+
+
 def _init_data(args: argparse.Namespace) -> None:
     world = _world("init-data", args.world)
     data: Path = args.data or world.path / DATA
@@ -128,13 +138,14 @@ def _init_data(args: argparse.Namespace) -> None:
             + f"{source.name!r} of {world.path}"
         )
     lines: list[str] = []
-    with psycopg.connect(settings.database()) as conn:
+    with psycopg.connect(settings.database()) as conn, conn.transaction():
         people = People(conn)
         user = people.find(args.user)
         if user is None:
             user = people.add(args.user, args.user)
             lines.append(f"[person] {args.user}: added")
         lines += init(conn, plan, cases, source, user, giftbag=args.giftbag)
+        _held("init-data, refused and nothing written", world, conn)
     findings = check(world.inventory, plan.registry.get)
     lines += [f"[world {f.level}] {f.subject}: {f.code}: {f.message}" for f in findings]
     n, m = len(findings), len(world.inventory.endpoints)
@@ -224,6 +235,7 @@ def _import_engine(args: argparse.Namespace) -> None:
 def _repl(args: argparse.Namespace) -> None:
     world = _world("repl", args.world)
     with psycopg.connect(settings.database(), autocommit=True) as conn:
+        _held("repl", world, conn)
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
@@ -248,6 +260,7 @@ def _scripted_runs(args: argparse.Namespace) -> None:
     if not chosen:
         raise SystemExit(f"scripted-runs: {world.path} has no {RUNS}/*.toml")
     with psycopg.connect(settings.database(), autocommit=True) as conn:
+        _held("scripted-runs", world, conn)
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
@@ -294,6 +307,8 @@ def _serve(
     host, _, port = bind.rpartition(":")
     if not host or not port.isdigit():
         raise SystemExit(f"{command}: bind to HOST:PORT, not {bind!r}")
+    with psycopg.connect(settings.database()) as conn:
+        _held(command, world, conn)
     served = made(world.inventory, settings.database())
     uvicorn.run(served, host=host.strip("[]"), port=int(port))
 
@@ -343,6 +358,8 @@ def _watching() -> subprocess.Popen[bytes]:
 
 def _worker(args: argparse.Namespace) -> None:
     world = _world("worker", args.world)
+    with psycopg.connect(settings.database()) as conn:
+        _held("worker", world, conn)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     worker = Worker(settings.database(), world.inventory)
     stopping = threading.Event()
@@ -549,8 +566,8 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     shell = commands.add_parser(
         "repl",
-        help="the chatddx shell: choose a configuration and an endpoint, see what would "
-        + "be sent, and run and score it",
+        help="the chatddx shell: choose a configuration, see what would be sent, and "
+        + "run it under its model's handle and score it",
     )
     _ = shell.add_argument("login", help="who you are in the shell")
     _ = shell.add_argument(

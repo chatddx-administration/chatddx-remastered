@@ -24,9 +24,9 @@ def test_the_kinds_say_their_json_schema_and_what_their_references_take(
     assert expectation["case"]["x-kind"] == ["case"]
     assert expectation["expectation_schema"]["x-kind"] == ["expectation_schema"]
     judge = listed["judge"]["json_schema"]["properties"]
-    assert (judge["skeleton"]["x-kind"], judge["engine"]["x-kind"]) == (
+    assert (judge["skeleton"]["x-kind"], judge["model"]["x-kind"]) == (
         ["skeleton"],
-        ["engine.local", "engine.remote"],
+        ["model.local", "model.remote"],
     )
 
 

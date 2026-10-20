@@ -89,8 +89,9 @@ def _sampled_for(
 
 
 def _pair(c: Trial | Judge, registry: Registry, facts: Facts) -> Iterable[Finding]:
-    name = model_of(c.engine, registry.get).name
-    model = facts.about(c.engine, registry.get)
+    served = c.engine if isinstance(c, Trial) else c.model
+    name = model_of(served, registry.get).name
+    model = facts.about(served, registry.get)
     skeleton = resolve(registry.get, c.skeleton, Skeleton)
     if model is None:
         yield Finding(
@@ -122,8 +123,13 @@ def lints(
     facts: Facts,
     digests: Collection[str],
     languages: Languages | None = None,
+    engines: Mapping[str, str] | None = None,
 ) -> list[Finding]:
     found = lint(
-        registry, digests, languages=languages, reasons=reasons(facts, registry)
+        registry,
+        digests,
+        languages=languages,
+        reasons=reasons(facts, registry),
+        engines=engines,
     )
     return found + check_pairs(registry, facts, digests)

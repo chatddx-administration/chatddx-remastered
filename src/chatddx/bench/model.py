@@ -60,6 +60,7 @@ class Handle:
     name: str
     thread: int
     weights: str
+    deleted: bool = False
 
 
 @dataclass(frozen=True)

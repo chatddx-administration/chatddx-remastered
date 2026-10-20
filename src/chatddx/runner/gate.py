@@ -20,11 +20,11 @@ def admit(
     get: Resolver,
     endpoint: str,
     trial: Trial,
-    judge: Judge | None = None,
+    judged: tuple[Judge, str] | None = None,
     timeout: float = 10.0,
 ) -> str | None:
-    bar(inventory, get, endpoint, trial, judge)
-    engine = trial.engine if judge is None else judge.engine
+    bar(inventory, get, endpoint, trial, judged)
+    engine = trial.engine if judged is None else judged[1]
     key = _secret(inventory, endpoint)
     url = str(inventory.endpoint(endpoint).url)
     try:
@@ -40,19 +40,18 @@ def admit(
     return key
 
 
-# What refuses an endpoint for as long as the World is as it is; admit adds what may pass later.
 def bar(
     inventory: Inventory,
     get: Resolver,
     endpoint: str,
     trial: Trial,
-    judge: Judge | None = None,
+    judged: tuple[Judge, str] | None = None,
 ) -> None:
-    if judge is None:
+    if judged is None:
         engine, whose = trial.engine, "trial"
         tools = bool(resolve(get, trial.skeleton, Skeleton).tools)
     else:
-        engine, whose, tools = judge.engine, "judge", False
+        (judge, engine), whose, tools = judged, "judge", False
         skeleton = resolve(get, judge.skeleton, Skeleton)
         if read := sorted(_slots(skeleton) & {"vignette", "appendices"}):
             raise Refused(

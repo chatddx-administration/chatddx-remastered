@@ -19,42 +19,6 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 * `repl: Repl`
 * ∟`None`
 
-## Cell `@dataclass(frozen=True)`
-`src/chatddx/repl/shell.py:Cell`
-
-* `variation: TriedVariation | None = None`
-* `endpoint: Endpoint | None = None`
-
-## cell
-`src/chatddx/repl/choosing.py:cell`
-
-* `repl: Repl`
-* `configuration: str`
-* `endpoint: str`
-* ∟`None`
-
-## Cell.label `@property`
-`src/chatddx/repl/shell.py:Cell.label`
-
-* ∟`str`
-
-## Cell.named `@property`
-`src/chatddx/repl/shell.py:Cell.named`
-
-* ∟`str | None`
-
-## Cell.on
-`src/chatddx/repl/shell.py:Cell.on`
-
-* `endpoint: Endpoint | None`
-* ∟`"Cell"`
-
-## Cell.trying
-`src/chatddx/repl/shell.py:Cell.trying`
-
-* `variation: TriedVariation`
-* ∟`"Cell"`
-
 ## clipped
 `src/chatddx/repl/render.py:clipped`
 
@@ -244,13 +208,6 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * `NONE = "none"`
 
-## on
-`src/chatddx/repl/choosing.py:on`
-
-* `repl: Repl`
-* `name: str`
-* ∟`None`
-
 ## outcome
 `src/chatddx/repl/render.py:outcome`
 
@@ -281,7 +238,8 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 `src/chatddx/repl/shell.py:Repl`
 
 * `bench: Bench`
-* `cell: Cell`
+* `variation: TriedVariation | None`
+* `under: str | None`
 * `seed: int`
 * `failed: bool`
 
@@ -324,19 +282,21 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * ∟`None`
 
+## Repl.handle
+`src/chatddx/repl/shell.py:Repl.handle`
+
+* `at: Endpoint`
+* ∟`str`
+
 ## Repl.prompt `@property`
 `src/chatddx/repl/shell.py:Repl.prompt`
 
 * ∟`str`
 
-## Repl.say_cell
-`src/chatddx/repl/shell.py:Repl.say_cell`
-
-* ∟`None`
-
 ## Repl.say_changed
 `src/chatddx/repl/shell.py:Repl.say_changed`
 
+* `variation: TriedVariation`
 * ∟`None`
 
 ## Repl.say_findings
@@ -346,10 +306,11 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 * `tally: bool = False`
 * ∟`None`
 
-## Repl.where
-`src/chatddx/repl/shell.py:Repl.where`
+## Repl.say_variation
+`src/chatddx/repl/shell.py:Repl.say_variation`
 
-* ∟`str | None`
+* `variation: TriedVariation`
+* ∟`Endpoint | None`
 
 ## replay
 `src/chatddx/repl/reviewing.py:replay`
@@ -606,6 +567,13 @@ Written by `chatddx reference` from `src/chatddx/repl/`; how to read it is in [d
 
 * `text: str`
 * `style: str = ""`
+* ∟`None`
+
+## under
+`src/chatddx/repl/choosing.py:under`
+
+* `repl: Repl`
+* `name: str`
 * ∟`None`
 
 ## UNTARGETED

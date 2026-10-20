@@ -19,7 +19,7 @@ from chatddx.catalog import About, Edit, Entry, EntryField, Subject, read, threa
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import FileDigest, LocalModel, model_of
+from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel, model_of
 from chatddx.factors.request import Prompt
 from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person, owns
@@ -391,6 +391,7 @@ def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> 
         _ = bench.save(variation, "twice")
 
 
+@pytest.mark.slow
 def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     bench: Bench,
 ) -> None:
@@ -568,6 +569,76 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     )
 
 
+def test_a_judged_scoring_pins_its_judges_latest_engines_or_says_why_it_can_t(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "noted")))
+    judged = plan.named("scorer", "judged").digest
+    built = scoring(bench, started, judged)
+    assert built is not None
+    assert {e.engine for e in built.engines} == {bench.endpoint(QWEN).engine}
+
+    inventory = bench.inventory
+    endpoints = {n: e for n, e in inventory.endpoints.items() if n != QWEN}
+    unserved = Bench(conn, alice, inventory.model_copy(update={"endpoints": endpoints}))
+    assert "judged" not in {a.name for _, a, _ in unserved.scorers(started)}
+    with pytest.raises(
+        ValueError, match=f"no endpoint here serves model {QWEN_ARTIFACT}: pick another"
+    ):
+        _ = scoring(unserved, started, judged)
+
+    store = Store(conn)
+    registry = store.load([inventory.endpoint(QWEN).engine])
+    weights = registry.add(
+        LocalModel(
+            repo=QWEN_MODEL,
+            revision="newer",
+            files=(FileDigest(path="none", sha256="0" * 64),),
+        )
+    )
+    engine = resolve(registry.get, inventory.endpoint(QWEN).engine, LocalEngine)
+    newer = registry.add(engine.model_copy(update={"model": weights}))
+    _ = store.add(registry, [newer])
+    _ = Catalog(conn).edit(
+        bench.handle(bench.endpoint(QWEN).model.digest).thread, weights, alice.id
+    )
+    moved = dict(inventory.endpoints)
+    moved[QWEN] = moved[QWEN].model_copy(update={"engine": newer})
+    later = Bench(conn, alice, inventory.model_copy(update={"endpoints": moved}))
+    assert "judged" in {a.name for _, a, _ in later.scorers(started)}
+    assert judged in later.unscored(started)
+    [refused] = later.score(started, {judged})
+    assert refused.refused is not None and refused.refused.endswith(
+        f"its model is behind {QWEN_ARTIFACT}, which holds other weights now: follow "
+        + "it first"
+    )
+
+
+def test_a_judge_under_a_deleted_handle_says_to_pick_another(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "noted")))
+    judged = plan.named("scorer", "judged").digest
+    handle = bench.handle(bench.endpoint(QWEN).model.digest)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    Catalog(conn).note(
+        Subject(thread=handle.thread), Entry(field=EntryField.DELETED), archive.id
+    )
+    deleted = Bench(conn, alice, bench.inventory)
+    held = deleted.handle(handle.weights)
+    assert (held.name, held.deleted, deleted.latest(held)) == (
+        QWEN_ARTIFACT,
+        True,
+        None,
+    )
+    assert "judged" not in {a.name for _, a, _ in deleted.scorers(started)}
+    with pytest.raises(
+        ValueError, match=f"model {QWEN_ARTIFACT} is deleted: pick another"
+    ):
+        _ = scoring(deleted, started, judged)
+
+
 def scored(graded: Graded) -> UUID:
     assert graded.score is not None
     return graded.score.started.score
@@ -630,7 +701,8 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     variation = bench.variation("judge-graded")
     engine = bench.endpoint(GPT_OSS).engine
     findings = bench.findings(variation, engine, 7)
-    judge = Judge(skeleton=variation.configuration.digest, engine=engine, seeds=(7,))
+    weights = bench.endpoint(GPT_OSS).model.digest
+    judge = Judge(skeleton=variation.configuration.digest, model=weights, seeds=(7,))
     assert {f.code for f in findings} == {
         "facts.output_note",
         "facts.sampling_unmatched",
@@ -655,8 +727,7 @@ def test_a_run_runs_again_under_its_handle_or_is_refused_saying_why(
     handle, latest = bench.under(made.engine)
     assert (None if handle is None else handle.name, latest) == (QWEN_ARTIFACT, False)
     with pytest.raises(
-        ValueError,
-        match=f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend",
+        ValueError, match=f"no endpoint here serves model {QWEN_ARTIFACT}: pick another"
     ):
         _ = bench.again(bench.run(run), (9,))
 

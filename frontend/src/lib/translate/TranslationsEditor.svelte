@@ -1,22 +1,17 @@
 <script lang="ts" module>
-  import type { Mode } from "$lib/editors/writing";
+  import type { Editing } from "$lib/editors/writing";
   import type { Entries } from "./translate";
 
-  export type TranslationsEditing = {
+  export type TranslationsEditing = Editing & {
     kind: "translations";
-    mode: Mode;
-    thread?: number;
-    head?: number;
-    name: string;
     into: Record<string, Entries>;
   };
 </script>
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import Findings from "$lib/editors/Findings.svelte";
   import Saving from "$lib/editors/Saving.svelte";
-  import { type Checked, checked, type Component } from "$lib/editors/writing";
+  import type { Component } from "$lib/editors/writing";
   import Entry from "./Entry.svelte";
   import { type Left, leftOut } from "./translate";
 
@@ -27,8 +22,6 @@
   let into = $state(languages[0] ?? "");
   const typed = $state(structuredClone(given.into));
   let left = $state<Left>({});
-  let found = $state<Checked | null>(null);
-  let asked = 0;
 
   function component(): Component {
     return { kind: "chunk.translations", into: leftOut(typed, left) };
@@ -38,16 +31,6 @@
     const now = left[into] ?? [];
     left[into] = now.includes(text) ? now.filter((t) => t !== text) : [...now, text];
   }
-
-  $effect(() => {
-    void JSON.stringify([typed, left]);
-    const sent = ++asked;
-    const timer = setTimeout(async () => {
-      const got = await checked(component());
-      if (sent === asked) found = got;
-    }, 350);
-    return () => clearTimeout(timer);
-  });
 </script>
 
 <div class="space-y-3">
@@ -79,11 +62,5 @@
       </Entry>
     {/each}
   </div>
-  <Findings {found} />
-  <Saving
-    editing={given}
-    {component}
-    unchanged={found !== null && "digest" in found && found.digest === digest}
-    blocked={found !== null && "problem" in found}
-  />
+  <Saving editing={given} {component} {digest} />
 </div>

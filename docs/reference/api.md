@@ -794,10 +794,9 @@ Raises:
 
 * `name: str = Field(description="the handle")`
 * `weights: str = Field(description="the weights it holds now, by digest")`
-* `engine: str | None = Field(description="its latest engine, when it resolves")`
+* `engine: str = Field(description="its latest engine")`
 * `facts: JsonValue`
 * `takes_typed: bool = Field(…)`
-* `problem: str | None = Field(…)`
 
 ## ModelDigest
 `src/chatddx/api/schemas.py:ModelDigest`
@@ -1716,7 +1715,7 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
-1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_at`)
+1. `HTTPException`: 422, str(e) (from `(NotFound, ValueError)`, through `_at`)
 
 ## Varied `(_Schema)`
 `src/chatddx/api/schemas.py:Varied`
