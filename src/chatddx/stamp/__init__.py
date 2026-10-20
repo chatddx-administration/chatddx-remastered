@@ -5,12 +5,11 @@ from chatddx import settings
 
 from .code import Code
 from .markers import pending, signed, stamped
-from .page import LEGEND, page
+from .page import page
 from .trace import Trace
 
 __all__ = [
     "DOCS",
-    "LEGEND",
     "Code",
     "Trace",
     "page",
@@ -27,7 +26,7 @@ FINDING = "chatddx.factors.base.Finding"
 def regenerated(packages: Iterable[str]) -> dict[Path, str]:
     code = Code(settings.PROJECT_ROOT / "src", "chatddx")
     trace = Trace(code, FINDING)
-    found = {DOCS / "README.md": LEGEND}
+    found: dict[Path, str] = {}
     for package in packages:
         path = DOCS / f"{package}.md"
         current = path.read_text() if path.exists() else None

@@ -16,23 +16,35 @@ This document contains project-wide instructions written by humans for agents.
 
 ## Handling errors and warnings
 
-Errors and warnings beyond the scope of the current task should remain, never hide them.
+How to handle a warning or error:
 
-### 0. Ignore completely
+### 0. Ignore
 
-Consider dodging handling completely before deciding what to do with it, developers and ops may want those stacktraces.
+Consider not handling an error if:
+
+- it's out of scope
+- if its timing, fallout and message are about right
 
 ### 1. Crash at boot
 
-First choice: If a runtime error can be known at boot, it should crash boot.
+First choice: If a runtime error can be known at boot
 
-### 2a. Raw writes to stderr and/or edges
+1. write a check that crashes it at boot
+2. attach a "fix boot-check <boot-check>" should it occur at runtime
 
-For developers and ops, minimize tampering with the message and maximize simplicity in handling.
+### 2. Raw writes to stderr and/or edges
 
-### 2b. Part of the UX runtime
+These are for developers and ops, so:
 
-Tell clinicians and researchers what's going on and what they can do now.
+- minimize tampering with the message
+- maximize simplicity in handling.
+
+### 3. Inform UX runtime
+
+Tell user:
+
+- what's going on
+- what they can do now
 
 ## Testing
 
@@ -41,26 +53,13 @@ Tell clinicians and researchers what's going on and what they can do now.
 - Baseline is `pytest` runs every test and takes ~110s;
 - `pytest -m 'not slow'` takes ~22s.
 - `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
-```
-AGENT: REPLACE
-`src/chatddx/test/test_tests.py` fails a test that takes a helper from a test or a conftest, or writes one again, and
-says where it goes; of the names, it fails a constant of a test's own for one, not the name written out.
----
 - Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
   `src/chatddx/test/world.py`.
-```
-- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
 
 ### TypeScript
 
 - `pnpm --dir frontend test` tests frontend takes less than 2s
 
-```
-AGENT: REPLACE
-`scripts/check.sh` runs the checks, and says what each stage runs; `nix flake check` runs every stage. What's left is
-what a script can't judge.
----
 ## Pre-commit checklist
 
 Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
@@ -69,28 +68,6 @@ Run `scripts/check.sh`, which checks what git says has changed, then:
 
 - Tell the human of each `flag:` it prints.
 - Flip what the budget suggests when it feels right.
-
-Commit.
-```
-## Pre-commit checklist
-
-If docs have changed (docs/*):
-
-- Ensure no broken references with `python scripts/refcheck.py`
-- If only docs have changed, skip the rest of the checks and commit
-
-Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
-
-If package has changed (src/chatddx/*):
-
-- Crosscheck `chatddx openapi > frontend/openapi.json` with `chatddx stamp`, flag when one change but not the other.
-- Run `ruff check` and `basedpyright`
-- Run `pytest -p chatddx.test.budget` without `-n 4`, flip when it feels right.
-
-If frontend has changed (frontend/*):
-
-- Run `pnpm --dir frontend check`
-- Run `pnpm --dir frontend test`
 
 Commit.
 

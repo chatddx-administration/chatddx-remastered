@@ -1,6 +1,6 @@
 # `chatddx.worker`
 
-Written by `chatddx stamp` from `src/chatddx/worker/`; how to read it is in [docs/surfaces/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/worker/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
 ## `EVERY`
 `src/chatddx/worker/publish.py:EVERY`

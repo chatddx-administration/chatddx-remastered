@@ -1,6 +1,6 @@
 # `chatddx.factors`
 
-Written by `chatddx stamp` from `src/chatddx/factors/`; how to read it is in [docs/surfaces/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/factors/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
 ## `Api`
 `src/chatddx/factors/base.py:Api`
