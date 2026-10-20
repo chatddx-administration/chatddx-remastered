@@ -16,7 +16,7 @@ package() {
   crosscheck
   ruff check
   basedpyright
-  pytest -p chatddx.test.budget -m "not browser"
+  pytest -p chatddx.test.budget
 }
 
 frontend() {

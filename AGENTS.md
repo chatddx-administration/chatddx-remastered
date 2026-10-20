@@ -60,6 +60,17 @@ Tell user:
 
 - `pnpm --dir frontend test` tests frontend takes less than 2s
 
+```
+AGENT: ADD
+The browser tests are a stage of their own in `scripts/check.sh`, and `pytest` skips them unless asked for.
+---
+### Browser
+
+- `pytest -m browser` runs the browser tests, which `pytest` skips, in ~75s; `scripts/check.sh browser` builds the
+  frontend for them first.
+- The dev shell carries their browser, the headless shell of nixpkgs' playwright-driver, whose minor release is the
+  one `pyproject.toml` pins, or the dev shell doesn't start.
+```
 ## Pre-commit checklist
 
 Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).

@@ -31,7 +31,7 @@ docs = ["griffelib>=2.3.2"]
 lint = ["ruff>=0.16.9"]
 test = [
   "httpx2>=2.13.1",
-  "playwright>=1.61.1",
+  "playwright~=1.61.0",
   "pytest>=9.1.1",
   "pytest-xdist>=3.8.0",
 ]
@@ -52,7 +52,7 @@ reportExplicitAny = false
 [tool.pytest]
 markers = [
   "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
-  "browser: drive a browser through the portal, run on their own by scripts/check.sh browser",
+  "browser: drive a browser through the portal, skipped unless asked for: pytest -m browser",
 ]
 strict_markers = true
 testpaths = ["src"]

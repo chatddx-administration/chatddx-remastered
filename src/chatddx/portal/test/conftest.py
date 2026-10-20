@@ -17,6 +17,18 @@ from chatddx.test.world import TEST
 __all__ = ["alice_with_password", "autocommitted", "curated_template"]
 
 
+# Policy: a browser test starts a browser, so it runs only when asked for by its mark.
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    if "browser" in (config.getoption("markexpr") or ""):
+        return
+    skip = pytest.mark.skip(reason="it starts a browser: pytest -m browser")
+    for item in items:
+        if "browser" in item.keywords:
+            item.add_marker(skip)
+
+
 @pytest.fixture
 def built(tmp_path: Path) -> Path:
     return tmp_path / "dist"
