@@ -32,9 +32,7 @@ from chatddx.facts import (
     check_pairs,
     lints,
 )
-
-QWEN = "Qwen/Qwen3-8B-AWQ"
-GPT_OSS = "openai/gpt-oss-20b"
+from chatddx.test.world import GPT_OSS_MODEL, QWEN_MODEL
 
 
 @pytest.fixture
@@ -43,7 +41,7 @@ def facts() -> Facts:
 
 
 def test_reasoning_levels_land_where_the_facts_say(facts: Facts) -> None:
-    qwen, gpt_oss = facts.models[QWEN], facts.models[GPT_OSS]
+    qwen, gpt_oss = facts.models[QWEN_MODEL], facts.models[GPT_OSS_MODEL]
     thinking = Writes(chat_template_kwargs={"enable_thinking": True})
     assert qwen.reasoning.landing("default") == Landing(level="on", writes=thinking)
     assert qwen.reasoning.landing("xhigh") == Landing(level="on", writes=thinking)
@@ -88,7 +86,7 @@ def test_a_refusal_lands_on_its_nearest_only_when_it_names_one() -> None:
 
 
 def test_recommended_sampling_is_per_reasoning_level(facts: Facts) -> None:
-    qwen = facts.models[QWEN]
+    qwen = facts.models[QWEN_MODEL]
     assert qwen.recommended("off") == SamplingValues(
         temperature=0.7, top_p=0.8, top_k=20, presence_penalty=1.5
     )
@@ -118,7 +116,7 @@ def test_facts_are_checked(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="only 'model' tables"):
         _ = load("[llm.m]\n")
     other = tmp_path / "other.toml"
-    _ = other.write_text(f'[model."{QWEN}"]\n')
+    _ = other.write_text(f'[model."{QWEN_MODEL}"]\n')
     with pytest.raises(ValueError, match="more than one file"):
         _ = Facts.load(BUNDLED, other)
 
@@ -158,10 +156,10 @@ def test_facts_check_pairs(facts: Facts) -> None:
         return {f.code: f.level for f in lints(reg, facts, [trial])}
 
     native = skeleton(NativeOutput(), response_format=response_format)
-    qwen = engine(QWEN)
+    qwen = engine(QWEN_MODEL)
     assert findings(native, qwen) == {"vllm.grammar_before_reasoning": "warning"}
     defaults_changed = engine(
-        QWEN, "--default-chat-template-kwargs", '{"enable_thinking": false}'
+        QWEN_MODEL, "--default-chat-template-kwargs", '{"enable_thinking": false}'
     )
     assert findings(native, defaults_changed) == {
         "vllm.grammar_before_reasoning": "info"
@@ -173,7 +171,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     effort = skeleton(TextOutput(), reasoning_effort="low")
     assert findings(effort, qwen) == {"facts.reasoning_unmatched": "warning"}
-    gpt_oss = engine(GPT_OSS, "--reasoning-parser", "openai_gptoss")
+    gpt_oss = engine(GPT_OSS_MODEL, "--reasoning-parser", "openai_gptoss")
     assert findings(effort, gpt_oss) == {}
     assert findings(skeleton(TextOutput(), reasoning_effort="none"), gpt_oss) == {
         "facts.reasoning_unmatched": "warning"
@@ -186,8 +184,9 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     refusing = Facts(
         models={
-            QWEN: ModelFacts(
-                model=QWEN, output=OutputFacts(native=Refusal(refused="no grammar"))
+            QWEN_MODEL: ModelFacts(
+                model=QWEN_MODEL,
+                output=OutputFacts(native=Refusal(refused="no grammar")),
             )
         }
     )
@@ -200,7 +199,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     unknown = engine("someone/unknown")
     assert findings(skeleton(TextOutput()), unknown) == {"facts.missing": "info"}
-    remote = reg.add(remote_engine(reg, GPT_OSS))
+    remote = reg.add(remote_engine(reg, GPT_OSS_MODEL))
     assert findings(effort, remote) == {}
 
 
@@ -220,23 +219,23 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     def recommended(model: str, level: Level) -> dict[str, JsonValue]:
         return Sampling().over(facts.models[model].recommended(level)).body()
 
-    qwen_on, qwen_off = recommended(QWEN, "on"), recommended(QWEN, "off")
-    gpt_oss = recommended(GPT_OSS, "medium")
-    assert findings(QWEN, **qwen_on) == findings(QWEN, **qwen_off) == {}
-    assert findings(GPT_OSS, **gpt_oss) == findings(GPT_OSS) == {}
-    assert findings(GPT_OSS, **qwen_on) == {
+    qwen_on, qwen_off = recommended(QWEN_MODEL, "on"), recommended(QWEN_MODEL, "off")
+    gpt_oss = recommended(GPT_OSS_MODEL, "medium")
+    assert findings(QWEN_MODEL, **qwen_on) == findings(QWEN_MODEL, **qwen_off) == {}
+    assert findings(GPT_OSS_MODEL, **gpt_oss) == findings(GPT_OSS_MODEL) == {}
+    assert findings(GPT_OSS_MODEL, **qwen_on) == {
         "facts.sampling_unmatched": "the configuration's sampling is what the facts "
-        + f"recommend for {QWEN}, not for {GPT_OSS}"
+        + f"recommend for {QWEN_MODEL}, not for {GPT_OSS_MODEL}"
     }
-    assert set(findings(QWEN, **gpt_oss)) == {"facts.sampling_unmatched"}
+    assert set(findings(QWEN_MODEL, **gpt_oss)) == {"facts.sampling_unmatched"}
     assert set(findings("google/gemma-3-27b-it", **qwen_on)) == {
         "facts.missing",
         "facts.sampling_unmatched",
     }
     greedy = Sampling(temperature=0).body()
-    assert findings(GPT_OSS, **greedy) == {}
-    assert findings(GPT_OSS, **{**qwen_on, "temperature": 0.5}) == {}
-    assert findings(GPT_OSS, **qwen_on, reasoning_effort="low") == {
+    assert findings(GPT_OSS_MODEL, **greedy) == {}
+    assert findings(GPT_OSS_MODEL, **{**qwen_on, "temperature": 0.5}) == {}
+    assert findings(GPT_OSS_MODEL, **qwen_on, reasoning_effort="low") == {
         "facts.sampling_unmatched": "the configuration's sampling is what the facts "
-        + f"recommend for {QWEN}, not for {GPT_OSS}"
+        + f"recommend for {QWEN_MODEL}, not for {GPT_OSS_MODEL}"
     }

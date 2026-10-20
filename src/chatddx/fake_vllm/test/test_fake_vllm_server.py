@@ -14,10 +14,10 @@ from chatddx.cli import main
 from chatddx.fake_vllm.chat import ANSWER
 from chatddx.fake_vllm.served import VERSION, Served
 from chatddx.fake_vllm.server import serving as fake_serving
+from chatddx.test.world import QWEN_MODEL
 
-QWEN = "Qwen/Qwen3-8B-AWQ"
 SERVED = Served.of(
-    QWEN,
+    QWEN_MODEL,
     [
         "--served-model-name",
         "sha256:abc",
@@ -106,7 +106,7 @@ def test_it_lists_what_it_serves_says_its_version_and_is_healthy(url: str) -> No
     assert status == 200
     assert (card["id"], card["root"], card["max_model_len"]) == (
         "sha256:abc",
-        QWEN,
+        QWEN_MODEL,
         32768,
     )
     assert json.loads(call(url, "/version")[1]) == {"version": VERSION}
@@ -150,4 +150,4 @@ def test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted(
 
 def test_the_command_won_t_start_what_vllm_wouldn_t() -> None:
     with pytest.raises(SystemExit, match="won't start: invalid tool call parser"):
-        main(["fake-vllm", QWEN, "--enable-auto-tool-choice"])
+        main(["fake-vllm", QWEN_MODEL, "--enable-auto-tool-choice"])

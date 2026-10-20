@@ -6,8 +6,7 @@ import pytest
 
 from chatddx.fake_vllm.served import Refused, Served
 from chatddx.fake_vllm.server import serving
-
-QWEN = "Qwen/Qwen3-8B-AWQ"
+from chatddx.test.world import QWEN_MODEL
 
 
 def status(url: str, key: str | None = None, body: bytes | None = None) -> int:
@@ -26,9 +25,9 @@ def status(url: str, key: str | None = None, body: bytes | None = None) -> int:
 
 
 def test_with_an_api_key_it_asks_for_a_key_as_a_bearer_on_v1_only() -> None:
-    served = Served.of(QWEN, ["--api-key", "one", "two"])
+    served = Served.of(QWEN_MODEL, ["--api-key", "one", "two"])
     chat = json.dumps(
-        {"model": QWEN, "messages": [{"role": "user", "content": "a cough"}]}
+        {"model": QWEN_MODEL, "messages": [{"role": "user", "content": "a cough"}]}
     ).encode()
 
     with serving([served], "127.0.0.1", 0) as (host, port):
@@ -43,4 +42,4 @@ def test_with_an_api_key_it_asks_for_a_key_as_a_bearer_on_v1_only() -> None:
 
 def test_an_api_key_takes_a_key() -> None:
     with pytest.raises(Refused, match="--api-key takes a key or more"):
-        _ = Served.of(QWEN, ["--api-key", "--port", "1"])
+        _ = Served.of(QWEN_MODEL, ["--api-key", "--port", "1"])

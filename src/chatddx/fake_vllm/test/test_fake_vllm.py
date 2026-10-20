@@ -21,9 +21,8 @@ from chatddx.fake_vllm.chat import (
     thinking,
 )
 from chatddx.fake_vllm.served import VERSION, Refused, Served
+from chatddx.test.world import GPT_OSS_MODEL, QWEN_MODEL
 
-QWEN = "Qwen/Qwen3-8B-AWQ"
-GPT_OSS = "openai/gpt-oss-20b"
 TOOLS = ("--enable-auto-tool-choice", "--tool-call-parser")
 # As the old chatddx served them (chatddx 7893656, src/chatddx/data/inventory/malborg.toml).
 QWEN_ARGV = ("--reasoning-parser", "qwen3", *TOOLS[:1], TOOLS[1], "hermes")
@@ -32,7 +31,7 @@ SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}}
 HELD = {"type": "json_schema", "json_schema": {"schema": SCHEMA}}
 
 
-def body(model: str = QWEN, **fields: Any) -> dict[str, Any]:
+def body(model: str = QWEN_MODEL, **fields: Any) -> dict[str, Any]:
     return {
         "model": model,
         "messages": [{"role": "user", "content": "a cough"}],
@@ -40,11 +39,11 @@ def body(model: str = QWEN, **fields: Any) -> dict[str, Any]:
 
 
 def qwen(*argv: str) -> Served:
-    return Served.of(QWEN, argv or QWEN_ARGV)
+    return Served.of(QWEN_MODEL, argv or QWEN_ARGV)
 
 
 def gpt_oss(*argv: str) -> Served:
-    return Served.of(GPT_OSS, argv or GPT_OSS_ARGV)
+    return Served.of(GPT_OSS_MODEL, argv or GPT_OSS_ARGV)
 
 
 def reply(served: Served, request: dict[str, Any], runaway: bool = False) -> Reply:
@@ -94,7 +93,7 @@ def valid(schema: Any, document: Any) -> bool:
 
 def test_it_reads_vllm_serve_s_flags_as_vllm_does() -> None:
     served = Served.of(
-        QWEN,
+        QWEN_MODEL,
         [
             "--served_model_name",
             "sha256:abc",
@@ -113,44 +112,52 @@ def test_it_reads_vllm_serve_s_flags_as_vllm_does() -> None:
         4096,
         12100,
     )
-    assert (Served.of(QWEN).names, Served.of(QWEN).max_model_len) == ((QWEN,), 32768)
-    assert Served.of(GPT_OSS).max_model_len == 131072
-    assert not Served.of(QWEN, ["--tool-call-parser", "hermes"]).parses_tools
+    assert (Served.of(QWEN_MODEL).names, Served.of(QWEN_MODEL).max_model_len) == (
+        (QWEN_MODEL,),
+        32768,
+    )
+    assert Served.of(GPT_OSS_MODEL).max_model_len == 131072
+    assert not Served.of(QWEN_MODEL, ["--tool-call-parser", "hermes"]).parses_tools
     assert qwen().parses_tools
 
 
 def test_it_won_t_start_where_vllm_won_t_or_where_it_can_t_follow() -> None:
     with pytest.raises(Refused, match="invalid tool call parser"):
-        _ = Served.of(QWEN, ["--enable-auto-tool-choice"])
+        _ = Served.of(QWEN_MODEL, ["--enable-auto-tool-choice"])
     with pytest.raises(Refused, match="--config FILE"):
-        _ = Served.of(QWEN, ["--config", "serve.yaml"])
+        _ = Served.of(QWEN_MODEL, ["--config", "serve.yaml"])
     with pytest.raises(Refused, match="as an integer"):
-        _ = Served.of(QWEN, ["--max-model-len", "32k"])
+        _ = Served.of(QWEN_MODEL, ["--max-model-len", "32k"])
     with pytest.raises(Refused, match="no JSON object"):
-        _ = Served.of(QWEN, ["--default-chat-template-kwargs", "[]"])
+        _ = Served.of(QWEN_MODEL, ["--default-chat-template-kwargs", "[]"])
 
 
 def test_its_fingerprint_follows_its_setup_and_mode() -> None:
-    fingerprint = Served.of(QWEN).system_fingerprint
+    fingerprint = Served.of(QWEN_MODEL).system_fingerprint
     assert fingerprint is not None and fingerprint.startswith(f"vllm-{VERSION}-")
-    assert Served.of(QWEN, ["--port", "1"]).system_fingerprint != fingerprint
-    assert Served.of(QWEN, ["--fingerprint-mode", "none"]).system_fingerprint is None
+    assert Served.of(QWEN_MODEL, ["--port", "1"]).system_fingerprint != fingerprint
+    assert (
+        Served.of(QWEN_MODEL, ["--fingerprint-mode", "none"]).system_fingerprint is None
+    )
     custom = ["--fingerprint-mode", "custom", "--fingerprint-value", "mine"]
-    assert Served.of(QWEN, custom).system_fingerprint == "mine"
+    assert Served.of(QWEN_MODEL, custom).system_fingerprint == "mine"
 
 
 def test_it_answers_as_the_model_it_serves_or_not_at_all() -> None:
-    served = Served.of(QWEN, ["--served-model-name", "sha256:abc"])
+    served = Served.of(QWEN_MODEL, ["--served-model-name", "sha256:abc"])
     response = completion(served, body("sha256:abc"), reply(served, body("sha256:abc")))
     assert response["model"] == "sha256:abc"
     assert accept([served], body("")) == served
-    missing = refusal(served, body(QWEN))
+    missing = refusal(served, body(QWEN_MODEL))
     assert (missing.status, missing.type, missing.param) == (
         404,
         "NotFoundError",
         "model",
     )
-    assert missing.body()["error"]["message"] == f"The model `{QWEN}` does not exist."
+    assert (
+        missing.body()["error"]["message"]
+        == f"The model `{QWEN_MODEL}` does not exist."
+    )
 
 
 # ------------------------------------------------------------------ reasoning
@@ -177,13 +184,13 @@ def test_the_server_s_template_kwargs_are_the_default_a_request_overrides() -> N
 
 
 def test_gpt_oss_always_thinks_and_harmony_takes_three_efforts() -> None:
-    off = body(GPT_OSS, chat_template_kwargs={"enable_thinking": False})
+    off = body(GPT_OSS_MODEL, chat_template_kwargs={"enable_thinking": False})
     assert reply(gpt_oss(), off).reasoning is not None
     for effort in ("low", "medium", "high"):
-        assert reply(gpt_oss(), body(GPT_OSS, reasoning_effort=effort)).reasoning
-    none = refusal(gpt_oss(), body(GPT_OSS, reasoning_effort="none"))
+        assert reply(gpt_oss(), body(GPT_OSS_MODEL, reasoning_effort=effort)).reasoning
+    none = refusal(gpt_oss(), body(GPT_OSS_MODEL, reasoning_effort="none"))
     assert none.message == "Harmony does not support reasoning_effort='none'"
-    minimal = refusal(gpt_oss(), body(GPT_OSS, reasoning_effort="minimal"))
+    minimal = refusal(gpt_oss(), body(GPT_OSS_MODEL, reasoning_effort="minimal"))
     assert minimal.message == (
         "reasoning_effort='minimal' is not supported by Harmony. Supported values "
         + "are: high, medium, low."
@@ -197,7 +204,9 @@ def test_a_model_of_no_family_it_knows_doesn_t_think() -> None:
 
 def test_it_thinks_about_the_fields_it_was_sent() -> None:
     thought = thinking(
-        body(GPT_OSS, reasoning_effort="low", temperature=1.0, response_format=HELD)
+        body(
+            GPT_OSS_MODEL, reasoning_effort="low", temperature=1.0, response_format=HELD
+        )
     )
     assert (
         'reasoning_effort="low" temperature=1.0 response_format=json_schema' in thought
@@ -209,10 +218,10 @@ def test_a_thinking_budget_cuts_the_thinking_short_where_reasoning_is_set_up() -
     cut = reply(qwen(), body(thinking_token_budget=3, temperature=0))
     assert (cut.reasoning, cut.content, cut.finish) == ("I am the ", ANSWER, "stop")
     configured = Served.of(
-        QWEN, ["--reasoning-config", '{"think_end_str": "</think>"}']
+        QWEN_MODEL, ["--reasoning-config", '{"think_end_str": "</think>"}']
     )
     assert reply(configured, body(thinking_token_budget=3, temperature=0)).content
-    refused = refusal(Served.of(QWEN), body(thinking_token_budget=3))
+    refused = refusal(Served.of(QWEN_MODEL), body(thinking_token_budget=3))
     assert refused.message.startswith(
         "thinking_token_budget is set but reasoning_config is not configured."
     )
@@ -230,14 +239,14 @@ def test_max_tokens_are_spent_on_thinking_first() -> None:
 
 
 def test_without_a_reasoning_parser_the_thinking_stays_in_the_content() -> None:
-    qwen_reply = reply(Served.of(QWEN), body(temperature=0))
+    qwen_reply = reply(Served.of(QWEN_MODEL), body(temperature=0))
     assert qwen_reply.reasoning is None
     assert (
         qwen_reply.content
         == f"<think>\n{thinking(body(temperature=0))}\n</think>\n\n{ANSWER}"
     )
-    harmony = body(GPT_OSS, temperature=0)
-    harmony_reply = reply(Served.of(GPT_OSS), harmony)
+    harmony = body(GPT_OSS_MODEL, temperature=0)
+    harmony_reply = reply(Served.of(GPT_OSS_MODEL), harmony)
     assert harmony_reply.reasoning is None
     assert harmony_reply.content == f"analysis{thinking(harmony)}assistantfinal{ANSWER}"
 
@@ -365,7 +374,10 @@ def test_auto_with_a_response_format_answers_by_the_schema_and_calls_nothing() -
 
 def test_without_a_tool_parser_tools_are_refused() -> None:
     tools = [function("final_result", SCHEMA)]
-    for served in (Served.of(QWEN), Served.of(QWEN, ["--tool-call-parser", "hermes"])):
+    for served in (
+        Served.of(QWEN_MODEL),
+        Served.of(QWEN_MODEL, ["--tool-call-parser", "hermes"]),
+    ):
         auto = refusal(served, body(tools=tools))
         assert auto.message == (
             '"auto" tool choice requires --enable-auto-tool-choice and '
@@ -377,13 +389,15 @@ def test_without_a_tool_parser_tools_are_refused() -> None:
         )
         by_name = refusal(served, body(tools=tools, tool_choice=named("final_result")))
         assert by_name.message.endswith("requires --tool-call-parser to be set")
-    assert reply(Served.of(QWEN), body(tools=tools, tool_choice="none")).calls == ()
+    assert (
+        reply(Served.of(QWEN_MODEL), body(tools=tools, tool_choice="none")).calls == ()
+    )
 
 
 def test_without_a_tool_parser_harmony_goes_out_unconstrained() -> None:
-    harmony = Served.of(GPT_OSS, ["--reasoning-parser", "openai_gptoss"])
+    harmony = Served.of(GPT_OSS_MODEL, ["--reasoning-parser", "openai_gptoss"])
     tool = body(
-        GPT_OSS,
+        GPT_OSS_MODEL,
         tools=[function("final_result", SCHEMA)],
         tool_choice=named("final_result"),
         temperature=0,
@@ -433,7 +447,7 @@ def test_it_returns_token_ids_only_when_asked() -> None:
 
 
 def test_it_answers_whole_when_asked_not_to_stream() -> None:
-    harmony = body(GPT_OSS, temperature=0)
+    harmony = body(GPT_OSS_MODEL, temperature=0)
     message = completion(gpt_oss(), harmony, reply(gpt_oss(), harmony))["choices"][0][
         "message"
     ]
@@ -538,7 +552,7 @@ def test_running_away_it_answers_then_writes_newlines_till_max_tokens_run_out() 
 
 
 def test_running_away_with_no_max_tokens_it_writes_till_the_context_runs_out() -> None:
-    small = Served.of(QWEN, [*QWEN_ARGV, "--max-model-len", "500"])
+    small = Served.of(QWEN_MODEL, [*QWEN_ARGV, "--max-model-len", "500"])
     usage = completion(small, body(), reply(small, body(), runaway=True))["usage"]
     assert usage["total_tokens"] == 500
 

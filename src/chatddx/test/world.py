@@ -56,9 +56,9 @@ FACTOR_LINTS = [
         f"[lint warning] model.local {name}: model.revision: revision {revision!r} is "
         + "not a commit and can move"
         for name, revision in (
-            ("qwen3-8b-awq", "fake"),
-            ("gpt-oss-20b", "fake"),
-            ("mistral-7b", "fake"),
+            (QWEN_ARTIFACT, "fake"),
+            (GPT_OSS_ARTIFACT, "fake"),
+            (MISTRAL_ARTIFACT, "fake"),
             (QWEN_BARE_ARTIFACT, "fake-bare"),
         )
     ),

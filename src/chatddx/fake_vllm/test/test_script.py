@@ -11,8 +11,8 @@ import pytest
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.served import Refused, Served
 from chatddx.fake_vllm.server import serving
+from chatddx.test.world import QWEN_MODEL
 
-QWEN = "Qwen/Qwen3-8B-AWQ"
 PARSED = [
     *("--reasoning-parser", "qwen3"),
     *("--enable-auto-tool-choice", "--tool-call-parser", "hermes"),
@@ -42,7 +42,7 @@ runaway = 3
 def body(**fields: Any) -> bytes:
     message = {"role": "user", "content": "a case"}
     return json.dumps(
-        {"model": QWEN, "messages": [message], "stream": True} | fields
+        {"model": QWEN_MODEL, "messages": [message], "stream": True} | fields
     ).encode()
 
 
@@ -81,7 +81,7 @@ def finish(chunks: list[dict[str, Any]]) -> str | None:
 
 @pytest.fixture
 def url() -> Iterator[str]:
-    served = Served.of(QWEN, PARSED)
+    served = Served.of(QWEN_MODEL, PARSED)
     with serving([served], "127.0.0.1", 0, script=Script.of(_parsed())) as (h, p):
         yield f"http://{h}:{p}"
 
@@ -121,7 +121,7 @@ def test_each_request_is_answered_with_the_script_s_next_turn(url: str) -> None:
 
 def test_a_scripted_thought_goes_where_the_server_puts_reasoning() -> None:
     script = Script.of(_parsed())
-    with serving([Served.of(QWEN)], "127.0.0.1", 0, script=script) as (h, p):
+    with serving([Served.of(QWEN_MODEL)], "127.0.0.1", 0, script=script) as (h, p):
         _, chunks, _ = post(f"http://{h}:{p}", body())
 
     assert said(chunks, "reasoning") == ""
@@ -132,7 +132,7 @@ def test_a_scripted_thought_goes_where_the_server_puts_reasoning() -> None:
 
 def test_a_scripted_request_still_meets_vllm_s_checks() -> None:
     script = Script.of(_parsed())
-    with serving([Served.of(QWEN)], "127.0.0.1", 0, script=script) as (h, p):
+    with serving([Served.of(QWEN_MODEL)], "127.0.0.1", 0, script=script) as (h, p):
         status, [error], _ = post(f"http://{h}:{p}", body(tool_choice="required"))
 
     assert status == 400 and error["error"]["param"] == "tool_choice"
