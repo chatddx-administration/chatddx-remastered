@@ -97,7 +97,7 @@ AGENT: <verb>
 The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop,
 describe the landscape and provide options.
 
-- The module-scoped documentation is in `docs/<module>.md`.
+- The module-scoped documentation is in `docs/modules/<module>.md`.
 - The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
 - References from code to docs are never allowed.
 

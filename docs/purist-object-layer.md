@@ -24,15 +24,15 @@ own.
 ## Two questions
 | How it is stored | What it is to the research |
 | --- | --- |
-| object: immutable, content-addressed, identified by its digest | factor: pinned, recorded or observed (`docs/factors.md`, "What a factor is") |
-| record: append-only, a log sealed per run or score (`docs/ledger.md`) | instrument: measures observed factors without changing an output (canary sets) |
-| state: rows updated in place (people; the worker's queue, `docs/store.md`, "The queue") | provenance: says how another object was made (compilations) |
-| text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/store.md`, "Texts") | |
-| World: outside the store (`docs/inventory.md`) | |
+| object: immutable, content-addressed, identified by its digest | factor: pinned, recorded or observed (`docs/modules/factors.md`, "What a factor is") |
+| record: append-only, a log sealed per run or score (`docs/modules/ledger.md`) | instrument: measures observed factors without changing an output (canary sets) |
+| state: rows updated in place (people; the worker's queue, `docs/modules/store.md`, "The Queue") | provenance: says how another object was made (compilations) |
+| text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/modules/store.md`, "Texts") | |
+| World: outside the store (`docs/modules/inventory.md`) | |
 
 Pinned factors are all objects, which is why the two looked the same. The exceptions run both ways:
 - Execution settings are a recorded factor held in records (`src/chatddx/ledger/run.py:RunStarted.execution`).
-- Canary sets and compilations are objects that aren't factors (`docs/factors.md`, "Components but not factors").
+- Canary sets and compilations are objects that aren't factors (`docs/modules/factors.md`, "Components but not factors").
 
 ## What exists today
 - `src/chatddx/factors/base.py` and `bundle.py` define no factor kind: `Digest`, `Sha256Hex`,
@@ -47,7 +47,7 @@ Pinned factors are all objects, which is why the two looked the same. The except
   - `runner/` and `importers/o11n.py` use `Finding` and `Registry`;
   - and the api, bench, catalog, curation, facts, portal, repl, scripted and store packages, and `cli.py`.
 - What docs/ says about these dependencies:
-  - "Factors depend on nothing else in chatddx" (`docs/factors.md`, introduction).
+  - "Factors depend on nothing else in chatddx" (`docs/modules/factors.md`, introduction).
   - The ledger imports no chatddx package but `chatddx.factors` (`src/chatddx/ledger/`), and the kinds as well as the
     base: a run start holds a trial, a skeleton's tools and a canary set, a score start a scoring and its judges.
   - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`src/chatddx/catalog/`).
@@ -65,7 +65,7 @@ reasons:
 - **Nothing forces the move.** None of the non-factor kinds needs anything above `factors`:
   - canary sets use `RUNTIME_KEYS` (`factors/trial.py`);
   - compilations use `Recipe` and `Code`;
-  The only cost of keeping them together is vocabulary, and `docs/factors.md` already says "Being a factor and being
+  The only cost of keeping them together is vocabulary, and `docs/modules/factors.md` already says "Being a factor and being
   a component are separate questions".
 - **The split's cost lands now, in the wrong places.** 64 import statements in 51 modules would change, the
   human-written docs would need reorganising through suggestions, and the schema would need a migration.
@@ -119,7 +119,7 @@ The plan for when "When to revisit" comes true. Nothing below is built.
   canonical JSON, as do parts of the inventory; the rest of the ledger and the inventory read kinds, and keep
   depending on `factors`. The rule "factors depend on nothing" becomes "objects depend on nothing and define no
   kinds"; `factors` stays the lowest of the packages that mean something to the research.
-- **Records aren't objects.** They are identified by their run and stage and sealed together (`docs/ledger.md`,
+- **Records aren't objects.** They are identified by their run and stage and sealed together (`docs/modules/ledger.md`,
   "Seal"). The layer gives both canonical form; only objects get digests.
 - **Imports change in one go**, with no re-exports from `chatddx.factors`, since this repository is its only user.
 - **Tests**: the base and bundle tests in `src/chatddx/factors/test/test_factors.py` use factor kinds (skeletons,
@@ -188,12 +188,12 @@ take a catalog reader.
 ### Docs
 To suggest when built:
 - **New pages**: `docs/objects.md` and `docs/objects-api.md`. They take over the general sections of
-  `docs/factors.md` under "How components work" ("Canonical form and digest", "Versions", "References and checks",
+  `docs/modules/factors.md` under "How components work" ("Canonical form and digest", "Versions", "References and checks",
   "Errors and findings", "Registries and bundles", "Fingerprints", "Code", "Storage"), and the part of "Kinds" that
   isn't about what each kind means to the research.
-- **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
-  on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move.
-- **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx") names `chatddx.objects`.
+- **`docs/modules/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
+  on canary sets and compilations move to `docs/modules/ledger.md` and `docs/modules/catalog.md` if those kinds move.
+- **Dependency statements**: `docs/modules/factors.md` ("depend on nothing else in chatddx") names `chatddx.objects`.
 - **Glossary and migrations**: `docs/chatddx.md`'s "Digest", "Kind", "Bundle" and "Canonical form" refer to objects,
   and `docs/migrations.md`'s "factor" section follows the schema.
 

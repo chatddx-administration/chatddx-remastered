@@ -13,7 +13,7 @@ same, for scientific rigor. This document describes what each factor is for and 
 and errors are in docs/reference/factors.md.
 
 Factors depend on nothing else in chatddx; the model facts, the catalog, the ledger and the store build on them.
-Principal authors are the roles in docs/identity.md.
+Principal authors are the roles in docs/modules/identity.md.
 
 ## What a factor is
 
@@ -29,27 +29,27 @@ Being a factor and being a component are separate questions. A factor is held in
 1. **Pinned**: chosen in advance and fixed by digest: a trial or a scoring, and every component it references. Prompts,
    sampling, engines, model weights, cases, seeds, expectations and scorers are pinned.
 2. **Recorded**: set or known when a run or a score starts, and written into its start record, which is sealed with the
-   rest of its log (docs/ledger.md): the execution settings (see "Execution"), the version of the rig that sent the
+   rest of its log (docs/modules/ledger.md): the execution settings (see "Execution"), the version of the rig that sent the
    requests, and the scorer code that actually ran. Set beside the code the scorer pins, the last shows whether what ran
    is what should have run, and checking a score warns when they differ.
 3. **Observed**: set by nobody, and only detected afterwards. These are the parts of the world outside our control: a
    remote engine that changes without notice, a tool such as a web search that answers differently from day to day, a
    vignette edited at its source, GPU arithmetic that isn't deterministic. Fingerprints, returned model names, drift
-   findings and canaries reveal them (docs/ledger.md, "Findings").
+   findings and canaries reveal them (docs/modules/ledger.md, "Findings").
 
 A trial's outputs therefore depend on the trial's pinned factors and on its run's recorded and observed factors. Two
 runs of the same trial are interchangeable only when those agree too (docs/backlog.md, "Aggregation").
 
 ### Not factors
-- Records of what happened (runs, scores, calls): [docs/ledger.md]. They hold the recorded factors and the evidence of the
+- Records of what happened (runs, scores, calls): [docs/modules/ledger.md]. They hold the recorded factors and the evidence of the
   observed ones, but they aren't factors themselves.
-- People, roles, authentication and authorization: [docs/identity.md].
-- Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/catalog.md].
+- People, roles, authentication and authorization: [docs/modules/identity.md].
+- Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/modules/catalog.md].
 - Sensitivity and vetting: [agents/wip-clearance.md].
-- Facts from model cards: [docs/facts.md].
-- Inventory: [docs/inventory.md].
+- Facts from model cards: [docs/modules/facts.md].
+- Inventory: [docs/modules/inventory.md].
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
-  (docs/facts.md). Facts work out what a recipe's intents send when it is compiled, and check skeletons against
+  (docs/modules/facts.md). Facts work out what a recipe's intents send when it is compiled, and check skeletons against
   engines; the skeleton holds what they did, so no factor's digest depends on them (see "Components but not
   factors").
 
@@ -148,7 +148,7 @@ tool changed too, and every trial over one.
 
 ### Storage
 Components are stored in one table for all kinds, plus one row per reference so that every reference gets a foreign key
-(docs/store.md; tables in docs/migrations.md, "factor"). Stored components are never changed or deleted. Anything a
+(docs/modules/store.md; tables in docs/migrations.md, "factor"). Stored components are never changed or deleted. Anything a
 component can hold can be stored: a component the store couldn't hold can't be built.
 
 Storing a component checks it and stores everything it references; storing it again changes nothing. Reading verifies
@@ -160,11 +160,11 @@ every digest. A bundle is exported from the store, and imported by loading it an
 Principal author: clinicians.
 
 A case is a vignette plus the appendices to send with it, in order. The vignette is named by the source it comes from,
-its id there, and the fingerprint of its raw bytes as fetched. Sources are declared in the inventory (docs/inventory.md,
+its id there, and the fingerprint of its raw bytes as fetched. Sources are declared in the inventory (docs/modules/inventory.md,
 "Sources") and hand over vignettes as UTF-8 text.
 
 The vignette itself is sensitive by default, unstructured, and never edited. The factors and the ledger never store it,
-only its fingerprint; a typed vignette is kept as its database source's text, apart from them (docs/store.md,
+only its fingerprint; a typed vignette is kept as its database source's text, apart from them (docs/modules/store.md,
 "Texts"). A case covers the vignette and its appendices, so the same vignette with different appendices is a
 different case. Expectations are keyed by the case, which lets appendices change the correct answer.
 
@@ -292,7 +292,7 @@ A reasoning chunk holds the reasoning effort, a thinking-token budget and argume
 a reasoning level (off, on, minimal, low, medium, high, xhigh, or the model's default), an intent, with at most a
 thinking-token budget beside it. Compiling works out what a level sends from the facts about the recipe's model: the
 effort and chat template arguments of the level it lands on, which may be another, its nearest, when the
-model can't be asked for the first (docs/facts.md, "Reasoning"). A level the model refuses, or a budget it refuses or
+model can't be asked for the first (docs/modules/facts.md, "Reasoning"). A level the model refuses, or a budget it refuses or
 isn't known to take, doesn't compile. A recipe without a reasoning chunk leaves reasoning to the model.
 
 ### Passthrough
@@ -329,7 +329,7 @@ most tool rounds one item may take. Its guidance goes where the instructions or 
 instructions, following the output's guidance.
 
 ### Translations
-A recipe's translations are a chunk of its own, `chunk.translations`, which docs/bench.md, "Translations", describes.
+A recipe's translations are a chunk of its own, `chunk.translations`, which docs/modules/bench.md, "Translations", describes.
 Here they are what compiling into a language reads: `translated` gives what a recipe's translations hold, by language,
 and `untranslated` the texts of the recipe they leave without an entry in one, every text in a language they don't go
 into. Compiling into a language refuses one they don't go into, and one they leave a text untranslated in, listing
@@ -415,8 +415,8 @@ that names no offered tool, arguments that don't fit the tool's parameters, and 
 an error for the model to read.
 
 ## Engines
-An engine is where requests are sent, written by ops (agents/glossary.md, "Roles"), who map each model handle,
-such as `qwen3-8b`, to one engine and one endpoint; a handle always means its latest engine (docs/inventory.md).
+An engine is where requests are sent, written by ops (docs/glossary.md, "Roles"), who map each model handle,
+such as `qwen3-8b`, to one engine and one endpoint; a handle always means its latest engine (docs/modules/inventory.md).
 Researchers pick a recipe's model and a judge's by handle, and see no engines, endpoints or proper model names. Every
 engine speaks the same API: OpenAI-compatible chat completions.
 
@@ -459,7 +459,7 @@ engine that uses it, and finding the engines that share a closure means scanning
 Principal author: ops.
 
 A remote engine is an API we don't control. It declares only the API and its model, a remote model, which names its
-provider and its name there; where it is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat
+provider and its name there; where it is served is the inventory's (docs/modules/inventory.md, "Endpoints"), and its chat
 template is not pinned.
 
 Canary probes at the start and end of a run apply to any engine and are planned per run, so they are not part of the
@@ -467,15 +467,15 @@ engine.
 
 ### Model facts
 Principal author: developers, for the bundled facts; whoever adds a model they don't know, for a World's
-(docs/inventory.md, "Worlds").
+(docs/modules/inventory.md, "Worlds").
 
-Model facts are what is known about one model that a request doesn't say (docs/facts.md), by the model's name: a
+Model facts are what is known about one model that a request doesn't say (docs/modules/facts.md), by the model's name: a
 `model.local` component's repository or a `model.remote` component's `name`.
 
 They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
-init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of
+init-data writes them from facts files, a thread per model (docs/modules/curation.md); correcting a fact is a new version of
 its thread, and a configuration compiled against the old one is then behind where the new one changes what it sends
-(docs/catalog.md, "What has moved on"), until its owner follows them (docs/bench.md, "Following its facts").
+(docs/modules/catalog.md, "What has moved on"), until its owner follows them (docs/modules/api.md, "Following").
 
 ## Trials
 
@@ -521,7 +521,7 @@ retries also decide whether a request gets an answer at all.
 
 A run's calls, and a score's judge calls, show whether the settings were followed: checks warn when a call took more
 attempts than its retries allow, when items were sent out of order, or when more calls were in flight than allowed
-(docs/ledger.md, "Run" and "Score"). Timeouts aren't checked.
+(docs/modules/ledger.md, "Run" and "Score"). Timeouts aren't checked.
 
 ## Scoring
 
@@ -652,6 +652,6 @@ They look at:
   worked out from no facts, pair with any; a skeleton with no compilation at hand isn't checked.
 - With languages known, trials whose cases are in another language than the request, or in an unknown one.
 
-Checks against the model facts belong to the facts (docs/facts.md). Other findings come from the steps that observe
+Checks against the model facts belong to the facts (docs/modules/facts.md). Other findings come from the steps that observe
 them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a component that a
 bundle holds in a form today's code wouldn't write. Each finding is made where it is found, as `Finding(…)`.

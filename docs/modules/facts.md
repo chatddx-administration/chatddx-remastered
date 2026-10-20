@@ -8,11 +8,11 @@ They never reach the wire themselves. A chunk may ask for an intent, a reasoning
 and compiling a recipe works out what it sends from the facts about the recipe's model; the skeleton holds
 the result, and its compilation names the facts it was worked out from. Correcting a guessed fact changes nothing
 stored: a skeleton still means exactly what it sends, and a configuration compiled against the old facts is behind
-where the new ones change what it sends (docs/catalog.md, "What has moved on"), until it follows them
-(docs/bench.md, "Following its facts").
+where the new ones change what it sends (docs/modules/catalog.md, "What has moved on"), until it follows them
+(docs/modules/api.md, "Following").
 
 This document describes what facts hold, what they are for and why. Classes, fields and errors are in
-docs/reference/facts.md. A model's facts are a kind of component (docs/factors.md, "Model facts"), so the factors
+docs/reference/facts.md. A model's facts are a kind of component (docs/modules/factors.md, "Model facts"), so the factors
 compile against them; reading facts files and checking pairs build on the factors and nothing else.
 
 ## Where facts come from
@@ -20,7 +20,7 @@ Facts are written in files, one entry per model, and their history as written is
 file, so they are never pieced together from several. `init-data` loads the bundled facts, a World's `facts.toml`
 when it has one, and the files `--facts` names, beside each other, and stores the facts about each model an engine of
 the World serves as a component of kind `facts`, a thread of the archive's named after the model
-(docs/curation.md). Correcting a fact and loading again makes a new version of its thread.
+(docs/modules/curation.md). Correcting a fact and loading again makes a new version of its thread.
 
 Facts are about a model, by its name: the repository a local engine's model comes from, or the model a remote engine
 names. A model's name is a `model.local` component's repository or a `model.remote` component's `name`; an engine's
@@ -31,7 +31,7 @@ version of every facts thread, read when they are needed, so a correction loaded
 
 A configuration sent in another language than its own is its recipe compiled into that language, against the facts
 its own compilation names rather than the current ones when nothing is replaced, so that the translation differs
-from it by its texts alone (docs/bench.md, "Translations"). A correction reaches the translation as it
+from it by its texts alone (docs/modules/bench.md, "Translations"). A correction reaches the translation as it
 reaches the configuration, by following its facts.
 
 ## What a model's facts hold
@@ -63,7 +63,7 @@ recommendation serves every level that collapses into it or lands on it as its n
 They may also say what the server fills in when a chunk leaves a value out. That is descriptive only.
 
 ### Output
-For each output contract, native, tool and text (docs/factors.md, "Output"), the facts say that it works, with a
+For each output contract, native, tool and text (docs/modules/factors.md, "Output"), the facts say that it works, with a
 caveat if there is one, or that the model refuses it. Which contract the model is usually asked for is descriptive
 only.
 
@@ -71,7 +71,7 @@ only.
 A model's family, size, quantization, context length and licence are descriptive only.
 
 ## Compiling intents
-Facts apply when a recipe is compiled (docs/factors.md, "Recipe and compilation"). A reasoning chunk that asks for a
+Facts apply when a recipe is compiled (docs/modules/factors.md, "Recipe and compilation"). A reasoning chunk that asks for a
 level, the model's default among them, sends what the level lands on; a sampling chunk that asks for the recommended
 sampling sends the recommendation for the level the reasoning lands on, or for the model's default, with the values
 the chunk sets itself in place of recommended ones. A thinking budget can stand beside a level.
@@ -82,7 +82,7 @@ known to take one, when nothing is recommended for the level, and when the engin
 sets the effort, the chat template arguments or the sampling values itself is literal, and compiles as it is on any
 model.
 
-`chatddx init-data` stores the facts (docs/curation.md). A factors file asks for an intent as it writes any chunk,
+`chatddx init-data` stores the facts (docs/modules/curation.md). A factors file asks for an intent as it writes any chunk,
 `level = "off"` or `recommended = true`, and a `from_facts` record is refused. Each recipe is made for the engine of
 the endpoint the World names for configurations; one the facts about its model refuse is skipped and reported, and so
 is a served model the facts don't know.
@@ -110,7 +110,7 @@ matter for literal chunks, hand-written skeletons, and a skeleton sent to anothe
 It also notes, without warning, the facts' caveat on the skeleton's contract, and a pair whose model has no facts, so
 that the checks above that need them were skipped.
 
-Facts also feed one of the factors' own lints (docs/factors.md, "Lints"): whether an engine's model reasons when a
+Facts also feed one of the factors' own lints (docs/modules/factors.md, "Lints"): whether an engine's model reasons when a
 request says nothing, which is when its default lands on a level other than off. The lint about a grammar that
 constrains the answer before the model can reason uses it for skeletons that leave reasoning to the model: it warns
 when the model reasons, says nothing when it doesn't, and only notes it when that is unknown. An engine started with

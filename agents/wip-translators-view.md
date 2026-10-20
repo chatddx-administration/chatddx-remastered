@@ -8,8 +8,8 @@ translations with a version of the configuration that holds them. It is to confi
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **It can be done.** Translations are a chunk like any other (`docs/factors.md`, "Translations"), which the bench
-   writes as any thread (`docs/bench.md`, "Writes for the person"), and the variation page already picks one as a part.
+1. **It can be done.** Translations are a chunk like any other (`docs/modules/factors.md`, "Translations"), which the bench
+   writes as any thread (`docs/modules/bench.md`, "Writes for the person"), and the variation page already picks one as a part.
    What is missing is a way to see which texts a configuration holds and which of them its translations leave out,
    an editor for a translations chunk (5c's, `agents/wip-portal.md`, "Authoring"), and the page around them.
 2. **Decided: the takes on T1 to T11** (see "The landscape"), and F1 (a) (see "Found on the way").
@@ -70,9 +70,9 @@ The address keeps what is picked: `/translate/{configuration}?into=sv&head=EDIT`
 Questions that change what is built, each with its options. Decided: the take on each.
 
 ### T1. Who translates
-`agents/glossary.md` ("Roles") names no translators; `docs/factors.md` ("Translations") names researchers, as
+`docs/glossary.md` ("Roles") names no translators; `docs/modules/factors.md` ("Translations") names researchers, as
 translators, the principal authors of translations.
-- **(a)** Researchers, as `docs/factors.md` says; Z1 later says which panes a role sees.
+- **(a)** Researchers, as `docs/modules/factors.md` says; Z1 later says which panes a role sees.
 - **(b)** A Translators role, suggested to `docs/chatddx.md` for a human to write.
 - **(c)** Clinicians too, who may know the medical terms best.
 
@@ -102,7 +102,7 @@ keeps its translating functions as they are; `texts` gives the part and the orde
 - **(a)** The missing texts, and apart from them the entries no text of the recipe uses, carried over by hand.
 - **(b)** As (a), and each missing text offered the closest unused entry, with what differs word by word, marked to
   be checked (gettext's fuzzy entries).
-- **(c)** Translations keyed by place rather than text, against `docs/factors.md`'s gettext model.
+- **(c)** Translations keyed by place rather than text, against `docs/modules/factors.md`'s gettext model.
 
 Decided: (b). Unused entries are kept on saving unless removed, since a chunk can serve several configurations: the
 sample's `sample` holds the texts of ten chunks, and one recipe names it. With it, a lint on a configuration whose
@@ -293,7 +293,7 @@ its instructions, carried over from its unused entry, saved, and the variation p
   tag is compared whole (`Seen.languages`).
 - **An unknown own language is said so**, with why: its texts' chunks have none, or not the same one.
 - **A translated skeleton's title says its language** (`src/chatddx/catalog/titles.py:_derive`): its recipe's
-  description, then ", in sv", suggested to `docs/catalog.md` as an `AGENT` block; what `docs/backlog.md`'s "Titles"
+  description, then ", in sv", suggested to `docs/modules/catalog.md` as an `AGENT` block; what `docs/backlog.md`'s "Titles"
   held of it moved here.
 - **Tests**: `test_translating.py`, the languages offered, a new one, and the regional notes; and
   `src/chatddx/catalog/test/test_titles.py`, a translated configuration titled with its language.
@@ -315,4 +315,4 @@ After step 4, by the user's pick of five from what the steps had added:
   texts and translations all go through; `rewriting.ts`'s own gone.
 - No page drawn twice: the server no longer draws the texts and the request beneath the island.
 - One code: `translations.incomplete` folded into `translations.missing`, both messages ending in the refusal
-  compiling gives, suggested to `docs/bench.md`.
+  compiling gives, suggested to `docs/modules/bench.md`.

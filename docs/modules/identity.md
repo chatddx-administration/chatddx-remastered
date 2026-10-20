@@ -6,7 +6,7 @@ with no store access (src/chatddx/identity/), which the bench, the operational l
 and the World, and the catalog to the owners it records or is asked about.
 
 This document describes what identity holds and why. Names, signatures and errors are in docs/reference/identity.md.
-People, their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` in
+People, their passwords and their sessions are kept by the store (docs/modules/store.md, "People"; `People` in
 docs/reference/store.md), and the `identity` schema and its migrations are in docs/migrations.md.
 
 ## People
@@ -23,11 +23,11 @@ and it reads neither.
 
 ## Roles
 The roles are admin, clinician, developer, ops and researcher (src/chatddx/identity/identity.py:Role). All but admin are
-the principal authors of docs/factors.md (agents/glossary.md, "Roles"); admin is identity's own, for administering
+the principal authors of docs/modules/factors.md (docs/glossary.md, "Roles"); admin is identity's own, for administering
 people. A person may hold several. Roles live in code and are stored on the person by name, and the database holds the
 names to the code's list.
 
-Nothing checks a role yet: a person writes on what they own, whatever their roles (docs/bench.md, "Writes for the
+Nothing checks a role yet: a person writes on what they own, whatever their roles (docs/modules/bench.md, "Writes for the
 person"), and nothing asks for admin (docs/backlog.md, "Administering people").
 
 ## Authentication
@@ -39,21 +39,21 @@ The app signs people in itself, with passwords and sessions in the database; the
   table holds nothing a client could present. A session lasts `settings.SESSION_TTL`, 12 hours; its expiry is checked
   each time it is used, and signing out or being made inactive ends it.
 
-How a token is carried is the edge's: the API takes it as a bearer token or a cookie (docs/api.md, "Signing in"). The
+How a token is carried is the edge's: the API takes it as a bearer token or a cookie (docs/modules/api.md, "Signing in"). The
 repl and the commands act as a person by login, over a database connection of their own, without signing in.
 
 ## Authorization
 What a person is shown is a convenience, not a protection: it decides what is relevant to show them. Sensitive data is
 protected by clearance and the database's grants (agents/wip-clearance.md), not by what a person is shown.
 
-It goes by the catalog's owners and collaborators, and only what is live counts (docs/catalog.md, "Owners"): a person
+It goes by the catalog's owners and collaborators, and only what is live counts (docs/modules/catalog.md, "Owners"): a person
 owns what names them its owner (src/chatddx/identity/identity.py:owns), collaborates on what is shared with them and
 isn't theirs (`collaborates`), and sees both (`sees`). Of what they see, their own comes first (`preferred`), which is
 how a name finds its thread or family.
 
 The catalog says who owns and shares what, and applies `owns` only to an owner, the one it records, to hold one live
 expectation per case and schema, or one it is asked to find threads by. The bench applies the rules to what the catalog
-gives, and to what is in the store and the World (docs/bench.md, "What a person sees").
+gives, and to what is in the store and the World (docs/modules/bench.md, "What a person sees").
 
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
 meaning (agents/wip-portal.md, "Below the UI").
@@ -62,7 +62,7 @@ meaning (agents/wip-portal.md, "Below the UI").
 People are managed by command, connecting as `DB_USER`:
 - `chatddx person add LOGIN NAME [--role ROLE …]` adds a person;
 - `chatddx person password LOGIN` sets their password, asked for twice, and refuses an empty one;
-- `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/curation.md).
+- `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/modules/curation.md).
 
 A person without a password can't sign in to the API, but can be acted as from the repl.
 
@@ -78,4 +78,4 @@ person.
 - src/chatddx/store/test/test_identity.py: people, passwords and sessions; that tokens aren't stored; what the
   database guards, and that the reader sees people but no secrets.
 - src/chatddx/store/test/test_cli.py: the `person` commands.
-- Signing in through the API: src/chatddx/api/test/test_people.py (docs/api.md, "Signing in").
+- Signing in through the API: src/chatddx/api/test/test_people.py (docs/modules/api.md, "Signing in").

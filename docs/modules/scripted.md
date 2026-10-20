@@ -10,7 +10,7 @@ and its command in src/chatddx/cli.py. Scripted runs build on the bench, the fak
 
 ## A scripted run
 A scripted run is a file in a World's `_runs/`, named after the run: `<world>/_runs/<name>.toml`. The leading `_` says
-the World itself doesn't read it, as with the data set in `_data/` (docs/inventory.md, "Worlds").
+the World itself doesn't read it, as with the data set in `_data/` (docs/modules/inventory.md, "Worlds").
 
 | Key | Meaning |
 | --- | --- |

@@ -3,7 +3,7 @@
 The terms, the roles, and every finding the code makes, in one place. The terms were gathered from the glossaries
 `docs/` used to hold, and reconciled against the code.
 
-Every entry is one line that starts with a colon: `grep '^:Edge' agents/glossary.md` finds what an edge is, and
+Every entry is one line that starts with a colon: `grep '^:Edge' docs/glossary.md` finds what an edge is, and
 `grep ':Edge'` where it is used too, since an entry refers to another as `:Edge`. A word that names two things has an
 entry for each, told apart in parentheses, so `grep '^:Item'` finds both. An entry ends with where the code holds it,
 if anywhere.
@@ -11,6 +11,12 @@ if anywhere.
 - "Terms" holds one definition per term, true to the code.
 - "Roles" holds the people's roles and what each authors.
 - "Findings" holds every `Finding(…)` made in `src/chatddx/`, by where it is raised.
+```
+AGENT: remove
+The glossary has no "Decided" section any more.
+---
+
+```
 - "Decided" holds what the human decided on earlier open items.
 
 ## Terms
@@ -443,8 +449,8 @@ if anywhere.
 
 ### People
 The roles live in code (`src/chatddx/identity/identity.py:Role`) and are stored on the person by name; a person may
-hold several, and nothing checks a role yet (`docs/identity.md`, "Roles"). Each entry gives what `docs/chatddx.md` said
-under "Roles mentioned", verbatim, which lives only here now, then what `docs/factors.md` and `docs/bench.md` make the
+hold several, and nothing checks a role yet (`docs/modules/identity.md`, "Roles"). Each entry gives what `docs/chatddx.md` said
+under "Roles mentioned", verbatim, which lives only here now, then what `docs/modules/factors.md` and `docs/modules/bench.md` make the
 role principal author of. `docs/chatddx.md` said: "These roles are distinct and not overlapping, a person may inhabit
 more than one role."
 
@@ -471,9 +477,9 @@ PostgreSQL's roles, not people's: :Admin (database), :Writer and :Reader. "Admin
 
 ## Findings
 A finding (`src/chatddx/factors/base.py:Finding`) has a level, `warning` unless said, a code, a message and optionally
-a subject. What findings are is in `docs/chatddx.md` ("Findings and errors"), `docs/factors.md` and `docs/ledger.md`
-("Errors and findings"), `docs/ledger.md` and `docs/runner.md` ("Findings"); the o11n import's are in
-`docs/inventory.md`. This is every code made in `src/chatddx/`, by where it is raised: when, then its level and
+a subject. What findings are is in `docs/chatddx.md` ("Findings and errors"), `docs/modules/factors.md` and `docs/modules/ledger.md`
+("Errors and findings"), `docs/modules/ledger.md` and `docs/modules/runner.md` ("Findings"); the o11n import's are in
+`docs/modules/inventory.md`. This is every code made in `src/chatddx/`, by where it is raised: when, then its level and
 subject. A code raised in more than one place has an entry in each.
 
 ### Lints

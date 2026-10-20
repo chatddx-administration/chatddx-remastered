@@ -51,7 +51,7 @@ is a part, and its name carries no model either.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, and its cases at its current vignette, the one it stands for first, each with its
   appendices and, under each expectation schema the person sees, the expectation it is scored against: their own,
-  so a schema under which they only see shared ones has none (`docs/bench.md`, "What a person is scored
+  so a schema under which they only see shared ones has none (`docs/modules/bench.md`, "What a person is scored
   against"). Several to choose from don't fail the request; that schema says so instead. Each schema also lists the
   expectation threads shared with the person they could take.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
@@ -78,20 +78,20 @@ one run moments later can differ if the configuration or the facts moved in betw
 ran, and its compilation the facts.
 
 A look at a variation gives:
-- the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
+- the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/modules/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
   person's own first, and whether its sampling is greedy.
 - each part's chunk, its title and what it holds, and whether it was replaced; the model is a part too, by its
   digest. A reasoning level, and a recommended sampling, also say the level the model is asked for
-  (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
+  (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/modules/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   a handle (`under`), for the model.
 - the handle it runs under (`model`), or why it can't run (`problem`): its handle is deleted, or no endpoint here
   serves it, and another is to be picked; its model is behind its handle; or it names no model and no handle is given.
-- Translations (`docs/bench.md`, "Translations")
+- Translations (`docs/modules/bench.md`, "Translations")
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
-(`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in the language each trial is
+(`docs/modules/bench.md`, "What a person is scored against"). An unsaved variation is linted in the language each trial is
 sent in, its own as written or the one it is translated into, since the language of a skeleton otherwise comes from
 its stored compilations, which it hasn't got yet.
 
@@ -102,7 +102,7 @@ out; a handle named for a hand-written configuration that isn't one; or a parame
 a misspelt part is refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
 ## Translations
-See docs/bench.md, "Translations".
+See docs/modules/bench.md, "Translations".
 
 ## Checking a component
 A component of a kind a person writes is checked as a write would store it, and nothing is written: its rules, its
@@ -116,7 +116,7 @@ digest of the skeleton it compiles to and what the lints say of it, or is refuse
 
 ## Picking
 Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view
-takes (docs/factors.md, "View"), picks what it does in the document's order, or says why it doesn't read. Nothing is
+takes (docs/modules/factors.md, "View"), picks what it does in the document's order, or says why it doesn't read. Nothing is
 read from the store and nothing is written, so a client shows what a view would pick from an expectation as it is
 typed, with the same selection the scoring pass makes.
 
@@ -131,7 +131,7 @@ version of the person's configuration of that name if there is one, and a new co
 
 Chunks, appendices, expectations and scorers are written the same way, with a component where a configuration takes
 parts, as its JSON as a component's own request gives it, and a scorer with the labels of its views and resources
-(`docs/bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
+(`docs/modules/bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
 an engine and its seeds:
 - **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
   recipe, by the chunks' digests for its parts and the digest of its model, its purpose and its appendix layout,
@@ -146,20 +146,20 @@ an expectation whose data its schema refuses, which is written all the same.
 ## What is said about a thread
 Its owner says what holds of a thread in one request, giving only what changes: its name, or none so that its title
 shows; its description; its tags and who it is shared with, each as the whole list, people by login; and whether it
-is deleted (`docs/bench.md`, "What is said about a thread"). What holds afterwards comes back. A deleted thread is
+is deleted (`docs/modules/bench.md`, "What is said about a thread"). What holds afterwards comes back. A deleted thread is
 restored before anything else is said of it. Another's thread is "not found", as "no expectation N of yours" for an
 expectation; a login that names nobody, an empty name or tag, and taking a description away are unprocessable.
 
 ## Typed cases
 A person types a case: its text, the language it is written in, and a name if they like; a case typed without a
 language is unprocessable, since a configuration is sent in its case's language. It is kept as written, in the World's
-database source, with its case and a family of their own, which comes back as a family does (`docs/bench.md`, "Typed
+database source, with its case and a family of their own, which comes back as a family does (`docs/modules/bench.md`, "Typed
 cases"); its vignette is then read as any family's. A text is held to a length and a person to a number of texts a
 day: past the day's is 429.
 
 ## Appendices and cases
 A family gives its cases at its current vignette, its default first, each with its appendices and the expectation
-it is scored against under each schema (`docs/bench.md`, "Appendices and cases"). The person writes an appendix
+it is scored against under each schema (`docs/modules/bench.md`, "Appendices and cases"). The person writes an appendix
 for a family from its text, and builds a case from appendices they see, in order, or stores the replacement of a
 case a repair left at an earlier vignette. An appendix's new version, written as any edit, answers with each case it
 replaced. An expectation is carried onto another case of its family by an edit of its own naming that case, which
@@ -167,9 +167,9 @@ names the head it was made on.
 
 ## Following
 A fork whose origin has moved on has a proposal: what following would keep, with the base, the origin's head, what
-the fork varies, and for a configuration the recipe it compiles from (`docs/bench.md`, "Following an origin"). A
+the fork varies, and for a configuration the recipe it compiles from (`docs/modules/bench.md`, "Following an origin"). A
 configuration whose facts or model have moved on has what following them would keep, or why the facts now refuse it
-(docs/catalog.md, "What has moved on"). One request asks for both, each nothing when there is none. Following
+(docs/modules/catalog.md, "What has moved on"). One request asks for both, each nothing when there is none. Following
 either is an edit of the person's own thread, which names the head it was made on and comes back with what the
 lints say; only following an origin takes a language. Following a thread with nothing to follow, or whose changes
 no longer fit, is unprocessable.
@@ -179,7 +179,7 @@ origin, its base and what it varies, whether its origin has moved on since, and 
 owner sees.
 
 ## Taking expectations
-A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
+A person is scored against their own expectations only, so they take the shared ones (`docs/modules/bench.md`,
 "Taking"):
 - **For many cases**, by family, under one schema, from any owner or one named. The answer says, for each family,
   whether its case was taken, and into which thread, or was kept as theirs, has several shared to choose from, or
@@ -192,7 +192,7 @@ A person is scored against their own expectations only, so they take the shared 
 ### Starting one
 Runs are started within their request, so whatever refuses them does so before anything is sent.
 
-A start is a run per language its cases are sent in (`docs/bench.md`, "Translations"): the cases in the
+A start is a run per language its cases are sent in (`docs/modules/bench.md`, "Translations"): the cases in the
 configuration's own language, and those in none, as written, and those in each language its translations cover
 translated, each a run of its own. The cases of a language they can't carry it into are left out, and the answer says
 which and why; a start that can send none of its cases is refused.
@@ -202,7 +202,7 @@ a start's runs are held to both before any of them starts, each counting as a ru
 
 Each run gives back its cases' digests and its language, and is named by the variation's label, `NAME+PART=CHUNK`.
 Listed or read, a run says what it ran (`ran`): the configuration, the edit the variation was built on and the parts
-replaced over it, or nothing for a run started from a trial alone (docs/catalog.md, "What a run ran"); the runs of a
+replaced over it, or nothing for a run started from a trial alone (docs/modules/catalog.md, "What a run ran"); the runs of a
 start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
 started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
 
@@ -210,7 +210,7 @@ A run goes under its variation's handle, to the one endpoint the handle resolves
 handle's latest engine; a hand-written configuration names no model, so a start names the handle it runs under
 (`under`). A handle that resolves to no endpoint or several is refused as ops' error, a variation whose weights its
 handle no longer holds as behind its model, and a handle named for a configuration with a model part as one it runs
-under already, all before the gate is asked (docs/bench.md, "The model").
+under already, all before the gate is asked (docs/modules/bench.md, "The model").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
@@ -219,9 +219,9 @@ Once started, each run is queued for the worker as a job of its own, and the sta
 each run's `run.started` holds, those sent as written first, and `left_out`, each language left out with its cases
 and why; `Location` is the first run's path.
 
-A run is sent under its endpoint's execution (docs/inventory.md, "Endpoints"), with the concurrency, up to the
+A run is sent under its endpoint's execution (docs/modules/inventory.md, "Endpoints"), with the concurrency, up to the
 endpoint's capacity, and the order the request gives, a shuffled order's seed drawn; with its endpoint's canary set;
-and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
+and with the cleanup steps the request gives, else those its cases' sources ask for (docs/modules/inventory.md, "Sources").
 
 ### Where it runs
 A started run is queued as a job in the store, and a worker sends it, finishes it and scores it under every scorer
@@ -369,7 +369,7 @@ many cases is answered 200, whatever it took.
 - **"Run N of trial X"**, which the repl says after a run. A run's trial lists its runs.
 
 ## Tests
-The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
+The tests start from the test World (`worlds/test`; docs/modules/inventory.md, "Worlds") as `chatddx init-data` lands it, with
 alice signed in by a bearer token and bob for what isn't his to see. They speak to the app through Starlette's test
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.

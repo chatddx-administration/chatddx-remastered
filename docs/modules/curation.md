@@ -15,7 +15,7 @@ and may be given forks of their own.
 
 Owning the loaded content as a person, rather than as no one, uses the catalog as it is: what a person sees, owns or
 forks works the same for the archive's threads as for anyone's. It also tells the data set's version of a thing apart
-from a person's: a re-run recognises its own stanzas by kind, name and the archive as owner (docs/catalog.md,
+from a person's: a re-run recognises its own stanzas by kind, name and the archive as owner (docs/modules/catalog.md,
 "Names"), and leaves everyone else's alone.
 
 The archive is never wiped.
@@ -26,7 +26,7 @@ in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
 A data set says what the model reads, the language each text is written in, and the cases it is run on.
 What a data set can't hold, engines, which engine judges and which engine its configurations are made for, is its
-World's (docs/inventory.md, "Worlds").
+World's (docs/modules/inventory.md, "Worlds").
 
 A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
 chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
@@ -51,7 +51,7 @@ On top of the fields:
   resolve skips the judge and its scorers, reported as ops' error.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a stanza of the same kind that this one is a fork of. It is loaded as a fork of
-  that stanza's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A stanza
+  that stanza's thread, so the catalog knows what it varies (docs/modules/catalog.md, "Forks"). It inherits no fields. A stanza
   whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's
   origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from the
   data's.
@@ -62,7 +62,7 @@ On top of the fields:
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
 - **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked
-  out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` stanza
+  out from the facts when a recipe is compiled (docs/modules/factors.md, "Reasoning" and "Sampling"). A `from_facts` stanza
   is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
   a `recommended` sampling".
 - **Translations by stanza.** A translations stanza's entries may be written in `of`, grouped by the stanza whose
@@ -93,12 +93,12 @@ A text is written in one language and translated into the others. A text stanza 
 `factors.toml` and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is
 written in one language, and translated into others". A translations stanza is written in the texts file of the
 language it translates into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused.
-Translations stanzas of one name in several texts files are one chunk, into each file's language (docs/factors.md,
+Translations stanzas of one name in several texts files are one chunk, into each file's language (docs/modules/factors.md,
 "Translations"): `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
 
 A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have
 is refused ("recipe.plan: no output named 'plans'"). It is written in its texts' language, and runs in that language
-as written, and in each its translations carry it into, translated (docs/catalog.md, "Languages"). Loading compiles
+as written, and in each its translations carry it into, translated (docs/modules/catalog.md, "Languages"). Loading compiles
 it into each language its translations name, and says each it can't carry it into, and why (see "Loading"); the
 recipe is made all the same.
 
@@ -111,7 +111,7 @@ recipes but the judges' into Swedish.
 ### Cases
 A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
 apart by its vignette, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices` in
-order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/factors.md, "Case").
+order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/modules/factors.md, "Case").
 Line endings are made LF before an appendix is digested, as every edge does.
 
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
@@ -120,23 +120,23 @@ file, and the file's name gives its language: every case in `cases-sv.toml` is i
 
 Splitting by language rather than tagging each case keeps a language's cases together, as they are sent, scored and
 compared together: a case runs in the language it was written in, under the configuration translated into it where
-that isn't the configuration's own (docs/catalog.md, "Languages"). Notes in the targets keep a language of their
+that isn't the configuration's own (docs/modules/catalog.md, "Languages"). Notes in the targets keep a language of their
 own.
 
 ### Facts and the engine
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
 `facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for the model under the handle the
-World names for configurations, its intents compiled against its facts (docs/facts.md, "Compiling intents").
+World names for configurations, its intents compiled against its facts (docs/modules/facts.md, "Compiling intents").
 
 A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
 sampling, and a recipe is skipped and reported when the facts refuse it on that model, when the World names no
 handle for configurations, or when that handle doesn't resolve to one endpoint, which is ops' to mend. Engines and
 facts are planned first for this reason. A researcher swaps the model at the bench, as any other part
-(docs/bench.md).
+(docs/modules/bench.md).
 
 ## The World
-A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
+A World is a directory (docs/modules/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
 vignettes, the handles its judges are bound to and the handle its configurations are made for, and takes its
 `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors, and its
 `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake
@@ -177,11 +177,11 @@ thing it comes to.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
-   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
+   what has moved on in the archive is proposed to them (docs/modules/catalog.md, "What has moved on"). The forks of the
    expectation threads are also what USER is scored against: without them, the archive's shared expectations score
    nothing for USER. Expectation schemas, scorers, models, engines and facts stay the archive's. A fork they already
    have is kept, and one they deleted comes back, unless they own an expectation of that case under that schema by
-   then: a person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
+   then: a person owns one at most (docs/modules/catalog.md, "Owners"), so theirs is kept instead.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake.
 8. **The World.** The inventory check's findings, and a count.
@@ -194,7 +194,7 @@ second run of an unchanged data set writes nothing and validates every stanza.
 
 ## Repairing
 A vignette can be renamed or edited at its source. Its family then needs a repair, which moves it to the vignette's
-new place (docs/catalog.md, "Repairing"). Loading only reports this, since a repair also moves the threads of everyone
+new place (docs/modules/catalog.md, "Repairing"). Loading only reports this, since a repair also moves the threads of everyone
 who used those cases.
 
 `chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
@@ -203,7 +203,7 @@ there, printing what moved. A family that isn't the archive's is named and left 
 only lists them.
 
 After a rename, the data set should name the new id; after new content, the expectations stay with the old case
-until someone confirms them for the new one (docs/catalog.md, "Repairing"), and the next loading gives the new case an
+until someone confirms them for the new one (docs/modules/catalog.md, "Repairing"), and the next loading gives the new case an
 expectation of its own.
 
 ## Wiping

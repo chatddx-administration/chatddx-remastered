@@ -2,18 +2,18 @@
 
 The worker sends and scores the runs queued for it, outside the request that asked for them, so that a run outlives
 the process that started it, and is followed and halted from any. It strings together pieces documented elsewhere:
-the queue (docs/store.md, "The Queue"), the bench that queues runs and scorings and, with the runner, sends and
-scores them (docs/bench.md, docs/runner.md), the ledger's rows a run is told by (docs/ledger.md), and the API, and
-the portal, that ask for runs, and tell their events (docs/api.md, "Runs").
+the queue (docs/modules/store.md, "The Queue"), the bench that queues runs and scorings and, with the runner, sends and
+scores them (docs/modules/bench.md, docs/modules/runner.md), the ledger's rows a run is told by (docs/modules/ledger.md), and the API, and
+the portal, that ask for runs, and tell their events (docs/modules/api.md, "Runs").
 
 This document describes what the worker does and why. Names, signatures and errors are in docs/reference/worker.md,
 and its settings in `src/chatddx/settings.py`.
 
 ## A job
 A job is what the worker is asked to do: take a started run to its finish, and score it when asked, or score a
-finished run again. The request starts the runs, a run per language its cases are sent in (docs/api.md, "Starting
+finished run again. The request starts the runs, a run per language its cases are sent in (docs/modules/api.md, "Starting
 one"), so whatever refuses them does so before anything is queued; each is queued as a job of its own, and counts
-against a person's runs a day as any run does. The worker resumes the run to send it (docs/runner.md, "Resuming"), as
+against a person's runs a day as any run does. The worker resumes the run to send it (docs/modules/runner.md, "Resuming"), as
 it resumes one it lost.
 
 A run has at most one job queued or under way. A job is queued, under way, finished, stopped or failed, and says why
@@ -49,7 +49,7 @@ resumes, so that it claims and halts without waiting for its next beat. On a bea
 - **A job another worker took over** is let go, as a run stopped and not ended.
 
 ## What it says as it happens
-A run is told by its rows as they land (docs/api.md, "Its events"). The worker says on the run's channel what the rows
+A run is told by its rows as they land (docs/modules/api.md, "Its events"). The worker says on the run's channel what the rows
 don't: an item about to be sent, its deltas and tool runs, a scoring starting, a judge asked, its deltas and its
 answer, and the scoring over, with each scorer's score or why it gave none. Deltas go out together, a tenth of a
 second's at a time, merged by item and kind, and an item's deltas still held when its row lands go unsaid. What it
@@ -78,7 +78,7 @@ before it. The portal's runs page shows the person's queue with its controls, an
 runs a worker in its own process; `chatddx portal` and `chatddx api` run none. A deployment runs the HTTP server, the
 API and the worker as separate services. Several workers work alike, taking turns to claim.
 
-A worker logs the inventory check's findings as it starts (docs/inventory.md, "Reaching an engine").
+A worker logs the inventory check's findings as it starts (docs/modules/inventory.md, "Reaching an engine").
 
 ## Tests
 The worker's tests run it on a thread against the fake vLLM, beating and losing fast, with a short deadline where a
@@ -86,8 +86,8 @@ test stops it mid-scoring. The queue's tests are the store's (src/chatddx/store/
 portal's run an app with a worker in its process (src/chatddx/api/test/, src/chatddx/portal/test/).
 
 ## Elsewhere
-- **The queue's tables and writes**: docs/store.md, "The Queue"; src/chatddx/store/queue.py, and the `worker`
+- **The queue's tables and writes**: docs/modules/store.md, "The Queue"; src/chatddx/store/queue.py, and the `worker`
   schema's migrations (docs/migrations.md).
-- **A run's events**, numbered by its rows: docs/api.md, "Its events"; docs/ledger.md, "Storage".
-- **Resuming a run**: docs/runner.md, "Resuming".
+- **A run's events**, numbered by its rows: docs/modules/api.md, "Its events"; docs/modules/ledger.md, "Storage".
+- **Resuming a run**: docs/modules/runner.md, "Resuming".
 - **The portal's runs page**: agents/wip-portal.md.

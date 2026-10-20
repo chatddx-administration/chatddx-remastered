@@ -10,7 +10,7 @@ configurations are made for.
 Heads-up: The location the vignette sources is a factor! Everything else is not.
 
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
-address (docs/ledger.md, "Run start").
+address (docs/modules/ledger.md, "Run start").
 
 This document describes what the inventory says and why. Classes, fields and errors are in docs/reference/inventory.md.
 The `inventory` builds on the `factors` and nothing else.
@@ -30,7 +30,7 @@ everything it includes.
 ### What loading checks
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, and that each source is named by its table. A judge's and the configurations'
-handles are resolved as the data set is loaded (docs/curation.md, "Facts and the engine"), and anything else that
+handles are resolved as the data set is loaded (docs/modules/curation.md, "Facts and the engine"), and anything else that
 needs the engines is checked when an entry is used (src/chatddx/inventory/check.py).
 
 ### Worlds
@@ -48,8 +48,8 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 | `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
 | `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
 | `vignettes/` | the source's owner | a directory source's vignettes, when git may hold them |
-| `_data/` | researchers and clinicians | the data set (docs/curation.md, "Data sets") |
-| `_runs/` | developers | scripted runs (docs/scripted.md) |
+| `_data/` | researchers and clinicians | the data set (docs/modules/curation.md, "Data sets") |
+| `_runs/` | developers | scripted runs (docs/modules/scripted.md) |
 
 ```
 worlds/<name>/
@@ -97,12 +97,12 @@ named by its id, or a database source, `kind = "database"`, whose vignettes are 
 database under new ids as written. A source is a directory unless it says otherwise.
 
 Each source name cleanup steps, such as `newlines.lf@1` for a source written with CRLF, and a run applies those of its
-cases' sources unless its request gives its own (docs/factors.md, "Preparing a case"). Ops write them, since they are
+cases' sources unless its request gives its own (docs/modules/factors.md, "Preparing a case"). Ops write them, since they are
 the source's quirks, so that runs on one source agree unless a researcher varies them.
 
 A directory source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette,
-without appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach
-outside it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case"). A
+without appendices, with the fingerprint of the raw bytes (docs/modules/factors.md, "Case"). It refuses an id that would reach
+outside it. What happens to the bytes next is the case's preparation (docs/modules/factors.md, "Preparing a case"). A
 database source lists nothing: its texts are read through the store, by id, so init-data and repair-data, which list
 a source, refuse one.
 
@@ -116,9 +116,9 @@ An endpoint says where one engine is served: the engine, by digest; the server's
 local engine; how many requests it takes at once; and, when it has a secret, the name of the environment variable that
 holds it.
 
-A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
+A local engine is served under its digest (docs/modules/factors.md, "Local engine"), so the endpoint names the very engine the
 server answers as. Changing the engine changes its digest, so the endpoint has to change with it, and its handle means
-the new engine from then on; runs under the handle on its earlier engines stay grouped under it (docs/bench.md).
+the new engine from then on; runs under the handle on its earlier engines stay grouped under it (docs/modules/bench.md).
 Every endpoint has an address, and a local engine's needs a host too to be started.
 
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its model, which names
@@ -149,7 +149,7 @@ and a deleted one are refused to the researcher, who picks another.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
-and chat template by hash (docs/factors.md, "Model artifact" and "Local engine"), and its host says where each file is.
+and chat template by hash (docs/modules/factors.md, "Local model" and "Local engine"), and its host says where each file is.
 Engines on one host share its entries. A location is the host's own, written the way its start-up reads it, as a path
 or a Hugging Face repository, and isn't resolved against the inventory file.
 
@@ -166,7 +166,7 @@ statement, so no command writes it.
 The judge table binds each of a data set's judges, by name, to the handle whose latest engine judges it:
 `[judge] verdict = "qwen3-8b"`. Which engine judges is the World's choice, as the handle a run goes under is,
 so a data set's judges are planned with the engines of the World they are loaded into, and a World that binds none of
-them leaves them and their scorers out (docs/curation.md, "Factors"). Like clearance, a binding is read only from the
+them leaves them and their scorers out (docs/modules/curation.md, "Factors"). Like clearance, a binding is read only from the
 inventory's own file, and no command writes it.
 
 A judge's model is picked by handle, a person's and a data set's alike, and a data set's judge is bound to a
@@ -175,7 +175,7 @@ endpoint.
 
 ## Configurations
 `configurations = "qwen3-8b"`, at the top of the inventory, names the handle whose model a data set's configurations
-are made for: init-data makes each recipe once, for its model (docs/curation.md).
+are made for: init-data makes each recipe once, for its model (docs/modules/curation.md).
 
 Which model a configuration is made for is the World's choice, and a researcher swaps it by its handle; the engine is
 the handle's latest, a trial's and a judge's alike. Ops may put new weights under a handle: configurations pinning the
@@ -194,14 +194,14 @@ the host's address and the endpoint's port, and then the engine's own arguments.
 A remote engine isn't ours to start. A start-up is refused for an endpoint without a host, and for a host that
 doesn't say where it keeps the model or the template. An engine's own arguments can't say where to listen: the
 endpoint decides that, and the engine refuses them as it refuses the arguments that pin the model and the template
-(docs/factors.md, "Local engine").
+(docs/modules/factors.md, "Local engine").
 
 The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then serves the endpoint's engine
 (docs/vllm.md, "The fake vLLM").
 
 ### Reaching an engine
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
-its engine is served under (docs/runner.md); the inventory itself connects to nothing.
+its engine is served under (docs/modules/runner.md); the inventory itself connects to nothing.
 
 With a World, init-data ends with the inventory check's findings and a count (src/chatddx/inventory/check.py), and a
 worker logs them as it starts, against the engines the store holds. Neither connects to find them.
@@ -229,7 +229,7 @@ count; a model that isn't a Hugging Face repository at a revision; a part of the
 extra arguments that say where to listen; whatever a local engine refuses; two servers at one address; and two
 servers on one host that listen on different addresses.
 
-What it sees without refusing, it reports: the model's and the engine's lints (docs/factors.md, "Lints"); the chat
+What it sees without refusing, it reports: the model's and the engine's lints (docs/modules/factors.md, "Lints"); the chat
 template, checked against the engine, or that it couldn't be checked, or isn't the model's own; a gpt-oss engine,
 whose template vLLM doesn't read and whose prompts hold the current date unless its environment sets one; and a
 server that wasn't seen, isn't running, runs other arguments than its configuration, doesn't answer, reports another

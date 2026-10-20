@@ -10,7 +10,7 @@ case (`agents/wip-review.md`) and `/translate` to a configuration's languages (`
 
 ## Start with this
 1. **It can be done.** The catalog models the workflow without objects of its own: forks, a fork's base, what it
-   varies, proposals, titles and what a run varied (`docs/catalog.md`, "Configurations and variations"). What is
+   varies, proposals, titles and what a run varied (`docs/modules/catalog.md`, "Configurations and variations"). What is
    missing is the page, the chunk editors, a few reads from the API, and a look over a chunk nobody has stored.
 2. **Decided: the takes on E1 to E8** (see "The landscape"), the name, Refine, and the chunk editors first, apart
    from Refine. The order of the steps is suggested, and the agent's to change (see "Steps").
@@ -19,11 +19,11 @@ case (`agents/wip-review.md`) and `/translate` to a configuration's languages (`
 4. **Steps 1, 2 and 2b are built** (see "Built"); what they leave is in each step's "What step N leaves". Step 1 is
    `agents/wip-portal.md`'s 5c ("Authoring", W1), and steps 2 and 3 build its C1 and C2 ("Comparing variations").
 5. **Decided: researchers see model handles**, such as `qwen3-8b`, never engines, endpoints or a model's proper name;
-   ops map each handle to one engine and one endpoint, and a handle always means its latest engine (`docs/chatddx.md`,
-   "Target stack"; `docs/inventory.md`, "Endpoints"). Step 2b brings the project and the page there (see "Steps").
+   ops map each handle to one engine and one endpoint, and a handle always means its latest engine (`docs/modules/inventory.md`,
+   "Endpoints"). Step 2b brings the project and the page there (see "Steps").
 
 ## What the researcher is here to do
-From `docs/chatddx.md` ("Intended evolution of configurations") and `agents/glossary.md` ("Roles"):
+From `docs/chatddx.md` ("Intended evolution of configurations") and `docs/glossary.md` ("Roles"):
 - **Hand-edit chunks**: instructions, few-shot examples, prompts, outputs, sampling, reasoning, passthrough and
   toolsets. Translations are the translator's (`agents/wip-translators-view.md`), tools the developers'.
 - **Try variations**: a configuration with parts replaced, seen before it runs.
@@ -48,7 +48,7 @@ From `docs/chatddx.md` ("Intended evolution of configurations") and `agents/glos
 | Follow a chunk that moved on | `catalog.threads.behind` lists it | nothing | the bench follows facts and the model only (step 5) |
 
 ## What the docs hold it to
-- **One hardware class per handle**: ops never expose a handle on two (`docs/chatddx.md`, "Target stack"), and
+- **One hardware class per handle**: ops never expose a handle on two (`docs/modules/inventory.md`, "Endpoints"), and
   comparing across handles is fine. Each column runs under its own model's handle, or under the one `model=` forces
   on every column.
 - **Runs aren't pooled by the trial's digest alone**: a trial pins neither the execution nor what was observed
@@ -56,11 +56,11 @@ From `docs/chatddx.md` ("Intended evolution of configurations") and `agents/glos
 - **No stored batch** (`agents/wip-portal.md`, "Comparing variations", decided): what goes together is the page's
   address, never a record.
 - **A person's runs are their own** (`src/chatddx/bench/seen.py:Seen.runs`), **scored against the expectations they
-  hold** (`docs/bench.md`, "What a person is scored against"): a researcher who holds none has empty columns.
-- **A start is a run per language** (`docs/bench.md`, "Translations"), and comparing languages is comparing case sets:
+  hold** (`docs/modules/bench.md`, "What a person is scored against"): a researcher who holds none has empty columns.
+- **A start is a run per language** (`docs/modules/bench.md`, "Translations"), and comparing languages is comparing case sets:
   the set's language is its cases', never picked. A set whose tags or families pick cases in several languages is
   refused, to be narrowed. A variation whose translations don't cover its cases runs nothing over the set, and says so.
-- **Judged views cost judge calls**, through the worker (`docs/runner.md`, "Judges").
+- **Judged views cost judge calls**, through the worker (`docs/modules/runner.md`, "Judges").
 
 ## The page
 A sketch, at a wide screen, in the review's layout: two columns are the main actors, the configuration being varied
@@ -103,7 +103,7 @@ Decided: the take on each.
 - **(b)** An experiment: a set of cases, an endpoint and scorers, with variations of several configurations. It brings
   back a stored grouping, which was decided against.
 - **(c)** One part across configurations, which needs a reverse lookup the catalog doesn't have (`agents/wip-portal.md`,
-  "What holds a configuration").
+  "Open", "What holds a configuration").
 
 Take: (a). The workflow is per configuration, and the catalog organises configurations by lineage.
 
@@ -190,7 +190,7 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
   prompt edited on its page, saved as a version, and a configuration made from a recipe holding it.
 
 ### Step 2: the API's reads, and the page read only
-- **The API**, suggested to `docs/api.md` as `AGENT` blocks:
+- **The API**, suggested to `docs/modules/api.md` as `AGENT` blocks:
   - `GET /api/threads/{id}/lineage`: the first origin and every fork below it, each with its thread, label, owner,
     base, what it varies (`catalog.threads.divergence`), whether it is behind, and whether it is deleted.
   - `GET /api/runs/compared?run=…`: runs side by side over the items they share: each scorer view's value per item
@@ -210,7 +210,7 @@ Each step leaves the portal whole. Step 2 doesn't depend on step 1, and the two 
 Decided by the user, after step 2 (see "Start with this", 5): what a researcher sees of models, engines and
 endpoints, and Refine's set in those terms.
 - **A handle** is the name of a model's thread, such as `qwen3-8b`: the weights a recipe pins are a version of it, and
-  new weights put under it by ops make its configurations behind their model (`docs/catalog.md`, "What has moved on").
+  new weights put under it by ops make its configurations behind their model (`docs/modules/catalog.md`, "What has moved on").
   Take: nothing new is stored; the World names its model records by handle, as the test World does already.
 - **Resolving a handle**: its thread's head, the weights it holds now, served by exactly one endpoint, whose engine is
   the handle's latest. None or several is ops' error: the inventory check reports weights served at several endpoints
@@ -234,7 +234,7 @@ endpoints, and Refine's set in those terms.
   under the handle, accessible.
 - **`/runs/compare`**: runs show their handle; runs under one handle on different engines are said to be grouped
   under it rather than like for like.
-- **Kept**: scripted runs name endpoints, as they are the fake's (`docs/scripted.md`); the repl was kept so too, and
+- **Kept**: scripted runs name endpoints, as they are the fake's (`docs/modules/scripted.md`); the repl was kept so too, and
   then brought to handles (see "Built", step 2b). A person's judge picks a handle and pins its latest engine, until
   "Judges name a model" changes the judge's kind, since built (`agents/wip-judge-handle.md`).
 - **Tests**: the inventory check's finding; loading by handle; the bench's resolving, refusals and running again;
@@ -287,7 +287,7 @@ endpoints, and Refine's set in those terms.
 ## Built
 
 ### Step 1: the chunk editors, and a configuration from a recipe
-- **The API**, suggested to `docs/api.md` as an `AGENT` block: `POST /api/recipes/check`
+- **The API**, suggested to `docs/modules/api.md` as an `AGENT` block: `POST /api/recipes/check`
   (`src/chatddx/api/world.py:check_recipe`), a recipe checked as making a configuration of it would make it, with
   nothing written: each part a stored chunk of that part and the model a stored model
   (`src/chatddx/bench/components.py:_stored_parts`, which `new` shares), compiled against the facts about its model
@@ -328,7 +328,7 @@ endpoints, and Refine's set in those terms.
 - **A toolset's tool at an earlier version** is kept and shown by its digest; the tools offered are the latest.
 
 ### Step 2: the API's reads, and the page read only
-- **The API**, suggested to `docs/api.md` as `AGENT` blocks:
+- **The API**, suggested to `docs/modules/api.md` as `AGENT` blocks:
   - `GET /api/threads/{id}/lineage` (`src/chatddx/api/threads.py:lineage`, `Bench.lineage` in
     `src/chatddx/bench/following.py`), as planned, with each thread's `origin` to draw it by. Its origin has moved on
     only when the person sees the origin, and a deleted thread is there only for its owner.
@@ -367,7 +367,7 @@ endpoints, and Refine's set in those terms.
 - **A lineage costs a few queries per thread**: its title and what it varies.
 
 #### Reduced
-A pass over the branch against main (`agents/reduce.md`):
+A pass over the branch against main (`docs/reduce.md`):
 - **Pruned**: the lineage's `depth`, which the page counts from the origins, and `behind`, which no page read and step
   5 brings back; the counts of `GET /api/runs/compared`, counted from its values; the runs Refine counted as gone
   elsewhere.
@@ -412,7 +412,7 @@ behind one `said`; a column that can't be worked out matched as any, finding not
 - **Tests**: `test_serving.py`, the check's finding; `test_judges.py`, `test_plan.py`, judges and configurations by
   handle; `test_o11n.py`, a handle on two hosts; `test_seen.py`, running again; `test_world.py`, the handles and a
   shared model's; the API's, the portal's and the repl's tests without endpoints; vitest for the variation's address.
-- **The repl**, after step 2b (`src/chatddx/repl/`), suggested to `docs/repl.md` as `AGENT` blocks: the cell is
+- **The repl**, after step 2b (`src/chatddx/repl/`), suggested to `docs/modules/repl.md` as `AGENT` blocks: the cell is
   dropped. The shell holds a variation (`Repl.variation`) that runs under its model's handle, at the endpoint the
   handle resolves to, and `under MODEL`, the API's `under`, names the handle a hand-written configuration runs under
   (`Repl.under`), kept while hand-written configurations are used. `on` and `cell` are gone, so the model changes by

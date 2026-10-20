@@ -1,8 +1,8 @@
 # Store
 
 The store is chatddx's database: PostgreSQL, reached through psycopg with plain SQL migrations and no ORM. Each module
-that keeps data has a schema of its own: the factors (docs/factors.md), the ledger (docs/ledger.md), identity
-(docs/identity.md) and the catalog (docs/catalog.md).
+that keeps data has a schema of its own: the factors (docs/modules/factors.md), the ledger (docs/modules/ledger.md), identity
+(docs/modules/identity.md) and the catalog (docs/modules/catalog.md).
 
 Catalog, factors and ledger are append-only, and the database enforces it at tier 2.
 Identity and the worker queue allow updates.
@@ -34,17 +34,17 @@ and validated as it is read. Runs and scores are listed newest first: those of a
 store tells which runs have finished.
 
 ### Texts
-The texts of database sources (docs/inventory.md, "Sources") are kept as people typed them, each under a new id, and
+The texts of database sources (docs/modules/inventory.md, "Sources") are kept as people typed them, each under a new id, and
 never changed. The writer adds and reads them; only the admin deletes one, to purge spam; the reader can't read them,
 since they are vignettes.
 
 ### People
-People, their passwords and their sessions are identity's (docs/identity.md). The store adds people and changes them,
+People, their passwords and their sessions are identity's (docs/modules/identity.md). The store adds people and changes them,
 but never removes them; it checks passwords and keeps sessions, removing those expired whenever one opens, and
 disabling a person ends their sessions.
 
 ### The catalog
-The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
+The catalog decides what its rows mean (docs/modules/catalog.md). The store reads the rows it asks for and writes what it
 decided, all of one change at once. Whoever reads the catalog asks the catalog, over the rows the store reads.
 
 ### The Queue

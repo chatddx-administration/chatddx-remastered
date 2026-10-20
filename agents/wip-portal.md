@@ -1,8 +1,8 @@
 # The portal: work in progress
 
 The portal is the web interface where people write their components and start and watch runs, and that is to export
-results (`agents/glossary.md`, `:Portal`). It is the bench's third edge, after the repl and the API
-(`docs/bench.md`; `docs/api.md`). This file plans it.
+results (`docs/glossary.md`, `:Portal`). It is the bench's third edge, after the repl and the API
+(`docs/modules/bench.md`; `docs/modules/api.md`). This file plans it.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -14,7 +14,7 @@ results (`agents/glossary.md`, `:Portal`). It is the bench's third edge, after t
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx run`** serves the portal, and starts everything the portal needs with it: the API and a
    worker (see "P3b, concretely"). It is a convenience for development: a deployment runs the HTTP server, the API and
-   the worker as separate systemd services on NixOS (`docs/worker.md`, "Where it runs"; `agents/wip-deploy.md`). It
+   the worker as separate systemd services on NixOS (`docs/modules/worker.md`, "Where it runs"; `agents/wip-deploy.md`). It
    was `chatddx portal`, which now serves the portal and the API with no worker, a deployment's service.
 4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
    `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
@@ -22,8 +22,8 @@ results (`agents/glossary.md`, `:Portal`). It is the bench's third edge, after t
    variation being tried, and starting and watching a run (decided, see "The variation being tried" and "Starting and
    watching a run"); then 5a, a page for every thread, and 5b, the clinicians' appendices, cases and expectations
    (decided, see "Authoring"). The choices of phases 1 and 2 are takes (see "Built").
-5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
-   (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
+5. **What it stands on is built**: the bench and the API (`docs/modules/bench.md`, `docs/modules/api.md`), the writes for authoring
+   (`docs/modules/bench.md`, "Writes for the person") and typed cases (`docs/modules/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open"). A clinician's page around one case, Review, which builds a scorer's composer with its judges
@@ -50,10 +50,10 @@ In remastered's terms:
 | Configurations | each with its versions, its recipe part by part, and its runs | `Bench.threads`, `Bench.runs(reaching=…, scored_by=…)`; `GET /api/threads?kind=configuration` |
 | The variation being tried | a chunk picked per part, with the skeleton's digest, the findings at an endpoint, each scorer view's reach and the request rendered, as you pick | `GET /api/threads/{id}/variation` |
 | Families | filtered by tag and name; a family's cases, appendices, and the expectation each is scored against under each schema, with those shared to take; the vignette in a place of its own | `Bench.families`, `Bench.family`, `Bench.expectation`; `GET /api/families` and below it |
-| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin, and a configuration's corrected facts; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
+| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin, and a configuration's corrected facts; taking expectations | the bench's writes (`docs/modules/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
 | Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
-| Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page | the worker (`docs/worker.md`) |
+| Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page | the worker (`docs/modules/worker.md`) |
 
 Ways of showing things the pages keep:
 - **A version timeline** on every thread: ◀ and ▶, "version i of n", and what each version changed, word by word.
@@ -68,32 +68,32 @@ Ways of showing things the pages keep:
 - The variation workflow: try, save the successful as configurations, delete the rest, branch (`docs/chatddx.md`,
   "Intended evolution of configurations").
 - A scorer's labels written with its edit: the editor sends each view's label with the views, and moves them with the
-  views it moves (`docs/catalog.md`, "Scorer labels"; `docs/bench.md`, "Scorers").
+  views it moves (`docs/modules/catalog.md`, "Scorer labels"; `docs/modules/bench.md`, "Scorers").
 - A new version offered the previous version's language, which the bench doesn't carry over itself
-  (`docs/catalog.md`, "Languages"; `docs/bench.md`, "Languages").
+  (`docs/modules/catalog.md`, "Languages"; `docs/modules/bench.md`, "Languages").
 - A case left at an earlier vignette by a repair offered its replacement, which the bench stores when asked
-  (`docs/catalog.md`, "What has moved on"; `docs/bench.md`, "Appendices and cases").
-- What deleting hides: everywhere, or only in pickers (`docs/catalog.md`, "Deleting").
+  (`docs/modules/catalog.md`, "What has moved on"; `docs/modules/bench.md`, "Appendices and cases").
+- What deleting hides: everywhere, or only in pickers (`docs/modules/catalog.md`, "Deleting").
 - Pickers of the right kind for each reference, from the kinds each reference takes in the components' JSON Schemas
-  (`x-kind`, from `GET /api/kinds`: `docs/api.md`, "What a person sees"; built, see W7), and execution settings to
+  (`x-kind`, from `GET /api/kinds`: `docs/modules/api.md`, "What a person sees"; built, see W7), and execution settings to
   pick, if they become a component (`docs/backlog.md`, "Execution settings as a component").
 - A change made in the portal kept in git through an export (`docs/backlog.md`, "Exporting data sets").
 - Clearance granted in the database, through the portal and logged, as a long-term option
   (`agents/wip-clearance.md`, "Open", 2).
 
-An appendix's line endings need nothing of the portal: the bench makes them LF for every edge (`docs/bench.md`,
+An appendix's line endings need nothing of the portal: the bench makes them LF for every edge (`docs/modules/bench.md`,
 "Appendices and cases").
 
 ## How it is built
 Decided: HTML pages rendered on the server, per request, from the bench, with Svelte islands that call the API where a
-page needs feedback without a reload. The portal consumes the bench, as every edge does (`docs/bench.md`), and the API
+page needs feedback without a reload. The portal consumes the bench, as every edge does (`docs/modules/bench.md`), and the API
 where it is interactive. Its look and the structure of its frontend come from swift (see "Swift").
 
 ### P3b, concretely
 Decided:
 - **`chatddx run`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
   alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: a basic
-  worker in its process (`docs/worker.md`, "Where it runs"), and the frontend's build when it has one.
+  worker in its process (`docs/modules/worker.md`, "Where it runs"), and the frontend's build when it has one.
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
@@ -108,7 +108,7 @@ Decided:
 - **Forms are plain POSTs**, checked by the API's same-origin check (`src/chatddx/api/people.py:same_origin`), so
   there is no CSRF token, as there is none for the API.
 - **Errors carry a code** beside their detail, so that a page or an island tells a refusal apart without reading its
-  sentence (`docs/api.md`, "Errors").
+  sentence (`docs/modules/api.md`, "Errors").
 - **Dependencies**: `jinja2`, and `python-multipart` for FastAPI's form fields, both in `pyproject.toml`, imported
   only under `chatddx.portal` as `rich` is only under `chatddx.repl`.
 
@@ -116,11 +116,11 @@ Decided:
 Decided: Svelte with TypeScript, only where a page needs feedback that takes a round trip or live state:
 - **The home page**: the text, and the answer as it comes (see "Swift").
 - **The variation being tried**: pick a chunk per part and see what it would make, as you pick.
-- **A run as it runs**: its items as they start and end, and the deltas while you watch (`docs/api.md`, "Its
+- **A run as it runs**: its items as they start and end, and the deltas while you watch (`docs/modules/api.md`, "Its
   events").
 - **Several started together**: more than one chunk picked per part, with the number of runs, what the gate refuses
   and each scorer's reach as you pick (see "Comparing variations", C2).
-- **The worker's state** (`docs/worker.md`).
+- **The worker's state** (`docs/modules/worker.md`).
 - Perhaps editors for structured chunks and expectations, checked against their JSON Schema as you type.
 
 Decided, for how, and built in phase 1:
@@ -137,7 +137,7 @@ Decided:
 - **Islands**: through the API's tests for what they call; an island's pure logic by vitest
   (`pnpm --dir frontend test`, built in phase 3); and a browser test under pytest (Playwright, with the container's
   Chromium), built in phase 4 (R12).
-- **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs"), run once into `ran`
+- **Runs to show**: the test World's six scripted runs (`docs/modules/scripted.md`, "The runs"), run once into `ran`
   (`src/chatddx/conftest.py`), built in phase 2.
 
 ## The variation being tried
@@ -178,12 +178,12 @@ Decided (phase 4), from the options R1 to R12:
 - **R5. A run names the edit it varies** (`head` on `NewRun`), so it runs what was looked at.
 - **R6. The cases** are the variation's tags, or families picked, with the number of items said before it starts;
   one seed, the look's, which can be changed.
-- **R7. A run is named by its variation's label** as it starts, which `Bench.described` reads first (`docs/api.md`,
+- **R7. A run is named by its variation's label** as it starts, which `Bench.described` reads first (`docs/modules/api.md`,
   "Starting one").
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
 - **R9. Concurrency** stays 1 until the worker shares an endpoint's capacity between runs, which the worker
-  does; a run's request then chooses a concurrency up to its capacity (`docs/api.md`, "Starting one"). Since
+  does; a run's request then chooses a concurrency up to its capacity (`docs/modules/api.md`, "Starting one"). Since
   step 3 the API's runs take one; the variation's island doesn't offer it yet.
 - **R10. On the jobs in the app's process**; the worker takes their place with the API as it is. Since step 3 they
   are the worker's queue's.
@@ -208,7 +208,7 @@ Decided (phase 5), from the options W1 to W11:
 - **W6. Checked as it is typed**, by `POST /api/components/check`: the component built, its rules, cross-checks and
   lints, and its digest, with nothing written.
 - **W7. Pickers from the kinds' JSON Schemas**, published with the kinds each reference takes (`x-kind`) by
-  `GET /api/kinds` (`docs/api.md`, "What a person sees").
+  `GET /api/kinds` (`docs/modules/api.md`, "What a person sees").
 - **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
   a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
   that keeps what was typed.
@@ -285,7 +285,7 @@ share its pieces.
 - **A judge's texts** are changed beside a case, on the Review page, or on the judge configuration's own page.
 
 #### Reduced
-After step 2, by the user's pick of what steps 1 and 2 and the judges' handles had added (`agents/reduce.md`):
+After step 2, by the user's pick of what steps 1 and 2 and the judges' handles had added (`docs/reduce.md`):
 - **Pruned**: the judge editor's `behind`, its hint now `Seen.judged`'s refusal. A scorer of code that isn't shipped
   crashed for a while, as a developer's error, until shipped code was decided not to be kept forever: its page says
   so now, and Review leaves it out of the composer (`agents/wip-error-handling.md`).
@@ -298,7 +298,7 @@ After step 2, by the user's pick of what steps 1 and 2 and the judges' handles h
 - **Kept**: who is editing (`me`) stays given by each editor's props: given once by `_editor` it would be given by
   the Library's beginning and Review's composer too, as many places as now.
 - **Then decided**: the ops' errors met on the way from a judge to its engine, by the model in
-  `agents/wip-error-handling.md` ("Built: step 1").
+  `agents/wip-error-handling.md` ("Built: step 1, the way from a judge to its engine").
 
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
@@ -320,10 +320,10 @@ Take:
   start, a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs, what each sets, what
   the gate refuses and why, the cases, and each scorer's reach. Each is a `POST /api/runs`; nothing else is stored,
   and the comparison page follows them.
-- **C3. Replicates and text cleanup** on a run's form, as `POST /api/runs` takes them (`docs/api.md`, "Starting one"; R1
+- **C3. Replicates and text cleanup** on a run's form, as `POST /api/runs` takes them (`docs/modules/api.md`, "Starting one"; R1
   and R2). Built: a replicates count beside the seed. Cleanup, a concurrency and an order aren't offered yet: a run
   takes its sources' and its endpoint's.
-- **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
+- **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/modules/catalog.md`, "Entries") and
   nothing writes yet; the runs page filters by them.
 
 C1 is built by `agents/wip-refine.md` (step 2), and C2 is its step 3's, where it fills Refine's trying list.
@@ -373,7 +373,7 @@ with react-query, react-router, lucide icons and sonner toasts; pnpm, and a Nix 
   the old API, which is gone.
 - **Lovable's own**: `lovable-tagger`, which tags components for Lovable's editor in development, and its README.
 
-Built, as takes (see "Built", "Phase 1"):
+Built, as takes (see "Built", "Phases"):
 - **The theme skeleton** is the tokens, both sets, and Tailwind's mapping of them, shared by the pages and the islands,
   in `frontend/src/portal.css`. The tokens stay swift's HSL, written as whole colors, which Tailwind 4 mixes itself.
   The dark set follows the system's preference (`prefers-color-scheme`), as swift had no switch. The fonts are served
@@ -423,12 +423,12 @@ Left:
 
 ### Typed cases
 Built below the home page: the `database` source kind and the `source` schema, `Bench.type_case`, `POST /api/families`,
-and the limits on a text's length and on texts a day (`docs/bench.md` and `docs/api.md`, "Typed cases";
-`docs/inventory.md`, "Sources"; `docs/store.md`, "Texts"; `docs/migrations.md`, "source"). A typed case runs as any
+and the limits on a text's length and on texts a day (`docs/modules/bench.md` and `docs/modules/api.md`, "Typed cases";
+`docs/modules/inventory.md`, "Sources"; `docs/modules/store.md`, "Texts"; `docs/migrations.md`, "source"). A typed case runs as any
 case, and its completion lands in the ledger; the vignette doesn't.
 
 ### Protection
-The demo is on the public web, but the portal has no guest: every request needs a session (`docs/api.md`, "Signing
+The demo is on the public web, but the portal has no guest: every request needs a session (`docs/modules/api.md`, "Signing
 in"), and people are added by command (`chatddx person add`). So:
 - a person's typed texts are held to a quota and a text to a size, with a NUL refused (built);
 - a person's runs are held to a quota a day, and a run to its items, by the bench (built in phase 4, R8);
@@ -459,7 +459,7 @@ Phase 0:
   `chatddx portal`, the same with no worker and no `--watch` (`_portal`).
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
-  (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/api.md` and
+  (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/modules/api.md` and
   `docs/reference/api.md`; the API's tests pin the codes and the header.
 - **Tests**: `src/chatddx/portal/test/test_signing_in.py`.
 
@@ -503,8 +503,8 @@ Phase 1:
   `impureEnvVars`, which the flake doesn't keep).
 - **The API**: a run's items carry the answer as read (`answer`: its value, why it couldn't be read or breaks its
   schema, and whether it was salvaged), and configurations are listed by what they answer (`answers`, the title of
-  their answer's JSON Schema; `Bench.threads(…, answering=…)`), described in `docs/api.md`, `docs/reference/api.md`,
-  `docs/bench.md` and `docs/reference/bench.md`.
+  their answer's JSON Schema; `Bench.threads(…, answering=…)`), described in `docs/modules/api.md`, `docs/reference/api.md`,
+  `docs/modules/bench.md` and `docs/reference/bench.md`.
 - **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
   Chromium (Playwright), signed in as alice, light and dark.
 
@@ -535,13 +535,13 @@ Phase 2, as takes:
   (`agents/wip-translators-view.md`). An island's imported chunks are preloaded
   (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
-  scripted runs each run once (`docs/scripted.md`). By hand on the sample World in Chromium,
+  scripted runs each run once (`docs/modules/scripted.md`). By hand on the sample World in Chromium,
   every page, with the plan drawn.
 
 Phase 3, as decided (see "The variation being tried"):
 - **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
   `head` too; a listed thread has its `language`, looked up for many at once (`language.languages_of`;
-  `Bench.variation(…, head)`), described in `docs/api.md`, `docs/reference/api.md`, `docs/bench.md`,
+  `Bench.variation(…, head)`), described in `docs/modules/api.md`, `docs/reference/api.md`, `docs/modules/bench.md`,
   `docs/reference/bench.md` and `docs/reference/catalog.md`.
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
   and `tag`. Without an endpoint it picks one serving the model the configuration's name is made for. The server
@@ -572,8 +572,8 @@ Phase 4, as decided (see "Starting and watching a run"):
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
   limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Rows.runs_started`), refused as over quota; and a quiet event
-  stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/api.md`,
-  `docs/reference/api.md`, `docs/bench.md`, `docs/reference/bench.md`, `docs/reference/catalog.md` and `docs/repl.md`.
+  stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/modules/api.md`,
+  `docs/reference/api.md`, `docs/modules/bench.md`, `docs/reference/bench.md`, `docs/reference/catalog.md` and `docs/modules/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
   folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
   scoring with its judges' calls. The home page follows its run with them too.
@@ -592,8 +592,8 @@ Phase 5, first half, as decided (see "Authoring"):
 - **The API**: `GET /api/kinds`, each kind with the bench's word for it, whether a person writes it, and its JSON
   Schema, in which a reference names the kinds it takes (`x-kind`, from `chatddx.factors.base.RefTo`); and
   `POST /api/components/check`, a component checked as a write would store it, with nothing written
-  (`Bench.check`), described in `docs/api.md`, `docs/reference/api.md`, `docs/reference/bench.md` and
-  `docs/factors.md`, and tested in `src/chatddx/api/test/test_kinds.py`.
+  (`Bench.check`), described in `docs/modules/api.md`, `docs/reference/api.md`, `docs/reference/bench.md` and
+  `docs/modules/factors.md`, and tested in `src/chatddx/api/test/test_kinds.py`.
 - **5a, a page for every thread** (`src/chatddx/portal/threads.py`): `/library`, every kind the person sees, their own
   first, and their deleted threads with **Restore**; `/threads/{id}`, any kind but a configuration's, which has its
   own: what is said of it, its versions stepped through with what each changed (`frontend/src/lib/thread/`, jsdiff),
@@ -610,7 +610,7 @@ Phase 5, first half, as decided (see "Authoring"):
   (`test_browser.py`); vitest for the differences, the schema's form and where a save goes; and by hand on the sample
   World.
 
-Languages (docs/bench.md, "Translations"):
+Languages (docs/modules/bench.md, "Translations"):
 - **The variation page** says, under its run line, where it runs ("A run per language: in en, 1 case; in sv, 3 cases,
   translated.") and lists the cases left out with why, from the look's `languages` and each family's language
   (`frontend/src/lib/variation/logic.ts:carried`); a family picked beyond the look's goes as its language's, said as
@@ -623,12 +623,12 @@ Languages (docs/bench.md, "Translations"):
 
 ## Below the UI
 What the portal needs below its pages that isn't built:
-1. **The worker** (`docs/worker.md`): runs that outlive the app's process and are seen from every replica.
+1. **The worker** (`docs/modules/worker.md`): runs that outlive the app's process and are seen from every replica.
    Built through its step 3: the API's runs, scorings and halts go through its queue, with the API as it was.
-2. **The worker's controls and status** (`docs/worker.md`, "A person's queue"), built: the runs page's queue, each
+2. **The worker's controls and status** (`docs/modules/worker.md`, "A person's queue"), built: the runs page's queue, each
    run's job, and Resume on an unfinished run's page.
 3. **Z1**, the map from roles to kinds, which waits for the portal's views. Decided: authorization goes by role first,
-   which kinds a role sees, then by the catalog's owners and collaborators (`docs/identity.md`, "Authorization").
+   which kinds a role sees, then by the catalog's owners and collaborators (`docs/modules/identity.md`, "Authorization").
    Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
    roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
    expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than
@@ -644,12 +644,12 @@ What the portal needs below its pages that isn't built:
    families with their expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island, built (see "Built").
 4. **Starting and watching a run**, built (see "Built"): the run's island, on the API's runs and events; the worker
-   under them (`docs/worker.md`).
+   under them (`docs/modules/worker.md`).
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
    Its first half is built (see "Built"): a page for every thread, and the clinicians' appendices, cases and
    expectations.
 6. **Comparing variations**: the page to compare runs, then several started together (see "Comparing variations"),
-   and the worker's status (`docs/worker.md`).
+   and the worker's status (`docs/modules/worker.md`).
 7. **Z1**, and what deleting hides.
 8. **Docs**: material for a `docs/portal.md`.
 
@@ -669,7 +669,7 @@ What the portal needs below its pages that isn't built:
 - **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
   the gate's confirming (`src/chatddx/runner/gate.py:admit`) cover parts of it.
-- **Export.** The portal is to export results (`agents/glossary.md`, `:Portal`), and the export isn't planned
+- **Export.** The portal is to export results (`docs/glossary.md`, `:Portal`), and the export isn't planned
   (`docs/backlog.md`, "Export and publication").
 - **Keycloak in front** skips the sign-in page (`agents/wip-deploy.md`, "What holds now", Identity).
 - **What holds a configuration**, and reverse lookups. `docs/backlog.md` ("Unheeded reasoning") leaves what holds a
@@ -729,11 +729,11 @@ From "What the portal shows", not on the pages yet:
 - **Concurrency** is 1 from the variation's page (R9): a run of the sample World's 104 cases sends them one at a
   time. The API's runs take a concurrency up to the endpoint's capacity.
 - **A page that joins a run late** is told its rows, then what the worker says from then on: an item's text from when
-  it joined, the whole once the run's page reloads (`docs/api.md`, "Its events").
+  it joined, the whole once the run's page reloads (`docs/modules/api.md`, "Its events").
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
   page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
 - **Replicates**: a run takes several seeds, or a count drawn, and the run's island takes a count; cleanup, a
-  concurrency and an order are the API's alone so far (`docs/api.md`, "Starting one").
+  concurrency and an order are the API's alone so far (`docs/modules/api.md`, "Starting one").
 - **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 1,000) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.

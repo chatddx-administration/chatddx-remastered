@@ -72,7 +72,7 @@ check canaries.
 
 - **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared (see "Drift
   between runs"), and canary calls stream without events.
-- **No scripted run sends a canary set**: the Worlds' endpoints name none (docs/inventory.md, "Endpoints"), and a
+- **No scripted run sends a canary set**: the Worlds' endpoints name none (docs/modules/inventory.md, "Endpoints"), and a
   scripted run's turns would have to answer its canaries too.
 - Canary calls emit no `Streamed`.
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
@@ -111,7 +111,7 @@ and canary calls.
 - the request a call sent and the request it should have been:
   The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
   fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
-  request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
+  request, from the scorer's reading of the answer (docs/modules/factors.md, "Judge"), aren't rebuilt, and checking a run
   rebuilds none.
 - Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
   (`chatddx.runner.prepare.rendered_again`), not a later round's or a judge's.
@@ -156,7 +156,7 @@ checked, before anything pools them. Nothing plans it yet.
 How records leave the store with the factors they reference, under a seal that covers the whole log, and with what an
 analysis needs frozen: languages and titles. Nothing plans it yet.
 
-- **Records aren't in bundles.** A bundle (docs/factors.md, "Registries and bundles") carries components only; how
+- **Records aren't in bundles.** A bundle (docs/modules/factors.md, "Registries and bundles") carries components only; how
   records travel with the factors they reference, for example for publication, isn't specified.
 - Records don't travel in a `Bundle`.
 - **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
@@ -224,7 +224,7 @@ caught when the run is checked, and a source a scripted run can send tools on.
 - **The answer tool called beside a toolset tool** ends the item, and checking the run notes the other call; no engine
   under test does that. Checking the run doesn't refuse a turn that runs the other call, though the runner never
   writes one.
-- The gate refuses tools on a sensitive source (docs/runner.md, "The gate"), and both Worlds' sources are sensitive, as
+- The gate refuses tools on a sensitive source (docs/modules/runner.md, "The gate"), and both Worlds' sources are sensitive, as
   a real one is, so no scripted run can send a tool round on their cases. The old chatddx's sample runs `broken` and
   `rich` searched the web. A take: a made-up source that isn't sensitive, once calibration wants a tool round to show,
   with the web patched in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
@@ -238,7 +238,7 @@ Decided: a passthrough's refusals stay, and a key vLLM 0.24 doesn't take gets a 
 
 Decided: the arguments that don't change what is computed, such as `--max-num-seqs`, `--gpu-memory-utilization`
 and logging, are the endpoint's rather than the engine's: out of its digest, written with the endpoint by the engine
-import, as its capacity is, and recorded with each run, as its execution settings are (docs/factors.md, "Execution").
+import, as its capacity is, and recorded with each run, as its execution settings are (docs/modules/factors.md, "Execution").
 Each flag in the list says which it is, and one the list doesn't know stays in the engine.
 
 - **Every argument is in the engine's digest**, so changing one that only tunes the server makes another engine: the
@@ -347,7 +347,7 @@ thread, on the owner, the kind and the name.
 - the head an edit names is checked under its thread's advisory lock;
 - **Two saves of one name at once** can both create a configuration, in the repl's `save`.
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
-  naming that owner doesn't pick between them. Only two writers at once can leave an owner two (docs/bench.md, "One
+  naming that owner doesn't pick between them. Only two writers at once can leave an owner two (docs/modules/bench.md, "One
   expectation per case and schema").
 
 ### The database repeats the rules
@@ -391,7 +391,7 @@ Decided: a run may name the digest of the skeleton its look gave, as an edit nam
 variation compiles to another by then.
 
 - **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
-  and against the facts as they are stored then (docs/bench.md, "The variation being tried"), so after a change to the
+  and against the facts as they are stored then (docs/modules/bench.md, "The variation being tried"), so after a change to the
   compiler, or a corrected fact, it can send otherwise than the edit it was built on where nothing was replaced, and
   what its fork varies doesn't say so.
 - **The variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
@@ -433,7 +433,7 @@ Decided: a skeleton compiled from a variation of a configuration is titled by th
   origin's current head but lists the changes from the base.
 - **A variation nobody saved has a long title.** It is described by its whole recipe: "case · diagnoses-tool ·
   recommended · off · qwen3-8b@pelle", where the repl called it "diagnoses-tool+reasoning=off": the configuration it
-  came from and the parts set over it. A run of one is named so and says what it varied (docs/catalog.md, "What a run
+  came from and the parts set over it. A run of one is named so and says what it varied (docs/modules/catalog.md, "What a run
   ran"), but its skeleton is still titled by its recipe.
 
 ### Following keeps a fork's renamed view
@@ -460,8 +460,8 @@ Decided: a person may correct the language of a text only their own threads hold
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
 - A case tagged `en-GB` on an `en` configuration is left out as untranslatable (`Seen.languages` compares tags
   whole); before, it ran with `language.mixed`.
-- **A judge's translations are never used.** A judge configuration runs in no language (docs/bench.md, "The languages
-  it runs in"), and nothing compiles one into a language, so the sample's Swedish of `output.verdict` and
+- **A judge's translations are never used.** A judge configuration runs in no language (docs/modules/bench.md, "The variation
+  being tried"), and nothing compiles one into a language, so the sample's Swedish of `output.verdict` and
   `output.grade` is unreachable. A judge in a language would have its configuration compiled into it, and pin that
   skeleton; it meets "Olof's work" (how a Swedish note is read against an English answer).
 
@@ -607,7 +607,7 @@ Decided: a collaborator may withdraw themselves.
 A finding when a hand-made recipe compiles to a shared configuration's skeleton.
 
 Decided: the save goes through, with an info finding naming the thread that already holds the skeleton, since no write
-is refused on a lint (docs/bench.md, "Writes for the person").
+is refused on a lint (docs/modules/bench.md, "Writes for the person").
 
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
   shared configuration's, compiled to its skeleton, becomes a thread of the person's own, and only a look's `held_by`
@@ -705,8 +705,8 @@ mean it to. Erasing a typed text is agents/wip-clearance.md's ("Before real pati
 
 - Nothing is ever removed from the store, and a leftover is only listed. A collection run as the admin could delete what
   nothing refers to: components no thread, family, run or other component reaches, and the catalog rows of what it
-  deletes. The tiers forbid it on purpose (docs/store.md, "Tiers"), and what counts as unreferenced must include the
-  ledger and every person's threads, deleted ones too, since history answers questions about the past (docs/catalog.md,
+  deletes. The tiers forbid it on purpose (docs/modules/store.md, "Tiers"), and what counts as unreferenced must include the
+  ledger and every person's threads, deleted ones too, since history answers questions about the past (docs/modules/catalog.md,
   "Deleting").
 - Garbage collector for true deletions of non-referenced items.
 
@@ -718,7 +718,7 @@ Decided: upgrade on read: a kind keeps a reader for each of its older versions, 
 stored bytes and their digest stay as they are.
 
 - A schema-version bump strands stored rows. Reading parses every row, and parsing refuses another version
-  (docs/factors.md, "Versions"; docs/ledger.md, "Canonical form and versions"), so after a bump the store can't return
+  (docs/modules/factors.md, "Versions"; docs/modules/ledger.md, "Canonical form and versions"), so after a bump the store can't return
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. "Splits beyond `lines@1`" already considers a bump of the
   scorer's schema version.

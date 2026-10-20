@@ -10,8 +10,8 @@ Fields, classes, functions and errors are in docs/reference/catalog.md.
 
 The catalog refers to
   - factor components by digest
-  - runs and scores by their start records (docs/ledger.md)
-  - people by their identity (docs/identity.md)
+  - runs and scores by their start records (docs/modules/ledger.md)
+  - people by their identity (docs/modules/identity.md)
 
 It holds nothing sensitive, so the reader role may read all of catalog.
 
@@ -24,7 +24,7 @@ history. "Latest" means written last, in the order the database numbered the row
 which is shown, and counts the runs a person started in the last day.
 
 Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
-(docs/store.md, "Tiers"); a garbage collector for unreferenced items waits (docs/backlog.md, "Garbage collection").
+(docs/modules/store.md, "Tiers"); a garbage collector for unreferenced items waits (docs/backlog.md, "Garbage collection").
 
 ### Rules
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
@@ -44,7 +44,7 @@ Every kind of component has threads except two:
 That includes the kinds ops and developers write, such as models, engines, the facts about models, expectation schemas
 and canary sets. They are rarely edited, but threads are where names attach for everything except cases. The facts
 about a model are a thread of the archive's, named by the model, which `chatddx init-data` writes from the facts files
-(docs/facts.md); correcting a fact is a new version of it.
+(docs/modules/facts.md); correcting a fact is a new version of it.
 
 The same component may appear in several threads, and more than once in one: reverting is an edit that points back at
 an earlier version.
@@ -70,7 +70,7 @@ of its own for it.
 
 A *configuration* is a skeleton thread: requests with the recipe it was compiled from (see "Recipes").
 
-A *variation* is a configuration with recipe parts replaced over a version of a configuration (docs/bench.md, "The
+A *variation* is a configuration with recipe parts replaced over a version of a configuration (docs/modules/bench.md, "The
 variation being tried"). It is tried until someone keeps it: as a fork, which then varies from its base (see
 "Forks"), or as a new version of a configuration of their own.
 
@@ -81,7 +81,7 @@ recipe parts they use, what is said about them and their runs, not by their name
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
-model, and the facts about it was worked out from, when it asks them for anything (docs/factors.md, "Compilation").
+model, and the facts about it was worked out from, when it asks them for anything (docs/modules/factors.md, "Compilation").
 The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written skeleton has no
 compilation, so its edits name none.
 
@@ -110,8 +110,8 @@ For any thread, the catalog lists the references of its head that could be updat
 - for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
 
-A model change puts the configuration behind it, and its owner follows it with the facts (docs/bench.md,
-"Following what has moved on").
+A model change puts the configuration behind it, and its owner follows it with the facts (docs/modules/api.md,
+"Following").
 
 A reference is *behind* when a live thread that held it has since moved on to another version. A component can be held
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
@@ -119,7 +119,7 @@ moved on. Deleted threads aren't proposed.
 
 Facts are behind only in a configuration that asks them for something: one with a literal sampling and reasoning
 names none. Its owner follows them by keeping its recipe compiled against the corrected facts, as a new version
-(docs/bench.md, "Following its facts"); init-data does so for the archive's.
+(docs/modules/api.md, "Following"); init-data does so for the archive's.
 
 A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
 against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it
@@ -166,12 +166,12 @@ about any subject. The fields the catalog doesn't use itself are for people and 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
 "Titles"). Names can still be used to look threads up by kind, name and owner, which is how `chatddx init-data`
-recognises its own stanzas when it runs again (docs/curation.md).
+recognises its own stanzas when it runs again (docs/modules/curation.md).
 
 ### Owners
 Whoever creates a thread or a family is its owner, unless they name someone else, and sharing it with someone makes
 them a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
-authorization, this decides what is relevant to show, not who may read it (docs/identity.md, "Authorization").
+authorization, this decides what is relevant to show, not who may read it (docs/modules/identity.md, "Authorization").
 
 Expectations are held to what a person owns, not to what they see. A person is scored against their own expectation of
 a case, and one shared with them counts once they fork it, so nothing someone else shares, edits or restores changes
@@ -180,7 +180,7 @@ second one, an edit that moves another onto that case and schema, an owner entry
 make two is refused.
 
 This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
-vignettes" (agents/glossary.md, "Roles").
+vignettes" (docs/glossary.md, "Roles").
 
 A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
 owner entry as they start, and a person's runs are the runs they own.
@@ -200,10 +200,10 @@ with them; loading the sample data again restores a deleted fork rather than for
 What the portal hides is open (agents/wip-portal.md, "What the docs ask of it").
 
 ### What a run ran
-The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
+The ledger records the trial a run ran (docs/modules/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
 was built on, and each part replaced over it, by the chunk or model it was set to, or none for a part taken out. A
-start over cases in several languages is a run per language (docs/bench.md), and each run after the first says the
+start over cases in several languages is a run per language (docs/modules/bench.md), and each run after the first says the
 first, the run it was started *with*, so the runs of one start are found together. A run started from a trial alone,
 as the runner starts one, says none of it. Running again says what the run it repeats varied, and starts alone.
 
@@ -285,7 +285,7 @@ A scorer digest is called what the person's view calls it: the labels of the hea
 they see, their own first; else of the latest edit in their history that held it; else "view N".
 
 ## Families and repairs
-A case is a component: a vignette plus its appendices (docs/factors.md, "Case"). It has no thread, because changing its
+A case is a component: a vignette plus its appendices (docs/modules/factors.md, "Case"). It has no thread, because changing its
 appendices makes another case, not a new version of the same one. The vignette can also change at its source, under
 the same file name or another. A *family* is the handle that follows one vignette through all of that. Names, tags and
 the rest are said about the family, and every case of the vignette belongs to it.
@@ -309,7 +309,7 @@ source's families, and sorts them into:
 - renamed: the same content under a new id, while the old id is gone;
 - new, and gone. A vignette whose name and content both changed shows up as gone plus new.
 
-A run notices a changed vignette too (docs/factors.md, "Preparing a case").
+A run notices a changed vignette too (docs/modules/factors.md, "Preparing a case").
 
 ### Repairing
 A *repair* moves a family to its vignette's new place. It changes exactly one half of the binding, the id or the
@@ -328,8 +328,8 @@ each new binding to the previous one's id or content.
 
 ## Languages
 The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
-which one, so that each case is sent in its own language (docs/bench.md) and lints can check that a trial doesn't mix
-languages (docs/factors.md, "Lints").
+which one, so that each case is sent in its own language (docs/modules/bench.md) and lints can check that a trial doesn't mix
+languages (docs/modules/factors.md, "Lints").
 
 A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
 of two places:
@@ -356,11 +356,11 @@ The language of any component can be worked out:
 An unknown or disagreeing language gives none.
 
 Vignettes are never translated: a case runs in the language it was written in. So the request follows the case (a
-Swedish case runs under its configuration translated into Swedish; docs/factors.md, "Translations"), and comparing
+Swedish case runs under its configuration translated into Swedish; docs/modules/factors.md, "Translations"), and comparing
 languages means comparing case sets.
 
 ## Storage
-The catalog is a schema of its own (docs/store.md; tables in docs/migrations.md, "catalog"), with a table each for
+The catalog is a schema of its own (docs/modules/store.md; tables in docs/migrations.md, "catalog"), with a table each for
 threads, edits, entries, labels, families, bindings and languages. The writer role writes it and the reader role may
 read all of it. Rows are never changed or deleted.
 
