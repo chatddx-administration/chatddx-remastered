@@ -1,7 +1,7 @@
 # The portal: work in progress
 
 The portal is the web interface where people write their components and start and watch runs, and that is to export
-results (`agents/glossary.md`, "Terms": Portal). It is the bench's third edge, after the repl and the API
+results (`agents/glossary.md`, `:Portal`). It is the bench's third edge, after the repl and the API
 (`docs/bench.md`; `docs/api.md`). This file plans it.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
@@ -669,7 +669,7 @@ What the portal needs below its pages that isn't built:
 - **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
   the gate's confirming (`src/chatddx/runner/gate.py:admit`) cover parts of it.
-- **Export.** The portal is to export results (`agents/glossary.md`, "Terms": Portal), and the export isn't planned
+- **Export.** The portal is to export results (`agents/glossary.md`, `:Portal`), and the export isn't planned
   (`docs/backlog.md`, "Export and publication").
 - **Keycloak in front** skips the sign-in page (`agents/wip-deploy.md`, "What holds now", Identity).
 - **What holds a configuration**, and reverse lookups. `docs/backlog.md` ("Unheeded reasoning") leaves what holds a
