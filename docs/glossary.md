@@ -11,13 +11,6 @@ if anywhere.
 - "Terms" holds one definition per term, true to the code.
 - "Roles" holds the people's roles and what each authors.
 - "Findings" holds every `Finding(…)` made in `src/chatddx/`, by where it is raised.
-```
-AGENT: remove
-The glossary has no "Decided" section any more.
----
-
-```
-- "Decided" holds what the human decided on earlier open items.
 
 ## Terms
 

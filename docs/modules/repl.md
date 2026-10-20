@@ -7,16 +7,8 @@ documented elsewhere: the runner and the scoring pass (docs/modules/runner.md), 
 names, owners and titles (docs/modules/catalog.md), endpoints and clearance (docs/modules/inventory.md), and model facts and their
 lints (docs/modules/facts.md).
 
-```
-AGENT: replace
-docs/repl-manual.md was removed with the model handles, and nothing replaces it.
----
 This document describes what the shell does and why. Its names and what they raise are in docs/reference/repl.md,
 and its commands in `src/chatddx/repl/commands.py:COMMANDS`.
-```
-This document describes what the shell does and why. Its names and what they raise are in docs/reference/repl.md,
-and its commands in `src/chatddx/repl/commands.py:COMMANDS`; how to use it, command by command, is the manual
-(docs/repl-manual.md).
 
 The repl writes only runs and scores, through the runner and the scoring pass, a person's saved configurations
 (`save`), and the expectations they take (`take`). Authoring, the chunks, cases, appendices and expectations a person

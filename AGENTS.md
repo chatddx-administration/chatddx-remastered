@@ -59,11 +59,11 @@ A thing under development is in one of the following stages:
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
-4. Named - Greppable and referred to as `<thing>`
+4. Named - Greppable and referred to as `<name>`
 5. Itemized - Has one or more items in `docs/backlog.md`
-6. Planned - Has a concept of a plan in `agents/plan-<thing>.md`
-7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
-8. Solidified - Dependable and documented in `docs/<thing>.md` and `docs/reference/<thing>.md`
+6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
+7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
+8. Solidified - Dependable module documented in `docs/module/<name>.md` and `docs/reference/<name>.md`
 9. Cemented - TBD
 10. Protected - TBD
 
@@ -72,7 +72,7 @@ Docs are never edited and reworked in the same commit: Move verbatim, commit,
 then edit or insert suggestions if permitted.
 
 ### Stage 5 and above
-docs *move* between backlog, plan, wip and doc, so a `thing` is never explained in more than one doc at a time.
+docs *move* between backlog, plan, wip and doc, so a thing is never explained in more than one doc at a time.
 
 ### Stage 8 and above
 Guarded by rule 1 and `chatddx reference`.
