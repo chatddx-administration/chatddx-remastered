@@ -366,34 +366,3 @@ The database keeps an edit on its thread's kind and on a stored component of tha
 kind, a skeleton edit's compilation on one of that very skeleton, a label on an edit of a scorer thread, once per part
 and position, written in the edit's transaction by its writer, and a language on a stored component of the kind it
 records. At tier 2 it repeats the rules above that two writers at once could break.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. |
-| Thread | The versions of one component that people edit, in order. |
-| Edit | One version on a thread. |
-| Head | A thread's latest edit, its current version. |
-| Fork | A thread started from a version of another thread of the same kind, its origin. |
-| Base | The version a fork is compared with: the one it came from, or the one its changes were last re-applied onto. |
-| Configuration | A skeleton thread: requests, each version with the recipe it was compiled from. |
-| Variation | A configuration with recipe parts replaced over a version of a configuration: tried, or kept as a fork or a new version. |
-| Varies | Of a fork: what its head changes from its base. |
-| Proposal | The origin's head with a fork's changes on top. |
-| Behind | A reference whose thread has moved on, or a case whose family has a newer binding. |
-| Entry | Something said about a thread, a family, a run or a score: a name, description, tag, owner, collaborator, deleted flag or language. |
-| Subject | What an entry is about. |
-| Owner, collaborator | Who a thread or family belongs to, and who it is shared with. Together they decide what a person sees. |
-| Title | How something without a name is shown, built from what it holds. |
-| Label | The name of a scorer's view or resource. |
-| Family | The handle on one vignette through renames and edits at its source. |
-| Binding | Where a family's vignette is: source, id and fingerprint. The latest is current. |
-| Survey | Comparing what a source lists with where its families are bound. |
-| Repair | Moving a family to its vignette's new id or content, and rebinding what depends on it. |
-| Replacement | The case a stale case becomes under its family's current binding. |
-| Latest wins | Of the rows about one thing, the one written last is what holds. |

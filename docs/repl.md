@@ -37,20 +37,14 @@ what they're scored against never changes under them when someone else edits the
 
 ## The variation
 The variation is what the shell runs: the edit of a configuration thread it holds, its recipe, and the parts set on it
-```
-AGENT: replace
-The last sentence of this paragraph: a handle with several endpoints stops the repl from starting now, so what
-can't run is the person's to change.
----
-A deleted handle, one no endpoint here serves, a model behind its handle, and a hand-written configuration with no
-handle named can't run. The repl doesn't start on a World whose weights are held by several model threads or served
-at several endpoints.
-```
 (`TriedVariation`), its model among them. It runs under its model's handle (docs/bench.md, "The model"), at the one
 endpoint the handle resolves to, and is rendered and linted for that endpoint's engine, the handle's latest
 (`Repl.at`). A hand-written configuration has no model part and runs under the handle `under MODEL` names, which the
-shell holds until a configuration with a model part is used. A handle that doesn't resolve to one endpoint, which is
-ops' to mend, a model behind its handle, and a hand-written configuration with no handle named can't run.
+shell holds until a configuration with a model part is used.
+
+A deleted handle, one no endpoint here serves, a model behind its handle, and a hand-written configuration with no
+handle named can't run. The repl doesn't start on a World whose weights are held by several model threads or served
+at several endpoints.
 
 Whenever the variation changes, the shell says the handle it runs under, `variation: plan × qwen3-8b-awq`, or why it
 can't run, as a note rather than a failure, so a piped session goes on; then what the lints find in it: `factors.lint`
@@ -235,23 +229,3 @@ its scoring as it would be built now: the scorer, and the person's own expectati
 Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks, models and
 engines by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags,
 each once.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-Its Cell row names what the repl no longer has (agents/glossary.md, "Where the docs part", 2).
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Repl, shell | `chatddx repl`, for one person over a World. |
-| Cell | What the shell runs: a configuration, its model one of its parts, and the endpoint named for it, if any. |
-| Variation | A configuration thread's edit with parts set on it: what the shell holds and runs, under its model's handle. |
-| Translated | A run whose skeleton is the configuration's compiled into its cases' language by its translations. |
-| Left out | Cases in a language the configuration's translations don't cover: said, and not sent. |
-| Case title | A family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices. |
-| Outcome | How an item went, from its last call and its answer. |
-| Salvaged | A structured answer cut short, read with its structure closed. |
-| Left to score | A scorer that applies to a run with no whole score under its scoring as built now. |
-| No target | A view a case's expectation gives nothing to hold an answer to. |

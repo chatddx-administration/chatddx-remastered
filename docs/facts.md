@@ -124,21 +124,3 @@ chatddx ships facts about the two models of the sample:
   on. It takes a thinking budget, and its makers recommend different sampling with thinking on and off.
 - openai/gpt-oss-20b always reasons, at a low, medium or high effort, so off and minimal are refused and land on low
   as their nearest, xhigh on high, and a thinking budget is refused. On collapses into medium, its default.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Facts | What is known about a model that a request doesn't say, written by people, one model at a time, and stored as a component, a thread per model. |
-| Level | What a request asks of reasoning: off, on, minimal, low, medium, high or xhigh. |
-| Default | The level a model uses when a request says nothing about reasoning. |
-| Collapse | A level that is asked for as another. |
-| Refusal | A fact that says the model can't do something, and why. |
-| Land | Where a level ends after its collapses and nearests: on a way of asking, a refusal, or nothing known. |
-| Recommended sampling | The sampling a model's makers recommend for a level. |
-| Nearest | The level a refused level lands on instead, when its refusal names one. |
-| Intent | A reasoning level or the recommended sampling, asked for in a chunk and worked out from the facts when a recipe is compiled. |

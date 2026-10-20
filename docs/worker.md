@@ -85,22 +85,6 @@ The worker's tests run it on a thread against the fake vLLM, beating and losing 
 test stops it mid-scoring. The queue's tests are the store's (src/chatddx/store/test/), and the API's and the
 portal's run an app with a worker in its process (src/chatddx/api/test/, src/chatddx/portal/test/).
 
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Worker | What claims queued jobs and works them, in a process of its own or the app's. |
-| Job | A started run to finish and score when asked, or a finished run to score again, for its owner. |
-| Claim | Taking the next job that fits, and marking it under way. |
-| Beat | Marking a worker and its jobs as seen, and hearing whether each is to halt or its owner has paused. |
-| Lost | A job under way whose worker hasn't been seen for a while, claimed again. |
-| Slots | What a job holds of its endpoint's `max_jobs`: its run's concurrency. |
-| Deadline | How long a stopping worker's scorings go on. |
-
 ## Elsewhere
 - **The queue's tables and writes**: docs/store.md, "The Queue"; src/chatddx/store/queue.py, and the `worker`
   schema's migrations (docs/migrations.md).

@@ -139,19 +139,13 @@ An endpoint may name a canary set, by digest, which every run at it sends, so th
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
-```
-AGENT: replace
-The last sentence of this paragraph, by agents/wip-error-handling.md's model: what a start can rule out crashes it.
----
+A run goes to the endpoint its model's handle maps to, and a judge's calls to the one its handle maps to; researchers
+name no endpoint. Ops map each handle to exactly one engine and one endpoint, on one hardware class.
+
 Weights served at several endpoints, or held by several model threads, stop `chatddx portal`, `api`, `run`,
 `worker`, `repl` and `scripted-runs` from starting, make init-data refuse and write nothing, and make the engine
 import refuse to write (src/chatddx/bench/handles.py:broken). A handle no endpoint here serves, as another World's,
 and a deleted one are refused to the researcher, who picks another.
-```
-A run goes to the endpoint its model's handle maps to, and a judge's calls to the one its handle maps to; researchers
-name no endpoint. Ops map each handle to exactly one engine and one endpoint, on one hardware class. A handle that
-doesn't resolve to one is ops' error: the inventory check reports it at init-data, as a worker starts and at the
-engine import, and a researcher's run or scoring is refused saying it is ops'.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
@@ -222,17 +216,9 @@ The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a contain
 engine's values come from its host, not from people: the engine import reads each host's report and writes the
 factors and the inventory entries together.
 
-```
-AGENT: replace
-The import refuses two servers serving one model's weights now, rather than reporting it.
----
 For each server, the import puts each server's model under the handle ops give it, and refuses to write two servers
-serving one model's weights. The models and engines go to the World's `engines.toml`, and the
-```
-For each server, the import puts each server's model under the handle ops give it and its inventory check reports a
-handle it leaves without exactly one endpoint. The models and engines go to the World's `engines.toml`, and the
-endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to change them, import again
-rather than edit.
+serving one model's weights. The models and engines go to the World's `engines.toml`, and the endpoints and hosts to a
+file an inventory includes. Both files are rewritten whole, so to change them, import again rather than edit.
 
 The endpoint's address is the report's, or a host name given in its place, with the server's port. The host's
 listening address, the capacity and the engine's environment come from the server's configuration, without the
@@ -268,23 +254,3 @@ The import's findings have the engine's digest as subject:
 Before it writes, the import also checks the endpoints and hosts it writes against the models and engines it writes,
 with the inventory check (see "Reaching an engine"), and prints the findings after its own. As it refuses two servers
 at one address and says where each engine's model and template are, the check finds nothing in what it writes today.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Inventory | Files written by ops that say where things are: vignette sources, endpoints and hosts. For now, they also say which endpoints are cleared for which sources. |
-| World | A directory with an inventory, the files it includes, and the factors of the engines its endpoints serve. |
-| Source | Where a set of vignettes is fetched from, by id. Its name is part of every case built from it. |
-| Endpoint | Where one engine is served: its address, capacity and secret, and the host that runs it. |
-| Host | A machine that runs local engines, and where it keeps the model files and chat templates they pin. |
-| Location | Where a host keeps a file, written the way the host reads it. |
-| Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. |
-| Include | A file whose endpoints and hosts an inventory takes as its own. |
-| Bound | A data set's judge, given the handle whose latest engine judges it. |
-| Configurations | The handle whose model a data set's configurations are made for. |
-| Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |

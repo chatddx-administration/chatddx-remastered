@@ -146,13 +146,8 @@ which loading stores for the models its engines serve.
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
-```
-AGENT: insert
-init-data now checks what a process checks as it starts before it commits, and refuses, writing nothing.
----
 Before it commits, a loading checks what a process checks as it starts (src/chatddx/bench/handles.py:broken): weights
 held by several model threads, or served at several endpoints, refuse it, and nothing is written.
-```
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
 each endpoint would refuse, and what is likely a slip (src/chatddx/inventory/check.py).
 
@@ -253,20 +248,3 @@ The Worlds' content is tested beside the names tests share, in src/chatddx/test/
 
 The first two read the test World and every World; `test_sample.py` reads the sample, loaded once for it and
 test_sample_world.py (src/chatddx/conftest.py, `sampled`).
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Curation | Getting authored content into the store as the archive's, keeping it in step with its files, and taking it out of people's way. |
-| Archive | The person who owns what a data set loads, and shares it with everyone else. |
-| Data set | A directory of authored files: factors, cases by language, and what they load. |
-| Record | A named entry of a data set's factors file, loaded as a thread. |
-| Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
-| Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
-| Leftover | An archive thread or family the data set no longer names. |
-| Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. |

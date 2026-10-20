@@ -693,16 +693,8 @@ The slots and turns wait for endpoints that are shared and busy; the lost endpoi
 - Decided: queue order, as built, then turns per owner at each endpoint once people wait on each other. Turns aren't
   built.
 - **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
-```
-AGENT: replace
-"no longer resolves to one endpoint" reads as deleted, or served by no endpoint here, since several are ruled out
-as a process starts.
----
 - **A job whose handle moved on** to another engine while it was queued fails at the gate and says to run it
   again; one whose handle was deleted, or that no endpoint here serves any more, fails saying to pick another.
-```
-- **A job whose handle moved on** to another engine while it was queued fails at the gate and says to run it
-  again; one whose handle no longer resolves to one endpoint fails as ops' error.
 
 ### Garbage collection
 A collection, run as the admin, of what nothing refers to, with the ledger and every person's threads, deleted ones too,

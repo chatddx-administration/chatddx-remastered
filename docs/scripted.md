@@ -93,15 +93,3 @@ src/chatddx/scripted/test/.
   (src/chatddx/repl/test/test_reviewing.py).
 - `ran` (src/chatddx/conftest.py) is `curated` with alice's scripted runs each run once, copied for each test, for
   tests that read runs they don't make: the portal's (src/chatddx/portal/test/test_reading.py).
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Scripted run | A run made to be looked at, written as a file in a World's `_runs/` and answered by the fake from its script. |
-| Script | The turns the fake answers with, one per attempt. |
-| Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. |

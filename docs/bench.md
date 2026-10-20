@@ -392,31 +392,3 @@ alice and her giftbag; bob is added with nothing. The database is made once a se
 A person can only come to own two expectations of a case under one schema through two writers at once, so that is how
 the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's
 check before the other has written.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Bench | What one person sees and does, whatever the edge. |
-| Edge | What a person reaches the bench through: the repl, the API, the portal. |
-| Sees | Owns or collaborates on, while it is live. |
-| Own | Owned by the person, while it is live. |
-| Word | What a kind of thread is asked for by: configuration, a recipe part, engine and the rest. |
-| Variation being tried | A configuration with recipe parts replaced over it, or none, that nobody has saved. |
-| Label | Of a variation: its short title, `NAME+PART=CHUNK`, not stored. Of a scorer: what an edit calls one of its views or resources. |
-| Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
-| Taking | Forking a thread shared with the person to make it their own, as an expectation must be to count. |
-| To choose from | A case with several expectations of the person's own under one schema or several shared with them. |
-| Left to score | Scorers that applies in finished run that has no whole score of it under the scoring built now. |
-| Carrying | Editing an expectation onto another case of its family, with the same data. |
-| Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
-| Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
-| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
-| Own language | A configuration's: its recipe's texts', or a hand-written skeleton's. It is sent in it as written. |
-| Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
-| Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
-| Typed case | A case whose vignette is a text the person typed, kept in a database source. |

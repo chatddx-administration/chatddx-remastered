@@ -217,24 +217,3 @@ for queries. Stored records are never changed or deleted.
   included, are read back in the order they were written; rows from before the counter are numbered in no particular
   order. Each write tells those listening for the run that rows have landed (docs/store.md, "Records").
 - The reader role can't read the ledger at all, which is the store's answer to "Sensitive records".
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Record | What the rig writes when something happens; never changed. |
-| Plan, conduct, observation | What a record holds: what a run or a score is set to do, what the rig did, and what the world answered. |
-| Ledger | All records: the run and score logs. |
-| Log | A run or a score: a start record, item records and a finish record, only ever added to. |
-| Stage | A log's start or finish record. |
-| Item | One case's replicate in a run: its first request and each tool round's; or how one view graded one run item. |
-| Call | One exchange with an engine. |
-| Request | The body one call sends to an engine. |
-| Attempt | One try at sending a call's request. |
-| Tool round | Running the tools a response called, and sending the next request. |
-| Seal | The hash over a log's records, kept in its finish record. |
-| Attestation | What the engine says about itself: the model it answered as and the prompt it read. |

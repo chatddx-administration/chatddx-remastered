@@ -105,19 +105,3 @@ ago may still be ending on the server, and the admin can't end a writer's sessio
 
 The admin creates and migrates databases; tests connect as the writer, except where they need the
 admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when the database can't be reached.
-
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Schema | One module's tables, in a namespace of their own. |
-| Tier | How much integrity the database enforces: structure, then grants, then the rules held in Python. |
-| Migration | A file of SQL a deployment applies once, at its tier. |
-| Admin | The role that owns the database and runs the migrations. |
-| Writer | The role the app connects as. |
-| Reader | The role that may read what isn't sensitive. |
-| Closure | A component and everything it references, transitively. |

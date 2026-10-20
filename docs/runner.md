@@ -180,23 +180,6 @@ breaks its schema. Drift of a vignette is noted as preparing a case notes it (do
 
 Each is made where it is found, as `Finding(…)` in `src/chatddx/runner/`.
 
-```
-AGENT: remove
-Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
-```
-## Terms
-
-| Term | Meaning |
-| --- | --- |
-| Runner | What sends a trial's requests and writes the run. |
-| Scoring pass | What grades a finished run with a scoring and writes the score. |
-| Gate | What refuses an endpoint before sensitive content goes to it. |
-| Endpoint | Where an engine is reached, by the World inventory's name (docs/inventory.md, "Endpoints"). |
-| Round | Running the tools a response called and sending the next request. |
-| Cutoff | Ending a call early, keeping what came: a runaway, or a timeout. |
-| Stop, interrupt, halt | Ending a run after the items under way; at once, raising; at once, from another thread. |
-| Verdict | A judge's answer, as its skeleton's contract reads it. |
-
 ## Elsewhere
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
 - **`max_jobs` across runs**, and a lost run resumed: `docs/worker.md`, "Claiming".
