@@ -51,6 +51,12 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 | `_data/` | researchers and clinicians | the data set (docs/curation.md, "Data sets") |
 | `_runs/` | developers | scripted runs (docs/scripted.md) |
 
+````
+AGENT: replace
+The `texts-<lang>.toml` line below: a data set's record is a stanza now (agents/glossary.md, "Decided", 1).
+---
+    texts-<lang>.toml  chunks that hold text, written in that language; translations into it, grouped by stanza
+````
 ```
 worlds/<name>/
   inventory.toml   sources, clearance, judges bound to handles, configurations, include = ["endpoints.toml"]
@@ -71,6 +77,16 @@ take another's vignettes or endpoints without copying them.
 
 This repository has three, in `worlds/`:
 
+```
+AGENT: replace
+A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
+---
+- The test World: what the tests run on, built so that each stanza exercises something a test reads. Four fake
+  endpoints on this machine (one with no reasoning parser and no tool flags, under weights of its own,
+  `qwen3-8b-bare`, one serving a made-up model whose facts are the World's own `facts.toml`), a remote endpoint that
+  only a fake stands in for, nine vignettes each carrying a quirk of its own, and its data set in `_data/`. Its tools
+  are the runner's test tools, so it loads only under pytest.
+```
 - The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
   endpoints on this machine (one with no reasoning parser and no tool flags, under weights of its own,
   `qwen3-8b-bare`, one serving a made-up model whose facts are the World's own `facts.toml`), a remote endpoint that
@@ -121,6 +137,13 @@ server answers as. Changing the engine changes its digest, so the endpoint has t
 the new engine from then on; runs under the handle on its earlier engines stay grouped under it (docs/bench.md).
 Every endpoint has an address, and a local engine's needs a host too to be started.
 
+```
+AGENT: replace
+A remote model names the provider, not the engine (src/chatddx/factors/engine.py:RemoteModel).
+---
+A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its model, which names
+its provider. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
+```
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its provider and
 model. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
 

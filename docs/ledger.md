@@ -196,6 +196,18 @@ items, judges or seeds that don't exist. Everything else is a warning, of four k
 - **Sealed**: nothing changed after the log was finished.
 
 ## Findings
+```
+AGENT: replace
+The last sign-off replaced the second bullet rather than the second sentence; this puts both back, with the levels
+where each comes from.
+---
+A finding (docs/factors.md, "Errors and findings") says what it is about: an item, a tool, a scorer, the run or the
+score. They come from
+- the runner and the scoring pass, while they run, kept in the finish record (see "Run finish" and "Score finish"):
+  warnings, but for the infos `run.resumed` and `answer.salvaged`;
+- checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them: all
+  warnings.
+```
 A finding (docs/factors.md, "Errors and findings") says what it is about: an item, a tool, a scorer, the run or the
 score. All of the ledger's findings are warnings. They come from
 - the runner and the scoring pass, while they run, kept in the finish record (see "Run finish" and "Score finish");

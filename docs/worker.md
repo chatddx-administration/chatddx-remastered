@@ -25,6 +25,16 @@ included; a scoring alone holds none. It keeps the scorers it has finished, so t
 scores what is left.
 
 ## Claiming
+```
+AGENT: replace
+An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
+---
+Jobs are taken in queue order, the time they were queued and then their id, whoever owns them. A job is taken when
+its slots fit within its endpoint's capacity, counting the jobs under way there, and its owner hasn't paused. A job
+asked to halt is taken whatever its slots, to be halted, and so is one at an endpoint the inventory doesn't name, which
+fails at the gate. Claims take turns, so that several workers count an endpoint's slots alike, and a claimed job is
+locked, so that two workers never take the same one.
+```
 Jobs are taken in queue order, the time they were queued and then their id, whoever owns them. A job is taken when
 its slots fit within its endpoint's `max_jobs`, counting the jobs under way there, and its owner hasn't paused. A job
 asked to halt is taken whatever its slots, to be halted, and so is one at an endpoint the inventory doesn't name, which

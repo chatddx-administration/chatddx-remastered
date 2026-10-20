@@ -48,11 +48,25 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once. Whoever reads the catalog asks the catalog, over the rows the store reads.
 
 ### The Queue
+```
+AGENT: replace
+An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
+---
+The Queue is a list of Jobs that points at their started run. Workers claims the next queued job by locking its row, so two
+workers never take the same one, and claims take turns, so that the runs on an endpoint keep to its capacity between them.
+```
 The Queue is a list of Jobs that points at their started run. Workers claims the next queued job by locking its row, so two
 workers never take the same one, and claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them.
 
 Heads-up: The worker's queue is state, not factors or records, and is updated in place.
 
+```
+AGENT: replace
+An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
+---
+Claims take turns, so that the runs on an endpoint keep to its capacity between them. Queuing, halting, pausing,
+ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
+```
 Claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them. Queuing, halting, pausing,
 ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
 

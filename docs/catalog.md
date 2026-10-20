@@ -162,6 +162,14 @@ Every field but the language, the varied edit, the replaced parts and the run a 
 about any subject. The fields the catalog doesn't use itself are for people and the portal.
 
 ### Names
+```
+AGENT: replace
+A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
+---
+A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
+"Titles"). Names can still be used to look threads up by kind, name and owner, which is how `chatddx init-data`
+recognises its own stanzas when it runs again (docs/curation.md).
+```
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
 "Titles"). Names can still be used to look threads up by kind, name and owner, which is how `chatddx init-data`
 recognises its own records when it runs again (docs/curation.md).

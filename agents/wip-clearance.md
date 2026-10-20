@@ -183,7 +183,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      (`src/chatddx/api/runs.py:215-229`, `src/chatddx/api/telling.py:166`), and each app one more for its listener
      (`src/chatddx/api/listening.py:114`).
    - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:178-185`). A
-     run's job is held to its endpoint's `max_jobs`, but a scoring alone holds no slots
+     run's job is held to its endpoint's capacity, but a scoring alone holds no slots
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
      counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as are queued.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`

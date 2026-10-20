@@ -685,9 +685,24 @@ The repl's runs and the worker's judge calls hold slots at their endpoints; clai
 endpoint, and "ahead" says what the turns make it; and a job at an endpoint the inventory lost waits rather than fails.
 The slots and turns wait for endpoints that are shared and busy; the lost endpoint can go now.
 
+```
+AGENT: replace
+An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
+---
+- The repl sends in its own process, and its runs don't count against an endpoint's capacity. It could queue its runs
+  and follow their events, or send in its own process but hold slots in the queue, as a worker claiming its own job.
+  Take: as it is, and holding slots once endpoints are shared and busy.
+```
 - The repl sends in its own process, and its runs don't count against an endpoint's `max_jobs`. It could queue its runs
   and follow their events, or send in its own process but hold slots in the queue, as a worker claiming its own job.
   Take: as it is, and holding slots once endpoints are shared and busy.
+```
+AGENT: replace
+An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
+---
+- **Capacity beside the worker.** The repl's runs and judge calls don't count. vLLM queues what's over
+  `--max-num-seqs` rather than refusing it, so the cost is batching that the runs' executions don't show.
+```
 - **`max_jobs` beside the worker.** The repl's runs and judge calls don't count. vLLM queues what's over
   `--max-num-seqs` rather than refusing it, so the cost is batching that the runs' executions don't show.
 - Decided: queue order, as built, then turns per owner at each endpoint once people wait on each other. Turns aren't

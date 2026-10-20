@@ -165,7 +165,7 @@ inventory.3 and inventory-api.3, from G16, as tracked in agents/wip-clearance.md
 - Endpoint names are only a convention, and renaming one drops its clearance.
 
 inventory.4, inventory-api.4 and runner.10, from G20, as stale: the worker's claims hold a job's slots within its
-endpoint's `max_jobs` across workers, and resume a lost run (docs/worker.md, "Claiming"):
+endpoint's capacity across workers, and resume a lost run (docs/worker.md, "Claiming"):
 
 **inventory.4** · From docs/inventory.md:293, "Open design issues", "Smaller issues"
 
@@ -174,11 +174,11 @@ endpoint's `max_jobs` across workers, and resume a lost run (docs/worker.md, "Cl
 
 **inventory-api.4** · From docs/inventory-api.md:269, "Known gaps"
 
-- `max_jobs` holds per run, not per endpoint.
+- Capacity holds per run, not per endpoint.
 
 **runner.10** · From docs/runner.md:230, "Open design issues", "Smaller issues"
 
-- **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
+- **Capacity across runs** belongs to the worker, and so does asking for a lost run to resume.
 
 catalog.4 and catalog-api.4, from G26, as holding: the database keeps a family to its source, and nothing changes one:
 

@@ -182,8 +182,8 @@ Decided (phase 4), from the options R1 to R12:
   "Starting one").
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
-- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs, which the worker
-  does; a run's request then chooses a concurrency up to `max_jobs` (`docs/api.md`, "Starting one"). Since
+- **R9. Concurrency** stays 1 until the worker shares an endpoint's capacity between runs, which the worker
+  does; a run's request then chooses a concurrency up to its capacity (`docs/api.md`, "Starting one"). Since
   step 3 the API's runs take one; the variation's island doesn't offer it yet.
 - **R10. On the jobs in the app's process**; the worker takes their place with the API as it is. Since step 3 they
   are the worker's queue's.
@@ -333,7 +333,7 @@ Open:
   part at a time at one endpoint.
 - **How many runs** a confirmation starts before it warns, with `settings.RUNS_PER_DAY` runs a day.
 - **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
-  endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
+  endpoint, so runs on one endpoint take turns within its capacity; the repl's runs and judge calls aren't counted
   (`docs/backlog.md`, "Claims: slots, turns and a lost endpoint").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
   export (`docs/backlog.md`, "Export and publication"). It is what would bring a kept grouping back.
@@ -727,7 +727,7 @@ From "What the portal shows", not on the pages yet:
 
 ### What starting and watching a run leaves
 - **Concurrency** is 1 from the variation's page (R9): a run of the sample World's 104 cases sends them one at a
-  time. The API's runs take a concurrency up to the endpoint's `max_jobs`.
+  time. The API's runs take a concurrency up to the endpoint's capacity.
 - **A page that joins a run late** is told its rows, then what the worker says from then on: an item's text from when
   it joined, the whole once the run's page reloads (`docs/api.md`, "Its events").
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
