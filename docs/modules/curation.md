@@ -41,6 +41,13 @@ The test World carries the tests' data set (worlds/test/_data/).
 
 ### Factors
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
+(docs/surfaces/factors.md).
+```
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
 (docs/reference/factors.md).
 

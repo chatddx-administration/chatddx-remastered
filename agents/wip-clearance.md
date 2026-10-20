@@ -41,7 +41,7 @@ adds them). The bench leaves a judged scorer that `bar` refuses out of what appl
 applies to a run").
 
 ### Sensitive sources
-Every source, a directory or a database, is sensitive unless declared otherwise (`docs/reference/inventory.md`,
+Every source, a directory or a database, is sensitive unless declared otherwise (`docs/surfaces/inventory.md`,
 `Source`).
 The gate enforces it against the inventory's `[cleared]` table until the clearance pipeline replaces the table. A
 `[cleared]` entry for a source that isn't sensitive clears nothing and is said so (`cleared.not_sensitive`,
@@ -81,7 +81,7 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 - Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the
   responses.
 - The runner runs tools (`docs/modules/runner.md`, "Tool rounds"), and the gate refuses them on a sensitive source until a
-  tool can be cleared. What ships a tool is in `docs/reference/factors.md` (`Tool`).
+  tool can be cleared. What ships a tool is in `docs/surfaces/factors.md` (`Tool`).
 
 ### Judges
 - A judge's engine falls under the hard block: a judge prompt always holds a completion, which is sensitive. The

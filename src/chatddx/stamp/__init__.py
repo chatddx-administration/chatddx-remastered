@@ -20,7 +20,7 @@ __all__ = [
     "stamped",
 ]
 
-DOCS = settings.PROJECT_ROOT / "docs" / "reference"
+DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"
 FINDING = "chatddx.factors.base.Finding"
 
 

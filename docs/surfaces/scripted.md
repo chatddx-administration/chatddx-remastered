@@ -1,6 +1,6 @@
 # `chatddx.scripted`
 
-Written by `chatddx stamp` from `src/chatddx/scripted/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/scripted/`; how to read it is in [docs/surfaces/README.md](README.md).
 
 ## `fake_at`
 `src/chatddx/scripted/fakes.py:fake_at`

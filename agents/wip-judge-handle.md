@@ -43,7 +43,7 @@ Decided: judges name a handle, as the take moved here from the backlog has it (s
 - **Edges**: `POST /api/judges/asked` renders the handle's latest engine's name, else `‹model›`; the portal's judge
   form sends the handle's weights (`frontend/src/lib/scorer/JudgeEditor.svelte`); scripted runs start a fake at each
   judge's handle's endpoint.
-- **Docs**: the reference's sign-off, and `AGENT` suggestions in `docs/modules/factors.md`, `docs/modules/facts.md`, `docs/modules/api.md`,
+- **Docs**: the surfaces' stamps, and `AGENT` suggestions in `docs/modules/factors.md`, `docs/modules/facts.md`, `docs/modules/api.md`,
   `docs/modules/bench.md`, `docs/modules/runner.md`, `docs/chatddx.md`, `docs/modules/catalog.md` and `docs/modules/inventory.md`.
 - **Tests**: `test_factors.py`, a scoring's engines; `test_judges.py`, judges by weights and the plan's engines;
   `test_score.py`, scorings pinning engines; `test_seen.py`, a scoring pinned, left out and behind;

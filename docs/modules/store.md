@@ -7,6 +7,13 @@ identity (docs/modules/identity.md) and the catalog (docs/modules/catalog.md).
 Catalog, factors and ledger are append-only, and the database enforces it at tier 2. Identity and the worker queue allow
 updates.
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what the store keeps, how the database guards it, and how it is reached. Classes, fields and
+errors are in docs/surfaces/store.md, and each schema's tables in its migrations (docs/migrations.md).
+```
 This document describes what the store keeps, how the database guards it, and how it is reached. Classes, fields and
 errors are in docs/reference/store.md, and each schema's tables in its migrations (docs/migrations.md).
 

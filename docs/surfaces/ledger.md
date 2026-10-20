@@ -1,6 +1,6 @@
 # `chatddx.ledger`
 
-Written by `chatddx stamp` from `src/chatddx/ledger/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/ledger/`; how to read it is in [docs/surfaces/README.md](README.md).
 
 ## `attest_model`
 `src/chatddx/ledger/call.py:attest_model`

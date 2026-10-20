@@ -1,6 +1,6 @@
 # `chatddx.api`
 
-Written by `chatddx stamp` from `src/chatddx/api/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/api/`; how to read it is in [docs/surfaces/README.md](README.md).
 
 ## `AGAIN`
 `src/chatddx/api/listening.py:AGAIN`

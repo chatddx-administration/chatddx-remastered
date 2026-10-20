@@ -4,6 +4,13 @@ The bench is what one person sees and does, whatever edge they reach it through.
 see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the repl
 (docs/modules/repl.md), the API (docs/modules/api.md) and the portal (agents/wip-portal.md).
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what the bench does and why it is shaped like it is. Names, signatures and errors are in
+`docs/surfaces/bench.md`.
+```
 This document describes what the bench does and why it is shaped like it is. Names, signatures and errors are in
 `docs/reference/bench.md`.
 

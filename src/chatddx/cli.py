@@ -654,13 +654,13 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     stamping = commands.add_parser(
         "stamp",
-        help="write docs/reference/<package>.md from the code, marking what changed as "
+        help="write docs/surfaces/<package>.md from the code, marking what changed as "
         + "a git conflict for a human to stamp",
     )
     _ = stamping.add_argument(
         "--check",
         action="store_true",
-        help="write nothing, and fail when a reference is behind the code",
+        help="write nothing, and fail when a surface is behind the code",
     )
     _ = stamping.add_argument(
         "package",

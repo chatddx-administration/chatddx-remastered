@@ -9,7 +9,7 @@ from .code import Code, Def, Node, decorated, private
 from .trace import VALIDATORS, Found, Raised, Trace
 
 LEGEND = """\
-# Reading a reference
+# Reading a surface
 
 Each file here is written by `chatddx stamp` from a package of `settings.STAMPED`: an entry for each public name,
 sorted alphabetically whatever its case, so that a class's members follow it. An entry's heading is the name, with its
@@ -119,7 +119,7 @@ class Page:
             f"# `{self.package.path}`",
             "",
             f"Written by `chatddx stamp` from `{directory}/`; how to read it is in "
-            + "[docs/reference/README.md](README.md).",
+            + "[docs/surfaces/README.md](README.md).",
         ]
         for _, _, written in entries:
             lines += ["", *written]

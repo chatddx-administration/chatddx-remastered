@@ -6,6 +6,13 @@ process that started it, and is followed and halted from any. It strings togethe
 them (docs/modules/bench.md, docs/modules/runner.md), the ledger's rows a run is told by (docs/modules/ledger.md), and
 the API, and the portal, that ask for runs, and tell their events (docs/modules/api.md, "Runs").
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what the worker does and why. Names, signatures and errors are in docs/surfaces/worker.md, and
+its settings in `src/chatddx/settings.py`.
+```
 This document describes what the worker does and why. Names, signatures and errors are in docs/reference/worker.md, and
 its settings in `src/chatddx/settings.py`.
 

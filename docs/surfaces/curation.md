@@ -1,6 +1,6 @@
 # `chatddx.curation`
 
-Written by `chatddx stamp` from `src/chatddx/curation/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/curation/`; how to read it is in [docs/surfaces/README.md](README.md).
 
 ## `ARCHIVE`
 `src/chatddx/curation/write.py:ARCHIVE`

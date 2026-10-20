@@ -460,7 +460,7 @@ Phase 0:
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
   (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/modules/api.md` and
-  `docs/reference/api.md`; the API's tests pin the codes and the header.
+  `docs/surfaces/api.md`; the API's tests pin the codes and the header.
 - **Tests**: `src/chatddx/portal/test/test_signing_in.py`.
 
 Found on the way:
@@ -503,8 +503,8 @@ Phase 1:
   `impureEnvVars`, which the flake doesn't keep).
 - **The API**: a run's items carry the answer as read (`answer`: its value, why it couldn't be read or breaks its
   schema, and whether it was salvaged), and configurations are listed by what they answer (`answers`, the title of
-  their answer's JSON Schema; `Bench.threads(…, answering=…)`), described in `docs/modules/api.md`, `docs/reference/api.md`,
-  `docs/modules/bench.md` and `docs/reference/bench.md`.
+  their answer's JSON Schema; `Bench.threads(…, answering=…)`), described in `docs/modules/api.md`, `docs/surfaces/api.md`,
+  `docs/modules/bench.md` and `docs/surfaces/bench.md`.
 - **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
   Chromium (Playwright), signed in as alice, light and dark.
 
@@ -541,8 +541,8 @@ Phase 2, as takes:
 Phase 3, as decided (see "The variation being tried"):
 - **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
   `head` too; a listed thread has its `language`, looked up for many at once (`language.languages_of`;
-  `Bench.variation(…, head)`), described in `docs/modules/api.md`, `docs/reference/api.md`, `docs/modules/bench.md`,
-  `docs/reference/bench.md` and `docs/reference/catalog.md`.
+  `Bench.variation(…, head)`), described in `docs/modules/api.md`, `docs/surfaces/api.md`, `docs/modules/bench.md`,
+  `docs/surfaces/bench.md` and `docs/surfaces/catalog.md`.
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
   and `tag`. Without an endpoint it picks one serving the model the configuration's name is made for. The server
   draws what is said of it and its versions, with ◀ ▶ and every version's link keeping what is set, and a note on an
@@ -573,7 +573,7 @@ Phase 4, as decided (see "Starting and watching a run"):
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
   limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Rows.runs_started`), refused as over quota; and a quiet event
   stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/modules/api.md`,
-  `docs/reference/api.md`, `docs/modules/bench.md`, `docs/reference/bench.md`, `docs/reference/catalog.md` and `docs/modules/repl.md`.
+  `docs/surfaces/api.md`, `docs/modules/bench.md`, `docs/surfaces/bench.md`, `docs/surfaces/catalog.md` and `docs/modules/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
   folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
   scoring with its judges' calls. The home page follows its run with them too.
@@ -592,7 +592,7 @@ Phase 5, first half, as decided (see "Authoring"):
 - **The API**: `GET /api/kinds`, each kind with the bench's word for it, whether a person writes it, and its JSON
   Schema, in which a reference names the kinds it takes (`x-kind`, from `chatddx.factors.base.RefTo`); and
   `POST /api/components/check`, a component checked as a write would store it, with nothing written
-  (`Bench.check`), described in `docs/modules/api.md`, `docs/reference/api.md`, `docs/reference/bench.md` and
+  (`Bench.check`), described in `docs/modules/api.md`, `docs/surfaces/api.md`, `docs/surfaces/bench.md` and
   `docs/modules/factors.md`, and tested in `src/chatddx/api/test/test_kinds.py`.
 - **5a, a page for every thread** (`src/chatddx/portal/threads.py`): `/library`, every kind the person sees, their own
   first, and their deleted threads with **Restore**; `/threads/{id}`, any kind but a configuration's, which has its

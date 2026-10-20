@@ -1,10 +1,10 @@
 # Stamp
 
-`chatddx stamp` writes `docs/reference/<package>.md` for each package in `settings.STAMPED` from the code
+`chatddx stamp` writes `docs/surfaces/<package>.md` for each package in `settings.STAMPED` from the code
 (`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
-last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/<package>.md`, and the reference
+last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/<package>.md`, and the surface
 replaces their `docs/<package>-api.md`. What those held that isn't Python (schemas, commands, file formats, conventions,
-tests) is dropped; their tables of finding codes are the references' Finds.
+tests) is dropped; their tables of finding codes are the surfaces' Finds.
 
 ## Where it stands among the common ways
 - Reading the code: griffe (`src/chatddx/stamp/code.py:Code`), the static loader behind mkdocstrings and
@@ -18,15 +18,16 @@ tests) is dropped; their tables of finding codes are the references' Finds.
 - What changed: a git conflict, the format editors and their conflict tools already read, so that one key, a conflict
   tool's "theirs", applies a stamp and undo and redo flip between the two sides.
 - The name: `stamp`, since `reference` is also SQL's, the curation plan's (`REFERENCES`) and the factors' (`RefTo`), and
-  `signoff` is also git's (`Signed-off-by`).
+  `signoff` is also git's (`Signed-off-by`). What it writes is a package's surface, AGENTS.md's word for its public
+  names.
 - griffe is in the `docs` dependency group: a deployed chatddx goes without it.
 
 ## The workflow
 - Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`. `--check` writes nothing and fails
-  while a reference is behind the code, and so does
-  `src/chatddx/stamp/test/test_stamp.py:test_each_reference_is_as_chatddx_stamp_writes_it`.
-- A reference that doesn't exist yet is written whole, and stamped as a whole in review.
-- A change in the generator's format is written whole too, deleting the references and running `chatddx stamp`, and
+  while a surface is behind the code, and so does
+  `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it`.
+- A surface that doesn't exist yet is written whole, and stamped as a whole in review.
+- A change in the generator's format is written whole too, deleting the surfaces and running `chatddx stamp`, and
   only while `chatddx stamp --check` passes with no stamp pending: the signed sides are then the code as the old
   format writes it, so nothing goes unstamped.
 - After that, a change in the code is written in place of the lines it changes as a git conflict
@@ -34,15 +35,15 @@ tests) is dropped; their tables of finding codes are the references' Finds.
   now, `>>>>>>> @stamp`. A human takes the code's side, which is their stamp. Stamps left pending are worked out anew
   on the next run from the signed sides, so they neither pile up nor go stale, and a line edited by hand is stamped
   back to what the code says. A conflict marker that isn't a stamp's, from a merge, is refused.
-- `.prettierignore` leaves `docs/reference/` out, since prettier reads a stamp as markdown: `=======` underlines the
+- `.prettierignore` leaves `docs/surfaces/` out, since prettier reads a stamp as markdown: `=======` underlines the
   line above it as a heading, `>>>>>>>` is a quote seven deep. The root `.prettierrc` is there for conform.nvim, which
   runs prettier where it finds one, the only place prettier reads `.prettierignore` from.
 - Only the entries are stamped. What comes before the first, the title and a line saying how to read it, is the
-  generator's own and written as it is, and so is `docs/reference/README.md`, the legend
+  generator's own and written as it is, and so is `docs/surfaces/README.md`, the legend
   (`src/chatddx/stamp/page.py:LEGEND`): they change with the generator, in its commits, and aren't stamped.
 
-## What a reference holds
-Its header points to the legend, `docs/reference/README.md`, which says how to read it: what `∟`, `*`, `/`, "through"
+## What a surface holds
+Its header points to the legend, `docs/surfaces/README.md`, which says how to read it: what `∟`, `*`, `/`, "through"
 and a quoted message mean, that a bound method leaves out its instance, that a public callee's raises are in its own
 entry, and what a pending stamp is.
 
@@ -95,7 +96,7 @@ Raises:
 `chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them, each
 once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the level is
 said when it isn't a warning, ``(`info`, through `_pair`)``. It replaces the tables of finding codes the API docs kept:
-every code the solidified packages make is in one reference or another.
+every code the solidified packages make is in one surface or another.
 
 Not said:
 - What a public function or class it calls raises: its own entry says.
@@ -105,9 +106,9 @@ What isn't said is said with an explicit `raise`, or with a docstring if AGENTS.
 them.
 
 ## Read by an agent
-An agent given only `docs/reference/bench.md` and `identity.md` answered ten questions on parameters, messages, order,
+An agent given only `docs/surfaces/bench.md` and `identity.md` answered ten questions on parameters, messages, order,
 bases and bound methods right, finding entries with `grep -n '^## '`. It had to work out the notation, so the legend
 says it now. What it found wanting and is left as is:
-- An exception from another package has no entry in the package's reference (`StructuralError`): grepping
-  `docs/reference/` finds it.
+- An exception from another package has no entry in the package's surface (`StructuralError`): grepping
+  `docs/surfaces/` finds it.
 - A message's values are the raising code's own names (`{word}`, `{name}` in a helper).

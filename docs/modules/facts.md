@@ -8,6 +8,14 @@ They never reach the wire themselves. A chunk may ask for an intent, a reasoning
 compiling a recipe works out what it sends from the facts about the recipe's model; and its compilation names the facts
 it was worked out from. Correcting a guessed fact changes nothing stored: a skeleton still means exactly what it sends.
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what facts hold, what they are for and why. Classes, fields and errors are in
+docs/surfaces/facts.md. A model's facts are a kind of component (docs/modules/factors.md, "Model facts"), so the
+factors compile against them; reading facts files and checking pairs build on the factors and nothing else.
+```
 This document describes what facts hold, what they are for and why. Classes, fields and errors are in
 docs/reference/facts.md. A model's facts are a kind of component (docs/modules/factors.md, "Model facts"), so the
 factors compile against them; reading facts files and checking pairs build on the factors and nothing else.

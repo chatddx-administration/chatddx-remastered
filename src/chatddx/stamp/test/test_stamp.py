@@ -37,7 +37,7 @@ def applied(text: str) -> str:
     return "\n".join(kept) + "\n"
 
 
-def test_a_reference_lists_the_public_names_alphabetically_whatever_their_case(
+def test_a_surface_lists_the_public_names_alphabetically_whatever_their_case(
     tmp_path: Path,
 ) -> None:
     found = written(
@@ -450,7 +450,7 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
     ]
 
 
-def test_a_first_reference_is_written_whole() -> None:
+def test_a_first_surface_is_written_whole() -> None:
     assert stamped(None, "# a\n\n## b\n") == "# a\n\n## b\n"
 
 
@@ -520,6 +520,6 @@ def test_an_unclosed_stamp_is_refused() -> None:
 
 
 @pytest.mark.slow
-def test_each_reference_is_as_chatddx_stamp_writes_it() -> None:
+def test_each_surface_is_as_chatddx_stamp_writes_it() -> None:
     for path, text in regenerated(settings.STAMPED).items():
         assert path.read_text() == text, "chatddx stamp"

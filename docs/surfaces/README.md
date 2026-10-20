@@ -1,4 +1,4 @@
-# Reading a reference
+# Reading a surface
 
 Each file here is written by `chatddx stamp` from a package of `settings.STAMPED`: an entry for each public name,
 sorted alphabetically whatever its case, so that a class's members follow it. An entry's heading is the name, with its

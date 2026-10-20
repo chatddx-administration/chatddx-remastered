@@ -2,6 +2,13 @@
 
 The API is the rig's canonical public control plane and server for the portal's islands.
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+Public external endpoints are documented as an OpenAPI schema in `/api/openapi.json`, with pages at `/api/docs`, while
+the internal api is documented in docs/surfaces/api.md along with the other modules in chatddx.
+```
 Public external endpoints are documented as an OpenAPI schema in `/api/openapi.json`, with pages at `/api/docs`, while
 the internal api is documented in docs/reference/api.md along with the other modules in chatddx.
 

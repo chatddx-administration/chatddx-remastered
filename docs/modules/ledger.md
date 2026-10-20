@@ -4,6 +4,13 @@ The ledger says what happened: which requests a run sent and what came back, and
 down as _records_, which are added as things happen and never changed, and the ledger is all of them. Records refer to
 components by digest and to each other by id.
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+It guarantees a run can be shown to have happened under the conditions it claims. This document describes what the
+ledger records and why, and what checking it shows. Names, fields and errors are in docs/surfaces/ledger.md.
+```
 It guarantees a run can be shown to have happened under the conditions it claims. This document describes what the
 ledger records and why, and what checking it shows. Names, fields and errors are in docs/reference/ledger.md.
 

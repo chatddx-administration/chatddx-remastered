@@ -8,6 +8,13 @@ Heads-up: The location the vignette sources is a factor! Everything else is not.
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/modules/ledger.md, "Run start").
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what the inventory says and why. Classes, fields and errors are in docs/surfaces/inventory.md.
+The `inventory` builds on the `factors` and nothing else.
+```
 This document describes what the inventory says and why. Classes, fields and errors are in docs/reference/inventory.md.
 The `inventory` builds on the `factors` and nothing else.
 

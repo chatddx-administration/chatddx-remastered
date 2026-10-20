@@ -6,6 +6,13 @@ elsewhere: the factors that render a request and prepare a case (docs/modules/fa
 checks (docs/modules/ledger.md), the store and the catalog (docs/modules/store.md, docs/modules/catalog.md), and the
 World inventory that says where an engine is reached and whether it may receive a case (docs/modules/inventory.md).
 
+```
+AGENT: REPLACE
+`docs/reference/` is `docs/surfaces/` now.
+---
+This document describes what a run and a score do and why. Names, signatures, refusals and their messages are in
+docs/surfaces/runner.md.
+```
 This document describes what a run and a score do and why. Names, signatures, refusals and their messages are in
 docs/reference/runner.md.
 
