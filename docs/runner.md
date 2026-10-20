@@ -180,6 +180,10 @@ breaks its schema. Drift of a vignette is noted as preparing a case notes it (do
 
 Each is made where it is found, as `Finding(…)` in `src/chatddx/runner/`.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

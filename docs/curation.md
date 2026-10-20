@@ -254,6 +254,10 @@ The Worlds' content is tested beside the names tests share, in src/chatddx/test/
 The first two read the test World and every World; `test_sample.py` reads the sample, loaded once for it and
 test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

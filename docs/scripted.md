@@ -94,6 +94,10 @@ src/chatddx/scripted/test/.
 - `ran` (src/chatddx/conftest.py) is `curated` with alice's scripted runs each run once, copied for each test, for
   tests that read runs they don't make: the portal's (src/chatddx/portal/test/test_reading.py).
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

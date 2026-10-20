@@ -85,6 +85,10 @@ The worker's tests run it on a thread against the fake vLLM, beating and losing 
 test stops it mid-scoring. The queue's tests are the store's (src/chatddx/store/test/), and the API's and the
 portal's run an app with a worker in its process (src/chatddx/api/test/, src/chatddx/portal/test/).
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

@@ -392,6 +392,11 @@ The app the tests serve runs a worker in its process, as `chatddx run` does. Wha
 stream listening as it happens, so a test that looks for it pauses alice's queue, starts the run, reads the stream's
 first row, by when it listens, and then lets the worker take the job.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+Its Parts row names the engine, where the code names a model (agents/glossary.md, "Where the docs part", 1).
+```
 ## Terms
 
 | Term | Meaning |

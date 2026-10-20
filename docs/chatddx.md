@@ -10,6 +10,10 @@ The rig provides:
 
 It must be possible to deliver the cage together with the results, for scientific rigor.
 
+```
+AGENT: remove
+Gathered, verbatim, with every doc's terms in agents/glossary.md ("Terms").
+```
 ## Glossary
 - **Factor:** Anything that can change an output or its score (`docs/factors.md`, "What a factor is").
 - **Fingerprint:** a hash of content that must *not* be stored: vignette, request, prompt token ids. It carries its algorithm: `sha256`, or `hmac-sha256` with a `key_id`
@@ -72,6 +76,11 @@ It must be possible to deliver the cage together with the results, for scientifi
   (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
 
+```
+AGENT: remove
+Gathered, verbatim, in agents/glossary.md ("Roles"), beside what each role is principal author of.
+docs/catalog.md, docs/factors.md and docs/identity.md refer to it by name.
+```
 ### Roles mentioned
 These roles are distinct and not overlapping, a person may inhabit more than one role.
 - **Clinicians:** Owners of vignettes and authors of Appendices and Expectations

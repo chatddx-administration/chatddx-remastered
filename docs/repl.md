@@ -236,6 +236,11 @@ Tab completes a command, then its names, word by word, from what the person sees
 engines by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags,
 each once.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+Its Cell row names what the repl no longer has (agents/glossary.md, "Where the docs part", 2).
+```
 ## Terms
 
 | Term | Meaning |

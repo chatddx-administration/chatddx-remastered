@@ -80,6 +80,10 @@ person.
 - src/chatddx/store/test/test_cli.py: the `person` commands.
 - Signing in through the API: src/chatddx/api/test/test_people.py (docs/api.md, "Signing in").
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

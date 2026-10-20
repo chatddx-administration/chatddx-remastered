@@ -393,6 +393,10 @@ A person can only come to own two expectations of a case under one schema throug
 the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's
 check before the other has written.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

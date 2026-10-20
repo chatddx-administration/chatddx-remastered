@@ -269,6 +269,10 @@ Before it writes, the import also checks the endpoints and hosts it writes again
 with the inventory check (see "Reaching an engine"), and prints the findings after its own. As it refuses two servers
 at one address and says where each engine's model and template are, the check finds nothing in what it writes today.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

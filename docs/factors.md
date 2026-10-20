@@ -154,6 +154,11 @@ component can hold can be stored: a component the store couldn't hold can't be b
 Storing a component checks it and stores everything it references; storing it again changes nothing. Reading verifies
 every digest. A bundle is exported from the store, and imported by loading it and storing what it holds.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+Its Recipe row names the engine, where the code names a model (agents/glossary.md, "Where the docs part", 1).
+```
 ## Terms
 
 | Term | Meaning |

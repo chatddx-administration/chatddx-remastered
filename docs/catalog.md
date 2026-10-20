@@ -367,6 +367,10 @@ kind, a skeleton edit's compilation on one of that very skeleton, a label on an 
 and position, written in the edit's transaction by its writer, and a language on a stored component of the kind it
 records. At tier 2 it repeats the rules above that two writers at once could break.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

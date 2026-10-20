@@ -218,6 +218,10 @@ for queries. Stored records are never changed or deleted.
   order. Each write tells those listening for the run that rows have landed (docs/store.md, "Records").
 - The reader role can't read the ledger at all, which is the store's answer to "Sensitive records".
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |

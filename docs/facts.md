@@ -125,6 +125,10 @@ chatddx ships facts about the two models of the sample:
 - openai/gpt-oss-20b always reasons, at a low, medium or high effort, so off and minimal are refused and land on low
   as their nearest, xhigh on high, and a thinking budget is refused. On collapses into medium, its default.
 
+```
+AGENT: remove
+Gathered, verbatim, with every other doc's terms in agents/glossary.md ("Terms").
+```
 ## Terms
 
 | Term | Meaning |
