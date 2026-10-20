@@ -14,19 +14,6 @@ This document contains project-wide instructions written by humans for agents.
 - `pnpm --dir frontend build` builds frontend.
 - `chatddx.settings` is the project-wide source of truth.
 
-```
-AGENT: REMOVE
-This section is repeated, in "### Python" and "### TypeScript", under the "## Testing" further down.
-```
-## Testing
-
-- Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s. `-n 4`
-  (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
-- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
-- A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
-- `pnpm --dir frontend test` tests frontend
-
 ## Handling errors and warnings
 
 Errors and warnings beyond the scope of the current task should remain, never hide them.
@@ -51,20 +38,15 @@ Tell clinicians and researchers what's going on and what they can do now.
 
 ### Python
 
-- Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s. `-n 4`
-  (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
+- Baseline is `pytest` runs every test and takes ~110s;
+- `pytest -m 'not slow'` takes ~22s.
+- `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
 - Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
   `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
-```
-AGENT: REMOVE
-`src/chatddx/test/test_tests.py:test_a_test_matches_a_table_s_cells_not_its_padding` fails a test that asserts on a
-string spanning a column gap, and says why and what to match instead.
-```
-- A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
 
 ### TypeScript
 
-- `pnpm --dir frontend test` tests frontend
+- `pnpm --dir frontend test` tests frontend takes less than 2s
 
 ## Pre-commit checklist
 
