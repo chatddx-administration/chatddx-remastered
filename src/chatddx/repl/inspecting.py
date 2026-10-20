@@ -7,7 +7,7 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, Carried, Family, Graded, TriedVariation
+from chatddx.bench import KINDS, Carried, Family, Graded, NotFound, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
@@ -614,7 +614,7 @@ def reasoning(repl: Repl) -> None:
         try:
             model = bench.endpoint(endpoint).model
             handles.setdefault(model.name, set()).add(bench.handle(model.digest).name)
-        except (LookupError, ValueError):
+        except NotFound:
             continue
 
     at = repl.at

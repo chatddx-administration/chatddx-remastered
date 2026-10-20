@@ -41,9 +41,7 @@
   let seeds = $state((given.body?.seeds ?? [1]).join(", "));
 
   const read = $derived(seedsOf(seeds));
-  const hint = $derived(
-    given.problem && weights === given.body?.model ? `${given.problem}. Pick a model it can be asked under.` : null,
-  );
+  const hint = $derived(weights === given.body?.model ? given.problem : null);
 
   function component(): Component | null {
     if (!configuration || !weights || typeof read === "string") return null;

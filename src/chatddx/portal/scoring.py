@@ -7,7 +7,8 @@ from chatddx.bench import Bench
 from chatddx.catalog import threads as catalog_threads
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Skeleton
-from chatddx.factors.scoring import Judge
+from chatddx.factors.scoring import Judge, Scorer
+from chatddx.scorers.shipped import problems
 
 from .pages import own_first
 
@@ -35,9 +36,7 @@ def judge_choices(bench: Bench) -> dict[str, list[dict[str, Any]]]:
             for t in configurations
         ],
         "models": [
-            {"name": m.name, "weights": m.weights}
-            for m in api_world.models(bench)
-            if m.engine is not None
+            {"name": m.name, "weights": m.weights} for m in api_world.models(bench)
         ],
     }
 
@@ -47,6 +46,14 @@ def code_of(bench: Bench, entry_point: str | None = None) -> schemas.ScorerCode:
     if entry_point is None:
         return shipped[0]
     return {c.entry_point: c for c in shipped}[entry_point]
+
+
+def unshipped(scorer: Scorer) -> str | None:
+    if found := problems(scorer):
+        return (
+            "; ".join(found) + ": write a new scorer from the Library to score with it"
+        )
+    return None
 
 
 def blank(code: schemas.ScorerCode, schema: str) -> dict[str, Any]:
@@ -77,10 +84,6 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     for t in own_first(bench, api.threads(bench, "judge")):
         judge = resolve(bench.store.get, t.head.digest, Judge)
-        try:
-            handle = bench.handle(judge.model).name
-        except ValueError:
-            handle = None
         found.append(
             {
                 "digest": t.head.digest,
@@ -91,7 +94,7 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
                 "name": t.name or t.title,
                 "owner": t.owner,
                 "configuration": bench.title(judge.skeleton),
-                "model": handle,
+                "model": bench.handle(judge.model).name,
                 "seeds": list(judge.seeds),
                 "output_schema": resolve(
                     bench.store.get, judge.skeleton, Skeleton

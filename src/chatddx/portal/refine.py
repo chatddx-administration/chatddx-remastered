@@ -107,7 +107,7 @@ def refine(
         gone=[k for k, _ in ordered if k.deleted],
         me=next(k for k in lineage if k.id == thread),
         mean_of=mean_of,
-        models=[m.name for m in api_world.models(bench) if m.problem is None],
+        models=[m.name for m in api_world.models(bench)],
         model=model,
         every_tag=sorted({t for f in families for t in f.tags}),
         tags=tags,

@@ -147,7 +147,7 @@ def judge_asked(bench: BenchDep, given: schemas.Asking) -> schemas.Asked:
     }
     try:
         model = served_model_name(bench.judged(judge).engine, bench.store.get)
-    except (LookupError, ValueError):
+    except ValueError:
         model = MODEL
     request = skeleton.render(model=model, seed=judge.seeds[0], fills=fills)
     return schemas.Asked(request=request, picked=picked)

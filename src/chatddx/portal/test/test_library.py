@@ -4,7 +4,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.factors.base import resolve
 from chatddx.factors.engine import FileDigest, LocalModel
+from chatddx.factors.scoring import Scorer
 from chatddx.identity import Person
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
@@ -225,6 +227,27 @@ def test_a_scorer_s_page_edits_its_views_labels_and_judges(signed: TestClient) -
     ).json()
     page = shown(signed, f"/threads/{forked['id']}")
     assert thread_props(page)["editor"]["mode"] == "edit"
+
+
+@pytest.mark.slow
+def test_a_scorer_of_code_that_isn_t_shipped_says_to_write_a_new_one(
+    signed: TestClient, conn: Connection, alice: Person
+) -> None:
+    lines = thread(signed, "scorer", "lines", "archive")
+    store = Store(conn)
+    registry = store.load([lines["head"]["digest"]])
+    held = resolve(registry.get, lines["head"]["digest"], Scorer)
+    old = registry.add(held.model_copy(update={"version": held.version + 1}))
+    _ = store.add(registry, [old])
+    made = Catalog(conn).create(old, alice.id, name="old lines")
+    props = thread_props(shown(signed, f"/threads/{made.thread}"))
+    assert props["editor"] is None
+    assert props["unshipped"].startswith(
+        f"{held.entry_point} is at version {held.version} in chatddx "
+    )
+    assert props["unshipped"].endswith(
+        f", not {held.version + 1}: write a new scorer from the Library to score with it"
+    )
 
 
 @pytest.mark.slow

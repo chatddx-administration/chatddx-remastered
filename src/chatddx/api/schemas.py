@@ -540,14 +540,11 @@ class Endpoint(_Schema):
 class Model(_Schema):
     name: str = Field(description="the handle")
     weights: str = Field(description="the weights it holds now, by digest")
-    engine: str | None = Field(description="its latest engine, when it resolves")
+    engine: str = Field(description="its latest engine")
     facts: JsonValue
     takes_typed: bool = Field(
         description="whether a case typed into the World's database source can run "
         + "under it: the source isn't sensitive, or its endpoint is cleared for it"
-    )
-    problem: str | None = Field(
-        description="why it doesn't resolve to one endpoint, which is ops' to mend"
     )
 
 

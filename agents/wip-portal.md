@@ -263,8 +263,9 @@ share its pieces.
   composes them: each view's label, what it reads of what is expected and of the answer, line by line or not, its
   metric, and, for a judged one, its judge, a new judge written in place, and its params. Checked as typed, its lints
   included, and saved with its labels as a version of the person's own or a fork; a change of labels alone is a new
-  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship is a developer's error and
-  crashes its page (`src/chatddx/portal/scoring.py:code_of`).
+  version, as the catalog keeps them. A scorer of code the running chatddx doesn't ship, at its version, has no editor:
+  its page says so and to write a new one (`src/chatddx/portal/scoring.py:unshipped`), as shipped code isn't kept
+  forever (`agents/wip-error-handling.md`).
 - **Begun from the Library**: **Write a new one** under scorers, `/library/new?kind=scorer`, starting from the shipped
   code, the first expectation schema and one view.
 - **Shared with Review**: the views' form is `frontend/src/lib/scorer/ScorerViews.svelte`, which Review's composer
@@ -285,9 +286,9 @@ share its pieces.
 
 #### Reduced
 After step 2, by the user's pick of what steps 1 and 2 and the judges' handles had added (`agents/reduce.md`):
-- **Pruned**: a scorer of code that isn't shipped no longer hides its editor or the composer, but crashes, as a
-  developer's error (`code_of`, which Review's composer and views use too); the judge editor's `behind`, its hint
-  now `Seen.judged`'s refusal.
+- **Pruned**: the judge editor's `behind`, its hint now `Seen.judged`'s refusal. A scorer of code that isn't shipped
+  crashed for a while, as a developer's error, until shipped code was decided not to be kept forever: its page says
+  so now, and Review leaves it out of the composer (`agents/wip-error-handling.md`).
 - **Consolidated**: the check as typed is `Saving`'s, which shows its findings and works out what is unchanged
   (`digest`, and `same` for the labels) and what blocks a save, in place of a copy per editor; the composer's new
   judge is the judge editor, saved through `Saving` and `writing.ts:written` (`made`), so `JudgeForm` is gone; the
@@ -296,9 +297,8 @@ After step 2, by the user's pick of what steps 1 and 2 and the judges' handles h
   and name read once (`_holder`); the views' fields are `FIELD`; the judge fields' options are `judging.ts:Option`.
 - **Kept**: who is editing (`me`) stays given by each editor's props: given once by `_editor` it would be given by
   the Library's beginning and Review's composer too, as many places as now.
-- **Left to decide**: the ops' errors met on the way from a judge to its engine, caught and said or swallowed in
-  `scoring.py:_judges`, `api/scores.py:judge_asked`, `seen.py:judging`, `_applies` and `unscored`, and in step 2b's
-  `latest`, `under`, `/api/models`, the look, Refine and the repl, against the error policy (`AGENTS.md`, "Errors").
+- **Then decided**: the ops' errors met on the way from a judge to its engine, by the model in
+  `agents/wip-error-handling.md` ("Built: step 1").
 
 ## Comparing variations
 Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept

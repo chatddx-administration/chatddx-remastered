@@ -48,7 +48,7 @@
     }
     login = me.data.login;
     configurations = preferred(found.data);
-    models = served.data.filter((m) => m.problem === null && m.takes_typed);
+    models = served.data.filter((m) => m.takes_typed);
     model = models[0]?.name;
     configuration = configurations[0]?.id;
   });

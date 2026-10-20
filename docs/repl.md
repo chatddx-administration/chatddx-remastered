@@ -37,6 +37,15 @@ what they're scored against never changes under them when someone else edits the
 
 ## The variation
 The variation is what the shell runs: the edit of a configuration thread it holds, its recipe, and the parts set on it
+```
+AGENT: replace
+The last sentence of this paragraph: a handle with several endpoints stops the repl from starting now, so what
+can't run is the person's to change.
+---
+A deleted handle, one no endpoint here serves, a model behind its handle, and a hand-written configuration with no
+handle named can't run. The repl doesn't start on a World whose weights are held by several model threads or served
+at several endpoints.
+```
 (`TriedVariation`), its model among them. It runs under its model's handle (docs/bench.md, "The model"), at the one
 endpoint the handle resolves to, and is rendered and linted for that endpoint's engine, the handle's latest
 (`Repl.at`). A hand-written configuration has no model part and runs under the handle `under MODEL` names, which the

@@ -146,6 +146,17 @@ answers is the title as written (`Seen.answers`): a translated skeleton's is its
 translates its title too.
 
 ### The model
+```
+AGENT: replace
+Weights are held by one model thread, deleted ones counted, and served by at most one endpoint, both checked as a
+process starts (src/chatddx/bench/handles.py:broken), so what is told the person is theirs to act on.
+---
+The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
+from the facts about it. A run goes under the handle the model's weights are under, deleted or not, to the endpoint
+serving its weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`). A deleted handle, and one no endpoint
+here serves, as another World's, are said to the person, to pick another; a look that can't run says why and has no
+findings. The engine is the trial's: the handle's latest.
+```
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
 from the facts about it. A run goes under the handle the model's weights are under, to the one endpoint serving its
 weights now (`Seen.handle`, `Seen.served`, `Inventory.serving`); none or several is ops' error, said to the person,

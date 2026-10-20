@@ -42,30 +42,32 @@ def _endpoint(
                 )
 
 
+# Policy: Checked as a process starts and before the World changes, as
+# src/chatddx/bench/seen.py:Seen.served relies on it.
+def broken(inventory: Inventory, get: Resolver) -> list[str]:
+    serving: dict[str, list[str]] = {}
+    for name, endpoint in inventory.endpoints.items():
+        if not isinstance(engine := _engine(get, name, endpoint.engine), Finding):
+            serving.setdefault(engine.model, []).append(name)
+    return [
+        f"endpoints {', '.join(sorted(names))} serve the same weights, which one "
+        + "endpoint should"
+        for names in serving.values()
+        if len(names) > 1
+    ]
+
+
 def check(inventory: Inventory, get: Resolver) -> list[Finding]:
     findings: list[Finding] = []
     local: dict[str, LocalEngine] = {}
-    serving: dict[str, list[str]] = {}
     for name, endpoint in inventory.endpoints.items():
         match _engine(get, name, endpoint.engine):
             case Finding() as f:
                 findings.append(f)
             case engine:
                 findings.extend(_endpoint(inventory, get, name, engine))
-                serving.setdefault(engine.model, []).append(name)
                 if isinstance(engine, LocalEngine):
                     local[name] = engine
-
-    for names in serving.values():
-        for name in names[1:]:
-            findings.append(
-                Finding(
-                    code="endpoint.model_shared",
-                    message=f"endpoint {names[0]!r} serves its model's weights too, so "
-                    + "the handle they are under resolves to neither: ops' to mend",
-                    subject=name,
-                )
-            )
 
     at: dict[str, list[str]] = {}
     for name in local:

@@ -139,6 +139,15 @@ An endpoint may name a canary set, by digest, which every run at it sends, so th
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
+```
+AGENT: replace
+The last sentence of this paragraph, by agents/wip-error-handling.md's model: what a start can rule out crashes it.
+---
+Weights served at several endpoints, or held by several model threads, stop `chatddx portal`, `api`, `run`,
+`worker`, `repl` and `scripted-runs` from starting, make init-data refuse and write nothing, and make the engine
+import refuse to write (src/chatddx/bench/handles.py:broken). A handle no endpoint here serves, as another World's,
+and a deleted one are refused to the researcher, who picks another.
+```
 A run goes to the endpoint its model's handle maps to, and a judge's calls to the one its handle maps to; researchers
 name no endpoint. Ops map each handle to exactly one engine and one endpoint, on one hardware class. A handle that
 doesn't resolve to one is ops' error: the inventory check reports it at init-data, as a worker starts and at the
@@ -213,6 +222,13 @@ The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a contain
 engine's values come from its host, not from people: the engine import reads each host's report and writes the
 factors and the inventory entries together.
 
+```
+AGENT: replace
+The import refuses two servers serving one model's weights now, rather than reporting it.
+---
+For each server, the import puts each server's model under the handle ops give it, and refuses to write two servers
+serving one model's weights. The models and engines go to the World's `engines.toml`, and the
+```
 For each server, the import puts each server's model under the handle ops give it and its inventory check reports a
 handle it leaves without exactly one endpoint. The models and engines go to the World's `engines.toml`, and the
 endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to change them, import again

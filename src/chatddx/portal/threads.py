@@ -13,7 +13,7 @@ from chatddx.factors.request import CHUNK_PARTS, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
 
 from .pages import BenchDep, own_first, page, within
-from .scoring import blank, code_of, judge_choices, scorer_choices
+from .scoring import blank, code_of, judge_choices, scorer_choices, unshipped
 
 WORDS = [w for w in KINDS if w != "configuration"]
 # Policy: A translations chunk is begun on /translate, beside what it translates.
@@ -89,6 +89,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
     proposal = None
     if mine and origin is not None and not shown.deleted:
         proposal = api.follows(bench, thread).origin
+    last = bodies[shown.head.digest]
     held: dict[str, Any] = {
         "word": word_of(shown.kind),
         "versions": [
@@ -100,6 +101,9 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
         ],
         "titles": titles,
         "editor": None if shown.deleted else _editor(bench, shown, mine),
+        "unshipped": unshipped(last)
+        if isinstance(last, Scorer) and not shown.deleted
+        else None,
     }
     return page(
         request,
@@ -108,7 +112,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
         thread=shown,
         word=word_of(shown.kind),
         versions=versions,
-        head=bodies[shown.head.digest].model_dump(mode="json"),
+        head=last.model_dump(mode="json"),
         origin=origin,
         mine=mine,
         proposal=proposal,
@@ -151,7 +155,7 @@ def _editor(
             return {**given, "kind": "translations", "into": held.into}
         case Judge():
             return {**given, **_judge(bench, held)}
-        case Scorer():
+        case Scorer() if unshipped(held) is None:
             return {**given, **_scorer(bench, held, shown.head.digest)}
         case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
             return {

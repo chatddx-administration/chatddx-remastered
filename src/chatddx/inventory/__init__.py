@@ -1,4 +1,4 @@
-from .check import check
+from .check import broken, check
 from .inventory import EndpointSpec, HostSpec, Inventory
 from .serving import StartUp, start_up
 from .sources import DatabaseSource, DirectorySource, Source
@@ -13,6 +13,7 @@ __all__ = [
     "Source",
     "StartUp",
     "World",
+    "broken",
     "check",
     "start_up",
 ]

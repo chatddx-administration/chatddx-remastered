@@ -26,7 +26,7 @@ from chatddx.scorers.shipped import unit_of
 from .families import appended, built, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN
-from .scoring import blank, code_of, scorer_choices
+from .scoring import blank, code_of, scorer_choices, unshipped
 
 ANSWERS = 50
 OPEN = ("queued", "under way")
@@ -162,7 +162,7 @@ def review(
         pending=pending,
         left=left,
         configurations=_configurations(bench),
-        models=[m.name for m in api_world.models(bench) if m.problem is None],
+        models=[m.name for m in api_world.models(bench)],
         most=settings.ITEMS_PER_RUN,
         at=None if at is None else at + 1,
         previous=previous,
@@ -424,7 +424,8 @@ def _views(
     bench: Bench, held: Held, expected: schemas.Expected | None
 ) -> list[dict[str, Any]]:
     _, scorer, labels = held
-    measures = {m.name: m.measures for m in code_of(bench, scorer.entry_point).metrics}
+    code = None if unshipped(scorer) else code_of(bench, scorer.entry_point)
+    measures = {} if code is None else {m.name: m.measures for m in code.metrics}
     picks = (
         []
         if expected is None or expected.data is None
@@ -481,7 +482,7 @@ def _composing(
     ran: list[tuple[schemas.Run, schemas.RunDetail]],
     case: str,
 ) -> dict[str, Any] | None:
-    if schema is None:
+    if schema is None or (held is not None and unshipped(held[1])):
         return None
     code = code_of(bench, None if held is None else held[1].entry_point)
     scorer = None

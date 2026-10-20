@@ -91,7 +91,7 @@ def configuration(
             for p in RECIPE_PARTS
         },
         "configurations": [t.model_dump(mode="json") for t in siblings],
-        "models": [m.name for m in models if m.problem is None],
+        "models": [m.name for m in models],
         "everyTag": sorted({t for f in families for t in f.tags}),
         "families": [f.model_dump(mode="json") for f in families],
         "itemsPerRun": settings.ITEMS_PER_RUN,
@@ -140,5 +140,5 @@ def _choices(
     found = api.threads(bench, part)
     if part != "model":
         return found
-    served = {m.weights for m in models if m.problem is None}
+    served = {m.weights for m in models}
     return [t for t in found if t.head.digest in served]

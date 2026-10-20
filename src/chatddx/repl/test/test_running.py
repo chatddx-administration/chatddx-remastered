@@ -91,19 +91,15 @@ def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     assert len({r.started.trial for r in ran(bench)}) == 1
 
 
-def test_run_needs_a_configuration_whose_handle_resolves_to_one_endpoint(
+def test_run_needs_a_configuration_whose_handle_is_served_here(
     bench: Bench, world: Inventory, say: Say
 ):
     assert "the repl holds no configuration" in say("run noted")
 
-    endpoints = {**world.endpoints, "twin@fake": world.endpoints[QWEN]}
+    endpoints = {n: e for n, e in world.endpoints.items() if n != QWEN}
     bench.inventory = world.model_copy(update={"endpoints": endpoints})
     written = say(f"use {LINES}", "run noted")
-    assert (
-        f"{QWEN}, twin@fake serve model {QWEN_ARTIFACT}, which one endpoint should: "
-        + "ops' to mend"
-        in written
-    )
+    assert f"no endpoint here serves model {QWEN_ARTIFACT}: pick another" in written
     assert ran(bench) == []
 
 

@@ -253,18 +253,15 @@ class Seen:
 
     def handle(self, weights: str) -> Handle:
         if weights not in self._handles:
-            held = {e.thread for e in self.rows.edits_holding([weights])}
-            known = read.abouts(self.rows, [Subject(thread=t) for t in held])
-            live = sorted(t for t in held if not known[Subject(thread=t)].deleted)
-            names = [known[Subject(thread=t)].name or str(t) for t in live]
-            if len(live) != 1:
-                under = f"handles {', '.join(names)}" if live else "no handle"
-                raise ValueError(
-                    f"{self.title(weights)} is under {under}, and weights are under "
-                    + "one: ops' to mend"
+            held = sorted({e.thread for e in self.rows.edits_holding([weights])})
+            if len(held) != 1:
+                raise LookupError(
+                    f"{short(weights)} is held by {len(held)} model threads, not one"
                 )
-            head = read.heads_of(self.rows, live)[live[0]]
-            self._handles[weights] = Handle(names[0], live[0], head.digest)
+            about = read.about(self.rows, Subject(thread=held[0]))
+            head = read.heads_of(self.rows, held)[held[0]]
+            name = about.name or str(held[0])
+            self._handles[weights] = Handle(name, held[0], head.digest, about.deleted)
         return self._handles[weights]
 
     def handle_named(self, name: str) -> Handle:
@@ -272,18 +269,22 @@ class Seen:
         return Handle(about.name or name, edit.thread, edit.digest)
 
     def served(self, handle: Handle) -> Endpoint:
+        if handle.deleted:
+            raise ValueError(f"model {handle.name} is deleted: pick another")
+        # Policy: Several endpoints serving it are ruled out as a process starts
+        # (src/chatddx/inventory/check.py:broken), so none does.
         try:
-            name = self.inventory.serving(
-                handle.weights, self._served_model, f"model {handle.name}"
-            )
-        except LookupError as e:
-            raise ValueError(str(e)) from None
+            name = self.inventory.serving(handle.weights, self._served_model)
+        except LookupError:
+            raise ValueError(
+                f"no endpoint here serves model {handle.name}: pick another"
+            ) from None
         return self.endpoint(name)
 
     def latest(self, handle: Handle) -> str | None:
         try:
             return self.served(handle).engine
-        except (LookupError, ValueError):
+        except ValueError:
             return None
 
     def judged(self, judge: Judge) -> Endpoint:
@@ -299,10 +300,7 @@ class Seen:
         weights = self._served_model(engine)
         if weights is None:
             return None, False
-        try:
-            handle = self.handle(weights)
-        except ValueError:
-            return None, False
+        handle = self.handle(weights)
         return handle, self.latest(handle) == engine
 
     # Policy: Only scripted runs name an endpoint; a researcher names a handle, and only
@@ -963,7 +961,7 @@ def linted(seen: Seen, digest: str) -> list[Finding]:
 def judging(seen: Seen, judge: Judge, registry: Registry) -> dict[str, str]:
     try:
         engine = seen.judged(judge).engine
-    except (LookupError, ValueError):
+    except ValueError:
         return {}
     held = seen.store.load([engine])
     for digest in held:

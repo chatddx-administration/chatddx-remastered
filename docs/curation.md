@@ -146,6 +146,13 @@ which loading stores for the models its engines serve.
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
+```
+AGENT: insert
+init-data now checks what a process checks as it starts before it commits, and refuses, writing nothing.
+---
+Before it commits, a loading checks what a process checks as it starts (src/chatddx/bench/handles.py:broken): weights
+held by several model threads, or served at several endpoints, refuse it, and nothing is written.
+```
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
 each endpoint would refuse, and what is likely a slip (src/chatddx/inventory/check.py).
 

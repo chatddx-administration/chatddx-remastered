@@ -21,6 +21,7 @@
       | ScorerEditing
       | TranslationsEditing
       | null;
+    unshipped: string | null;
   };
 </script>
 
@@ -106,5 +107,9 @@
     {:else if given.editor.kind === "scorer"}
       <ScorerEditor editor={given.editor} digest={head} />
     {/if}
+  </section>
+{:else if given.unshipped}
+  <section id="edit" class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+    <p class="text-sm text-warning">{given.unshipped}</p>
   </section>
 {/if}

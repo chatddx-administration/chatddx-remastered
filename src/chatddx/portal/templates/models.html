@@ -9,8 +9,7 @@
     {% for m in models %}
     <details class="rounded-lg border border-border/60 bg-background/40 p-3">
       <summary class="cursor-pointer text-sm"><span class="font-medium">{{ m.name }}</span>
-        <span class="text-muted-foreground">{% if m.facts is none %}no facts{% endif %}</span>
-        {% if m.problem %}<span class="block text-xs text-destructive">{{ m.problem }}</span>{% endif %}</summary>
+        <span class="text-muted-foreground">{% if m.facts is none %}no facts{% endif %}</span></summary>
       {% if m.facts is not none %}<div class="mt-3">{{ json(m.facts) }}</div>{% endif %}
     </details>
     {% endfor %}

@@ -195,7 +195,9 @@ def test_a_configuration_follows_its_model_to_a_new_version(
     assert found.model is not None and found.model.head == moved
     assert found.model.digest == held != moved.digest
     assert found.digest == head.digest and found.compilation != head.compilation
-    with pytest.raises(ValueError, match=f"no endpoint serves model {QWEN_ARTIFACT}"):
+    with pytest.raises(
+        ValueError, match=f"no endpoint here serves model {QWEN_ARTIFACT}"
+    ):
         _ = bench.at(bench.variation(mine, {"model": moved.digest}), None)
 
     followed = bench.follow_moved(mine, head.id)

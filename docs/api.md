@@ -86,6 +86,14 @@ A look at a variation gives:
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   a handle (`under`), for the model.
+```
+AGENT: replace
+Several endpoints for one handle's weights stop a process from starting now, so the look no longer says ops' error;
+it says the handle is deleted or no endpoint here serves it (src/chatddx/bench/seen.py:Seen.served).
+---
+- the handle it runs under (`model`), or why it can't run (`problem`): its handle is deleted, or no endpoint here
+  serves it, and another is to be picked; its model is behind its handle; or it names no model and no handle is given.
+```
 - the handle it runs under (`model`), or why it can't run (`problem`): its handle doesn't resolve to one endpoint,
   which is ops' to mend, its model is behind its handle, or it names no model and no handle is given.
 - Translations (`docs/bench.md`, "Translations")
@@ -352,6 +360,12 @@ where. The code says what it is:
 | `unprocessable` | 422 | A request that doesn't validate, or names a field it shouldn't; the detail lists where. |
 | `refused` | 422 | What the API, the bench or the gate refuses: the rest of 422. |
 | `over_quota` | 429 | A person who has typed as many cases, or started as many runs, as a day takes; a run of more items than one takes. |
+```
+AGENT: replace
+What isn't caught is answered raw, its type and its message, sensitive or not for now (src/chatddx/api/app.py:_raw).
+---
+| `error` | 500 | An error for developers or ops, raw: its type and message. |
+```
 | `error` | any other | |
 
 The OpenAPI document holds the body as the schema `Error`.

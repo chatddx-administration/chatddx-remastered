@@ -794,9 +794,19 @@ Raises:
 
 * `name: str = Field(description="the handle")`
 * `weights: str = Field(description="the weights it holds now, by digest")`
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+* `engine: str = Field(description="its latest engine")`
+```
 * `engine: str | None = Field(description="its latest engine, when it resolves")`
 * `facts: JsonValue`
 * `takes_typed: bool = Field(…)`
+```
+SIGN-OFF: REMOVE
+remove the line below
+```
 * `problem: str | None = Field(…)`
 
 ## ModelDigest
@@ -1716,6 +1726,12 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
+```
+SIGN-OFF: REPLACE
+replace the line below with these
+---
+1. `HTTPException`: 422, str(e) (from `(NotFound, ValueError)`, through `_at`)
+```
 1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_at`)
 
 ## Varied `(_Schema)`

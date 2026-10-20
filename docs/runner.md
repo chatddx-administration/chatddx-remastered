@@ -169,6 +169,14 @@ A halt or an interrupt keeps the verdicts of the seeds sent so far. The item's j
 after it, aren't scored, and checking the score counts them missing.
 
 ### What applies to a run
+```
+AGENT: replace
+"its handle resolves to one endpoint": several are ruled out as a process starts, so it reads as served here.
+---
+A scorer applies to a run when its views can reach the run's answers (docs/ledger.md, "Score"), a view of the whole
+answer reaching only a text answer, and the World lets each of its judges run: no judge reads the case, its handle
+isn't deleted and an endpoint here serves it, and that endpoint is cleared for the run's sources.
+```
 A scorer applies to a run when its views can reach the run's answers (docs/ledger.md, "Score"), a view of the whole
 answer reaching only a text answer, and the World lets each of its judges run: no judge reads the case, its handle
 resolves to one endpoint, and that endpoint is cleared for the run's sources. A judge behind its handle doesn't bar its

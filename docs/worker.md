@@ -78,6 +78,12 @@ before it. The portal's runs page shows the person's queue with its controls, an
 runs a worker in its own process; `chatddx portal` and `chatddx api` run none. A deployment runs the HTTP server, the
 API and the worker as separate services. Several workers work alike, taking turns to claim.
 
+```
+AGENT: insert
+---
+A worker doesn't start on a World whose weights are held by several model threads or served at several endpoints
+(docs/inventory.md, "Reaching an engine").
+```
 A worker logs the inventory check's findings as it starts (docs/inventory.md, "Reaching an engine").
 
 ## Tests

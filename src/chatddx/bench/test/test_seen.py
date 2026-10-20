@@ -583,8 +583,7 @@ def test_a_judged_scoring_pins_its_judges_latest_engines_or_says_why_it_can_t(
     unserved = Bench(conn, alice, inventory.model_copy(update={"endpoints": endpoints}))
     assert "judged" not in {a.name for _, a, _ in unserved.scorers(started)}
     with pytest.raises(
-        ValueError,
-        match=f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend",
+        ValueError, match=f"no endpoint here serves model {QWEN_ARTIFACT}: pick another"
     ):
         _ = scoring(unserved, started, judged)
 
@@ -613,6 +612,31 @@ def test_a_judged_scoring_pins_its_judges_latest_engines_or_says_why_it_can_t(
         f"its model is behind {QWEN_ARTIFACT}, which holds other weights now: follow "
         + "it first"
     )
+
+
+def test_a_judge_under_a_deleted_handle_says_to_pick_another(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "noted")))
+    judged = plan.named("scorer", "judged").digest
+    handle = bench.handle(bench.endpoint(QWEN).model.digest)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    Catalog(conn).note(
+        Subject(thread=handle.thread), Entry(field=EntryField.DELETED), archive.id
+    )
+    deleted = Bench(conn, alice, bench.inventory)
+    held = deleted.handle(handle.weights)
+    assert (held.name, held.deleted, deleted.latest(held)) == (
+        QWEN_ARTIFACT,
+        True,
+        None,
+    )
+    assert "judged" not in {a.name for _, a, _ in deleted.scorers(started)}
+    with pytest.raises(
+        ValueError, match=f"model {QWEN_ARTIFACT} is deleted: pick another"
+    ):
+        _ = scoring(deleted, started, judged)
 
 
 def scored(graded: Graded) -> UUID:
@@ -703,8 +727,7 @@ def test_a_run_runs_again_under_its_handle_or_is_refused_saying_why(
     handle, latest = bench.under(made.engine)
     assert (None if handle is None else handle.name, latest) == (QWEN_ARTIFACT, False)
     with pytest.raises(
-        ValueError,
-        match=f"no endpoint serves model {QWEN_ARTIFACT}, which is ops' to mend",
+        ValueError, match=f"no endpoint here serves model {QWEN_ARTIFACT}: pick another"
     ):
         _ = bench.again(bench.run(run), (9,))
 

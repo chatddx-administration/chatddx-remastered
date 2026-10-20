@@ -124,8 +124,9 @@ def test_the_portal_s_pages_aren_t_the_api_s(client: TestClient) -> None:
 
 @pytest.mark.parametrize(("command", "worker"), [("portal", False), ("run", True)])
 def test_chatddx_portal_and_run_serve_the_portal_and_the_api(
-    monkeypatch: pytest.MonkeyPatch, command: str, worker: bool
+    db: str, monkeypatch: pytest.MonkeyPatch, command: str, worker: bool
 ) -> None:
+    monkeypatch.setenv("DB_NAME", db)
     heard: list[tuple[object, str, int]] = []
     workers: list[bool] = []
 

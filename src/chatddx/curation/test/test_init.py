@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
@@ -11,6 +12,7 @@ from chatddx.conftest import connect
 from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, TEXTS, appended, vignettes
 from chatddx.identity import Person
+from chatddx.inventory import World
 from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -21,6 +23,7 @@ from chatddx.test.world import (
     LINTS,
     NATIVE,
     NATIVE_TOOLS,
+    QWEN,
     TEST,
     copied,
     edit,
@@ -328,6 +331,36 @@ def test_init_data_command(
     monkeypatch.delenv("CHATDDX_WORLD")
     with pytest.raises(SystemExit, match="give a World with --world DIR"):
         main(["init-data", "alice", *data])
+
+
+@pytest.mark.slow
+def test_a_world_whose_endpoints_share_weights_is_refused_and_doesn_t_start(
+    db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DB_NAME", db)
+    world = copied(tmp_path)
+    data = ["--world", str(world), "--data", str(world / "_data")]
+    engine = World.load(world).inventory.endpoint(QWEN).engine
+    twin = f'\n[endpoint.twin]\nengine = "{engine}"\nurl = "http://127.0.0.1:1/v1/"\n'
+    shared = f"endpoints {QWEN}, twin serve the same weights, which one endpoint should"
+    with (world / "inventory.toml").open("a") as f:
+        _ = f.write(twin)
+    refused = f"init-data, refused and nothing written: {world}, as loaded:\n  {shared}"
+    with pytest.raises(SystemExit, match=re.escape(refused)):
+        main(["init-data", "alice", *data])
+    with connect(db) as conn:
+        assert Rows(conn).threads("model.local") == []
+        assert People(conn).find("alice") is None
+
+    edit(world / "inventory.toml", twin, "")
+    main(["init-data", "alice", *data])
+    with (world / "inventory.toml").open("a") as f:
+        _ = f.write(twin)
+    for command in ("api", "worker"):
+        with pytest.raises(
+            SystemExit, match=re.escape(f"{command}: {world}, as loaded:\n  {shared}")
+        ):
+            main([command, "--world", str(world)])
 
 
 @pytest.mark.slow

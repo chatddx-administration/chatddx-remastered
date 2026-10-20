@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import KINDS, Bench, Endpoint, TriedVariation
+from chatddx.bench import KINDS, Bench, Endpoint, NotFound, TriedVariation
 from chatddx.factors.base import Finding
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS
 
@@ -48,7 +48,7 @@ class Repl:
             return None
         try:
             return self.bench.at(self.variation, model=self.under)
-        except (LookupError, ValueError):
+        except (NotFound, ValueError):
             return None
 
     @property
@@ -97,7 +97,7 @@ class Repl:
         try:
             at = self.bench.at(variation, model=self.under)
             handle = self.handle(at)
-        except (LookupError, ValueError) as e:
+        except (NotFound, ValueError) as e:
             self.console.print(Text(f"variation: {variation.label} × ?"))
             self.console.print(Text(str(e), style=LATER))
             return None

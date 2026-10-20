@@ -57,6 +57,11 @@ def _status(status: int, code: Code) -> Callable[[Request, Exception], JSONRespo
     return handle
 
 
+# Compromise: Raw, though it may quote sensitive content, until edges hold that back.
+def _raw(_: Request, e: Exception) -> JSONResponse:
+    return _answer(500, Error(detail=f"{type(e).__name__}: {e}", code="error"))
+
+
 def _http(_: Request, e: Exception) -> JSONResponse:
     assert isinstance(e, HTTPException)
     error = Error(detail=e.detail, code=CODES.get(e.status_code, "error"))
@@ -128,5 +133,6 @@ def app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
         made.add_exception_handler(error, _status(status, code))
     made.add_exception_handler(HTTPException, _http)
     made.add_exception_handler(RequestValidationError, _invalid)
+    made.add_exception_handler(Exception, _raw)
     made.openapi = _with_models(made)
     return made

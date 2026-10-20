@@ -201,8 +201,9 @@ def test_the_api_describes_itself(client: TestClient) -> None:
     [("127.0.0.1:9999", ("127.0.0.1", 9999)), ("[::1]:8001", ("::1", 8001))],
 )
 def test_chatddx_api_serves_where_it_is_told(
-    monkeypatch: pytest.MonkeyPatch, bind: str, where: tuple[str, int]
+    db: str, monkeypatch: pytest.MonkeyPatch, bind: str, where: tuple[str, int]
 ) -> None:
+    monkeypatch.setenv("DB_NAME", db)
     heard: list[tuple[object, str, int]] = []
 
     def run(served: object, host: str, port: int) -> None:

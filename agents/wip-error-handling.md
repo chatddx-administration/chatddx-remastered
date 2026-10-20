@@ -91,3 +91,38 @@ database holding version 1 judges fails at each read.
 
 A bug: `nix/module.nix` gives `chatddx portal` and `chatddx worker` `--facts`, which neither takes
 (`src/chatddx/cli.py`), so both services fail to start whenever `services.chatddx.facts` is set.
+
+## Built: step 1, the way from a judge to its engine
+- **Class 1** (`src/chatddx/bench/handles.py:broken`, `src/chatddx/inventory/check.py:broken`): weights held by several
+  model threads, deleted ones counted, and weights served at several endpoints. `chatddx portal`, `api`, `run`,
+  `worker`, `repl` and `scripted-runs` don't start on them (`src/chatddx/cli.py:_held`); init-data checks before it
+  commits and refuses, writing nothing; the engine import refuses to write. `endpoint.model_shared` is no longer a
+  finding. Only init-data writes model threads, and a restore can't add a holder of weights, as deleted threads are
+  counted, so neither can turn up while a process runs.
+- **Not class 1, as planned**: a live handle no endpoint serves. init-data keeps the archive's threads of other
+  Worlds, saying they're "not in the data", so a database may hold handles this World doesn't serve; that is a state,
+  not a broken World. An endpoint whose engine isn't stored stays a finding: before init-data, the store is empty,
+  and a deployment starts its services before init-data (`nix/test.nix`).
+- **Class 3** (`src/chatddx/bench/seen.py:Seen.served`): a deleted handle ("model X is deleted: pick another"), as a
+  thread is never deleted and keeps its weights; one no endpoint here serves ("no endpoint here serves model X: pick
+  another"); and behind, as it was. `Seen.handle` counts deleted threads, and `Handle.deleted` says it. A scorer of
+  code that isn't shipped at its version has no editor, its page saying so (`src/chatddx/portal/scoring.py:unshipped`),
+  no composer on Review, and no measures in its views there.
+- **Class 2**: what can't be caught is raised as a `LookupError`, not a `ValueError`, so that it isn't answered as a
+  refusal: `Seen.handle` for weights held by other than one thread. The catches of it went: `_judges`,
+  `judge_asked`, `judging`, `Seen.latest`, `Seen.under`, `GET /api/models`, the look, the repl. The API and the portal
+  answer what isn't caught raw, a 500 with its type and message (`src/chatddx/api/app.py:_raw`), and uvicorn prints
+  its traceback to stderr.
+- **Pruned**: `Model.problem` of `GET /api/models`, which lists the handles served here, each with its engine; the
+  Models page's problem, and the portal's filters on it.
+- **Tests**: `test_init.py`, init-data refusing and writing nothing, and `api` and `worker` not starting;
+  `test_serving.py` and `test_o11n.py`, the inventory's half; `test_world.py`, a model not served here, and a World
+  broken under a running app answered raw; `test_seen.py`, a deleted handle; `test_library.py`, a scorer of code
+  not shipped; the serve commands' tests run on a test database, as they check it now.
+
+### What step 1 leaves
+- **A stored model held by no thread** isn't checked: only init-data stores models, each with its thread. Naming one
+  raises raw.
+- **The rest of "Elsewhere"**: secrets, canary sets, sources, migrations, the frontend, tools and kinds.
+- **`Seen.served` still catches** the inventory's `LookupError`, as the "none" it can only be, several being ruled out
+  at start; an inventory method telling who serves weights would spare the catch.

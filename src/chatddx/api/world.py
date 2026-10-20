@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import JsonValue
 
-from chatddx.bench import KINDS, WRITTEN, Bench, Checked, Endpoint, Handle, NotFound
+from chatddx.bench import KINDS, WRITTEN, Bench, Checked, Handle, NotFound
 from chatddx.factors.engine import model_of
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
@@ -60,22 +60,19 @@ def models(bench: BenchDep) -> list[schemas.Model]:
     for edit, about in bench.threads("model"):
         handle = Handle(about.name or str(edit.thread), edit.thread, edit.digest)
         weights = model_of(edit.digest, bench.store.get).name
-        at: Endpoint | None = None
-        problem = None
         try:
             at = bench.served(handle)
-        except (LookupError, ValueError) as e:
-            problem = str(e)
+        except ValueError:
+            continue
         found.append(
             schemas.Model(
                 name=handle.name,
                 weights=edit.digest,
-                engine=None if at is None else at.engine,
+                engine=at.engine,
                 facts=known[weights].model_dump(mode="json")
                 if weights in known
                 else None,
-                takes_typed=at is not None and bench.inventory.takes_typed(at.name),
-                problem=problem,
+                takes_typed=bench.inventory.takes_typed(at.name),
             )
         )
     return sorted(found, key=lambda m: m.name)
