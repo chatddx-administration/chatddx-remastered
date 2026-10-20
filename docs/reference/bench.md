@@ -296,10 +296,6 @@ Raises:
 Raises:
 1. `ValueError`: "an appendix is bound to the current vignette of a case you see"
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 ## broken
 `src/chatddx/bench/handles.py:broken`
 
@@ -307,7 +303,6 @@ add these lines here
 * `inventory: Inventory`
 * ∟`list[str]`
 
-```
 ## Carried `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Carried`
 
@@ -440,12 +435,7 @@ Raises:
 * `name: str`
 * `thread: int`
 * `weights: str`
-```
-SIGN-OFF: ADD
-add these lines here
----
 * `deleted: bool = False`
-```
 
 ## judging
 `src/chatddx/bench/seen.py:judging`
@@ -741,13 +731,7 @@ Raises:
 * ∟`Handle`
 
 Raises:
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 1. `LookupError`: "{short(weights)} is held by {len(held)} model threads, not one"
-```
-1. `ValueError`: "{self.title(weights)} is under {under}, and weights are under one: ops' to mend"
 
 ## Seen.handle_named
 `src/chatddx/bench/seen.py:Seen.handle_named`
@@ -873,14 +857,8 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 1. `ValueError`: "model {handle.name} is deleted: pick another"
 2. `ValueError`: "no endpoint here serves model {handle.name}: pick another"
-```
-1. `ValueError`: str(e) (from `LookupError`)
 
 ## Seen.shared
 `src/chatddx/bench/seen.py:Seen.shared`
