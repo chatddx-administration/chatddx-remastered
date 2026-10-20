@@ -209,14 +209,7 @@ A *request* is the body one call sends to an engine: a skeleton rendered with it
 seed (see "Rendering"), or a tool round's next request (see "Tool rounds"). It is built in three layers:
 1. Chunks are written in the portal, one component per part of the request.
 2. A recipe picks one chunk per part, and the model the request is for.
-```
-AGENT: replace
-A request is the body a call sends; a skeleton is said as such (agents/glossary.md, "Decided", 6).
----
 3. The compiler turns the recipe into a skeleton, which trials and judges reference, working out
-   what its intents send from the facts about the model.
-```
-3. The compiler turns the recipe into a skeleton, the frozen request that trials and judges reference, working out
    what its intents send from the facts about the model.
 
 Nothing in a request is a template: text is plain text. There are two kinds of placeholder, and nothing else is
@@ -368,21 +361,11 @@ model, and, without intents, for every model. What a run of it was sent to is it
 ### Compilation
 Principal author: none; written by the compiler.
 
-```
-AGENT: replace
-A request is the body a call sends; a skeleton is said as such (agents/glossary.md, "Decided", 6).
----
 A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
 compiler, the language it was compiled into, none for the recipe as written, and the facts it was worked out from:
 none when the recipe asks them for nothing, a literal sampling and reasoning, since such a skeleton is the same on
 every model. It is the only place a recipe is kept, and so the lineage from the chunks written in the portal to the
 skeleton.
-```
-A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
-compiler, the language it was compiled into, none for the recipe as written, and the facts it was worked out from:
-none when the recipe asks them for nothing, a literal sampling and reasoning, since such a skeleton is the same on
-every model. It is the only place a recipe is kept, and so the lineage from the chunks written in the portal to the
-frozen request.
 
 A compilation is provenance, not a factor: no component refers to it, so it changes no digest and no output. Trials and
 judges reference the skeleton, which holds whatever the compiler did. The same recipe compiled by the same compiler
@@ -398,14 +381,7 @@ language it names.
 ### Skeleton
 Principal author: none; normally produced by the compiler.
 
-```
-AGENT: replace
-A request is the body a call sends; a skeleton is said as such (agents/glossary.md, "Decided", 6).
----
 A skeleton is what trials and judges reference. It is the only component normally produced by code
-rather than people, though nothing prevents writing one by hand (docs/backlog.md, "Compilations checked").
-```
-A skeleton is the frozen request that trials and judges reference. It is the only component normally produced by code
 rather than people, though nothing prevents writing one by hand (docs/backlog.md, "Compilations checked").
 
 It is fully pre-rendered: the whole request except what is filled in at send time. It holds a purpose, the messages with
@@ -482,16 +458,9 @@ engine that uses it, and finding the engines that share a closure means scanning
 ### Remote engine
 Principal author: ops.
 
-```
-AGENT: replace
-A remote model names the provider, not the engine (src/chatddx/factors/engine.py:RemoteModel).
----
-A remote engine is an API we don't control. It declares only the API and its model, a remote
-model, which names its provider and its name there; where it
-is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat template is not pinned.
-```
-A remote engine is an API we don't control. It declares only the API, its provider and the requested model; where it
-is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat template is not pinned.
+A remote engine is an API we don't control. It declares only the API and its model, a remote model, which names its
+provider and its name there; where it is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat
+template is not pinned.
 
 Canary probes at the start and end of a run apply to any engine and are planned per run, so they are not part of the
 engine.

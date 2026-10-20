@@ -110,15 +110,8 @@ Variation is a configuration with recipe parts replaced (docs/catalog.md, "Confi
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
 set by. With nothing replaced, it is the configuration itself.
 
-```
-AGENT: replace
-Nothing of an unsaved variation is stored, and only what it compiles to has a digest (agents/glossary.md, "Decided", 4).
----
 It is a plain value, and nothing of an unsaved one is stored. It runs under its model's handle, so an edge needs a
 handle beside it only for a hand-written configuration, which has no model part and runs under the one named.
-```
-It is a plain value and an unsaved one is just a digest. It runs under its model's handle, so an edge needs a handle
-beside it only for a hand-written configuration, which has no model part and runs under the one named.
 
 A variation replaces the recipe's nine chunks and its model, which can't be taken out.
 

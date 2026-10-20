@@ -9,30 +9,13 @@ This document describes what curation does and why. The code is `chatddx.curatio
 commands in src/chatddx/cli.py. Curation builds on the factors, the facts, the inventory, the catalog and the store.
 
 ## The archive
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 The archive is a person, `archive`, created the first time anything is loaded. It owns everything a data set loads:
 a thread per stanza, and a family and an expectation thread per case. Whoever it is shared with collaborates on it,
 and may be given forks of their own.
-```
-The archive is a person, `archive`, created the first time anything is loaded. It owns everything a data set loads:
-a thread per record, and a family and an expectation thread per case. Whoever it is shared with collaborates on it,
-and may be given forks of their own.
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 Owning the loaded content as a person, rather than as no one, uses the catalog as it is: what a person sees, owns or
 forks works the same for the archive's threads as for anyone's. It also tells the data set's version of a thing apart
 from a person's: a re-run recognises its own stanzas by kind, name and the archive as owner (docs/catalog.md,
-"Names"), and leaves everyone else's alone.
-```
-Owning the loaded content as a person, rather than as no one, uses the catalog as it is: what a person sees, owns or
-forks works the same for the archive's threads as for anyone's. It also tells the data set's version of a thing apart
-from a person's: a re-run recognises its own records by kind, name and the archive as owner (docs/catalog.md,
 "Names"), and leaves everyone else's alone.
 
 The archive is never wiped.
@@ -60,67 +43,28 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 (docs/reference/factors.md).
 
 On top of the fields:
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   a `local_model` stanza, and a remote engine's model, a `remote_model` stanza; and a recipe's parts name stanzas,
-  not digests.
-```
-- **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
-  a `local_model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
   not digests.
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds a data set's judge
   to a handle, whose latest engine judges, and its recipe is compiled for the handle's model; a handle that doesn't
   resolve skips the judge and its scorers, reported as ops' error.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - **Forks.** `fork_of` names a stanza of the same kind that this one is a fork of. It is loaded as a fork of
   that stanza's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A stanza
-  whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's
-  origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from the
-  data's.
-```
-- **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
-  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A record
   whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's
   origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from the
   data's.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - **Catalog entries.** `tags` and `description` are entries on the stanza's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
-```
-- **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
-  label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
-  `description` is also a field, the one the model reads.
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked
   out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` stanza
   is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
   a `recommended` sampling".
-```
-- **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked
-  out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` record
-  is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
-  a `recommended` sampling".
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - **Translations by stanza.** A translations stanza's entries may be written in `of`, grouped by the stanza whose
   texts they translate, any stanza of texts (instructions, few-shot, prompt, output, toolset) or a recipe, for its
   appendix layout, each entry a `text` and its `translation`: `[[translations.sample.of."instructions.clinician"]]`.
@@ -130,44 +74,13 @@ A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
   so an entry no text uses any more is found, an entry that isn't a text and its translation, and a text translated
   two ways. A text that several stanzas hold is written once, under any of them. A text left untranslated doesn't
   stop the loading (see "Texts").
-```
-- **Translations by record.** A translations record's entries may be written in `of`, grouped by the record whose
-  texts they translate, any record of texts (instructions, few-shot, prompt, output, toolset) or a recipe, for its
-  appendix layout, each entry a `text` and its `translation`: `[[translations.sample.of."instructions.clinician"]]`.
-  Loading makes them the chunk's entries into the texts file's language, and refuses a record that isn't one of texts
-  ("'sampling.greedy' names no record of texts"), one the data set doesn't have ("'output.nope': no output named
-  'nope'"), one written in the file's own language ("output.plan is written in en"), a text its record doesn't hold,
-  so an entry no text uses any more is found, an entry that isn't a text and its translation, and a text translated
-  two ways. A text that several records hold is written once, under any of them. A text left untranslated doesn't
-  stop the loading (see "Texts").
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 A name is defined once per kind: a text is written in one texts file, and only a translations stanza's name comes
-back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `local_model`, `remote_model`,
-`local_engine` or `remote_engine` tables, and a recipe names no `model`: engines are the World's (see "The World"),
-and a recipe that names one is refused.
-```
-A name is defined once per kind: a text is written in one texts file, and only a translations record's name comes
 back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `local_model`, `remote_model`,
 `local_engine` or `remote_engine` tables, and a recipe names no `model`: engines are the World's (see "The World"),
 and a recipe that names one is refused.
 
 ### Texts
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
-What the model reads is written in a language, and a texts file's name gives it: every text stanza in
-`texts-sv.toml` is written in Swedish, every translations stanza there translates into Swedish, and no stanza says its
-own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool
-description, or schema prose says something, so a prompt of slots alone, or an output without guidance or schema,
-holds none. A chunk that holds text is written in a texts file, and one that holds none in `factors.toml`, where it
-serves every language. Loading writes each text's language on its digest, and names it plainly, such as
-`management-plan`; a translations chunk says its languages itself, and is given none.
-```
 What the model reads is written in a language, and a texts file's name gives it: every text record in
 `texts-sv.toml` is written in Swedish, every translations record there translates into Swedish, and no record says its
 own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool
@@ -176,22 +89,11 @@ holds none. A chunk that holds text is written in a texts file, and one that hol
 serves every language. Loading writes each text's language on its digest, and names it plainly, such as
 `management-plan`; a translations chunk says its languages itself, and is given none.
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 A text is written in one language and translated into the others. A text stanza in two texts files, or in
 `factors.toml` and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is
 written in one language, and translated into others". A translations stanza is written in the texts file of the
 language it translates into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused.
 Translations stanzas of one name in several texts files are one chunk, into each file's language (docs/factors.md,
-"Translations"): `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
-```
-A text is written in one language and translated into the others. A text record in two texts files, or in
-`factors.toml` and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is
-written in one language, and translated into others". A translations record is written in the texts file of the
-language it translates into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused.
-Translations records of one name in several texts files are one chunk, into each file's language (docs/factors.md,
 "Translations"): `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
 
 A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have
@@ -255,10 +157,6 @@ loads a data set, the World's `_data/` unless `--data` names another, for the ar
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references
    resolved, the facts about each served model the facts know, recipes made once and compiled for the engine the
    World names for configurations, and into each language their translations name, judges' recipes compiled for
@@ -266,23 +164,7 @@ A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
    written. A recipe its translations can't carry into a language is made all the same, and said after the stanzas:
    `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data
    set gives one.
-```
-1. **Plan.** The data set and the World's engines are planned into components, without the store: references
-   resolved, the facts about each served model the facts know, recipes made once and compiled for the engine the
-   World names for configurations, and into each language their translations name, judges' recipes compiled for
-   their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
-   written. A recipe its translations can't carry into a language is made all the same, and said after the records:
-   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data
-   set gives one.
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 2. **Stanzas.** Each planned stanza becomes a thread named after it. A stanza the archive already has, by kind and
-   name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
-   records its compilation. Its tags, description, view labels and language are brought in line with the data.
-```
-2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
 3. **Cases.** Each case is read from the World's source, the one `--source` names or the only one that lists its
@@ -307,15 +189,8 @@ A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
 A tag the archive gave that the data no longer lists is withdrawn; tags people gave stay theirs. Sharing is only
 ever added.
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 Running it again is how a change to the data set is loaded, and how it is checked that the store still holds it: a
 second run of an unchanged data set writes nothing and validates every stanza.
-```
-Running it again is how a change to the data set is loaded, and how it is checked that the store still holds it: a
-second run of an unchanged data set writes nothing and validates every record.
 
 ## Repairing
 A vignette can be renamed or edited at its source. Its family then needs a repair, which moves it to the vignette's
@@ -342,16 +217,8 @@ Wiping covers all a person owns, their runs and their own threads included, not 
 ## Tests
 src/chatddx/curation/test/.
 
-```
-AGENT: replace
-A data set's record is a stanza now (agents/glossary.md, "Decided", 1).
----
 - The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
   stanzas exercises something a test reads. Its paths, the names tests share and the helpers they import are in
-  src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
-```
-- The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
-  records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
   src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
 - What `curated` loads holds no mistakes: its only skips, lints and findings are the ones the World is built to
   give. Only `test_the_test_world.py` writes counts, skip lines or lint lines out; other tests derive them from the

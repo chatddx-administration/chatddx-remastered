@@ -311,13 +311,7 @@ Raises:
 `src/chatddx/store/queue.py:Queue.claim`
 
 * `worker: UUID`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `capacity: Mapping[str, int]`
-```
-* `max_jobs: Mapping[str, int]`
 * `lost: timedelta`
 * ∟`Job | None`
 

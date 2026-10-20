@@ -282,13 +282,7 @@ Raises:
 ## Effort
 `src/chatddx/factors/facts.py:Effort`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `Effort = Level | Literal["default"]`
-```
-* `Effort = Intent | Literal["default"]`
 
 ## EngineRef
 `src/chatddx/factors/engine.py:EngineRef`
@@ -468,20 +462,6 @@ Raises:
 1. `ValueError`: "{kind} cannot use inserts {sorted(stray)}" (through `Instructions._inserts`, in a `ValidationError`)
 2. `ValueError`: "inserts used more than once: {sorted(dupes)}" (through `Instructions._inserts`, in a `ValidationError`)
 
-```
-SIGN-OFF: REMOVE
-remove the 10 lines below
-```
-## Intent
-`src/chatddx/factors/facts.py:Intent`
-
-* `Intent = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]`
-
-## INTENTS
-`src/chatddx/factors/facts.py:INTENTS`
-
-* `INTENTS: tuple[Intent, ...] = get_args(Intent)`
-
 ## iter_refs
 `src/chatddx/factors/base.py:iter_refs`
 
@@ -535,13 +515,7 @@ Raises:
 ## Landing `(Frozen)`
 `src/chatddx/factors/facts.py:Landing`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `level: Level`
-```
-* `level: Intent`
 * `writes: Writes`
 * `nearest: tuple[str, ...] = ()`
 
@@ -581,10 +555,6 @@ Raises:
 `src/chatddx/factors/lint.py:Languages`
 
 * `Languages = Callable[[str], str | None]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 ## Level
 `src/chatddx/factors/facts.py:Level`
@@ -595,7 +565,6 @@ add these lines here
 `src/chatddx/factors/facts.py:LEVELS`
 
 * `LEVELS: tuple[Level, ...] = get_args(Level)`
-```
 
 ## lint
 `src/chatddx/factors/lint.py:lint`
@@ -732,13 +701,7 @@ Raises:
 ## ModelFacts.recommended
 `src/chatddx/factors/facts.py:ModelFacts.recommended`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `level: Level`
-```
-* `level: Intent`
 * ∟`SamplingValues`
 
 Raises:
@@ -964,24 +927,12 @@ Raises:
 ## ReasoningFact
 `src/chatddx/factors/facts.py:ReasoningFact`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `ReasoningFact = Level | Refusal | Writes`
-```
-* `ReasoningFact = Intent | Refusal | Writes`
 
 ## ReasoningFacts `(Frozen)`
 `src/chatddx/factors/facts.py:ReasoningFacts`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `default: Level | None = None`
-```
-* `default: Intent | None = None`
 * `off: ReasoningFact | None = None`
 * `on: ReasoningFact | None = None`
 * `minimal: ReasoningFact | None = None`
@@ -992,25 +943,13 @@ replace the line below with these
 * `budget: Literal["thinking_token_budget"] | Refusal | None = None`
 
 Raises:
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 1. `ValueError`: "{' -> '.join([*path, level])}: the collapses go round" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
-```
-1. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 2. `ValueError`: "{name!r} collapses into {target!r}, which ends in no fact" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 
 ## ReasoningFacts.fact
 `src/chatddx/factors/facts.py:ReasoningFacts.fact`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `level: Level`
-```
-* `intent: Intent`
 * ∟`ReasoningFact | None`
 
 ## ReasoningFacts.landing
@@ -1021,26 +960,14 @@ replace the line below with these
 
 Raises:
 1. `Refused`: "no default reasoning level is known"
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 2. `ValueError`: "{' -> '.join([*path, level])}: the collapses go round" (through `ReasoningFacts._land`)
-```
-2. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._land`)
 3. `Refused`: "nothing is known about reasoning {landed!r}"
 4. `Refused`: reason
 
 ## ReasoningFacts.realized
 `src/chatddx/factors/facts.py:ReasoningFacts.realized`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * ∟`dict[Level, Writes]`
-```
-* ∟`dict[Intent, Writes]`
 
 ## Reasons
 `src/chatddx/factors/lint.py:Reasons`
@@ -1096,13 +1023,7 @@ replace the line below with these
 `src/chatddx/factors/facts.py:Refusal`
 
 * `refused: Annotated[str, StringConstraints(min_length=1)]`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `nearest: Level | None = None`
-```
-* `nearest: Intent | None = None`
 
 ## Refused `(ValueError)`
 `src/chatddx/factors/facts.py:Refused`
@@ -1251,13 +1172,7 @@ Raises:
 ## SamplingFacts `(Frozen)`
 `src/chatddx/factors/facts.py:SamplingFacts`
 
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `recommended: dict[Level, SamplingValues] = Field(default_factory=dict)`
-```
-* `recommended: dict[Intent, SamplingValues] = Field(default_factory=dict)`
 * `generation_config: SamplingValues | None = None`
 
 ## SamplingValues `(Frozen)`

@@ -32,17 +32,8 @@ The researchers will want to iterate and continuously refine configurations acco
 4. A configuration with several successful variations branch out
 5. Unsuccessful configurations are deleted
 
-```
-AGENT: replace
-A configuration is a skeleton thread (agents/glossary.md, "Decided", 6), and a variation being tried is a plain
-value of which nothing is stored (agents/glossary.md, "Decided", 4; src/chatddx/bench/variation.py:TriedVariation).
----
-A configuration is a skeleton thread, each version with the recipe it was compiled from, and a
-variation is one with recipe parts replaced over one of its versions. A variation being tried is a plain value, of which
-nothing is stored; saving it makes it a configuration of its own, a fork, or a new version of one of the person's own.
-```
-A configuration is a request kept on a skeleton thread, each version with the recipe it was compiled from, and a
-variation is one with recipe parts replaced over one of its versions. A variation being tried is just a digest;
+A configuration is a skeleton thread, each version with the recipe it was compiled from, and a variation is one with
+recipe parts replaced over one of its versions. A variation being tried is a plain value, of which nothing is stored;
 saving it makes it a configuration of its own, a fork, or a new version of one of the person's own.
 
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies.

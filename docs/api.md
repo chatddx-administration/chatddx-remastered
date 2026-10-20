@@ -219,16 +219,8 @@ Once started, each run is queued for the worker as a job of its own, and the sta
 each run's `run.started` holds, those sent as written first, and `left_out`, each language left out with its cases
 and why; `Location` is the first run's path.
 
-```
-AGENT: replace
-An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
----
 A run is sent under its endpoint's execution (docs/inventory.md, "Endpoints"), with the concurrency, up to the
 endpoint's capacity, and the order the request gives, a shuffled order's seed drawn; with its endpoint's canary set;
-and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
-```
-A run is sent under its endpoint's execution (docs/inventory.md, "Endpoints"), with the concurrency, up to the
-endpoint's `max_jobs`, and the order the request gives, a shuffled order's seed drawn; with its endpoint's canary set;
 and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
 
 ### Where it runs

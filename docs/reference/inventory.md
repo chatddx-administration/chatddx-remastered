@@ -72,25 +72,13 @@ Raises:
 * `engine: Digest`
 * `url: HttpUrl`
 * `host: str | None = None`
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 * `capacity: int = Field(default=1, ge=1)`
-```
-* `max_jobs: int = Field(default=1, ge=1)`
 * `credential: str | None = None`
 * `canaries: Digest | None = None`
 * `execution: Execution = Field(default_factory=Execution)`
 
 Raises:
-```
-SIGN-OFF: REPLACE
-replace the line below with these
----
 1. `ValueError`: "the execution sends {self.execution.concurrency} requests at once, and the capacity is {self.capacity}" (through `EndpointSpec._within_capacity`, in a `ValidationError`)
-```
-1. `ValueError`: "the execution sends {self.execution.concurrency} requests at once, and max_jobs takes {self.max_jobs}" (through `EndpointSpec._within_max_jobs`, in a `ValidationError`)
 
 ## HostSpec `(Frozen)`
 `src/chatddx/inventory/inventory.py:HostSpec`

@@ -21,13 +21,7 @@ Starting a run refuses, before anything is written:
 - an endpoint the gate refuses (see "The gate");
 - a tool whose code isn't shipped by the running chatddx, or not at the version the tool pins (docs/factors.md,
   "Tool");
-```
-AGENT: replace
-An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
----
 - a concurrency above the endpoint's capacity;
-```
-- a concurrency above the endpoint's `max_jobs`;
 - phases to send canaries at without a canary set.
 
 Then it stores the trial with everything it refers to, and the canary set, writes the run's start record and the run's
@@ -188,13 +182,7 @@ Each is made where it is found, as `Finding(…)` in `src/chatddx/runner/`.
 
 ## Elsewhere
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
-```
-AGENT: replace
-An endpoint's `max_jobs` is its capacity now (agents/glossary.md, "Decided", 3).
----
 - **Capacity across runs**, and a lost run resumed: `docs/worker.md`, "Claiming".
-```
-- **`max_jobs` across runs**, and a lost run resumed: `docs/worker.md`, "Claiming".
 - **Canary sets are each endpoint's**, in the inventory (docs/inventory.md, "Endpoints"); no World's endpoint names
   one yet, though data sets hold them.
 - **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/backlog.md,
