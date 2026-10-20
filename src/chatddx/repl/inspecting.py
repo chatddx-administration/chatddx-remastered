@@ -16,7 +16,7 @@ from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import RECIPE_PARTS, Reasoning, Sampling, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import (
-    INTENTS,
+    LEVELS,
     Effort,
     Landing,
     ModelFacts,
@@ -571,7 +571,7 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
 
     table.add_row("url", str(spec.url))
     table.add_row("host", spec.host or "—")
-    table.add_row("max jobs", str(spec.max_jobs))
+    table.add_row("capacity", str(spec.capacity))
     table.add_row("credential", spec.credential or "—")
     table.add_row(
         "cleared for", " ".join(sorted(bench.inventory.cleared.get(name, ())))
@@ -633,7 +633,7 @@ def reasoning(repl: Repl) -> None:
         held = [f"▸ {h}" if h == under else h for h in sorted(handles.get(model, ()))]
         table.add_column("\n".join([model, *held]), overflow="fold")
 
-    for effort in ("default", *INTENTS):
+    for effort in ("default", *LEVELS):
         cells = [_level(facts, effort) for facts in models.values()]
         table.add_row(f"▸ {effort}" if effort == asked else effort, *cells)
 

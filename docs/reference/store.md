@@ -311,7 +311,7 @@ Raises:
 `src/chatddx/store/queue.py:Queue.claim`
 
 * `worker: UUID`
-* `max_jobs: Mapping[str, int]`
+* `capacity: Mapping[str, int]`
 * `lost: timedelta`
 * ∟`Job | None`
 

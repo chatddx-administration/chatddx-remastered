@@ -37,7 +37,7 @@ def _endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoin
         serves=serves,
         url=str(spec.url),
         host=spec.host,
-        max_jobs=spec.max_jobs,
+        capacity=spec.capacity,
         credential=spec.credential,
         cleared_for=sorted(bench.inventory.cleared.get(name, ())),
         takes_typed=bench.inventory.takes_typed(name),

@@ -80,7 +80,7 @@ def test_endpoints_and_hosts_are_declared_in_the_inventory(tmp_path: Path) -> No
     )
     inventory = Inventory.load(path)
     endpoint = inventory.endpoint("qwen")
-    assert (endpoint.max_jobs, endpoint.credential, str(endpoint.url)) == (
+    assert (endpoint.capacity, endpoint.credential, str(endpoint.url)) == (
         1,
         None,
         "http://pelle.km:12009/v1/",

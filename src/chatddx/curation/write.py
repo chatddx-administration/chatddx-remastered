@@ -116,7 +116,7 @@ class _Init:
         )
         return edit.thread, VERBS[kept]
 
-    def record(self, r: Planned) -> None:
+    def stanza(self, r: Planned) -> None:
         found = threads.find(self.rows, r.kind, r.name, owner=self.archive.id)
         labels: dict[tuple[Part, int], str] = {
             ("view", i): label for i, label in enumerate(r.labels) if label is not None
@@ -427,20 +427,20 @@ def init(
     user: Person,
     giftbag: bool = False,
 ) -> list[str]:
-    schemas = [r for r in plan.records if r.kind == "expectation_schema"]
+    schemas = [r for r in plan.stanzas if r.kind == "expectation_schema"]
     if len(schemas) != 1:
         raise ValueError("a data set needs exactly one expectation schema")
     with conn.transaction():
         people = People(conn)
         archive = people.find(ARCHIVE) or people.add(ARCHIVE, "Archive")
         writer = _Init(conn, plan, archive)
-        compilations = [r.compilation for r in plan.records if r.compilation]
+        compilations = [r.compilation for r in plan.stanzas if r.compilation]
         _ = writer.store.add(
             plan.registry,
-            [*(r.digest for r in plan.records), *compilations, *plan.compilations],
+            [*(r.digest for r in plan.stanzas), *compilations, *plan.compilations],
         )
-        for r in plan.records:
-            writer.record(r)
+        for r in plan.stanzas:
+            writer.stanza(r)
         writer.lines += [f"[skipped] {s}" for s in plan.skipped]
         writer.lines += [f"[untranslated] {s}" for s in plan.untranslated]
         for id, data in cases.items():

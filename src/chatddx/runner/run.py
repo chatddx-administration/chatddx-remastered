@@ -159,9 +159,9 @@ class Runner:
         secret = admit(self._inventory, registry.get, endpoint, trial)
         toolbox = load(resolve(registry.get, trial.skeleton, Skeleton), registry.get)
         spec = self._inventory.endpoint(endpoint)
-        if execution.concurrency > spec.max_jobs:
+        if execution.concurrency > spec.capacity:
             raise ValueError(
-                f"endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the "
+                f"endpoint {endpoint!r} takes {spec.capacity} requests at once, the "
                 + f"execution sends {execution.concurrency}"
             )
         return secret, toolbox, str(spec.url)

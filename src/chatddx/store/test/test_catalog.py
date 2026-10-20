@@ -25,7 +25,7 @@ from chatddx.factors import request
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
-from chatddx.factors.facts import Intent, ModelFacts, ReasoningFacts, Writes
+from chatddx.factors.facts import Level, ModelFacts, ReasoningFacts, Writes
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
@@ -333,7 +333,7 @@ def test_a_configuration_is_behind_facts_corrected_where_it_reaches(
     catalog, store, reg, _, alice = stored_world(conn)
     rows = Rows(conn)
 
-    def facts(default: Intent, **more: JsonValue) -> str:
+    def facts(default: Level, **more: JsonValue) -> str:
         reasoning = ReasoningFacts(
             default=default,
             on=Writes(chat_template_kwargs={"enable_thinking": True}),

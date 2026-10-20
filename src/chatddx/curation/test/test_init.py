@@ -55,7 +55,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     plan = world_plan()
     lines = init(conn, plan, CASES, vignettes(), alice)
     appendices, ordered, expected = appended(CASES)
-    made = len(plan.records) + len(CASES) + appendices + expected
+    made = len(plan.stanzas) + len(CASES) + appendices + expected
     assert tally(lines) == Counter(
         {
             "archive created": made + len(CASES) + ordered,
@@ -70,7 +70,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         == f"[share] {shared} of {shared} archive threads and families with alice"
     )
     components = (
-        len({r.digest for r in plan.records}) + 2 * len(CASES) + sum(appended(CASES))
+        len({r.digest for r in plan.stanzas}) + 2 * len(CASES) + sum(appended(CASES))
     )
     assert lines[-len(LINTS) - 1 :] == [
         *LINTS,
@@ -108,7 +108,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert [line for line in lines if line.endswith(LANGUAGES)] == [
         f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
         + f", in {r.language}"
-        for r in plan.records
+        for r in plan.stanzas
         if r.language is not None
     ]
     assert language_of(rows, plan.named("toolset", "lookup").digest) == "en"
@@ -138,7 +138,7 @@ def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
     unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
     lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
     components = (
-        len({r.digest for r in plan.records}) + 2 * len(CASES) + sum(appended(CASES))
+        len({r.digest for r in plan.stanzas}) + 2 * len(CASES) + sum(appended(CASES))
     )
     assert [line for line in lines if line.startswith("[lint")] == [
         *FACTOR_LINTS,

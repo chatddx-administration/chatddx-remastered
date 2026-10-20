@@ -282,7 +282,7 @@ Raises:
 ## Effort
 `src/chatddx/factors/facts.py:Effort`
 
-* `Effort = Intent | Literal["default"]`
+* `Effort = Level | Literal["default"]`
 
 ## EngineRef
 `src/chatddx/factors/engine.py:EngineRef`
@@ -462,16 +462,6 @@ Raises:
 1. `ValueError`: "{kind} cannot use inserts {sorted(stray)}" (through `Instructions._inserts`, in a `ValidationError`)
 2. `ValueError`: "inserts used more than once: {sorted(dupes)}" (through `Instructions._inserts`, in a `ValidationError`)
 
-## Intent
-`src/chatddx/factors/facts.py:Intent`
-
-* `Intent = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]`
-
-## INTENTS
-`src/chatddx/factors/facts.py:INTENTS`
-
-* `INTENTS: tuple[Intent, ...] = get_args(Intent)`
-
 ## iter_refs
 `src/chatddx/factors/base.py:iter_refs`
 
@@ -525,7 +515,7 @@ Raises:
 ## Landing `(Frozen)`
 `src/chatddx/factors/facts.py:Landing`
 
-* `level: Intent`
+* `level: Level`
 * `writes: Writes`
 * `nearest: tuple[str, ...] = ()`
 
@@ -565,6 +555,16 @@ Raises:
 `src/chatddx/factors/lint.py:Languages`
 
 * `Languages = Callable[[str], str | None]`
+
+## Level
+`src/chatddx/factors/facts.py:Level`
+
+* `Level = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]`
+
+## LEVELS
+`src/chatddx/factors/facts.py:LEVELS`
+
+* `LEVELS: tuple[Level, ...] = get_args(Level)`
 
 ## lint
 `src/chatddx/factors/lint.py:lint`
@@ -701,7 +701,7 @@ Raises:
 ## ModelFacts.recommended
 `src/chatddx/factors/facts.py:ModelFacts.recommended`
 
-* `level: Intent`
+* `level: Level`
 * ∟`SamplingValues`
 
 Raises:
@@ -927,12 +927,12 @@ Raises:
 ## ReasoningFact
 `src/chatddx/factors/facts.py:ReasoningFact`
 
-* `ReasoningFact = Intent | Refusal | Writes`
+* `ReasoningFact = Level | Refusal | Writes`
 
 ## ReasoningFacts `(Frozen)`
 `src/chatddx/factors/facts.py:ReasoningFacts`
 
-* `default: Intent | None = None`
+* `default: Level | None = None`
 * `off: ReasoningFact | None = None`
 * `on: ReasoningFact | None = None`
 * `minimal: ReasoningFact | None = None`
@@ -943,13 +943,13 @@ Raises:
 * `budget: Literal["thinking_token_budget"] | Refusal | None = None`
 
 Raises:
-1. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
+1. `ValueError`: "{' -> '.join([*path, level])}: the collapses go round" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 2. `ValueError`: "{name!r} collapses into {target!r}, which ends in no fact" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 
 ## ReasoningFacts.fact
 `src/chatddx/factors/facts.py:ReasoningFacts.fact`
 
-* `intent: Intent`
+* `level: Level`
 * ∟`ReasoningFact | None`
 
 ## ReasoningFacts.landing
@@ -960,14 +960,14 @@ Raises:
 
 Raises:
 1. `Refused`: "no default reasoning level is known"
-2. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._land`)
+2. `ValueError`: "{' -> '.join([*path, level])}: the collapses go round" (through `ReasoningFacts._land`)
 3. `Refused`: "nothing is known about reasoning {landed!r}"
 4. `Refused`: reason
 
 ## ReasoningFacts.realized
 `src/chatddx/factors/facts.py:ReasoningFacts.realized`
 
-* ∟`dict[Intent, Writes]`
+* ∟`dict[Level, Writes]`
 
 ## Reasons
 `src/chatddx/factors/lint.py:Reasons`
@@ -1023,7 +1023,7 @@ Raises:
 `src/chatddx/factors/facts.py:Refusal`
 
 * `refused: Annotated[str, StringConstraints(min_length=1)]`
-* `nearest: Intent | None = None`
+* `nearest: Level | None = None`
 
 ## Refused `(ValueError)`
 `src/chatddx/factors/facts.py:Refused`
@@ -1172,7 +1172,7 @@ Raises:
 ## SamplingFacts `(Frozen)`
 `src/chatddx/factors/facts.py:SamplingFacts`
 
-* `recommended: dict[Intent, SamplingValues] = Field(default_factory=dict)`
+* `recommended: dict[Level, SamplingValues] = Field(default_factory=dict)`
 * `generation_config: SamplingValues | None = None`
 
 ## SamplingValues `(Frozen)`

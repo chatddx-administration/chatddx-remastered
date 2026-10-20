@@ -86,7 +86,7 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
         + remote("gemma@api", "google/gemma-3-27b-it")
     )
     planned = plan(tmp_path, engines=engines, factors=INTENTS)
-    assert [(r.table, r.name) for r in planned.records] == [
+    assert [(r.table, r.name) for r in planned.stanzas] == [
         ("remote_model", "qwen@api"),
         ("remote_model", "gpt-oss@api"),
         ("remote_model", "gemma@api"),
@@ -197,7 +197,7 @@ entries = { "Fill in the plan." = "Fyll i planen." }
 "You are an emergency physician." = "Du bist Notarzt."
 """,
     )
-    assert [(r.table, r.name, r.language) for r in planned.records] == [
+    assert [(r.table, r.name, r.language) for r in planned.stanzas] == [
         ("remote_model", "qwen@api", None),
         ("remote_engine", "qwen@api", None),
         ("facts", QWEN, None),
@@ -261,7 +261,7 @@ sampling = "greedy"
 """,
         texts_en=ENGLISH,
     )
-    assert {r.name: r.fork_of for r in planned.records if r.table == "recipe"} == {
+    assert {r.name: r.fork_of for r in planned.stanzas if r.table == "recipe"} == {
         "plan": None,
         "asked": "plan",
         "greedy": "plan",
@@ -338,7 +338,7 @@ GROUPED = """
 """
 
 
-def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
+def test_translations_are_grouped_by_the_stanza_whose_texts_they_translate(
     tmp_path: Path,
 ) -> None:
     files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
@@ -397,7 +397,7 @@ translation = "Du är akutläkare."
         ),
         (
             '"sampling.greedy" = [{ text = "x", translation = "x" }]',
-            "'sampling.greedy' names no record of texts",
+            "'sampling.greedy' names no stanza of texts",
         ),
         (
             '"output.nope" = [{ text = "x", translation = "x" }]',

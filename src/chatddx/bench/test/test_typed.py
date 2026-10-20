@@ -30,6 +30,16 @@ def test_a_typed_case_is_kept_with_its_case_and_family(bench: Bench) -> None:
     assert unnamed.case != family.case and unnamed.about.name is None
 
 
+def test_an_unnamed_family_is_shown_and_found_by_its_vignette_s_place(
+    bench: Bench,
+) -> None:
+    family = bench.type_case(TYPED, language="en")
+    place = f"{family.vignette.source}/{family.vignette.id}"
+    assert (family.name, bench.title(family.case)) == (place, place)
+    assert bench.family(place).case == family.case
+    assert bench.case_titled(place)[1] == family.case
+
+
 def test_what_can_t_be_typed_is_refused(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ) -> None:

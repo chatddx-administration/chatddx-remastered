@@ -30,7 +30,7 @@ from chatddx.factors.engine import (
     served_model_name,
 )
 from chatddx.factors.facts import (
-    Intent,
+    Level,
     ModelFacts,
     ReasoningFacts,
     Refusal,
@@ -1706,7 +1706,7 @@ def test_intents_are_worked_out_from_the_facts_of_the_engine_s_model() -> None:
     ).body
     assert (body["temperature"], body["top_p"]) == (0.5, 0.9)
 
-    refused: list[tuple[Intent, int | None, str]] = [
+    refused: list[tuple[Level, int | None, str]] = [
         ("high", None, "no high effort"),
         ("low", 64, "no budget"),
     ]

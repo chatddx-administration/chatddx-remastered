@@ -282,7 +282,7 @@ Raises:
 * `serves: str | None = Field(description="the model its engine serves, by digest")`
 * `url: str`
 * `host: str | None`
-* `max_jobs: int`
+* `capacity: int`
 * `credential: str | None`
 * `cleared_for: list[str]`
 * `takes_typed: bool = Field(…)`

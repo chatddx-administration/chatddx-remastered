@@ -1,8 +1,8 @@
 # Judge handles: work in progress
 
 A judge names a model handle, as a recipe does, rather than an engine: researchers pick models by handle and see no
-engines (`agents/wip-refine.md`, "Start with this", 5). The docs already say so: `docs/factors.md`, "Judge", and
-`docs/runner.md`, "Judges". "Decided" means the user said so; "Take" is the agent's recommendation and still open.
+engines (`agents/wip-refine.md`, "Start with this", 5). The docs already say so: `docs/modules/factors.md`, "Judge", and
+`docs/modules/runner.md`, "Judges". "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 ## Decided
 Decided: judges name a handle, as the take moved here from the backlog has it (see "Taken from the backlog").
@@ -43,8 +43,8 @@ Decided: judges name a handle, as the take moved here from the backlog has it (s
 - **Edges**: `POST /api/judges/asked` renders the handle's latest engine's name, else `‹model›`; the portal's judge
   form sends the handle's weights (`frontend/src/lib/scorer/JudgeEditor.svelte`); scripted runs start a fake at each
   judge's handle's endpoint.
-- **Docs**: the reference's sign-off, and `AGENT` suggestions in `docs/factors.md`, `docs/facts.md`, `docs/api.md`,
-  `docs/bench.md`, `docs/runner.md`, `docs/chatddx.md`, `docs/catalog.md` and `docs/inventory.md`.
+- **Docs**: the reference's sign-off, and `AGENT` suggestions in `docs/modules/factors.md`, `docs/modules/facts.md`, `docs/modules/api.md`,
+  `docs/modules/bench.md`, `docs/modules/runner.md`, `docs/chatddx.md`, `docs/modules/catalog.md` and `docs/modules/inventory.md`.
 - **Tests**: `test_factors.py`, a scoring's engines; `test_judges.py`, judges by weights and the plan's engines;
   `test_score.py`, scorings pinning engines; `test_seen.py`, a scoring pinned, left out and behind;
   `test_writes.py` and `test_scores.py`, the API's judge and what it is asked.
@@ -62,7 +62,7 @@ Decided: judges name a handle, as the take moved here from the backlog has it (s
 
 ### Judges name a model
 A judge names a model, as a recipe does, rather than an engine: its calls go to the endpoint serving that model,
-picked as a run's endpoint is (see "Picking an endpoint for a model"), and the engine they went to is pinned with the
+picked as a run's endpoint is (`agents/wip-refine.md`, "Picking an endpoint for a model"), and the engine they went to is pinned with the
 score, as a trial pins a run's. It changes the judge's kind, so it is cheapest before real scores are stored.
 
 Decided: a judge's model is picked by handle, and its engine is the handle's latest.

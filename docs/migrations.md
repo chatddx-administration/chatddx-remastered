@@ -1,49 +1,55 @@
 # Migrations
-Migrations are `migrations/NNNN-tT-<schema>-<what>.sql`: the next free number, the tier, the schema and a few words
-on what it does (the first migration of each schema and tier has none). Below, each schema lists its migrations by
-tier; a new migration goes last in its schema and tier's list, with what it changes and the Python code that repeats
-it, if any. A new schema gets its own section with all three tiers.
+
+Migrations are `migrations/NNNN-tT-<schema>-<what>.sql`: the next free number, the tier, the schema and a few words on
+what it does (the first migration of each schema and tier has none). Below, each schema lists its migrations by tier; a
+new migration goes last in its schema and tier's list, with what it changes and the Python code that repeats it, if any.
+A new schema gets its own section with all three tiers.
 
 ## factor
 
 ### Tier 0
+
 - `0001-t0-factor.sql`: schema `factor`.
   - `component (digest, kind, v, canonical, doc)`: every component kind in one table. `canonical` is the source of
     truth; `doc` is its `jsonb` copy.
   - `component_ref (src, path, dst, kinds)`: one row per typed reference (`Component.refs()`), with deferred foreign
-    keys on `src` and `dst`. This gives references inside lists, and references that allow several kinds, a
-    foreign key each.
+    keys on `src` and `dst`. This gives references inside lists, and references that allow several kinds, a foreign key
+    each.
 
 ### Tier 1
-- `0002-t1-factor.sql`: creates `chatddx_writer` and `chatddx_reader` (NOLOGIN) unless they exist; every schema's
-  tier 1 grants to them. PUBLIC loses all access to `factor`; the writer gets SELECT, INSERT and the reader SELECT,
-  with default privileges for tables the admin creates later.
+
+- `0002-t1-factor.sql`: creates `chatddx_writer` and `chatddx_reader` (NOLOGIN) unless they exist; every schema's tier 1
+  grants to them. PUBLIC loses all access to `factor`; the writer gets SELECT, INSERT and the reader SELECT, with
+  default privileges for tables the admin creates later.
 
 ### Tier 2
-- `0003-t2-factor.sql`: a CHECK that `digest` matches `canonical` and that `doc`, `kind` and `v` match it; a
-  deferred constraint trigger (`factor.check_ref`) that each reference row points at one of its allowed kinds and
-  matches the value at its path; `factor.refuse_change()`, which every schema's insert-only triggers call; and
-  insert-only triggers (UPDATE, DELETE, TRUNCATE) on both tables.
+
+- `0003-t2-factor.sql`: a CHECK that `digest` matches `canonical` and that `doc`, `kind` and `v` match it; a deferred
+  constraint trigger (`factor.check_ref`) that each reference row points at one of its allowed kinds and matches the
+  value at its path; `factor.refuse_change()`, which every schema's insert-only triggers call; and insert-only triggers
+  (UPDATE, DELETE, TRUNCATE) on both tables.
 
 ## ledger
 
 ### Tier 0
+
 - `0004-t0-ledger.sql`: schema `ledger`, the run and score logs: `run_stage (run, stage)`,
   `run_item (run, case, replicate)`, `canary_call (run, phase, canary)`, `score_stage (score, stage)` and
-  `score_item (score, case, replicate, view)`. `payload` holds `Record.canonical`; `doc` is its `jsonb` copy. Item
-  rows and canary calls reference their log's started row through a constant `stage` column, and a score's started
-  row references its run's. Trials, scorings and cases reference `factor.component`.
+  `score_item (score, case, replicate, view)`. `payload` holds `Record.canonical`; `doc` is its `jsonb` copy. Item rows
+  and canary calls reference their log's started row through a constant `stage` column, and a score's started row
+  references its run's. Trials, scorings and cases reference `factor.component`.
 
 ### Tier 1
+
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
-  gets nothing: `run_item` and `score_item` hold sensitive records
-  (`src/chatddx/ledger/record.py:Record.sensitive`), and the stage rows and canary calls sit beside them so that
-  each log stays in one schema.
+  gets nothing: `run_item` and `score_item` hold sensitive records (`src/chatddx/ledger/record.py:Record.sensitive`),
+  and the stage rows and canary calls sit beside them so that each log stays in one schema.
 - `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
-  are read back in the order they were written; rows from before are numbered as the column is added, in no
-  particular order. An index on `score_stage (run)`.
+  are read back in the order they were written; rows from before are numbered as the column is added, in no particular
+  order. An index on `score_stage (run)`.
 
 ### Tier 2
+
 - `0006-t2-ledger.sql`: CHECKs that `doc` matches `payload` and that every key column matches `doc`; insert-only
   triggers on every table.
 - `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
@@ -51,61 +57,67 @@ it, if any. A new schema gets its own section with all three tiers.
 ## identity
 
 ### Tier 0
+
 ### Tier 1
-- `0008-t1-identity.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges,
-  because tables here may be mutable. The writer gets SELECT, INSERT, UPDATE on `person` and `credential`, and no
-  DELETE, so people are never removed; and SELECT, INSERT, DELETE on `session` (sessions are deleted on logout,
-  expiry and deactivation). The reader gets SELECT on `person` only.
+
+- `0008-t1-identity.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, because
+  tables here may be mutable. The writer gets SELECT, INSERT, UPDATE on `person` and `credential`, and no DELETE, so
+  people are never removed; and SELECT, INSERT, DELETE on `session` (sessions are deleted on logout, expiry and
+  deactivation). The reader gets SELECT on `person` only.
 - `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
   - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
   - `credential (person, hash)`.
   - `session (token_digest, person, created, expires)`: only a digest of the token is stored.
 
 ### Tier 2
-- `0009-t2-identity.sql`: CHECKs on `person.login` (lowercase pattern), `person.roles` (known role names) and
-  `session` expiry. Repeated by `src/chatddx/identity/identity.py:LOGIN` and `Role`, and `Role` is tested against
-  the check (`test/test_identity.py`). No insert-only triggers.
+
+- `0009-t2-identity.sql`: CHECKs on `person.login` (lowercase pattern), `person.roles` (known role names) and `session`
+  expiry. Repeated by `src/chatddx/identity/identity.py:LOGIN` and `Role`, and `Role` is tested against the check
+  (`test/test_identity.py`). No insert-only triggers.
 
 ## catalog
 
 ### Tier 0
+
 - `0010-t0-catalog.sql`: schema `catalog`, append-only.
-  - `UNIQUE (digest, kind)` on `factor.component` and `UNIQUE (src, path, dst)` on `factor.component_ref`, as
-    targets for the composite foreign keys below.
+  - `UNIQUE (digest, kind)` on `factor.component` and `UNIQUE (src, path, dst)` on `factor.component_ref`, as targets
+    for the composite foreign keys below.
   - `thread (id, kind, forked_from, by, at)`: `forked_from` is an edit of the same kind.
-  - `edit (id, thread, kind, digest, compilation, compilation_kind, compilation_path, based_on, by, at)`: `digest`
-    is a component of the thread's kind. `compilation_kind` and `compilation_path` are constants, so that two
-    composite foreign keys can require a (skeleton) edit's compilation to be a `compilation` component whose
-    `/skeleton` reference row points at the edit's digest. `based_on` is an edit of the same kind.
+  - `edit (id, thread, kind, digest, compilation, compilation_kind, compilation_path, based_on, by, at)`: `digest` is a
+    component of the thread's kind. `compilation_kind` and `compilation_path` are constants, so that two composite
+    foreign keys can require a (skeleton) edit's compilation to be a `compilation` component whose `/skeleton` reference
+    row points at the edit's digest. `based_on` is an edit of the same kind.
   - `family (id, by, at)` and `binding (id, family, source, source_id, fingerprint, by, at)`.
-  - `entry (id, thread | family | run | score, field, value, person, present, by, at)`: exactly one subject; runs
-    and scores through their started rows.
+  - `entry (id, thread | family | run | score, field, value, person, present, by, at)`: exactly one subject; runs and
+    scores through their started rows.
   - `label (id, scorer, kind, part, position, value, by, at)`: `scorer` is a `scorer` component.
   - `language (id, digest, kind, value, by, at)`: a component's language, kept on its digest; `(digest, kind)`
     references `factor.component`.
 
-- `0013-t0-catalog-binding-content.sql`: index `binding_content (source, fingerprint)` on `catalog.binding`,
-  beside `binding_source (source, source_id)`, so that looking a case's family up and finding which family holds
-  a vignette's place read only the bindings to its id or content
-  (`src/chatddx/store/catalog.py:Rows.bindings_sharing`, `src/chatddx/catalog/families.py:family_of`, `_holder`).
-- `0017-t0-catalog-label-edit.sql`: `catalog.label` dropped and made again as `label (id, edit, kind, part, position,
-  value, by, at)`: `(edit, kind)` is an edit of a `scorer` thread, `UNIQUE (edit, part, position)`, and the value not
-  empty. The old rows named a scorer digest; they are dropped, since a store from before holds v1 scorers, which can't
-  be read any more, and is rebuilt from its data sets. The writer and the reader get the new table through `0011`'s
-  default privileges.
+- `0013-t0-catalog-binding-content.sql`: index `binding_content (source, fingerprint)` on `catalog.binding`, beside
+  `binding_source (source, source_id)`, so that looking a case's family up and finding which family holds a vignette's
+  place read only the bindings to its id or content (`src/chatddx/store/catalog.py:Rows.bindings_sharing`,
+  `src/chatddx/catalog/families.py:family_of`, `_holder`).
+- `0017-t0-catalog-label-edit.sql`: `catalog.label` dropped and made again as
+  `label (id, edit, kind, part, position, value, by, at)`: `(edit, kind)` is an edit of a `scorer` thread,
+  `UNIQUE (edit, part, position)`, and the value not empty. The old rows named a scorer digest; they are dropped, since
+  a store from before holds v1 scorers, which can't be read any more, and is rebuilt from its data sets. The writer and
+  the reader get the new table through `0011`'s default privileges.
 
 ### Tier 1
-- `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with
-  default privileges.
+
+- `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with default
+  privileges.
 
 ### Tier 2
+
 - `0012-t2-catalog.sql`: repeats the rules of `chatddx.catalog` that concurrent writers could break.
-  - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored
-    by `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place
-    rather than by a new migration: a store migrated before it is dropped and migrated again, and its data sets
-    loaded again, as its compilations are v1, which can't be read any more. `chunk.translations` was taken out in
-    place too, as a translations chunk names its languages itself; a store migrated before it is dropped and loaded
-    again the same way, as its compilations are v2 and its translations v1.
+  - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored by
+    `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place rather
+    than by a new migration: a store migrated before it is dropped and migrated again, and its data sets loaded again,
+    as its compilations are v1, which can't be read any more. `chunk.translations` was taken out in place too, as a
+    translations chunk names its languages itself; a store migrated before it is dropped and loaded again the same way,
+    as its compilations are v2 and its translations v1.
   - Entry shapes (`src/chatddx/catalog/model.py:Entry._shape`): a name can be removed (no value, `present` false),
     language tags follow `src/chatddx/factors/base.py:LANGUAGE`, NULL values are ruled out explicitly (a NULL check
     passes), and a `language` entry is only on a family (`src/chatddx/catalog/threads.py:check_note`).
@@ -122,52 +134,58 @@ it, if any. A new schema gets its own section with all three tiers.
     (`src/chatddx/catalog/threads.py:check_edit`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
   - `model.local` replaced `model` among the thread kinds in place: a local model's digest changes with its kind, and
-    its engines' and their endpoints' with it, so a store migrated before it is dropped and migrated again, and its
-    data sets loaded again.
+    its engines' and their endpoints' with it, so a store migrated before it is dropped and migrated again, and its data
+    sets loaded again.
   - `0026-t2-catalog-run-variation.sql`: the entry fields `varied`, `replaced` and `with`, which only a run takes
-    (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
-    as `src/chatddx/catalog/model.py:_VARIED`, `_REPLACED` and `_WITH` have them, the model among a `replaced`
-    entry's parts; and a constraint trigger, after the row's checks, that a `varied` entry names an edit of a
-    configuration, a `replaced` one a stored chunk of its part, or for the model a stored `model.local` or
-    `model.remote`, and a `with` one a run that has started (`catalog.check_varied()`,
-    `src/chatddx/catalog/threads.py:check_note`, which leaves `with` to the database, as the catalog doesn't read the
-    ledger). The engine and `with` were added in place, as `0012`'s `facts` was.
+    (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values as
+    `src/chatddx/catalog/model.py:_VARIED`, `_REPLACED` and `_WITH` have them, the model among a `replaced` entry's
+    parts; and a constraint trigger, after the row's checks, that a `varied` entry names an edit of a configuration, a
+    `replaced` one a stored chunk of its part, or for the model a stored `model.local` or `model.remote`, and a `with`
+    one a run that has started (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_note`, which leaves
+    `with` to the database, as the catalog doesn't read the ledger). The engine and `with` were added in place, as
+    `0012`'s `facts` was.
 
 ## source
 
 ### Tier 0
-- `0014-t0-source.sql`: schema `source`: `text (source, id, text, by, at)`, keyed by source and id, the text not
-  empty, and an index on `(by, at)` for a person's latest texts (`src/chatddx/store/texts.py:Texts.typed_since`).
+
+- `0014-t0-source.sql`: schema `source`: `text (source, id, text, by, at)`, keyed by source and id, the text not empty,
+  and an index on `(by, at)` for a person's latest texts (`src/chatddx/store/texts.py:Texts.typed_since`).
 
 ### Tier 1
+
 - `0015-t1-source.sql`: PUBLIC loses all access. The writer gets SELECT, INSERT on `text`, granted explicitly, and no
   DELETE, so only the admin deletes a text. The reader gets nothing: the texts are vignettes.
 
 ### Tier 2
+
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
 
 ## worker
 
 ### Tier 0
+
 - `0019-t0-worker.sql`: schema `worker`, the worker's queue, updated in place.
   - `worker (id, started, seen)`: each worker, and when it was last seen.
-  - `job (id, owner, run, stage, endpoint, slots, score, scorers, status, why, halt, worker, queued, claimed, beat,
-    ended)`: a started run to send and finish, and score when asked. `(run, stage)` references the run's started row
-    in `ledger.run_stage`, as an item row does; `owner` references `identity.person`. A unique index keeps one job
-    queued or under way per run.
+  - `job (id, owner, run, stage, endpoint, slots, score, scorers, status, why, halt, worker, queued, claimed, beat, ended)`:
+    a started run to send and finish, and score when asked. `(run, stage)` references the run's started row in
+    `ledger.run_stage`, as an item row does; `owner` references `identity.person`. A unique index keeps one job queued
+    or under way per run.
   - `control (owner, paused)`: an owner's controls.
 
 ### Tier 1
+
 - `0020-t1-worker.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, as the
-  tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since
-  why a job failed can quote what it was sending.
+  tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since why
+  a job failed can quote what it was sending.
 - `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
-  scores what is left (docs/worker.md, "Stopping").
+  scores what is left (docs/modules/worker.md, "Stopping").
 
 ### Tier 2
+
 - `0021-t2-worker.sql`: CHECKs on a job's status (`src/chatddx/store/queue.py:Status`, tested against the check in
   `test/test_queue.py`), and how each status goes with its worker, its claim, its end and why; scorers only for a job
   that scores. A trigger (`worker.keep_job`) refuses to change what a job is asked to do, and any change to a job that
   has ended.
-- `0025-t2-worker-scored.sql`: CHECKs that only a job that scores has scored any, and only scorers it names; the
-  trigger again, also refusing to take away from what a job has scored.
+- `0025-t2-worker-scored.sql`: CHECKs that only a job that scores has scored any, and only scorers it names; the trigger
+  again, also refusing to take away from what a job has scored.

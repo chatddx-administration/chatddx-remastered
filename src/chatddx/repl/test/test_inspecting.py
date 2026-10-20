@@ -30,7 +30,7 @@ from chatddx.test.world import (
     TEST,
 )
 
-INTENTS = [
+LEVELS = [
     "default",
     "off",
     "on",
@@ -268,7 +268,7 @@ def test_show_endpoint_says_when_its_engine_isn_t_stored(
 def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     written = say("reasoning")
 
-    assert row_names(written) == INTENTS
+    assert row_names(written) == LEVELS
     for handle in HANDLES:
         assert written.count(f"┃ {handle} ") == 1
     assert "its nearest: always reasons" in written

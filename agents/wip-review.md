@@ -10,7 +10,7 @@ rather than a click, a scroll or another page.
 ## Start with this
 1. **What it is**: one case at a time, the vignette with its appendices, the expectation with the views that read it,
    a scorer composed with its judges, and the record of the person's answers to the case. The bench and the API write
-   everything it needs (`docs/api.md`, "Forking and editing"); the page is built (see "Steps").
+   everything it needs (`docs/modules/api.md`, "Forking and editing"); the page is built (see "Steps").
 2. **The page gathers what is spread over other pages.** The vignette is at `/families/{id}/vignette`; appendices,
    cases and expectations are at `/families/{id}`; an expectation's versions are at `/threads/{id}`; a scorer is
    composed only here; and answers and scores are at `/runs/{id}`, one run at a time.
@@ -61,7 +61,7 @@ As the plan found it; what each step built is under "Built".
 | Running the case | `POST /api/runs` | the variation page, the home page | a short form on this page |
 
 The test World has what the page needs to be tested on: `judged` and `appendix` among the scripted runs
-(`docs/scripted.md`), notes by placeholder authors (carol, dave), and the `verdict`, `graded` and `remote` judges.
+(`docs/modules/scripted.md`), notes by placeholder authors (carol, dave), and the `verdict`, `graded` and `remote` judges.
 
 ## The page
 A sketch, at a wide screen. The page fills the window rather than the 5xl column the other pages keep, and each pane
@@ -98,7 +98,7 @@ The address keeps what is picked, as the variation's page does: `/review/{family
 Questions that change what is built, each with its options. Decided: the take on each.
 
 ### L1. Roles
-`docs/chatddx.md` ("Roles mentioned") names clinicians as the authors of appendices and expectations, and researchers
+`docs/glossary.md` ("Roles") names clinicians as the authors of appendices and expectations, and researchers
 as the authors of judges and of "a scorer's views, free parameters and labels"; its requirements say the same. A
 person may hold several roles, and nothing checks roles yet (`agents/wip-portal.md`, W10; Z1), so nothing refuses
 Olof composing a scorer. But a page built for a clinician that composes scorers and judges either has Olof acting as
@@ -113,25 +113,25 @@ Decided: (a). It needs no change to the primary document, and Z1 has to answer w
 
 ### L2. The vignette's place
 What is made from a vignette is shown "only in its own places, so that a policy for edges can gate those few"
-(`docs/api.md`, "Sensitive content"), and the portal gave the vignette a page of its own (`agents/wip-clearance.md`,
+(`docs/modules/api.md`, "Sensitive content"), and the portal gave the vignette a page of its own (`agents/wip-clearance.md`,
 "Open", 5). Here it sits beside everything else.
 - **(a)** The page's island fetches the vignette from `GET /api/families/{id}/vignette`, and answers and score details
   from `GET /api/runs/{id}/items` and `…/scores/{score}/items`. The HTML holds nothing sensitive, the places stay the
   API's four, and a refusal from a future gate shows in its own pane. Without scripts the page shows no vignette; the
   vignette's page still does.
 - **(b)** The server draws the vignette into the page through the same handler (`api.vignette`), so a gate in the
-  handler covers it, and the page becomes a fifth place in `docs/api.md`'s list.
+  handler covers it, and the page becomes a fifth place in `docs/modules/api.md`'s list.
 
 Decided: (a).
 
 ### L3. Whose answers
-A person sees only their own runs, and being a collaborator on a run shows nothing (`docs/bench.md`, "What a person
+A person sees only their own runs, and being a collaborator on a run shows nothing (`docs/modules/bench.md`, "What a person
 sees"). A clinician who doesn't start runs has no answers to review, and a researcher's runs are scored against the
-researcher's expectations (`docs/bench.md`, "What a person is scored against").
+researcher's expectations (`docs/modules/bench.md`, "What a person is scored against").
 - **(a)** Olof runs the case himself from the page: a configuration, a model and seeds, scored by his scorers
   against his expectations. This matches how his judge is to be measured: "real answers from pelle and malborg on
   `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`" (`docs/backlog.md`, "Olof's work").
-- **(b)** Runs can be shared: a collaborator reads a run's items and scores. That changes `docs/bench.md`, which is
+- **(b)** Runs can be shared: a collaborator reads a run's items and scores. That changes `docs/modules/bench.md`, which is
   solidified (a suggestion there), and asks whose expectations a shared run is scored against for the reader.
 - **(c)** A reviewer reads across people's runs by role, through Z1.
 
@@ -153,7 +153,7 @@ which isn't sensitive, and the `completion` left as a placeholder.
 - **(a)** Unjudged views are scored as they are typed, against the answers to the case among the person's runs and
   the expectation as typed, with nothing written (`score_view` is pure). This needs a new route, whose answer is
   sensitive, since a detail quotes the answer (`"answer": "3. Septic shock"`). It is `no-store` and joins
-  `docs/api.md`'s list of places.
+  `docs/modules/api.md`'s list of places.
 - **(b)** Judged views are tried only by scoring: save, then **Score again** on the case's runs, which the worker
   queues and the ledger records. Judge calls sent while trying, and not recorded, would be exchanges outside the
   ledger, which is there to "record each exchange within the cage" (`docs/chatddx.md`, "Purpose").
@@ -161,7 +161,7 @@ which isn't sensitive, and the `completion` left as a placeholder.
 Decided: (a) and (b).
 
 ### L6. Selectors
-A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/factors.md`, "View"), such as
+A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/modules/factors.md`, "View"), such as
 `$.notes[?@.author == 'Olof'].comment`. No clinician should have to type that.
 - **Writing them**: (a) typed, with the picks shown live; (b) picked from the expectation schema and from the output
   schemas of the configurations the person sees ("notes by Olof → comment"), which writes the selector, with typed
@@ -181,23 +181,23 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   threads' pages get their editors as `agents/wip-portal.md` plans them ("5d: scorers and judges"), the judge's
   sharing this page's judge fields and the scorer's its views' form (`frontend/src/lib/scorer/ScorerViews.svelte`).
 - **Its name**: the address and the page's title name no person. Decided: `/review` and "Review"; the tests keep
-  to alice, bob and carol (AGENTS.md, "Placeholder username").
+  to alice, bob and carol (AGENTS.md, "6. Placeholder username").
 
 ## Smaller choices, as takes
 - **The expectation's form** as 5b's, with a note's author offered as the person's name, and the language offered as
   the family's. The keys still follow the schema alphabetically (`agents/wip-portal.md`, "What the first half of
-  authoring leaves"), although the canonical form keeps JSON data's order (`docs/factors.md`, "Canonical form and
+  authoring leaves"), although the canonical form keeps JSON data's order (`docs/modules/factors.md`, "Canonical form and
   digest"). Where they get sorted is worth finding first: the order matters more here, where the form is read beside
   the vignette.
 - **A scorer's entry point** is picked silently while one is shipped (`chatddx.scorers.metrics:score`, version 2).
   Resources aren't offered (`docs/backlog.md`, "Shipped code: scorers and tools").
 - **A view's reach** is shown beside it: whether the configurations the person sees answer what it reads from the
   answer (`View.offered_by`), so a view that nothing answers says so.
-- **Labels** are written with the views and move with them (`docs/catalog.md`, "Scorer labels").
+- **Labels** are written with the views and move with them (`docs/modules/catalog.md`, "Scorer labels").
 - **Saving** says where a save goes, as W8 does. A scorer of the archive's is forked into the person's own.
 - **The archive's expectations** reach Olof as they reach anyone: taken, or given by `chatddx init-data LOGIN
   --giftbag`. His corrections reach a researcher who took from him as proposals. Nothing hands the archive's threads
-  over to him (`docs/bench.md`, "What is said about a thread").
+  over to him (`docs/modules/bench.md`, "What is said about a thread").
 
 ## Steps
 1. **The page, read only**, built (see "Built"): the list of cases, the case (vignette fetched, appendices, cases),
@@ -219,7 +219,7 @@ the pattern is typed, a scorer saved, and its score.
 
 ## Built
 ### Step 1: the page, read only
-- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/picks`
+- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/picks`
   (`src/chatddx/api/world.py:picks`), selectors and a document in, and out each selector's picks, by
   `chatddx.factors.select`, or why it doesn't read; and `case` on a run's items and on a score's items, so that the
   island reads one case's alone.
@@ -286,7 +286,7 @@ the pattern is typed, a scorer saved, and its score.
   case's expectation, and `j`.
 
 #### What step 2 leaves
-- **The fields' order** is still the schema's keys sorted (see "Smaller choices"); in the review it is read beside the
+- **The fields' order** is still the schema's keys sorted (see "Smaller choices, as takes"); in the review it is read beside the
   vignette, so diagnosis, disposition, dont miss, notes, warning reads worse than the data's own order.
 - **A view of a long list** is shown under the whole list: the notes' views come after every note, far from the
   comment they read once the notes are long.
@@ -331,7 +331,7 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 4: composing a scorer without judges
-- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/scorers/try`
+- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/scorers/try`
   (`src/chatddx/api/scores.py:tried`), a scorer as written and an expectation's data tried on a case's items in some of
   the person's runs: each item's answer as the scoring pass reads it, and each view's value and detail by
   `chatddx.scorers.scorer.score_view`, with nothing stored. A judged view isn't tried, since its judge would be sent
@@ -354,7 +354,7 @@ the pattern is typed, a scorer saved, and its score.
   them.
 - **Saving** says where the save goes, as every editor does, with the labels (`writing.ts:saved` takes them,
   `Saving` passes them), and comes back to the review with the scorer saved picked (`review.ts:withScorer`). An edit
-  that changes only a label is a new edit, as the catalog keeps it (`docs/catalog.md`, "Scorer labels").
+  that changes only a label is a new edit, as the catalog keeps it (`docs/modules/catalog.md`, "Scorer labels").
 - **Tests**: `test_scores.py` (the API's), a scorer tried: the stored score's values, a missed target, judged views
   untried, nothing written, an unknown metric refused, bob not finding the run; `test_reviewing.py`, the composer's
   props; vitest for `choices`, `chosen` and `withScorer`; and `test_browser.py`, a run's answer tried as the
@@ -369,7 +369,7 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 5: with judges
-- **The API**, suggested to `docs/api.md` and the API's reference as `AGENT` blocks: `POST /api/judges/asked`
+- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/judges/asked`
   (`src/chatddx/api/scores.py:judge_asked`), a stored judge's first request rendered as the scoring pass renders it,
   its `expectation` slot filled by what a view picks of the expectation as typed, the answer and the case's slots as
   placeholders (`chatddx.bench.model.PLACEHOLDERS`). Nothing is sent or stored, and nothing in it is sensitive.
@@ -403,13 +403,13 @@ the pattern is typed, a scorer saved, and its score.
 #### What step 5 leaves
 - **A judge is written new** here: changing or forking one is on its thread's page (`agents/wip-portal.md`, "5d:
   scorers and judges").
-- **A judge whose handle doesn't resolve** leaves its scorer out (`docs/runner.md`, "What applies to a run"). A new
+- **A judge whose handle doesn't resolve** leaves its scorer out (`docs/modules/runner.md`, "What applies to a run"). A new
   judge starts under the handle its configuration was made for, since the judge's editor (`agents/wip-portal.md`,
   "5d: scorers and judges").
 - **A judged view's values come only from scoring**: one judge call per seed per answer, recorded, through the worker.
 
 ### Step 6: the judge's texts
-- **What a judge comes with** (`src/chatddx/portal/review.py:_texts`): each judge the composer is given carries its
+- **What a judge comes with** (`src/chatddx/portal/scoring.py:_texts`): each judge the composer is given carries its
   head, its body and its texts: the judge configuration whose head is its skeleton (the person's own first), the
   recipe that configuration reads, and the recipe's instructions, prompt and output, each with the thread whose head
   it is, whether that thread is the person's, and its language. A judge whose skeleton no configuration in sight

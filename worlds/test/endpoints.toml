@@ -2,7 +2,7 @@
 engine = "sha256:da96724f04176f3f979fe853c7cf7e6c8a9ea865853e3453c479e98ea8ae0c90"
 url = "http://127.0.0.1:12201/v1/"
 host = "fake"
-max_jobs = 4
+capacity = 4
 
 [endpoint."qwen3-bare@fake"]
 engine = "sha256:84c8924d467906c35e786e2e5a1486f96a595acf86893698dccfa87b6dbde276"
@@ -13,13 +13,13 @@ host = "fake"
 engine = "sha256:7033068c2419408202120bcc7ea5a33fbdbd074b6e378726ebb1856596c8e251"
 url = "http://127.0.0.1:12203/v1/"
 host = "fake"
-max_jobs = 4
+capacity = 4
 
 [endpoint."mistral@fake"]
 engine = "sha256:2d62e9ef7d596aaa649614887ac21ea930d7e3e9b3a46fe3523bbbc1d150eb62"
 url = "http://127.0.0.1:12204/v1/"
 host = "fake"
-max_jobs = 2
+capacity = 2
 
 [endpoint."unknown@remote"]
 engine = "sha256:29a0c07805b0282d97e743d005f6c4aff3261439a6451af7f580667bd3d72566"

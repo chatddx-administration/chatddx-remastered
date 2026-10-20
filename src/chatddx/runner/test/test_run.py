@@ -416,10 +416,10 @@ def test_calls_are_in_flight_together_up_to_the_execution_s_concurrency(
 
 
 @pytest.mark.usefixtures("fake")
-def test_a_concurrency_above_the_endpoint_s_max_jobs_is_refused(
+def test_a_concurrency_above_the_endpoint_s_capacity_is_refused(
     conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    assert inventory.endpoint(QWEN).max_jobs == 4
+    assert inventory.endpoint(QWEN).capacity == 4
     with pytest.raises(
         ValueError, match="takes 4 requests at once, the execution sends 5"
     ):

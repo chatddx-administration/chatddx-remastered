@@ -86,7 +86,7 @@ class Worker:
         self._waking: socket.socket | None = None
 
     def serve(self, stopping: threading.Event) -> None:
-        max_jobs = {name: e.max_jobs for name, e in self._inventory.endpoints.items()}
+        capacity = {name: e.capacity for name, e in self._inventory.endpoints.items()}
         woken, waking = socket.socketpair()
         waking.setblocking(False)
         with self._guard:
@@ -121,7 +121,7 @@ class Worker:
                         return
                     if not leaving:
                         while (
-                            job := queue.claim(self.id, max_jobs, self._lost)
+                            job := queue.claim(self.id, capacity, self._lost)
                         ) is not None:
                             self._take(job)
                     self._wait(conn, woken, deadline)

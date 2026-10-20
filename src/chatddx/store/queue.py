@@ -283,7 +283,7 @@ class Queue:
     # A job under way whose worker hasn't been seen for `lost` is claimed again. Claims
     # take turns, so that two workers count an endpoint's slots in use alike.
     def claim(
-        self, worker: UUID, max_jobs: Mapping[str, int], lost: timedelta
+        self, worker: UUID, capacity: Mapping[str, int], lost: timedelta
     ) -> Job | None:
         with self._conn.transaction():
             _ = self._conn.execute(
@@ -299,8 +299,8 @@ class Queue:
                     {"lost": lost},
                 ).fetchall()
             )
-            endpoints = sorted(max_jobs)
-            free = [max_jobs[e] - int(used.get(e, 0)) for e in endpoints]
+            endpoints = sorted(capacity)
+            free = [capacity[e] - int(used.get(e, 0)) for e in endpoints]
             row = self._conn.execute(
                 f"""
                 SELECT j.id FROM worker.job j

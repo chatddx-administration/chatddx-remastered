@@ -87,7 +87,7 @@ class Family:
 
     @property
     def name(self) -> str:
-        return self.about.name or f"family {self.id}"
+        return self.about.name or f"{self.vignette.source}/{self.vignette.id}"
 
 
 @dataclass(frozen=True)

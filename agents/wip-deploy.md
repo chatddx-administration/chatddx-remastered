@@ -28,18 +28,18 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
   | `chatddx portal` | the portal at `/` and the API at `/api/`, with no worker; `chatddx worker` runs beside it |
   | `chatddx api` | the API at `/api/`, with no worker; `chatddx worker` runs beside it |
   | `chatddx worker` | the queue for a World, until SIGTERM or SIGINT; what it holds then is queued again |
-  | `chatddx migrate` | the migrations, as the admin, up to a tier (`docs/store.md`, "Tiers") |
+  | `chatddx migrate` | the migrations, as the admin, up to a tier (`docs/modules/store.md`, "Tiers") |
   | `chatddx fake-engines` | the World's fake engines, for development |
 
 - **Stopping a worker**: its scorings go on for `settings.WORKER_DEADLINE` (60 s), which is to be "within the stop
   timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop timeout is 90 s;
   Kubernetes' default grace period is 30 s.
-- **Several processes may serve one database**: workers take turns to claim (`docs/worker.md`, "Where it runs"), and a
+- **Several processes may serve one database**: workers take turns to claim (`docs/modules/worker.md`, "Where it runs"), and a
   run's events reach every app through `LISTEN`/`NOTIFY` (`src/chatddx/api/listening.py`). Sessions are in the
   database.
 - **What a process reads from its environment**: `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_ADMIN`
   (`settings.database`); `HOST`, where to listen; `CHATDDX_WORLD`, `CHATDDX_PORTAL_ASSETS` and `CHATDDX_REVISION`;
-  and each endpoint's secret, under the variable its `credential` names (`docs/inventory.md`, "Endpoints"), read in
+  and each endpoint's secret, under the variable its `credential` names (`docs/modules/inventory.md`, "Endpoints"), read in
   `src/chatddx/runner/gate.py` and `src/chatddx/scripted/fakes.py`, not through `chatddx.settings`.
 - **The database**: `src/chatddx/store/setup.sql` makes the admin `chatddx`, the writer `chatddx_writer` and the
   database. Development connects on a socket with peer authentication, OS users mapped to roles (AGENTS.md,
@@ -48,13 +48,11 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 - **A World is a directory**: its inventory, its facts, and a directory source's vignettes (`worlds/sample/vignettes`),
   which are sensitive unless declared otherwise (`docs/reference/inventory.md`, `Source`). Every process but `migrate`
   reads one.
-- **Where it is to run**, in two places that don't agree yet:
-  - `docs/chatddx.md` ("Target stack"): the orchestrator "Runs in Kubernetes, writes the start-ups and hosts the
-    portal", and each inference server serves vLLM in a NixOS container;
-  - the worker's: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with the
-    module's stop timeout above the worker's deadline, which is the worker's own (`docs/worker.md`, "Stopping"). What
-    the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front of both.
-- **Identity**: "The deployment is to sit behind Keycloak" (`docs/identity.md`, "Keycloak"), which isn't decided
+- **Where it is to run**: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with
+  the module's stop timeout above the worker's deadline, which is the worker's own (`docs/modules/worker.md`,
+  "Stopping"). What the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front
+  of both.
+- **Identity**: "The deployment is to sit behind Keycloak" (`docs/modules/identity.md`, "Keycloak"), which isn't decided
   further. Take: a proxy in front, such as oauth2-proxy, passes the login in a header the app believes from it alone,
   mapped onto `person.login`, and Keycloak's own tokens are bearers for scripts when they come. Whether roles then come
   from Keycloak's realm roles instead of the column isn't decided.
@@ -145,17 +143,17 @@ this flake (`lib.modules.importApply`), whose packages and revision are its defa
   then the fake engines. Through nginx, with a certificate made for the test: a typed case run by the portal, sent and
   scored by a worker; the headers; a 429 among sign-ins sent at once. Last, a worker that doesn't see a proxy set for
   every service. It passed by emulation in a cloud session before the admin option; decided since, a cloud session
-  doesn't run it, the person does, on a host with KVM (`agents/nixos-test-procedure.md`, "Who runs what").
+  doesn't run it, the person does, on a host with KVM (`docs/nixos-test-procedure.md`, "Who runs what").
 - **The evaluation**: `nix/module-eval.nix`, the flake's `checks.<system>.module-eval`, evaluates the module without
   building or booting: the default and an org's admin, workers, a database elsewhere, ordering, the sandbox's settings,
   PostgreSQL's versions, the database's name, and paths in the store refused. A cloud session runs it, `pytest` against
-  PostgreSQL 17 and the host flow (`agents/nixos-test-procedure.md`).
+  PostgreSQL 17 and the host flow (`docs/nixos-test-procedure.md`).
 - Open:
   - static files from nginx rather than the app, left with caching the build (`agents/wip-portal.md`, "Open");
   - a `script-src` and `/api/docs` (`agents/wip-clearance.md`, "Before real patient data", Headers);
   - a timer that purges expired sessions, once there is a command for it;
   - whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves a
-    fake from it, or that stays with the hosts' own NixOS containers (`docs/chatddx.md`, "Target stack").
+    fake from it, or that stays with the hosts' own NixOS containers.
 
 ## On Kompismoln
 Decided: chatddx-dev first, on stationary, from this repository's `main`, with the World `worlds/kompismoln`; the old
@@ -205,8 +203,8 @@ chatddx stays on helsinki meanwhile.
 
 ## Open
 - Which target serves real patient data first, and whether the other stays (`docs/chatddx.md` puts the orchestrator
-  in Kubernetes; `docs/worker.md` decides systemd on NixOS).
-- Keycloak in front (`docs/identity.md`, "Keycloak"; `agents/wip-portal.md`, "Open"): which target runs it, and how it
+  in Kubernetes; `docs/modules/worker.md` decides systemd on NixOS).
+- Keycloak in front (`docs/modules/identity.md`, "Keycloak"; `agents/wip-portal.md`, "Open"): which target runs it, and how it
   hands the app a login.
 - CI: what builds the image and the module's test, and runs `pytest` and the frontend's checks, before a deployment
   takes a revision. The VM test needs KVM: a self-hosted runner on one of Kompismoln's hosts is among the options in

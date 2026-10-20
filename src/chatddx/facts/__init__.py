@@ -1,9 +1,9 @@
 from chatddx.factors.facts import (
-    INTENTS,
+    LEVELS,
     ContractFact,
     Effort,
-    Intent,
     Landing,
+    Level,
     ModelFacts,
     OutputFacts,
     ReasoningFact,
@@ -20,12 +20,12 @@ from .models import BUNDLED, Facts
 
 __all__ = [
     "BUNDLED",
-    "INTENTS",
+    "LEVELS",
     "ContractFact",
     "Effort",
     "Facts",
-    "Intent",
     "Landing",
+    "Level",
     "ModelFacts",
     "OutputFacts",
     "ReasoningFact",

@@ -4,9 +4,9 @@ from pydantic import Field, StringConstraints, model_validator
 
 from .base import Component, Digest, Frozen, RefTo, Settings
 
-Intent = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]
-Effort = Intent | Literal["default"]
-INTENTS: tuple[Intent, ...] = get_args(Intent)
+Level = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]
+Effort = Level | Literal["default"]
+LEVELS: tuple[Level, ...] = get_args(Level)
 
 
 class Refused(ValueError):
@@ -15,7 +15,7 @@ class Refused(ValueError):
 
 class Refusal(Frozen):
     refused: Annotated[str, StringConstraints(min_length=1)]
-    nearest: Intent | None = None
+    nearest: Level | None = None
 
 
 class Writes(Frozen):
@@ -23,17 +23,17 @@ class Writes(Frozen):
     chat_template_kwargs: Settings = Field(default_factory=dict)
 
 
-ReasoningFact = Intent | Refusal | Writes
+ReasoningFact = Level | Refusal | Writes
 
 
 class Landing(Frozen):
-    level: Intent
+    level: Level
     writes: Writes
     nearest: tuple[str, ...] = ()
 
 
 class ReasoningFacts(Frozen):
-    default: Intent | None = None
+    default: Level | None = None
     off: ReasoningFact | None = None
     on: ReasoningFact | None = None
     minimal: ReasoningFact | None = None
@@ -43,35 +43,35 @@ class ReasoningFacts(Frozen):
     xhigh: ReasoningFact | None = None
     budget: Literal["thinking_token_budget"] | Refusal | None = None
 
-    def fact(self, intent: Intent) -> ReasoningFact | None:
-        fact: ReasoningFact | None = getattr(self, intent)
+    def fact(self, level: Level) -> ReasoningFact | None:
+        fact: ReasoningFact | None = getattr(self, level)
         return fact
 
     def _land(
-        self, intent: Intent
-    ) -> tuple[Intent, Refusal | Writes | None, tuple[str, ...]]:
-        path: list[Intent] = []
+        self, level: Level
+    ) -> tuple[Level, Refusal | Writes | None, tuple[str, ...]]:
+        path: list[Level] = []
         nearest: list[str] = []
         while True:
-            if intent in path:
+            if level in path:
                 raise ValueError(
-                    f"{' -> '.join([*path, intent])}: the collapses go round"
+                    f"{' -> '.join([*path, level])}: the collapses go round"
                 )
-            path.append(intent)
-            match self.fact(intent):
+            path.append(level)
+            match self.fact(level):
                 case str() as collapsed:
-                    intent = collapsed
+                    level = collapsed
                 case Refusal(refused=reason, nearest=str() as near):
                     nearest.append(reason)
-                    intent = near
+                    level = near
                 case fact:
-                    return intent, fact, tuple(nearest)
+                    return level, fact, tuple(nearest)
 
     def landing(self, effort: Effort) -> Landing:
-        intent = self.default if effort == "default" else effort
-        if intent is None:
+        level = self.default if effort == "default" else effort
+        if level is None:
             raise Refused("no default reasoning level is known")
-        landed, fact, nearest = self._land(intent)
+        landed, fact, nearest = self._land(level)
         match fact:
             case None:
                 raise Refused(f"nothing is known about reasoning {landed!r}")
@@ -80,13 +80,13 @@ class ReasoningFacts(Frozen):
             case Writes():
                 return Landing(level=landed, writes=fact, nearest=nearest)
 
-    def realized(self) -> dict[Intent, Writes]:
-        return {i: f for i in INTENTS if isinstance(f := self.fact(i), Writes)}
+    def realized(self) -> dict[Level, Writes]:
+        return {i: f for i in LEVELS if isinstance(f := self.fact(i), Writes)}
 
     @model_validator(mode="after")
     def _collapses_land(self) -> Self:
-        leads: dict[str, Intent] = {}
-        for i in INTENTS:
+        leads: dict[str, Level] = {}
+        for i in LEVELS:
             match self.fact(i):
                 case str() as collapsed:
                     leads[i] = collapsed
@@ -115,7 +115,7 @@ class SamplingValues(Frozen):
 
 
 class SamplingFacts(Frozen):
-    recommended: dict[Intent, SamplingValues] = Field(default_factory=dict)
+    recommended: dict[Level, SamplingValues] = Field(default_factory=dict)
     generation_config: SamplingValues | None = None
 
 
@@ -158,7 +158,7 @@ class ModelFacts(Component):
             case _:
                 pass
 
-    def recommended(self, level: Intent) -> SamplingValues:
+    def recommended(self, level: Level) -> SamplingValues:
         values = self.sampling.recommended.get(level)
         if values is None:
             raise Refused(f"no sampling is recommended for reasoning {level!r}")

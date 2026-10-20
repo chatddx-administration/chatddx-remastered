@@ -220,7 +220,7 @@ def imported(
             "engine": engine.digest,
             "url": _url(endpoint_host or hostname, s["port"]),
             "host": hostname,
-            "max_jobs": _max_num_seqs(argv) or 1,
+            "capacity": _max_num_seqs(argv) or 1,
         }
     )
     return Imported(
@@ -332,7 +332,7 @@ def endpoints_toml(imports: Iterable[Imported]) -> str:
         + f"engine = {_value(e.engine)}\n"
         + f"url = {_value(str(e.url))}\n"
         + f"host = {_value(e.host)}\n"
-        + f"max_jobs = {_value(e.max_jobs)}\n"
+        + f"capacity = {_value(e.capacity)}\n"
         for name, e in inventory.endpoints.items()
     ]
     for name, host in inventory.hosts.items():
