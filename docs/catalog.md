@@ -177,15 +177,8 @@ what they are scored against. A person owns at most one live expectation thread 
 second one, an edit that moves another onto that case and schema, an owner entry naming them, or a restore that would
 make two is refused.
 
-```
-AGENT: replace
-"Roles mentioned" moved to agents/glossary.md ("Roles").
----
 This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
 vignettes" (agents/glossary.md, "Roles").
-```
-This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
-vignettes" (docs/chatddx.md, "Roles mentioned").
 
 A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
 owner entry as they start, and a person's runs are the runs they own.

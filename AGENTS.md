@@ -16,8 +16,21 @@ This document contains project-wide instructions written by humans for agents.
 * `pnpm --dir frontend check` typechecks frontend
 
 ## Errors
-Errors for developers and ops should crash raw at earliest convenience.
+There are four ways an error can announce itself, the guiding principles are:
+- fail as soon as possible
+- handle as little as possible
+
+### 1. Crash at boot
+Runtime errors that can be known at boot should have a check that crashes boot when failing.
+
+### 2. Runtime write to stderr and the edge
+Errors for developers and ops (including unexpected errors) writes raw templated messages to generic channels.
+
+### 3. Part of the UX runtime
 Errors for clinicians and researchers should tell them what to do.
+
+### 4. Silent
+Not a thing.
 
 ## Testing
 * Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s.

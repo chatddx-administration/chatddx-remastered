@@ -73,18 +73,10 @@ that refuses a pick among them: set the pick otherwise first. Setting the config
 the part, and `none` takes an optional part out.
 
 ### Saving
-```
-AGENT: replace
-The shell holds no cell any more, but a variation (src/chatddx/repl/choosing.py:save; agents/glossary.md, "Terms").
----
 `save NAME` makes the configuration in use the person's own. Their live thread named NAME gets a new edit, or none when
 its head has the same digest; without one, a thread named NAME is forked from the edit the variation is built on. When
 parts are set, the compilation is written with the running code as compiler. The shell then holds the saved
 configuration, with no parts set.
-```
-`save NAME` makes the configuration in use the person's own. Their live thread named NAME gets a new edit, or none when
-its head has the same digest; without one, a thread named NAME is forked from the edit the cell holds. When parts are
-set, the compilation is written with the running code as compiler. The cell then holds the saved configuration.
 
 ## Looking
 Nothing here is sent anywhere.

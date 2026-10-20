@@ -18,28 +18,14 @@ is for display.
 People are never deleted, since what they wrote refers to them. A person who leaves is made inactive, which ends their
 sessions and keeps them from signing in.
 
-```
-AGENT: replace
-docs/chatddx.md has no glossary any more; its section on sensitive data says the same.
----
-Names aren't sensitive (docs/chatddx.md, "Vignettes and anything made from them are sensitive"), so the reader may
-read people. Passwords and sessions are secrets rather than sensitive data, and it reads neither.
-```
-Names aren't sensitive (docs/chatddx.md, glossary, "Sensitive"), so the reader may read people. Passwords and sessions
-are secrets rather than sensitive data, and it reads neither.
+Names aren't sensitive so the reader may read people. Passwords and sessions are secrets rather than sensitive data,
+and it reads neither.
 
 ## Roles
-```
-AGENT: replace
-The second sentence's reference: "Roles mentioned" moved to agents/glossary.md ("Roles").
----
-All but admin are the principal authors of docs/factors.md (agents/glossary.md, "Roles"); admin is identity's own,
-for administering people.
-```
-The roles are admin, clinician, developer, ops and researcher (src/chatddx/identity/identity.py:Role). All but admin
-are the principal authors of docs/chatddx.md ("Roles mentioned") and docs/factors.md; admin is identity's own, for
-administering people. A person may hold several. Roles live in code and are stored on the person by name, and the
-database holds the names to the code's list.
+The roles are admin, clinician, developer, ops and researcher (src/chatddx/identity/identity.py:Role). All but admin are
+the principal authors of docs/factors.md (agents/glossary.md, "Roles"); admin is identity's own, for administering
+people. A person may hold several. Roles live in code and are stored on the person by name, and the database holds the
+names to the code's list.
 
 Nothing checks a role yet: a person writes on what they own, whatever their roles (docs/bench.md, "Writes for the
 person"), and nothing asks for admin (docs/backlog.md, "Administering people").
