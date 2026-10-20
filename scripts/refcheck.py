@@ -57,7 +57,7 @@ class Doc:
         self.headings = {
             m.group(1) for line in lines if (m := re.match(r"^#+\s+(.*?)\s*$", line))
         }
-        self.items = set(re.findall(r"\*\*(.+?)\*\*", self.text))
+        self.items = {i.rstrip(".:,;") for i in re.findall(r"\*\*(.+?)\*\*", self.text)}
         self.entries = {
             m.group(1) for line in lines if (m := re.match(r"^:(.+?) — ", line))
         }
@@ -65,11 +65,7 @@ class Doc:
     def holds(self, section: str) -> bool:
         if section[0].islower():
             return section in self.text
-        return (
-            section in self.headings
-            or section in self.items
-            or section.rstrip(".") in self.items
-        )
+        return section in self.headings or section.rstrip(".:,;") in self.items
 
 
 def code_problem(root: Path, ref: str) -> str | None:
