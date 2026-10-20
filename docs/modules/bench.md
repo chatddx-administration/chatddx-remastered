@@ -356,6 +356,19 @@ Any kind the person owns a fork of is followed, since a proposal holds only the 
 changes, which are stored already. That is how a correction to the archive's expectations reaches the person's taken
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
+```
+AGENT: insert
+Moved verbatim from docs/modules/catalog.md ("Following facts"). The references to it in catalog.md, factors.md
+and facts.md follow it.
+---
+### Following facts
+
+A configuration is behind what it was compiled for when the facts about its model were corrected where they change what
+it sends, or its model's thread moved on, as to a new revision of the weights. Whoever sees it sees both (`Bench.moved`,
+`GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows them as one edit, the recipe
+with the model's head compiled against the current facts (`Bench.follow_moved`, `POST .../follows` with
+`"follow": "moved"`). Facts that refuse what it asks are said, not followed.
+```
 ## Runs and scores
 
 - **Cases** a run is started on are the current cases of the families the person sees, and running again needs every

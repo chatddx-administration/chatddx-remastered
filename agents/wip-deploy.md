@@ -48,12 +48,10 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 - **A World is a directory**: its inventory, its facts, and a directory source's vignettes (`worlds/sample/vignettes`),
   which are sensitive unless declared otherwise (`docs/reference/inventory.md`, `Source`). Every process but `migrate`
   reads one.
-- **Where it is to run**, in two places that don't agree yet:
-  - `docs/chatddx.md` ("Target stack"): the orchestrator "Runs in Kubernetes, writes the start-ups and hosts the
-    portal", and each inference server serves vLLM in a NixOS container;
-  - the worker's: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with the
-    module's stop timeout above the worker's deadline, which is the worker's own (`docs/modules/worker.md`, "Stopping"). What
-    the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front of both.
+- **Where it is to run**: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with
+  the module's stop timeout above the worker's deadline, which is the worker's own (`docs/modules/worker.md`,
+  "Stopping"). What the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front
+  of both.
 - **Identity**: "The deployment is to sit behind Keycloak" (`docs/modules/identity.md`, "Keycloak"), which isn't decided
   further. Take: a proxy in front, such as oauth2-proxy, passes the login in a header the app believes from it alone,
   mapped onto `person.login`, and Keycloak's own tokens are bearers for scripts when they come. Whether roles then come
@@ -155,7 +153,7 @@ this flake (`lib.modules.importApply`), whose packages and revision are its defa
   - a `script-src` and `/api/docs` (`agents/wip-clearance.md`, "Before real patient data", Headers);
   - a timer that purges expired sessions, once there is a command for it;
   - whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves a
-    fake from it, or that stays with the hosts' own NixOS containers (`docs/chatddx.md`, "Target stack").
+    fake from it, or that stays with the hosts' own NixOS containers.
 
 ## On Kompismoln
 Decided: chatddx-dev first, on stationary, from this repository's `main`, with the World `worlds/kompismoln`; the old

@@ -79,7 +79,7 @@ A thing under development is in one of the following stages:
 5. Itemized - Has one or more items in `docs/backlog.md`
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
-8. Solidified - Dependable module documented in `docs/module/<name>.md` and `docs/reference/<name>.md`
+8. Solidified - Dependable module documented in `docs/modules/<name>.md` and `docs/reference/<name>.md`
 9. Cemented - TBD
 10. Protected - TBD
 

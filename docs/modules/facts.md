@@ -8,8 +8,8 @@ They never reach the wire themselves. A chunk may ask for an intent, a reasoning
 compiling a recipe works out what it sends from the facts about the recipe's model; the skeleton holds the result, and
 its compilation names the facts it was worked out from. Correcting a guessed fact changes nothing stored: a skeleton
 still means exactly what it sends, and a configuration compiled against the old facts is behind where the new ones
-change what it sends (docs/modules/catalog.md, "What has moved on"), until it follows them (docs/modules/api.md,
-"Following").
+change what it sends (docs/modules/catalog.md, "What has moved on"), until it follows them (docs/modules/catalog.md,
+"Following facts").
 
 This document describes what facts hold, what they are for and why. Classes, fields and errors are in
 docs/reference/facts.md. A model's facts are a kind of component (docs/modules/factors.md, "Model facts"), so the

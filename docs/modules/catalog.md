@@ -122,8 +122,8 @@ For any thread, the catalog lists the references of its head that could be updat
 - for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
 
-A model change puts the configuration behind it, and its owner follows it with the facts (docs/modules/api.md,
-"Following").
+A model change puts the configuration behind it, and its owner follows it with the facts (see "Following
+facts").
 
 A reference is _behind_ when a live thread that held it has since moved on to another version. A component can be held
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
@@ -131,7 +131,7 @@ moved on. Deleted threads aren't proposed.
 
 Facts are behind only in a configuration that asks them for something: one with a literal sampling and reasoning names
 none. Its owner follows them by keeping its recipe compiled against the corrected facts, as a new version
-(docs/modules/api.md, "Following"); init-data does so for the archive's.
+(see "Following facts"); init-data does so for the archive's.
 
 A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
 against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it doesn't
@@ -145,6 +145,12 @@ this way too.
 Moving on goes one level at a time. A chunk edit makes its skeleton threads behind; saving one of those makes its trial
 threads behind. A fork makes nothing behind until it moves on.
 
+```
+AGENT: move
+To docs/modules/bench.md, beside "Following an origin": following facts is what a person does on the bench, as
+following an origin is, and this section says it through `Bench` and the API. What makes a configuration behind
+stays here.
+```
 #### Following facts
 
 A configuration is behind what it was compiled for when the facts about its model were corrected where they change what

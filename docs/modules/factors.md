@@ -519,7 +519,8 @@ Model facts are what is known about one model that a request doesn't say (docs/m
 They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
 init-data writes them from facts files, a thread per model (docs/modules/curation.md); correcting a fact is a new
 version of its thread, and a configuration compiled against the old one is then behind where the new one changes what it
-sends (docs/modules/catalog.md, "What has moved on"), until its owner follows them (docs/modules/api.md, "Following").
+sends (docs/modules/catalog.md, "What has moved on"), until its owner follows them (docs/modules/catalog.md,
+"Following facts").
 
 ## Trials
 
