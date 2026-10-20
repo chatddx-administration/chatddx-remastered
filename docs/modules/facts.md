@@ -78,8 +78,8 @@ is known, or the level is refused or unknown), when a budget is asked of a model
 one, when nothing is recommended for the level, and when the engine's model has no facts. A chunk that sets the effort,
 the chat template arguments or the sampling values itself is literal, and compiles as it is on any model.
 
-`chatddx init-data` stores the facts and compiles each recipe against them (docs/modules/curation.md, "Facts and the
-engine"). A factors file asks for an intent as it writes any chunk, `level = "off"` or `recommended = true`
+`chatddx init-data` stores the facts and compiles each recipe against them (docs/modules/curation.md, "Loading"). A
+factors file asks for an intent as it writes any chunk, `level = "off"` or `recommended = true`
 (docs/modules/curation.md, "Factors", "Intents").
 
 ## Checking pairs

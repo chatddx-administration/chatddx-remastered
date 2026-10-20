@@ -43,7 +43,7 @@ Open:
   here as researchers and clinicians.
 - A `@sensitive` decorator on every function that may handle sensitive content, so that its errors are handled
   otherwise (suggested by the user; `agents/wip-clearance.md`, "Before real patient data", 13).
-- `docs/chatddx.md`, "Findings and errors": a finding is anything declared that doesn't match what was observed, and
+- `docs/chatddx.md`, "Findings": a finding is anything declared that doesn't match what was observed, and
   `endpoint.model_shared` and `endpoint.engine_unknown` are findings today, though class 1 would crash a start on
   them. The doc may want a line on which findings stop a start.
 

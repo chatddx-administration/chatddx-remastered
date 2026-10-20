@@ -118,11 +118,11 @@ connects as the writer and does everything in one transaction. It prints a line 
 
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references resolved,
    the facts about each served model the facts know, recipes made once and compiled for the engine the World names for
-   configurations (see "Facts and the engine"), and into each language their translations name, judges' recipes compiled
-   for their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
-   written. A recipe its translations can't carry into a language is made all the same, and said after the stanzas:
-   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data set
-   gives one.
+   configurations (docs/modules/inventory.md, "Configurations"), and into each language their translations name, judges'
+   recipes compiled for their own engines, texts and entry points checked. A data set that can't be planned is refused
+   before anything is written. A recipe its translations can't carry into a language is made all the same, and said
+   after the stanzas: `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`.
+   Neither World's data set gives one.
 2. **Stanzas.** Each planned stanza becomes a thread named after it. A stanza the archive already has, by kind and name,
    is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit records its
    compilation. Its tags, description, view labels and language are brought in line with the data.

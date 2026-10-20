@@ -58,7 +58,7 @@ person's own win, else the ones shared with them. Several raise `Ambiguous`, whi
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its word
 names; the same method takes a name or an id. A run is also found by the start of its id, among their own, as a person
 at a prompt types it; an edge that names things by id can take whole ids only, since a start could name another run
-tomorrow (docs/modules/api.md, "Ids").
+tomorrow.
 
 ## What a person is scored against
 
@@ -204,8 +204,8 @@ What every write has in common:
 - **Editing** keeps it as a new version of a configuration the person owns.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
-- **Making one from a recipe** a recipe is made with a model's digest (docs/modules/api.md, "Forking and editing",
-  "New") picked by its handle, compiled against the facts about it.
+- **Making one from a recipe** a recipe is made with a model's digest picked by its handle, compiled against the facts
+  about it.
 
 A configuration is kept with the compilation that makes it: for a variation with parts replaced, or a recipe, the one
 the running code compiles; otherwise the configuration's own.

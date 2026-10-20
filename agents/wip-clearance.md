@@ -8,7 +8,7 @@ gate are built; the clearance pipeline (a `clearance` schema and its grants) isn
 ## Scope
 Decided: clearance tracks sensitive sources, sensitive derived content and vetted endpoints, both engines and
 databases. It is enforcement, not curation: sending sensitive content to an engine that isn't cleared, judge
-engines included, is the system's one hard block (`docs/chatddx.md`, "Findings and errors"). The factors and the
+engines included, is the system's one hard block (`docs/chatddx.md`, "Findings"). The factors and the
 ledger provide the means; the runner enforces.
 
 Decided: this plan also holds every concern about running real patient data until it is resolved (see "Before real
@@ -224,7 +224,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    They are served with a run's items only, which are no-store. Not checked against real vLLM.
 7. **Digests** work as capabilities.
    - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:79-89`), by design: appendices and
-     expectations aren't sensitive (`docs/chatddx.md`; `docs/modules/api.md`, "What a person sees").
+     expectations aren't sensitive (`docs/chatddx.md`).
    - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:Seen.variation`), so `/threads/{id}/variation`
      shows another person's unshared chunk, and `POST /runs` with `parts` runs one (`src/chatddx/api/runs.py:_new`).
      Untracked.

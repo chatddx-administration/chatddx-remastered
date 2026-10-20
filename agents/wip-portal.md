@@ -75,7 +75,7 @@ Ways of showing things the pages keep:
   (`docs/modules/catalog.md`, "What has moved on"; `docs/modules/bench.md`, "Appendices and cases").
 - What deleting hides: everywhere, or only in pickers (`docs/modules/catalog.md`, "Deleting").
 - Pickers of the right kind for each reference, from the kinds each reference takes in the components' JSON Schemas
-  (`x-kind`, from `GET /api/kinds`: `docs/modules/api.md`, "What a person sees"; built, see W7), and execution settings to
+  (`x-kind`, from `GET /api/kinds`: `src/chatddx/api/world.py:kinds`; built, see W7), and execution settings to
   pick, if they become a component (`docs/backlog.md`, "Execution settings as a component").
 - A change made in the portal kept in git through an export (`docs/backlog.md`, "Exporting data sets").
 - Clearance granted in the database, through the portal and logged, as a long-term option
@@ -208,7 +208,7 @@ Decided (phase 5), from the options W1 to W11:
 - **W6. Checked as it is typed**, by `POST /api/components/check`: the component built, its rules, cross-checks and
   lints, and its digest, with nothing written.
 - **W7. Pickers from the kinds' JSON Schemas**, published with the kinds each reference takes (`x-kind`) by
-  `GET /api/kinds` (`docs/modules/api.md`, "What a person sees").
+  `GET /api/kinds` (`src/chatddx/api/world.py:kinds`).
 - **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
   a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
   that keeps what was typed.
@@ -428,8 +428,8 @@ and the limits on a text's length and on texts a day (`docs/modules/bench.md` an
 case, and its completion lands in the ledger; the vignette doesn't.
 
 ### Protection
-The demo is on the public web, but the portal has no guest: every request needs a session (`docs/modules/api.md`, "Signing
-in"), and people are added by command (`chatddx person add`). So:
+The demo is on the public web, but the portal has no guest: every request needs a session (`docs/modules/api.md`,
+"Authentication"), and people are added by command (`chatddx person add`). So:
 - a person's typed texts are held to a quota and a text to a size, with a NUL refused (built);
 - a person's runs are held to a quota a day, and a run to its items, by the bench (built in phase 4, R8);
 - signing in is limited per address by the NixOS module's nginx (`agents/wip-deploy.md`, "The NixOS module"); the

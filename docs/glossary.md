@@ -722,10 +722,10 @@ PostgreSQL's roles, not people's: :Admin (database), :Writer and :Reader. "Admin
 ## Findings
 
 A finding (`src/chatddx/factors/base.py:Finding`) has a level, `warning` unless said, a code, a message and optionally a
-subject. What findings are is in `docs/chatddx.md` ("Findings and errors"), `docs/modules/factors.md` and
-`docs/modules/ledger.md` ("Errors and findings"), `docs/modules/ledger.md` and `docs/modules/runner.md` ("Findings");
-the o11n import's are in `docs/modules/inventory.md`. This is every code made in `src/chatddx/`, by where it is raised:
-when, then its level and subject. A code raised in more than one place has an entry in each.
+subject. What findings are is in `docs/chatddx.md` ("Findings"), `docs/modules/factors.md` ("Errors and findings"),
+`docs/modules/ledger.md` and `docs/modules/runner.md` ("Findings"); the o11n import's are in
+`docs/modules/inventory.md`. This is every code made in `src/chatddx/`, by where it is raised: when, then its level and
+subject. A code raised in more than one place has an entry in each.
 
 ### Lints
 

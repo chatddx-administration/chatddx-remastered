@@ -26,7 +26,7 @@ writes apart from what people write. A name is defined once, across the inventor
 
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, and that each source is named by its table. A judge's and the configurations' handles
-are resolved as the data set is loaded (docs/modules/curation.md, "Facts and the engine"), and anything else that needs
+are resolved as the data set is loaded (docs/modules/curation.md, "Loading"), and anything else that needs
 the engines is checked when an entry is used (src/chatddx/inventory/check.py).
 
 ### Worlds

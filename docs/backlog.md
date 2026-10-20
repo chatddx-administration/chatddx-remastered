@@ -130,7 +130,7 @@ checked, before anything pools them. Nothing plans it yet.
 How records leave the store with the factors they reference, under a seal that covers the whole log, and with what an
 analysis needs frozen: languages and titles. Nothing plans it yet.
 
-- **Records aren't in bundles.** A bundle (docs/modules/factors.md, "Registries and bundles") carries components only;
+- **Records aren't in bundles.** A bundle (docs/modules/factors.md, "Storage") carries components only;
   how records travel with the factors they reference, for example for publication, isn't specified.
 
 - How scores are aggregated and exported together with the factors and the ledger for publication.

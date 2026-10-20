@@ -40,8 +40,9 @@ The app signs people in itself, with passwords and sessions in the database; the
   table holds nothing a client could present. A session lasts `settings.SESSION_TTL`, 12 hours; its expiry is checked
   each time it is used, and signing out or being made inactive ends it.
 
-How a token is carried is the edge's: the API takes it as a bearer token or a cookie (docs/modules/api.md, "Signing
-in"). The repl and the commands act as a person by login, over a database connection of their own, without signing in.
+How a token is carried is the edge's: the API takes it as a bearer token or a cookie (docs/modules/api.md,
+"Authentication"). The repl and the commands act as a person by login, over a database connection of their own, without
+signing in.
 
 ## Authorization
 
@@ -82,4 +83,4 @@ person.
 - src/chatddx/store/test/test_identity.py: people, passwords and sessions; that tokens aren't stored; what the database
   guards, and that the reader sees people but no secrets.
 - src/chatddx/store/test/test_cli.py: the `person` commands.
-- Signing in through the API: src/chatddx/api/test/test_people.py (docs/modules/api.md, "Signing in").
+- Signing in through the API: src/chatddx/api/test/test_people.py (docs/modules/api.md, "Authentication").

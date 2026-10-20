@@ -25,7 +25,7 @@ stay together, and what would make the split worth it. On that day the work goes
 | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | object: immutable, content-addressed, identified by its digest                                                           | factor: pinned, recorded or observed (`docs/modules/factors.md`, "What a factor is") |
 | record: append-only, a log sealed per run or score (`docs/modules/ledger.md`)                                            | instrument: measures observed factors without changing an output (canary sets)       |
-| state: rows updated in place (people; the worker's queue, `docs/modules/store.md`, "The Queue")                          | provenance: says how another object was made (compilations)                          |
+| state: rows updated in place (people; the worker's queue, `docs/modules/store.md`)                                       | provenance: says how another object was made (compilations)                          |
 | text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/modules/store.md`, "Texts") |                                                                                      |
 | World: outside the store (`docs/modules/inventory.md`)                                                                   |                                                                                      |
 
