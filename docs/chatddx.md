@@ -16,18 +16,9 @@ It must be possible to deliver the cage together with the results, for scientifi
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can be passed along revealing just enough for the orchestrator to fulfill its duty. Cases will enter the system de-identified from a predefined source.
 - Nothing can be expected of the vignettes: They may or may not include labs and imaging results, and may even lack basic details such as age or sex. The source exposes no revision identifier.
 - Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
-```
-AGENT: replace
-A scorer's resources are strings, and the gap is the backlog's ("Shipped code: scorers and tools";
-agents/glossary.md, "Decided", 8).
----
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
   scorer's views, free parameters, labels and resources are written by researchers in the portal, who pick its
   scoring code and expectation schema among those shipped.
-```
-- Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
-  scorer's views, free parameters and labels are written by researchers in the portal, who pick its scoring code,
-  expectation schema and resources among those shipped.
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
@@ -48,16 +39,7 @@ saving it makes it a configuration of its own, a fork, or a new version of one o
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies.
 
 ## Vignettes and anything made from them are sensitive
-```
-AGENT: replace
-A completion is the judge's slot; what an engine sends back is a response, and what is read from it an answer
-(agents/glossary.md, "Decided", 9).
----
 The vignette and content produced from it: fills, requests and responses, tool arguments and results, judge requests and
-responses, an engine's error that echoes a request; are all sensitive. Every part in the system that touches this data
-must label it "sensitive".
-```
-The vignette and content produced from it: fills, requests, completions, tool arguments and results, judge requests and
 responses, an engine's error that echoes a request; are all sensitive. Every part in the system that touches this data
 must label it "sensitive".
 

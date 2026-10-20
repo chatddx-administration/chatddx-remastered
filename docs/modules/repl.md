@@ -22,19 +22,10 @@ locates the sources and the endpoints. The model facts are the store's, as init-
 when they are needed, so facts corrected meanwhile are used. The shell connects as `DB_USER` in autocommit mode, as
 the runner needs, and refuses a login with no person.
 
-```
-AGENT: replace
-"Completion" is the judge's slot only, so the repl's is tab completion (agents/glossary.md, "Decided", 9).
----
 Lines are read with readline, which keeps a history (`~/.chatddx_history`, or `--history`) and completes with Tab
 (see "Tab completion"). Lines from a pipe are echoed, and the session stops at the first that fails, exiting with 1, so
 a piped routine either holds or says where it broke. Ctrl-C at the prompt clears the line; during a command it ends
 the command, but where `run` and `score` hold it (see "Stopping").
-```
-Lines are read with readline, which keeps a history (`~/.chatddx_history`, or `--history`) and completes with Tab (see
-"Completion"). Lines from a pipe are echoed, and the session stops at the first that fails, exiting with 1, so a piped
-routine either holds or says where it broke. Ctrl-C at the prompt clears the line; during a command it ends the
-command, but where `run` and `score` hold it (see "Stopping").
 
 ## What a person sees
 The shell acts as one person. It sees the threads they own or collaborate on, live (docs/catalog.md, "Owners"), and
@@ -235,13 +226,7 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   or all, under each expectation schema they have one in, keeping the person's own. Where several people share one for
   a case, it names them, and `take from OWNER` takes theirs.
 
-```
-AGENT: replace
-"Completion" is the judge's slot only, so the repl's is tab completion (agents/glossary.md, "Decided", 9).
----
 ## Tab completion
-```
-## Completion
 Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks, models and
 engines by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags,
 each once.

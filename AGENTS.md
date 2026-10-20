@@ -17,8 +17,8 @@ This document contains project-wide instructions written by humans for agents.
 
 ## Errors
 There are four ways an error can announce itself, the guiding principles are:
-- fail as soon as possible
-- handle as little as possible
+- fail asap
+- dodge handling
 
 ### 1. Crash at boot
 Runtime errors that can be known at boot should have a check that crashes boot when failing.

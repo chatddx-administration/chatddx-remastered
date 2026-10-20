@@ -667,24 +667,3 @@ Raised by `src/chatddx/ledger/score.py:check_score`, with `src/chatddx/ledger/ca
 :execution.order — Items' judge calls were sent before those of items scheduled ahead of them. (warning)
 
 :execution.concurrency — More judge calls were in flight at once than declared. (warning)
-
-## Decided
-What the human decided on the open items, and what came of each; "Decided" means the user said so.
-
-1. **Record.** (b), "stanza": a data set's record is a :Stanza, in the code
-   (`src/chatddx/curation/plan.py:Plan.stanzas`) and in the docs.
-2. **Intent and level.** (a): the code's type of the reasoning levels is `src/chatddx/factors/facts.py:Level`.
-3. **`max_jobs`.** (a): an endpoint's :Capacity (`src/chatddx/inventory/inventory.py:EndpointSpec.capacity`), in the
-   Worlds' endpoints files and the API too, and in the docs.
-4. **A variation "is just a digest".** (b): a plain value, of which nothing is stored, in `docs/chatddx.md` and
-   `docs/bench.md`.
-5. **A case's title.** (a): the bench shows and finds an unnamed family by its vignette's `SOURCE/ID`
-   (`src/chatddx/bench/model.py:Family.name`).
-6. **Request.** (a): a :Request is the body a call sends; the docs say a skeleton or a configuration as such.
-7. **Handle.** (a): a :Handle is a model's; the catalog is more than a handle, and suggestions rephrase
-   `docs/catalog.md`.
-8. **Resource.** The docs call a :Resource what it is, a string, and the gap stays the backlog's ("Shipped code: scorers
-   and tools"); suggestions to `docs/factors.md` and `docs/chatddx.md`.
-9. **Completion.** (a): a :Completion is the judge's slot; what an engine sends back is a response and what is read
-   from it an :Answer, and the repl's is tab completion. Suggestions throughout the docs.
-10. **The answer tool.** (a): the docs say :Answer tool, as the code does; suggestions throughout the docs.

@@ -81,20 +81,8 @@ back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds n
 and a recipe that names one is refused.
 
 ### Texts
-```
-AGENT: replace
-The code says "answer tool" (src/chatddx/factors/request.py:ToolOutput; agents/glossary.md, "Decided", 10).
----
-What the model reads is written in a language, and a texts file's name gives it: every text record in
-`texts-sv.toml` is written in Swedish, every translations record there translates into Swedish, and no record says its
-own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-tool or tool
-description, or schema prose says something, so a prompt of slots alone, or an output without guidance or schema,
-holds none. A chunk that holds text is written in a texts file, and one that holds none in `factors.toml`, where it
-serves every language. Loading writes each text's language on its digest, and names it plainly, such as
-`management-plan`; a translations chunk says its languages itself, and is given none.
-```
-What the model reads is written in a language, and a texts file's name gives it: every text record in
-`texts-sv.toml` is written in Swedish, every translations record there translates into Swedish, and no record says its
+What the model reads is written in a language, and a texts file's name gives it: every text stanza in
+`texts-sv.toml` is written in Swedish, every translations stanza there translates into Swedish, and no stanza says its
 own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool
 description, or schema prose says something, so a prompt of slots alone, or an output without guidance or schema,
 holds none. A chunk that holds text is written in a texts file, and one that holds none in `factors.toml`, where it
