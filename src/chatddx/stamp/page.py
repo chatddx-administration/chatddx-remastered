@@ -1,4 +1,5 @@
 import ast
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -14,15 +15,16 @@ Each file here is written by `chatddx stamp` from a package of `settings.STAMPED
 sorted alphabetically whatever its case, so that a class's members follow it. An entry's heading is the name, with its
 decorators, type parameters and bases; below it is where the code is.
 
-- The bullets are a function's parameters or a class's fields, and `∟` the return type. `*`: the parameters after it
-  are keyword-only; `/`: those before it are positional-only. A function a class binds as an attribute is its method:
-  its first parameter, the instance, is left out.
+- The bullets are a function's parameters or a class's fields, and `∟` the return type, which a class and its
+  `__init__` leave out: calling a class gives one of it. A constant or a type alias is its definition, without a bullet.
+  `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a class binds as
+  an attribute is its method: its first parameter, the instance, is left out.
 - Raises: the function's own `raise` statements and its private helpers' (through `<helper>`), in the order the code
   reaches them, each once. What the public functions it calls raise is in their own entries.
-- A message is quoted, with the values of the code that raises it as `{expr}`. An argument that isn't text is as
-  written, and from `<exception>` when it is the exception caught.
+- A message is in code: text quoted, with the values of the code that raises it as `{expr}`, and an argument that
+  isn't text as written; from `<exception>` when it is the exception caught.
 - Finds: each `Finding` the function makes, as `code`: message, followed as Raises are; a warning unless it says
-  info.
+  another level, such as `info`.
 - A change in the code waits for a stamp as a git conflict: the lines between `<<<<<<< signed` and `=======` are as
   last stamped, and those between `=======` and `>>>>>>> @stamp` are what the code says now. Keeping the latter, and
   taking the rest away, as a conflict tool's "theirs" does, is the stamp.
@@ -48,12 +50,15 @@ def _head(value: str | griffe.Expr) -> str:
 
 
 def _noted(name: str, message: str | None, notes: list[str]) -> str:
-    written = _code(name) + ("" if message is None else f": {message}")
+    written = _code(name) + ("" if message is None else f": {_code(message)}")
     return written + (f" ({', '.join(notes)})" if notes else "")
 
 
 def _code(text: str) -> str:
-    return f"`` {text} ``" if "`" in text else f"`{text}`"
+    if "`" not in text:
+        return f"`{text}`"
+    fence = "`" * (max(len(run) for run in re.findall("`+", text)) + 1)
+    return f"{fence} {text} {fence}"
 
 
 class Page:
@@ -152,7 +157,7 @@ class Page:
         assert isinstance(obj.filepath, Path)
         local = obj.path.removeprefix(f"{obj.module.path}.")
         return [
-            " ".join([f"## {name}", *marks]),
+            " ".join([f"## {_code(name)}", *marks]),
             _code(f"{obj.filepath.relative_to(self.repo)}:{local}"),
         ]
 
@@ -171,8 +176,8 @@ class Page:
     def written(self, obj: griffe.Object) -> list[str]:
         lines = self.code.lines(obj)
         if len(lines) == 1:
-            return ["", f"* {_code(lines[0].strip())}"]
-        return ["", f"* {_code(self.annotated(obj, valued=True))}"]
+            return ["", _code(lines[0].strip())]
+        return ["", _code(self.annotated(obj, valued=True))]
 
     def annotated(self, obj: griffe.Object, valued: bool) -> str:
         written = obj.name
@@ -259,7 +264,7 @@ class Page:
         ]
 
     def noted(self, f: Found) -> str:
-        notes = [] if f.level is None else [f.level]
+        notes = [] if f.level is None else [_code(f.level)]
         if f.origin is not None:
             notes.append(f"from {_code(f.origin)}")
         if f.through is not None:

@@ -2,13 +2,13 @@
 
 Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs/reference/README.md](README.md).
 
-## Assembler
+## `Assembler`
 `src/chatddx/store/notify.py:Assembler`
 
-## Assembler.__init__
+## `Assembler.__init__`
 `src/chatddx/store/notify.py:Assembler.__init__`
 
-## Assembler.message
+## `Assembler.message`
 `src/chatddx/store/notify.py:Assembler.message`
 
 * `channel: str`
@@ -16,15 +16,15 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `payload: str`
 * ∟`Message | None`
 
-## Catalog
+## `Catalog`
 `src/chatddx/store/catalog.py:Catalog`
 
-## Catalog.__init__
+## `Catalog.__init__`
 `src/chatddx/store/catalog.py:Catalog.__init__`
 
 * `conn: Connection`
 
-## Catalog.adopt
+## `Catalog.adopt`
 `src/chatddx/store/catalog.py:Catalog.adopt`
 
 * `case: str`
@@ -34,7 +34,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `by_content: bool = True`
 * ∟`int`
 
-## Catalog.create
+## `Catalog.create`
 `src/chatddx/store/catalog.py:Catalog.create`
 
 * `digest: str`
@@ -47,7 +47,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `labels: Labels | None = None`
 * ∟`Edit`
 
-## Catalog.edit
+## `Catalog.edit`
 `src/chatddx/store/catalog.py:Catalog.edit`
 
 * `thread: int`
@@ -60,7 +60,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `labels: Labels | None = None`
 * ∟`Edit`
 
-## Catalog.keep
+## `Catalog.keep`
 `src/chatddx/store/catalog.py:Catalog.keep`
 
 * `digest: str`
@@ -74,7 +74,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `labels: Labels | None = None`
 * ∟`tuple[Edit, Kept]`
 
-## Catalog.language
+## `Catalog.language`
 `src/chatddx/store/catalog.py:Catalog.language`
 
 * `digest: str`
@@ -82,7 +82,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `by: int`
 * ∟`None`
 
-## Catalog.note
+## `Catalog.note`
 `src/chatddx/store/catalog.py:Catalog.note`
 
 * `subject: Subject`
@@ -90,7 +90,7 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `by: int`
 * ∟`None`
 
-## Catalog.repair
+## `Catalog.repair`
 `src/chatddx/store/catalog.py:Catalog.repair`
 
 * `family: int`
@@ -100,28 +100,28 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `fingerprint: Fingerprint | None = None`
 * ∟`RepairPlan`
 
-## channel
+## `channel`
 `src/chatddx/store/notify.py:channel`
 
 * `run: UUID`
 * ∟`str`
 
-## Connection
+## `Connection`
 `src/chatddx/store/store.py:Connection`
 
-* `Connection = psycopg.Connection[TupleRow]`
+`Connection = psycopg.Connection[TupleRow]`
 
-## ENDED
+## `ENDED`
 `src/chatddx/store/queue.py:ENDED`
 
-* `ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")`
+`ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")`
 
-## Events `@dataclass(frozen=True)`
+## `Events` `@dataclass(frozen=True)`
 `src/chatddx/store/notify.py:Events`
 
 * `said: Said`
 
-## fetch_vignette
+## `fetch_vignette`
 `src/chatddx/store/texts.py:fetch_vignette`
 
 * `conn: Connection`
@@ -129,19 +129,19 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `vignette: Vignette`
 * ∟`bytes`
 
-## Held `@dataclass(frozen=True)`
+## `Held` `@dataclass(frozen=True)`
 `src/chatddx/store/queue.py:Held`
 
 * `job: int`
 * `halt: bool`
 * `paused: bool`
 
-## JOB
+## `JOB`
 `src/chatddx/store/notify.py:JOB`
 
-* `JOB = "job "`
+`JOB = "job "`
 
-## Job `@dataclass(frozen=True)`
+## `Job` `@dataclass(frozen=True)`
 `src/chatddx/store/queue.py:Job`
 
 * `id: int`
@@ -161,63 +161,63 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `beat: datetime | None`
 * `ended: datetime | None`
 
-## JobChanged `@dataclass(frozen=True)`
+## `JobChanged` `@dataclass(frozen=True)`
 `src/chatddx/store/notify.py:JobChanged`
 
 * `status: str`
 
-## Kept
+## `Kept`
 `src/chatddx/store/catalog.py:Kept`
 
-* `Kept = Literal["created", "edited", "unchanged"]`
+`Kept = Literal["created", "edited", "unchanged"]`
 
-## LIMIT
+## `LIMIT`
 `src/chatddx/store/notify.py:LIMIT`
 
-* `LIMIT = 7900`
+`LIMIT = 7900`
 
-## listen
+## `listen`
 `src/chatddx/store/notify.py:listen`
 
 * `conn: psycopg.Connection[TupleRow]`
 * `*channels: str`
 * ∟`None`
 
-## Message
+## `Message`
 `src/chatddx/store/notify.py:Message`
 
-* `type Message = Rows | JobChanged | Events`
+`type Message = Rows | JobChanged | Events`
 
-## migrate
+## `migrate`
 `src/chatddx/store/migrate.py:migrate`
 
 * `conn: psycopg.Connection`
 * `tier: int = TOP_TIER`
 * ∟`list[str]`
 
-## Migration `@dataclass(frozen=True)`
+## `Migration` `@dataclass(frozen=True)`
 `src/chatddx/store/migrate.py:Migration`
 
 * `name: str`
 * `tier: int`
 * `path: Path`
 
-## pending
+## `pending`
 `src/chatddx/store/migrate.py:pending`
 
 * `conn: psycopg.Connection`
 * `tier: int = TOP_TIER`
 * ∟`list[Migration]`
 
-## People
+## `People`
 `src/chatddx/store/people.py:People`
 
-## People.__init__
+## `People.__init__`
 `src/chatddx/store/people.py:People.__init__`
 
 * `conn: Connection`
 
-## People.add
+## `People.add`
 `src/chatddx/store/people.py:People.add`
 
 * `login: str`
@@ -225,55 +225,55 @@ Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs
 * `roles: Iterable[Role] = ()`
 * ∟`Person`
 
-## People.authenticate
+## `People.authenticate`
 `src/chatddx/store/people.py:People.authenticate`
 
 * `login: str`
 * `password: str`
 * ∟`Person | None`
 
-## People.close_session
+## `People.close_session`
 `src/chatddx/store/people.py:People.close_session`
 
 * `token: str`
 * ∟`None`
 
-## People.find
+## `People.find`
 `src/chatddx/store/people.py:People.find`
 
 * `login: str`
 * ∟`Person | None`
 
-## People.get
+## `People.get`
 `src/chatddx/store/people.py:People.get`
 
 * `id: int`
 * ∟`Person`
 
 Raises:
-1. `LookupError`: "no person with id {id}"
+1. `LookupError`: `"no person with id {id}"`
 
-## People.open_session
+## `People.open_session`
 `src/chatddx/store/people.py:People.open_session`
 
 * `id: int`
 * `ttl: timedelta = settings.SESSION_TTL`
 * ∟`str`
 
-## People.session
+## `People.session`
 `src/chatddx/store/people.py:People.session`
 
 * `token: str`
 * ∟`Person | None`
 
-## People.set_password
+## `People.set_password`
 `src/chatddx/store/people.py:People.set_password`
 
 * `id: int`
 * `password: str`
 * ∟`None`
 
-## People.update
+## `People.update`
 `src/chatddx/store/people.py:People.update`
 
 * `id: int`
@@ -284,30 +284,30 @@ Raises:
 * ∟`Person`
 
 Raises:
-1. `LookupError`: "no person with id {id}"
+1. `LookupError`: `"no person with id {id}"`
 
-## Placed `@dataclass(frozen=True)`
+## `Placed` `@dataclass(frozen=True)`
 `src/chatddx/store/queue.py:Placed`
 
 * `job: Job`
 * `ahead: int | None`
 
-## Queue
+## `Queue`
 `src/chatddx/store/queue.py:Queue`
 
-## Queue.__init__
+## `Queue.__init__`
 `src/chatddx/store/queue.py:Queue.__init__`
 
 * `conn: Connection`
 
-## Queue.beat
+## `Queue.beat`
 `src/chatddx/store/queue.py:Queue.beat`
 
 * `worker: UUID`
 * `jobs: Collection[int]`
 * ∟`list[Held]`
 
-## Queue.claim
+## `Queue.claim`
 `src/chatddx/store/queue.py:Queue.claim`
 
 * `worker: UUID`
@@ -315,7 +315,7 @@ Raises:
 * `lost: timedelta`
 * ∟`Job | None`
 
-## Queue.end
+## `Queue.end`
 `src/chatddx/store/queue.py:Queue.end`
 
 * `job: int`
@@ -325,43 +325,43 @@ Raises:
 * ∟`bool`
 
 Raises:
-1. `ValueError`: "a job ends {', '.join(ENDED)}, not {status}"
+1. `ValueError`: `"a job ends {', '.join(ENDED)}, not {status}"`
 
-## Queue.enlist
+## `Queue.enlist`
 `src/chatddx/store/queue.py:Queue.enlist`
 
 * `worker: UUID`
 * ∟`None`
 
-## Queue.halt
+## `Queue.halt`
 `src/chatddx/store/queue.py:Queue.halt`
 
 * `run: UUID`
 * ∟`Job`
 
 Raises:
-1. `LookupError`: "run {run} has nothing under way"
+1. `LookupError`: `"run {run} has nothing under way"`
 
-## Queue.open
+## `Queue.open`
 `src/chatddx/store/queue.py:Queue.open`
 
 * `run: UUID`
 * ∟`Job | None`
 
-## Queue.pause
+## `Queue.pause`
 `src/chatddx/store/queue.py:Queue.pause`
 
 * `owner: int`
 * `paused: bool = True`
 * ∟`None`
 
-## Queue.placed
+## `Queue.placed`
 `src/chatddx/store/queue.py:Queue.placed`
 
 * `runs: Collection[UUID]`
 * ∟`dict[UUID, Placed]`
 
-## Queue.put
+## `Queue.put`
 `src/chatddx/store/queue.py:Queue.put`
 
 * `owner: int`
@@ -373,9 +373,9 @@ Raises:
 * ∟`Job`
 
 Raises:
-1. `UnderWay`: "run {run} has something under way"
+1. `UnderWay`: `"run {run} has something under way"`
 
-## Queue.requeue
+## `Queue.requeue`
 `src/chatddx/store/queue.py:Queue.requeue`
 
 * `job: int`
@@ -383,7 +383,7 @@ Raises:
 * `why: str | None = None`
 * ∟`bool`
 
-## Queue.scored
+## `Queue.scored`
 `src/chatddx/store/queue.py:Queue.scored`
 
 * `job: int`
@@ -391,169 +391,169 @@ Raises:
 * `scorer: str`
 * ∟`bool`
 
-## Queue.standing
+## `Queue.standing`
 `src/chatddx/store/queue.py:Queue.standing`
 
 * `owner: int`
 * `lost: timedelta`
 * ∟`Standing`
 
-## Queue.stop
+## `Queue.stop`
 `src/chatddx/store/queue.py:Queue.stop`
 
 * `owner: int`
 * `now: bool = False`
 * ∟`Stopped`
 
-## ROWS
+## `ROWS`
 `src/chatddx/store/notify.py:ROWS`
 
-* `ROWS = "rows"`
+`ROWS = "rows"`
 
-## catalog.Rows
+## `catalog.Rows`
 `src/chatddx/store/catalog.py:Rows`
 
-## notify.Rows `@dataclass(frozen=True)`
+## `notify.Rows` `@dataclass(frozen=True)`
 `src/chatddx/store/notify.py:Rows`
 
-## catalog.Rows.__init__
+## `catalog.Rows.__init__`
 `src/chatddx/store/catalog.py:Rows.__init__`
 
 * `conn: Connection`
 
-## catalog.Rows.bindings
+## `catalog.Rows.bindings`
 `src/chatddx/store/catalog.py:Rows.bindings`
 
 * `families: Collection[int]`
 * ∟`list[Binding]`
 
-## catalog.Rows.bindings_in
+## `catalog.Rows.bindings_in`
 `src/chatddx/store/catalog.py:Rows.bindings_in`
 
 * `source: str`
 * ∟`list[Binding]`
 
-## catalog.Rows.bindings_sharing
+## `catalog.Rows.bindings_sharing`
 `src/chatddx/store/catalog.py:Rows.bindings_sharing`
 
 * `vignette: Vignette`
 * ∟`list[Binding]`
 
-## catalog.Rows.bound_to
+## `catalog.Rows.bound_to`
 `src/chatddx/store/catalog.py:Rows.bound_to`
 
 * `vignettes: Collection[Vignette]`
 * `kind: str`
 * ∟`list[tuple[str, Vignette]]`
 
-## catalog.Rows.compilations
+## `catalog.Rows.compilations`
 `src/chatddx/store/catalog.py:Rows.compilations`
 
 * `skeleton: str`
 * ∟`list[Compilation]`
 
-## catalog.Rows.components
+## `catalog.Rows.components`
 `src/chatddx/store/catalog.py:Rows.components`
 
 * `digests: Collection[str]`
 * ∟`list[tuple[str, Component]]`
 
-## catalog.Rows.edit
+## `catalog.Rows.edit`
 `src/chatddx/store/catalog.py:Rows.edit`
 
 * `id: int`
 * ∟`Edit | None`
 
-## catalog.Rows.edits
+## `catalog.Rows.edits`
 `src/chatddx/store/catalog.py:Rows.edits`
 
 * `threads: Collection[int]`
 * ∟`list[Edit]`
 
-## catalog.Rows.edits_holding
+## `catalog.Rows.edits_holding`
 `src/chatddx/store/catalog.py:Rows.edits_holding`
 
 * `digests: Collection[str]`
 * ∟`list[Edit]`
 
-## catalog.Rows.entries
+## `catalog.Rows.entries`
 `src/chatddx/store/catalog.py:Rows.entries`
 
 * `subjects: Collection[Subject]`
 * ∟`list[tuple[Subject, Entry, int]]`
 
-## catalog.Rows.expectations
+## `catalog.Rows.expectations`
 `src/chatddx/store/catalog.py:Rows.expectations`
 
 * `cases: Collection[str]`
 * ∟`list[str]`
 
-## catalog.Rows.families
+## `catalog.Rows.families`
 `src/chatddx/store/catalog.py:Rows.families`
 
 * ∟`list[int]`
 
-## catalog.Rows.get
+## `catalog.Rows.get`
 `src/chatddx/store/catalog.py:Rows.get`
 
 * `digest: str`
 * ∟`Component`
 
-## catalog.Rows.involving
+## `catalog.Rows.involving`
 `src/chatddx/store/catalog.py:Rows.involving`
 
 * `person: int`
 * ∟`list[Subject]`
 
-## catalog.Rows.kind
+## `catalog.Rows.kind`
 `src/chatddx/store/catalog.py:Rows.kind`
 
 * `digest: str`
 * ∟`str | None`
 
-## catalog.Rows.labels
+## `catalog.Rows.labels`
 `src/chatddx/store/catalog.py:Rows.labels`
 
 * `edits: Collection[int]`
 * ∟`list[tuple[int, Part, int, str]]`
 
-## catalog.Rows.languages
+## `catalog.Rows.languages`
 `src/chatddx/store/catalog.py:Rows.languages`
 
 * `digests: Collection[str]`
 * ∟`list[tuple[str, str]]`
 
-## catalog.Rows.runs_started
+## `catalog.Rows.runs_started`
 `src/chatddx/store/catalog.py:Rows.runs_started`
 
 * `person: int`
 * `since: datetime`
 * ∟`int`
 
-## catalog.Rows.thread
+## `catalog.Rows.thread`
 `src/chatddx/store/catalog.py:Rows.thread`
 
 * `id: int`
 * ∟`Thread | None`
 
-## catalog.Rows.threads
+## `catalog.Rows.threads`
 `src/chatddx/store/catalog.py:Rows.threads`
 
 * `kind: str`
 * ∟`list[Thread]`
 
-## catalog.Rows.threads_forked_from
+## `catalog.Rows.threads_forked_from`
 `src/chatddx/store/catalog.py:Rows.threads_forked_from`
 
 * `edits: Collection[int]`
 * ∟`list[Thread]`
 
-## Said
+## `Said`
 `src/chatddx/store/notify.py:Said`
 
-* `type Said = list[tuple[str, JsonValue]]`
+`type Said = list[tuple[str, JsonValue]]`
 
-## Standing `@dataclass(frozen=True)`
+## `Standing` `@dataclass(frozen=True)`
 `src/chatddx/store/queue.py:Standing`
 
 * `paused: bool`
@@ -561,128 +561,128 @@ Raises:
 * `under_way: int`
 * `workers: int`
 
-## Status
+## `Status`
 `src/chatddx/store/queue.py:Status`
 
-* `Status = Literal["queued", "under way", "finished", "stopped", "failed"]`
+`Status = Literal["queued", "under way", "finished", "stopped", "failed"]`
 
-## STATUSES
+## `STATUSES`
 `src/chatddx/store/queue.py:STATUSES`
 
-* `STATUSES: tuple[Status, ...] = get_args(Status)`
+`STATUSES: tuple[Status, ...] = get_args(Status)`
 
-## Stopped `@dataclass(frozen=True)`
+## `Stopped` `@dataclass(frozen=True)`
 `src/chatddx/store/queue.py:Stopped`
 
 * `taken_out: tuple[UUID, ...]`
 * `halting: tuple[UUID, ...]`
 
-## Store
+## `Store`
 `src/chatddx/store/store.py:Store`
 
-## Store.__init__
+## `Store.__init__`
 `src/chatddx/store/store.py:Store.__init__`
 
 * `conn: Connection`
 
-## Store.add
+## `Store.add`
 `src/chatddx/store/store.py:Store.add`
 
 * `registry: Registry`
 * `roots: Iterable[str]`
 * ∟`list[str]`
 
-## Store.append
+## `Store.append`
 `src/chatddx/store/store.py:Store.append`
 
 * `*records: Record`
 * ∟`None`
 
 Raises:
-1. `TypeError`: "no table for {type(record).__name__}"
+1. `TypeError`: `"no table for {type(record).__name__}"`
 
-## Store.compilations
+## `Store.compilations`
 `src/chatddx/store/store.py:Store.compilations`
 
 * `skeleton: str`
 * ∟`list[Compilation]`
 
-## Store.finished
+## `Store.finished`
 `src/chatddx/store/store.py:Store.finished`
 
 * `runs: Collection[UUID]`
 * ∟`set[UUID]`
 
-## Store.get
+## `Store.get`
 `src/chatddx/store/store.py:Store.get`
 
 * `digest: str`
 * ∟`Component`
 
 Raises:
-1. `StructuralError`: "{digest} is not in the store"
+1. `StructuralError`: `"{digest} is not in the store"`
 
-## Store.load
+## `Store.load`
 `src/chatddx/store/store.py:Store.load`
 
 * `roots: Iterable[str]`
 * ∟`Registry`
 
 Raises:
-1. `StructuralError`: "not in the store: {missing}"
+1. `StructuralError`: `"not in the store: {missing}"`
 
-## Store.reaching
+## `Store.reaching`
 `src/chatddx/store/store.py:Store.reaching`
 
 * `digest: str`
 * `kind: str`
 * ∟`list[str]`
 
-## Store.rows_of
+## `Store.rows_of`
 `src/chatddx/store/store.py:Store.rows_of`
 
 * `run: UUID`
 * `after: int = 0`
 * ∟`list[Written]`
 
-## Store.run
+## `Store.run`
 `src/chatddx/store/store.py:Store.run`
 
 * `run: UUID`
 * ∟`Run`
 
 Raises:
-1. `LookupError`: "{log} {key} is not in the store" (through `Store._stages`)
-2. `StructuralError`: "{log} {key} has no started row" (through `Store._stages`)
+1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._stages`)
+2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._stages`)
 
-## Store.score
+## `Store.score`
 `src/chatddx/store/store.py:Store.score`
 
 * `score: UUID`
 * ∟`Score`
 
 Raises:
-1. `LookupError`: "{log} {key} is not in the store" (through `Store._stages`)
-2. `StructuralError`: "{log} {key} has no started row" (through `Store._stages`)
+1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._stages`)
+2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._stages`)
 
-## Store.scores_of
+## `Store.scores_of`
 `src/chatddx/store/store.py:Store.scores_of`
 
 * `run: UUID`
 * ∟`list[ScoreStarted]`
 
-## Store.started
+## `Store.started`
 `src/chatddx/store/store.py:Store.started`
 
 * `runs: Collection[UUID]`
 * ∟`list[RunStarted]`
 
-## TAKEN_OUT
+## `TAKEN_OUT`
 `src/chatddx/store/queue.py:TAKEN_OUT`
 
-* `TAKEN_OUT = "taken out of the queue"`
+`TAKEN_OUT = "taken out of the queue"`
 
-## tell
+## `tell`
 `src/chatddx/store/notify.py:tell`
 
 * `conn: psycopg.Connection[TupleRow]`
@@ -690,15 +690,15 @@ Raises:
 * `said: Iterable[tuple[str, JsonValue]]`
 * ∟`None`
 
-## Texts
+## `Texts`
 `src/chatddx/store/texts.py:Texts`
 
-## Texts.__init__
+## `Texts.__init__`
 `src/chatddx/store/texts.py:Texts.__init__`
 
 * `conn: Connection`
 
-## Texts.add
+## `Texts.add`
 `src/chatddx/store/texts.py:Texts.add`
 
 * `source: str`
@@ -706,7 +706,7 @@ Raises:
 * `by: int`
 * ∟`str`
 
-## Texts.get
+## `Texts.get`
 `src/chatddx/store/texts.py:Texts.get`
 
 * `source: str`
@@ -714,36 +714,36 @@ Raises:
 * ∟`bytes`
 
 Raises:
-1. `LookupError`: "no case {id!r} in source {source!r}"
+1. `LookupError`: `"no case {id!r} in source {source!r}"`
 
-## Texts.typed_since
+## `Texts.typed_since`
 `src/chatddx/store/texts.py:Texts.typed_since`
 
 * `by: int`
 * `since: datetime`
 * ∟`int`
 
-## TOP_TIER
+## `TOP_TIER`
 `src/chatddx/store/migrate.py:TOP_TIER`
 
-* `TOP_TIER = 2`
+`TOP_TIER = 2`
 
-## UnderWay `(ValueError)`
+## `UnderWay` `(ValueError)`
 `src/chatddx/store/queue.py:UnderWay`
 
-## unlisten
+## `unlisten`
 `src/chatddx/store/notify.py:unlisten`
 
 * `conn: psycopg.Connection[TupleRow]`
 * `*channels: str`
 * ∟`None`
 
-## WORKERS
+## `WORKERS`
 `src/chatddx/store/notify.py:WORKERS`
 
-* `WORKERS = "worker"`
+`WORKERS = "worker"`
 
-## Written
+## `Written`
 `src/chatddx/store/store.py:Written`
 
-* `type Written = tuple[int, Record]`
+`type Written = tuple[int, Record]`

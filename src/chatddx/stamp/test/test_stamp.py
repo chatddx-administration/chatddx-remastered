@@ -61,12 +61,12 @@ def test_a_reference_lists_the_public_names_alphabetically_whatever_their_case(
         },
     )
     headings = [line for line in found.splitlines() if line.startswith("## ")]
-    assert headings == ["## Alpha", "## beta", "## GAMMA"]
-    assert entry(found, "## beta") == [
+    assert headings == ["## `Alpha`", "## `beta`", "## `GAMMA`"]
+    assert entry(found, "## `beta`") == [
         "`src/proj/alpha/things.py:beta`",
         "* ∟`None`",
     ]
-    assert entry(found, "## GAMMA")[1:] == ["* `GAMMA = 1`"]
+    assert entry(found, "## `GAMMA`")[1:] == ["`GAMMA = 1`"]
     assert "dumps" not in found
 
 
@@ -90,7 +90,7 @@ def test_a_signature_is_a_list_of_its_parameters_as_the_code_writes_them(
             """,
         },
     )
-    assert entry(found, "## every `@functools.cache` `[T]`")[1:] == [
+    assert entry(found, "## `every` `@functools.cache` `[T]`")[1:] == [
         "* `a: int`",
         "* `/`",
         '* `b: str = "x"`',
@@ -99,7 +99,7 @@ def test_a_signature_is_a_list_of_its_parameters_as_the_code_writes_them(
         "* `**rest: str`",
         "* ∟`list[T]`",
     ]
-    assert entry(found, "## keyed")[1:] == ["* `a`", "* `*`", "* `b=1`"]
+    assert entry(found, "## `keyed`")[1:] == ["* `a`", "* `*`", "* `b=1`"]
 
 
 def test_a_class_lists_its_fields_and_each_method_is_an_entry_of_its_own(
@@ -143,22 +143,22 @@ def test_a_class_lists_its_fields_and_each_method_is_an_entry_of_its_own(
     )
     headings = [line for line in found.splitlines() if line.startswith("## ")]
     assert headings == [
-        "## Kept `@dataclass(frozen=True)` `(LookupError)`",
-        "## KINDS",
-        "## Store",
-        "## Store.__init__",
-        "## Store.default `@staticmethod`",
-        "## Store.name `@property`",
+        "## `Kept` `@dataclass(frozen=True)` `(LookupError)`",
+        "## `KINDS`",
+        "## `Store`",
+        "## `Store.__init__`",
+        "## `Store.default` `@staticmethod`",
+        "## `Store.name` `@property`",
     ]
-    assert entry(found, "## Store")[1:] == ["* `path: str`"]
-    assert entry(found, "## Store.__init__")[1:] == ["* `path: str`"]
-    assert entry(found, "## Store.name `@property`")[1:] == ["* ∟`str`"]
-    assert entry(found, "## Kept `@dataclass(frozen=True)` `(LookupError)`")[1:] == [
+    assert entry(found, "## `Store`")[1:] == ["* `path: str`"]
+    assert entry(found, "## `Store.__init__`")[1:] == ["* `path: str`"]
+    assert entry(found, "## `Store.name` `@property`")[1:] == ["* ∟`str`"]
+    assert entry(found, "## `Kept` `@dataclass(frozen=True)` `(LookupError)`")[1:] == [
         "* `digest: str`",
         '* `kind: str = "case"`',
         "* `labels: dict[str, str] = field(…)`",
     ]
-    assert entry(found, "## KINDS")[1:] == ["* `KINDS: dict[str, str] = {…}`"]
+    assert entry(found, "## `KINDS`")[1:] == ["`KINDS: dict[str, str] = {…}`"]
 
 
 def test_a_function_a_class_binds_is_written_once_as_the_class_s_method(
@@ -191,13 +191,13 @@ def test_a_function_a_class_binds_is_written_once_as_the_class_s_method(
             """,
         },
     )
-    assert "## act" not in found
-    assert entry(found, "## Bench.act") == [
+    assert "## `act`" not in found
+    assert entry(found, "## `Bench.act`") == [
         "`src/proj/alpha/acting.py:act`",
         "* `times: int`",
         "* ∟`int`",
         "Raises:",
-        '1. `ValueError`: "a negative number of times" (through `Seen._counted`)',
+        '1. `ValueError`: `"a negative number of times"` (through `Seen._counted`)',
     ]
 
 
@@ -225,11 +225,11 @@ def test_a_raise_is_said_with_its_message_as_the_code_writes_it(
             """,
         },
     )
-    assert entry(found, "## find")[4:] == [
-        '1. `ValueError`: "nothing to find"',
-        "2. `ValueError`: name",
+    assert entry(found, "## `find`")[4:] == [
+        '1. `ValueError`: `"nothing to find"`',
+        "2. `ValueError`: `name`",
         "3. `Missing`",
-        '4. `Missing`: "no {name!r} in the store"',
+        '4. `Missing`: `"no {name!r} in the store"`',
     ]
 
 
@@ -256,10 +256,26 @@ def test_an_argument_that_isn_t_text_is_said_as_written(tmp_path: Path) -> None:
             """,
         },
     )
-    assert entry(found, "## checked")[4:] == [
-        '1. `Problem`: 422, "{n} is negative"',
-        '2. `Problem`: status=404, detail="nothing"',
-        '3. `Problem`: "too many" (through `_refused`)',
+    assert entry(found, "## `checked`")[4:] == [
+        '1. `Problem`: `422, "{n} is negative"`',
+        '2. `Problem`: `status=404, detail="nothing"`',
+        '3. `Problem`: `"too many"` (through `_refused`)',
+    ]
+
+
+def test_code_holding_backticks_is_fenced_with_more_of_them(tmp_path: Path) -> None:
+    found = written(
+        tmp_path,
+        {
+            "proj/alpha/quoting.py": """
+                def quoted() -> None:
+                    raise ValueError("write ``x``, not `x`")
+            """,
+        },
+    )
+    assert entry(found, "## `quoted`")[2:] == [
+        "Raises:",
+        '1. `ValueError`: ``` "write ``x``, not `x`" ```',
     ]
 
 
@@ -272,7 +288,7 @@ def test_a_name_two_modules_define_is_headed_with_its_module(tmp_path: Path) -> 
         },
     )
     headings = [line for line in found.splitlines() if line.startswith("## ")]
-    assert headings == ["## one.log", "## two.log"]
+    assert headings == ["## `one.log`", "## `two.log`"]
 
 
 def test_raises_are_in_the_order_the_code_reaches_them_helpers_included(
@@ -301,9 +317,9 @@ def test_raises_are_in_the_order_the_code_reaches_them_helpers_included(
         },
     )
     assert "\nRaises:\n1. `ValueError`" in found
-    assert entry(found, "## done")[4:] == [
-        '1. `ValueError`: "a negative number of times" (through `_checked`)',
-        '2. `OverflowError`: "too many times"',
+    assert entry(found, "## `done`")[4:] == [
+        '1. `ValueError`: `"a negative number of times"` (through `_checked`)',
+        '2. `OverflowError`: `"too many times"`',
     ]
 
 
@@ -347,16 +363,16 @@ def test_what_a_function_catches_isn_t_said_to_be_raised_unless_raised_again(
             """,
         },
     )
-    assert entry(found, "## held")[1:] == ["* ∟`None`"]
-    assert entry(found, "## passed")[1:] == [
+    assert entry(found, "## `held`")[1:] == ["* ∟`None`"]
+    assert entry(found, "## `passed`")[1:] == [
         "* ∟`None`",
         "Raises:",
-        '1. `Missing`: "gone" (through `_inner`)',
+        '1. `Missing`: `"gone"` (through `_inner`)',
     ]
-    assert entry(found, "## translated")[1:] == [
+    assert entry(found, "## `translated`")[1:] == [
         "* ∟`None`",
         "Raises:",
-        "1. `ValueError`: str(e) (from `LookupError`)",
+        "1. `ValueError`: `str(e)` (from `LookupError`)",
     ]
 
 
@@ -382,10 +398,10 @@ def test_a_validator_s_raise_is_said_of_its_class_in_a_validation_error(
             """,
         },
     )
-    assert entry(found, "## Person `(BaseModel)`")[1:] == [
+    assert entry(found, "## `Person` `(BaseModel)`")[1:] == [
         "* `login: str`",
         "Raises:",
-        '1. `ValueError`: "a login can\'t be empty" '
+        '1. `ValueError`: `"a login can\'t be empty"` '
         + "(through `Person._login`, in a `ValidationError`)",
     ]
 
@@ -426,11 +442,11 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
         },
     )
     assert "\nFinds:\n1. `lint.started`" in found
-    assert entry(found, "## lint")[4:] == [
+    assert entry(found, "## `lint`")[4:] == [
         "Finds:",
-        '1. `lint.started`: "linting"',
-        '2. `pair.odd`: "{n} is odd" (info, through `_pair`)',
-        "3. `{code}`: str(e) (from `ValueError`)",
+        '1. `lint.started`: `"linting"`',
+        '2. `pair.odd`: `"{n} is odd"` (`info`, through `_pair`)',
+        "3. `{code}`: `str(e)` (from `ValueError`)",
     ]
 
 

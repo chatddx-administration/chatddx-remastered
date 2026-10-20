@@ -2,69 +2,69 @@
 
 Written by `chatddx stamp` from `src/chatddx/worker/`; how to read it is in [docs/reference/README.md](README.md).
 
-## EVERY
+## `EVERY`
 `src/chatddx/worker/publish.py:EVERY`
 
-* `EVERY = 0.1`
+`EVERY = 0.1`
 
-## LEFT
+## `LEFT`
 `src/chatddx/worker/worker.py:LEFT`
 
-* `LEFT = "its worker stopped"`
+`LEFT = "its worker stopped"`
 
-## publish.log
+## `publish.log`
 `src/chatddx/worker/publish.py:log`
 
-* `log = logging.getLogger(__name__)`
+`log = logging.getLogger(__name__)`
 
-## worker.log
+## `worker.log`
 `src/chatddx/worker/worker.py:log`
 
-* `log = logging.getLogger(__name__)`
+`log = logging.getLogger(__name__)`
 
-## PAUSED
+## `PAUSED`
 `src/chatddx/worker/worker.py:PAUSED`
 
-* `PAUSED = "paused"`
+`PAUSED = "paused"`
 
-## Publisher
+## `Publisher`
 `src/chatddx/worker/publish.py:Publisher`
 
-## Publisher.__init__
+## `Publisher.__init__`
 `src/chatddx/worker/publish.py:Publisher.__init__`
 
 * `conn: Connection`
 * `run: UUID`
 
-## Publisher.close
+## `Publisher.close`
 `src/chatddx/worker/publish.py:Publisher.close`
 
 * ∟`None`
 
-## Publisher.put
+## `Publisher.put`
 `src/chatddx/worker/publish.py:Publisher.put`
 
 * `said: Named`
 * ∟`None`
 
-## Publisher.run_event
+## `Publisher.run_event`
 `src/chatddx/worker/publish.py:Publisher.run_event`
 
 * `event: RunEvent`
 * ∟`None`
 
-## Publisher.scoring_event
+## `Publisher.scoring_event`
 `src/chatddx/worker/publish.py:Publisher.scoring_event`
 
 * `event: ScoringEvent`
 * ∟`None`
 
-## Worker
+## `Worker`
 `src/chatddx/worker/worker.py:Worker`
 
 * `id: UUID`
 
-## Worker.__init__
+## `Worker.__init__`
 `src/chatddx/worker/worker.py:Worker.__init__`
 
 * `conninfo: str`
@@ -73,13 +73,13 @@ Written by `chatddx stamp` from `src/chatddx/worker/`; how to read it is in [doc
 * `lost: timedelta = settings.WORKER_LOST`
 * `deadline: timedelta = settings.WORKER_DEADLINE`
 
-## Worker.serve
+## `Worker.serve`
 `src/chatddx/worker/worker.py:Worker.serve`
 
 * `stopping: threading.Event`
 * ∟`None`
 
-## Worker.wake
+## `Worker.wake`
 `src/chatddx/worker/worker.py:Worker.wake`
 
 * ∟`None`
