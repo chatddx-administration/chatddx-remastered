@@ -48,6 +48,22 @@ Tell clinicians and researchers what's going on and what they can do now.
 
 - `pnpm --dir frontend test` tests frontend takes less than 2s
 
+```
+AGENT: REPLACE
+`scripts/check.sh` runs the checks, and says what each stage runs; `nix flake check` runs every stage. What's left is
+what a script can't judge.
+---
+## Pre-commit checklist
+
+Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
+
+Run `scripts/check.sh`, which checks what git says has changed, then:
+
+- Tell the human of each `flag:` it prints.
+- Flip what the budget suggests when it feels right.
+
+Commit.
+```
 ## Pre-commit checklist
 
 If docs have changed (docs/*):

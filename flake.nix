@@ -69,7 +69,8 @@
           )
       );
 
-      # Tailwind reads the portal's templates beside the frontend (frontend/src/portal.css).
+      # Accommodating for Tailwind, which reads the portal's templates beside the frontend
+      # (frontend/src/portal.css).
       frontend =
         system:
         let
@@ -109,6 +110,52 @@
           '';
         });
 
+      devEnv =
+        system:
+        (pythonSets.${system}.overrideScope editableOverlay).mkVirtualEnv "${name}-dev-env"
+          workspace.deps.all;
+
+      dev-db =
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.writeShellApplication {
+          name = "dev-db";
+          runtimeInputs = [
+            pkgs.postgresql_16
+            pkgs.coreutils
+          ];
+          text = builtins.readFile ./scripts/dev-db.sh;
+        };
+
+      # Optimization: a stage of scripts/check.sh sees only the files it reads, so that nix runs
+      # it again only when one of them changes.
+      check =
+        system: stage: fileset: attrs:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.stdenvNoCC.mkDerivation (
+          {
+            name = "${name}-check-${stage}";
+            src = lib.fileset.toSource {
+              root = ./.;
+              fileset = lib.fileset.unions [
+                fileset
+                ./scripts/check.sh
+              ];
+            };
+            buildPhase = ''
+              runHook preBuild
+              bash scripts/check.sh ${stage}
+              runHook postBuild
+            '';
+            installPhase = "touch $out";
+          }
+          // attrs
+        );
+
     in
     {
 
@@ -119,43 +166,96 @@
 
       nixosModules.default = lib.modules.importApply ./nix/module.nix { inherit self; };
 
-      checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system: {
-        module = import ./nix/test.nix {
+      checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
+        system:
+        let
           pkgs = nixpkgs.legacyPackages.${system};
-          inherit self;
-        };
-        module-eval = import ./nix/module-eval.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-          inherit self;
-          inherit (lib) nixosSystem;
-        };
-      });
+        in
+        {
+          module = import ./nix/test.nix {
+            inherit pkgs self;
+          };
+          module-eval = import ./nix/module-eval.nix {
+            inherit pkgs self;
+            inherit (lib) nixosSystem;
+          };
+
+          docs =
+            check system "docs"
+              (lib.fileset.unions [
+                ./docs
+                ./agents
+                ./AGENTS.md
+                ./README.md
+                ./scripts/refcheck.py
+                ./src
+              ])
+              {
+                nativeBuildInputs = [ pkgs.python313 ];
+              };
+
+          # Compromise: the browser's tests skip, with nothing built for them and no browser
+          # of the playwright pyproject.toml pins (nixpkgs carries another's browsers).
+          package =
+            check system "package"
+              (lib.fileset.unions [
+                ./src
+                ./worlds
+                ./docs/surfaces
+                ./frontend/openapi.json
+                ./pyproject.toml
+                ./uv.lock
+                ./scripts/dev-db.sh
+                ./.env-devshell
+              ])
+              {
+                nativeBuildInputs = [
+                  (devEnv system)
+                  (dev-db system)
+                ];
+                # Accommodating for stdenv's SSL_CERT_FILE, a file that isn't there, which httpx2
+                # loads for plain HTTP too.
+                preBuild = ''
+                  unset PYTHONPATH
+                  export HOME="$TMPDIR" REPO_ROOT="$PWD" CHATDDX_STATE_HOME="$PWD"
+                  export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                  set -a && source .env-devshell && set +a
+                  dev-db start
+                '';
+                postBuild = "dev-db stop";
+              };
+
+          frontend =
+            check system "frontend"
+              (lib.fileset.unions [
+                ./frontend
+                ./src/chatddx/portal/templates
+              ])
+              {
+                pnpmRoot = "frontend";
+                inherit (frontend system) pnpmDeps;
+                nativeBuildInputs = [
+                  pkgs.nodejs_22
+                  pkgs.pnpm
+                  pkgs.pnpmConfigHook
+                ];
+              };
+        }
+      );
 
       devShells = forAllSystems (
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           pythonSet = pythonSets.${system}.overrideScope editableOverlay;
-
-          dev-db = pkgs.writeShellApplication {
-            name = "dev-db";
-            runtimeInputs = [
-              pkgs.postgresql_16
-              pkgs.coreutils
-            ];
-            text = builtins.readFile ./scripts/dev-db.sh;
-          };
-
-          # workspace.deps.all includes dev/test dependency-groups
-          virtualenv = pythonSet.mkVirtualEnv "${name}-dev-env" workspace.deps.all;
         in
         {
           default = pkgs.mkShell {
             inherit name;
 
             packages = [
-              virtualenv
-              dev-db
+              (devEnv system)
+              (dev-db system)
               pkgs.uv
               pkgs.nodejs_22
               pkgs.pnpm
