@@ -29,7 +29,7 @@ from chatddx.test.world import (
 
 __all__ = ["world_served"]
 
-pytestmark = pytest.mark.slow
+pytestmark = [pytest.mark.slow, pytest.mark.browser]
 
 
 def _settled(page: Page, run: str) -> None:

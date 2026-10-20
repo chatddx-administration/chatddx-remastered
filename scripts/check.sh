@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Usage: scripts/check.sh [docs|package|frontend]..., from the repository's root in the
-# dev shell with its database up (dev-db start). Each stage checks what a kind of change
-# can break and writes nothing; with no stage named, the stages of what git says changed.
+# Usage: scripts/check.sh [docs|package|frontend|browser]..., from the repository's root
+# in the dev shell with its database up (dev-db start). Each stage checks what a kind of
+# change can break and writes nothing git tracks; with no stage named, the stages of what
+# git says changed.
 set -euo pipefail
 
 docs() {
@@ -15,12 +16,18 @@ package() {
   crosscheck
   ruff check
   basedpyright
-  pytest -p chatddx.test.budget
+  pytest -p chatddx.test.budget -m "not browser"
 }
 
 frontend() {
   pnpm --dir frontend check
   pnpm --dir frontend test
+}
+
+# Compromise: on their own, for the browser they start, with what they say they skip.
+browser() {
+  pnpm --dir frontend build
+  pytest -m browser -rs
 }
 
 # Policy: the API's Python surface and its OpenAPI document change together, so one
@@ -46,7 +53,8 @@ changed() {
   paths="$(git status --porcelain | cut -c4-)"
   grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|scripts/refcheck\.py|src/)' <<<"$paths" && echo docs
   grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
-  grep -qE '^frontend/' <<<"$paths" && echo frontend
+  grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
+  grep -qE '^(frontend/|src/chatddx/portal/)' <<<"$paths" && echo browser
   return 0
 }
 
@@ -57,10 +65,10 @@ if [[ ${#stages[@]} -eq 0 ]]; then
 fi
 for stage in "${stages[@]}"; do
   case "$stage" in
-  docs | package | frontend)
+  docs | package | frontend | browser)
     echo "• $stage" >&2
     "$stage"
     ;;
-  *) fail "no stage $stage: docs, package or frontend" ;;
+  *) fail "no stage $stage: docs, package, frontend or browser" ;;
   esac
 done

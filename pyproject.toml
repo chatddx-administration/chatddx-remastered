@@ -52,6 +52,7 @@ reportExplicitAny = false
 [tool.pytest]
 markers = [
   "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
+  "browser: drive a browser through the portal, run on their own by scripts/check.sh browser",
 ]
 strict_markers = true
 testpaths = ["src"]

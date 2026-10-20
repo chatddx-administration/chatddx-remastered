@@ -194,8 +194,8 @@
                 nativeBuildInputs = [ pkgs.python313 ];
               };
 
-          # Compromise: the browser's tests skip, with nothing built for them and no browser
-          # of the playwright pyproject.toml pins (nixpkgs carries another's browsers).
+          # Compromise: scripts/check.sh's browser stage isn't checked here, for the browser
+          # it starts.
           package =
             check system "package"
               (lib.fileset.unions [
@@ -230,6 +230,8 @@
               (lib.fileset.unions [
                 ./frontend
                 ./src/chatddx/portal/templates
+                ./worlds/test/_data/schemas
+                ./worlds/sample/_data/schemas
               ])
               {
                 pnpmRoot = "frontend";
