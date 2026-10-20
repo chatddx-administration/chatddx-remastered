@@ -23,6 +23,13 @@ The archive is never wiped.
 
 ## Data sets
 
+```
+AGENT: insert
+Add to the end of this paragraph the one thing docs/modules/inventory.md ("Worlds") says of a data set
+that this section doesn't, as its tree would point here.
+---
+This repository's data sets keep them in `schemas/`.
+```
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases in
 `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
@@ -30,10 +37,30 @@ A data set says what the model reads, the language each text is written in, and 
 can't hold, engines, which engine judges and which engine its configurations are made for, is its World's
 (docs/modules/inventory.md, "Worlds").
 
+```
+AGENT: dedupe
+From "`data` is init-data's `--data`": also in docs/modules/curation.md ("Loading"), which suits it best.
+---
+```
+```
+AGENT: replace
+What a World is, and that its `_` directories are chatddx's own, is the inventory's; kept here: `_data/` and
+`World.load`.
+---
+A World may carry one beside its vignettes, in `_data/`, which is chatddx's own and so no part of the World
+(docs/modules/inventory.md, "Worlds"): `World.load` doesn't read it. `data` is init-data's `--data`, which loads it
+unless it names another.
+```
 A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
 chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
 `data` is init-data's `--data`, which loads it unless it names another.
 
+```
+AGENT: dedupe
+This and the next paragraph: also in docs/modules/inventory.md ("Worlds"), which suits it best. Kompismoln's
+`--data` is said only here.
+---
+```
 The sample World carries the sample (worlds/sample/_data/), Kompismoln's World loads it with
 `--data worlds/sample/_data`.
 
@@ -49,6 +76,12 @@ On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model a
   `local_model` stanza, and a remote engine's model, a `remote_model` stanza; and a recipe's parts name stanzas, not
   digests.
+```
+AGENT: dedupe
+From "the World binds a data set's judge": also in docs/modules/inventory.md ("Judges"), which suits the
+binding best; the skip of a handle that doesn't resolve is this item's own.
+---
+```
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds a data set's judge to
   a handle, whose latest engine judges, and its recipe is compiled for the handle's model; a handle that doesn't resolve
   skips the judge and its scorers, reported as ops' error.
@@ -58,9 +91,25 @@ On top of the fields:
   stanza whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A
   thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from
   the data's.
+```
+AGENT: replace
+What shipped code a tool or a scorer may name, and what its views may ask of it, is the component's rule.
+---
+- **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
+  ships, so loading the data again after a deploy that raises a version moves it on. Its code, and a scorer's views, are
+  held to what is shipped (docs/modules/factors.md, "Tool" and "Scorer").
+```
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped, at
   the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
+```
+AGENT: replace
+Kept at docs/modules/catalog.md ("Scorer labels"), which owns labels and says what renaming a view does.
+---
+- **Catalog entries.** `tags` and `description` are entries on the stanza's thread, and a scorer view's `label` is a
+  label of the edit the scorer is kept with (docs/modules/catalog.md, "Scorer labels"). A tool's `description` is also a
+  field, the one the model reads.
+```
 - **Catalog entries.** `tags` and `description` are entries on the stanza's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's `description`
   is also a field, the one the model reads.
@@ -85,6 +134,12 @@ a recipe that names one is refused.
 
 ### Texts
 
+```
+AGENT: dedupe
+From "a translations chunk says its languages itself". Also in docs/modules/catalog.md ("Languages"), which suits
+it best, and docs/modules/bench.md ("Languages").
+---
+```
 What the model reads is written in a language, and a texts file's name gives it: every text stanza in `texts-sv.toml` is
 written in Swedish, every translations stanza there translates into Swedish, and no stanza says its own language. A
 chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool description, or
@@ -100,6 +155,12 @@ into, and gives its `entries` or its `of`, and no other field; one in `factors.t
 one name in several texts files are one chunk, into each file's language (docs/modules/factors.md, "Translations"):
 `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
 
+```
+AGENT: dedupe
+From "Loading compiles it": docs/modules/curation.md ("Loading", "Plan") suits it best, where the message
+is shown; the pointer here can stay.
+---
+```
 A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have is
 refused ("recipe.plan: no output named 'plans'"). It is written in its texts' language, and runs in that language as
 written, and in each its translations carry it into, translated (docs/modules/catalog.md, "Languages"). Loading compiles
@@ -114,6 +175,12 @@ the judges' into Swedish.
 
 ### Cases
 
+```
+AGENT: dedupe
+From "Line endings are made LF": docs/modules/factors.md ("Appendix") suits it best; also
+docs/modules/bench.md ("Appendices and cases").
+---
+```
 A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
 apart by its vignette, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices`
 in order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/modules/factors.md,
@@ -129,6 +196,12 @@ isn't the configuration's own (docs/modules/catalog.md, "Languages"). Notes in t
 
 ### Facts and the engine
 
+```
+AGENT: dedupe
+Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/catalog.md ("Threads and edits"),
+docs/modules/factors.md ("Model facts"), docs/modules/curation.md ("The World"). From "The facts about each".
+---
+```
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a reasoning
 level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind `facts`,
 named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for the model under the handle the World names
@@ -141,6 +214,21 @@ planned first for this reason. A researcher swaps the model at the bench, as any
 
 ## The World
 
+```
+AGENT: replace
+What each file holds is the inventory's, which this cites already; kept here: what loading does with each.
+---
+A World is a directory (docs/modules/inventory.md, "Worlds"). Loading reads its `inventory.toml`, and takes its
+`engines.toml` with the data set's factors and its `facts.toml` with the bundled facts. So the sample World's fake
+engines are loaded only with the sample World, and a World that serves a model of its own brings what is known about it,
+which loading stores for the models its engines serve.
+```
+```
+AGENT: dedupe
+Best kept in docs/modules/facts.md ("Where facts come from"); also docs/modules/catalog.md ("Threads and edits"),
+docs/modules/factors.md ("Model facts"), docs/modules/curation.md ("Facts and the engine"). From "its `facts.toml`".
+---
+```
 A World is a directory (docs/modules/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the
 cases' vignettes, the handles its judges are bound to and the handle its configurations are made for, and takes its
 `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors, and its
@@ -148,9 +236,21 @@ cases' vignettes, the handles its judges are bound to and the handle its configu
 are loaded only with the sample World, and a World that serves a model of its own brings what is known about it, which
 loading stores for the models its engines serve.
 
+```
+AGENT: dedupe
+Its first sentence repeats docs/modules/inventory.md ("Worlds"), which suits it best; also
+docs/modules/repl.md ("Starting").
+---
+```
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
+```
+AGENT: dedupe
+From "A loading ends with": docs/modules/curation.md ("Loading", "The World.") suits it best; also
+docs/modules/inventory.md ("Reaching an engine"), where what the check reports would fit.
+---
+```
 Before it commits, a loading checks what a process checks as it starts (src/chatddx/bench/handles.py:broken): weights
 held by several model threads, or served at several endpoints, refuse it, and nothing is written. A loading ends with
 the inventory checked against the engines just planned, all at once: what starting or reaching each endpoint would
@@ -162,6 +262,19 @@ refuse, and what is likely a slip (src/chatddx/inventory/check.py).
 World's `_data/` unless `--data` names another, for the archive, and shares it with USER, who is added when missing. It
 connects as the writer and does everything in one transaction. It prints a line for each thing it comes to.
 
+```
+AGENT: replace
+Which handle a recipe is made for, and what is skipped, is docs/modules/curation.md ("Facts and the engine"),
+which suits it best; this step points there.
+---
+1. **Plan.** The data set and the World's engines are planned into components, without the store: references resolved,
+   the facts about each served model the facts know, recipes made once and compiled for the engine the World names for
+   configurations (see "Facts and the engine"), and into each language their translations name, judges' recipes compiled
+   for their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
+   written. A recipe its translations can't carry into a language is made all the same, and said after the stanzas:
+   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data set
+   gives one.
+```
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references resolved,
    the facts about each served model the facts know, recipes made once and compiled for the engine the World names for
    configurations, and into each language their translations name, judges' recipes compiled for their own engines, texts
@@ -224,6 +337,12 @@ Wiping covers all a person owns, their runs and their own threads included, not 
 
 src/chatddx/curation/test/.
 
+```
+AGENT: dedupe
+Its first sentence: also in docs/modules/inventory.md ("Worlds"), which suits it best, and
+docs/modules/curation.md ("Data sets").
+---
+```
 - The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its stanzas
   exercises something a test reads. Its paths, the names tests share and the helpers they import are in
   src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.

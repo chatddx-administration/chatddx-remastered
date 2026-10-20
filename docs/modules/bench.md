@@ -10,11 +10,23 @@ describes what the bench does and why it is shaped like it is. Names, signatures
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
 
+```
+AGENT: dedupe
+docs/modules/identity.md ("Identity") suits it best, with ("Authorization"); the instruction to express rules
+in `identity` is the bench's own.
+---
+```
 `bench` is the _operational_ layer of person-scoped functionality. When adding functionality, express rules as pure
 functions in `identity` and utilize them here.
 
 ## What a bench is not
 
+```
+AGENT: replace
+Kept at docs/modules/identity.md ("Authorization"), which owns it.
+---
+- Authorization (docs/modules/identity.md, "Authorization").
+```
 - Authorization, what the bench shows is what is relevant to show a person, not who may read what.
 - A facade. Claude clarifies:
 
@@ -30,6 +42,12 @@ A connection lasts as long as its caller, and caches logins and the model each e
 about models aren't cached: they are read from the store each time they are asked for, so that a fact corrected while a
 connection lasts is used at once.
 
+```
+AGENT: dedupe
+From "the runner and the scoring pass write each row": docs/modules/runner.md ("Sending") suits the runner's
+half best; the autocommit they need is this place's own.
+---
+```
 Each write is made in one transaction, so one that is refused leaves nothing behind. Starting and scoring are the
 exception: the runner and the scoring pass write each row as it lands, so that a run or a score that dies leaves a log
 to read, and they need the bench's connection in autocommit mode.
@@ -39,9 +57,21 @@ to read, and they need the bench's connection in autocommit mode.
 - **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
   configuration, each recipe part, the model among them, tool, scorer, judge, expectation, appendix, expectation schema,
   canary set, model or facts.
+```
+AGENT: dedupe
+From "A family stands for its case": docs/modules/bench.md ("Appendices and cases") suits it best; also in
+docs/modules/api.md ("What a person sees"), docs/modules/api.md ("Appendices and cases"). "by digest" is own.
+---
+```
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
   vignette makes alone, else the first, by digest, that holds the vignette, and holds that vignette and its cases. A
   family without a case isn't shown.
+```
+AGENT: dedupe
+From "Nothing else finds them": repeats docs/modules/catalog.md ("Deleting"), which suits it best; also
+docs/modules/catalog.md ("What has moved on").
+---
+```
 - **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else finds
   them: not names, not lists, not what is run or scored against.
 - **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
@@ -60,6 +90,12 @@ person's own win, else the ones shared with them. Several raise `Ambiguous`, whi
 
 ### Finding things by id
 
+```
+AGENT: dedupe
+From "an edge that names things by id": docs/modules/api.md ("Ids") suits it best, as the edges' rule; the
+pointer here can stay.
+---
+```
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its word
 names; the same method takes a name or an id. A run is also found by the start of its id, among their own, as a person
 at a prompt types it; an edge that names things by id can take whole ids only, since a start could name another run
@@ -72,6 +108,12 @@ is there to read and to take, by forking it, and counts once they have. So nothi
 or hands over changes what a person is scored against, and a correction made upstream reaches them as a proposal (see
 "Following an origin") rather than under them.
 
+```
+AGENT: dedupe
+From "`chatddx init-data` gives its user forks": docs/modules/curation.md ("Loading", "Giftbag") suits it best,
+where the giftbag and keeping one's own expectation are told; the pointer here can stay.
+---
+```
 A person who only sees shared expectations has none. `chatddx init-data` gives its user forks of the archive's when
 asked to (the giftbag, docs/modules/curation.md), keeping any expectation of their own for a case and schema rather than
 failing on the rule below; anyone else takes them.
@@ -102,6 +144,14 @@ and not their own.
 
 ### One expectation per case and schema
 
+```
+AGENT: replace
+The writes the rule refuses are the catalog's, which enforces it; kept here: the bench's own refusal.
+---
+A person owns at most one live expectation thread per case and expectation schema, and the catalog refuses what would
+make two (docs/modules/catalog.md, "Owners"; src/chatddx/catalog/threads.py:_check_expectation). The bench refuses the
+same before it writes, worded as the person reads it.
+```
 A person owns at most one live expectation thread per case and expectation schema. The catalog refuses what would make
 two: a second thread, an edit that moves another onto that case and schema, naming them the owner of another, or a
 restore (src/chatddx/catalog/threads.py:_check_expectation). The bench refuses the same before it writes, worded as the
@@ -126,6 +176,12 @@ handle beside it only for a hand-written configuration, which has no model part 
 
 A variation replaces the recipe's nine chunks and its model, which can't be taken out.
 
+```
+AGENT: dedupe
+From "What an unsaved skeleton was compiled from": docs/modules/bench.md ("Configurations") suits it best;
+also docs/modules/bench.md ("Following an origin"), docs/modules/repl.md ("Saving") and ("A run").
+---
+```
 Looking at a variation writes nothing. What an unsaved skeleton was compiled from, its recipe and the facts about its
 model, is stored when it is saved or started, by the running code (docs/modules/catalog.md, "Recipes").
 
@@ -164,11 +220,26 @@ under, deleted or not, to the endpoint serving its weights now (`Seen.handle`, `
 deleted handle, and one no endpoint here serves, as another World's, are said to the person, to pick another; a look
 that can't run says why and has no findings. The engine is the trial's: the handle's latest.
 
+```
+AGENT: replace
+Kept at docs/modules/facts.md ("Compiling intents"), which owns landing and refusals; "as they are stored then"
+and when the refusal comes stay here.
+---
+A reasoning level and a recommended sampling are intents rather than settings: compiling resolves them with the facts
+about the model as they are stored then (docs/modules/facts.md, "Compiling intents"). So a variation the facts refuse is
+refused for its model as it is looked at, before anything runs.
+```
 A reasoning level and a recommended sampling are intents rather than settings: compiling resolves them with the facts
 about the model as they are stored then (docs/modules/facts.md), lands each level where the facts say, on its nearest
 when the model can't be asked for it, and refuses what they refuse, and any intent on a model they don't know. So a
 variation is refused for its model as it is looked at, before anything runs.
 
+```
+AGENT: dedupe
+Its first sentence is also in docs/modules/inventory.md ("Endpoints"), which suits it best,
+docs/modules/factors.md ("Engines"), and the first paragraph of docs/modules/bench.md ("The model").
+---
+```
 A run goes under its variation's handle: to the one endpoint ops map it to, at its latest engine. A handle that doesn't
 resolve to one endpoint is refused as ops' error, and a variation whose weights its handle no longer holds is behind its
 model, and refused until followed. A hand-written configuration has no model part, and runs under the handle named.
@@ -177,6 +248,12 @@ model, and refused until followed. A hand-written configuration has no model par
 
 Principal author: researchers (translators)
 
+```
+AGENT: dedupe
+From "Vignettes aren't translated". Also in docs/modules/catalog.md ("Languages"), which suits it best, and
+docs/backlog.md ("Aggregation").
+---
+```
 Translations map source texts to their translations, much as gettext does, into languages named by tags such as `sv` or
 `pt-BR`. One chunk holds every language a configuration is translated into, so adding a language is a new version of it.
 Vignettes aren't translated, so comparing languages is comparing case sets.
@@ -186,6 +263,21 @@ and compiling it into one of their languages passes every text it holds through 
 instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed, the
 descriptions of tools and of the answer tool, the titles and descriptions in schemas, and the appendix layout.
 
+```
+AGENT: dedupe
+From "its translations don't go into": also in docs/modules/factors.md ("Translations"), which suits it best,
+and ("Recipe and compilation").
+---
+```
+```
+AGENT: insert
+The bench, the API, the repl and the catalog point here for how a start splits by language, but it isn't said
+here; this is docs/modules/api.md ("Starting one")'s wording, which the replace there points here for.
+---
+A start is a run per language its cases are sent in: the cases in the configuration's own language, and those in none,
+as written, and those in each language its translations cover translated, each a run of its own. The cases of a language
+they can't carry it into are left out, and named with why; a start that can send none of its cases is refused.
+```
 `translations.missing`: running the configuration in some language would be refused, and the warning says why, as
 compiling it there says: its translations don't go into the language, or leave a text untranslated. It fires for each
 language the look's cases are in that can't be sent, saying how many are left out, and for each other language its
@@ -203,9 +295,23 @@ docs/modules/facts.md), and a scoring is built when a run is scored rather than 
 
 What every write has in common:
 
+```
+AGENT: dedupe
+"made new, forked from one the person sees, or edited when it is theirs": docs/modules/bench.md ("Components")
+suits it best; also docs/modules/api.md ("Forking and editing").
+---
+```
 - **One set of writes for every kind.** A thread is made new, forked from one the person sees, or edited when it is
   theirs, whatever its kind: the catalog's writes are generic over kinds, and what differs between kinds is what a
   component is, which its model checks. A configuration takes a variation where another kind takes a component.
+```
+AGENT: replace
+The refusal's reason, and that it holds with several writers, are docs/modules/catalog.md ("Threads and
+edits")'s; `MovedOn` and saving by name stay.
+---
+- **An edit names the head it was made on**, configurations included, and is refused as `MovedOn` when the thread has
+  moved on since (docs/modules/catalog.md, "Threads and edits"). Saving by name names the head it found.
+```
 - **An edit names the head it was made on**, configurations included, and is refused as `MovedOn` when the thread has
   moved on since, so that a change made on an older version doesn't undo what came after it unseen. Saving by name names
   the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
@@ -217,6 +323,12 @@ What every write has in common:
   followed or carried, and so does a configuration, made from a recipe, saved, forked, edited or followed. Taking,
   saying and building cases give back what they made. Refusals are the components' own rules, the store's and the
   catalog's, and the few the bench adds, below.
+```
+AGENT: dedupe
+From "a second expectation of the person's own": also in docs/modules/bench.md ("One expectation per case and
+schema"), which suits it best, and ("What is said about a thread").
+---
+```
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse later
   in theirs: a component of another kind than the thread's, a second expectation of the person's own for a case and
   schema.
@@ -247,20 +359,51 @@ over a judge configuration already kept, which its own rule holds it to (docs/mo
 
 ### Languages
 
+```
+AGENT: replace
+Where a language is kept, that the latest wins and that a fork keeps it are docs/modules/catalog.md
+("Languages")'s; what giving one would do to others and the bench's write rule stay.
+---
+A text is written with its language when the person gives one, and only a text can have one. A language belongs to the
+text, wherever it is held (docs/modules/catalog.md, "Languages"), so a person giving one to a text someone else holds
+too would change it for them. So the bench writes one only where the text has none, and refuses one that differs from
+what it has; the person writes another text, or leaves it.
+```
 A text is written with its language when the person gives one, and only a text can have one. A language belongs to the
 text, wherever it is held: it is kept on the digest, and the latest wins, so a person giving one to a text someone else
 holds too would change it for them. So the bench writes one only where the text has none, and refuses one that differs
 from what it has; the person writes another text, or leaves it. A fork that changes nothing keeps its language, being
 the same digest.
 
+```
+AGENT: dedupe
+Up to "into itself". Also in docs/modules/catalog.md ("Languages"), which suits it best, and
+docs/modules/curation.md ("Texts"). That the bench refuses one is said only here.
+---
+```
 A translations chunk has no language of its own: it says the languages it translates into itself, so the bench refuses
 one given it, as it does for any component that isn't a text.
 
+```
+AGENT: dedupe
+Also in docs/modules/catalog.md ("Languages"), which suits it best and is cited.
+---
+```
 The bench doesn't carry the previous version's language over by itself: the edge offers it, and the person keeps it or
 changes it (docs/modules/catalog.md, "Languages").
 
 ### Scorers
 
+```
+AGENT: replace
+What a scorer names and when it is refused is the component's rule; kept here: the views the person writes, that
+the bench refuses as it is written, the scoring pass, and the view it writes and says.
+---
+A scorer names scoring code the running chatddx ships (docs/modules/factors.md, "Scorer"), and the views the person
+writes over it, each picking from an answer and from an expectation. A scorer the running code could never score with is
+refused as it is written, and the scoring pass refuses it the same way. A view that can't pick anything from the
+scorer's expectation schema is written, and said so.
+```
 A scorer names scoring code the running chatddx ships, by its entry point and the version it pins, and the views the
 person writes over it: each picks from an answer and from an expectation, and names a metric the code publishes, with
 parameters only where the code publishes a schema for them. A scorer the running code could never score with is refused
@@ -268,14 +411,36 @@ as it is written: code it doesn't ship, at a version it doesn't ship, a metric i
 schemas refuse. The scoring pass refuses it the same way. A view that can't pick anything from the scorer's expectation
 schema is written, and said so.
 
+```
+AGENT: replace
+That a scorer runs only shipped code is said in docs/modules/factors.md ("Tool"), and moved to ("Scorer") with
+these code links by the insert there.
+---
+It is a refusal rather than a lint because what the code ships is also a protection (docs/modules/factors.md, "Scorer").
+```
 It is a refusal rather than a lint because what the code ships is also a protection: a scorer names code to run, and one
 written over the API names its own, so only code on the shipped list runs (src/chatddx/scorers/shipped.py,
 src/chatddx/rig.py:entry).
 
+```
+AGENT: dedupe
+Also in docs/modules/factors.md ("Code"), which suits the pin and the deploy best, and, for init-data moving the
+archive's on, docs/modules/curation.md ("Factors", "Code."). Who else moves on, and how, is the bench's.
+---
+```
 A scorer pins a version of its code rather than the running chatddx, so a deploy changes no scorer unless it raises a
 version. One that does leaves the scorers pinned to the earlier version refused until they move on: the archive's when
 `init-data` runs again, a person's by following its origin, or by an edit.
 
+```
+AGENT: replace
+Kept at docs/modules/catalog.md ("Scorer labels"), which owns labels; covers this paragraph and the next. Their
+second fallback differs: here "held it in a thread they see" (as `Seen.labels` does), there "in their history".
+---
+What a scorer's views and resources are called belongs to the edit they are written with, by its writer
+(docs/modules/catalog.md, "Scorer labels"). Labels on the digest would let anyone who forks a scorer unchanged rename
+its views for everyone who sees it, the archive's included.
+```
 What a scorer's views and resources are called belongs to the edit they are written with, by its writer. A fork of a
 scorer as it is keeps its origin's labels unless given others, and renaming a view is a new edit of the same scorer, so
 no score and no run left to score changes with it, and no one else's labels do. Labels on the digest would let anyone
@@ -293,6 +458,12 @@ its cases at its current vignette, that one first. What is run and scored is a c
 families. The bench starts a run on any stored cases; the edges offer only the current ones of the families the person
 sees.
 
+```
+AGENT: dedupe
+From "with its line endings made LF": docs/modules/factors.md ("Appendix") suits it best; also
+docs/modules/curation.md ("Cases"). That the bench does it for every edge is this place's own.
+---
+```
 An appendix is written like any other component, but always bound to the current vignette of a family the person sees,
 and with its line endings made LF before it is digested, since browsers send CRLF: the bench does it for every edge as
 it writes one, which an edge builds of a family's vignette and a text. A case is built from a family and appendices the
@@ -319,6 +490,12 @@ say so. A typed case always has a language, since a configuration is sent in its
 any case: a vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the
 runner and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
+```
+AGENT: dedupe
+From "A typed text never moves": also in docs/modules/catalog.md ("Families and repairs"), which suits it best
+and this already points to.
+---
+```
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as set
 in `chatddx.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by id alone,
 and the same text typed twice is two cases and two families (docs/modules/catalog.md, "Families and repairs").
@@ -332,6 +509,12 @@ collaborators by login; and whether it is deleted. Only what changes what holds 
 same again writes nothing. A form shows the whole thread and sends it back; a write per field would ask the edge to tell
 what changed, and leave half a change when one of several fails.
 
+```
+AGENT: dedupe
+From "Restoring is held to the catalog's rules": also in docs/modules/bench.md ("One expectation per case and
+schema"), which suits it best, and ("Writes for the person", "Some refusals come before the write").
+---
+```
 A deleted thread is restored before anything else is said of it, and nothing else is said of one that stays deleted.
 Restoring is held to the catalog's rules, so a second expectation of the person's own for a case and schema is refused.
 A thread isn't shared with its owner, a name and a tag aren't empty, and a login that names nobody is refused. Handing a
@@ -346,18 +529,46 @@ against the facts as they are stored now, so that an edge can tell a fork it wou
 the origin hasn't moved on, or when the person no longer sees it, deleted or unshared, since its head is then not theirs
 to read.
 
+```
+AGENT: dedupe
+"A configuration is kept with the compilation that makes it": docs/modules/bench.md ("Configurations") suits
+it best; also docs/modules/bench.md ("The variation being tried") and docs/modules/repl.md ("Saving").
+---
+```
 Following keeps the proposal as an edit of the person's own fork, based on the origin's head and naming the head they
 saw. It does so even when the proposal holds what the fork's head holds already, since otherwise the fork would keep
 being compared with its old base, and keep proposing. A configuration is kept with the compilation that makes it, and a
 text takes a language as an edit does; a compiled configuration takes none. Changes that no longer fit the origin's head
 are refused, saying so.
 
+```
+AGENT: dedupe
+From "That is how a correction to the archive's expectations". Also in docs/modules/bench.md ("Taking"), which
+suits it best.
+---
+```
 Any kind the person owns a fork of is followed, since a proposal holds only the origin's head and the fork's own
 changes, which are stored already. That is how a correction to the archive's expectations reaches the person's taken
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ### Following facts
 
+```
+AGENT: replace
+When a configuration is behind is the catalog's; kept here: how it is seen and followed.
+---
+A configuration is behind what it was compiled for when its facts or its model moved on, as to a new revision of the
+weights (docs/modules/catalog.md, "What has moved on"). Whoever sees it sees both (`Bench.moved`,
+`GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows them as one edit, the recipe
+with the model's head compiled against the current facts (`Bench.follow_moved`, `POST .../follows` with
+`"follow": "moved"`). Facts that refuse what it asks are said, not followed.
+```
+```
+AGENT: dedupe
+Its first sentence, what puts a configuration behind: also in docs/modules/catalog.md ("What has moved on"), which
+suits it best, for the facts and for the model's thread.
+---
+```
 A configuration is behind what it was compiled for when the facts about its model were corrected where they change what
 it sends, or its model's thread moved on, as to a new revision of the weights. Whoever sees it sees both (`Bench.moved`,
 `GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows them as one edit, the recipe
@@ -376,12 +587,22 @@ with the model's head compiled against the current facts (`Bench.follow_moved`, 
   (docs/modules/catalog.md, "What a run ran").
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/modules/runner.md,
   "Resuming").
+```
+AGENT: dedupe
+From "found by the start of their id": docs/modules/bench.md ("Finding things by id") suits it best.
+---
+```
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
 - **A start's runs** are its first and those started with it, found from the first; a run says the first of its start,
   or nothing when it is the first or was started alone.
 - **A run is described** as the repl's `run` and `run tag` say it: the run's name, else the configuration, where it ran,
   its case or how many, the language it was translated into, and the seed.
+```
+AGENT: dedupe
+Repeats docs/modules/runner.md ("What applies to a run"), which this item cites and which suits it best.
+---
+```
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/modules/runner.md, "What applies to a run").
 - **A run's scoring** is built from the expectation each of its cases is scored against, and with each judge's handle's
@@ -415,16 +636,33 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 | `OverQuota`            | `ValueError`                | more of something than a day takes, or a run of more items than one takes                                                               |
 | any other `ValueError` |                             | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or model                                        |
 
+```
+AGENT: dedupe
+From "The API answers". Also in docs/modules/api.md ("Errors"), which suits it best and is cited.
+---
+```
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one. The API
 answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, `OverQuota` with 429, and the other
 refusals with 422 (docs/modules/api.md, "Errors").
 
 ## Tests
 
+```
+AGENT: dedupe
+From "The database is made once a session". Also in docs/modules/store.md ("Tests"), which suits it best.
+`curated` is named only here.
+---
+```
 The tests start from the test World (`worlds/test`; docs/modules/inventory.md, "Worlds") as `chatddx init-data` lands
 it, with alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
 (`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
 
+```
+AGENT: dedupe
+Up to "through two writers at once": docs/modules/bench.md ("One expectation per case and schema") suits it
+best; how the tests make them is this paragraph's own.
+---
+```
 A person can only come to own two expectations of a case under one schema through two writers at once, so that is how
 the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's check
 before the other has written.

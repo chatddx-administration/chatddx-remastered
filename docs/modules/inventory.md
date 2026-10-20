@@ -3,6 +3,12 @@
 The inventory says which directory holds a source's vignettes, at which address an engine is served, where a host keeps
 the model files and chat template an engine pins.
 
+```
+AGENT: dedupe
+The intro restates docs/modules/inventory.md ("Clearance"), which suits it best; for the judges and the
+configurations' handle, docs/modules/inventory.md ("Judges") and docs/modules/inventory.md ("Configurations").
+---
+```
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources. It also says under which handle each of a data set's judges judges, and the handle its configurations
 are made for.
@@ -23,6 +29,12 @@ own files are the host's (see "Hosts").
 
 ### Includes
 
+```
+AGENT: dedupe
+From "so an import can rewrite its file whole": docs/modules/inventory.md ("Importing from a host") suits it
+best.
+---
+```
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine import
 writes apart from what people write, so an import can rewrite its file whole. An included file holds only endpoints and
 hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the handle configurations
@@ -54,6 +66,42 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 | `_data/`         | researchers and clinicians                        | the data set (docs/modules/curation.md, "Data sets")                                             |
 | `_runs/`         | developers                                        | scripted runs (docs/modules/scripted.md)                                                         |
 
+````
+AGENT: replace
+The tree's comments repeat what the table above says each top-level entry holds; the table suits it best, as it
+also says who writes each. The tree keeps the layout and what `_data/` holds.
+---
+```
+worlds/<name>/
+  inventory.toml
+  endpoints.toml
+  engines.toml
+  facts.toml
+  vignettes/
+  _data/
+    factors.toml       chunks without text, tools, the expectation schema, scorers, judges, recipes, canary sets
+    texts-<lang>.toml  chunks that hold text, written in that language; translations into it, grouped by stanza
+    cases-<lang>.toml  cases in that language, with tags, targets, appendices and the cases that send them
+    schemas/           the JSON files the factors load
+  _runs/
+```
+````
+````
+AGENT: replace
+The data set's files are docs/modules/curation.md ("Data sets")'s, as the table row above already points; the
+tree keeps `_data/` with that pointer. The `schemas/` name moves there (see the insert there).
+---
+```
+worlds/<name>/
+  inventory.toml   sources, clearance, judges bound to handles, configurations, include = ["endpoints.toml"]
+  endpoints.toml   endpoints and hosts
+  engines.toml     models, local engines, remote engines
+  facts.toml       facts about models the bundled facts don't know
+  vignettes/       a directory source's vignettes, when git may hold them
+  _data/           the data set (docs/modules/curation.md, "Data sets")
+  _runs/           scripted runs
+```
+````
 ```
 worlds/<name>/
   inventory.toml   sources, clearance, judges bound to handles, configurations, include = ["endpoints.toml"]
@@ -93,6 +141,12 @@ This repository has three, in `worlds/`:
 Each names the handle its configurations are made for: `qwen3-8b-awq` in the test and the sample World, and `qwen3-8b`
 in Kompismoln's.
 
+```
+AGENT: dedupe
+docs/modules/curation.md ("Tests") suits it best, as "each endpoint serves the engine planned under its name";
+also docs/vllm.md ("The fake vLLM").
+---
+```
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
@@ -105,12 +159,24 @@ Each source name cleanup steps, such as `newlines.lf@1` for a source written wit
 cases' sources unless its request gives its own (docs/modules/factors.md, "Preparing a case"). Ops write them, since
 they are the source's quirks, so that runs on one source agree unless a researcher varies them.
 
+```
+AGENT: dedupe
+From "so init-data and repair-data": which source they take is docs/modules/curation.md ("Loading" and
+"Repairing")'s, which suits it best, and which says a database source lists none.
+---
+```
 A directory source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette,
 without appendices, with the fingerprint of the raw bytes (docs/modules/factors.md, "Case"). It refuses an id that would
 reach outside it. What happens to the bytes next is the case's preparation (docs/modules/factors.md, "Preparing a
 case"). A database source lists nothing: its texts are read through the store, by id, so init-data and repair-data,
 which list a source, refuse one.
 
+```
+AGENT: dedupe
+Its last sentence, "init-data loads the cases of a source", repeats docs/modules/curation.md ("Loading"),
+which suits it best.
+---
+```
 The source's name is part of every case built from it, including their digests. Renaming a source makes new cases; ``
 moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only directory
 source.
@@ -121,21 +187,43 @@ An endpoint says where one engine is served: the engine, by digest; the server's
 local engine; how many requests it takes at once; and, when it has a secret, the name of the environment variable that
 holds it.
 
+```
+AGENT: dedupe
+From "runs under the handle on its earlier engines": also in docs/modules/catalog.md ("Titles"), which suits it
+best; the pointer here names docs/modules/bench.md, which doesn't say it.
+---
+```
 A local engine is served under its digest (docs/modules/factors.md, "Local engine"), so the endpoint names the very
 engine the server answers as. Changing the engine changes its digest, so the endpoint has to change with it, and its
 handle means the new engine from then on; runs under the handle on its earlier engines stay grouped under it
 (docs/modules/bench.md). Every endpoint has an address, and a local engine's needs a host too to be started.
 
+```
+AGENT: dedupe
+From "the engine itself names its model": docs/modules/factors.md ("Remote engine") suits it best.
+---
+```
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its model, which names
 its provider. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
 
 Endpoint names are free-form. The engine import names them after the server and the host, server@host, and the sample
 World follows that pattern. A run records the name, and clearance keys on it.
 
+```
+AGENT: dedupe
+Also in docs/modules/runner.md ("The gate"), which suits it best, being the runner's: an unset secret is refused,
+and the secret goes only into the `Authorization` header.
+---
+```
 The runner reads the secret from the variable the endpoint names, and sends it as a bearer token with every request to
 the endpoint, the one that confirms it included. It refuses to run when the variable isn't set. The secret itself never
 appears in the inventory or the ledger.
 
+```
+AGENT: dedupe
+From "and the runner refuses an execution". Also in docs/modules/runner.md ("Starting"), which suits it best.
+---
+```
 The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
 configuration, as it takes the arguments that only tune the server (docs/backlog.md, "What reaches vLLM: argv and
 passthrough"), and the runner refuses an execution that would send more.
@@ -147,6 +235,15 @@ concurrency and order of. Loading refuses a default concurrency above the capaci
 A run goes to the endpoint its model's handle maps to, and a judge's calls to the one its handle maps to; researchers
 name no endpoint. Ops map each handle to exactly one engine and one endpoint, on one hardware class.
 
+```
+AGENT: replace
+From "A handle no endpoint here serves": near-verbatim with the bench, which says what the person is told.
+---
+Weights served at several endpoints, or held by several model threads, stop `chatddx portal`, `api`, `run`, `worker`,
+`repl` and `scripted-runs` from starting, make init-data refuse and write nothing, and make the engine import refuse to
+write (src/chatddx/bench/handles.py:broken). A handle no endpoint here serves, and a deleted one, are refused as the
+bench says (docs/modules/bench.md, "The model").
+```
 Weights served at several endpoints, or held by several model threads, stop `chatddx portal`, `api`, `run`, `worker`,
 `repl` and `scripted-runs` from starting, make init-data refuse and write nothing, and make the engine import refuse to
 write (src/chatddx/bench/handles.py:broken). A handle no endpoint here serves, as another World's, and a deleted one are
@@ -164,6 +261,12 @@ one chat template, the empty one, is the null device.
 
 ## Clearance
 
+```
+AGENT: dedupe
+From "It is read only from": docs/modules/inventory.md ("Includes") suits it best; also in
+docs/modules/inventory.md ("Judges").
+---
+```
 The clearance table lists, for each endpoint, the sensitive sources it may receive sensitive content from. It stands in
 until clearance has a database grant, and what it permits is clearance's (agents/wip-clearance.md, "Vetted endpoints").
 It is read only from the inventory's own file (see "Includes"). Clearing an endpoint is a person's statement, so no
@@ -171,12 +274,24 @@ command writes it.
 
 ## Judges
 
+```
+AGENT: dedupe
+From "Like clearance": docs/modules/inventory.md ("Includes") suits it best; also in
+docs/modules/inventory.md ("Clearance"), which says why no command writes it.
+---
+```
 The judge table binds each of a data set's judges, by name, to the handle whose latest engine judges it:
 `[judge] verdict = "qwen3-8b"`. Which engine judges is the World's choice, as the handle a run goes under is, so a data
 set's judges are planned with the engines of the World they are loaded into, and a World that binds none of them leaves
 them and their scorers out (docs/modules/curation.md, "Factors"). Like clearance, a binding is read only from the
 inventory's own file, and no command writes it.
 
+```
+AGENT: dedupe
+Restates this section's first paragraph, docs/modules/inventory.md ("Judges"), which suits the binding best; where
+calls go is best in docs/modules/runner.md ("Judges", "Where its calls go"); also docs/modules/factors.md ("Judge").
+---
+```
 A judge's model is picked by handle, a person's and a data set's alike, and a data set's judge is bound to a handle
 rather than an endpoint (`[judge] verdict = "qwen3-8b"`); the scoring pass sends its calls to the handle's endpoint.
 
@@ -185,6 +300,14 @@ rather than an endpoint (`[judge] verdict = "qwen3-8b"`); the scoring pass sends
 `configurations = "qwen3-8b"`, at the top of the inventory, names the handle whose model a data set's configurations are
 made for: init-data makes each recipe once, for its model (docs/modules/curation.md).
 
+```
+AGENT: replace
+From "configurations pinning the old ones": that they are behind and refused until followed is the bench's.
+---
+Which model a configuration is made for is the World's choice, and a researcher swaps it by its handle; the engine is
+the handle's latest, a trial's and a judge's alike. Ops may put new weights under a handle, which puts the
+configurations pinning the old ones behind their model (docs/modules/bench.md, "The model").
+```
 Which model a configuration is made for is the World's choice, and a researcher swaps it by its handle; the engine is
 the handle's latest, a trial's and a judge's alike. Ops may put new weights under a handle: configurations pinning the
 old ones are then behind their model, and don't run under the handle until followed.
@@ -201,6 +324,12 @@ and the runtime to run vLLM from. The arguments are the model's location on the 
 digest as the name it is served under, the chat template's location on the host, where to listen, from the host's
 address and the endpoint's port, and then the engine's own arguments.
 
+```
+AGENT: dedupe
+From "An engine's own arguments can't say where to listen". Also in docs/modules/factors.md ("Local engine"),
+which suits it best and is cited.
+---
+```
 A remote engine isn't ours to start. A start-up is refused for an endpoint without a host, and for a host that doesn't
 say where it keeps the model or the template. An engine's own arguments can't say where to listen: the endpoint decides
 that, and the engine refuses them as it refuses the arguments that pin the model and the template
@@ -214,6 +343,12 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name its
 engine is served under (docs/modules/runner.md); the inventory itself connects to nothing.
 
+```
+AGENT: dedupe
+From "init-data ends with": docs/modules/curation.md ("Loading", "The World.") suits it best; also
+docs/modules/curation.md ("The World"). That a worker logs them is this place's own.
+---
+```
 With a World, init-data ends with the inventory check's findings and a count (src/chatddx/inventory/check.py), and a
 worker logs them as it starts, against the engines the store holds. Neither connects to find them.
 
@@ -241,6 +376,14 @@ count; a model that isn't a Hugging Face repository at a revision; a part of the
 arguments that say where to listen; whatever a local engine refuses; two servers at one address; and two servers on one
 host that listen on different addresses.
 
+```
+AGENT: replace
+The chat template, gpt-oss and server cases are the import's findings listed below, each with its code, level
+and reason; the list suits them best, so the prose points to it and keeps only the lints.
+---
+What it sees without refusing, it reports: the model's and the engine's lints (docs/modules/factors.md, "Lints"), and
+the findings listed below.
+```
 What it sees without refusing, it reports: the model's and the engine's lints (docs/modules/factors.md, "Lints"); the
 chat template, checked against the engine, or that it couldn't be checked, or isn't the model's own; a gpt-oss engine,
 whose template vLLM doesn't read and whose prompts hold the current date unless its environment sets one; and a server
@@ -251,6 +394,12 @@ The import's findings have the engine's digest as subject:
 
 - `engine.chat_template_unused` (info): vLLM renders the model with Harmony and doesn't read the chat template, so its
   hash pins nothing (docs/vllm.md).
+```
+AGENT: dedupe
+From "so every prompt holds": docs/vllm.md ("vLLM 0.24 discoveries"), item 21, suits it best, as a fact of
+vLLM's.
+---
+```
 - `engine.harmony_date` (warning): such an engine's environment doesn't set `VLLM_SYSTEM_START_DATE`, so every prompt
   holds the current date.
 - `engine.chat_template_unread` (info): the report has no template text, so the template wasn't checked. When it has,

@@ -11,6 +11,12 @@ its settings in `src/chatddx/settings.py`.
 
 ## A job
 
+```
+AGENT: dedupe
+From "so whatever refuses them": docs/modules/api.md ("Starting one"), cited already, suits it best, with the
+run a day each counts as.
+---
+```
 A job is what the worker is asked to do: take a started run to its finish, and score it when asked, or score a finished
 run again. The request starts the runs, a run per language its cases are sent in (docs/modules/api.md, "Starting one"),
 so whatever refuses them does so before anything is queued; each is queued as a job of its own, and counts against a
@@ -46,6 +52,12 @@ The worker beats, marking itself and its jobs as seen, and hearing for each whet
 has paused. It is woken at once when a job is queued, halted, ended or queued again, or an owner pauses or resumes, so
 that it claims and halts without waiting for its next beat. On a beat:
 
+```
+AGENT: dedupe
+From "the scorer under way finishes": docs/modules/bench.md ("Runs and scores", "Stopping a scoring") suits it
+best; it says "aren't scored" where this and docs/modules/repl.md ("Stopping") say "refused as stopped".
+---
+```
 - **A halt** hangs the run's calls up and finishes it unscored, or stops its scoring: the scorer under way finishes its
   score with what it has, and the scorers after it are refused as stopped. The job ends stopped.
 - **A pause** stops the run after the items under way, leaves it unfinished, and queues the job again; a scoring under
@@ -54,6 +66,23 @@ that it claims and halts without waiting for its next beat. On a beat:
 
 ## What it says as it happens
 
+```
+AGENT: replace
+From "an item about to be sent": what isn't a row is listed in docs/modules/api.md ("Its events"), which
+suits it best, as streams are told it there; the batching of deltas stays here, where it is done.
+---
+A run is told by its rows as they land (docs/modules/api.md, "Its events"). The worker says on the run's channel what
+the rows don't, listed there, and when the scoring is over, each scorer's score or why it gave none. Deltas go out
+together, a tenth of a second's at a time, merged by item and kind, and an item's deltas still held when its row lands
+go unsaid. What it says goes through `NOTIFY`, packed to keep within its payloads' size (src/chatddx/store/notify.py). A
+worker that can't say it goes on without: the rows still land.
+```
+```
+AGENT: dedupe
+From "What it says goes through `NOTIFY`": docs/modules/store.md ("Notifications") suits it best, as the
+store sends it (src/chatddx/store/notify.py).
+---
+```
 A run is told by its rows as they land (docs/modules/api.md, "Its events"). The worker says on the run's channel what
 the rows don't: an item about to be sent, its deltas and tool runs, a scoring starting, a judge asked, its deltas and
 its answer, and the scoring over, with each scorer's score or why it gave none. Deltas go out together, a tenth of a
@@ -82,6 +111,12 @@ it. The portal's runs page shows the person's queue with its controls, and each 
 
 ## Where it runs
 
+```
+AGENT: dedupe
+Its "taking turns to claim" repeats docs/modules/worker.md ("Claiming"), which suits it best; also
+docs/modules/store.md ("The Queue").
+---
+```
 `chatddx worker` serves the queue for a World until it is stopped. `chatddx run`, a convenience for development, runs a
 worker in its own process; `chatddx portal` and `chatddx api` run none. A deployment runs the HTTP server, the API and
 the worker as separate services. Several workers work alike, taking turns to claim.
@@ -90,6 +125,12 @@ A worker logs the inventory check's findings as it starts (docs/modules/inventor
 
 ## Tests
 
+```
+AGENT: dedupe
+From "and the API's": docs/modules/api.md ("Tests") suits it best for the API's; also in
+docs/modules/worker.md ("Where it runs"). The portal's tests are this paragraph's own.
+---
+```
 The worker's tests run it on a thread against the fake vLLM, beating and losing fast, with a short deadline where a test
 stops it mid-scoring. The queue's tests are the store's (src/chatddx/store/test/), and the API's and the portal's run an
 app with a worker in its process (src/chatddx/api/test/, src/chatddx/portal/test/).

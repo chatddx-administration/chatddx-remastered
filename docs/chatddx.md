@@ -27,6 +27,14 @@ It must be possible to deliver the cage together with the results, for scientifi
 - Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough,
   translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and
   monitoring runs.
+```
+AGENT: replace
+Who writes which part of a scorer is docs/modules/factors.md ("Scorer")'s "Principal authors" line, near word
+for word; who authors and ships the rest stays, as docs/modules/bench.md cites it here.
+---
+- Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
+  scorer is put together by researchers in the portal (`docs/modules/factors.md`, "Scorer").
+```
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
   scorer's views, free parameters, labels and resources are written by researchers in the portal, who pick its scoring
   code and expectation schema among those shipped.
@@ -45,10 +53,23 @@ The researchers will want to iterate and continuously refine configurations acco
 4. A configuration with several successful variations branch out
 5. Unsuccessful configurations are deleted
 
+```
+AGENT: replace
+Kept at docs/modules/catalog.md ("Configurations and variations"), which owns the definitions, and
+docs/modules/bench.md ("The variation being tried"), which says nothing of a tried one is stored.
+---
+What a configuration and a variation are, and how a variation is kept, is the catalog's (docs/modules/catalog.md,
+"Configurations and variations").
+```
 A configuration is a skeleton thread, each version with the recipe it was compiled from, and a variation is one with
 recipe parts replaced over one of its versions. A variation being tried is a plain value, of which nothing is stored;
 saving it makes it a configuration of its own, a fork, or a new version of one of the person's own.
 
+```
+AGENT: dedupe
+Also in docs/modules/catalog.md ("Names") and docs/modules/catalog.md ("Titles"), which suit it best.
+---
+```
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies.
 
 ## Vignettes and anything made from them are sensitive
@@ -65,6 +86,21 @@ exporting it where it isn't.
 
 ## Findings and errors
 
+```
+AGENT: replace
+From "The run and score checks return": kept at docs/modules/ledger.md ("Findings"), which owns finish records
+and checks; what a finding is stays.
+---
+A finding has a level (`warning` by default, or `info`), a code, a message and optionally the subject it concerns. It is
+anything declared that doesn't match what was observed, and anything risky, becomes a finding. Which findings are stored
+is the ledger's (docs/modules/ledger.md, "Findings").
+```
+```
+AGENT: dedupe
+From "It is anything declared": docs/modules/factors.md ("Errors and findings") suits it best, unless this stays
+as the principle and factors points here; also in docs/modules/ledger.md ("Errors and findings").
+---
+```
 A finding has a level (`warning` by default, or `info`), a code, a message and optionally the subject it concerns. It is
 anything declared that doesn't match what was observed, and anything risky, becomes a finding. The run and score checks
 return their findings, and a finished row holds the findings the runner or scorer saw while working, such as

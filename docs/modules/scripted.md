@@ -45,6 +45,12 @@ started, sent and finished through the bench, as the repl runs one (`Bench.start
 `stop_after` is the run's own halt. A scored run is then scored by `Bench.score`, with a fake without a script at each
 judge's endpoint, so a judge answers as the fake does by itself.
 
+```
+AGENT: dedupe
+From "for a local engine, from its start-up" to "credential names": also in docs/vllm.md ("The fake vLLM"),
+which suits it best; `fake_at` and the sample's key are only here.
+---
+```
 `chatddx fake-engines` serves the fake engine (`fakes.py:fake_at`, which the command uses too): for a local engine, from
 its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this machine that asks for the key in the
 variable the endpoint's credential names: in the sample World, `CHATDDX_SAMPLE_KEY`, which `.env-devshell` and
@@ -55,6 +61,11 @@ The fake stays a leaf: it reads a script and knows nothing of the bench. The scr
 
 ## The command
 
+```
+AGENT: dedupe
+From "It serves its own fakes": docs/modules/scripted.md ("Running one") suits it best.
+---
+```
 `chatddx scripted-runs LOGIN [--world DIR] [--again] [NAME …]` runs the World's scripted runs, or the ones named, as
 LOGIN, after `chatddx init-data LOGIN --giftbag`. One whose trial LOGIN has a run of already isn't run again unless
 `--again` is given; it is said as run before, with that run. Each gets a line: its configuration and cases, how its

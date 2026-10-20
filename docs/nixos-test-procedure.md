@@ -4,12 +4,30 @@ How the NixOS module (`nix/module.nix`) is tested when a claude.ai cloud session
 can do it again. `agents/wip-deploy.md` ("The NixOS module") says what the module and its tests are; this file says who
 runs what, how, and what got in the way.
 
+```
+AGENT: dedupe
+docs/nixos-test-procedure.md ("What the session has, and doesn't", "No `/dev/kvm`.") suits it best, from
+"a cloud session has no KVM" to "by emulation"; the decision is this place's own.
+---
+```
 Decided: a cloud session has no KVM, and its VM test by emulation is too slow and too fragile to rely on (see "Runs").
 The session runs everything that needs no VM; the person runs the VM test on a host with KVM. CI with KVM, which would
 close the loop without the person, is an option in o11n's `agents/wip-self-hosted-kvm.md`.
 
 ## Who runs what
 
+```
+AGENT: dedupe
+docs/nixos-test-procedure.md ("4. The VM test's script, typechecked without a VM") suits it best; the row
+"Building `checks.<system>.module.driver`" may stay as the table's summary of it.
+---
+```
+```
+AGENT: dedupe
+Row "The host flow": docs/nixos-test-procedure.md ("6. The host flow") suits it best; also in
+docs/nixos-test-procedure.md ("Runs").
+---
+```
 | Check                                                 | What it covers                                                                                                                                                                                                                                                     | Who, where                              |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
 | `checks.<system>.module-eval` (`nix/module-eval.nix`) | The module's wiring, evaluated: services, users, environment, ordering, the sandbox's settings, PostgreSQL's versions, assertions, paths in the store refused                                                                                                      | The session, seconds                    |
@@ -167,6 +185,12 @@ PGPORT=5433 .venv/bin/pytest -n 4 -q
 
 ### 6. The host flow
 
+```
+AGENT: dedupe
+From "the admin `chatddx-test`": docs/nixos-test-procedure.md ("What the test does") suits it best, as the
+host flow copies the test; the Kompismoln comparison is this one's own.
+---
+```
 The services' commands, run as the module runs them but without systemd or nginx, against the cluster of step 5, under
 an org's identities: the admin `chatddx-test` (a hyphenated role, as Kompismoln's `chatddx-dev`) owning the database of
 its name, and the writer reading the World through the admin's group.
@@ -206,6 +230,12 @@ with alice's password; `GET /api/threads?kind=configuration&owner=alice&name=pla
 `"score": true`; `GET /api/runs/<run>` until its job is neither queued nor under way, and it must be finished. Last,
 `pkill -u chatddx_writer`: killing `runuser` doesn't reach the process under it.
 
+```
+AGENT: dedupe
+From "since the container has no IPv6": docs/nixos-test-procedure.md ("What the session has, and doesn't",
+"No IPv6") suits it best.
+---
+```
 `127.0.0.1` and not `[::1]`, since the container has no IPv6; the VM test listens on `[::1]`.
 
 ### 7. Check the formatting
@@ -279,6 +309,12 @@ About 20 minutes up to the end of subtest 2. With KVM it is a few minutes.
 
 - **`curl -I` against the app** fails: FastAPI adds no HEAD to a GET route, so HEAD is 405. The test reads headers from
   a GET (`curl -sf -o /dev/null -D -`).
+```
+AGENT: dedupe
+From "The test sends its sign-ins at once": repeats docs/nixos-test-procedure.md ("What the test does",
+"nginx"), which suits it best; why stays here.
+---
+```
 - **A limit that emulation doesn't reach**: at 10 a minute with a burst of 5, nginx takes a sign-in every 6 s beyond the
   burst. By emulation each `curl`, and the argon2 behind it, takes several seconds, so eight in a row all got 200. The
   test sends its sign-ins at once (`curl … &` in a loop, then `wait`), at `1r/m`.
@@ -304,10 +340,28 @@ About 20 minutes up to the end of subtest 2. With KVM it is a few minutes.
 - **By emulation, before the admin option**: the first run failed on `curl -sfI`, the second on the sign-in limit (see
   "What went wrong on the way"); the third passed, all four subtests, the script in 1,146 s (subtests 1 to 4: 248, 45,
   70 and 5 s).
+```
+AGENT: dedupe
+From "Two boots outlasted": the causes are in docs/nixos-test-procedure.md ("What went wrong on the way"), which
+suits them best; point there as the first item does.
+---
+```
 - **By emulation, with the admin option**: five tries, on another day. Two boots outlasted the driver's 300 s for the
   guest's shell; one booted, and the services failed after PostgreSQL's start limit (and showed tmpfiles' refused `Z`);
   one run of the driver outside the sandbox failed on its socket's path. None reached the subtests, hence the split
   above.
+```
+AGENT: dedupe
+From "failed on the typed case's missing": also in docs/nixos-test-procedure.md ("What went wrong on the way"),
+which suits it best; point there as the first item does.
+---
+```
+```
+AGENT: dedupe
+From "migrations as `chatddx-test`": docs/nixos-test-procedure.md ("6. The host flow") suits it best; also in
+docs/nixos-test-procedure.md ("Who runs what").
+---
+```
 - **The host flow, with the admin option, on PostgreSQL 17**: failed on the typed case's missing `language` (422); with
   it, passed: migrations as `chatddx-test`, the World read through its group, the operator's commands, a run queued by
   the portal, sent and scored by a worker, finished.

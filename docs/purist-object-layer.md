@@ -1,15 +1,32 @@
 # The object layer: a purist take
 
+```
+AGENT: dedupe
+From "Execution settings are a factor": repeats docs/modules/factors.md ("Components but not factors" and
+"Execution"), which suits it best; also docs/purist-object-layer.md ("Two questions"), which cites it.
+---
+```
 Not a plan, and not on the work queue: a take on how `chatddx.factors` would split if how a thing is stored and what it
 means to the research were kept apart. Execution settings are a factor but not a component, and canary sets and
 compilations are components but not factors. This file follows that split to its end, where how something is stored is a
 layer of its own and "factor" is a label for what something means to the research. It also says why, for now, the kinds
 stay together, and what would make the split worth it. On that day the work goes into a `wip-` plan of its own.
 
+```
+AGENT: dedupe
+The same sentence is in docs/backlog.md ("Backlog"), which suits it best, as the backlog uses the words most.
+---
+```
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
 
+```
+AGENT: dedupe
+docs/purist-object-layer.md ("The object layer: a purist take") suits it best, opening with "Not a plan, and
+not on the work queue".
+---
+```
 1. **What this is**: a take to come back to. Nothing in it is scheduled.
 2. **Two questions, one package** (see "Two questions"): `chatddx.factors` decides both how a thing is stored and
    whether it is a factor.
@@ -17,12 +34,30 @@ stay together, and what would make the split worth it. On that day the work goes
    replaces self-registration.
 4. **Keep the kinds together** (see "The pragmatic take"): every kind stays in `chatddx.factors`, and the package reads
    as "the factors, and the objects built alongside them". Take.
+```
+AGENT: dedupe
+Repeats docs/purist-object-layer.md ("The pragmatic take", "When to revisit"), which suits it best and which
+its "(see "The split")" should name; also docs/backlog.md ("The object layer, if the split happens").
+---
+```
 5. **The trigger** (see "The split"): the day an object kind has to import something above `factors`. Until then, the
    split is the plan for that day.
+```
+AGENT: dedupe
+Repeats docs/backlog.md ("The object layer, if the split happens"), which suits open questions best and also
+lists where `refuse_change` lives and whether canary sets and compilations move.
+---
+```
 6. **Open**: the name (see "Naming"), and declaring `kind` as a class keyword (see "Kinds written down").
 
 ## Two questions
 
+```
+AGENT: dedupe
+The "instrument" and "provenance" cells repeat docs/modules/factors.md ("Components but not factors"), which
+suits them best; also the introduction above. The "factor" cell cites its source, these don't.
+---
+```
 | How it is stored                                                                                                         | What it is to the research                                                           |
 | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | object: immutable, content-addressed, identified by its digest                                                           | factor: pinned, recorded or observed (`docs/modules/factors.md`, "What a factor is") |
@@ -33,6 +68,12 @@ stay together, and what would make the split worth it. On that day the work goes
 
 Pinned factors are all objects, which is why the two looked the same. The exceptions run both ways:
 
+```
+AGENT: dedupe
+Also in docs/modules/factors.md ("Execution"), which suits it best, docs/modules/ledger.md ("Run start"),
+docs/backlog.md ("Execution settings as a component") and docs/purist-object-layer.md ("Homes").
+---
+```
 - Execution settings are a recorded factor held in records (`src/chatddx/ledger/run.py:RunStarted.execution`).
 - Canary sets and compilations are objects that aren't factors (`docs/modules/factors.md`, "Components but not
   factors").
@@ -51,10 +92,22 @@ Pinned factors are all objects, which is why the two looked the same. The except
   - and the api, bench, catalog, curation, facts, portal, repl, scripted and store packages, and `cli.py`.
 - What docs/ says about these dependencies:
   - "Factors depend on nothing else in chatddx" (`docs/modules/factors.md`, introduction).
+```
+AGENT: dedupe
+Its first clause is docs/modules/ledger.md ("Ledger"), which suits it best; quote it with a pointer, as the
+item above does for factors.md. "and the kinds as well as the base" is only here.
+---
+```
   - The ledger imports no chatddx package but `chatddx.factors` (`src/chatddx/ledger/`), and the kinds as well as the
     base: a run start holds a trial, a skeleton's tools and a canary set, a score start a scoring and its judges.
   - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`src/chatddx/catalog/`).
   - The inventory's check and serving read engines, and its sources build cases (`src/chatddx/inventory/`).
+```
+AGENT: dedupe
+From "which is all `parse_component` reads". Also in docs/purist-object-layer.md ("Kinds written down"), which
+suits it best, and docs/purist-object-layer.md ("Every kind in one place").
+---
+```
 - All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component` reads. A
   typed case's text is no component: it is kept in the `source` schema.
 
@@ -63,6 +116,12 @@ Pinned factors are all objects, which is why the two looked the same. The except
 Take: keep every kind in `factors`. Don't extract the object layer, don't move kinds, and don't rename the schema. The
 reasons:
 
+```
+AGENT: dedupe
+From "and it adds a new way to fail". Also in docs/purist-object-layer.md ("Every kind in one place"), which suits
+it best and is cited in the same sentence.
+---
+```
 - **Reproducibility needs the set of kinds to stay closed.** What the research needs from this layer is that digests
   never change, and that a bundle still loads offline years from now. With every kind in one package, every reader knows
   every kind. The split would have to rebuild that (see "Every kind in one place"), and it adds a new way to fail: a
@@ -126,6 +185,12 @@ The plan for when "When to revisit" comes true. Nothing below is built.
 - **It defines no kinds.**
 - **The packages built on it**: `factors` (its kinds), and every package that imports the base today (see "What exists
   today"), for the general-purpose parts.
+```
+AGENT: dedupe
+From "`ledger/record.py` depends". Also in docs/purist-object-layer.md ("What exists today"), which suits it best
+and is cited in the item above.
+---
+```
 - **It removes some false dependencies rather than adding one.** `ledger/record.py` depends on `factors` only to get
   canonical JSON, as do parts of the inventory; the rest of the ledger and the inventory read kinds, and keep depending
   on `factors`. The rule "factors depend on nothing" becomes "objects depend on nothing and define no kinds"; `factors`
@@ -164,6 +229,18 @@ Open: a question for the user.
 | canary set                                         | an instrument                    | `ledger`          | `catalog/titles.py` titles canary sets, so the catalog imports the ledger. Its SQL already points at the ledger's (`catalog.entry` → `ledger.run_stage`).                                                                         |
 | compilation                                        | provenance                       | `catalog`         | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/seen.py`) sits at or above the catalog. |
 
+```
+AGENT: dedupe
+Also in docs/modules/factors.md ("Execution"), which suits it best, docs/modules/ledger.md ("Run start"),
+docs/purist-object-layer.md ("Two questions") and docs/backlog.md ("Execution settings as a component").
+---
+```
+```
+AGENT: dedupe
+From "The settings would be an object": docs/backlog.md ("Execution settings as a component") suits it best,
+which this cites already.
+---
+```
 Execution settings stay inside the start records of runs and scores (`ledger/run.py:RunStarted`,
 `ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/backlog.md`) is a storage choice
 only. The settings would be an object that the start record references by digest, as `RunStarted.canaries` references a
@@ -195,6 +272,12 @@ catalog reader.
   languages) follow the rename, since Postgres binds them to the tables themselves rather than their names. Labels key
   on the catalog's edits, not on components (`0017-t0-catalog-label-edit.sql`). Tier-1 grants and tier-2 checks and
   triggers move with the schema.
+```
+AGENT: dedupe
+Its "is the insert-only trigger function every schema calls" repeats docs/migrations.md ("factor", "Tier 2"),
+which suits it best; only this place lists the callers.
+---
+```
 - **`refuse_change`.** `factor.refuse_change()` is the insert-only trigger function every schema calls
   (`0003-t2-factor.sql`, called from `0006-t2-ledger.sql`, `0012-t2-catalog.sql`, `0016-t2-source.sql` and
   `0018-t2-catalog-label-edit.sql`). It moves with the schema. Open: whether a function every schema uses belongs there.
@@ -223,6 +306,18 @@ To suggest when built:
 2. **`KINDS` moves up**, before any kind leaves `factors`.
 3. **Homes**: the kind that forced the split first. Canary sets to the ledger and compilations to the catalog are
    optional.
+```
+AGENT: dedupe
+From "once only objects are left": docs/purist-object-layer.md ("The store", "The schema") suits it best; the
+order of the steps is this item's own.
+---
+```
 4. **The schema rename**, once only objects are left in `factor`. It depends on step 1, not on step 3.
 
+```
+AGENT: dedupe
+Repeats docs/purist-object-layer.md ("Kinds written down"), which suits it best; also docs/backlog.md ("The
+object layer, if the split happens").
+---
+```
 Until then, `kind` as a class keyword is optional, when the component classes are being touched anyway.

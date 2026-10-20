@@ -4,6 +4,18 @@ Facts about models are used to smooth over implementation details and make the m
 each reasoning level is expressed for a model, which sampling its makers recommend for each level, which output
 contracts work with it and with what caveats.
 
+```
+AGENT: dedupe
+From "and a configuration compiled against the old facts". Also in docs/modules/catalog.md ("What has moved on"),
+which suits it best, docs/modules/bench.md ("Following facts") and docs/modules/factors.md ("Model facts").
+---
+```
+```
+AGENT: dedupe
+From "the skeleton holds the result": docs/modules/factors.md ("Model facts") suits it best; also in
+docs/modules/factors.md ("Not factors") and docs/modules/factors.md ("Components but not factors").
+---
+```
 They never reach the wire themselves. A chunk may ask for an intent, a reasoning level or the recommended sampling, and
 compiling a recipe works out what it sends from the facts about the recipe's model; the skeleton holds the result, and
 its compilation names the facts it was worked out from. Correcting a guessed fact changes nothing stored: a skeleton
@@ -23,10 +35,22 @@ one, and the files `--facts` names, beside each other, and stores the facts abou
 serves as a component of kind `facts`, a thread of the archive's named after the model (docs/modules/curation.md).
 Correcting a fact and loading again makes a new version of its thread.
 
+```
+AGENT: dedupe
+Said twice here, as "the repository a local engine's model comes from" and as "A model's name is a
+`model.local` component's repository", which suits it best; also docs/modules/factors.md ("Model facts").
+---
+```
 Facts are about a model, by its name: the repository a local engine's model comes from, or the model a remote engine
 names. A model's name is a `model.local` component's repository or a `model.remote` component's `name`; an engine's
 facts are its model's.
 
+```
+AGENT: dedupe
+Repeats docs/modules/bench.md ("One person, one connection"), which suits it best: every edge reads the facts
+through the bench, which says what it caches. Also docs/modules/repl.md ("Starting").
+---
+```
 The bench, and the repl, the API, the portal and the worker through it, read the facts from the store: the current
 version of every facts thread, read when they are needed, so a correction loaded meanwhile is used.
 
@@ -88,6 +112,15 @@ is known, or the level is refused or unknown), when a budget is asked of a model
 one, when nothing is recommended for the level, and when the engine's model has no facts. A chunk that sets the effort,
 the chat template arguments or the sampling values itself is literal, and compiles as it is on any model.
 
+```
+AGENT: replace
+Kept at docs/modules/curation.md ("Factors", "Intents") and ("Facts and the engine"), since loading is curation's;
+this said "the engine of the endpoint the World names" where curation says the handle.
+---
+`chatddx init-data` stores the facts and compiles each recipe against them (docs/modules/curation.md, "Facts and the
+engine"). A factors file asks for an intent as it writes any chunk, `level = "off"` or `recommended = true`
+(docs/modules/curation.md, "Factors", "Intents").
+```
 `chatddx init-data` stores the facts (docs/modules/curation.md). A factors file asks for an intent as it writes any
 chunk, `level = "off"` or `recommended = true`, and a `from_facts` record is refused. Each recipe is made for the engine
 of the endpoint the World names for configurations; one the facts about its model refuse is skipped and reported, and so
@@ -108,6 +141,15 @@ skeleton was written for another model than the one it is paired with, or asks t
 - It asks a model that refuses a thinking budget for one.
 - Its output contract is one the model refuses.
 
+```
+AGENT: replace
+Restates docs/modules/facts.md ("Compiling intents"), which suits it best, as the premise for which checks
+matter.
+---
+A skeleton compiled from intents for the model it is sent to sends what that model's facts say (see "Compiling
+intents"), so the reasoning and sampling checks matter for literal chunks, hand-written skeletons, and a skeleton sent
+to another model than its recipe's.
+```
 A skeleton compiled from a reasoning level for the model it is sent to sends one of its model's ways of asking, and one
 compiled from a recommended sampling sends its model's recommendation, so the reasoning and sampling checks matter for
 literal chunks, hand-written skeletons, and a skeleton sent to another model than its recipe's.

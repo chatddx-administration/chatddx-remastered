@@ -99,6 +99,12 @@ prefixes of the flags it may not use (`src/chatddx/factors/engine.py:_abbreviati
     `LocalEngine.argv` refuses bare arguments that can't be a flag's value
     (`src/chatddx/factors/engine.py:_bare_arguments`).
 
+```
+AGENT: dedupe
+From "A passthrough chunk may not set them". Also in docs/modules/factors.md ("Passthrough"), which suits the rule
+best; the keys, what they do and `BYPASS_KEYS` stay here.
+---
+```
 12. A chat-completion request accepts keys beyond the OpenAI API
     (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/chat_completion/protocol.py#L193), four
     of which go around other settings: `chat_template` replaces the server's chat template for the request (#L317),
@@ -191,6 +197,12 @@ Each entry is one emulated behaviour, then a line with:
 - where it is coded;
 - the tests that pin it (`src/chatddx/fake_vllm/test/`), or `untested`.
 
+```
+AGENT: dedupe
+From "renders every skeleton": docs/modules/curation.md ("Tests"), which lists what test_worlds.py checks,
+suits it best; also docs/modules/inventory.md ("Worlds"). The test's name can stay.
+---
+```
 The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests cut
 across them: `src/chatddx/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would` renders
 every skeleton of every World for each of its fake endpoints, and checks each answer against its contract and schema, or
@@ -320,6 +332,12 @@ round through `next_request`.
   `chatcmpl-tool-fake-N`, N the calls in earlier assistant messages. The content is empty. fake · `chat.py:respond`,
   `chat.py:_call_id` · `test_a_named_tool_is_called_and_stops`,
   `test_a_tool_round_goes_from_the_toolset_to_the_answer_tool`
+```
+AGENT: dedupe
+The fact: item 18 of docs/vllm.md ("vLLM 0.24 discoveries") suits it best; the code and the tests are this
+item's own.
+---
+```
 - **Finish.** `tool_calls` for a call under `auto` and `required`, `stop` under a named choice. item 18 ·
   `chat.py:respond` · `test_a_named_tool_is_called_and_stops`,
   `test_required_calls_the_toolset_then_the_answer_tool_offered_last`, `test_auto_calls_each_tool_once_then_answers`
@@ -425,6 +443,12 @@ instead, `content` its message); a request past the last turn gets 500. A file m
 - A document holds to the sample's schemas, not to every schema, as a grammar would make it: `minItems` above 3 is met
   only with a `maxItems`, and `maximum`, `exclusiveMinimum`, `multipleOf` and the string keywords are ignored
   (`chat.py:instance`).
+```
+AGENT: dedupe
+docs/vllm.md ("Reasoning", "Where the reasoning goes") suits it best; only "unchecked" and the special tokens
+skipped in detokenizing are this item's own.
+---
+```
 - Unchecked against vLLM: gpt-oss without any parser answers `analysis…assistantfinal…`, taking Harmony's channel
   markers to be special tokens skipped in detokenizing; and Harmony with a tool parser but no reasoning parser still
   separates the reasoning.
@@ -444,6 +468,12 @@ instead, `content` its message); a request past the last turn gets 500. A file m
    - an option of the fake's own: `fake-vllm` in `src/chatddx/cli.py`, through `server.py:run` and `server.py:server`.
 3. Test it in the section of `test/test_fake_vllm.py` it belongs to, or in `test/test_fake_vllm_server.py` when it needs
    HTTP.
+```
+AGENT: dedupe
+Its template repeats the entry shape docs/vllm.md ("The fake vLLM") explains, which suits it best; "in the
+same shape" can point there.
+---
+```
 4. Add its entry to the matching section above, in the same shape, and take it off "Not emulated":
    ```
    - **<behaviour>.** <what the fake does>.

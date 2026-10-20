@@ -44,6 +44,12 @@ A new schema gets its own section with all three tiers.
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
   gets nothing: `run_item` and `score_item` hold sensitive records (`src/chatddx/ledger/record.py:Record.sensitive`),
   and the stage rows and canary calls sit beside them so that each log stays in one schema.
+```
+AGENT: dedupe
+From "so that a run's rows": docs/modules/store.md ("Records") suits it best; also in
+docs/modules/ledger.md ("Storage").
+---
+```
 - `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
   are read back in the order they were written; rows from before are numbered as the column is added, in no particular
   order. An index on `score_stage (run)`.
@@ -64,6 +70,12 @@ A new schema gets its own section with all three tiers.
   tables here may be mutable. The writer gets SELECT, INSERT, UPDATE on `person` and `credential`, and no DELETE, so
   people are never removed; and SELECT, INSERT, DELETE on `session` (sessions are deleted on logout, expiry and
   deactivation). The reader gets SELECT on `person` only.
+```
+AGENT: dedupe
+"the one mutable schema": also in docs/modules/store.md ("Store"), which suits it best. "The one" no longer holds,
+since `0019-t0-worker.sql` makes the worker's queue updated in place too.
+---
+```
 - `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
   - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
   - `credential (person, hash)`.
@@ -133,6 +145,12 @@ A new schema gets its own section with all three tiers.
     and its position is within the views or resources of the edit's scorer
     (`src/chatddx/catalog/threads.py:check_edit`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
+```
+AGENT: dedupe
+From "so a store migrated before": the `facts` item above, docs/migrations.md ("Tier 2"), suits it best, as
+the `chunk.translations` sentence there says "the same way".
+---
+```
   - `model.local` replaced `model` among the thread kinds in place: a local model's digest changes with its kind, and
     its engines' and their endpoints' with it, so a store migrated before it is dropped and migrated again, and its data
     sets loaded again.
@@ -154,6 +172,12 @@ A new schema gets its own section with all three tiers.
 
 ### Tier 1
 
+```
+AGENT: dedupe
+Its "so only the admin deletes a text" and "the texts are vignettes" repeat docs/modules/store.md ("Texts"),
+which suits them best; the grants are this file's.
+---
+```
 - `0015-t1-source.sql`: PUBLIC loses all access. The writer gets SELECT, INSERT on `text`, granted explicitly, and no
   DELETE, so only the admin deletes a text. The reader gets nothing: the texts are vignettes.
 
@@ -167,6 +191,12 @@ A new schema gets its own section with all three tiers.
 
 - `0019-t0-worker.sql`: schema `worker`, the worker's queue, updated in place.
   - `worker (id, started, seen)`: each worker, and when it was last seen.
+```
+AGENT: dedupe
+From "a started run to send and finish": docs/modules/worker.md ("A job") suits it best; also in
+docs/backlog.md ("Streams that miss nothing"). The columns and the index are this item's own.
+---
+```
   - `job (id, owner, run, stage, endpoint, slots, score, scorers, status, why, halt, worker, queued, claimed, beat, ended)`:
     a started run to send and finish, and score when asked. `(run, stage)` references the run's started row in
     `ledger.run_stage`, as an item row does; `owner` references `identity.person`. A unique index keeps one job queued
@@ -175,9 +205,21 @@ A new schema gets its own section with all three tiers.
 
 ### Tier 1
 
+```
+AGENT: dedupe
+Its "why a job failed can quote what it was sending" repeats docs/modules/api.md ("Sensitive content"), which
+suits it best.
+---
+```
 - `0020-t1-worker.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, as the
   tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since why
   a job failed can quote what it was sending.
+```
+AGENT: dedupe
+From "so that a job queued again". Also in docs/modules/worker.md ("A job"), which suits it best, and
+docs/modules/store.md ("The Queue").
+---
+```
 - `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
   scores what is left (docs/modules/worker.md, "Stopping").
 
