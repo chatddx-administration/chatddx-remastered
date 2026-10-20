@@ -1,242 +1,196 @@
 # Glossary
 
-Every term table and glossary in `docs/`, the roles, and every finding the code makes, in one place.
+The terms, the roles, and every finding the code makes, in one place. The terms were gathered from the glossaries
+`docs/` used to hold, and reconciled against the code.
 
-- "Terms" holds the rows of `docs/chatddx.md` ("Glossary") and of each `docs/<doc>.md` ("Terms"), copied verbatim and
-  sorted by term. Doc names the doc a row comes from. A term several docs define keeps a row for each.
+- "Terms" holds one definition per term, true to the code. Code names where the code holds it, or none for a
+  concept only the research has. A word that names two things has a row for each, told apart in parentheses.
 - "Roles" holds the people's roles, what each authors, and the database's roles.
 - "Findings" holds every `Finding(…)` made in `src/chatddx/`, by where it is raised.
-- "Where the docs part" holds the definitions that disagree with each other or with the code, with options.
+- "Open" holds what the code can't settle, with options.
 
 ## Terms
 
-| Term | Meaning | Doc |
+| Term | Meaning | Code |
 | --- | --- | --- |
-| Active | Whether a person may sign in. People are made inactive, never deleted. | identity |
-| Admin | The role that owns the database and runs the migrations. | store |
-| Appendix | Extra plain text written for one vignette. | factors |
-| Archive | The person who owns what a data set loads, and shares it with everyone else. | curation |
-| Attempt | one try at sending a call's request; a call is tried again only when the request didn't get through. | chatddx |
-| Attempt | One try at sending a call's request. | ledger |
-| Attestation | What the engine says about itself: the model it answered as and the prompt it read. | ledger |
-| Base | The version a fork is compared with: the one it came from, or the one its changes were last re-applied onto. | catalog |
-| Beat | Marking a worker and its jobs as seen, and hearing whether each is to halt or its owner has paused. | worker |
-| Behind | A reference whose thread has moved on, or a case whose family has a newer binding. | catalog |
-| Bench | What one person sees and does, whatever the edge. | bench |
-| Binding | Where a family's vignette is: source, id and fingerprint. The latest is current. | catalog |
-| Bound | A data set's judge, given the handle whose latest engine judges it. | inventory |
-| Bundle | a set of root components plus everything they reference (the closure), stored as canonical text keyed by digest, together with the code version that produced it. | chatddx |
-| Cage | the constrained environment a bundle enforces | chatddx |
-| Call | one exchange with an engine: a request sent, in one or more attempts, and what came back. | chatddx |
-| Call | One exchange with an engine. | ledger |
-| Canary | a fixed, non-sensitive probe request. | chatddx |
-| Canary | A fixed, non-sensitive probe request. | factors |
-| Canonical form | JSON with field names sorted and fields left out when equal to their default, plus the type's schema version. JSON data keeps its key order, because a schema's property order is part of what a model reads; the keys of settings (`Settings`: bodies, `chat_template_kwargs`, `params`, and `env`) are sorted, so equivalent settings share a digest. | chatddx |
-| Carrying | Editing an expectation onto another case of its family, with the same data. | bench |
-| Case | A vignette plus the appendices sent with it. | factors |
-| Case title | A family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices. | repl |
-| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. | catalog |
-| Cell | What the shell runs: a configuration, its model one of its parts, and the endpoint named for it, if any. | repl |
-| Chunk | a factor authored in the portal that fills one part of a recipe (not to be confused with a slot). | chatddx |
-| Chunk | A component that fills one part of a request. | factors |
-| Claim | Taking the next job that fits, and marking it under way. | worker |
-| Cleared | An endpoint's permission, for now, to receive content from a sensitive source. | inventory |
-| Closure | A component and everything it references, transitively. | store |
-| Collaborates on | Has shared with them, while it is live, and isn't the owner of. | identity |
-| Collapse | A level that is asked for as another. | facts |
-| Compilation | A provenance (component) that says which recipe, compiler and facts produced a skeleton, and the language it was compiled into, none for the recipe as written | chatddx |
-| Component | An immutable set of parameters identified by its digest. Pinned factors are held in components. | factors |
-| Configuration | A skeleton thread: requests, each version with the recipe it was compiled from. | catalog |
-| Configurations | The handle whose model a data set's configurations are made for. | inventory |
-| Contract | how an output chunk constrains the answer: `native`, `tool` or `text`. | chatddx |
-| Contract | How the answer is constrained: native, tool or text. | factors |
-| Curation | Getting authored content into the store as the archive's, keeping it in step with its files, and taking it out of people's way. | curation |
-| Cutoff | Ending a call early, keeping what came: a runaway, or a timeout. | runner |
-| Data set | A directory of authored files: factors, cases by language, and what they load. | curation |
-| Deadline | How long a stopping worker's scorings go on. | worker |
-| Default | The level a model uses when a request says nothing about reasoning. | facts |
-| Digest | the factor's identity and how it's referenced, an `sha256:<hex>` over the component's canonical bytes. | chatddx |
-| Digest | The hash of a component's canonical form. Components are told apart and referred to by it. | factors |
-| Edge | What a person reaches the bench through: the repl, the API, the portal. | bench |
-| Edit | One version on a thread. | catalog |
-| Edit | A new version of a configuration of one's own. | api |
-| Endpoint | Where one engine is served: its address, capacity and secret, and the host that runs it. | inventory |
-| Endpoint | Where an engine is reached, by the World inventory's name (docs/inventory.md, "Endpoints"). | runner |
-| Engine | Where requests go: a vLLM server we run, or a remote API. | factors |
-| Entry | Something said about a thread, a family, a run or a score: a name, description, tag, owner, collaborator, deleted flag or language. | catalog |
-| Event | One step of what is under way for a run, as its events tell it. | api |
-| Execution | how a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the runaway cutoff. | chatddx |
-| Expectation | The reference answer for one case. | factors |
-| Factor | Anything that can change an output or its score (`docs/factors.md`, "What a factor is"). | chatddx |
-| Factor | Anything that can change an output or its score. | factors |
-| Facts | ops- or developer-authored knowledge about models (how each reasoning level is expressed, collapsed, refused or landed on its nearest, recommended sampling, output caveats, specs), typed in code, written in TOML and stored by init-data as components of kind `facts`, a thread per model, corrected by a new version. Not factors: they work out a reasoning level and a recommended sampling for the recipe's model when compiled. | chatddx |
-| Facts | What is known about a model that a request doesn't say. A component, but not a factor. | factors |
-| Facts | What is known about a model that a request doesn't say, written by people, one model at a time, and stored as a component, a thread per model. | facts |
-| Family | The handle on one vignette through renames and edits at its source. | catalog |
-| Finding | a warning or info produced when something declared doesn't match what was observed, or when a setting is risky. | chatddx |
-| Fingerprint | a hash of content that must *not* be stored: vignette, request, prompt token ids. It carries its algorithm: `sha256`, or `hmac-sha256` with a `key_id` | chatddx |
-| Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. | bench |
-| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. | bench |
-| Fork | A thread started from a version of another thread of the same kind, its origin. | catalog |
-| Fork | A new configuration of one's own, made from one the person sees. | api |
-| Gate | What refuses an endpoint before sensitive content goes to it. | runner |
-| Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. | curation |
-| Guidance | Text that tells the model how to answer, or how to use its tools. | factors |
-| Halt | Ending what is under way for a run early: its sending, hanging up the calls under way, or its scoring. | api |
-| Head | A thread's latest edit, its current version. | catalog |
-| Head | A configuration's latest version, which a request's variation is built on. | api |
-| Host | A machine that runs local engines, and where it keeps the model files and chat templates they pin. | inventory |
-| Include | A file whose endpoints and hosts an inventory takes as its own. | inventory |
-| Insert | a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that output's schema, and `output_guidance` and `tool_guidance` in the instructions or the prompt, filled with the output's guidance and the toolset's. An insert's `before` and `after` text appear only when what it inserts isn't empty. | chatddx |
-| Insert | A placeholder filled at compile time: the output's schema, the output guidance or the tool guidance. | factors |
-| Instrument | A component that measures without being a factor: canary sets. | factors |
-| Intent | What a reasoning or sampling chunk asks of the model, a reasoning level or the recommended sampling, worked out from the facts about the recipe's model when the recipe is compiled. | factors |
-| Intent | A reasoning level or the recommended sampling, asked for in a chunk and worked out from the facts when a recipe is compiled. | facts |
-| Inventory | files written by ops that say where vignette sources, endpoints and hosts are (`docs/inventory.md`). | chatddx |
-| Inventory | Files written by ops that say where things are: vignette sources, endpoints and hosts. For now, they also say which endpoints are cleared for which sources. | inventory |
-| Item | one case's replicate in a run: its first request and each tool round's, each sent as a call. | chatddx |
-| Item | One case's replicate in a run: its first request and each tool round's. | factors |
-| Item | One case's replicate in a run: its first request and each tool round's; or how one view graded one run item. | ledger |
-| Item | One case's replicate in a run: its first request and each tool round's, each a call. | api |
-| Item key | (case, replicate index), which identifies an item of a run, and with a view an item of a score. | chatddx |
-| Job | a started run or scoring queued for the worker, at its endpoint, for its owner, scored afterwards or not. | chatddx |
-| Job | A started run to finish and score when asked, or a finished run to score again, for its owner. | worker |
-| Job | What the app has under way for a run: the run, or a scoring of it, with its events. | api |
-| Judge | An LLM used to grade outputs. | factors |
-| Kind | the discriminator of a component, e.g. `engine.local`, `chunk.prompt`. | chatddx |
-| Label | The name of a scorer's view or resource. | catalog |
-| Label | Of a variation: its short title, `NAME+PART=CHUNK`, not stored. Of a scorer: what an edit calls one of its views or resources. | bench |
-| Land | Where a level ends after its collapses and nearests: on a way of asking, a refusal, or nothing known. | facts |
-| Latest wins | Of the rows about one thing, the one written last is what holds. | catalog |
-| Ledger | All records: the run and score logs. | ledger |
-| Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. | bench |
-| Left out | Cases in a language the configuration's translations don't cover: said, and not sent. | repl |
-| Left to score | Scorers that applies in finished run that has no whole score of it under the scoring built now. | bench |
-| Left to score | A scorer that applies to a run with no whole score under its scoring as built now. | repl |
-| Leftover | An archive thread or family the data set no longer names. | curation |
-| Level | What a request asks of reasoning: off, on, minimal, low, medium, high or xhigh. | facts |
-| Location | Where a host keeps a file, written the way the host reads it. | inventory |
-| Log | A run or a score: a start record, item records and a finish record, only ever added to. | ledger |
-| Login | What a person signs in with: unique and lowercase. | identity |
-| Look | Asking for a configuration's variation: what it would send, its lints, the languages its cases are sent in and its reach, with nothing stored. | api |
-| Lost | A job under way whose worker hasn't been seen for a while, claimed again. | worker |
-| Migration | A file of SQL a deployment applies once, at its tier. | store |
-| Nearest | The level a refused level lands on instead, when its refusal names one. | facts |
-| No target | A view a case's expectation gives nothing to hold an answer to. | repl |
-| Outcome | How an item ended: stopped, errored, unread, salvaged, completed, invalid or valid. | api |
-| Outcome | How an item went, from its last call and its answer. | repl |
-| Own | Owned by the person, while it is live. | bench |
-| Own language | A configuration's: its recipe's texts', or a hand-written skeleton's. It is sent in it as written. | bench |
-| Owner, collaborator | Who a thread or family belongs to, and who it is shared with. Together they decide what a person sees. | catalog |
-| Owns | Is the owner of, while it is live. | identity |
-| Parts | The chunks and the engine a variation replaces over a configuration, each by its digest, or nothing to take an optional chunk out. | api |
-| Person | Someone who acts in chatddx, by an id the rest of the store refers to. | identity |
-| Pinned | a value that can't be altered without changing the digest of one or more factors. | chatddx |
-| Pinned, recorded, observed | The three ways a factor is held: fixed in advance by digest, written into a run's or a score's start record, or only detected afterwards. | factors |
-| Plan, conduct, observation | What a record holds: what a run or a score is set to do, what the rig did, and what the world answered. | ledger |
-| Portal | the web-interface used to configure factors, watch runs and export results. | chatddx |
-| Portal | The web interface where components are written and runs are watched. | factors |
-| Proposal | The origin's head with a fork's changes on top. | catalog |
-| Provenance | A component that says how another was made, without being a factor: compilations. | factors |
-| Purpose | whether a prompt or skeleton is for `generation` or for a `judge`; it decides which slots are allowed. | chatddx |
-| Purpose | Whether a request writes an answer (generation) or grades one (judge). It decides which slots are allowed. | factors |
-| Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. | bench |
-| Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. | api |
-| Reader | The role that may read what isn't sensitive. | store |
-| Recipe | the chunks and the model a skeleton was compiled from. | chatddx |
-| Recipe | The choice of chunks, and the engine, a request is compiled from. Not a component. | factors |
-| Recommended sampling | The sampling a model's makers recommend for a level. | facts |
-| Record | A named entry of a data set's factors file, loaded as a thread. | curation |
-| Record | What the rig writes when something happens; never changed. | ledger |
-| Record / ledger | events logged while running or scoring. | chatddx |
-| Refusal | A fact that says the model can't do something, and why. | facts |
-| Repair | Moving a family to its vignette's new id or content, and rebinding what depends on it. | catalog |
-| Repl, shell | `chatddx repl`, for one person over a World. | repl |
-| Replacement | The case a stale case becomes under its family's current binding. | catalog |
-| Replicate | one seed of a trial, identified by its index. | chatddx |
-| Request | the body one call sends to an engine: a skeleton rendered with its fills, the served model and the seed, or a tool round's next request. | chatddx |
-| Request | The body one call sends to an engine: a skeleton rendered, or a tool round's next request. | factors |
-| Request | The body one call sends to an engine. | ledger |
-| Rig | the chatddx software that builds cages from factors, runs and scores inside them and records what happened. | chatddx |
-| Role | Admin, clinician, developer, ops or researcher; a person may hold several. | identity |
-| Round | Running the tools a response called and sending the next request. | runner |
-| Run | One execution of a trial: its requests, responses and records. | factors |
-| Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. | api |
-| Run and Score | a stage log. | chatddx |
-| Runner | What sends a trial's requests and writes the run. | runner |
-| Salvaged | A structured answer cut short, read with its structure closed. | repl |
-| Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. | bench |
-| Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. | api |
-| Schema | One module's tables, in a namespace of their own. | store |
-| Schema op | a named, versioned rewrite an output chunk applies to its schema at compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`. | chatddx |
-| Scoring pass | What grades a finished run with a scoring and writes the score. | runner |
-| Script | The turns the fake answers with, one per attempt. | scripted |
-| Scripted run | A run made to be looked at, written as a file in a World's `_runs/` and answered by the fake from its script. | scripted |
-| Seal | the hash over a log's started row and item rows, kept in its finished row. | chatddx |
-| Seal | The hash over a log's records, kept in its finish record. | ledger |
-| Seed, replicate | A seed fixes the sampler's randomness. Each seed of a trial is one replicate, identified by its position. | factors |
-| Sees | Owns, or collaborates on. | identity |
-| Sees | Owns or collaborates on, while it is live. | bench |
-| Segment | a literal string, a slot or an insert | chatddx |
-| Segment | One piece of a text: a literal string, a slot or an insert. | factors |
-| Sensitive | data that may only be stored or sent where it is cleared to go (see "Vignettes and anything made from them are sensitive"). | chatddx |
-| Session | A person signed in, by a token of which only a digest is kept. | identity |
-| Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. | api |
-| Skeleton | the frozen request. | chatddx |
-| Skeleton | The compiled, frozen request. | factors |
-| Slot | a placeholder filled at send time. | chatddx |
-| Slot | A placeholder filled at send time: the vignette, the appendices, the completion or the expectation. | factors |
-| Slots | What a job holds of its endpoint's `max_jobs`: its run's concurrency. | worker |
-| Source | Where a set of vignettes is fetched from, by id. Its name is part of every case built from it. | inventory |
-| Stage | A log's start or finish record. | ledger |
-| Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. | scripted |
-| Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. | bench |
-| Start | The runs one request starts: a run per language its cases are sent in, the later ones started with the first. | api |
-| Start-up | what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where) (`docs/inventory.md`, "The start-up"). | chatddx |
-| Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. | inventory |
-| Stop, interrupt, halt | Ending a run after the items under way; at once, raising; at once, from another thread. | runner |
-| Subject | What an entry is about. | catalog |
-| Survey | Comparing what a source lists with where its families are bound. | catalog |
-| Take | A fork of an expectation shared with the person, so that it counts. | api |
-| Taking | Forking a thread shared with the person to make it their own, as an expectation must be to count. | bench |
-| Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. | curation |
-| Text cleanup | the named steps a trial applies to vignettes before they are sent. | chatddx |
-| Text cleanup | Named steps that tidy a vignette before it is sent. | factors |
-| Thread | The versions of one component that people edit, in order. | catalog |
-| Tier | How much integrity the database enforces: structure, then grants, then the rules held in Python. | store |
-| Title | How something without a name is shown, built from what it holds. | catalog |
-| To choose from | A case with several expectations of the person's own under one schema or several shared with them. | bench |
-| Tool round | the tools a response called, run, and the next request, sent with their results. | chatddx |
-| Tool round | Running the tools a response called, and sending the next request. | ledger |
-| Translated | A run whose skeleton is the configuration's compiled into its cases' language by its translations. | repl |
-| Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. | curation |
-| Trial | The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds. | chatddx |
-| Trial | The pinned factors of one experiment: a skeleton, an engine, cases, text cleanup and seeds. | factors |
-| Typed case | A case whose vignette is a text the person typed, kept in a database source. | bench |
-| Variation | A configuration with recipe parts replaced over a version of a configuration: tried, or kept as a fork or a new version. | catalog |
-| Variation | A configuration thread's edit with parts set on it: what the shell holds and runs, under its model's handle. | repl |
-| Variation being tried | A configuration with recipe parts replaced over it, or none, that nobody has saved. | bench |
-| Varies | Of a fork: what its head changes from its base. | catalog |
-| Verdict | A judge's answer, as its skeleton's contract reads it. | runner |
-| Vetted | a fact within the planned clearance pipeline. | chatddx |
-| View | the part of an output and of an expectation that a scorer scores, and how. | chatddx |
-| View | One comparison a scorer makes between part of an output and part of an expectation. | factors |
-| Vignette | The clinical text of one case at its source. Sensitive. | factors |
-| Wire-body | a request as sent: with the streaming options, and the secret in a header. May hold sensitive content. | chatddx |
-| Word | What a kind of thread is asked for by: configuration, a recipe part, engine and the rest. | bench |
-| Worker | the process that runs the trials queued for it, outside the request that asked for them. | chatddx |
-| Worker | What claims queued jobs and works them, in a process of its own or the app's. | worker |
-| World | factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine) | chatddx |
-| World | A directory with an inventory, the files it includes, and the factors of the engines its endpoints serve. | inventory |
-| Writer | The role the app connects as. | store |
+| Active | Whether a person may sign in; making them inactive ends their sessions. People are made inactive, never deleted. | `src/chatddx/identity/identity.py:Person.active` |
+| Admin (database) | The database role that owns the database and its schemas, may create databases and roles, and runs the migrations. | `src/chatddx/store/setup.sql` |
+| Appendix | Extra plain text written for one vignette, sent with it by the cases that include it. Text cleanup doesn't touch it. | `src/chatddx/factors/cases.py:Appendix` |
+| Archive | The person who owns everything a data set loads, and shares it with each person a loading names. Never wiped. | `src/chatddx/curation/write.py:ARCHIVE` |
+| Attempt | One try at sending a call's request. A call is tried again only when the request didn't get through: no connection, a 429 or a 5xx. | `src/chatddx/ledger/call.py:Call.attempts` |
+| Attestation | What the engine says about itself in its responses, the model it answered as and the prompt it read, set beside what was declared. | `src/chatddx/ledger/call.py:attest_model` |
+| Base | The version a fork is compared with: the one it came from, or the origin's head it last followed. | `src/chatddx/catalog/model.py:Divergence.base` |
+| Beat | Marking a worker and its jobs as seen, and hearing whether each is to halt or its owner has paused. | `src/chatddx/store/queue.py:Queue.beat` |
+| Behind | A reference of a thread's head that a live thread has since moved on from, or a case whose family has a newer binding. | `src/chatddx/catalog/threads.py:behind` |
+| Bench | What one person sees and does, whatever the edge. | `src/chatddx/bench/bench.py:Bench` |
+| Binding | Where a family's vignette is: source, id and fingerprint. The latest is current. | `src/chatddx/catalog/model.py:Binding` |
+| Bound | Of a data set's judge: given by the World the handle whose model it is made for when loaded, and whose latest engine then judges it. | `src/chatddx/inventory/inventory.py:Inventory.judges` |
+| Bundle | A set of root components plus everything they reference, stored as canonical text keyed by digest, together with the code version that produced it, so it can be checked offline. | `src/chatddx/factors/bundle.py:Bundle` |
+| Cage | The environment runs and scores happen in, which can be provably rebuilt from what was pinned, and delivered with the results. | none |
+| Call | One exchange with an engine: a request sent, in one or more attempts, and what came back or why nothing did. | `src/chatddx/ledger/call.py:Call` |
+| Canary | A fixed, non-sensitive probe request, sent at a run's start or end to reveal an engine that changed. | `src/chatddx/factors/trial.py:Canary` |
+| Canonical form | The one way a component or a record is written out: JSON with field names sorted, fields equal to their default left out (the kind kept), and the schema version added. JSON data keeps its key order, since a schema's property order is part of what a model reads; settings' keys and other order that means nothing (a model's files, a trial's cases, translations) are put in a fixed order, so equivalent components share a digest. | `src/chatddx/factors/base.py:Component.canonical_doc` |
+| Carrying | Editing an expectation onto another case of its family, with the same data. | `src/chatddx/portal/threads.py` |
+| Case | A vignette plus the appendices sent with it, in order. | `src/chatddx/factors/cases.py:Case` |
+| Case title | How the repl names a case: its family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices, each appendix by its thread's name. | `src/chatddx/bench/seen.py:Seen.case_titled` |
+| Catalog | People's handles on components and records: threads and their versions, families and where their vignettes are, and what is said of them. | `src/chatddx/catalog/` |
+| Chunk | A component that fills one of a recipe's nine chunk parts: instructions, few-shot, prompt, output, sampling, reasoning, passthrough, translations or toolset. Not to be confused with a slot. | `src/chatddx/factors/request.py:CHUNK_PARTS` |
+| Chunk (streamed) | One piece of a response as it streams in. | `src/chatddx/runner/wire.py:Chunk` |
+| Claim | Taking the next job that fits its endpoint's free slots, or one that is lost or is to halt, and marking it under way. | `src/chatddx/store/queue.py:Queue.claim` |
+| Cleared | An endpoint's permission, for now, to receive content from a sensitive source; without it, the gate refuses runs and judge calls on that source's cases there. | `src/chatddx/inventory/inventory.py:Inventory.cleared` |
+| Closure (components) | A set of components and everything they reference, transitively. | `src/chatddx/factors/bundle.py:Registry.closure` |
+| Closure (Nix) | The Nix store path a local engine's runtime runs from. | `src/chatddx/factors/engine.py:Runtime.closure` |
+| Collaborates on | Has it shared with them, while it is live, and isn't its owner. | `src/chatddx/identity/identity.py:collaborates` |
+| Collapse | A level the model is asked for exactly as another, so the two are one request. | `src/chatddx/factors/facts.py:ReasoningFacts` |
+| Compilation | A provenance component that says which recipe, compiler and facts produced a skeleton, and the language it was compiled into, none for the recipe as written. | `src/chatddx/factors/request.py:Compilation` |
+| Component | An immutable set of parameters of one kind, identified by its digest and referring to other components by theirs. Pinned factors are held in components; canary sets, facts and compilations are components but not factors. | `src/chatddx/factors/base.py:Component` |
+| Configuration | A skeleton thread: each version a request, with the recipe it was compiled from unless written by hand. | `src/chatddx/bench/model.py:KINDS` |
+| Configurations (inventory) | The handle whose model a data set's configurations are made for when it is loaded. | `src/chatddx/inventory/inventory.py:Inventory.configurations` |
+| Contract | How an output, and the skeleton compiled from it, constrains the answer: native (the engine enforces the schema), tool (the answer is a forced function call) or text (nothing is constrained). | `src/chatddx/factors/request.py:OutputContract` |
+| Curation | Loading a data set into the store as the archive's and sharing it, keeping it in step with its files and its vignettes' sources, and taking back all a person owns. | `src/chatddx/curation/` |
+| Cutoff | Ending a call early and keeping what came, with why as its error: a runaway of whitespace, or a timeout. | `src/chatddx/runner/send.py:send` |
+| Data set | A directory of authored files: factors, texts and cases by language, and the files they load. Its engines are the World's. | `src/chatddx/curation/plan.py:plan_factors` |
+| Deadline | How long a stopping worker's scorings go on before they are cut short and queued again. | `src/chatddx/settings.py:WORKER_DEADLINE` |
+| Default | The reasoning level a model uses when a request says nothing about reasoning. A reasoning chunk may ask for it, and it lands like any other level. | `src/chatddx/factors/facts.py:ReasoningFacts.default` |
+| Digest | The hash of a component's canonical form as stored, `sha256:<hex>`. Components are told apart and referred to by it. | `src/chatddx/factors/base.py:Component.digest` |
+| Edge | What a person reaches the bench through: the repl, the API, the portal, or a command acting as them. | none |
+| Edit | One version on a thread. Editing writes a new one on a thread of one's own, naming the head it was made on. | `src/chatddx/catalog/model.py:Edit` |
+| Endpoint | Where one engine is served, under the inventory's name for it: its address, the host that runs a local engine, how many requests it takes at once, the variable holding its secret, and the canary set and execution its runs default to. | `src/chatddx/inventory/inventory.py:EndpointSpec` |
+| Engine | What answers requests: a vLLM server we run, pinned by its hardware, runtime, weights, chat template and arguments, or a remote API's model. Where it is reached is its endpoint. | `src/chatddx/factors/engine.py:LocalEngine` |
+| Entry | Something said about a thread, a family, a run or a score: a name, description, tag, owner, collaborator, deleted flag, a family's language, or what a run varied, replaced and was started with. | `src/chatddx/catalog/model.py:Entry` |
+| Event | One message of a run's event stream: a record of its log as written, or what its worker says as it happens. | `src/chatddx/api/telling.py:Telling` |
+| Execution | How a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the runaway cutoff. Recorded at the start, not pinned; the endpoint gives the default. | `src/chatddx/factors/trial.py:Execution` |
+| Expectation | The reference data for one case, written to an expectation schema, that a scorer's views grade answers against. | `src/chatddx/factors/scoring.py:Expectation` |
+| Factor | Anything that can change an output or its score: what the research varies, holds fixed, or has to account for. The package and the schema named for factors hold every component, factors or not. | none |
+| Facts | What is known about one model that a request doesn't say: its reasoning levels, recommended sampling, output caveats and specs. Written by people in TOML, stored as a component on a thread per model, and read by compiling and by lints; not a factor. | `src/chatddx/factors/facts.py:ModelFacts` |
+| Family | The handle on one vignette through renames and changes at its source; every case of the vignette belongs to it. | `src/chatddx/catalog/families.py:family_of` |
+| Finding | A warning or an info with a code, a message and what it is about: something declared that doesn't match what was observed, something that failed or is missing, or a risky setting. | `src/chatddx/factors/base.py:Finding` |
+| Fingerprint | A hash of content that is not stored with the factors or the ledger: a vignette, a request, a prompt's token ids. It names its algorithm: `sha256`, or `hmac-sha256` with the key's id. | `src/chatddx/factors/base.py:Fingerprint` |
+| Following | Keeping the proposal as an edit of the person's own fork, based on its origin's head. | `src/chatddx/bench/following.py:follow` |
+| Following its facts | Keeping a configuration's recipe, with its model's head, compiled against the facts as they are now, as a new version of the person's own. | `src/chatddx/bench/following.py:follow_moved` |
+| Fork | A thread started from a version of another thread of the same kind, its origin. Forking makes one of one's own from any thread one sees. | `src/chatddx/catalog/model.py:Thread.forked_from` |
+| Gate | What refuses an endpoint or a judge before a run or a scoring uses it: another engine than the trial's, a sensitive source not cleared, tools on a sensitive source, a judge that reads the case, an unset secret, or a server not serving the model. | `src/chatddx/runner/gate.py:bar` |
+| Giftbag | A person's own forks of the chunks, tools, skeletons and expectations a loading gives the archive. | `src/chatddx/curation/write.py:_Init.giftbag` |
+| Guidance | Text that tells the model how to answer, an output's, which may show the schema, or how to use its tools, a toolset's. | `src/chatddx/factors/request.py:Output.guidance` |
+| Halt (job) | Asking a run's queued or running job to end at once: its calls are hung up and the run is finished unscored, or its scoring stops. | `src/chatddx/store/queue.py:Queue.halt` |
+| Head | A thread's latest edit, its current version. A variation is built on it unless an earlier edit is named. | `src/chatddx/catalog/threads.py:head` |
+| Host (inventory) | A machine that runs local engines: the address its servers listen on, and where it keeps the model files and chat templates they pin. | `src/chatddx/inventory/inventory.py:HostSpec` |
+| Include | A file of endpoints and hosts, as the engine import writes them, that an inventory takes as its own. | `src/chatddx/inventory/inventory.py:Inventory.load` |
+| Insert | A placeholder filled at compile time: the output's schema in its guidance, or the output's or the toolset's guidance in the instructions or the prompt. Its text before and after appears only when what it inserts isn't empty. | `src/chatddx/factors/request.py:Insert` |
+| Instrument | A component that measures without being a factor: canary sets. | `src/chatddx/factors/trial.py:CanarySet` |
+| Intent | What a reasoning or sampling chunk asks of the model instead of setting it: a reasoning level, or the recommended sampling, worked out from the facts about the recipe's model when the recipe is compiled. | `src/chatddx/factors/request.py:Reasoning.level` |
+| Inventory | The files that say where vignette sources, endpoints and hosts are, and for now which endpoints are cleared for which sources, which handle each of a data set's judges is bound to, and which handle configurations are made for. Ops write them; the engine import writes the endpoints and hosts. | `src/chatddx/inventory/inventory.py:Inventory` |
+| Item (run) | One case's replicate in a run: the fingerprint of the vignette as read, its first call and each tool round's. | `src/chatddx/ledger/run.py:RunItem` |
+| Item (score) | How one view graded one run item, with the judge calls it took. | `src/chatddx/ledger/score.py:ScoreItem` |
+| Item key | A case and a replicate's index, which identify an item of a run, and with a view an item of a score. | `src/chatddx/ledger/record.py:ItemKey` |
+| Job | A run queued for the worker, for its owner at its endpoint: to send and finish, then score when asked, or, finished, to score again. | `src/chatddx/store/queue.py:Job` |
+| Judge | An LLM used as a metric by a scorer's views: a judge skeleton, the model's weights, its own seeds, and a rule for filling in what a view picks. The scoring pins the engine it is sent to. | `src/chatddx/factors/scoring.py:Judge` |
+| Kind | What a component is, written into it and read first: `engine.local`, `chunk.prompt` and the rest. | `src/chatddx/factors/kinds.py:KINDS` |
+| Label (scorer) | What an edit of a scorer thread calls one of its views or resources. | `src/chatddx/catalog/read.py:labels` |
+| Label (variation) | A variation's short title, `NAME+PART=CHUNK`, which names its runs. | `src/chatddx/bench/variation.py:TriedVariation.label` |
+| Land | Where a level ends after its collapses and nearests: on a way of asking, a refusal, or nothing known. Only a way of asking compiles. | `src/chatddx/factors/facts.py:Landing` |
+| Latest wins | Of the rows about one thing, the one written last holds; for tags and collaborators, the last about each. | `src/chatddx/catalog/model.py:About.of` |
+| Ledger | All records: the logs of every run and every score. | `src/chatddx/ledger/` |
+| Left out | The cases of a language a configuration's translations can't carry it into, because they don't go into it or leave a text untranslated. Said with why, and not sent. | `src/chatddx/bench/model.py:Started.left_out` |
+| Left to score | A scorer that applies to a finished run, with an expectation for some of its cases, and no whole score of the run under the scoring built now. | `src/chatddx/bench/seen.py:Seen.unscored` |
+| Leftover | An archive thread or family a loading didn't come to, as when the data set no longer names it. Listed, never deleted. | `src/chatddx/curation/write.py:_Init.leftovers` |
+| Level (finding) | How much a finding weighs: a warning, or an info. | `src/chatddx/factors/base.py:Finding.level` |
+| Level (reasoning) | What a reasoning chunk asks of reasoning: off, on, minimal, low, medium, high or xhigh, or the model's default. The facts say how each is asked for; a request carries only what it lands on. | `src/chatddx/factors/facts.py:Intent` |
+| Location | Where a host keeps a model or a chat template, written the way vLLM on the host reads it. | `src/chatddx/inventory/inventory.py:HostSpec` |
+| Log | A run or a score as written: a start record, a record per item (and, for a run, per canary call), and once it is done a finish record. Only ever added to. | `src/chatddx/ledger/record.py:Log` |
+| Login | What a person signs in with, and is named by when shared with or acted as. Unique and lowercase. | `src/chatddx/identity/identity.py:Person.login` |
+| Look | Asking for a configuration's variation with nothing stored: its parts, the request it would send, the handle it runs under or why it can't run, its lints, the languages its cases are sent in and its reach. | `src/chatddx/api/threads.py` |
+| Lost | A job under way whose worker hasn't been seen for a while, so a claim takes it. | `src/chatddx/store/queue.py:Queue.claim` |
+| Migration | A file of SQL, at a tier, that a deployment applies once when it migrates to that tier or above. | `src/chatddx/store/migrate.py:Migration` |
+| Nearest | The level a refused level is asked for instead, when its refusal names one. Landing goes on from it. | `src/chatddx/factors/facts.py:Refusal.nearest` |
+| No target | Why a view gives a case no value: its expectation gives the view nothing to hold an answer to, or there is none. | `src/chatddx/scorers/scorer.py:NO_TARGET` |
+| Outcome | How an item ended, from its last call and the answer read from it: stopped, errored, unread, salvaged, completed, invalid or valid. | `src/chatddx/runner/outcome.py:Outcome` |
+| Own language | A configuration's language: the one its recipe's texts are all written in, or a hand-written skeleton's. Cases in it, or in none, are sent as written. | `src/chatddx/catalog/language.py:recipe_language` |
+| Owner, collaborator | Who a thread, family, run or score belongs to, and who it is shared with. Together they decide what a person sees. | `src/chatddx/catalog/model.py:About` |
+| Owns | Is the owner of, while it is live. | `src/chatddx/identity/identity.py:owns` |
+| Parts | The chunks and the model a variation replaces over a configuration, each by its digest. An empty chunk takes an optional part out; the model can't be taken out. | `src/chatddx/api/schemas.py:Parts` |
+| Person | Someone who acts in chatddx, by an id the rest of the store refers to, with a login, a name, roles, and whether they are active. | `src/chatddx/identity/identity.py:Person` |
+| Pinned | Fixed in advance inside a component, so that changing it changes that component's digest and the digest of every component that refers to it. | none |
+| Pinned, recorded, observed | The three ways a factor is held: fixed in advance by digest, written into a run's or a score's start record, or only detected afterwards. | `src/chatddx/ledger/run.py:RunStarted` |
+| Plan, conduct, observation | What a start or an item record holds: what the run or score was set to do, what the rig did, and what the world answered. A finish record holds its seal and findings. | `src/chatddx/ledger/run.py:RunStarted` |
+| Portal | The web interface where people write and version their components, review cases, and start, watch, score and compare runs; the bench's third edge. It is to export results, which isn't built. | `src/chatddx/portal/app.py:app` |
+| Proposal | When the origin has moved on, its head with a fork's changes on top. | `src/chatddx/catalog/threads.py:proposal` |
+| Provenance | A component that says how another was made, without being a factor: compilations. | `src/chatddx/factors/request.py:Compilation` |
+| Purpose | Whether a prompt, a recipe or a skeleton writes an answer (generation) or grades one (judge). It decides which slots are allowed and which are required. | `src/chatddx/factors/request.py:Purpose` |
+| Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation of the person's own it picks from, none, or several to choose from. | `src/chatddx/bench/model.py:Reach` |
+| Reader | The database role that may read the factors, the catalog and people, and nothing else; nothing connects as it yet. | `src/chatddx/store/migrations/0002-t1-factor.sql` |
+| Recipe | The chunks, purpose, appendix layout and model a skeleton is compiled from. Not a component: it is kept in its compilations. | `src/chatddx/factors/request.py:Recipe` |
+| Recommended sampling | The sampling a model's makers recommend for a reasoning level, as the facts hold it; a sampling chunk may ask for it. | `src/chatddx/factors/facts.py:SamplingFacts.recommended` |
+| Record (data set) | A named entry of a data set's factors or texts files, or of a World's engines files, loaded as a thread. | `src/chatddx/curation/plan.py:Planned` |
+| Record (ledger) | What the rig writes as a run or a score goes, its start, each item or canary call, and its finish; never changed. | `src/chatddx/ledger/record.py:Record` |
+| Refusal | A fact that says the model can't be asked for a level, a thinking budget or an output contract, and why. | `src/chatddx/factors/facts.py:Refusal` |
+| Repair | Moving a family to its vignette's new id or content: its cases rebuilt, its appendix threads moved, and on a rename its expectation threads. | `src/chatddx/catalog/families.py:plan_repair` |
+| Repl, shell | `chatddx repl`, a shell for one person over a World. | `src/chatddx/repl/shell.py:Repl` |
+| Replacement | The case a stale case becomes under its family's current binding: the same appendices on the current vignette. | `src/chatddx/catalog/families.py:replacement` |
+| Replicate | One seed of a trial, identified by that seed's position in the trial. | `src/chatddx/ledger/record.py:ItemKey.replicate` |
+| Request | The body one call sends to an engine: a skeleton rendered with its fills, the model and the seed, a tool round's next request, or a canary. | `src/chatddx/factors/request.py:Skeleton.render` |
+| Rig | The chatddx software that builds cages from factors, runs and scores inside them and records what happened, which build of it included. | `src/chatddx/rig.py:rig` |
+| Role (person) | Admin, clinician, developer, ops or researcher; a person may hold several, and nothing checks one yet. | `src/chatddx/identity/identity.py:Role` |
+| Run | One execution of a trial at one endpoint, written as a log: what it was set to do, each item's calls, and its finish. | `src/chatddx/ledger/run.py:Run` |
+| Runner | What starts or resumes a run at an endpoint, sends its items and canaries, runs its tools, and writes the run. | `src/chatddx/runner/run.py:Runner` |
+| Salvaged | A structured answer cut short, read with its structure closed. | `src/chatddx/scorers/answer.py:Answer.salvaged` |
+| Saying | The owner writing what holds of a thread: its name, description, tags, collaborators and whether it is deleted. | `src/chatddx/bench/saying.py:say` |
+| Schema (database) | One namespace of the database's tables: factor, ledger, identity, catalog, source (typed vignettes) or worker (the queue). | `src/chatddx/store/migrations/` |
+| Schema op | A named, versioned rewrite an output chunk applies to its schema at compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`. | `src/chatddx/factors/request.py:SchemaOp` |
+| Score | One scoring of a finished run, written as a log: what it was set to do, how each view graded each run item, and its finish. | `src/chatddx/ledger/score.py:Score` |
+| Scoring pass | What grades a finished run with a scoring, asking a view's judge where it names one, and writes the score. | `src/chatddx/runner/score.py:grade` |
+| Script | The turns the fake answers with, one per request it accepts, so one per attempt. | `src/chatddx/fake_vllm/script.py:Script` |
+| Scripted run | A run made to be looked at, described by a file in a World's `_runs/` and answered by the fake from its script. | `src/chatddx/scripted/read.py:ScriptedRun` |
+| Seal | The hash over a log's records but its finish record, kept in the finish record. | `src/chatddx/ledger/record.py:seal_rows` |
+| Seed | A number that fixes the sampler's randomness, not sent when sampling is greedy. Each seed of a trial is one replicate; a judge's seeds and an execution's shuffle seed are not. | `src/chatddx/factors/trial.py:Trial.seeds` |
+| Sees | Owns or collaborates on; a run only when one owns it. | `src/chatddx/identity/identity.py:sees` |
+| Segment | One piece of a message: a literal string or a slot. A prompt's pieces may also be inserts, which compiling fills. | `src/chatddx/factors/request.py:Segment` |
+| Sensitive | Content that may go only where it is cleared to go: a source's vignettes, unless the source says otherwise, and everything made from them. Today only sending to an endpoint is checked. | `src/chatddx/runner/gate.py:bar` |
+| Session | A person signed in: a token, carried as a bearer or a cookie, of which only a digest is kept. It lasts 12 hours, or until they sign out or are made inactive. | `src/chatddx/store/people.py:People.open_session` |
+| Skeleton | The frozen request trials and judges reference: everything sent but the slots' fills, the model and the seed. Compiled from a recipe, or written by hand. | `src/chatddx/factors/request.py:Skeleton` |
+| Slot | A placeholder filled at send time: the vignette, the appendices, the completion or the expectation. | `src/chatddx/factors/request.py:Slot` |
+| Slots | What a job holds of its endpoint's `max_jobs` while under way: its run's concurrency. A scoring alone holds none. | `src/chatddx/store/queue.py:Job.slots` |
+| Source | Where a set of vignettes is fetched from, by id: a directory, or texts people typed, kept in the database. Its name is part of every case built from it, and it is sensitive unless it says otherwise. | `src/chatddx/inventory/sources.py:Source` |
+| Stage | A log's start or finish record. | `src/chatddx/ledger/record.py:Stage` |
+| Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. | `src/chatddx/scripted/fakes.py:fake_at` |
+| Start | The runs one start of a variation makes: a run per language its cases are sent in, the later ones `with` the first. | `src/chatddx/bench/runs.py:start` |
+| Start-up | What starting a local engine's endpoint takes: vLLM's arguments, the engine's environment and the runtime, joining the engine with where its host keeps what it pins. | `src/chatddx/inventory/serving.py:StartUp` |
+| Stop, interrupt, halt (runner) | Ending a run: after the items under way; at once, recording the calls under way as stopped and raising; or at once from another thread, returning. | `src/chatddx/runner/run.py:Running.stop` |
+| Subject | The thread, family, run or score an entry is about. | `src/chatddx/catalog/model.py:Subject` |
+| Survey | Comparing what a source lists with where its families are bound: unchanged, changed, renamed, new or gone. | `src/chatddx/catalog/families.py:survey` |
+| Taking | Forking an expectation shared with the person into a thread of their own, so that it counts. | `src/chatddx/bench/taking.py:take` |
+| Text | A chunk that holds what the model reads: instructions, few-shot examples, a prompt, an output or a toolset, written in one language; in a data set, the one its texts file is named for. | `src/chatddx/curation/plan.py:TEXT_TABLES` |
+| Text (translated) | One string the model reads, as a translations chunk maps it. | `src/chatddx/factors/request.py:texts` |
+| Text cleanup | The named, versioned steps a trial applies to its vignettes after fingerprinting and before sending; a source names the default ones. | `src/chatddx/factors/cases.py:CleanupOp` |
+| Thread | A handle on a sequence of components of one kind, its versions in the order they were saved. | `src/chatddx/catalog/model.py:Thread` |
+| Tier | How much integrity the database enforces: structure, then grants, then checks and triggers that repeat the rules held in Python and keep tables append-only. | `src/chatddx/store/migrate.py:TOP_TIER` |
+| Title | How something without a name is shown, built when asked and never stored: for a fork, its origin's title and what it varies; else a name it had earlier; else what it holds. | `src/chatddx/catalog/titles.py:title` |
+| To choose from | A case with several expectations under one schema where one is needed: several of the person's own that differ, or several shared with them to take. | `src/chatddx/bench/seen.py:choices` |
+| Tool round | Running the tools a response called, and sending their results in the next request. A round stopped while its tools run has no request. | `src/chatddx/ledger/call.py:Turn` |
+| Translated | A run whose skeleton is its configuration's recipe compiled into its cases' language through the recipe's translations. | `src/chatddx/bench/model.py:Carried.translated` |
+| Translations | A chunk that maps each text a recipe's other chunks and appendix layout hold to its translation, for each language it goes into; cases and appendices aren't translated. In a data set it is written in the texts file of each such language. | `src/chatddx/factors/request.py:Translations` |
+| Trial | One experimental condition, the smallest unit of a scientific intent: a generation skeleton, an engine, cases, text-cleanup steps and seeds. | `src/chatddx/factors/trial.py:Trial` |
+| Typed case | A case whose vignette is a text the person typed, kept in a database source, with a family of their own in the language they say. | `src/chatddx/bench/cases.py:type_case` |
+| Variation | A version of a configuration with recipe parts replaced over it, or none, as it is tried before anyone keeps it as a fork or a new version. | `src/chatddx/bench/variation.py:TriedVariation` |
+| Varies | Of a fork: what its head changes from its base. | `src/chatddx/catalog/model.py:Divergence.varies` |
+| Verdict | A judge's answer for one seed, as its skeleton's contract reads it, or none when it can't be read. | `src/chatddx/runner/score.py:Grading` |
+| Vetted | Cleared by a person to receive sensitive content: today an endpoint in the inventory's clearance table, later what the planned clearance pipeline grants. | none |
+| View | One comparison a scorer makes: what it picks from an output and from an expectation, how the output's pick is split, and the metric, with its parameters and its judge if any, that grades them. | `src/chatddx/factors/scoring.py:View` |
+| Vignette | The clinical text a source holds under one id, named by the source, the id and a fingerprint of its bytes. Sensitive unless its source says otherwise. | `src/chatddx/factors/cases.py:Vignette` |
+| Wire-body | A request as it goes over the wire: the rendered request plus the streaming options, sent with the endpoint's secret in a header. May hold sensitive content. | `src/chatddx/runner/send.py` |
+| Word | What a kind of thread is asked for by: configuration, each chunk part, model, engine and the rest. | `src/chatddx/bench/model.py:KINDS` |
+| Worker | What claims queued jobs and works them, each on a thread, in a process of its own or the app's. | `src/chatddx/worker/worker.py:Worker` |
+| world | What lies outside chatddx's control: vignette sources, model files, the Nix closure, the chat-template file, a remote engine. Its factors are observed, or imported by fingerprint. | none |
+| World | The directory that describes one deployment's world: an inventory, the engines and model facts it adds, and the data carried with it. | `src/chatddx/inventory/world.py:World` |
+| Writer | The database role the app connects as: it reads and adds, updates only people, their passwords and the worker's queue, and deletes only sessions. | `src/chatddx/store/setup.sql` |
 
 ## Roles
 
 ### People
 The roles live in code (`src/chatddx/identity/identity.py:Role`) and are stored on the person by name; a person may
-hold several, and nothing checks a role yet (`docs/identity.md`, "Roles"). The second column is `docs/chatddx.md`
-("Roles mentioned") verbatim; the third gathers each "Principal author" line of `docs/factors.md` and
-`docs/bench.md`.
+hold several, and nothing checks a role yet (`docs/identity.md`, "Roles"). The second column is what
+`docs/chatddx.md` said under "Roles mentioned", verbatim, which lives only here now; the third gathers each
+"Principal author" line of `docs/factors.md` and `docs/bench.md`.
 
 | Role | Roles mentioned | Principal author of |
 | --- | --- | --- |
@@ -246,25 +200,24 @@ hold several, and nothing checks a role yet (`docs/identity.md`, "Roles"). The s
 | ops | Owners of engines and authors of the engine's components | local model, local engine, remote engine |
 | researcher | Authors of Sampling, Judges and Trials, and of a scorer's views, free parameters and labels | instructions, few-shot, prompt, output, sampling, reasoning, passthrough, toolset, recipe, trial, scorer (its views, free parameters and labels; picks its code, expectation schema and resources), judge (its skeleton and seeds; picks its model by handle and its fill rule), scoring, translations (as translators) |
 
-- `docs/chatddx.md`: "These roles are distinct and not overlapping, a person may inhabit more than one role."
-- Nobody authors compilations and skeletons; the compiler writes them. A World's model facts are written by whoever
-  adds a model they don't know.
-- Ops also write the inventory (`docs/inventory.md`, "Terms").
-- Translators are researchers (`agents/wip-translators-view.md`, T1); `docs/chatddx.md` names none.
-- A person also stands to a thread or a family as its owner or a collaborator, and one person, the archive, owns what
-  data sets load ("Terms": Owner, collaborator; Archive).
+- `docs/chatddx.md` said: "These roles are distinct and not overlapping, a person may inhabit more than one role."
+- Nobody authors compilations, and skeletons are compiled but for a hand-written configuration's. A World's model
+  facts are written by whoever adds a model they don't know.
+- Ops write the inventory, but for the endpoints and hosts the engine import writes ("Terms": Inventory).
+- Translators are researchers (`agents/wip-translators-view.md`, T1); `docs/chatddx.md` named none.
+- A person also stands to a thread, a family, a run or a score as its owner or a collaborator, and one person, the
+  archive, owns what data sets load ("Terms": Owner, collaborator; Archive).
 - Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, rule 6).
 
 ### The database
-From `docs/store.md` ("Roles and connections"), verbatim. These are PostgreSQL roles, not people's: `admin` names both.
+PostgreSQL's roles, not people's: "admin" names both (`docs/store.md`, "Roles and connections"; the grants are in the
+tier-1 migrations, `src/chatddx/store/migrations/`).
 
-| Role | Used by | Created by | May |
-| --- | --- | --- | --- |
-| Admin | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles. |
-| Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people and the worker queue. |
-| Reader | Nothing yet. | Tier 1. | Read the factors, the catalog and people, but not passwords. |
-
-The reader can't read the ledger or sessions.
+| Role | In PostgreSQL | Used by | Created by | May |
+| --- | --- | --- | --- | --- |
+| Admin | `chatddx` | `chatddx migrate` and the tests | the setup script | own the database and schemas; create databases and roles |
+| Writer | `chatddx_writer` | every other command | the setup script, or tier 1 when it is missing | read and add to the factors, the ledger, the catalog and typed vignettes; read, add and update people, their passwords and the worker's queue; end sessions |
+| Reader | `chatddx_reader` | nothing yet | tier 1 | read the factors, the catalog and people; not passwords, sessions, the ledger, typed vignettes or the queue |
 
 ## Findings
 A finding (`src/chatddx/factors/base.py:Finding`) has a level, `warning` unless said, a code, a message and optionally
@@ -415,39 +368,37 @@ Raised by `src/chatddx/ledger/score.py:check_score`, with `src/chatddx/ledger/ca
 | `execution.order` | warning | none | Items' judge calls were sent before those of items scheduled ahead of them. |
 | `execution.concurrency` | warning | none | More judge calls were in flight at once than declared. |
 
-## Where the docs part
-Gathering the glossaries puts these side by side. Nothing here is decided.
+## Open
+What reconciling the terms left for a human: words the code uses for two things, or that the docs and the code use
+differently. Nothing here is decided.
 
-1. **Recipe.** `docs/chatddx.md`'s row, `docs/factors.md` ("Recipe and compilation") and the code
-   (`src/chatddx/factors/request.py:Recipe.model`) say a recipe holds a model. `docs/factors.md`'s row says "the
-   engine", and so does `docs/api.md`'s Parts, where `src/chatddx/api/schemas.py:Parts` has a model and no engine.
-   - (a) The two rows go with their tables, and `docs/chatddx.md`'s stands.
-   - (b) If the tables stay, a suggestion to each row: model for engine.
-2. **Cell.** `docs/repl.md` defines the cell, and its "Saving" says what the cell holds, but `src/chatddx/repl/` has
-   no cell any more; the shell holds a variation (`TriedVariation`).
-   - (a) The row goes with its table, and a suggestion to "Saving": the variation for the cell.
-   - (b) "Cell" stays the doc's word for what the shell holds, said as such.
-3. **World.** `docs/chatddx.md`'s row: what is outside the orchestrator's control. `docs/inventory.md`'s row: a
-   directory with an inventory. `docs/inventory.md` ("Worlds") reconciles them: a world is technically only what is
-   beyond chatddx's control, and `worlds/*` also hold the data this repository carries for it, in `_` directories.
-   - (a) Both rows stand, and `docs/inventory.md`'s says it is the directory, as "Worlds" does.
-   - (b) `docs/chatddx.md`'s row only; the directory is described where it is, in `docs/inventory.md`.
-4. **A finding's level.** `docs/ledger.md` ("Findings") says all of the ledger's findings are warnings, counting the
-   runner's and the scoring pass's in the finish record among them, but `run.resumed` and `answer.salvaged` can be
-   info ("Findings": Running, Scoring).
-   - (a) A suggestion to `docs/ledger.md`: the checks' findings are warnings, and the finish record's either.
-   - (b) The runner's and the scoring pass's become warnings.
-5. **One word, two things.** In the gathered table only the Doc column tells them apart.
-   - Admin: a person's role (identity) and the database's owner (store).
-   - Closure: a component and what it references (store, and `docs/chatddx.md`'s Bundle), and a Nix closure
-     (`docs/chatddx.md`'s World, `engine.closure`).
-   - Configuration: a skeleton thread (catalog), and `configurations`, the handle a data set's configurations are made
-     for (inventory).
-   - Label: a scorer's view's or resource's name (catalog, bench), and a variation's short title (bench).
-   - Record: what the rig writes (ledger, and `docs/chatddx.md`'s "Record / ledger"), and an entry of a data set's
-     factors file (curation).
-   - Stage: what a run and a score are logs of (`docs/chatddx.md`'s "Run and Score"), and a log's start or finish
-     record (ledger).
-
-   Options: (a) the gathered rows say which, by a qualifier in the term ("Record (ledger)"); (b) one of each pair is
-   renamed, which is a human's choice of word.
+1. **Record.** A ledger record and a data set's record are two things under one word ("Terms": Record (ledger),
+   Record (data set)).
+   - (a) Both stay, told apart by their qualifier.
+   - (b) A data set's record gets a word of its own; "entry" is the catalog's.
+2. **Intent and level.** The docs' intent is what a reasoning or sampling chunk asks for; the code's `Intent`
+   (`src/chatddx/factors/facts.py:Intent`) is the type of the reasoning levels, which `docs/facts.md` calls levels and
+   "the old chatddx's intents".
+   - (a) The docs' words stand, and the code's type is named for levels.
+   - (b) Both stand, the type's name read as "the intents a level can be".
+3. **`max_jobs`.** An endpoint's `max_jobs` counts requests at once, not jobs
+   (`src/chatddx/inventory/inventory.py:EndpointSpec`), and a job's slots are its run's requests at once
+   ("Terms": Endpoint, Slots).
+   - (a) The field is renamed for what it counts, as `docs/inventory.md` calls it: capacity.
+   - (b) It stays, and the docs say what it counts.
+4. **A variation "is just a digest".** `docs/chatddx.md` ("Intended evolution of configurations") and `docs/bench.md`
+   ("The variation being tried") say so of one being tried, where the code holds it as a value
+   (`src/chatddx/bench/variation.py:TriedVariation`): an edit, its recipe and the parts set on it. Only the skeleton it
+   compiles to has a digest.
+   - (a) Read as "nothing is stored of it", and left as it is.
+   - (b) A suggestion to both docs: a plain value, of which nothing is stored.
+5. **A case's title.** The catalog titles a case of an unnamed family by its vignette's `SOURCE/ID`
+   (`src/chatddx/catalog/titles.py:_case_title`), and the bench finds the family as `family N`
+   (`src/chatddx/bench/model.py:Family.name`), so a title as shown may not find its case
+   (`src/chatddx/bench/seen.py:Seen.case_titled`). Read from the code, not run.
+   - (a) The bench finds an unnamed family by `SOURCE/ID` too.
+   - (b) The title says `family N` too.
+6. **Request.** "Terms": Request is the body a call sends, but `docs/chatddx.md` calls a skeleton "the frozen request"
+   and a configuration "a request kept on a skeleton thread", and the API's requests are HTTP requests.
+   - (a) Request stays the body a call sends, and the other two are said as skeleton and configuration.
+   - (b) "Request" is the frozen request, and the body a call sends is "the request as sent".
