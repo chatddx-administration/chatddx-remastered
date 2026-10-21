@@ -1,30 +1,17 @@
 import json
-from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.helpers import thread
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.scoring import Scorer
 from chatddx.identity import Person
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
-from chatddx.portal.test.test_varying import held, thread
+from chatddx.portal.test.helpers import shown, thread_props
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT, QWEN_MODEL
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-def thread_props(page: str) -> dict[str, Any]:
-    return held(page.replace('id="thread-props"', 'id="variation-props"'))
 
 
 @pytest.mark.slow

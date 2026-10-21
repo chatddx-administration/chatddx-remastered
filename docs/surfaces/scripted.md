@@ -1,8 +1,8 @@
 # `chatddx.scripted`
 
-Written by `chatddx reference` from `src/chatddx/scripted/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/scripted/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
-## fake_at
+## `fake_at`
 `src/chatddx/scripted/fakes.py:fake_at`
 
 * `inventory: Inventory`
@@ -11,27 +11,27 @@ Written by `chatddx reference` from `src/chatddx/scripted/`; how to read it is i
 * ∟`Served`
 
 Raises:
-1. `LookupError`: str(e) (from `StructuralError`)
-2. `LookupError`: "endpoint {name!r} isn't on this machine" (through `_stand_in`)
-3. `LookupError`: "endpoint {name!r} asks for the key in {spec.credential}, which isn't set" (through `_stand_in`)
-4. `LookupError`: "endpoint {name!r} runs in {startup.closure}, not the fake vLLM"
-5. `LookupError`: "{name} won't start: {e}" (from `Refused`)
+1. `LookupError`: `str(e)` (from `StructuralError`)
+2. `LookupError`: `"endpoint {name!r} isn't on this machine"` (through `_stand_in`)
+3. `LookupError`: `"endpoint {name!r} asks for the key in {spec.credential}, which isn't set"` (through `_stand_in`)
+4. `LookupError`: `"endpoint {name!r} runs in {startup.closure}, not the fake vLLM"`
+5. `LookupError`: `"{name} won't start: {e}"` (from `Refused`)
 
-## load
+## `load`
 `src/chatddx/scripted/read.py:load`
 
 * `path: Path`
 * ∟`ScriptedRun`
 
 Raises:
-1. `ValueError`: "{path}: {e}" (from `(ValidationError, Refused)`)
+1. `ValueError`: `"{path}: {e}"` (from `(ValidationError, Refused)`)
 
-## NONE
+## `NONE`
 `src/chatddx/scripted/run.py:NONE`
 
-* `NONE = "none"`
+`NONE = "none"`
 
-## ran_before
+## `ran_before`
 `src/chatddx/scripted/run.py:ran_before`
 
 * `bench: Bench`
@@ -39,9 +39,9 @@ Raises:
 * ∟`RunStarted | None`
 
 Raises:
-1. `ValueError`: "{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}" (through `_sent`)
+1. `ValueError`: `"{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}"` (through `_sent`)
 
-## run
+## `run`
 `src/chatddx/scripted/run.py:run`
 
 * `bench: Bench`
@@ -49,20 +49,20 @@ Raises:
 * ∟`RunStarted`
 
 Raises:
-1. `ValueError`: "{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}" (through `_sent`)
+1. `ValueError`: `"{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}"` (through `_sent`)
 
-## RUNS
+## `RUNS`
 `src/chatddx/scripted/__init__.py:RUNS`
 
-* `RUNS = "_runs"`
+`RUNS = "_runs"`
 
-## scripted_runs
+## `scripted_runs`
 `src/chatddx/scripted/read.py:scripted_runs`
 
 * `directory: Path`
 * ∟`list[ScriptedRun]`
 
-## ScriptedRun `(BaseModel)`
+## `ScriptedRun` `(BaseModel)`
 `src/chatddx/scripted/read.py:ScriptedRun`
 
 * `model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")`
@@ -78,7 +78,7 @@ Raises:
 * `scored: bool = True`
 * `turns: tuple[Turn, ...] = ()`
 
-## variation
+## `variation`
 `src/chatddx/scripted/run.py:variation`
 
 * `bench: Bench`

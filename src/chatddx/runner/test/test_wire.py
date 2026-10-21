@@ -1,19 +1,16 @@
-import json
 import logging
-import threading
 import time
 import urllib.error
-import urllib.request
-from collections.abc import Generator, Iterator
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, override
+from collections.abc import Iterator
+from typing import Any
 
 import pytest
 from pydantic import JsonValue
 
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
+from chatddx.fake_vllm.test.helpers import SCHEMA, function
+from chatddx.runner.test.helpers import SERVED, body, going_away, whole
 from chatddx.runner.wire import (
     Rejected,
     Unfinished,
@@ -25,87 +22,13 @@ from chatddx.runner.wire import (
     served,
 )
 
-SERVED = Served.of(
-    "Qwen/Qwen3-8B-AWQ",
-    [
-        "--served-model-name",
-        "sha256:abc",
-        "--reasoning-parser",
-        "qwen3",
-        "--enable-auto-tool-choice",
-        "--tool-call-parser",
-        "hermes",
-    ],
-)
-SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}}
 STREAM: dict[str, Any] = {"stream": True, "stream_options": {"include_usage": True}}
-
-
-def body(**fields: Any) -> dict[str, Any]:
-    return {
-        "model": "sha256:abc",
-        "messages": [{"role": "user", "content": "a cough"}],
-        "temperature": 0.6,
-        "seed": 7,
-        "return_token_ids": True,
-    } | fields
-
-
-def function(name: str, parameters: Any = None) -> dict[str, Any]:
-    return {"type": "function", "function": {"name": name, "parameters": parameters}}
 
 
 @pytest.fixture
 def url() -> Iterator[str]:
     with serving([SERVED], "127.0.0.1", 0) as (host, port):
         yield f"http://{host}:{port}/v1/"
-
-
-# vLLM streams over HTTP/1.1 in chunks, the fake over HTTP/1.0 until it closes. An engine that
-# goes away mid-stream ends the stream either way.
-class _GoingAway(BaseHTTPRequestHandler):
-    protocol_version: str = "HTTP/1.1"
-    chunked: bool = False
-
-    def do_POST(self) -> None:
-        _ = self.rfile.read(int(self.headers["Content-Length"]))
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        if self.chunked:
-            self.send_header("Transfer-Encoding", "chunked")
-        self.send_header("Connection", "close")
-        self.end_headers()
-        data = b'data: {"choices": [{"index": 0, "delta": {"content": "Fake"}}]}\n\n'
-        if self.chunked:
-            data = b"%x\r\n%s\r\n" % (len(data), data)
-        _ = self.wfile.write(data)
-
-    @override
-    def log_message(self, format: str, *args: Any) -> None:
-        pass
-
-
-@contextmanager
-def going_away(chunked: bool) -> Generator[str]:
-    handler = type("Handler", (_GoingAway,), {"chunked": chunked})
-    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
-        thread = threading.Thread(target=server.serve_forever, args=(0.01,))
-        thread.start()
-        try:
-            yield f"http://127.0.0.1:{server.server_address[1]}/v1/"
-        finally:
-            server.shutdown()
-            thread.join()
-
-
-def whole(url: str, request: dict[str, Any]) -> dict[str, Any]:
-    sent = urllib.request.Request(
-        url + "chat/completions",
-        data=json.dumps(request).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(sent) as response:
-        return json.loads(response.read())
 
 
 def kept(response: dict[str, Any]) -> dict[str, Any]:

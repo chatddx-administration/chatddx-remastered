@@ -41,9 +41,6 @@ The test World carries the tests' data set (worlds/test/_data/).
 
 ### Factors
 
-Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
-(docs/reference/factors.md).
-
 On top of the fields:
 
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model a

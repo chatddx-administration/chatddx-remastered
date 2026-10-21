@@ -1,12 +1,14 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.conftest import Loaded
 from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
 from chatddx.store import People
 from chatddx.store.store import Connection
+from chatddx.test.helpers import sampled_template
 from chatddx.test.world import WORLDS, free_world
+
+__all__ = ["sampled_template"]
 
 PATH = WORLDS / "sample"
 VALID = ("valid", None)
@@ -31,11 +33,6 @@ OUTCOMES = {
     "typical": {"DutchFall10w": VALID},
     "unfinished": {"Dutchfall15w": VALID},
 }
-
-
-@pytest.fixture
-def template(sampled: Loaded) -> str:
-    return sampled.name
 
 
 @pytest.mark.slow

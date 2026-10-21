@@ -4,8 +4,7 @@ from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
-from chatddx.api.test.conftest import bearer
-from chatddx.api.test.helpers import endpoint
+from chatddx.api.test.helpers import bearer, endpoint
 from chatddx.bench.handles import broken
 from chatddx.catalog.titles import short
 from chatddx.factors.engine import model_of
@@ -13,6 +12,7 @@ from chatddx.identity import Person
 from chatddx.inventory import EndpointSpec, Inventory
 from chatddx.store import Catalog, Rows, Store
 from chatddx.store.store import Connection
+from chatddx.test.helpers import ZERO
 from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_ARTIFACT,
@@ -29,7 +29,6 @@ from chatddx.test.world import (
     UNKNOWN_MODEL,
 )
 
-GHOST = "sha256:" + "0" * 64
 NOTED = {
     "diagnosis": {"pattern": "sepsis | septic & shock"},
     "notes": [
@@ -85,7 +84,7 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
     served: FastAPI, signed: TestClient
 ) -> None:
     held = served.state.chatddx
-    ghost = EndpointSpec(engine=GHOST, url=HttpUrl("http://127.0.0.1:1/v1/"))
+    ghost = EndpointSpec(engine=ZERO, url=HttpUrl("http://127.0.0.1:1/v1/"))
     endpoints = {**held.inventory.endpoints, "ghost@nowhere": ghost}
     served.state.chatddx = AppState(
         held.conninfo,
@@ -172,10 +171,10 @@ def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
             endpoint["title"],
         )
         assert shown["body"]["kind"] == kind
-    got = signed.get(f"/api/components/{GHOST}")
+    got = signed.get(f"/api/components/{ZERO}")
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no component {GHOST} in the store", "code": "not_found"},
+        {"detail": f"no component {ZERO} in the store", "code": "not_found"},
     )
 
 

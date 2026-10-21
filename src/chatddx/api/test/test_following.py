@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import JsonValue
 
-from chatddx.api.test.test_variations import thread
+from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
 from chatddx.catalog import threads

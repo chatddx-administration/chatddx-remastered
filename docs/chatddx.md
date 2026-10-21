@@ -64,5 +64,5 @@ exporting it where it isn't.
 
 A finding is a non-catastrophic inconsistency discovered at start-up or runtime (docs/backlog.md, "Differentiate
 start-up and runtime findings"). They are a separate layer on top of ordinary exceptions to isolate rig-level
-irregularities from application-level exceptions, and are listed separately in the generated references at
-docs/reference/*. All findings are listed in docs/glossary.md, "Findings".
+irregularities from application-level exceptions, and are listed separately in the generated surfaces at
+docs/surfaces/*. All findings are listed in docs/glossary.md, "Findings".

@@ -9,10 +9,11 @@ from fastapi.testclient import TestClient
 from chatddx import cli
 from chatddx.api.people import COOKIE
 from chatddx.api.schemas import Me
-from chatddx.api.test.conftest import PASSWORD, sign_in
+from chatddx.api.test.helpers import sign_in
 from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.identity import Person
 from chatddx.runner import Refused
+from chatddx.test.helpers import PASSWORD
 from chatddx.test.world import TEST
 
 ELSEWHERE = (

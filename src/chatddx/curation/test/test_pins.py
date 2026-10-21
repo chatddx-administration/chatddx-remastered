@@ -11,9 +11,8 @@ from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
 from chatddx.store import People, Rows, Store
 from chatddx.store.store import Connection
+from chatddx.test.helpers import SHIPPED
 from chatddx.test.world import world_plan
-
-SHIPPED = "chatddx.scorers.metrics:score"
 
 
 def _scorers(lines: list[str]) -> set[str]:

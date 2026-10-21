@@ -13,18 +13,11 @@ from chatddx.ledger import RunStarted
 from chatddx.store import Job, People, Queue, Store, UnderWay
 from chatddx.store.queue import STATUSES, TAKEN_OUT, Held, Standing, Stopped
 from chatddx.store.store import Connection
+from chatddx.test.helpers import added_alice, autocommitted
+
+__all__ = ["added_alice", "autocommitted"]
 
 LOST = timedelta(seconds=10)
-
-
-@pytest.fixture
-def autocommit() -> bool:
-    return True
-
-
-@pytest.fixture
-def alice(conn: Connection) -> Person:
-    return People(conn).add("alice", "Alice")
 
 
 @pytest.fixture

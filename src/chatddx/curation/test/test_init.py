@@ -8,13 +8,13 @@ import pytest
 from chatddx.catalog import Entry, EntryField, Subject, families, read, threads, titles
 from chatddx.catalog.language import language_of
 from chatddx.cli import main
-from chatddx.conftest import connect
 from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, TEXTS, appended, vignettes
 from chatddx.identity import Person
 from chatddx.inventory import World
 from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
+from chatddx.test.helpers import connect
 from chatddx.test.world import (
     DATA,
     FACT_LINTS,

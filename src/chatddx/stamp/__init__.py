@@ -4,33 +4,32 @@ from pathlib import Path
 from chatddx import settings
 
 from .code import Code
-from .page import legend, page
-from .tags import pending, tagged, untagged
+from .markers import pending, signed, stamped
+from .page import page
 from .trace import Trace
 
 __all__ = [
     "DOCS",
     "Code",
     "Trace",
-    "legend",
     "page",
     "pending",
     "regenerated",
-    "tagged",
-    "untagged",
+    "signed",
+    "stamped",
 ]
 
-DOCS = settings.PROJECT_ROOT / "docs" / "reference"
+DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"
 FINDING = "chatddx.factors.base.Finding"
 
 
 def regenerated(packages: Iterable[str]) -> dict[Path, str]:
     code = Code(settings.PROJECT_ROOT / "src", "chatddx")
     trace = Trace(code, FINDING)
-    found = {DOCS / "README.md": legend(settings.REFERENCE_TAG)}
+    found: dict[Path, str] = {}
     for package in packages:
         path = DOCS / f"{package}.md"
         current = path.read_text() if path.exists() else None
         written = page(code, trace, f"chatddx.{package}", settings.PROJECT_ROOT)
-        found[path] = tagged(current, written, settings.REFERENCE_TAG)
+        found[path] = stamped(current, written)
     return found

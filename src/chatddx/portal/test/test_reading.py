@@ -4,30 +4,11 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
-from chatddx.identity import Person
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.portal.test.helpers import ran_template, shown
 from chatddx.store import People
 from chatddx.store.store import Connection
 
-
-@pytest.fixture
-def template(ran: str) -> str:
-    return ran
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-def shown(client: TestClient, path: str) -> str:
-    got = client.get(path)
-    assert got.status_code == 200, (path, got.text[:500])
-    assert got.headers["content-type"].startswith("text/html")
-    assert got.headers["cache-control"] == "no-store"
-    return got.text
+__all__ = ["ran_template"]
 
 
 @pytest.mark.slow

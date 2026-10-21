@@ -1,8 +1,8 @@
 # `chatddx.ledger`
 
-Written by `chatddx reference` from `src/chatddx/ledger/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/ledger/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
-## attest_model
+## `attest_model`
 `src/chatddx/ledger/call.py:attest_model`
 
 * `calls: Iterable[Call]`
@@ -12,10 +12,10 @@ Written by `chatddx reference` from `src/chatddx/ledger/`; how to read it is in 
 * ∟`list[Finding]`
 
 Finds:
-1. `attestation.model`: "{who} returned model {got!r}, declared {want!r}"
-2. `attestation.model`: "{who} returned no model name, declared {want!r}"
+1. `attestation.model`: `"{who} returned model {got!r}, declared {want!r}"`
+2. `attestation.model`: `"{who} returned no model name, declared {want!r}"`
 
-## Call `(Frozen)`
+## `Call` `(Frozen)`
 `src/chatddx/ledger/call.py:Call`
 
 * `request: Fingerprint`
@@ -28,14 +28,14 @@ Finds:
 * `error: str | None = None`
 
 Raises:
-1. `ValueError`: "prompt_tokens and prompt_token_ids both given" (through `Call._prompt_tokens`, in a `ValidationError`)
+1. `ValueError`: `"prompt_tokens and prompt_token_ids both given"` (through `Call._prompt_tokens`, in a `ValidationError`)
 
-## Call.returned_model `@property`
+## `Call.returned_model` `@property`
 `src/chatddx/ledger/call.py:Call.returned_model`
 
 * ∟`str | None`
 
-## CanaryCall `(Record)`
+## `CanaryCall` `(Record)`
 `src/chatddx/ledger/run.py:CanaryCall`
 
 * `sensitive: ClassVar[bool] = False`
@@ -44,7 +44,7 @@ Raises:
 * `canary: int = Field(ge=0)`
 * `call: Call`
 
-## check_execution
+## `check_execution`
 `src/chatddx/ledger/call.py:check_execution`
 
 * `execution: Execution`
@@ -54,11 +54,11 @@ Raises:
 * ∟`list[Finding]`
 
 Finds:
-1. `execution.retries`: "{over} calls took more than the {allowed} attempts allowed"
-2. `execution.order`: "{early} items were sent before items scheduled ahead of them"
-3. `execution.concurrency`: "{peak} calls were in flight at once, declared {execution.concurrency}"
+1. `execution.retries`: `"{over} calls took more than the {allowed} attempts allowed"`
+2. `execution.order`: `"{early} items were sent before items scheduled ahead of them"`
+3. `execution.concurrency`: `"{peak} calls were in flight at once, declared {execution.concurrency}"`
 
-## check_log
+## `check_log`
 `src/chatddx/ledger/record.py:check_log`
 
 * `started: Stage`
@@ -67,9 +67,9 @@ Finds:
 * ∟`None`
 
 Raises:
-1. `StructuralError`: "rows belong to different logs"
+1. `StructuralError`: `"rows belong to different logs"`
 
-## check_run
+## `check_run`
 `src/chatddx/ledger/run.py:check_run`
 
 * `run: Run`
@@ -77,28 +77,28 @@ Raises:
 * ∟`list[Finding]`
 
 Raises:
-1. `StructuralError`: "canary calls in a run without canaries"
-2. `StructuralError`: "canary calls not planned: {names}"
-3. `StructuralError`: "duplicate canary calls"
-4. `StructuralError`: "run items outside the trial: {sorted(map(str, stray))}"
-5. `StructuralError`: "duplicate run items"
-6. `StructuralError`: "{item.key}: tool rounds, but the skeleton has no tools" (through `_rounds`)
-7. `StructuralError`: "{item.key}: more than {skeleton.max_rounds} rounds" (through `_rounds`)
-8. `StructuralError`: "{item.key}: no tool named {r.name!r}" (through `_rounds`)
-9. `StructuralError`: "{item.key}: a round runs tools for calls the response didn't make" (through `_rounds`)
-10. `StructuralError`: "tool code recorded for tools the skeleton lacks: {stray}" (through `_tool_code`)
+1. `StructuralError`: `"canary calls in a run without canaries"`
+2. `StructuralError`: `"canary calls not planned: {names}"`
+3. `StructuralError`: `"duplicate canary calls"`
+4. `StructuralError`: `"run items outside the trial: {sorted(map(str, stray))}"`
+5. `StructuralError`: `"duplicate run items"`
+6. `StructuralError`: `"{item.key}: tool rounds, but the skeleton has no tools"` (through `_rounds`)
+7. `StructuralError`: `"{item.key}: more than {skeleton.max_rounds} rounds"` (through `_rounds`)
+8. `StructuralError`: `"{item.key}: no tool named {r.name!r}"` (through `_rounds`)
+9. `StructuralError`: `"{item.key}: a round runs tools for calls the response didn't make"` (through `_rounds`)
+10. `StructuralError`: `"tool code recorded for tools the skeleton lacks: {stray}"` (through `_tool_code`)
 
 Finds:
-1. `run.incomplete`: "{len(missing)} {what} missing"
-2. `case.drift`: "the vignette read differs from the case's"
-3. `call.failed`: error
-4. `tools.stopped`: "round {len(item.turns)} stopped after {len(item.turns[-1].tools)} of {len(asked)} tool calls, before its call" (through `_rounds`)
-5. `tools.unanswered`: "the last response still calls {', '.join(left)} after {len(item.turns)} of {skeleton.max_rounds} rounds" (through `_rounds`)
-6. `tools.code`: message (through `_tool_code`)
-7. `attestation.prompt_tokens`: "{unfingerprinted} items have no prompt token fingerprint"
-8. `canary.phase`: message (through `_bracketed`)
+1. `run.incomplete`: `"{len(missing)} {what} missing"`
+2. `case.drift`: `"the vignette read differs from the case's"`
+3. `call.failed`: `error`
+4. `tools.stopped`: `"round {len(item.turns)} stopped after {len(item.turns[-1].tools)} of {len(asked)} tool calls, before its call"` (through `_rounds`)
+5. `tools.unanswered`: `"the last response still calls {', '.join(left)} after {len(item.turns)} of {skeleton.max_rounds} rounds"` (through `_rounds`)
+6. `tools.code`: `message` (through `_tool_code`)
+7. `attestation.prompt_tokens`: `"{unfingerprinted} items have no prompt token fingerprint"`
+8. `canary.phase`: `message` (through `_bracketed`)
 
-## check_score
+## `check_score`
 `src/chatddx/ledger/score.py:check_score`
 
 * `score: Score`
@@ -107,23 +107,23 @@ Finds:
 * ∟`list[Finding]`
 
 Raises:
-1. `StructuralError`: "score does not belong to this run"
-2. `StructuralError`: "duplicate score items"
-3. `StructuralError`: "score item view {item.view} is out of range"
-4. `StructuralError`: "score item {item.key} is not in the run"
-5. `StructuralError`: "judge {jc.judge} is not view {item.view}'s judge" (through `_judged`)
-6. `StructuralError`: "judge seed index {jc.seed_index} out of range" (through `_judged`)
-7. `StructuralError`: "{item.key}: duplicate judge calls for view {item.view}" (through `_judged`)
+1. `StructuralError`: `"score does not belong to this run"`
+2. `StructuralError`: `"duplicate score items"`
+3. `StructuralError`: `"score item view {item.view} is out of range"`
+4. `StructuralError`: `"score item {item.key} is not in the run"`
+5. `StructuralError`: `"judge {jc.judge} is not view {item.view}'s judge"` (through `_judged`)
+6. `StructuralError`: `"judge seed index {jc.seed_index} out of range"` (through `_judged`)
+7. `StructuralError`: `"{item.key}: duplicate judge calls for view {item.view}"` (through `_judged`)
 
 Finds:
-1. `view.unreachable`: "view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"
-2. `judge.incomplete`: "view {item.view}'s value rests on {called} of {declared} judge seeds" (through `_judged`)
-3. `score.scorer_code`: "the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"
-4. `score.run_unfinished`: "the run hasn't finished" if ended is None else 'the score started before the run finished'
-5. `score.no_expectation`: "{len(uncovered)} of the run's cases have no expectation in the scoring"
-6. `score.incomplete`: "{len(missing)} items missing"
+1. `view.unreachable`: `"view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"`
+2. `judge.incomplete`: `"view {item.view}'s value rests on {called} of {declared} judge seeds"` (through `_judged`)
+3. `score.scorer_code`: `"the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"`
+4. `score.run_unfinished`: `"the run hasn't finished" if ended is None else 'the score started before the run finished'`
+5. `score.no_expectation`: `"{len(uncovered)} of the run's cases have no expectation in the scoring"`
+6. `score.incomplete`: `"{len(missing)} items missing"`
 
-## check_seal
+## `check_seal`
 `src/chatddx/ledger/record.py:check_seal`
 
 * `log: Log`
@@ -131,29 +131,29 @@ Finds:
 * ∟`list[Finding]`
 
 Finds:
-1. `ledger.seal`: "rows changed after the log was sealed"
+1. `ledger.seal`: `"rows changed after the log was sealed"`
 
-## Endpoint `(Frozen)`
+## `Endpoint` `(Frozen)`
 `src/chatddx/ledger/run.py:Endpoint`
 
 * `name: str`
 * `url: str`
 
-## fingerprint_request
+## `fingerprint_request`
 `src/chatddx/ledger/call.py:fingerprint_request`
 
 * `body: dict[str, JsonValue]`
 * ∟`Fingerprint`
 
-## Finished `(Protocol)`
+## `Finished` `(Protocol)`
 `src/chatddx/ledger/record.py:Finished`
 
-## Finished.seal `@property`
+## `Finished.seal` `@property`
 `src/chatddx/ledger/record.py:Finished.seal`
 
 * ∟`str`
 
-## in_order
+## `in_order`
 `src/chatddx/ledger/record.py:in_order`
 
 * `started: datetime`
@@ -161,82 +161,82 @@ Finds:
 * ∟`None`
 
 Raises:
-1. `ValueError`: "finished before it started"
+1. `ValueError`: `"finished before it started"`
 
-## ItemKey `(Frozen)`
+## `ItemKey` `(Frozen)`
 `src/chatddx/ledger/record.py:ItemKey`
 
 * `case: CaseRef`
 * `replicate: int = Field(ge=0)`
 
-## ItemKey.__hash__ `@override`
+## `ItemKey.__hash__` `@override`
 `src/chatddx/ledger/record.py:ItemKey.__hash__`
 
 * ∟`int`
 
-## JudgeCall `(Frozen)`
+## `JudgeCall` `(Frozen)`
 `src/chatddx/ledger/score.py:JudgeCall`
 
 * `judge: JudgeRef`
 * `seed_index: int = Field(ge=0)`
 * `call: Call`
 
-## JudgeEndpoint `(Frozen)`
+## `JudgeEndpoint` `(Frozen)`
 `src/chatddx/ledger/score.py:JudgeEndpoint`
 
 * `judge: JudgeRef`
 * `endpoint: Endpoint`
 
-## Log `(Protocol)`
+## `Log` `(Protocol)`
 `src/chatddx/ledger/record.py:Log`
 
-## Log.finished `@property`
+## `Log.finished` `@property`
 `src/chatddx/ledger/record.py:Log.finished`
 
 * ∟`Finished | None`
 
-## Log.seal
+## `Log.seal`
 `src/chatddx/ledger/record.py:Log.seal`
 
 * ∟`str`
 
-## Phase
+## `Phase`
 `src/chatddx/ledger/run.py:Phase`
 
-* `Phase = Literal["start", "end"]`
+`Phase = Literal["start", "end"]`
 
-## PHASES
+## `PHASES`
 `src/chatddx/ledger/run.py:PHASES`
 
-* `PHASES: tuple[Phase, ...] = ("start", "end")`
+`PHASES: tuple[Phase, ...] = ("start", "end")`
 
-## Record `(Frozen)`
+## `Record` `(Frozen)`
 `src/chatddx/ledger/record.py:Record`
 
 * `sensitive: ClassVar[bool] = True`
 * `schema_version: ClassVar[int] = 1`
 
-## Record.canonical `@property`
+## `Record.canonical` `@property`
 `src/chatddx/ledger/record.py:Record.canonical`
 
 * ∟`bytes`
 
-## Record.canonical_doc
+## `Record.canonical_doc`
 `src/chatddx/ledger/record.py:Record.canonical_doc`
 
 * ∟`dict[str, JsonValue]`
 
-## Record.parse `@classmethod`
+## `Record.parse` `@classmethod`
 `src/chatddx/ledger/record.py:Record.parse`
 
 * `data: bytes | str`
 * ∟`Self`
 
 Raises:
-1. `StructuralError`: "{cls.__name__} is not a JSON object"
-2. `StructuralError`: "{cls.__name__} v{v} is not readable by v{cls.schema_version}"
+1. `StructuralError`: `"{cls.__name__} is not a JSON object"`
+2. `StructuralError`: `"{cls.__name__} v{v} is not readable by v{cls.schema_version}"`
 
-## Run `(Frozen)`
+## `Run` `(Frozen)`
 `src/chatddx/ledger/run.py:Run`
 
 * `started: RunStarted`
@@ -244,19 +244,19 @@ Raises:
 * `items: tuple[RunItem, ...] = ()`
 * `canaries: tuple[CanaryCall, ...] = ()`
 
-## Run.finish
+## `Run.finish`
 `src/chatddx/ledger/run.py:Run.finish`
 
 * `at: AwareDatetime`
 * `findings: Sequence[Finding] = ()`
 * ∟`RunFinished`
 
-## Run.seal
+## `Run.seal`
 `src/chatddx/ledger/run.py:Run.seal`
 
 * ∟`str`
 
-## RunFinished `(Record)`
+## `RunFinished` `(Record)`
 `src/chatddx/ledger/run.py:RunFinished`
 
 * `sensitive: ClassVar[bool] = False`
@@ -266,7 +266,7 @@ Raises:
 * `findings: tuple[Finding, ...] = ()`
 * `seal: Digest`
 
-## RunItem `(Record)`
+## `RunItem` `(Record)`
 `src/chatddx/ledger/run.py:RunItem`
 
 * `run: UUID`
@@ -276,14 +276,14 @@ Raises:
 * `turns: tuple[Turn, ...] = ()`
 
 Raises:
-1. `ValueError`: "only the last round may lack its call" (through `RunItem._unsent`, in a `ValidationError`)
+1. `ValueError`: `"only the last round may lack its call"` (through `RunItem._unsent`, in a `ValidationError`)
 
-## RunItem.calls `@property`
+## `RunItem.calls` `@property`
 `src/chatddx/ledger/run.py:RunItem.calls`
 
 * ∟`tuple[Call, ...]`
 
-## RunStarted `(Record)`
+## `RunStarted` `(Record)`
 `src/chatddx/ledger/run.py:RunStarted`
 
 * `sensitive: ClassVar[bool] = False`
@@ -300,28 +300,28 @@ Raises:
 * `endpoint: Endpoint | None = None`
 
 Raises:
-1. `ValueError`: "verify_at goes with a canary set" (through `RunStarted._verify_at`, in a `ValidationError`)
+1. `ValueError`: `"verify_at goes with a canary set"` (through `RunStarted._verify_at`, in a `ValidationError`)
 
-## Score `(Frozen)`
+## `Score` `(Frozen)`
 `src/chatddx/ledger/score.py:Score`
 
 * `started: ScoreStarted`
 * `finished: ScoreFinished | None = None`
 * `items: tuple[ScoreItem, ...] = ()`
 
-## Score.finish
+## `Score.finish`
 `src/chatddx/ledger/score.py:Score.finish`
 
 * `at: AwareDatetime`
 * `findings: Sequence[Finding] = ()`
 * ∟`ScoreFinished`
 
-## Score.seal
+## `Score.seal`
 `src/chatddx/ledger/score.py:Score.seal`
 
 * ∟`str`
 
-## ScoreFinished `(Record)`
+## `ScoreFinished` `(Record)`
 `src/chatddx/ledger/score.py:ScoreFinished`
 
 * `stage: Literal["finished"] = "finished"`
@@ -330,7 +330,7 @@ Raises:
 * `findings: tuple[Finding, ...] = ()`
 * `seal: Digest`
 
-## ScoreItem `(Record)`
+## `ScoreItem` `(Record)`
 `src/chatddx/ledger/score.py:ScoreItem`
 
 * `score: UUID`
@@ -340,7 +340,7 @@ Raises:
 * `detail: JsonValue = None`
 * `judge_calls: tuple[JudgeCall, ...] = ()`
 
-## ScoreStarted `(Record)`
+## `ScoreStarted` `(Record)`
 `src/chatddx/ledger/score.py:ScoreStarted`
 
 * `sensitive: ClassVar[bool] = False`
@@ -355,28 +355,28 @@ Raises:
 * `execution: Execution = Execution()`
 * `endpoints: tuple[JudgeEndpoint, ...] = ()`
 
-## seal_rows
+## `seal_rows`
 `src/chatddx/ledger/record.py:seal_rows`
 
 * `started: Record`
 * `**rows: Iterable[Record]`
 * ∟`str`
 
-## Stage `(Protocol)`
+## `Stage` `(Protocol)`
 `src/chatddx/ledger/record.py:Stage`
 
-## Stage.at `@property`
+## `Stage.at` `@property`
 `src/chatddx/ledger/record.py:Stage.at`
 
 * ∟`datetime`
 
-## ToolCode `(Frozen)`
+## `ToolCode` `(Frozen)`
 `src/chatddx/ledger/run.py:ToolCode`
 
 * `tool: ToolRef`
 * `version: int = Field(ge=1)`
 
-## ToolRun `(Frozen)`
+## `ToolRun` `(Frozen)`
 `src/chatddx/ledger/call.py:ToolRun`
 
 * `id: str`
@@ -386,13 +386,13 @@ Raises:
 * `result: str`
 * `error: str | None = None`
 
-## Turn `(Frozen)`
+## `Turn` `(Frozen)`
 `src/chatddx/ledger/call.py:Turn`
 
 * `tools: tuple[ToolRun, ...] = Field(min_length=1)`
 * `call: Call | None = None`
 
-## UtcDatetime
+## `UtcDatetime`
 `src/chatddx/ledger/record.py:UtcDatetime`
 
-* `UtcDatetime = Annotated[AwareDatetime, AfterValidator(_utc)]`
+`UtcDatetime = Annotated[AwareDatetime, AfterValidator(_utc)]`

@@ -4,11 +4,7 @@ The ledger says what happened: which requests a run sent and what came back, and
 down as _records_, which are added as things happen and never changed, and the ledger is all of them. Records refer to
 components by digest and to each other by id.
 
-It guarantees a run can be shown to have happened under the conditions it claims. This document describes what the
-ledger records and why, and what checking it shows. Names, fields and errors are in docs/reference/ledger.md.
-
-The ledger builds on the factors and nothing else. The rig writes it: the runner writes runs and the scoring pass writes
-scores.
+The ledger builds on the factors. The rig writes it: the runner writes runs and the scoring pass writes scores.
 
 ## How records work
 

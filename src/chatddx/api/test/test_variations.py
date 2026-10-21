@@ -5,8 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
-from chatddx.api.test.conftest import sign_in
-from chatddx.api.test.helpers import endpoint
+from chatddx.api.test.helpers import digest, endpoint, sign_in, thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
@@ -27,18 +26,6 @@ from chatddx.test.world import (
 )
 
 DIFFERENTIAL = ("answer", "differential")
-
-
-def thread(
-    signed: TestClient, kind: str, name: str, owner: str = "alice"
-) -> dict[str, Any]:
-    query = {"kind": kind, "name": name, "owner": owner}
-    [found] = signed.get("/api/threads", params=query).json()
-    return found
-
-
-def digest(signed: TestClient, kind: str, name: str) -> str:
-    return thread(signed, kind, name)["head"]["digest"]
 
 
 def variation(

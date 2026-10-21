@@ -10,16 +10,15 @@ import pytest
 import uvicorn
 from fastapi import FastAPI
 from playwright.sync_api import Error, Page, expect, sync_playwright
-from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.portal.app import app
 from chatddx.portal.assets import Assets
-from chatddx.portal.test.conftest import PASSWORD
+from chatddx.portal.test.helpers import world_served
 from chatddx.store import Store
 from chatddx.store.store import Connection
+from chatddx.test.helpers import PASSWORD
 from chatddx.test.world import (
     GPT_OSS_ARTIFACT,
     LINES,
@@ -28,7 +27,9 @@ from chatddx.test.world import (
     faked,
 )
 
-pytestmark = pytest.mark.slow
+__all__ = ["world_served"]
+
+pytestmark = [pytest.mark.slow, pytest.mark.browser]
 
 
 def _settled(page: Page, run: str) -> None:
@@ -51,16 +52,6 @@ def built() -> Path:
     if not Assets(found).built:
         pytest.skip(f"nothing built in {found}: pnpm --dir frontend build")
     return found
-
-
-@pytest.fixture
-def served(db: str, built: Path, world: Inventory) -> FastAPI:
-    return app(
-        world,
-        make_conninfo(settings.database(), dbname=db),
-        built,
-        worker=True,
-    )
 
 
 # localhost, as a browser keeps the __Host- session cookie over plain HTTP only there.

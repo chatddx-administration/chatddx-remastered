@@ -3,13 +3,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.test_variations import thread
+from chatddx.api.test.helpers import thread
+from chatddx.test.helpers import INSTRUCTION
 from chatddx.test.world import LINES_GUIDED
-
-INSTRUCTION = (
-    "You are assisting a physician in an emergency department. Read the case and give "
-    + "your assessment."
-)
 
 
 def translation(signed: TestClient, configuration: int, **body: Any) -> Any:

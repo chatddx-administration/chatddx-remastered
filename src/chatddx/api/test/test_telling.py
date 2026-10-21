@@ -1,5 +1,4 @@
 import asyncio
-from datetime import UTC, datetime
 from uuid import uuid4
 
 import psycopg
@@ -9,6 +8,7 @@ from pydantic import JsonValue
 from chatddx import settings
 from chatddx.api.listening import BEHIND, Heard, Lagged, Listener
 from chatddx.api.telling import Telling
+from chatddx.api.test.helpers import told
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.curation import Plan
@@ -20,11 +20,8 @@ from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.store import Store
 from chatddx.store.notify import Events, JobChanged, Rows, channel, tell
 from chatddx.store.store import Connection
+from chatddx.test.helpers import NOW
 from chatddx.test.world import LINES
-
-from .test_runs import told
-
-NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def tool(id: str) -> ToolRun:

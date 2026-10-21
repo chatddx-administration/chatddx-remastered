@@ -26,7 +26,7 @@ def sources(root: Path) -> list[Path]:
     docs = [
         p
         for p in (root / "docs").rglob("*.md")
-        if "reference" not in p.relative_to(root).parts
+        if "surfaces" not in p.relative_to(root).parts
     ]
     return sorted(
         [*docs, *(root / "agents").glob("*.md"), root / "AGENTS.md", root / "README.md"]

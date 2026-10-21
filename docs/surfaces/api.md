@@ -1,13 +1,13 @@
 # `chatddx.api`
 
-Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/api/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
-## AGAIN
+## `AGAIN`
 `src/chatddx/api/listening.py:AGAIN`
 
-* `AGAIN = 1.0`
+`AGAIN = 1.0`
 
-## again `@router.post("/runs/{run}/again", …)`
+## `again` `@router.post("/runs/{run}/again", …)`
 `src/chatddx/api/runs.py:again`
 
 * `request: Request`
@@ -17,14 +17,14 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * `given: schemas.NewAgain`
 * ∟`schemas.RunStartedData`
 
-## Answer `(_Schema)`
+## `Answer` `(_Schema)`
 `src/chatddx/api/schemas.py:Answer`
 
 * `value: JsonValue = Field(…)`
 * `problem: str | None = Field(…)`
 * `salvaged: bool = Field(…)`
 
-## app
+## `app`
 `src/chatddx/api/app.py:app`
 
 * `inventory: Inventory`
@@ -32,7 +32,7 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * `worker: bool = False`
 * ∟`FastAPI`
 
-## appendix `@router.post("/families/{family}/appendices", status_code=201)`
+## `appendix` `@router.post("/families/{family}/appendices", status_code=201)`
 `src/chatddx/api/families.py:appendix`
 
 * `request: Request`
@@ -42,37 +42,37 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * `given: schemas.NewAppendix`
 * ∟`schemas.MadeThread`
 
-## AppState `@dataclass(frozen=True)`
+## `AppState` `@dataclass(frozen=True)`
 `src/chatddx/api/state.py:AppState`
 
 * `conninfo: str`
 * `inventory: Inventory`
 * `listener: Listener`
 
-## AppState.connect
+## `AppState.connect`
 `src/chatddx/api/state.py:AppState.connect`
 
 * ∟`Connection`
 
-## Asked `(_Schema)`
+## `Asked` `(_Schema)`
 `src/chatddx/api/schemas.py:Asked`
 
 * `request: dict[str, JsonValue] = Field(…)`
 * `picked: list[JsonValue] = Field(description="what the view picks of the data")`
 
-## Asking `(_Schema)`
+## `Asking` `(_Schema)`
 `src/chatddx/api/schemas.py:Asking`
 
 * `judge: str = Field(description="a stored judge, by digest")`
 * `expectation: str = Field(description="what a view picks of the expectation")`
 * `data: JsonValue = Field(description="the expectation's data")`
 
-## BEHIND
+## `BEHIND`
 `src/chatddx/api/listening.py:BEHIND`
 
-* `BEHIND = 1000`
+`BEHIND = 1000`
 
-## bench
+## `bench`
 `src/chatddx/api/people.py:bench`
 
 * `request: Request`
@@ -80,25 +80,25 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * `person: Annotated[Person, Depends(signed_in)]`
 * ∟`Bench`
 
-## BenchDep
+## `BenchDep`
 `src/chatddx/api/people.py:BenchDep`
 
-* `type BenchDep = Annotated[Bench, Depends(bench)]`
+`type BenchDep = Annotated[Bench, Depends(bench)]`
 
-## canary_of
+## `canary_of`
 `src/chatddx/api/events.py:canary_of`
 
 * `call: CanaryCall`
 * ∟`Named`
 
-## CanaryEndedData `(_Schema)`
+## `CanaryEndedData` `(_Schema)`
 `src/chatddx/api/schemas.py:CanaryEndedData`
 
 * `phase: str`
 * `canary: int`
 * `call: JsonValue`
 
-## Carried `(_Schema)`
+## `Carried` `(_Schema)`
 `src/chatddx/api/schemas.py:Carried`
 
 * `language: str | None = Field(…)`
@@ -107,7 +107,7 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * `skeleton: str | None = Field(description="the request they are sent as")`
 * `refused: str | None = Field(description="why they can't be sent, and are left out")`
 
-## case `@router.post("/families/{family}/cases", status_code=201)`
+## `case` `@router.post("/families/{family}/cases", status_code=201)`
 `src/chatddx/api/families.py:case`
 
 * `bench: BenchDep`
@@ -116,44 +116,44 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * ∟`schemas.FamilyCase`
 
 Raises:
-1. `ValueError`: "{given.replacing} isn't a case of family {family}"
+1. `ValueError`: `"{given.replacing} isn't a case of family {family}"`
 
-## check `@router.post("/components/check")`
+## `check` `@router.post("/components/check")`
 `src/chatddx/api/world.py:check`
 
 * `bench: BenchDep`
 * `given: schemas.ComponentBody`
 * ∟`schemas.Checked`
 
-## check_recipe `@router.post("/recipes/check")`
+## `check_recipe` `@router.post("/recipes/check")`
 `src/chatddx/api/world.py:check_recipe`
 
 * `bench: BenchDep`
 * `given: schemas.RecipeBody`
 * ∟`schemas.Checked`
 
-## Checked `(_Schema)`
+## `Checked` `(_Schema)`
 `src/chatddx/api/schemas.py:Checked`
 
 * `digest: str`
 * `findings: list[Finding]`
 
-## Chunk
+## `Chunk`
 `src/chatddx/api/schemas.py:Chunk`
 
-* `Chunk`
+`Chunk`
 
-## Code
+## `Code`
 `src/chatddx/api/schemas.py:Code`
 
-* `Code`
+`Code`
 
-## CODES
+## `CODES`
 `src/chatddx/api/app.py:CODES`
 
-* `CODES: dict[int, Code] = {…}`
+`CODES: dict[int, Code] = {…}`
 
-## Compared `(_Schema)`
+## `Compared` `(_Schema)`
 `src/chatddx/api/schemas.py:Compared`
 
 * `runs: list[Run]`
@@ -161,14 +161,14 @@ Raises:
 * `items: list[ItemKey] = Field(description="the items every run's trial holds")`
 * `apart: list[HeldBySome] = Field(description="the cases only some of the runs hold")`
 
-## compared `@router.get("/runs/compared")`
+## `compared` `@router.get("/runs/compared")`
 `src/chatddx/api/runs.py:compared`
 
 * `bench: BenchDep`
 * `run: Annotated[list[UUID], Query(min_length=1, max_length=20, description='the runs, in order')]`
 * ∟`schemas.Compared`
 
-## ComparedView `(_Schema)`
+## `ComparedView` `(_Schema)`
 `src/chatddx/api/schemas.py:ComparedView`
 
 * `scorer: str`
@@ -178,7 +178,7 @@ Raises:
 * `means: list[float | None] = Field(…)`
 * `values: list[list[float | None]] = Field(…)`
 
-## Component `(_Schema)`
+## `Component` `(_Schema)`
 `src/chatddx/api/schemas.py:Component`
 
 * `digest: str`
@@ -186,7 +186,7 @@ Raises:
 * `title: str`
 * `body: JsonValue`
 
-## component `@router.get("/components/{digest}")`
+## `component` `@router.get("/components/{digest}")`
 `src/chatddx/api/world.py:component`
 
 * `bench: BenchDep`
@@ -194,51 +194,51 @@ Raises:
 * ∟`schemas.Component`
 
 Raises:
-1. `NotFound`: "no component {digest} in the store"
+1. `NotFound`: `"no component {digest} in the store"`
 
-## component_of
+## `component_of`
 `src/chatddx/api/threads.py:component_of`
 
 * `doc: Mapping[str, JsonValue]`
 * ∟`Component`
 
 Raises:
-1. `ValueError`: "{kind!r} isn't a kind a person writes: the kinds are {", ".join(sorted(WRITTEN))}"
-2. `ValueError`: "{kind} is at v{cls.schema_version}, not v{doc['v']}"
+1. `ValueError`: `"{kind!r} isn't a kind a person writes: the kinds are {", ".join(sorted(WRITTEN))}"`
+2. `ValueError`: `"{kind} is at v{cls.schema_version}, not v{doc['v']}"`
 
-## ComponentBody
+## `ComponentBody`
 `src/chatddx/api/schemas.py:ComponentBody`
 
-* `ComponentBody`
+`ComponentBody`
 
-## ConnDep
+## `ConnDep`
 `src/chatddx/api/people.py:ConnDep`
 
-* `type ConnDep = Annotated[Connection, Depends(connection)]`
+`type ConnDep = Annotated[Connection, Depends(connection)]`
 
-## connection
+## `connection`
 `src/chatddx/api/state.py:connection`
 
 * `request: Request`
 * ∟`Iterator[Connection]`
 
-## COOKIE
+## `COOKIE`
 `src/chatddx/api/people.py:COOKIE`
 
-* `COOKIE = "__Host-chatddx-session"`
+`COOKIE = "__Host-chatddx-session"`
 
-## DoneData `(_Schema)`
+## `DoneData` `(_Schema)`
 `src/chatddx/api/schemas.py:DoneData`
 
 * `halted: bool | None = Field(…)`
 
-## drop_cookie
+## `drop_cookie`
 `src/chatddx/api/people.py:drop_cookie`
 
 * `response: Response`
 * ∟`None`
 
-## Edit `(_Schema)`
+## `Edit` `(_Schema)`
 `src/chatddx/api/schemas.py:Edit`
 
 * `id: int`
@@ -249,7 +249,7 @@ Raises:
 * `at: datetime`
 * `labels: Labels | None = Field(default=None, description="a scorer edit's")`
 
-## edit `@router.post("/threads/{thread}/edits", …)`
+## `edit` `@router.post("/threads/{thread}/edits", …)`
 `src/chatddx/api/threads.py:edit`
 
 * `response: Response`
@@ -259,20 +259,20 @@ Raises:
 * ∟`schemas.MadeEdit`
 
 Raises:
-1. `HTTPException`: 422, "a configuration is written with parts, not a component" (through `_check_given`)
-2. `HTTPException`: 422, "only a configuration has parts" (through `_check_given`)
-3. `HTTPException`: 422, "only a configuration is forked from an edit: another kind from a component" (through `_check_given`)
-4. `HTTPException`: 422, "only a scorer has labels" (through `_check_given`)
-5. `ValueError`: "an edit holds a component"
+1. `HTTPException`: `422, "a configuration is written with parts, not a component"` (through `_check_given`)
+2. `HTTPException`: `422, "only a configuration has parts"` (through `_check_given`)
+3. `HTTPException`: `422, "only a configuration is forked from an edit: another kind from a component"` (through `_check_given`)
+4. `HTTPException`: `422, "only a scorer has labels"` (through `_check_given`)
+5. `ValueError`: `"an edit holds a component"`
 
-## edits `@router.get("/threads/{thread}/edits")`
+## `edits` `@router.get("/threads/{thread}/edits")`
 `src/chatddx/api/threads.py:edits`
 
 * `bench: BenchDep`
 * `thread: int`
 * ∟`list[schemas.Edit]`
 
-## Endpoint `(_Schema)`
+## `Endpoint` `(_Schema)`
 `src/chatddx/api/schemas.py:Endpoint`
 
 * `name: str`
@@ -288,34 +288,34 @@ Raises:
 * `takes_typed: bool = Field(…)`
 * `problem: str | None`
 
-## endpoints `@router.get("/endpoints")`
+## `endpoints` `@router.get("/endpoints")`
 `src/chatddx/api/world.py:endpoints`
 
 * `bench: BenchDep`
 * ∟`list[schemas.Endpoint]`
 
-## Error `(_Schema)`
+## `Error` `(_Schema)`
 `src/chatddx/api/schemas.py:Error`
 
 * `detail: str | list[JsonValue] = Field(…)`
 * `code: Code`
 
-## ErrorData `(_Schema)`
+## `ErrorData` `(_Schema)`
 `src/chatddx/api/schemas.py:ErrorData`
 
 * `detail: str`
 
-## runs.EVENTS
+## `runs.EVENTS`
 `src/chatddx/api/runs.py:EVENTS`
 
-* `` EVENTS = ", ".join(f"`{name}`" for name in schemas.EVENTS) ``
+`` EVENTS = ", ".join(f"`{name}`" for name in schemas.EVENTS) ``
 
-## schemas.EVENTS
+## `schemas.EVENTS`
 `src/chatddx/api/schemas.py:EVENTS`
 
-* `EVENTS: dict[str, type[_Schema]] = {…}`
+`EVENTS: dict[str, type[_Schema]] = {…}`
 
-## events `@router.get("/runs/{run}/events", …)`
+## `events` `@router.get("/runs/{run}/events", …)`
 `src/chatddx/api/runs.py:events`
 
 * `request: Request`
@@ -324,7 +324,7 @@ Raises:
 * `last: Annotated[int | None, Header(alias='Last-Event-ID', description='the id of the last event had')] = None`
 * ∟`StreamingResponse`
 
-## Expected `(_Schema)`
+## `Expected` `(_Schema)`
 `src/chatddx/api/schemas.py:Expected`
 
 * `expectation_schema: str`
@@ -334,7 +334,7 @@ Raises:
 * `ambiguous: str | None`
 * `shared: list[Thread] = Field(…)`
 
-## families `@router.get("/families")`
+## `families` `@router.get("/families")`
 `src/chatddx/api/families.py:families`
 
 * `bench: BenchDep`
@@ -342,7 +342,7 @@ Raises:
 * `name: str | None = None`
 * ∟`list[schemas.Family]`
 
-## Family `(_Schema)`
+## `Family` `(_Schema)`
 `src/chatddx/api/schemas.py:Family`
 
 * `id: int`
@@ -352,14 +352,14 @@ Raises:
 * `language: str | None`
 * `case: str`
 
-## family `@router.get("/families/{family}")`
+## `family` `@router.get("/families/{family}")`
 `src/chatddx/api/families.py:family`
 
 * `bench: BenchDep`
 * `family: int`
 * ∟`schemas.FamilyDetail`
 
-## FamilyCase `(_Schema)`
+## `FamilyCase` `(_Schema)`
 `src/chatddx/api/schemas.py:FamilyCase`
 
 * `case: str`
@@ -368,14 +368,14 @@ Raises:
 * `default: bool = Field(description="the case the family stands for")`
 * `expectations: list[Expected]`
 
-## FamilyDetail `(Family)`
+## `FamilyDetail` `(Family)`
 `src/chatddx/api/schemas.py:FamilyDetail`
 
 * `description: str | None`
 * `collaborators: list[str]`
 * `cases: list[FamilyCase] = Field(…)`
 
-## Finding `(_Schema)`
+## `Finding` `(_Schema)`
 `src/chatddx/api/schemas.py:Finding`
 
 * `level: Literal["info", "warning"]`
@@ -383,13 +383,13 @@ Raises:
 * `message: str`
 * `subject: str | None`
 
-## Finding.of `@classmethod`
+## `Finding.of` `@classmethod`
 `src/chatddx/api/schemas.py:Finding.of`
 
 * `finding: factors.Finding`
 * ∟`Self`
 
-## follow `@router.post("/threads/{thread}/follows", …)`
+## `follow` `@router.post("/threads/{thread}/follows", …)`
 `src/chatddx/api/threads.py:follow`
 
 * `bench: BenchDep`
@@ -398,22 +398,22 @@ Raises:
 * ∟`schemas.MadeEdit`
 
 Raises:
-1. `ValueError`: "following what moved on takes no language"
+1. `ValueError`: `"following what moved on takes no language"`
 
-## Follows `(_Schema)`
+## `Follows` `(_Schema)`
 `src/chatddx/api/schemas.py:Follows`
 
 * `origin: Proposal | None = Field(…)`
 * `moved: Moved | None = Field(…)`
 
-## follows `@router.get("/threads/{thread}/follows")`
+## `follows` `@router.get("/threads/{thread}/follows")`
 `src/chatddx/api/threads.py:follows`
 
 * `bench: BenchDep`
 * `thread: int`
 * ∟`schemas.Follows`
 
-## fork `@router.post("/threads/{thread}/forks", status_code=201)`
+## `fork` `@router.post("/threads/{thread}/forks", status_code=201)`
 `src/chatddx/api/threads.py:fork`
 
 * `request: Request`
@@ -424,12 +424,12 @@ Raises:
 * ∟`schemas.MadeThread`
 
 Raises:
-1. `HTTPException`: 422, "a configuration is written with parts, not a component" (through `_check_given`)
-2. `HTTPException`: 422, "only a configuration has parts" (through `_check_given`)
-3. `HTTPException`: 422, "only a configuration is forked from an edit: another kind from a component" (through `_check_given`)
-4. `HTTPException`: 422, "only a scorer has labels" (through `_check_given`)
+1. `HTTPException`: `422, "a configuration is written with parts, not a component"` (through `_check_given`)
+2. `HTTPException`: `422, "only a configuration has parts"` (through `_check_given`)
+3. `HTTPException`: `422, "only a configuration is forked from an edit: another kind from a component"` (through `_check_given`)
+4. `HTTPException`: `422, "only a scorer has labels"` (through `_check_given`)
 
-## Graded `(_Schema)`
+## `Graded` `(_Schema)`
 `src/chatddx/api/schemas.py:Graded`
 
 * `scorer: str`
@@ -443,13 +443,13 @@ Raises:
 * `items: list[ScoredItem]`
 * `refused: str | None`
 
-## graded_of
+## `graded_of`
 `src/chatddx/api/events.py:graded_of`
 
 * `graded: benches.Graded`
 * ∟`schemas.Graded`
 
-## halt `@router.post("/runs/{run}/halt", …)`
+## `halt` `@router.post("/runs/{run}/halt", …)`
 `src/chatddx/api/runs.py:halt`
 
 * `bench: BenchDep`
@@ -457,42 +457,42 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: 409, str(e) (from `LookupError`)
+1. `HTTPException`: `409, str(e)` (from `LookupError`)
 
-## Heard
+## `Heard`
 `src/chatddx/api/listening.py:Heard`
 
-* `type Heard = Message | Lagged`
+`type Heard = Message | Lagged`
 
-## Hearing
+## `Hearing`
 `src/chatddx/api/listening.py:Hearing`
 
 * `loop: asyncio.AbstractEventLoop`
 
-## Hearing.__init__
+## `Hearing.__init__`
 `src/chatddx/api/listening.py:Hearing.__init__`
 
 * `loop: asyncio.AbstractEventLoop`
 
-## Hearing.next
+## `Hearing.next`
 `src/chatddx/api/listening.py:Hearing.next`
 
 * `timeout: float`
 * ∟`list[Heard]`
 
-## Hearing.put
+## `Hearing.put`
 `src/chatddx/api/listening.py:Hearing.put`
 
 * `heard: Heard`
 * ∟`None`
 
-## HeldBySome `(_Schema)`
+## `HeldBySome` `(_Schema)`
 `src/chatddx/api/schemas.py:HeldBySome`
 
 * `case: str`
 * `runs: list[UUID] = Field(description="the runs that hold it")`
 
-## Item `(_Schema)`
+## `Item` `(_Schema)`
 `src/chatddx/api/schemas.py:Item`
 
 * `case: str`
@@ -501,21 +501,21 @@ Raises:
 * `prompt_tokens: int`
 * `completion_tokens: int`
 
-## item_ended_of
+## `item_ended_of`
 `src/chatddx/api/events.py:item_ended_of`
 
 * `skeleton: Skeleton`
 * `item: RunItem`
 * ∟`Named`
 
-## item_of
+## `item_of`
 `src/chatddx/api/events.py:item_of`
 
 * `skeleton: Skeleton`
 * `item: RunItem`
 * ∟`schemas.Item`
 
-## item_started_of
+## `item_started_of`
 `src/chatddx/api/events.py:item_started_of`
 
 * `case: str`
@@ -523,7 +523,7 @@ Raises:
 * `seed: int`
 * ∟`Named`
 
-## ItemDeltaData `(_Schema)`
+## `ItemDeltaData` `(_Schema)`
 `src/chatddx/api/schemas.py:ItemDeltaData`
 
 * `case: str`
@@ -532,7 +532,7 @@ Raises:
 * `text: str`
 * `tokens: int`
 
-## ItemDetail `(Item)`
+## `ItemDetail` `(Item)`
 `src/chatddx/api/schemas.py:ItemDetail`
 
 * `why: str | None`
@@ -541,18 +541,18 @@ Raises:
 * `turns: JsonValue`
 * `answer: Answer`
 
-## ItemEndedData `(Item)`
+## `ItemEndedData` `(Item)`
 `src/chatddx/api/schemas.py:ItemEndedData`
 
 * `why: str | None`
 
-## ItemKey `(_Schema)`
+## `ItemKey` `(_Schema)`
 `src/chatddx/api/schemas.py:ItemKey`
 
 * `case: str`
 * `replicate: int`
 
-## runs.items `@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])`
+## `runs.items` `@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])`
 `src/chatddx/api/runs.py:items`
 
 * `bench: BenchDep`
@@ -560,7 +560,7 @@ Raises:
 * `case: Annotated[str | None, Query(description="only this case's items")] = None`
 * ∟`list[schemas.ItemDetail]`
 
-## scores.items `@router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])`
+## `scores.items` `@router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])`
 `src/chatddx/api/scores.py:items`
 
 * `bench: BenchDep`
@@ -569,21 +569,21 @@ Raises:
 * `case: Annotated[str | None, Query(description="only this case's items")] = None`
 * ∟`schemas.ScoreItems`
 
-## ItemStartedData `(_Schema)`
+## `ItemStartedData` `(_Schema)`
 `src/chatddx/api/schemas.py:ItemStartedData`
 
 * `case: str`
 * `replicate: int`
 * `seed: int`
 
-## ItemToolData `(_Schema)`
+## `ItemToolData` `(_Schema)`
 `src/chatddx/api/schemas.py:ItemToolData`
 
 * `case: str`
 * `replicate: int`
 * `tool: JsonValue`
 
-## judge_asked `@router.post("/judges/asked")`
+## `judge_asked` `@router.post("/judges/asked")`
 `src/chatddx/api/scores.py:judge_asked`
 
 * `bench: BenchDep`
@@ -591,9 +591,9 @@ Raises:
 * ∟`schemas.Asked`
 
 Raises:
-1. `NotFound`: "no judge {given.judge} in the store"
+1. `NotFound`: `"no judge {given.judge} in the store"`
 
-## JudgeAnsweredData `(_Schema)`
+## `JudgeAnsweredData` `(_Schema)`
 `src/chatddx/api/schemas.py:JudgeAnsweredData`
 
 * `case: str`
@@ -604,7 +604,7 @@ Raises:
 * `verdict: JsonValue`
 * `call: JsonValue`
 
-## JudgeAskedData `(_Schema)`
+## `JudgeAskedData` `(_Schema)`
 `src/chatddx/api/schemas.py:JudgeAskedData`
 
 * `case: str`
@@ -614,18 +614,18 @@ Raises:
 * `judge: str`
 * `seed_index: int`
 
-## JUDGED
+## `JUDGED`
 `src/chatddx/api/scores.py:JUDGED`
 
-* `JUDGED: JsonValue = {"reason": "its judge scores it, once the scorer is saved"}`
+`JUDGED: JsonValue = {"reason": "its judge scores it, once the scorer is saved"}`
 
-## judged_of
+## `judged_of`
 `src/chatddx/api/events.py:judged_of`
 
 * `event: ScoringEvent`
 * ∟`Named | None`
 
-## JudgeDeltaData `(_Schema)`
+## `JudgeDeltaData` `(_Schema)`
 `src/chatddx/api/schemas.py:JudgeDeltaData`
 
 * `case: str`
@@ -634,19 +634,19 @@ Raises:
 * `text: str`
 * `tokens: int`
 
-## KEEP_ALIVE
+## `KEEP_ALIVE`
 `src/chatddx/api/telling.py:KEEP_ALIVE`
 
-* `KEEP_ALIVE = 15.0`
+`KEEP_ALIVE = 15.0`
 
-## keep_cookie
+## `keep_cookie`
 `src/chatddx/api/people.py:keep_cookie`
 
 * `response: Response`
 * `token: str`
 * ∟`None`
 
-## Kin `(Thread)`
+## `Kin` `(Thread)`
 `src/chatddx/api/schemas.py:Kin`
 
 * `origin: int | None = Field(…)`
@@ -655,7 +655,7 @@ Raises:
 * `moved_on: bool = Field(…)`
 * `deleted: bool`
 
-## Kind `(_Schema)`
+## `Kind` `(_Schema)`
 `src/chatddx/api/schemas.py:Kind`
 
 * `kind: str`
@@ -663,83 +663,83 @@ Raises:
 * `written: bool = Field(description="whether a person writes it")`
 * `json_schema: dict[str, JsonValue] = Field(…)`
 
-## kinds `@router.get("/kinds")`
+## `kinds` `@router.get("/kinds")`
 `src/chatddx/api/world.py:kinds`
 
 * `_: BenchDep`
 * ∟`list[schemas.Kind]`
 
-## Labels `(_Schema)`
+## `Labels` `(_Schema)`
 `src/chatddx/api/schemas.py:Labels`
 
 * `views: list[str | None] = Field(…)`
 * `resources: list[str | None] = Field(…)`
 
-## Labels.given
+## `Labels.given`
 `src/chatddx/api/schemas.py:Labels.given`
 
 * ∟`catalog.Labels`
 
-## Labels.of `@classmethod`
+## `Labels.of` `@classmethod`
 `src/chatddx/api/schemas.py:Labels.of`
 
 * `labels: Mapping[tuple[catalog.Part, int], str]`
 * ∟`Self`
 
-## Lagged `@dataclass(frozen=True)`
+## `Lagged` `@dataclass(frozen=True)`
 `src/chatddx/api/listening.py:Lagged`
 
-## Language
+## `Language`
 `src/chatddx/api/schemas.py:Language`
 
-* `Language`
+`Language`
 
-## LeftOut `(_Schema)`
+## `LeftOut` `(_Schema)`
 `src/chatddx/api/schemas.py:LeftOut`
 
 * `language: str`
 * `cases: list[str]`
 * `why: str`
 
-## lineage `@router.get("/threads/{thread}/lineage")`
+## `lineage` `@router.get("/threads/{thread}/lineage")`
 `src/chatddx/api/threads.py:lineage`
 
 * `bench: BenchDep`
 * `thread: int`
 * ∟`list[schemas.Kin]`
 
-## Listener
+## `Listener`
 `src/chatddx/api/listening.py:Listener`
 
-## Listener.__init__
+## `Listener.__init__`
 `src/chatddx/api/listening.py:Listener.__init__`
 
 * `conninfo: str`
 
-## Listener.heard `@asynccontextmanager`
+## `Listener.heard` `@asynccontextmanager`
 `src/chatddx/api/listening.py:Listener.heard`
 
 * `run: UUID`
 * ∟`AsyncGenerator[Hearing]`
 
-## Listener.stop
+## `Listener.stop`
 `src/chatddx/api/listening.py:Listener.stop`
 
 * ∟`None`
 
-## log
+## `log`
 `src/chatddx/api/listening.py:log`
 
-* `log = logging.getLogger(__name__)`
+`log = logging.getLogger(__name__)`
 
-## login
+## `login`
 `src/chatddx/api/threads.py:login`
 
 * `bench: Bench`
 * `person: int | None`
 * ∟`str | None`
 
-## made
+## `made`
 `src/chatddx/api/threads.py:made`
 
 * `request: Request`
@@ -749,18 +749,18 @@ Raises:
 * `findings: list[Finding]`
 * ∟`schemas.MadeThread`
 
-## MadeEdit `(Edit)`
+## `MadeEdit` `(Edit)`
 `src/chatddx/api/schemas.py:MadeEdit`
 
 * `findings: list[Finding]`
 * `cases: dict[str, str] = Field(…)`
 
-## MadeThread `(ThreadDetail)`
+## `MadeThread` `(ThreadDetail)`
 `src/chatddx/api/schemas.py:MadeThread`
 
 * `findings: list[Finding]`
 
-## Me `(_Schema)`
+## `Me` `(_Schema)`
 `src/chatddx/api/schemas.py:Me`
 
 * `id: int`
@@ -768,19 +768,19 @@ Raises:
 * `name: str`
 * `roles: list[Role]`
 
-## me `@router.get("/me")`
+## `me` `@router.get("/me")`
 `src/chatddx/api/people.py:me`
 
 * `person: Annotated[Person, Depends(signed_in)]`
 * ∟`Me`
 
-## Me.of `@classmethod`
+## `Me.of` `@classmethod`
 `src/chatddx/api/schemas.py:Me.of`
 
 * `person: Person`
 * ∟`Self`
 
-## Metric `(_Schema)`
+## `Metric` `(_Schema)`
 `src/chatddx/api/schemas.py:Metric`
 
 * `name: str`
@@ -789,7 +789,7 @@ Raises:
 * `judged: bool = Field(…)`
 * `unit: str | None = Field(…)`
 
-## Model `(_Schema)`
+## `Model` `(_Schema)`
 `src/chatddx/api/schemas.py:Model`
 
 * `name: str = Field(description="the handle")`
@@ -798,18 +798,18 @@ Raises:
 * `facts: JsonValue`
 * `takes_typed: bool = Field(…)`
 
-## ModelDigest
+## `ModelDigest`
 `src/chatddx/api/schemas.py:ModelDigest`
 
-* `ModelDigest`
+`ModelDigest`
 
-## models `@router.get("/models")`
+## `models` `@router.get("/models")`
 `src/chatddx/api/world.py:models`
 
 * `bench: BenchDep`
 * ∟`list[schemas.Model]`
 
-## Moved `(_Schema)`
+## `Moved` `(_Schema)`
 `src/chatddx/api/schemas.py:Moved`
 
 * `about: str = Field(description="the model it is compiled for, by name")`
@@ -821,12 +821,12 @@ Raises:
 * `compilation: str | None`
 * `refused: str | None = Field(…)`
 
-## Named
+## `Named`
 `src/chatddx/api/events.py:Named`
 
-* `type Named = tuple[str, BaseModel]`
+`type Named = tuple[str, BaseModel]`
 
-## new `@router.post("/threads", status_code=201)`
+## `new` `@router.post("/threads", status_code=201)`
 `src/chatddx/api/threads.py:new`
 
 * `request: Request`
@@ -835,27 +835,27 @@ Raises:
 * `given: schemas.NewThread`
 * ∟`schemas.MadeThread`
 
-## NewAgain `(Seeds)`
+## `NewAgain` `(Seeds)`
 `src/chatddx/api/schemas.py:NewAgain`
 
 * `score: bool = Field(…)`
 
-## NewAppendix `(_Schema)`
+## `NewAppendix` `(_Schema)`
 `src/chatddx/api/schemas.py:NewAppendix`
 
 * `text: str = Field(min_length=1)`
 * `name: str = Field(min_length=1)`
 
-## NewCase `(_Schema)`
+## `NewCase` `(_Schema)`
 `src/chatddx/api/schemas.py:NewCase`
 
 * `appendices: list[str] | None = Field(None, description="the appendices, in order")`
 * `replacing: str | None = Field(…)`
 
 Raises:
-1. `ValueError`: "a case is built from appendices or replacing one, not both" (through `NewCase._one`, in a `ValidationError`)
+1. `ValueError`: `"a case is built from appendices or replacing one, not both"` (through `NewCase._one`, in a `ValidationError`)
 
-## NewEdit `(_Schema)`
+## `NewEdit` `(_Schema)`
 `src/chatddx/api/schemas.py:NewEdit`
 
 * `head: int = Field(description="the edit the change was made on: the head seen")`
@@ -864,14 +864,14 @@ Raises:
 * `language: Language = None`
 * `labels: Labels | None = Field(…)`
 
-## NewFollow `(_Schema)`
+## `NewFollow` `(_Schema)`
 `src/chatddx/api/schemas.py:NewFollow`
 
 * `head: int = Field(description="the edit the change was made on: the head seen")`
 * `follow: Literal['origin', 'moved'] = Field(…)`
 * `language: Language = None`
 
-## NewFork `(_Schema)`
+## `NewFork` `(_Schema)`
 `src/chatddx/api/schemas.py:NewFork`
 
 * `name: str = Field(min_length=1)`
@@ -881,12 +881,12 @@ Raises:
 * `language: Language = None`
 * `labels: Labels | None = Field(…)`
 
-## NewResume `(_Schema)`
+## `NewResume` `(_Schema)`
 `src/chatddx/api/schemas.py:NewResume`
 
 * `score: bool = Field(…)`
 
-## NewRun `(Seeds)`
+## `NewRun` `(Seeds)`
 `src/chatddx/api/schemas.py:NewRun`
 
 * `configuration: int`
@@ -902,31 +902,31 @@ Raises:
 * `score: bool = Field(…)`
 
 Raises:
-1. `ValueError`: "a run takes one of families, tags or cases" (through `NewRun._cases`, in a `ValidationError`)
+1. `ValueError`: `"a run takes one of families, tags or cases"` (through `NewRun._cases`, in a `ValidationError`)
 
-## NewScoring `(_Schema)`
+## `NewScoring` `(_Schema)`
 `src/chatddx/api/schemas.py:NewScoring`
 
 * `scorers: list[str] | None = Field(…)`
 
-## NewStop `(_Schema)`
+## `NewStop` `(_Schema)`
 `src/chatddx/api/schemas.py:NewStop`
 
 * `now: bool = Field(…)`
 
-## NewTake `(_Schema)`
+## `NewTake` `(_Schema)`
 `src/chatddx/api/schemas.py:NewTake`
 
 * `replace: bool = Field(…)`
 
-## NewTakes `(_Schema)`
+## `NewTakes` `(_Schema)`
 `src/chatddx/api/schemas.py:NewTakes`
 
 * `families: list[int] = Field(min_length=1, description="the cases, by family")`
 * `expectation_schema: str`
 * `owner: str | None = Field(None, description="a login: that owner's only")`
 
-## NewThread `(_Schema)`
+## `NewThread` `(_Schema)`
 `src/chatddx/api/schemas.py:NewThread`
 
 * `component: ComponentBody | None = None`
@@ -936,9 +936,9 @@ Raises:
 * `labels: Labels | None = Field(None, description="for a scorer")`
 
 Raises:
-1. `ValueError`: "a new thread holds a component or a recipe, not both" (through `NewThread._one`, in a `ValidationError`)
+1. `ValueError`: `"a new thread holds a component or a recipe, not both"` (through `NewThread._one`, in a `ValidationError`)
 
-## NewTyped `(_Schema)`
+## `NewTyped` `(_Schema)`
 `src/chatddx/api/schemas.py:NewTyped`
 
 * `text: str = Field(description="the case as typed, kept as written")`
@@ -946,18 +946,18 @@ Raises:
 * `language: str = Field(description="the language it is typed in, such as 'sv'")`
 * `source: str | None = Field(…)`
 
-## NO_STORE
+## `NO_STORE`
 `src/chatddx/api/state.py:NO_STORE`
 
-* `NO_STORE = {"Cache-Control": "no-store"}`
+`NO_STORE = {"Cache-Control": "no-store"}`
 
-## no_store
+## `no_store`
 `src/chatddx/api/state.py:no_store`
 
 * `response: Response`
 * ∟`None`
 
-## Part `(_Schema)`
+## `Part` `(_Schema)`
 `src/chatddx/api/schemas.py:Part`
 
 * `part: str`
@@ -968,7 +968,7 @@ Raises:
 * `landed: str | None = Field(…)`
 * `nearest: list[str] = Field(…)`
 
-## Parts `(_Schema)`
+## `Parts` `(_Schema)`
 `src/chatddx/api/schemas.py:Parts`
 
 * `instructions: Chunk = None`
@@ -982,43 +982,43 @@ Raises:
 * `toolset: Chunk = None`
 * `model: ModelDigest = None`
 
-## Parts.given
+## `Parts.given`
 `src/chatddx/api/schemas.py:Parts.given`
 
 * ∟`dict[str, str | None]`
 
-## pause `@router.patch("/queue", …)`
+## `pause` `@router.patch("/queue", …)`
 `src/chatddx/api/queue.py:pause`
 
 * `bench: BenchDep`
 * `given: schemas.Paused`
 * ∟`schemas.Queue`
 
-## Paused `(_Schema)`
+## `Paused` `(_Schema)`
 `src/chatddx/api/schemas.py:Paused`
 
 * `paused: bool`
 
-## Picked `(_Schema)`
+## `Picked` `(_Schema)`
 `src/chatddx/api/schemas.py:Picked`
 
 * `items: list[JsonValue] | None = Field(…)`
 * `problem: str | None = Field(description="why the selector doesn't read")`
 
-## Picking `(_Schema)`
+## `Picking` `(_Schema)`
 `src/chatddx/api/schemas.py:Picking`
 
 * `document: JsonValue = Field(…)`
 * `selectors: list[str] = Field(…)`
 
-## picks `@router.post("/picks")`
+## `picks` `@router.post("/picks")`
 `src/chatddx/api/world.py:picks`
 
 * `_: BenchDep`
 * `given: schemas.Picking`
 * ∟`list[schemas.Picked]`
 
-## Proposal `(_Schema)`
+## `Proposal` `(_Schema)`
 `src/chatddx/api/schemas.py:Proposal`
 
 * `base: Edit`
@@ -1029,7 +1029,7 @@ Raises:
 * `digest: str`
 * `compilation: str | None`
 
-## Queue `(_Schema)`
+## `Queue` `(_Schema)`
 `src/chatddx/api/schemas.py:Queue`
 
 * `paused: bool`
@@ -1037,20 +1037,20 @@ Raises:
 * `under_way: int = Field(description="the person's jobs under way")`
 * `workers: int = Field(…)`
 
-## queue `@router.get("/queue")`
+## `queue` `@router.get("/queue")`
 `src/chatddx/api/queue.py:queue`
 
 * `bench: BenchDep`
 * ∟`schemas.Queue`
 
-## Ran `(_Schema)`
+## `Ran` `(_Schema)`
 `src/chatddx/api/schemas.py:Ran`
 
 * `configuration: int`
 * `head: int = Field(description="the edit it varied")`
 * `parts: dict[str, str | None] = Field(…)`
 
-## Reach `(_Schema)`
+## `Reach` `(_Schema)`
 `src/chatddx/api/schemas.py:Reach`
 
 * `scorer: int`
@@ -1062,28 +1062,28 @@ Raises:
 * `missing: list[int]`
 * `choosing: list[int]`
 
-## RecipeBody
+## `RecipeBody`
 `src/chatddx/api/schemas.py:RecipeBody`
 
-* `RecipeBody`
+`RecipeBody`
 
-## refused `@contextmanager`
+## `refused` `@contextmanager`
 `src/chatddx/api/state.py:refused`
 
 * `*named: type[Exception]`
 * ∟`Generator[None]`
 
 Raises:
-1. `HTTPException`: 422, str(e) (from `(ValueError, *named)`)
+1. `HTTPException`: `422, str(e)` (from `(ValueError, *named)`)
 
-## rendered_again `@router.get("/runs/{run}/rendered-again")`
+## `rendered_again` `@router.get("/runs/{run}/rendered-again")`
 `src/chatddx/api/runs.py:rendered_again`
 
 * `bench: BenchDep`
 * `run: UUID`
 * ∟`list[schemas.RenderedAgain]`
 
-## RenderedAgain `(_Schema)`
+## `RenderedAgain` `(_Schema)`
 `src/chatddx/api/schemas.py:RenderedAgain`
 
 * `case: str`
@@ -1091,7 +1091,7 @@ Raises:
 * `same: bool`
 * `why: str | None`
 
-## resume `@router.post("/runs/{run}/resume", …)`
+## `resume` `@router.post("/runs/{run}/resume", …)`
 `src/chatddx/api/runs.py:resume`
 
 * `request: Request`
@@ -1101,49 +1101,49 @@ Raises:
 * `given: schemas.NewResume`
 * ∟`schemas.RunStartedData`
 
-## Rig `(_Schema)`
+## `Rig` `(_Schema)`
 `src/chatddx/api/schemas.py:Rig`
 
 * `distribution: str`
 * `version: str`
 * `revision: str | None`
 
-## families.router
+## `families.router`
 `src/chatddx/api/families.py:router`
 
-* `router = APIRouter(tags=["families"])`
+`router = APIRouter(tags=["families"])`
 
-## people.router
+## `people.router`
 `src/chatddx/api/people.py:router`
 
-* `router = APIRouter(tags=["people"])`
+`router = APIRouter(tags=["people"])`
 
-## queue.router
+## `queue.router`
 `src/chatddx/api/queue.py:router`
 
-* `router = APIRouter(tags=["queue"])`
+`router = APIRouter(tags=["queue"])`
 
-## runs.router
+## `runs.router`
 `src/chatddx/api/runs.py:router`
 
-* `router = APIRouter(tags=["runs"])`
+`router = APIRouter(tags=["runs"])`
 
-## scores.router
+## `scores.router`
 `src/chatddx/api/scores.py:router`
 
-* `router = APIRouter(tags=["scores"])`
+`router = APIRouter(tags=["scores"])`
 
-## threads.router
+## `threads.router`
 `src/chatddx/api/threads.py:router`
 
-* `router = APIRouter(tags=["threads"])`
+`router = APIRouter(tags=["threads"])`
 
-## world.router
+## `world.router`
 `src/chatddx/api/world.py:router`
 
-* `router = APIRouter(tags=["world"])`
+`router = APIRouter(tags=["world"])`
 
-## Run `(_Schema)`
+## `Run` `(_Schema)`
 `src/chatddx/api/schemas.py:Run`
 
 * `id: UUID`
@@ -1164,14 +1164,14 @@ Raises:
 * `unscored: list[Unscored] | None = Field(…)`
 * `job: RunJob | None = Field(…)`
 
-## run `@router.get("/runs/{run}")`
+## `run` `@router.get("/runs/{run}")`
 `src/chatddx/api/runs.py:run`
 
 * `bench: BenchDep`
 * `run: UUID`
 * ∟`schemas.RunDetail`
 
-## RunDetail `(Run)`
+## `RunDetail` `(Run)`
 `src/chatddx/api/schemas.py:RunDetail`
 
 * `rig: Rig`
@@ -1181,12 +1181,12 @@ Raises:
 * `items: list[Item]`
 * `scores: list[Graded]`
 
-## RunFinishedData `(_Schema)`
+## `RunFinishedData` `(_Schema)`
 `src/chatddx/api/schemas.py:RunFinishedData`
 
 * `findings: list[Finding]`
 
-## RunJob `(_Schema)`
+## `RunJob` `(_Schema)`
 `src/chatddx/api/schemas.py:RunJob`
 
 * `status: Literal["queued", "under way", "finished", "stopped", "failed"]`
@@ -1196,7 +1196,7 @@ Raises:
 * `queued: datetime`
 * `ended: datetime | None`
 
-## runs `@router.get("/runs")`
+## `runs` `@router.get("/runs")`
 `src/chatddx/api/runs.py:runs`
 
 * `bench: BenchDep`
@@ -1209,12 +1209,12 @@ Raises:
 * `started_with: Annotated[UUID | None, Query(alias='with', description='a run: the runs started with it, itself the first of them')] = None`
 * ∟`list[schemas.Run]`
 
-## RunScoredData `(_Schema)`
+## `RunScoredData` `(_Schema)`
 `src/chatddx/api/schemas.py:RunScoredData`
 
 * `scores: list[Graded]`
 
-## RunStartedData `(_Schema)`
+## `RunStartedData` `(_Schema)`
 `src/chatddx/api/schemas.py:RunStartedData`
 
 * `run: UUID`
@@ -1226,12 +1226,12 @@ Raises:
 * `seeds: list[int]`
 * `greedy: bool`
 
-## SAFE
+## `SAFE`
 `src/chatddx/api/people.py:SAFE`
 
-* `SAFE = frozenset({"GET", "HEAD", "OPTIONS"})`
+`SAFE = frozenset({"GET", "HEAD", "OPTIONS"})`
 
-## Said `(_Schema)`
+## `Said` `(_Schema)`
 `src/chatddx/api/schemas.py:Said`
 
 * `name: str | None = Field(…)`
@@ -1240,22 +1240,22 @@ Raises:
 * `collaborators: list[str] | None = Field(…)`
 * `deleted: bool | None = None`
 
-## said_of
+## `said_of`
 `src/chatddx/api/events.py:said_of`
 
 * `event: RunEvent`
 * ∟`Named | None`
 
-## same_origin
+## `same_origin`
 `src/chatddx/api/people.py:same_origin`
 
 * `request: Request`
 * ∟`None`
 
 Raises:
-1. `HTTPException`: 403, "a browser's request must come from this site's pages"
+1. `HTTPException`: `403, "a browser's request must come from this site's pages"`
 
-## say `@router.patch("/threads/{thread}")`
+## `say` `@router.patch("/threads/{thread}")`
 `src/chatddx/api/threads.py:say`
 
 * `bench: BenchDep`
@@ -1264,16 +1264,16 @@ Raises:
 * ∟`schemas.ThreadDetail`
 
 Raises:
-1. `HTTPException`: 422, "a description is replaced, never taken away"
-2. `HTTPException`: 422, "no person {missing[0]!r}"
+1. `HTTPException`: `422, "a description is replaced, never taken away"`
+2. `HTTPException`: `422, "no person {missing[0]!r}"`
 
-## score_item_of
+## `score_item_of`
 `src/chatddx/api/events.py:score_item_of`
 
 * `item: ScoreItem`
 * ∟`Named`
 
-## score_now `@router.post("/runs/{run}/scores", …)`
+## `score_now` `@router.post("/runs/{run}/scores", …)`
 `src/chatddx/api/scores.py:score_now`
 
 * `request: Request`
@@ -1283,7 +1283,7 @@ Raises:
 * `given: schemas.NewScoring`
 * ∟`schemas.ScoringData`
 
-## score_started_of
+## `score_started_of`
 `src/chatddx/api/events.py:score_started_of`
 
 * `bench: Bench`
@@ -1291,7 +1291,7 @@ Raises:
 * `score: UUID`
 * ∟`Named`
 
-## ScoredItem `(_Schema)`
+## `ScoredItem` `(_Schema)`
 `src/chatddx/api/schemas.py:ScoredItem`
 
 * `case: str`
@@ -1299,31 +1299,31 @@ Raises:
 * `view: int`
 * `value: float | None`
 
-## ScoreItemData `(ScoredItem)`
+## `ScoreItemData` `(ScoredItem)`
 `src/chatddx/api/schemas.py:ScoreItemData`
 
 * `score: UUID`
 * `detail: JsonValue`
 
-## ScoreItemDetail `(ScoredItem)`
+## `ScoreItemDetail` `(ScoredItem)`
 `src/chatddx/api/schemas.py:ScoreItemDetail`
 
 * `detail: JsonValue`
 * `judge_calls: JsonValue`
 
-## ScoreItems `(_Schema)`
+## `ScoreItems` `(_Schema)`
 `src/chatddx/api/schemas.py:ScoreItems`
 
 * `items: list[ScoreItemDetail]`
 * `findings: list[Finding]`
 
-## scorer_code `@router.get("/scorer-code")`
+## `scorer_code` `@router.get("/scorer-code")`
 `src/chatddx/api/world.py:scorer_code`
 
 * `_: BenchDep`
 * ∟`list[schemas.ScorerCode]`
 
-## ScorerCode `(_Schema)`
+## `ScorerCode` `(_Schema)`
 `src/chatddx/api/schemas.py:ScorerCode`
 
 * `entry_point: str`
@@ -1331,7 +1331,7 @@ Raises:
 * `metrics: list[Metric]`
 * `params: dict[str, JsonValue] = Field(…)`
 
-## scores `@router.get("/runs/{run}/scores")`
+## `scores` `@router.get("/runs/{run}/scores")`
 `src/chatddx/api/scores.py:scores`
 
 * `bench: BenchDep`
@@ -1339,7 +1339,7 @@ Raises:
 * `every: Annotated[bool, Query(alias='all', description='every score of the run, newest first, rather than the latest ' + 'under each scorer')] = False`
 * ∟`list[schemas.Graded]`
 
-## ScoreStartedData `(_Schema)`
+## `ScoreStartedData` `(_Schema)`
 `src/chatddx/api/schemas.py:ScoreStartedData`
 
 * `scorer: str`
@@ -1347,7 +1347,7 @@ Raises:
 * `score: UUID`
 * `labels: list[str]`
 
-## scoring_of
+## `scoring_of`
 `src/chatddx/api/events.py:scoring_of`
 
 * `bench: Bench`
@@ -1355,27 +1355,27 @@ Raises:
 * `scorers: Collection[str] | None`
 * ∟`schemas.ScoringData`
 
-## ScoringData `(_Schema)`
+## `ScoringData` `(_Schema)`
 `src/chatddx/api/schemas.py:ScoringData`
 
 * `scorers: list[Unscored]`
 
-## Seeds `(_Schema)`
+## `Seeds` `(_Schema)`
 `src/chatddx/api/schemas.py:Seeds`
 
 * `seeds: list[int] | None = Field(…)`
 * `replicates: int | None = Field(…)`
 
 Raises:
-1. `ValueError`: "a run takes seeds or replicates, not both" (through `Seeds._seeds_or_replicates`, in a `ValidationError`)
+1. `ValueError`: `"a run takes seeds or replicates, not both"` (through `Seeds._seeds_or_replicates`, in a `ValidationError`)
 
-## Session `@dataclass(frozen=True)`
+## `Session` `@dataclass(frozen=True)`
 `src/chatddx/api/people.py:Session`
 
 * `person: Person`
 * `token: str`
 
-## session
+## `session`
 `src/chatddx/api/people.py:session`
 
 * `request: Request`
@@ -1386,9 +1386,9 @@ Raises:
 
 Raises:
 1. `HTTPException` (through `_unsigned`)
-2. `HTTPException`: "the session has ended: sign in again" (through `_unsigned`)
+2. `HTTPException`: `"the session has ended: sign in again"` (through `_unsigned`)
 
-## sign_in `@router.post("/session", status_code=201)`
+## `sign_in` `@router.post("/session", status_code=201)`
 `src/chatddx/api/people.py:sign_in`
 
 * `request: Request`
@@ -1398,9 +1398,9 @@ Raises:
 * ∟`SignedIn`
 
 Raises:
-1. `HTTPException`: "wrong login or password" (through `_unsigned`)
+1. `HTTPException`: `"wrong login or password"` (through `_unsigned`)
 
-## sign_out `@router.delete("/session", status_code=204)`
+## `sign_out` `@router.delete("/session", status_code=204)`
 `src/chatddx/api/people.py:sign_out`
 
 * `response: Response`
@@ -1408,25 +1408,25 @@ Raises:
 * `conn: ConnDep`
 * ∟`None`
 
-## signed_in
+## `signed_in`
 `src/chatddx/api/people.py:signed_in`
 
 * `held: Annotated[Session, Depends(session)]`
 * ∟`Person`
 
-## SignedIn `(_Schema)`
+## `SignedIn` `(_Schema)`
 `src/chatddx/api/schemas.py:SignedIn`
 
 * `token: str`
 * `person: Me`
 
-## SignIn `(_Schema)`
+## `SignIn` `(_Schema)`
 `src/chatddx/api/schemas.py:SignIn`
 
 * `login: str`
 * `password: str`
 
-## sse
+## `sse`
 `src/chatddx/api/events.py:sse`
 
 * `name: str`
@@ -1434,7 +1434,7 @@ Raises:
 * `id: int | None = None`
 * ∟`str`
 
-## start `@router.post("/runs", …)`
+## `start` `@router.post("/runs", …)`
 `src/chatddx/api/runs.py:start`
 
 * `request: Request`
@@ -1444,9 +1444,9 @@ Raises:
 * ∟`schemas.StartedRuns`
 
 Raises:
-1. `ValueError`: "no case tagged {' or '.join(given.tags)} for {bench.person.login}" (through `_new`)
+1. `ValueError`: `"no case tagged {' or '.join(given.tags)} for {bench.person.login}"` (through `_new`)
 
-## started_of
+## `started_of`
 `src/chatddx/api/events.py:started_of`
 
 * `started: RunStarted`
@@ -1455,42 +1455,42 @@ Raises:
 * `language: str | None`
 * ∟`schemas.RunStartedData`
 
-## StartedRuns `(_Schema)`
+## `StartedRuns` `(_Schema)`
 `src/chatddx/api/schemas.py:StartedRuns`
 
 * `runs: list[RunStartedData] = Field(…)`
 * `left_out: list[LeftOut] = Field(…)`
 
-## state
+## `state`
 `src/chatddx/api/state.py:state`
 
 * `request: Request`
 * ∟`AppState`
 
-## STATUSES
+## `STATUSES`
 `src/chatddx/api/app.py:STATUSES`
 
-* `STATUSES: dict[type[Exception], tuple[int, Code]] = {…}`
+`STATUSES: dict[type[Exception], tuple[int, Code]] = {…}`
 
-## stop `@router.post("/queue/stop", …)`
+## `stop` `@router.post("/queue/stop", …)`
 `src/chatddx/api/queue.py:stop`
 
 * `bench: BenchDep`
 * `given: schemas.NewStop`
 * ∟`schemas.Stopped`
 
-## Stopped `(_Schema)`
+## `Stopped` `(_Schema)`
 `src/chatddx/api/schemas.py:Stopped`
 
 * `taken_out: list[UUID] = Field(…)`
 * `halting: list[UUID] = Field(description="the runs under way asked to halt")`
 
-## STREAM
+## `STREAM`
 `src/chatddx/api/runs.py:STREAM`
 
-* `STREAM = "text/event-stream"`
+`STREAM = "text/event-stream"`
 
-## take `@router.post("/threads/{thread}/takes", …)`
+## `take` `@router.post("/threads/{thread}/takes", …)`
 `src/chatddx/api/threads.py:take`
 
 * `request: Request`
@@ -1500,7 +1500,7 @@ Raises:
 * `given: schemas.NewTake`
 * ∟`schemas.ThreadDetail`
 
-## Taken `(_Schema)`
+## `Taken` `(_Schema)`
 `src/chatddx/api/schemas.py:Taken`
 
 * `taken: dict[int, int] = Field(description="the thread each was taken into")`
@@ -1508,7 +1508,7 @@ Raises:
 * `choosing: dict[int, list[int]] = Field(…)`
 * `missing: list[int] = Field(description="none shared")`
 
-## takes `@router.post("/takes")`
+## `takes` `@router.post("/takes")`
 `src/chatddx/api/families.py:takes`
 
 * `bench: BenchDep`
@@ -1516,43 +1516,43 @@ Raises:
 * ∟`schemas.Taken`
 
 Raises:
-1. `HTTPException`: 422, "no case {missing[0]} for {bench.person.login}"
+1. `HTTPException`: `422, "no case {missing[0]} for {bench.person.login}"`
 
-## Telling
+## `Telling`
 `src/chatddx/api/telling.py:Telling`
 
 * `last: int`
 
-## Telling.__init__
+## `Telling.__init__`
 `src/chatddx/api/telling.py:Telling.__init__`
 
 * `bench: Bench`
 * `run: UUID`
 * `after: int`
 
-## Telling.rows
+## `Telling.rows`
 `src/chatddx/api/telling.py:Telling.rows`
 
 * ∟`list[str]`
 
-## Telling.run `@property`
+## `Telling.run` `@property`
 `src/chatddx/api/telling.py:Telling.run`
 
 * ∟`UUID`
 
-## Telling.said
+## `Telling.said`
 `src/chatddx/api/telling.py:Telling.said`
 
 * `said: Said`
 * ∟`list[str]`
 
-## Telling.tail
+## `Telling.tail`
 `src/chatddx/api/telling.py:Telling.tail`
 
 * `job: Job | None`
 * ∟`list[str]`
 
-## Thread `(_Schema)`
+## `Thread` `(_Schema)`
 `src/chatddx/api/schemas.py:Thread`
 
 * `id: int`
@@ -1566,14 +1566,14 @@ Raises:
 * `translated: list[str] = Field(…)`
 * `head: Edit`
 
-## thread `@router.get("/threads/{thread}")`
+## `thread` `@router.get("/threads/{thread}")`
 `src/chatddx/api/threads.py:thread`
 
 * `bench: BenchDep`
 * `thread: int`
 * ∟`schemas.ThreadDetail`
 
-## thread_of
+## `thread_of`
 `src/chatddx/api/threads.py:thread_of`
 
 * `bench: Bench`
@@ -1583,7 +1583,7 @@ Raises:
 * `languages: Mapping[int, str | None] | None = None`
 * ∟`schemas.Thread`
 
-## ThreadDetail `(Thread)`
+## `ThreadDetail` `(Thread)`
 `src/chatddx/api/schemas.py:ThreadDetail`
 
 * `description: str | None`
@@ -1592,7 +1592,7 @@ Raises:
 * `recipe: JsonValue`
 * `deleted: bool`
 
-## threads `@router.get("/threads")`
+## `threads` `@router.get("/threads")`
 `src/chatddx/api/threads.py:threads`
 
 * `bench: BenchDep`
@@ -1606,11 +1606,11 @@ Raises:
 * ∟`list[schemas.Thread]`
 
 Raises:
-1. `HTTPException`: 422, "no kind {kind!r}: the kinds are {', '.join(KINDS)}"
-2. `HTTPException`: 422, "only a configuration has a purpose"
-3. `HTTPException`: 422, "only a configuration answers"
+1. `HTTPException`: `422, "no kind {kind!r}: the kinds are {', '.join(KINDS)}"`
+2. `HTTPException`: `422, "only a configuration has a purpose"`
+3. `HTTPException`: `422, "only a configuration answers"`
 
-## told
+## `told`
 `src/chatddx/api/telling.py:told`
 
 * `held: AppState`
@@ -1619,7 +1619,7 @@ Raises:
 * `after: int`
 * ∟`AsyncIterator[str]`
 
-## tool_of
+## `tool_of`
 `src/chatddx/api/events.py:tool_of`
 
 * `case: str`
@@ -1627,14 +1627,14 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
-## Translating `(Parts)`
+## `Translating` `(Parts)`
 `src/chatddx/api/schemas.py:Translating`
 
 * `head: int | None = Field(…)`
 * `into: str = Field(description="the language it is translated into, such as 'sv'")`
 * `entries: dict[str, str] | None = Field(…)`
 
-## translation `@router.post("/threads/{thread}/translation")`
+## `translation` `@router.post("/threads/{thread}/translation")`
 `src/chatddx/api/threads.py:translation`
 
 * `bench: BenchDep`
@@ -1642,14 +1642,14 @@ Raises:
 * `given: schemas.Translating`
 * ∟`dict[str, JsonValue]`
 
-## Tried `(_Schema)`
+## `Tried` `(_Schema)`
 `src/chatddx/api/schemas.py:Tried`
 
 * `run: UUID`
 * `replicate: int`
 * `views: list[TriedView]`
 
-## tried `@router.post("/scorers/try", dependencies=[Depends(no_store)])`
+## `tried` `@router.post("/scorers/try", dependencies=[Depends(no_store)])`
 `src/chatddx/api/scores.py:tried`
 
 * `bench: BenchDep`
@@ -1657,16 +1657,16 @@ Raises:
 * ∟`list[schemas.Tried]`
 
 Raises:
-1. `HTTPException`: 422, "only a scorer is tried"
+1. `HTTPException`: `422, "only a scorer is tried"`
 
-## TriedView `(_Schema)`
+## `TriedView` `(_Schema)`
 `src/chatddx/api/schemas.py:TriedView`
 
 * `value: float | None`
 * `detail: JsonValue`
 * `judged: bool = Field(…)`
 
-## Trying `(_Schema)`
+## `Trying` `(_Schema)`
 `src/chatddx/api/schemas.py:Trying`
 
 * `scorer: ComponentBody = Field(description="a scorer, as it is written")`
@@ -1674,7 +1674,7 @@ Raises:
 * `case: str = Field(description="the case whose items are tried")`
 * `runs: list[UUID] = Field(…)`
 
-## typed `@router.post("/families", …)`
+## `typed` `@router.post("/families", …)`
 `src/chatddx/api/families.py:typed`
 
 * `request: Request`
@@ -1683,13 +1683,13 @@ Raises:
 * `given: schemas.NewTyped`
 * ∟`schemas.Family`
 
-## Unscored `(_Schema)`
+## `Unscored` `(_Schema)`
 `src/chatddx/api/schemas.py:Unscored`
 
 * `scorer: str`
 * `name: str`
 
-## Variation `(_Schema)`
+## `Variation` `(_Schema)`
 `src/chatddx/api/schemas.py:Variation`
 
 * `head: Edit`
@@ -1706,7 +1706,7 @@ Raises:
 * `languages: list[Carried] = Field(…)`
 * `reach: list[Reach]`
 
-## variation `@router.get("/threads/{thread}/variation")`
+## `variation` `@router.get("/threads/{thread}/variation")`
 `src/chatddx/api/threads.py:variation`
 
 * `bench: BenchDep`
@@ -1715,16 +1715,16 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
-1. `HTTPException`: 422, str(e) (from `(NotFound, ValueError)`, through `_at`)
+1. `HTTPException`: `422, str(e)` (from `(NotFound, ValueError)`, through `_at`)
 
-## Varied `(_Schema)`
+## `Varied` `(_Schema)`
 `src/chatddx/api/schemas.py:Varied`
 
 * `path: str`
 * `base: JsonValue`
 * `fork: JsonValue`
 
-## Varying `(Parts)`
+## `Varying` `(Parts)`
 `src/chatddx/api/schemas.py:Varying`
 
 * `head: int | None = Field(…)`
@@ -1732,7 +1732,7 @@ Raises:
 * `tag: list[str] = Field(…)`
 * `seed: int | None = Field(None, description="drawn when not given")`
 
-## Vignette `(_Schema)`
+## `Vignette` `(_Schema)`
 `src/chatddx/api/schemas.py:Vignette`
 
 * `source: str`
@@ -1740,7 +1740,7 @@ Raises:
 * `text: str`
 * `drifted: bool | None`
 
-## vignette `@router.get("/families/{family}/vignette", dependencies=[Depends(no_store)])`
+## `vignette` `@router.get("/families/{family}/vignette", dependencies=[Depends(no_store)])`
 `src/chatddx/api/families.py:vignette`
 
 * `bench: BenchDep`
@@ -1748,4 +1748,4 @@ Raises:
 * ∟`schemas.Vignette`
 
 Raises:
-1. `NotFound`: str(e) (from `LookupError`)
+1. `NotFound`: `str(e)` (from `LookupError`)

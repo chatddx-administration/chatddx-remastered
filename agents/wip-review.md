@@ -219,7 +219,7 @@ the pattern is typed, a scorer saved, and its score.
 
 ## Built
 ### Step 1: the page, read only
-- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/picks`
+- **The API**, suggested to `docs/modules/api.md` and the API's surface as `AGENT` blocks: `POST /api/picks`
   (`src/chatddx/api/world.py:picks`), selectors and a document in, and out each selector's picks, by
   `chatddx.factors.select`, or why it doesn't read; and `case` on a run's items and on a score's items, so that the
   island reads one case's alone.
@@ -331,7 +331,7 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 4: composing a scorer without judges
-- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/scorers/try`
+- **The API**, suggested to `docs/modules/api.md` and the API's surface as `AGENT` blocks: `POST /api/scorers/try`
   (`src/chatddx/api/scores.py:tried`), a scorer as written and an expectation's data tried on a case's items in some of
   the person's runs: each item's answer as the scoring pass reads it, and each view's value and detail by
   `chatddx.scorers.scorer.score_view`, with nothing stored. A judged view isn't tried, since its judge would be sent
@@ -369,7 +369,7 @@ the pattern is typed, a scorer saved, and its score.
 
 
 ### Step 5: with judges
-- **The API**, suggested to `docs/modules/api.md` and the API's reference as `AGENT` blocks: `POST /api/judges/asked`
+- **The API**, suggested to `docs/modules/api.md` and the API's surface as `AGENT` blocks: `POST /api/judges/asked`
   (`src/chatddx/api/scores.py:judge_asked`), a stored judge's first request rendered as the scoring pass renders it,
   its `expectation` slot filled by what a view picks of the expectation as typed, the answer and the case's slots as
   placeholders (`chatddx.bench.model.PLACEHOLDERS`). Nothing is sent or stored, and nothing in it is sensitive.

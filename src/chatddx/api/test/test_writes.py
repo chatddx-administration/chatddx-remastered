@@ -3,13 +3,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.helpers import endpoint
-from chatddx.api.test.test_variations import thread
+from chatddx.api.test.helpers import body, endpoint, thread
 from chatddx.test.world import CLINICIAN, JUDGE, LINES, QWEN, QWEN_ARTIFACT
-
-
-def body(signed: TestClient, found: dict[str, Any]) -> dict[str, Any]:
-    return signed.get(f"/api/components/{found['head']['digest']}").json()["body"]
 
 
 @pytest.mark.slow

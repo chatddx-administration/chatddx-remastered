@@ -33,8 +33,7 @@ from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner
 from chatddx.runner.score import NO_EXPECTATION
 from chatddx.runner.send import STOPPED, Halt, send
-from chatddx.runner.test.conftest import DELAY
-from chatddx.runner.test.test_run import rows, trial
+from chatddx.runner.test.helpers import DELAY, rows, trial
 from chatddx.scorers import metrics
 from chatddx.store import Rows, Store
 from chatddx.store.store import Connection

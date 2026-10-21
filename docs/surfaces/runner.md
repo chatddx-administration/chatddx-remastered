@@ -1,8 +1,8 @@
 # `chatddx.runner`
 
-Written by `chatddx reference` from `src/chatddx/runner/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/runner/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
-## admit
+## `admit`
 `src/chatddx/runner/gate.py:admit`
 
 * `inventory: Inventory`
@@ -14,17 +14,17 @@ Written by `chatddx reference` from `src/chatddx/runner/`; how to read it is in 
 * ∟`str | None`
 
 Raises:
-1. `Refused`: "endpoint {endpoint!r} needs the secret in ${credential}, which isn't set" (through `_secret`)
-2. `Refused`: "endpoint {endpoint!r} can't be confirmed: {e}" (from `(StructuralError, OSError)`)
-3. `Refused`: "endpoint {endpoint!r} can't be confirmed: it serves {', '.join(listed) or 'nothing'} at {url}, not {expected}"
+1. `Refused`: `"endpoint {endpoint!r} needs the secret in ${credential}, which isn't set"` (through `_secret`)
+2. `Refused`: `"endpoint {endpoint!r} can't be confirmed: {e}"` (from `(StructuralError, OSError)`)
+3. `Refused`: `"endpoint {endpoint!r} can't be confirmed: it serves {', '.join(listed) or 'nothing'} at {url}, not {expected}"`
 
-## assemble
+## `assemble`
 `src/chatddx/runner/wire.py:assemble`
 
 * `chunks: Iterable[Chunk]`
 * ∟`dict[str, JsonValue]`
 
-## bar
+## `bar`
 `src/chatddx/runner/gate.py:bar`
 
 * `inventory: Inventory`
@@ -35,34 +35,34 @@ Raises:
 * ∟`None`
 
 Raises:
-1. `Refused`: "judge {judge.digest} reads the {' and '.join(read)}, which no judge is given"
-2. `Refused`: str(e) (from `LookupError`)
-3. `Refused`: "endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is {engine}"
-4. `Refused`: "endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, which is sensitive"
-5. `Refused`: "the configuration's tools would get content from source {', '.join(sensitive)}, which is sensitive, and tools can't be cleared yet"
+1. `Refused`: `"judge {judge.digest} reads the {' and '.join(read)}, which no judge is given"`
+2. `Refused`: `str(e)` (from `LookupError`)
+3. `Refused`: `"endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is {engine}"`
+4. `Refused`: `"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, which is sensitive"`
+5. `Refused`: `"the configuration's tools would get content from source {', '.join(sensitive)}, which is sensitive, and tools can't be cleared yet"`
 
-## CanaryEnded `@dataclass(frozen=True)`
+## `CanaryEnded` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:CanaryEnded`
 
 * `call: CanaryCall`
 
-## Chunk
+## `Chunk`
 `src/chatddx/runner/wire.py:Chunk`
 
-* `type Chunk = dict[str, JsonValue]`
+`type Chunk = dict[str, JsonValue]`
 
-## chunks
+## `chunks`
 `src/chatddx/runner/wire.py:chunks`
 
 * `lines: Iterable[bytes]`
 * ∟`Iterator[Chunk]`
 
 Raises:
-1. `ValueError`: "a chunk that isn't a JSON object: {data[:200]!r}"
-2. `Rejected`: 200, chunk
-3. `Unfinished`: "the stream ended before [DONE]"
+1. `ValueError`: `"a chunk that isn't a JSON object: {data[:200]!r}"`
+2. `Rejected`: `200, chunk`
+3. `Unfinished`: `"the stream ended before [DONE]"`
 
-## converse
+## `converse`
 `src/chatddx/runner/rounds.py:converse`
 
 * `url: str`
@@ -77,27 +77,27 @@ Raises:
 * `started_at: datetime | None = None`
 * ∟`Exchange`
 
-## Delta `@dataclass(frozen=True)`
+## `Delta` `@dataclass(frozen=True)`
 `src/chatddx/runner/send.py:Delta`
 
 * `kind: Literal["reasoning", "content", "tool_call"]`
 * `text: str`
 * `tokens: int`
 
-## events
+## `events`
 `src/chatddx/runner/wire.py:events`
 
 * `lines: Iterable[bytes]`
 * ∟`Iterator[str]`
 
-## Exchange `@dataclass(frozen=True)`
+## `Exchange` `@dataclass(frozen=True)`
 `src/chatddx/runner/rounds.py:Exchange`
 
 * `call: Call`
 * `turns: tuple[Turn, ...] = ()`
 * `stopped: bool = False`
 
-## grade
+## `grade`
 `src/chatddx/runner/score.py:grade`
 
 * `conn: Connection`
@@ -110,13 +110,13 @@ Raises:
 * ∟`"Grading"`
 
 Raises:
-1. `ValueError`: "run {run} hasn't finished"
-2. `ValueError`: "judge calls are sent one at a time yet"
+1. `ValueError`: `"run {run} hasn't finished"`
+2. `ValueError`: `"judge calls are sent one at a time yet"`
 
-## Grading
+## `Grading`
 `src/chatddx/runner/score.py:Grading`
 
-## Grading.__init__
+## `Grading.__init__`
 `src/chatddx/runner/score.py:Grading.__init__`
 
 * `store: Store`
@@ -129,20 +129,20 @@ Raises:
 * `judging: dict[str, _Judging]`
 * `trial: Trial`
 
-## Grading.finish
+## `Grading.finish`
 `src/chatddx/runner/score.py:Grading.finish`
 
 * ∟`tuple[Score, list[Finding]]`
 
 Raises:
-1. `ValueError`: "score {self.score} is finished"
+1. `ValueError`: `"score {self.score} is finished"`
 
-## Grading.score `@property`
+## `Grading.score` `@property`
 `src/chatddx/runner/score.py:Grading.score`
 
 * ∟`UUID`
 
-## Grading.send
+## `Grading.send`
 `src/chatddx/runner/score.py:Grading.send`
 
 * `on_event: Callable[[ScoreEvent], None] | None = None`
@@ -153,54 +153,54 @@ Raises:
 1. `KeyboardInterrupt`
 
 Finds:
-1. `answer.salvaged`: message (info, through `Grading._grade`)
-2. `{code}`: message (through `Grading._grade`)
+1. `answer.salvaged`: `message` (`info`, through `Grading._grade`)
+2. `{code}`: `message` (through `Grading._grade`)
 
-## Grading.started `@property`
+## `Grading.started` `@property`
 `src/chatddx/runner/score.py:Grading.started`
 
 * ∟`ScoreStarted`
 
-## Halt
+## `Halt`
 `src/chatddx/runner/send.py:Halt`
 
-## Halt.__init__
+## `Halt.__init__`
 `src/chatddx/runner/send.py:Halt.__init__`
 
-## Halt.is_set
+## `Halt.is_set`
 `src/chatddx/runner/send.py:Halt.is_set`
 
 * ∟`bool`
 
-## Halt.set
+## `Halt.set`
 `src/chatddx/runner/send.py:Halt.set`
 
 * ∟`None`
 
-## Halt.wait
+## `Halt.wait`
 `src/chatddx/runner/send.py:Halt.wait`
 
 * `timeout: float`
 * ∟`bool`
 
-## Halt.watching `@contextmanager`
+## `Halt.watching` `@contextmanager`
 `src/chatddx/runner/send.py:Halt.watching`
 
 * `interrupt: Callable[[], None]`
 * ∟`Generator[None]`
 
-## ItemEnded `@dataclass(frozen=True)`
+## `ItemEnded` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:ItemEnded`
 
 * `item: RunItem`
 
-## Items
+## `Items`
 `src/chatddx/runner/prepare.py:Items`
 
 * `trial: Trial`
 * `skeleton: Skeleton`
 
-## Items.__init__
+## `Items.__init__`
 `src/chatddx/runner/prepare.py:Items.__init__`
 
 * `conn: Connection`
@@ -208,31 +208,31 @@ Finds:
 * `get: Resolver`
 * `trial: str`
 
-## Items.case
+## `Items.case`
 `src/chatddx/runner/prepare.py:Items.case`
 
 * `case: str`
 * `layout: AppendixLayout`
 * ∟`Prepared`
 
-## Items.item
+## `Items.item`
 `src/chatddx/runner/prepare.py:Items.item`
 
 * `key: ItemKey`
 * ∟`PreparedItem`
 
-## ItemScored `@dataclass(frozen=True)`
+## `ItemScored` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:ItemScored`
 
 * `item: ScoreItem`
 
-## ItemStarted `@dataclass(frozen=True)`
+## `ItemStarted` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:ItemStarted`
 
 * `key: ItemKey`
 * `seed: int`
 
-## judge_at
+## `judge_at`
 `src/chatddx/runner/score.py:judge_at`
 
 * `inventory: Inventory`
@@ -243,9 +243,9 @@ Finds:
 * ∟`str`
 
 Raises:
-1. `Refused`: str(e) (from `LookupError`)
+1. `Refused`: `str(e)` (from `LookupError`)
 
-## JudgeAnswered `@dataclass(frozen=True)`
+## `JudgeAnswered` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:JudgeAnswered`
 
 * `key: ItemKey`
@@ -253,7 +253,7 @@ Raises:
 * `call: JudgeCall`
 * `verdict: JsonValue | None`
 
-## JudgeAsked `@dataclass(frozen=True)`
+## `JudgeAsked` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:JudgeAsked`
 
 * `key: ItemKey`
@@ -262,36 +262,36 @@ Raises:
 * `judge: str`
 * `seed_index: int`
 
-## load
+## `load`
 `src/chatddx/runner/rounds.py:load`
 
 * `skeleton: Skeleton`
 * `get: Resolver`
 * ∟`Toolbox | None`
 
-## NO_EXPECTATION
+## `NO_EXPECTATION`
 `src/chatddx/runner/score.py:NO_EXPECTATION`
 
-* `NO_EXPECTATION: JsonValue = {"reason": "no expectation"}`
+`NO_EXPECTATION: JsonValue = {"reason": "no expectation"}`
 
-## Noted `@dataclass(frozen=True)`
+## `Noted` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:Noted`
 
 * `finding: Finding`
 
-## Outcome
+## `Outcome`
 `src/chatddx/runner/outcome.py:Outcome`
 
-* `Outcome`
+`Outcome`
 
-## outcome
+## `outcome`
 `src/chatddx/runner/outcome.py:outcome`
 
 * `skeleton: Skeleton`
 * `item: RunItem`
 * ∟`tuple[Outcome, str | None]`
 
-## post
+## `post`
 `src/chatddx/runner/wire.py:post`
 
 * `url: str`
@@ -302,9 +302,9 @@ Raises:
 * ∟`Stream`
 
 Raises:
-1. `Rejected`: e.code, _parsed(e.read()) (from `urllib.error.HTTPError`)
+1. `Rejected`: `e.code, _parsed(e.read())` (from `urllib.error.HTTPError`)
 
-## PreparedItem `@dataclass(frozen=True)`
+## `PreparedItem` `@dataclass(frozen=True)`
 `src/chatddx/runner/prepare.py:PreparedItem`
 
 * `key: ItemKey`
@@ -313,22 +313,22 @@ Raises:
 * `body: dict[str, JsonValue]`
 * `findings: tuple[Finding, ...]`
 
-## Refused `(Exception)`
+## `Refused` `(Exception)`
 `src/chatddx/runner/gate.py:Refused`
 
-## Rejected `(Exception)`
+## `Rejected` `(Exception)`
 `src/chatddx/runner/wire.py:Rejected`
 
 * `status: int`
 * `body: dict[str, JsonValue] | None`
 
-## Rejected.__init__
+## `Rejected.__init__`
 `src/chatddx/runner/wire.py:Rejected.__init__`
 
 * `status: int`
 * `body: dict[str, JsonValue] | None`
 
-## rendered_again
+## `rendered_again`
 `src/chatddx/runner/prepare.py:rendered_again`
 
 * `conn: Connection`
@@ -336,7 +336,7 @@ Raises:
 * `run: Run`
 * ∟`dict[ItemKey, str | None]`
 
-## request
+## `request`
 `src/chatddx/runner/wire.py:request`
 
 * `url: str`
@@ -344,15 +344,15 @@ Raises:
 * `secret: str | None = None`
 * ∟`urllib.request.Request`
 
-## RunEvent
+## `RunEvent`
 `src/chatddx/runner/events.py:RunEvent`
 
-* `type RunEvent = ItemStarted | Streamed | ToolRan | ItemEnded | CanaryEnded | Noted`
+`type RunEvent = ItemStarted | Streamed | ToolRan | ItemEnded | CanaryEnded | Noted`
 
-## Runner
+## `Runner`
 `src/chatddx/runner/run.py:Runner`
 
-## Runner.__init__
+## `Runner.__init__`
 `src/chatddx/runner/run.py:Runner.__init__`
 
 * `conn: Connection`
@@ -360,25 +360,25 @@ Raises:
 * `by: Person`
 
 Raises:
-1. `ValueError`: "the runner needs a connection in autocommit mode"
+1. `ValueError`: `"the runner needs a connection in autocommit mode"`
 
-## Runner.resume
+## `Runner.resume`
 `src/chatddx/runner/run.py:Runner.resume`
 
 * `run: UUID`
 * ∟`"Running"`
 
 Raises:
-1. `ValueError`: "run {run} is finished"
-2. `ValueError`: "run {run} was sent to no endpoint, so it can't resume"
-3. `ValueError`: "endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
-4. `ValueError`: "endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"
+1. `ValueError`: `"run {run} is finished"`
+2. `ValueError`: `"run {run} was sent to no endpoint, so it can't resume"`
+3. `ValueError`: `"endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}"` (through `Runner._admitted`)
+4. `ValueError`: `"endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"`
 
 Finds:
-1. `run.resumed`: "{said} by {_built(now)}, where {_built(log.started.rig)} started it" (through `_resumed`)
-2. `run.resumed`: said (info, through `_resumed`)
+1. `run.resumed`: `"{said} by {_built(now)}, where {_built(log.started.rig)} started it"` (through `_resumed`)
+2. `run.resumed`: `said` (`info`, through `_resumed`)
 
-## Runner.score
+## `Runner.score`
 `src/chatddx/runner/run.py:Runner.score`
 
 * `run: UUID`
@@ -387,7 +387,7 @@ Finds:
 * `execution: Execution | None = None`
 * ∟`Grading`
 
-## Runner.start
+## `Runner.start`
 `src/chatddx/runner/run.py:Runner.start`
 
 * `trial: Trial`
@@ -399,12 +399,12 @@ Finds:
 * ∟`"Running"`
 
 Raises:
-1. `ValueError`: "endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
+1. `ValueError`: `"endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}"` (through `Runner._admitted`)
 
-## Running
+## `Running`
 `src/chatddx/runner/run.py:Running`
 
-## Running.__init__
+## `Running.__init__`
 `src/chatddx/runner/run.py:Running.__init__`
 
 * `conn: Connection`
@@ -418,20 +418,20 @@ Raises:
 * `canaries: Sequence[CanaryCall] = ()`
 * `findings: Sequence[Finding] = ()`
 
-## Running.finish
+## `Running.finish`
 `src/chatddx/runner/run.py:Running.finish`
 
 * ∟`list[Finding]`
 
 Raises:
-1. `ValueError`: "run {self.run} is finished"
+1. `ValueError`: `"run {self.run} is finished"`
 
-## Running.run `@property`
+## `Running.run` `@property`
 `src/chatddx/runner/run.py:Running.run`
 
 * ∟`UUID`
 
-## Running.send
+## `Running.send`
 `src/chatddx/runner/run.py:Running.send`
 
 * `on_event: Callable[[RunEvent], None] | None = None`
@@ -442,24 +442,24 @@ Raises:
 1. `KeyboardInterrupt` (through `Running._probe`)
 
 Finds:
-1. `case.unreadable`: str(e) (from `(LookupError, StructuralError)`, through `Running._prepared`)
+1. `case.unreadable`: `str(e)` (from `(LookupError, StructuralError)`, through `Running._prepared`)
 
-## Running.started `@property`
+## `Running.started` `@property`
 `src/chatddx/runner/run.py:Running.started`
 
 * ∟`RunStarted`
 
-## Running.stop
+## `Running.stop`
 `src/chatddx/runner/run.py:Running.stop`
 
 * ∟`None`
 
-## ScoreEvent
+## `ScoreEvent`
 `src/chatddx/runner/events.py:ScoreEvent`
 
-* `type ScoreEvent = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted`
+`type ScoreEvent = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted`
 
-## send
+## `send`
 `src/chatddx/runner/send.py:send`
 
 * `url: str`
@@ -474,10 +474,10 @@ Finds:
 * ∟`Call`
 
 Raises:
-1. `Stopped`: call(None, STOPPED)
-2. `Stopped`: call(stream.status, STOPPED)
+1. `Stopped`: `call(None, STOPPED)`
+2. `Stopped`: `call(stream.status, STOPPED)`
 
-## served
+## `served`
 `src/chatddx/runner/wire.py:served`
 
 * `url: str`
@@ -486,35 +486,35 @@ Raises:
 * `timeout: float | None = None`
 * ∟`list[str]`
 
-## STOPPED
+## `STOPPED`
 `src/chatddx/runner/send.py:STOPPED`
 
-* `STOPPED = "stopped"`
+`STOPPED = "stopped"`
 
-## Stopped `(Exception)`
+## `Stopped` `(Exception)`
 `src/chatddx/runner/send.py:Stopped`
 
 * `call: Call`
 
-## Stopped.__init__
+## `Stopped.__init__`
 `src/chatddx/runner/send.py:Stopped.__init__`
 
 * `call: Call`
 
-## STREAM
+## `STREAM`
 `src/chatddx/runner/send.py:STREAM`
 
-* `STREAM: dict[str, JsonValue] = {…}`
+`STREAM: dict[str, JsonValue] = {…}`
 
-## Stream
+## `Stream`
 `src/chatddx/runner/wire.py:Stream`
 
-## Stream.__enter__
+## `Stream.__enter__`
 `src/chatddx/runner/wire.py:Stream.__enter__`
 
 * ∟`Self`
 
-## Stream.__exit__
+## `Stream.__exit__`
 `src/chatddx/runner/wire.py:Stream.__exit__`
 
 * `_type: type[BaseException] | None`
@@ -522,38 +522,38 @@ Raises:
 * `_traceback: TracebackType | None`
 * ∟`None`
 
-## Stream.__init__
+## `Stream.__init__`
 `src/chatddx/runner/wire.py:Stream.__init__`
 
 * `response: HTTPResponse`
 
-## Stream.__iter__
+## `Stream.__iter__`
 `src/chatddx/runner/wire.py:Stream.__iter__`
 
 * ∟`Iterator[Chunk]`
 
-## Stream.close
+## `Stream.close`
 `src/chatddx/runner/wire.py:Stream.close`
 
 * ∟`None`
 
-## Stream.interrupt
+## `Stream.interrupt`
 `src/chatddx/runner/wire.py:Stream.interrupt`
 
 * ∟`None`
 
-## Stream.status `@property`
+## `Stream.status` `@property`
 `src/chatddx/runner/wire.py:Stream.status`
 
 * ∟`int`
 
-## Streamed `@dataclass(frozen=True)`
+## `Streamed` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:Streamed`
 
 * `key: ItemKey`
 * `delta: Delta`
 
-## Toolbox `@dataclass(frozen=True)`
+## `Toolbox` `@dataclass(frozen=True)`
 `src/chatddx/runner/rounds.py:Toolbox`
 
 * `functions: Mapping[str, Callable[..., object]]`
@@ -562,47 +562,47 @@ Raises:
 * `max_rounds: int`
 * `code: tuple[ToolCode, ...]`
 
-## Toolbox.pending
+## `Toolbox.pending`
 `src/chatddx/runner/rounds.py:Toolbox.pending`
 
 * `call: Call`
 * ∟`tuple[ToolCall, ...]`
 
-## Toolbox.run
+## `Toolbox.run`
 `src/chatddx/runner/rounds.py:Toolbox.run`
 
 * `call: ToolCall`
 * ∟`ToolRun`
 
 Raises:
-1. `ToolStopped`: ToolRun(id=call.id, name=call.name, started_at=started, finished_at=_now(), result=f'error: {STOPPED}', error=STOPPED)
+1. `ToolStopped`: `ToolRun(id=call.id, name=call.name, started_at=started, finished_at=_now(), result=f'error: {STOPPED}', error=STOPPED)`
 
-## ToolRan `@dataclass(frozen=True)`
+## `ToolRan` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:ToolRan`
 
 * `key: ItemKey`
 * `run: ToolRun`
 
-## ToolStopped `(Exception)`
+## `ToolStopped` `(Exception)`
 `src/chatddx/runner/rounds.py:ToolStopped`
 
 * `run: ToolRun`
 
-## ToolStopped.__init__
+## `ToolStopped.__init__`
 `src/chatddx/runner/rounds.py:ToolStopped.__init__`
 
 * `run: ToolRun`
 
-## Unfinished `(ConnectionError)`
+## `Unfinished` `(ConnectionError)`
 `src/chatddx/runner/wire.py:Unfinished`
 
-## usage
+## `usage`
 `src/chatddx/runner/outcome.py:usage`
 
 * `item: RunItem`
 * ∟`tuple[int, int]`
 
-## used
+## `used`
 `src/chatddx/runner/outcome.py:used`
 
 * `call: Call`

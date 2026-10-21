@@ -1,5 +1,3 @@
-import json
-from typing import Any
 from urllib.parse import urlencode
 
 import pytest
@@ -7,40 +5,17 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 from pydantic import JsonValue
 
+from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
+from chatddx.portal.test.helpers import ran_template, shown, variation_props
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, OFF, QWEN_ARTIFACT, QWEN_MODEL, TEST
 
-
-@pytest.fixture
-def template(ran: str) -> str:
-    return ran
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-def thread(
-    signed: TestClient, kind: str, name: str, owner: str = "alice"
-) -> dict[str, Any]:
-    query = {"kind": kind, "name": name, "owner": owner}
-    [found] = signed.get("/api/threads", params=query).json()
-    return found
-
-
-def held(page: str) -> dict[str, Any]:
-    opened = '<script type="application/json" id="variation-props">'
-    return json.loads(page.split(opened, 1)[1].split("</script>", 1)[0])
+__all__ = ["ran_template"]
 
 
 @pytest.mark.slow
@@ -52,7 +27,7 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     page = shown(signed, f"/configurations/{mine['id']}?reasoning={off}")
     assert escape(f"{LINES}+reasoning={OFF}") in page
 
-    given = held(page)
+    given = variation_props(page)
     look = given["look"]
     api = f"/api/threads/{mine['id']}/variation"
     asked = signed.get(api, params={"reasoning": off}).json()
@@ -71,7 +46,7 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     handles = {t["name"] for t in given["choices"]["model"]}
     assert handles == set(given["models"]) and len(models) == len(set(models))
 
-    tagged = held(shown(signed, f"/configurations/{mine['id']}?tag=targets"))
+    tagged = variation_props(shown(signed, f"/configurations/{mine['id']}?tag=targets"))
     assert (tagged["under"], tagged["tags"]) == (None, ["targets"])
     assert {r["cases"] for r in tagged["look"]["reach"]} != {0}
 
@@ -170,12 +145,12 @@ def test_its_versions_are_stepped_through_keeping_what_is_set(
     assert "Version 1 of 2" in page and "A newer version is saved" in page
     kept = urlencode({"sampling": greedy})
     assert f'href="?{kept}" data-head="{latest}"' in page
-    assert held(page)["look"]["head"]["id"] == first
+    assert variation_props(page)["look"]["head"]["id"] == first
 
     page = shown(signed, path)
     assert "Version 2 of 2" in page and "A newer version is saved" not in page
     assert f'href="?head={first}" data-head="{first}"' in page
-    assert held(page)["base"]["reasoning"] == off
+    assert variation_props(page)["base"]["reasoning"] == off
 
 
 @pytest.mark.slow
@@ -207,7 +182,7 @@ def test_the_runs_of_the_variation_are_on_its_page(signed: TestClient) -> None:
     run = next(r for r in runs if r["skeleton"] in heads)
     page = shown(signed, f"/configurations/{heads[run['skeleton']]['id']}")
     assert f'href="/runs/{run["id"]}"' in page
-    assert run["id"] in {r["id"] for r in held(page)["runs"]}
+    assert run["id"] in {r["id"] for r in variation_props(page)["runs"]}
 
 
 @pytest.mark.slow

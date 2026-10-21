@@ -9,8 +9,7 @@ from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.store import Catalog, People, Rows, Store
-
-ZERO = "sha256:" + "0" * 64
+from chatddx.test.helpers import ZERO
 
 
 def test_an_appendix_makes_a_case_and_its_edit_a_replacement(bench: Bench) -> None:

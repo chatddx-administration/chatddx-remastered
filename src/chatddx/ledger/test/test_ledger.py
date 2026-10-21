@@ -36,11 +36,9 @@ from chatddx.ledger import (
     fingerprint_request,
 )
 from chatddx.ledger.test.rounds import ran, rounds
+from chatddx.test.helpers import registry
 
-
-@pytest.fixture
-def reg() -> Registry:
-    return Registry()
+__all__ = ["registry"]
 
 
 def test_run_and_score_checks(reg: Registry) -> None:

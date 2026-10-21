@@ -10,6 +10,7 @@ from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
 from chatddx.store import Catalog
+from chatddx.test.helpers import ZERO
 from chatddx.test.world import (
     CLINICIAN,
     GPT_OSS,
@@ -20,8 +21,6 @@ from chatddx.test.world import (
     QWEN,
     QWEN_MODEL,
 )
-
-ZERO = "sha256:" + "0" * 64
 
 
 def _archive_s(bench: Bench, word: str) -> tuple[int, dict[str, Any]]:

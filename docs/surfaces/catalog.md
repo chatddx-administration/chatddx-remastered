@@ -1,8 +1,8 @@
 # `chatddx.catalog`
 
-Written by `chatddx reference` from `src/chatddx/catalog/`; how to read it is in [docs/reference/README.md](README.md).
+Written by `chatddx stamp` from `src/chatddx/catalog/`; how to read it is in [docs/surfaces.md](surfaces.md).
 
-## About `(_Frozen)`
+## `About` `(_Frozen)`
 `src/chatddx/catalog/model.py:About`
 
 * `name: str | None = None`
@@ -16,27 +16,27 @@ Written by `chatddx reference` from `src/chatddx/catalog/`; how to read it is in
 * `replaced: dict[str, str | None] = Field(default_factory=dict[str, str | None])`
 * `started_with: UUID | None = None`
 
-## about
+## `about`
 `src/chatddx/catalog/read.py:about`
 
 * `rows: Reader`
 * `subject: Subject`
 * ∟`About`
 
-## About.of `@classmethod`
+## `About.of` `@classmethod`
 `src/chatddx/catalog/model.py:About.of`
 
 * `entries: Iterable[Entry]`
 * ∟`Self`
 
-## abouts
+## `abouts`
 `src/chatddx/catalog/read.py:abouts`
 
 * `rows: Reader`
 * `subjects: Collection[Subject]`
 * ∟`dict[Subject, About]`
 
-## Behind `(_Frozen)`
+## `Behind` `(_Frozen)`
 `src/chatddx/catalog/model.py:Behind`
 
 * `path: str`
@@ -46,17 +46,17 @@ Written by `chatddx reference` from `src/chatddx/catalog/`; how to read it is in
 * `replacement: str | None = None`
 
 Raises:
-1. `ValueError`: "behind either a newer head or a newer binding" (through `Behind._one`, in a `ValidationError`)
-2. `ValueError`: "a replacement case goes with a newer binding, and only with it" (through `Behind._one`, in a `ValidationError`)
+1. `ValueError`: `"behind either a newer head or a newer binding"` (through `Behind._one`, in a `ValidationError`)
+2. `ValueError`: `"a replacement case goes with a newer binding, and only with it"` (through `Behind._one`, in a `ValidationError`)
 
-## behind
+## `behind`
 `src/chatddx/catalog/threads.py:behind`
 
 * `rows: Reader`
 * `thread: int`
 * ∟`list[Behind]`
 
-## Binding `(_Frozen)`
+## `Binding` `(_Frozen)`
 `src/chatddx/catalog/model.py:Binding`
 
 * `id: int`
@@ -65,7 +65,7 @@ Raises:
 * `by: int`
 * `at: datetime`
 
-## check_adoptable
+## `check_adoptable`
 `src/chatddx/catalog/families.py:check_adoptable`
 
 * `rows: Reader`
@@ -75,10 +75,10 @@ Raises:
 * ∟`Vignette`
 
 Raises:
-1. `LookupError`: "{case} is not a stored case"
-2. `ValueError`: "{case} gives family {other}'s vignette {change}; rebind the family"
+1. `LookupError`: `"{case} is not a stored case"`
+2. `ValueError`: `"{case} gives family {other}'s vignette {change}; rebind the family"`
 
-## check_create
+## `check_create`
 `src/chatddx/catalog/threads.py:check_create`
 
 * `rows: Reader`
@@ -86,10 +86,10 @@ Raises:
 * ∟`str`
 
 Raises:
-1. `LookupError`: "{digest} is not in the store"
-2. `ValueError`: "{kind} components have no threads"
+1. `LookupError`: `"{digest} is not in the store"`
+2. `ValueError`: `"{kind} components have no threads"`
 
-## check_edit
+## `check_edit`
 `src/chatddx/catalog/threads.py:check_edit`
 
 * `rows: Reader`
@@ -102,14 +102,14 @@ Raises:
 * ∟`None`
 
 Raises:
-1. `MovedOn`: "thread {thread_id} has moved on since edit {head}: its head is edit {current.id}"
-2. `ValueError`: "edit {based_on} is not in the origin of thread {thread.id}" (through `_check_based_on`)
-3. `ValueError`: "person {owner} owns an expectation of case {case} under that schema already, in thread {others[0]}" (through `_check_expectation`)
-4. `ValueError`: "a {thread.kind} has no views or resources to label" (through `_check_labels`)
-5. `ValueError`: "{digest} has no {part} at position {position}" (through `_check_labels`)
-6. `ValueError`: "the label of {part} {position} is empty" (through `_check_labels`)
+1. `MovedOn`: `"thread {thread_id} has moved on since edit {head}: its head is edit {current.id}"`
+2. `ValueError`: `"edit {based_on} is not in the origin of thread {thread.id}"` (through `_check_based_on`)
+3. `ValueError`: `"person {owner} owns an expectation of case {case} under that schema already, in thread {others[0]}"` (through `_check_expectation`)
+4. `ValueError`: `"a {thread.kind} has no views or resources to label"` (through `_check_labels`)
+5. `ValueError`: `"{digest} has no {part} at position {position}"` (through `_check_labels`)
+6. `ValueError`: `"the label of {part} {position} is empty"` (through `_check_labels`)
 
-## check_language
+## `check_language`
 `src/chatddx/catalog/language.py:check_language`
 
 * `rows: Reader`
@@ -118,11 +118,11 @@ Raises:
 * ∟`str`
 
 Raises:
-1. `LookupError`: "{digest} is not in the store"
-2. `ValueError`: "{kind} components have no language of their own"
-3. `ValueError`: "{digest}: a compiled skeleton's language comes from its recipe"
+1. `LookupError`: `"{digest} is not in the store"`
+2. `ValueError`: `"{kind} components have no language of their own"`
+3. `ValueError`: `"{digest}: a compiled skeleton's language comes from its recipe"`
 
-## check_note
+## `check_note`
 `src/chatddx/catalog/threads.py:check_note`
 
 * `rows: Reader`
@@ -131,27 +131,27 @@ Raises:
 * ∟`None`
 
 Raises:
-1. `ValueError`: "a language entry is for a family's vignette; a component's language is kept on its digest"
-2. `ValueError`: "a {entry.field} entry is about a run, and what it ran" (through `_check_ran`)
-3. `ValueError`: "edit {entry.value} is no configuration's" (through `_check_ran`)
-4. `ValueError`: "{digest} isn't {what} in the store" (through `_check_ran`)
-5. `ValueError`: "person {owner} owns an expectation of case {case} under that schema already, in thread {others[0]}" (through `_check_expectation`)
+1. `ValueError`: `"a language entry is for a family's vignette; a component's language is kept on its digest"`
+2. `ValueError`: `"a {entry.field} entry is about a run, and what it ran"` (through `_check_ran`)
+3. `ValueError`: `"edit {entry.value} is no configuration's"` (through `_check_ran`)
+4. `ValueError`: `"{digest} isn't {what} in the store"` (through `_check_ran`)
+5. `ValueError`: `"person {owner} owns an expectation of case {case} under that schema already, in thread {others[0]}"` (through `_check_expectation`)
 
-## describe
+## `describe`
 `src/chatddx/catalog/titles.py:describe`
 
 * `component: Component`
 * `title: Title`
 * ∟`str`
 
-## Divergence `(_Frozen)`
+## `Divergence` `(_Frozen)`
 `src/chatddx/catalog/model.py:Divergence`
 
 * `base: Edit`
 * `origin_head: Edit`
 * `varies: dict[str, tuple[JsonValue, JsonValue]]`
 
-## divergence
+## `divergence`
 `src/chatddx/catalog/threads.py:divergence`
 
 * `rows: Reader`
@@ -159,14 +159,14 @@ Raises:
 * ∟`Divergence | None`
 
 Raises:
-1. `LookupError`: "no edit with id {id}" (through `_edit`)
+1. `LookupError`: `"no edit with id {id}"` (through `_edit`)
 
-## Divergence.moved `@property`
+## `Divergence.moved` `@property`
 `src/chatddx/catalog/model.py:Divergence.moved`
 
 * ∟`bool`
 
-## Edit `(_Frozen)`
+## `Edit` `(_Frozen)`
 `src/chatddx/catalog/model.py:Edit`
 
 * `id: int`
@@ -177,14 +177,14 @@ Raises:
 * `by: int`
 * `at: datetime`
 
-## edit_languages
+## `edit_languages`
 `src/chatddx/catalog/language.py:edit_languages`
 
 * `rows: Reader`
 * `edits: Collection[Edit]`
 * ∟`dict[int, str | None]`
 
-## Entry `(_Frozen)`
+## `Entry` `(_Frozen)`
 `src/chatddx/catalog/model.py:Entry`
 
 * `field: EntryField`
@@ -193,33 +193,33 @@ Raises:
 * `present: bool = True`
 
 Raises:
-1. `ValueError`: "wrong value or person for {self.field}" (through `Entry._shape`, in a `ValidationError`)
-2. `ValueError`: "{self.field} can't be removed, only replaced" (through `Entry._shape`, in a `ValidationError`)
-3. `ValueError`: "{self.field} can't be empty" (through `Entry._shape`, in a `ValidationError`)
-4. `ValueError`: "{self.value!r} is not an edit's id" (through `Entry._shape`, in a `ValidationError`)
-5. `ValueError`: "{self.value!r} is not PART=DIGEST, or PART= for a part taken out" (through `Entry._shape`, in a `ValidationError`)
-6. `ValueError`: "{self.value!r} is not a run's id" (through `Entry._shape`, in a `ValidationError`)
+1. `ValueError`: `"wrong value or person for {self.field}"` (through `Entry._shape`, in a `ValidationError`)
+2. `ValueError`: `"{self.field} can't be removed, only replaced"` (through `Entry._shape`, in a `ValidationError`)
+3. `ValueError`: `"{self.field} can't be empty"` (through `Entry._shape`, in a `ValidationError`)
+4. `ValueError`: `"{self.value!r} is not an edit's id"` (through `Entry._shape`, in a `ValidationError`)
+5. `ValueError`: `"{self.value!r} is not PART=DIGEST, or PART= for a part taken out"` (through `Entry._shape`, in a `ValidationError`)
+6. `ValueError`: `"{self.value!r} is not a run's id"` (through `Entry._shape`, in a `ValidationError`)
 
-## Entry.replaced `@classmethod`
+## `Entry.replaced` `@classmethod`
 `src/chatddx/catalog/model.py:Entry.replaced`
 
 * `part: str`
 * `digest: str | None`
 * ∟`Self`
 
-## Entry.started_with `@classmethod`
+## `Entry.started_with` `@classmethod`
 `src/chatddx/catalog/model.py:Entry.started_with`
 
 * `run: UUID`
 * ∟`Self`
 
-## Entry.varied `@classmethod`
+## `Entry.varied` `@classmethod`
 `src/chatddx/catalog/model.py:Entry.varied`
 
 * `edit: int`
 * ∟`Self`
 
-## EntryField `(StrEnum)`
+## `EntryField` `(StrEnum)`
 `src/chatddx/catalog/model.py:EntryField`
 
 * `NAME = "name"`
@@ -233,7 +233,7 @@ Raises:
 * `REPLACED = "replaced"`
 * `WITH = "with"`
 
-## expecting
+## `expecting`
 `src/chatddx/catalog/threads.py:expecting`
 
 * `rows: Reader`
@@ -241,14 +241,14 @@ Raises:
 * `schema: str | None = None`
 * ∟`dict[str, list[tuple[Edit, About]]]`
 
-## family_of
+## `family_of`
 `src/chatddx/catalog/families.py:family_of`
 
 * `rows: Reader`
 * `case: str`
 * ∟`int | None`
 
-## find
+## `find`
 `src/chatddx/catalog/threads.py:find`
 
 * `rows: Reader`
@@ -258,42 +258,42 @@ Raises:
 * `owner: int | None = None`
 * ∟`list[int]`
 
-## forks
+## `forks`
 `src/chatddx/catalog/threads.py:forks`
 
 * `rows: Reader`
 * `thread: int`
 * ∟`list[int]`
 
-## head
+## `head`
 `src/chatddx/catalog/threads.py:head`
 
 * `rows: Reader`
 * `thread: int`
 * ∟`Edit`
 
-## heads
+## `heads`
 `src/chatddx/catalog/threads.py:heads`
 
 * `rows: Reader`
 * `kind: str`
 * ∟`list[tuple[Edit, About]]`
 
-## heads_holding
+## `heads_holding`
 `src/chatddx/catalog/read.py:heads_holding`
 
 * `rows: Reader`
 * `digests: Collection[str]`
 * ∟`dict[int, Edit]`
 
-## heads_of
+## `heads_of`
 `src/chatddx/catalog/read.py:heads_of`
 
 * `rows: Reader`
 * `threads: Collection[int]`
 * ∟`dict[int, Edit]`
 
-## history
+## `history`
 `src/chatddx/catalog/threads.py:history`
 
 * `rows: Reader`
@@ -301,9 +301,9 @@ Raises:
 * ∟`list[Edit]`
 
 Raises:
-1. `LookupError`: "no thread with id {thread}"
+1. `LookupError`: `"no thread with id {thread}"`
 
-## holds
+## `holds`
 `src/chatddx/catalog/threads.py:holds`
 
 * `rows: Reader`
@@ -313,41 +313,41 @@ Raises:
 * `labels: Labels | None = None`
 * ∟`bool`
 
-## Labels
+## `Labels`
 `src/chatddx/catalog/model.py:Labels`
 
-* `Labels = Mapping[tuple[Part, int], str]`
+`Labels = Mapping[tuple[Part, int], str]`
 
-## labels
+## `labels`
 `src/chatddx/catalog/read.py:labels`
 
 * `rows: Reader`
 * `edit: int`
 * ∟`Labels`
 
-## LANGUAGE_KINDS
+## `LANGUAGE_KINDS`
 `src/chatddx/catalog/model.py:LANGUAGE_KINDS`
 
-* `LANGUAGE_KINDS = frozenset(…)`
+`LANGUAGE_KINDS = frozenset(…)`
 
-## language_of
+## `language_of`
 `src/chatddx/catalog/language.py:language_of`
 
 * `rows: Reader`
 * `digest: str`
 * ∟`str | None`
 
-## languages_of
+## `languages_of`
 `src/chatddx/catalog/language.py:languages_of`
 
 * `rows: Reader`
 * `digests: Collection[str]`
 * ∟`dict[str, str | None]`
 
-## MovedOn `(ValueError)`
+## `MovedOn` `(ValueError)`
 `src/chatddx/catalog/model.py:MovedOn`
 
-## origin
+## `origin`
 `src/chatddx/catalog/threads.py:origin`
 
 * `rows: Reader`
@@ -355,14 +355,14 @@ Raises:
 * ∟`int | None`
 
 Raises:
-1. `LookupError`: "no edit with id {id}" (through `_edit`)
+1. `LookupError`: `"no edit with id {id}"` (through `_edit`)
 
-## Part
+## `Part`
 `src/chatddx/catalog/model.py:Part`
 
-* `Part = Literal["view", "resource"]`
+`Part = Literal["view", "resource"]`
 
-## picked
+## `picked`
 `src/chatddx/catalog/threads.py:picked`
 
 * `case: str`
@@ -370,9 +370,9 @@ Raises:
 * ∟`str | None`
 
 Raises:
-1. `LookupError`: "case {case} has expectations to choose from, in threads {", ".join(str(t) for t in sorted(choices))}"
+1. `LookupError`: `"case {case} has expectations to choose from, in threads {", ".join(str(t) for t in sorted(choices))}"`
 
-## plan_repair
+## `plan_repair`
 `src/chatddx/catalog/families.py:plan_repair`
 
 * `rows: Reader`
@@ -383,144 +383,144 @@ Raises:
 * ∟`RepairPlan`
 
 Raises:
-1. `LookupError`: "no family with id {family}" (through `_current`)
-2. `ValueError`: "a repair changes exactly one of the id or the fingerprint"
-3. `ValueError`: "family {other} already has {taken}"
+1. `LookupError`: `"no family with id {family}"` (through `_current`)
+2. `ValueError`: `"a repair changes exactly one of the id or the fingerprint"`
+3. `ValueError`: `"family {other} already has {taken}"`
 
-## proposal
+## `proposal`
 `src/chatddx/catalog/threads.py:proposal`
 
 * `rows: Reader`
 * `id: int`
 * ∟`Recipe | Component | None`
 
-## Reader `(Protocol)`
+## `Reader` `(Protocol)`
 `src/chatddx/catalog/read.py:Reader`
 
-## Reader.bindings
+## `Reader.bindings`
 `src/chatddx/catalog/read.py:Reader.bindings`
 
 * `families: Collection[int]`
 * ∟`list[Binding]`
 
-## Reader.bindings_in
+## `Reader.bindings_in`
 `src/chatddx/catalog/read.py:Reader.bindings_in`
 
 * `source: str`
 * ∟`list[Binding]`
 
-## Reader.bindings_sharing
+## `Reader.bindings_sharing`
 `src/chatddx/catalog/read.py:Reader.bindings_sharing`
 
 * `vignette: Vignette`
 * ∟`list[Binding]`
 
-## Reader.bound_to
+## `Reader.bound_to`
 `src/chatddx/catalog/read.py:Reader.bound_to`
 
 * `vignettes: Collection[Vignette]`
 * `kind: str`
 * ∟`list[tuple[str, Vignette]]`
 
-## Reader.compilations
+## `Reader.compilations`
 `src/chatddx/catalog/read.py:Reader.compilations`
 
 * `skeleton: str`
 * ∟`list[Compilation]`
 
-## Reader.components
+## `Reader.components`
 `src/chatddx/catalog/read.py:Reader.components`
 
 * `digests: Collection[str]`
 * ∟`list[tuple[str, Component]]`
 
-## Reader.edit
+## `Reader.edit`
 `src/chatddx/catalog/read.py:Reader.edit`
 
 * `id: int`
 * ∟`Edit | None`
 
-## Reader.edits
+## `Reader.edits`
 `src/chatddx/catalog/read.py:Reader.edits`
 
 * `threads: Collection[int]`
 * ∟`list[Edit]`
 
-## Reader.edits_holding
+## `Reader.edits_holding`
 `src/chatddx/catalog/read.py:Reader.edits_holding`
 
 * `digests: Collection[str]`
 * ∟`list[Edit]`
 
-## Reader.entries
+## `Reader.entries`
 `src/chatddx/catalog/read.py:Reader.entries`
 
 * `subjects: Collection[Subject]`
 * ∟`list[tuple[Subject, Entry, int]]`
 
-## Reader.expectations
+## `Reader.expectations`
 `src/chatddx/catalog/read.py:Reader.expectations`
 
 * `cases: Collection[str]`
 * ∟`list[str]`
 
-## Reader.get
+## `Reader.get`
 `src/chatddx/catalog/read.py:Reader.get`
 
 * `digest: str`
 * ∟`Component`
 
-## Reader.kind
+## `Reader.kind`
 `src/chatddx/catalog/read.py:Reader.kind`
 
 * `digest: str`
 * ∟`str | None`
 
-## Reader.labels
+## `Reader.labels`
 `src/chatddx/catalog/read.py:Reader.labels`
 
 * `edits: Collection[int]`
 * ∟`list[tuple[int, Part, int, str]]`
 
-## Reader.languages
+## `Reader.languages`
 `src/chatddx/catalog/read.py:Reader.languages`
 
 * `digests: Collection[str]`
 * ∟`list[tuple[str, str]]`
 
-## Reader.thread
+## `Reader.thread`
 `src/chatddx/catalog/read.py:Reader.thread`
 
 * `id: int`
 * ∟`Thread | None`
 
-## Reader.threads
+## `Reader.threads`
 `src/chatddx/catalog/read.py:Reader.threads`
 
 * `kind: str`
 * ∟`list[Thread]`
 
-## Reader.threads_forked_from
+## `Reader.threads_forked_from`
 `src/chatddx/catalog/read.py:Reader.threads_forked_from`
 
 * `edits: Collection[int]`
 * ∟`list[Thread]`
 
-## recipe
+## `recipe`
 `src/chatddx/catalog/threads.py:recipe`
 
 * `rows: Reader`
 * `edit: Edit`
 * ∟`Recipe | None`
 
-## recipe_language
+## `recipe_language`
 `src/chatddx/catalog/language.py:recipe_language`
 
 * `rows: Reader`
 * `recipe: Recipe`
 * ∟`str | None`
 
-## RepairPlan `@dataclass(frozen=True)`
+## `RepairPlan` `@dataclass(frozen=True)`
 `src/chatddx/catalog/families.py:RepairPlan`
 
 * `vignette: Vignette`
@@ -529,7 +529,7 @@ Raises:
 * `appendices: dict[str, str]`
 * `moves: list[tuple[int, str]]`
 
-## replacement
+## `replacement`
 `src/chatddx/catalog/families.py:replacement`
 
 * `rows: Reader`
@@ -537,22 +537,22 @@ Raises:
 * ∟`tuple[str, Registry]`
 
 Raises:
-1. `LookupError`: "{case} has no family"
-2. `LookupError`: "no family with id {family}" (through `_current`)
-3. `ValueError`: "{case} is at its family's current vignette already"
+1. `LookupError`: `"{case} has no family"`
+2. `LookupError`: `"no family with id {family}"` (through `_current`)
+3. `ValueError`: `"{case} is at its family's current vignette already"`
 
-## RUN_FIELDS
+## `RUN_FIELDS`
 `src/chatddx/catalog/model.py:RUN_FIELDS`
 
-* `RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})`
+`RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})`
 
-## short
+## `short`
 `src/chatddx/catalog/titles.py:short`
 
 * `digest: str`
 * ∟`str`
 
-## stale_cases
+## `stale_cases`
 `src/chatddx/catalog/families.py:stale_cases`
 
 * `rows: Reader`
@@ -560,9 +560,9 @@ Raises:
 * ∟`list[Behind]`
 
 Raises:
-1. `LookupError`: "no family with id {family}" (through `_current`)
+1. `LookupError`: `"no family with id {family}"` (through `_current`)
 
-## Subject `(_Frozen)`
+## `Subject` `(_Frozen)`
 `src/chatddx/catalog/model.py:Subject`
 
 * `thread: int | None = None`
@@ -571,9 +571,9 @@ Raises:
 * `score: UUID | None = None`
 
 Raises:
-1. `ValueError`: "a subject is exactly one of a thread, a family, a run or a score" (through `Subject._one`, in a `ValidationError`)
+1. `ValueError`: `"a subject is exactly one of a thread, a family, a run or a score"` (through `Subject._one`, in a `ValidationError`)
 
-## Survey `(_Frozen)`
+## `Survey` `(_Frozen)`
 `src/chatddx/catalog/model.py:Survey`
 
 * `unchanged: tuple[int, ...] = ()`
@@ -582,7 +582,7 @@ Raises:
 * `new: tuple[str, ...] = ()`
 * `gone: tuple[int, ...] = ()`
 
-## survey
+## `survey`
 `src/chatddx/catalog/families.py:survey`
 
 * `rows: Reader`
@@ -590,14 +590,14 @@ Raises:
 * `listing: Mapping[str, Fingerprint]`
 * ∟`Survey`
 
-## tags_given
+## `tags_given`
 `src/chatddx/catalog/read.py:tags_given`
 
 * `rows: Reader`
 * `subject: Subject`
 * ∟`dict[str, int]`
 
-## Thread `(_Frozen)`
+## `Thread` `(_Frozen)`
 `src/chatddx/catalog/model.py:Thread`
 
 * `id: int`
@@ -606,7 +606,7 @@ Raises:
 * `by: int`
 * `at: datetime`
 
-## thread
+## `thread`
 `src/chatddx/catalog/threads.py:thread`
 
 * `rows: Reader`
@@ -614,26 +614,26 @@ Raises:
 * ∟`Thread`
 
 Raises:
-1. `LookupError`: "no thread with id {id}"
+1. `LookupError`: `"no thread with id {id}"`
 
-## THREAD_KINDS
+## `THREAD_KINDS`
 `src/chatddx/catalog/model.py:THREAD_KINDS`
 
-* `THREAD_KINDS = frozenset(…)`
+`THREAD_KINDS = frozenset(…)`
 
-## Title
+## `Title`
 `src/chatddx/catalog/titles.py:Title`
 
-* `Title = Callable[[str], str]`
+`Title = Callable[[str], str]`
 
-## title
+## `title`
 `src/chatddx/catalog/titles.py:title`
 
 * `rows: Reader`
 * `thread: int`
 * ∟`str`
 
-## title_of
+## `title_of`
 `src/chatddx/catalog/titles.py:title_of`
 
 * `rows: Reader`

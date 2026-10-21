@@ -1,13 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.api.test.helpers import endpoint
-from chatddx.api.test.test_variations import thread
-from chatddx.api.test.test_writes import body
+from chatddx.api.test.helpers import body, endpoint, thread
 from chatddx.bench import KINDS, WRITTEN
+from chatddx.test.helpers import ZERO
 from chatddx.test.world import CLINICIAN, QWEN
-
-GHOST = "sha256:" + "0" * 64
 
 
 def test_the_kinds_say_their_json_schema_and_what_their_references_take(
@@ -68,7 +65,7 @@ def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
     )
     for given, said in (
         ({**held, "effort": "max"}, "effort"),
-        ({**expectation, "case": GHOST}, f"not in the store: ['{GHOST}']"),
+        ({**expectation, "case": ZERO}, f"not in the store: ['{ZERO}']"),
         ({"kind": "tool"}, "'tool' isn't a kind a person writes"),
         ({"kind": "skeleton"}, "'skeleton' isn't a kind a person writes"),
         ({**held, "v": 2}, "chunk.reasoning is at v1, not v2"),
@@ -101,7 +98,7 @@ def test_a_recipe_is_checked_as_a_new_configuration_compiles_it_and_nothing_is_w
 
     for given, said in (
         ({**recipe, "prompt": recipe["output"]}, "isn't a stored chunk of prompt"),
-        ({**recipe, "model": GHOST}, "isn't a stored model"),
+        ({**recipe, "model": ZERO}, "isn't a stored model"),
         ({k: v for k, v in recipe.items() if k != "sampling"}, "sampling"),
     ):
         got = signed.post("/api/recipes/check", json=given)

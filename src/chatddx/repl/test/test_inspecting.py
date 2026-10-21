@@ -308,7 +308,15 @@ def test_show_case_lists_a_family_s_appendices_and_the_cases_that_send_them(say:
     written = say("show case whitespace")
 
     assert "labs" in line_of(written, "appendices")
-    assert "whitespace with labs  its own expectation" in line_of(written, "cases")
+    assert [
+        "cases",
+        "whitespace",
+        "with",
+        "labs",
+        "its",
+        "own",
+        "expectation",
+    ] in cells(written)
 
     written = say("show case whitespace with labs")
 

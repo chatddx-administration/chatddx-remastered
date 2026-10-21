@@ -25,6 +25,7 @@ from chatddx.scorers.patterns import (
 from chatddx.scorers.scorer import Metric, Metrics, Scored, score
 from chatddx.scorers.shipped import SCORERS, function, problems
 from chatddx.scorers.verdicts import asked
+from chatddx.test.helpers import SHIPPED
 from chatddx.test.world import DATA, world_plan
 
 
@@ -34,7 +35,6 @@ def read_only_plan() -> Plan:
 
 
 SCHEMA = "sha256:" + "0" * 64
-SHIPPED = "chatddx.scorers.metrics:score"
 
 
 @pytest.mark.parametrize(

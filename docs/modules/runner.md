@@ -1,13 +1,11 @@
 # Runner
 
 The runner sends a trial's requests to an engine and writes what happened to the ledger. The scoring pass grades a
-finished run with a scoring, sending a judge's requests where a view names one. Both string together pieces documented
-elsewhere: the factors that render a request and prepare a case (docs/modules/factors.md), the ledger's records and
+finished run with a scoring, sending a judge's requests where a view names one.
+
+It depends on factors that render a request and prepare a case (docs/modules/factors.md), the ledger's records and
 checks (docs/modules/ledger.md), the store and the catalog (docs/modules/store.md, docs/modules/catalog.md), and the
 World inventory that says where an engine is reached and whether it may receive a case (docs/modules/inventory.md).
-
-This document describes what a run and a score do and why. Names, signatures, refusals and their messages are in
-docs/reference/runner.md.
 
 The bench calls the runner for the repl and the API: it starts a run of a variation for each language its cases are sent
 in, and scores a finished run under every scorer that applies to it.

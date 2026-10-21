@@ -2,9 +2,6 @@
 
 The API is the rig's canonical public control plane and server for the portal's islands.
 
-Public external endpoints are documented as an OpenAPI schema in `/api/openapi.json`, with pages at `/api/docs`, while
-the internal api is documented in docs/reference/api.md along with the other modules in chatddx.
-
 A session is scoped to a person and is carried as a bearer token or cookie. The bench (docs/modules/bench.md), and
 identitiy (docs/modules/identity.md) provide the operational and declarative person-scoped functionality respectively.
 

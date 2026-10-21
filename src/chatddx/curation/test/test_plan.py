@@ -16,9 +16,7 @@ from chatddx.factors.request import (
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import EndpointSpec, Inventory, World
 from chatddx.rig import rig
-from chatddx.test.world import DATA
-
-QWEN, GPT_OSS = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
+from chatddx.test.world import DATA, GPT_OSS_MODEL, QWEN_MODEL
 
 
 def remote(name: str, model: str) -> str:
@@ -55,7 +53,7 @@ def plan(tmp_path: Path, configurations: str | None = "qwen@api", **files: str) 
     return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
 
-ENGINE = remote("qwen@api", QWEN)
+ENGINE = remote("qwen@api", QWEN_MODEL)
 INTENTS = """
 [prompt.case]
 segments = [{ slot = "vignette" }]
@@ -82,7 +80,7 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
 ) -> None:
     engines = (
         ENGINE
-        + remote("gpt-oss@api", GPT_OSS)
+        + remote("gpt-oss@api", GPT_OSS_MODEL)
         + remote("gemma@api", "google/gemma-3-27b-it")
     )
     planned = plan(tmp_path, engines=engines, factors=INTENTS)
@@ -93,8 +91,8 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gpt-oss@api"),
         ("remote_engine", "gemma@api"),
-        ("facts", QWEN),
-        ("facts", GPT_OSS),
+        ("facts", QWEN_MODEL),
+        ("facts", GPT_OSS_MODEL),
         ("prompt", "case"),
         ("output", "raw"),
         ("sampling", "recommended"),
@@ -110,7 +108,7 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
     assert raw.compilation is not None
     compilation = resolve(get, raw.compilation, Compilation)
     assert compilation.recipe.model == planned.named("remote_model", "qwen@api").digest
-    assert compilation.facts == planned.named("facts", QWEN).digest
+    assert compilation.facts == planned.named("facts", QWEN_MODEL).digest
     body = resolve(get, raw.digest, Skeleton).body
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
@@ -200,7 +198,7 @@ entries = { "Fill in the plan." = "Fyll i planen." }
     assert [(r.table, r.name, r.language) for r in planned.stanzas] == [
         ("remote_model", "qwen@api", None),
         ("remote_engine", "qwen@api", None),
-        ("facts", QWEN, None),
+        ("facts", QWEN_MODEL, None),
         ("instructions", "physician", "en"),
         ("prompt", "case", None),
         ("output", "raw", None),

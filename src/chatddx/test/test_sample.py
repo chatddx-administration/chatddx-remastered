@@ -2,12 +2,10 @@ import json
 import tomllib
 from typing import cast
 
-import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
 from chatddx.catalog import threads
-from chatddx.conftest import Loaded
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
 from chatddx.factors.base import Fingerprint, StructuralError, resolve
@@ -16,7 +14,10 @@ from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.rig import rig
 from chatddx.store import People, Rows
 from chatddx.store.store import Connection
+from chatddx.test.helpers import Loaded, sampled_template
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
+
+__all__ = ["sampled_template"]
 
 MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 
@@ -194,11 +195,6 @@ def test_the_sample_s_cases_are_79_english_and_20_swedish() -> None:
     assert sum(c.language == "sv" for c in cases.values()) == 20
     assert cases["casesfromedn1"].language == "sv"
     assert cases["Dutchfall11w"].language == "en"
-
-
-@pytest.fixture
-def template(sampled: Loaded) -> str:
-    return sampled.name
 
 
 def test_the_sample_loads_with_its_world_s_fakes(

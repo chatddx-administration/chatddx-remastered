@@ -6,7 +6,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scoring
 from chatddx.store import People, Rows
 from chatddx.store.store import Connection
-from chatddx.store.test.test_catalog import stored_world
+from chatddx.store.test.helpers import stored_world
 
 LABELS: Labels = {
     ("view", 0): "top-1 match",

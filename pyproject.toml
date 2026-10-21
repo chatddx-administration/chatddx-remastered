@@ -5,16 +5,16 @@ description = "A reproducible and composable rig for accuracy assessment of LLMs
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "argon2-cffi>=25.1",
-    "fastapi>=0.143.0",
-    "jinja2>=3.1.6",
-    "jsonschema>=4.26.0",
-    "psycopg[binary]>=3.3.6",
-    "pydantic>=2.13.5",
-    "python-multipart>=0.0.32",
-    "referencing>=0.37.0",
-    "rich>=15.0",
-    "uvicorn>=0.54.0",
+  "argon2-cffi>=25.1",
+  "fastapi>=0.143.0",
+  "jinja2>=3.1.6",
+  "jsonschema>=4.26.0",
+  "psycopg[binary]>=3.3.6",
+  "pydantic>=2.13.5",
+  "python-multipart>=0.0.32",
+  "referencing>=0.37.0",
+  "rich>=15.0",
+  "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
@@ -31,7 +31,7 @@ docs = ["griffelib>=2.3.2"]
 lint = ["ruff>=0.16.9"]
 test = [
   "httpx2>=2.13.1",
-  "playwright==1.56.0",
+  "playwright~=1.61.0",
   "pytest>=9.1.1",
   "pytest-xdist>=3.8.0",
 ]
@@ -49,15 +49,16 @@ include = ["src"]
 reportAny = false
 reportExplicitAny = false
 
+[tool.pytest]
+markers = [
+  "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
+  "browser: drive a browser through the portal, skipped unless asked for: pytest -m browser",
+]
+strict_markers = true
+testpaths = ["src"]
+
 [tool.ruff.lint]
 extend-select = ["I"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-[tool.pytest]
-testpaths = ["src"]
-strict_markers = true
-markers = [
-  "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
-]

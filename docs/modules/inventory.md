@@ -8,9 +8,6 @@ Heads-up: The location the vignette sources is a factor! Everything else is not.
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/modules/ledger.md, "Run start").
 
-This document describes what the inventory says and why. Classes, fields and errors are in docs/reference/inventory.md.
-The `inventory` builds on the `factors` and nothing else.
-
 ## The file
 
 An inventory is a file of named entries: sources, endpoints, hosts, and the clearance table. An entry's name is its
@@ -26,8 +23,8 @@ writes apart from what people write. A name is defined once, across the inventor
 
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, and that each source is named by its table. A judge's and the configurations' handles
-are resolved as the data set is loaded (docs/modules/curation.md, "Loading"), and anything else that needs
-the engines is checked when an entry is used (src/chatddx/inventory/check.py).
+are resolved as the data set is loaded (docs/modules/curation.md, "Loading"), and anything else that needs the engines
+is checked when an entry is used (src/chatddx/inventory/check.py).
 
 ### Worlds
 

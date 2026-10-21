@@ -4,7 +4,7 @@ from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import start_up
 from chatddx.runner.gate import Refused, admit
-from chatddx.runner.test.test_run import trial
+from chatddx.runner.test.helpers import trial
 from chatddx.test.world import GPT_OSS, QWEN, free_world, world_plan
 
 

@@ -4,16 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
+from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.factors.engine import FileDigest, LocalModel
-from chatddx.identity import Person
-from chatddx.inventory import Inventory
-from chatddx.portal.test.test_reading import shown
-from chatddx.portal.test.test_signing_in import signing_in
-from chatddx.portal.test.test_varying import thread
-from chatddx.scripted.test.test_scripted_runs import held
+from chatddx.portal.test.helpers import ran_template, shown
+from chatddx.scripted.test.helpers import held
 from chatddx.store import Catalog, Store
-from chatddx.store.store import Connection
+from chatddx.test.helpers import alices_bench
 from chatddx.test.world import (
     COMPARED,
     GPT_OSS_ARTIFACT,
@@ -25,22 +22,7 @@ from chatddx.test.world import (
     QWEN_MODEL,
 )
 
-
-@pytest.fixture
-def template(ran: str) -> str:
-    return ran
-
-
-@pytest.fixture
-def signed(client: TestClient, alice: Person) -> TestClient:
-    assert alice.login == "alice"
-    assert signing_in(client).status_code == 303
-    return client
-
-
-@pytest.fixture
-def bench(conn: Connection, alice: Person, world: Inventory) -> Bench:
-    return Bench(conn, alice, world)
+__all__ = ["alices_bench", "ran_template"]
 
 
 def said(page: str) -> str:

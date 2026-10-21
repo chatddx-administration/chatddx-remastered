@@ -3,9 +3,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.test.helpers import ZERO
 from chatddx.test.world import LINES
-
-ZERO = "sha256:" + "0" * 64
 
 
 def _family(signed: TestClient, name: str) -> dict[str, Any]:

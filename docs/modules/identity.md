@@ -1,13 +1,10 @@
 # Identity
 
-Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of what
-chatddx does is done as a person, and `identity` is its declarative layer: its rules are data and pure functions with no
-store access (src/chatddx/identity/), which the bench, the operational layer, applies to what is in the store and the
-World, and the catalog to the owners it records or is asked about.
+People authenticate with a simple identity that represents them throughout the application. Most operations in chatddx
+are done as a person, and `identity` is its declarative layer.
 
-This document describes what identity holds and why. Names, signatures and errors are in docs/reference/identity.md.
-People, their passwords and their sessions are kept by the store (docs/modules/store.md, "People"; `People` in
-docs/reference/store.md), and the `identity` schema and its migrations are in docs/migrations.md.
+An identity own a store and declared rules independently, which are utilized by the operational layer (see
+/docs/modules/bench.py).
 
 ## People
 

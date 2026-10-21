@@ -1,13 +1,12 @@
 # Worker
 
 The worker sends and scores the runs queued for it, outside the request that asked for them, so that a run outlives the
-process that started it, and is followed and halted from any. It strings together pieces documented elsewhere: the queue
-(docs/modules/store.md), the bench that queues runs and scorings and, with the runner, sends and scores
-them (docs/modules/bench.md, docs/modules/runner.md), the ledger's rows a run is told by (docs/modules/ledger.md), and
-the API, and the portal, that ask for runs, and tell their events (docs/modules/api.md, "Runs").
+process that started it, and is followed and halted from any.
 
-This document describes what the worker does and why. Names, signatures and errors are in docs/reference/worker.md, and
-its settings in `src/chatddx/settings.py`.
+It strings together pieces documented elsewhere: the queue (docs/modules/store.md), the bench that queues runs and
+scorings and, with the runner, sends and scores them (docs/modules/bench.md, docs/modules/runner.md), the ledger's rows
+a run is told by (docs/modules/ledger.md), and the API, and the portal, that ask for runs, and tell their events
+(docs/modules/api.md, "Runs").
 
 ## A job
 
@@ -83,8 +82,8 @@ A worker logs the inventory check's findings as it starts (docs/modules/inventor
 
 ## Elsewhere
 
-- **The queue's tables and writes**: docs/modules/store.md; src/chatddx/store/queue.py, and the `worker`
-  schema's migrations (docs/migrations.md).
+- **The queue's tables and writes**: docs/modules/store.md; src/chatddx/store/queue.py, and the `worker` schema's
+  migrations (docs/migrations.md).
 - **A run's events**, numbered by its rows: docs/modules/api.md, "Its events"; docs/modules/ledger.md, "Storage".
 - **Resuming a run**: docs/modules/runner.md, "Resuming".
 - **The portal's runs page**: agents/wip-portal.md.

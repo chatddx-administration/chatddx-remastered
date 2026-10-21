@@ -44,21 +44,11 @@ from chatddx.factors.request import (
     untranslated,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scoring
-from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
-from chatddx.identity import Person
+from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe
 from chatddx.ledger import RunStarted, ScoreStarted
-from chatddx.store import Catalog, People, Rows, Store
+from chatddx.store import People, Rows, Store
 from chatddx.store.store import Connection
-
-
-def stored_world(
-    conn: Connection,
-) -> tuple[Catalog, Store, Registry, dict[str, str], Person]:
-    reg = Registry()
-    ids = world(reg)
-    store = Store(conn)
-    _ = store.add(reg, [ids["trial"], ids["scoring"], ids["canaries"]])
-    return Catalog(conn), store, reg, ids, People(conn).add("alice", "Alice")
+from chatddx.store.test.helpers import stored_world
 
 
 def compiled(store: Store, reg: Registry, *instructions: str) -> Compilation:

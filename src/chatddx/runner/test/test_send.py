@@ -16,7 +16,7 @@ from chatddx.fake_vllm.chat import ANSWER
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Halt, Stopped, send
-from chatddx.runner.test.test_wire import SERVED, body, going_away, whole
+from chatddx.runner.test.helpers import SERVED, body, going_away, whole
 
 
 def at(host: str, port: int) -> str:
