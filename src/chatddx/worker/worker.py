@@ -227,7 +227,9 @@ class Worker:
                 graded = self._scored(conn, bench, started, publisher, held)
                 if held.cut and not held.halted:
                     return "queued"
-                scores = [graded_of(g) for g in graded]
+                latest = {g.scorer.digest: g for g in bench.scores_of(started)}
+                told = {**latest, **{g.scorer.digest: g for g in graded}}.values()
+                scores = [graded_of(g) for g in sorted(told, key=lambda g: g.name)]
                 publisher.put(("run.scored", schemas.RunScoredData(scores=scores)))
         finally:
             publisher.close()
@@ -258,4 +260,4 @@ class Worker:
             )
             if not held.scoring.is_set():
                 _ = queue.scored(job.id, self.id, scorer)
-        return sorted(graded, key=lambda g: g.name)
+        return graded

@@ -304,6 +304,42 @@ def test_a_job_that_can_t_connect_is_lost_and_claimed_again(
 
 
 @pytest.mark.slow
+def test_a_scoring_by_some_scorers_tells_the_latest_score_of_each_as_it_is_over(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, variation = Queue(conn), bench.variation(LINES)
+    lines = next(e.digest for e, a in bench.threads("scorer") if a.name == "lines")
+    with faked(world, Store(conn).get):
+        running = bench.start(variation, QWEN, [bench.family("crlf").case], (7,)).first
+        running.send()
+        _ = running.finish()
+        _ = bench.score(bench.run(running.run))
+    every = [g.name for g in bench.scores_of(bench.run(running.run))]
+    with psycopg.connect(conninfo, autocommit=True) as listener:
+        listen(listener, channel(running.run))
+        with serving(conninfo, world):
+            job = queue.put(alice.id, running.run, QWEN, 0, True, [lines])
+            _ = until(queue, job, ended)
+        assembler = Assembler()
+        heard = [
+            m
+            for n in listener.notifies(timeout=0.5)
+            if (m := assembler.message(n.channel, n.pid, n.payload)) is not None
+        ]
+
+    [told] = [
+        data
+        for m in heard
+        if isinstance(m, Events)
+        for name, data in m.said
+        if name == "run.scored"
+    ]
+    assert isinstance(told, dict) and isinstance(told["scores"], list)
+    assert len(every) > 1
+    assert [s["name"] for s in told["scores"] if isinstance(s, dict)] == every
+
+
+@pytest.mark.slow
 def test_a_worker_takes_a_job_only_while_it_holds_fewer_than_it_may(
     conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
 ) -> None:
