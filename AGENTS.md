@@ -67,12 +67,17 @@ Tell user:
 
 ### Nix
 
-- `nix flake check` runs `scripts/check.sh`'s docs, package and frontend stages, and boots the NixOS module in a VM for
-  its test (`nix/test.nix`), in ~7 minutes; agents aren't expected to run it.
+Agents aren't expected to run this, just know it exists.
+
+`nix flake check` runs:
+
+- `scripts/check.sh`'s docs, package and frontend stages
+- `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
+- `nix/module-eval.nix`
 
 ## Pre-commit checklist
 
-Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
+Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
 
 Run `scripts/check.sh`, which checks what git says has changed, then:
 
