@@ -1,6 +1,6 @@
 # `chatddx.stamp`
 
-Written by `chatddx stamp` from `src/chatddx/stamp/`; how to read it is in [docs/surfaces.md](docs/surfaces.md).
+Written by `chatddx stamp` from `src/chatddx/stamp/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `CLOSING`
 `src/chatddx/stamp/markers.py:CLOSING`
