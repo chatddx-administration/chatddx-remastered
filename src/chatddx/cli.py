@@ -93,7 +93,8 @@ def _person_password(args: argparse.Namespace) -> None:
     print(f"password set for {args.login}")
 
 
-# A World's data set, which the World itself doesn't read: init-data's by default.
+# Policy: a World's data set is where the World itself doesn't read it; init-data's by
+# default.
 DATA = "_data"
 
 
