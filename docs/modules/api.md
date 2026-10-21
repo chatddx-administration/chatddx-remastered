@@ -164,14 +164,7 @@ A stream joined after its run's job ended, or for a run no job took, is told the
 | `judge.answered` | call is recorded    | the case, replicate, view, judge, seed's index, verdict read, and the call |
 | `score.item`     | score written       | the score, the case and replicate, the view, its value and detail          |
 | `score.noted`    | about done          | a finding of the scoring pass, such as an answer its schema refuses        |
-```
-AGENT: replace
-Live, it held only the scorers that job scored; it now holds what a stream joined later is told, and the scoring's
-refusals beside (src/chatddx/worker/worker.py:Worker._done).
----
 | `run.scored`     | scoring is over     | each scorer's latest score, or why this scoring gave none                  |
-```
-| `run.scored`     | scoring is over     | each scorer's score, or why not                                            |
 | `error`          | before `done`       | why                                                                        |
 | `done`           | last                | whether the run's last job was asked to halt, `null` for a run no job took |
 

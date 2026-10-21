@@ -275,8 +275,6 @@ class Queue:
     def enlist(self, worker: UUID) -> None:
         _ = self._conn.execute("INSERT INTO worker.worker (id) VALUES (%s)", (worker,))
 
-    # A job under way that its worker hasn't beaten for `lost` is claimed again. Claims
-    # take turns, so that two workers count an endpoint's slots in use alike.
     def claim(
         self, worker: UUID, capacity: Mapping[str, int], lost: timedelta
     ) -> Job | None:

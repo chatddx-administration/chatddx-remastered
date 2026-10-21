@@ -20,7 +20,7 @@ in between is its own.
 
 ### 1. Before work starts
 
-Run `scripts/check.sh baseline`, on non-zero exit, pause work and relay the flags.
+Run `scripts/check.sh baseline`: on non-zero exit, pause work and relay the flags.
 
 ### 2. Between units of work
 
@@ -32,8 +32,9 @@ you see fit, a session's hooks may ask for both at a turn's end, but neither is 
 Only when asked for a handover or pull request:
 
 1. Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
-2. Run `scripts/check.sh`, which checks what the branch changed since it left `origin/main`, then tell the human of each
-   `flag:` it prints, and flip what the budget suggests when it feels right.
+2. Run `scripts/check.sh`, which checks what the branch changed since it left `origin/main`:
+   - relay flags
+   - flip what the budget suggests when it feels right
 3. Commit and push, and open the pull request if one was asked for.
 
 ## Handling errors and warnings
@@ -42,28 +43,31 @@ How to handle a warning or error:
 
 ### 0. Ignore
 
-Consider not handling an error if:
+Consider not handling an error or warning if:
 
 - it's out of scope
-- its timing, fallout and message are about right
+- its timing, fallout and message are already about right
 
 ### 1. Crash at boot
 
-First choice: If a runtime error can be known at boot
+First choice: If a runtime error can be known at boot:
 
 1. write a check that crashes it at boot
-2. attach a "fix boot-check <boot-check>" message should it occur at runtime
+2. attach a "fix boot-check <boot-check>" message, should it occur at runtime
 
 ### 2. Raw writes to stderr and/or edges
 
 These are for developers and ops, so:
 
 - minimize tampering with the message
-- maximize simplicity in handling.
+- maximize simplicity in handling
 
 ### 3. Inform UX runtime
 
-Tell user:
+Check first: Users should not be able to cause errors, if that's what's happened, an investigation to what lead here is
+needed.
+
+If the error is outside of the user's control, tell them:
 
 - what's going on
 - what they can do now
@@ -117,12 +121,14 @@ A thing under development is in one of the following stages:
 9. Cemented: TBD
 10. Protected: TBD
 
-Things can bounce around freely across these stages but is only in one stage at a time. Docs are never moved and
-reworked in the same commit:
+Things can bounce around freely across these stages but are only in one stage at a time. Docs are moved and reworked in
+separate commits:
 
 - when entering rule 1: Rework -> commit -> move -> commit -> insert suggestions.
 - when leaving rule 1: Move -> commit -> rework.
 - when moving within rule 1: Move -> commit -> insert suggestions.
+
+A move entails updating references.
 
 ## Documentation rules
 
@@ -187,7 +193,7 @@ def serving(
 ### 4. When and how to write a docstring
 
 Public solidified entry points may have a docstring that describes their cost and utility. The cost is the resources it
-invokes, locks it holds and complexity of its operations. The utility is derived from its responsibilty without any
+invokes, locks it holds and complexity of its operations. The utility is derived from its responsibility without any
 assumptions about the caller.
 
 It should be written as a direct continuation of its signature, raises and findings and only fill in the blanks:
