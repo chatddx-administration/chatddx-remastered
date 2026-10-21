@@ -74,6 +74,14 @@ it.
 
 ### The database
 
+```
+AGENT: replace
+The shell keeps dev-db's state under $CHATDDX_STATE_HOME, ~/.local/state (flake.nix, scripts/dev-db.sh), and
+.env-devshell now looks for its socket there; a .env copied before needs copying again.
+---
+`dev-db` runs PostgreSQL 16 from `~/.local/state/dev-db/`, on a socket only. The first start creates the cluster, the
+roles and the `chatddx` database:
+```
 `dev-db` runs PostgreSQL 16 from `./dev-db/`, on a socket only. The first start creates the cluster, the roles and the
 `chatddx` database:
 
@@ -121,6 +129,16 @@ curl -s http://127.0.0.1:12099/v1/models   # served under the engine's digest
 chatddx repl alice
 ```
 
+````
+AGENT: replace
+The repl has no `cell`; a piped repl stops at the first unknown command. `plan`'s model part runs it on the fake.
+---
+```text
+use plan
+run DutchFall10w
+quit
+```
+````
 ```text
 cell plan qwen3-8b-awq@fake
 run DutchFall10w
@@ -173,6 +191,17 @@ chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
 chatddx repl alice --world worlds/kompismoln
 ```
 
+````
+AGENT: replace
+The repl has no `cell`. `plan`'s model, qwen3-8b-awq, isn't served on Kompismoln; its qwen3-8b is, at pelle.
+---
+```text
+use plan
+set model qwen3-8b
+run DutchFall10w
+quit
+```
+````
 ```text
 cell plan qwen3-8b@pelle
 run DutchFall10w
