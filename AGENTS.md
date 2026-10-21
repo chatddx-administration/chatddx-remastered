@@ -69,7 +69,7 @@ The browser tests are a stage of their own in `scripts/check.sh`, and `pytest` s
 - `pytest -m browser` runs the browser tests, which `pytest` skips, in ~75s; `scripts/check.sh browser` builds the
   frontend for them first.
 - The dev shell carries their browser, the headless shell of nixpkgs' playwright-driver, whose minor release is the
-  one `pyproject.toml` pins, or the dev shell doesn't start.
+  one `pyproject.toml` pins, or the dev shell warns and they skip.
 ```
 ## Pre-commit checklist
 

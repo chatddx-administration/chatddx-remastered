@@ -75,13 +75,15 @@ pkgs.testers.runNixOSTest {
     import shlex
 
     def call(method, path, body=None, token=None):
-        asked = ["curl", "-sf", "-X", method, "https://${host}" + path]
+        asked = ["curl", "-s", "--fail-with-body", "-X", method, "https://${host}" + path]
         asked += ["-H", "content-type: application/json"]
         if token:
             asked += ["-H", f"authorization: Bearer {token}"]
         if body is not None:
             asked += ["-d", json.dumps(body)]
-        return json.loads(machine.succeed(shlex.join(asked)))
+        status, said = machine.execute(shlex.join(asked))
+        assert status == 0, f"{method} {path}: {said}"
+        return json.loads(said)
 
     machine.wait_for_unit("chatddx-portal.service")
     machine.wait_for_unit("chatddx-worker-2.service")
@@ -105,7 +107,7 @@ pkgs.testers.runNixOSTest {
         name = "plan"
         [configuration] = call("GET", "/api/threads?kind=configuration&owner=alice&name=" + name.replace(" ", "%20"), token=token)
         family = call("POST", "/api/families", {"text": "A woman of 79 fell at home.", "language": "en"}, token)
-        body = {"configuration": configuration["id"], "endpoint": "qwen3-8b-awq@fake", "families": [family["id"]], "score": True}
+        body = {"configuration": configuration["id"], "families": [family["id"]], "score": True}
         run = call("POST", "/api/runs", body, token)["runs"][0]["run"]
 
         def ended(_):

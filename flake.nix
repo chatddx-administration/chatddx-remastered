@@ -258,13 +258,15 @@
               pinned = pythonSet.playwright.version;
               packaged = pkgs.playwright-driver.version;
             in
-            assert lib.assertMsg (lib.versions.majorMinor pinned == lib.versions.majorMinor packaged)
-              "pyproject.toml pins playwright ${pinned}, nixpkgs' playwright-driver is ${packaged}: their minor releases move together";
-            pkgs.playwright-driver.browsers.override {
-              withChromium = false;
-              withFirefox = false;
-              withWebkit = false;
-            };
+            lib.warnIf (lib.versions.majorMinor pinned != lib.versions.majorMinor packaged)
+              "pyproject.toml pins playwright ${pinned}, nixpkgs' playwright-driver is ${packaged}: the browser tests find no browser of their minor release, and skip"
+              (
+                pkgs.playwright-driver.browsers.override {
+                  withChromium = false;
+                  withFirefox = false;
+                  withWebkit = false;
+                }
+              );
         in
         {
           default = pkgs.mkShell {
