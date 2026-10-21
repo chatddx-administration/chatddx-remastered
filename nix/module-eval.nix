@@ -120,10 +120,7 @@ let
     workers =
       let
         config = evaluated {
-          services.chatddx = {
-            workers = 3;
-            facts = [ "/etc/facts.toml" ];
-          };
+          services.chatddx.workers = 3;
         };
       in
       {
@@ -259,7 +256,7 @@ let
         "chatddx-worker-3"
       ];
       stop = "90s";
-      command = "chatddx worker --facts /etc/facts.toml";
+      command = "chatddx worker";
     };
 
     no_workers_nor_local_database = {

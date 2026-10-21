@@ -26,11 +26,6 @@ let
   }
   // lib.optionalAttrs (cfg.revision != null) { CHATDDX_REVISION = cfg.revision; };
 
-  facts = lib.concatMap (f: [
-    "--facts"
-    "${f}"
-  ]) cfg.facts;
-
   # The engine client follows a proxy named in its environment (src/chatddx/runner/wire.py).
   proxies = [
     "http_proxy"
@@ -88,13 +83,10 @@ let
     // {
       User = writer;
       Group = writer;
-      ExecStart = lib.escapeShellArgs (
-        [
-          "${cfg.package}/bin/chatddx"
-          command
-        ]
-        ++ facts
-      );
+      ExecStart = lib.escapeShellArgs [
+        "${cfg.package}/bin/chatddx"
+        command
+      ];
       EnvironmentFile = lib.optional (cfg.environmentFile != null) cfg.environmentFile;
       Restart = "on-failure";
     };
@@ -169,12 +161,6 @@ in
         read, and should be readable by no user but `${writer}` and the admin. It can't be under /home, which the
         services can't see.
       '';
-    };
-
-    facts = mkOption {
-      type = types.listOf types.path;
-      default = [ ];
-      description = "More model facts, beside the bundled ones and the World's (`--facts`).";
     };
 
     listen = mkOption {
