@@ -251,8 +251,6 @@
           pkgs = nixpkgs.legacyPackages.${system};
           pythonSet = pythonSets.${system}.overrideScope editableOverlay;
 
-          # Accommodating for playwright, which launches only the browsers of its own minor
-          # release, and the browser tests, which launch only the headless shell.
           browsers =
             let
               pinned = pythonSet.playwright.version;
@@ -286,7 +284,6 @@
               UV_PYTHON_DOWNLOADS = "never";
               UV_VENV = "/dev/null";
               PLAYWRIGHT_BROWSERS_PATH = "${browsers}";
-              PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
             };
 
             shellHook = ''

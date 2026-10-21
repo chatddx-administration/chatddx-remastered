@@ -23,14 +23,14 @@ How to handle a warning or error:
 Consider not handling an error if:
 
 - it's out of scope
-- if its timing, fallout and message are about right
+- its timing, fallout and message are about right
 
 ### 1. Crash at boot
 
 First choice: If a runtime error can be known at boot
 
 1. write a check that crashes it at boot
-2. attach a "fix boot-check <boot-check>" should it occur at runtime
+2. attach a "fix boot-check <boot-check>" message should it occur at runtime
 
 ### 2. Raw writes to stderr and/or edges
 
@@ -65,15 +65,11 @@ Tell user:
 - `scripts/check.sh browser` builds the frontend for them first.
 - `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s
 
-```
-AGENT: ADD
-`nix flake check` is the one check that boots the NixOS module; agents only need to know it's there.
----
 ### Nix
 
-- `nix flake check` runs `scripts/check.sh`'s docs, package and frontend stages, and boots the NixOS module in a VM
-  for its test (`nix/test.nix`), in ~7 minutes; agents aren't expected to run it.
-```
+- `nix flake check` runs `scripts/check.sh`'s docs, package and frontend stages, and boots the NixOS module in a VM for
+  its test (`nix/test.nix`), in ~7 minutes; agents aren't expected to run it.
+
 ## Pre-commit checklist
 
 Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
