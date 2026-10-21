@@ -69,8 +69,6 @@
           )
       );
 
-      # Accommodating for Tailwind, which reads the portal's templates beside the frontend
-      # (frontend/src/portal.css).
       frontend =
         system:
         let
@@ -83,6 +81,8 @@
             root = ./.;
             fileset = lib.fileset.unions [
               ./frontend
+              # Accommodating for Tailwind, which reads the portal's templates beside the frontend
+              # (frontend/src/portal.css).
               ./src/chatddx/portal/templates
             ];
           };
