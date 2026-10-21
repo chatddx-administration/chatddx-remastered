@@ -75,12 +75,18 @@ Agents aren't expected to run this, just know it exists.
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 
-## Before work starts
+## Workflow
+
+### 1. Before work starts
 
 On a fresh commit, run `scripts/check.sh baseline`. When it prints a `flag:`, stop and tell the human: stamps pending
 are theirs to stamp, and a surface behind the code is to be looked into, before work proceeds.
 
-## Pre-commit checklist
+### 2. Between units of works
+
+No rules, use your own judgement and the tests and checks at your disposal, the commits will be squashed.
+
+### 3. Before work is handed over
 
 Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
 
@@ -89,7 +95,7 @@ Run `scripts/check.sh`, which checks what git says has changed, then:
 - Tell the human of each `flag:` it prints.
 - Flip what the budget suggests when it feels right.
 
-Commit.
+Commit and push.
 
 ## Development stages
 
