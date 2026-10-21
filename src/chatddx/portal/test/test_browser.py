@@ -50,7 +50,7 @@ def _model(page: Page, name: str) -> dict[str, Any]:
 def built() -> Path:
     found = settings.portal_assets()
     if not Assets(found).built:
-        pytest.skip(f"nothing built in {found}: pnpm --dir frontend build")
+        pytest.fail(f"nothing built in {found}: pnpm --dir frontend build")
     return found
 
 
@@ -79,7 +79,7 @@ def page(portal: str, alice: Person) -> Iterator[Page]:
         try:
             browser = playwright.chromium.launch()
         except Error as e:
-            pytest.skip(f"no browser for Playwright: {e.message.splitlines()[0]}")
+            pytest.fail(f"no browser for Playwright: {e.message.splitlines()[0]}")
         opened = browser.new_page(base_url=portal)
         opened.set_default_timeout(15_000)
         _ = opened.goto("/sign-in")
