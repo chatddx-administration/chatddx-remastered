@@ -9,24 +9,11 @@ last stamped it. `settings.STAMPED` holds the solidified packages, those with a 
 
 - `chatddx stamp write` writes the surfaces behind the code, and says how many stamps it wrote to each, `new` for a
   surface written whole, or "nothing to write".
-
-```
-AGENT: rewrite
-AGENTS.md's "Pre-commit checklist" is now "3. Before work is handed over", and a suggestion there renames it "3. Handing
-over"; refcheck fails on the old name. `scripts/check.sh` runs the check whenever its package stage runs.
----
 - `chatddx stamp check` writes nothing, and prints "ok" or what it flags. `scripts/check.sh` runs it in its package
   stage, as a handover does (AGENTS.md, "3. Handing over"): it flags stamps pending, which wait for a human and are
   normal as work goes on, and fails while a surface is behind the code, which `chatddx stamp write` settles, as
   `chatddx openapi` settles `frontend/openapi.json`.
   `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` fails then too.
-```
-
-- `chatddx stamp check` writes nothing, and prints "ok" or what it flags. `scripts/check.sh` runs it before a handover
-  (AGENTS.md, "Workflow"): it flags stamps pending, which wait for a human and are normal as work goes on, and fails
-  while a surface is behind the code, which `chatddx stamp write` settles, as `chatddx openapi` settles
-  `frontend/openapi.json`. `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` fails
-  then too.
 - `chatddx stamp check --baseline` is run on a fresh commit before work starts (`scripts/check.sh baseline`), and fails
   on both: stamps pending are a human's to stamp before work proceeds, and a surface behind the code means a commit
   skipped `chatddx stamp write`, which is looked into before work proceeds.
