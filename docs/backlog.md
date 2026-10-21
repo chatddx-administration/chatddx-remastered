@@ -499,17 +499,10 @@ refuses a parameter a route doesn't declare and a scalar given twice.
 Loading that can only verify, loads as someone other than the archive, from several sources, holds what has no table
 yet, knows the leftovers meant to stay, and says why it skips a recipe.
 
-Decided: a data set lists the leftovers it keeps, and loading reports only new ones.
-
 - verifying that the store holds a data set, without writing anything, which a loading's validated lines only do inside
   a transaction that writes;
 - importing a data set as someone other than the archive.
 - Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
-
-- **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
-- `curation/plan.py:plan_factors`: when the configurations endpoint's engine has no engine file in the data set, every
-  recipe is skipped as "the World names no endpoint configurations are made for"; it names one, whose engine the data
-  set doesn't hold.
 
 ### Exporting data sets
 
