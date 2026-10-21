@@ -1,3 +1,5 @@
+from collections.abc import Generator
+from contextlib import contextmanager, suppress
 from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
@@ -15,7 +17,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
 from chatddx.factors.trial import Trial, suggest_seeds
-from chatddx.store import Queue
+from chatddx.store import Queue, UnderWay
 
 from .configurations import linked
 from .pages import BenchDep, page
@@ -122,20 +124,29 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     )
 
 
+# Policy: a press made while something is under way for its run, from a second tab, a
+# stale page or a second click, counts as made: the page it leads back to says so.
+@contextmanager
+def pressed() -> Generator[None]:
+    with refused(), suppress(UnderWay):
+        yield
+
+
 @router.post("/runs/{run}/halt")
 def halting(bench: BenchDep, run: UUID) -> Response:
     _ = bench.run(run)
-    try:
+    # Policy: as with pressed, a run with nothing left under way is halted already.
+    with suppress(LookupError):
         _ = Queue(bench.conn).halt(run)
-    except LookupError as e:
-        raise HTTPException(409, str(e)) from None
     return RedirectResponse(f"/runs/{run}", 303)
 
 
 @router.post("/runs/{run}/resume")
 def resuming(bench: BenchDep, run: UUID) -> Response:
-    with refused():
-        _ = bench.queue(bench.resume(bench.run(run)))
+    started = bench.run(run)
+    if run not in bench.store.finished([run]):
+        with pressed():
+            _ = bench.queue(bench.resume(started))
     return RedirectResponse(f"/runs/{run}", 303)
 
 
@@ -161,7 +172,7 @@ def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
 def scoring(bench: BenchDep, run: UUID) -> Response:
     started = bench.run(run)
     if left := bench.unscored(started):
-        with refused():
+        with pressed():
             _ = bench.queue_scoring(started, left)
     return RedirectResponse(f"/runs/{run}", 303)
 

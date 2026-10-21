@@ -59,8 +59,8 @@ def test_a_run_under_way_is_followed_and_halted_on_its_page(
     left = shown(signed, "/runs?left=true")
     assert f'action="/runs/{run}/scores"' in left
 
-    got = signed.post(f"/runs/{run}/halt")
-    assert got.status_code == 409 and "A conflict" in got.text
+    stale = signed.post(f"/runs/{run}/halt")
+    assert (stale.status_code, stale.headers["location"]) == (303, f"/runs/{run}")
 
 
 @pytest.mark.usefixtures("fake")
@@ -91,6 +91,25 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
         shown_again["described"].split(" (seed")[0]
         == scored["described"].split(" (seed")[0]
     )
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_with_something_under_way_is_scored_again_by_one_press_of_many(
+    signed: TestClient,
+) -> None:
+    run = started(signed, score=False)
+    _ = settled(signed, run)
+    assert signed.post("/queue/pause").status_code == 303
+    assert signed.post(f"/runs/{run}/scores").status_code == 303
+    queued = signed.get(f"/api/runs/{run}").json()["job"]
+    assert queued["status"] == "queued"
+    left = shown(signed, "/runs?left=true")
+    assert f'href="/runs/{run}"' in left and f'action="/runs/{run}/scores"' not in left
+
+    again = signed.post(f"/runs/{run}/scores")
+    assert (again.status_code, again.headers["location"]) == (303, f"/runs/{run}")
+    assert signed.get(f"/api/runs/{run}").json()["job"] == queued
 
 
 @pytest.mark.usefixtures("fake")
@@ -130,14 +149,21 @@ def test_the_runs_page_says_how_the_queue_stands_and_pauses_stops_and_resumes_it
     page = shown(signed, f"/runs/{run}")
     assert f'action="/runs/{run}/resume"' in page and "Run again" in page
 
+    for _ in range(2):
+        got = signed.post(f"/runs/{run}/resume")
+        assert (got.status_code, got.headers["location"]) == (303, f"/runs/{run}")
+    resumed = signed.get(f"/api/runs/{run}").json()["job"]
+    assert resumed["status"] == "queued"
     assert signed.post("/queue/resume").status_code == 303
-    got = signed.post(f"/runs/{run}/resume")
-    assert (got.status_code, got.headers["location"]) == (303, f"/runs/{run}")
     _ = settled(signed, run)
     done = signed.get(f"/api/runs/{run}").json()
     assert done["finished"] and done["job"]["status"] == "finished"
+    assert done["job"]["queued"] == resumed["queued"]
     page = shown(signed, f"/runs/{run}")
     assert f'action="/runs/{run}/resume"' not in page
+    stale = signed.post(f"/runs/{run}/resume")
+    assert (stale.status_code, stale.headers["location"]) == (303, f"/runs/{run}")
+    assert signed.get(f"/api/runs/{run}").json()["job"] == done["job"]
 
 
 @pytest.mark.slow
@@ -276,6 +302,29 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
     got = signed.post(f"/review/{crlf['id']}/scores", data=form)
     assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
     assert signed.get(f"/api/runs/{run}").json()["job"] == scored
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_case_s_runs_are_scored_from_its_review_whatever_is_under_way_for_one(
+    signed: TestClient,
+) -> None:
+    first, second = started(signed, score=False), started(signed, score=False)
+    for run in (first, second):
+        _ = settled(signed, run)
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    query = {"kind": "scorer", "name": LINES}
+    [scorer] = signed.get("/api/threads", params=query).json()
+    assert signed.post("/queue/pause").status_code == 303
+    assert signed.post(f"/runs/{first}/scores").status_code == 303
+    held = signed.get(f"/api/runs/{first}").json()["job"]
+
+    back = f"/review/{crlf['id']}?scorer={scorer['id']}"
+    form = {"run": [first, second], "scorer": scorer["head"]["digest"], "back": back}
+    got = signed.post(f"/review/{crlf['id']}/scores", data=form)
+    assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
+    assert signed.get(f"/api/runs/{first}").json()["job"] == held
+    assert signed.get(f"/api/runs/{second}").json()["job"]["status"] == "queued"
 
 
 @pytest.mark.slow
