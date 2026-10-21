@@ -1,6 +1,6 @@
 # `chatddx.store`
 
-Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs/surfaces.md](surfaces.md).
+Written by `chatddx stamp` from `src/chatddx/store/`; how to read it is in [docs/surfaces.md](docs/surfaces.md).
 
 ## `Assembler`
 `src/chatddx/store/notify.py:Assembler`

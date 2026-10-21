@@ -1,6 +1,6 @@
 # `chatddx.repl`
 
-Written by `chatddx stamp` from `src/chatddx/repl/`; how to read it is in [docs/surfaces.md](surfaces.md).
+Written by `chatddx stamp` from `src/chatddx/repl/`; how to read it is in [docs/surfaces.md](docs/surfaces.md).
 
 ## `ANSWERED`
 `src/chatddx/repl/render.py:ANSWERED`
