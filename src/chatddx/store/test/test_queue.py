@@ -127,8 +127,8 @@ def test_a_worker_s_beat_keeps_its_jobs_and_a_lost_one_is_claimed_again(
 
     with admin.transaction():
         _ = admin.execute(
-            "UPDATE worker.worker SET seen = now() - interval '1 minute' WHERE id = %s",
-            (gone,),
+            "UPDATE worker.job SET beat = now() - interval '1 minute' WHERE id = %s",
+            (job.id,),
         )
     taken = queue.claim(here, {"e": 1}, LOST)
     assert taken is not None and (taken.id, taken.worker) == (job.id, here)

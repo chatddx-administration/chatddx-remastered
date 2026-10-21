@@ -29,6 +29,14 @@ halt is taken whatever its slots, to be halted, and so is one at an endpoint the
 the gate. Claims take turns, so that several workers count an endpoint's slots alike, and a claimed job is locked, so
 that two workers never take the same one.
 
+```
+AGENT: replace
+A job is lost by its own beat now, not its worker's (src/chatddx/store/queue.py:Queue.claim): a worker that can't end
+a job, as when it can't connect for it, still beats, and its job was under way, and its slots held, until a restart.
+---
+A job under way that its worker hasn't beaten for a while, as one its worker has let go of or is gone with, is claimed
+again, and its run resumed: lost isn't a status.
+```
 A job under way whose worker hasn't been seen for a while is claimed again, and its run resumed: lost isn't a status.
 
 ## Working a job

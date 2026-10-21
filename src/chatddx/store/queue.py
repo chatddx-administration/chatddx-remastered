@@ -26,12 +26,7 @@ _PAUSED = """
     EXISTS (SELECT 1 FROM worker.control c WHERE c.owner = j.owner AND c.paused)
 """
 
-_LIVE = """
-    EXISTS (
-        SELECT 1 FROM worker.worker w
-        WHERE w.id = j.worker AND w.seen > now() - %(lost)s
-    )
-"""
+_LIVE = "j.beat > now() - %(lost)s"
 
 
 class UnderWay(ValueError):
@@ -280,7 +275,7 @@ class Queue:
     def enlist(self, worker: UUID) -> None:
         _ = self._conn.execute("INSERT INTO worker.worker (id) VALUES (%s)", (worker,))
 
-    # A job under way whose worker hasn't been seen for `lost` is claimed again. Claims
+    # A job under way that its worker hasn't beaten for `lost` is claimed again. Claims
     # take turns, so that two workers count an endpoint's slots in use alike.
     def claim(
         self, worker: UUID, capacity: Mapping[str, int], lost: timedelta

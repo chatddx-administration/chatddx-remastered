@@ -357,6 +357,12 @@ done a finish record. Only ever added to. `src/chatddx/ledger/record.py:Log`
 runs under or why it can't run, its lints, the languages its cases are sent in and its reach.
 `src/chatddx/api/threads.py`
 
+```
+AGENT: replace
+A job is lost by its own beat now, not its worker's, so a job its worker let go of without ending is lost too.
+---
+:Lost — A job under way that its worker hasn't beaten for a while, so a claim takes it.
+```
 :Lost — A job under way whose worker hasn't been seen for a while, so a claim takes it.
 `src/chatddx/store/queue.py:Queue.claim`
 

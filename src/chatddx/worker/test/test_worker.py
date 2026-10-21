@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 import psycopg
@@ -261,12 +262,42 @@ def test_a_job_whose_worker_is_lost_is_claimed_and_its_run_resumed(
     assert queue.claim(ghost, {QWEN: 4}, LOST) is not None
     with admin.transaction():
         _ = admin.execute(
-            "UPDATE worker.worker SET seen = now() - interval '1 minute' WHERE id = %s",
-            (ghost,),
+            "UPDATE worker.job SET beat = now() - interval '1 minute' WHERE id = %s",
+            (job.id,),
         )
     with serving(conninfo, world) as worker:
         done = until(queue, job, ended)
 
+    assert (done.status, done.worker) == ("finished", worker.id)
+    assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_job_that_can_t_connect_is_lost_and_claimed_again(
+    conn: Connection,
+    conninfo: str,
+    world: Inventory,
+    bench: Bench,
+    alice: Person,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, False)
+    connect, refused = psycopg.connect, threading.Event()
+
+    def once_refused(*args: Any, **kwargs: Any) -> Connection:
+        on_a_job = threading.current_thread().name.startswith("chatddx-job-")
+        if on_a_job and not refused.is_set():
+            refused.set()
+            raise psycopg.OperationalError("too many connections for role")
+        return connect(*args, **kwargs)
+
+    monkeypatch.setattr(psycopg, "connect", once_refused)
+    with serving(conninfo, world) as worker:
+        done = until(queue, job, ended)
+
+    assert refused.is_set()
     assert (done.status, done.worker) == ("finished", worker.id)
     assert len(Store(conn).run(started).items) == 2
 
