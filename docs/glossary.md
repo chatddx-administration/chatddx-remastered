@@ -215,8 +215,7 @@ and before the prompt. `src/chatddx/factors/request.py:FewShot`
 versioned; the only one, `text@1`, writes a string as it is, strings one per line, and anything else as JSON.
 `src/chatddx/factors/scoring.py:Judge.fill`
 
-:Finding — A warning or an info with a code, a message and what it is about: something declared that doesn't match what
-was observed, something that failed or is missing, or a risky setting. `src/chatddx/factors/base.py:Finding`
+:Finding — non-catastrophic inconsistency discovered at start-up or runtime, see "Findings" below.
 
 :Fingerprint — A hash of content that is not stored with the factors or the ledger: a vignette, a request, a prompt's
 token ids. It names its algorithm: `sha256`, or `hmac-sha256` with the key's id.

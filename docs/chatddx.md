@@ -21,19 +21,18 @@ It must be possible to deliver the cage together with the results, for scientifi
   require strict and simple pattern matching.
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can
   be passed along revealing just enough for the orchestrator to fulfill its duty. Cases will enter the system
-  de-identified from a predefined source.
+  de-identified from a predefined source, are be typed directly into a chat see "Typed case" in docs/glossary.md.
+  De-identification is the clinician's duty, said in the portal.
 - Nothing can be expected of the vignettes: They may or may not include labs and imaging results, and may even lack
   basic details such as age or sex. The source exposes no revision identifier.
 - Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough,
   translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and
   monitoring runs.
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
-  scorer is put together by researchers in the portal (`docs/modules/factors.md`, "Scorer"). code and expectation schema
-  among those shipped.
+  scorer is put together by researchers in the portal (docs/modules/factors.md, "Scorer").
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
-- a start-up that the start-up script reads (`agents/wip-deploy.md`, "The NixOS module")
 
 ### Intended evolution of configurations
 
@@ -48,16 +47,20 @@ The researchers will want to iterate and continuously refine configurations acco
 What a configuration and a variation are, and how a variation is kept, is the catalog's (docs/modules/catalog.md,
 "Configurations and variations").
 
+## Release
+
+The project is ready to be released when agents/wip-deploy.md ("the last wip").
+
 ## Vignettes and anything made from them are sensitive
 
 The vignette and content produced from it: fills, requests and responses, tool arguments and results, judge requests and
 responses, an engine's error that echoes a request; are all sensitive. Every part in the system that touches this data
-must label it "sensitive".
+must mention "sensitive" in the docs in preparation for the clearance pipeline (agents/wip-clearance.md). Typed cases
+included. Clearance and sensitivity are considered a moving target until release: own store as cleared by definition,
+and errors as an exception until the clearance pipeline exists.
 
-## The clearance pipeline
-
-Sensitive content may go only where it is cleared to go, so sending it to an engine that isn't cleared, judge engines
-included, must be refused, and so must storing it, showing it at an edge, handing it to a tool's third party or
+In short: Sensitive content may go only where it is cleared to go, so sending it to an engine that isn't cleared, judge
+engines included, must be refused, and so must storing it, showing it at an edge, handing it to a tool's third party or
 exporting it where it isn't.
 
 ## Findings
