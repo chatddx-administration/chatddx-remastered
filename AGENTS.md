@@ -98,13 +98,17 @@ A thing under development is in one of the following stages:
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
 8. Solidified:
-   - Docs under rule-1 in `docs/modules/<name>.md`
+   - Docs under rule 1 in `docs/modules/<name>.md`
    - Surface stamped in `docs/surfaces/<name>.md`
 9. Cemented: TBD
 10. Protected: TBD
 
-Things can bounce around freely across these stages but is only in one stage at once. Docs are never moved and reworked
-in the same commit: Move verbatim, commit, then insert suggestions or edit if permitted.
+Things can bounce around freely across these stages but is only in one stage at a time. Docs are never moved and
+reworked in the same commit:
+
+- when entering rule 1: Rework -> commit -> move -> commit -> insert suggestions.
+- when leaving rule 1: Move -> commit -> rework.
+- when moving within rule 1: Move -> commit -> insert suggestions.
 
 ## Documentation rules
 
