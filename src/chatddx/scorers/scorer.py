@@ -18,7 +18,8 @@ NO_ANSWER: JsonValue = {"reason": "no answer"}
 NO_TARGET: JsonValue = {"reason": "no target"}
 
 
-# A judged view's verdicts, one per seed of its judge, each none when it couldn't be read.
+# Policy: a verdict that couldn't be read is kept as none, so that a judged view's verdicts
+# stay one per seed of its judge.
 type Verdicts = list[JsonValue | None]
 
 

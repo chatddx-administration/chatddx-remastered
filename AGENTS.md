@@ -11,8 +11,30 @@ This document contains project-wide instructions written by humans for agents.
   - Setup database and roles with `src/chatddx/store/setup.sql`
 - Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is
   needed.
-- `pnpm --dir frontend build` builds frontend.
 - `chatddx.settings` is the project-wide source of truth.
+
+## Workflow
+
+The workflow is a session's: it starts from a human-reviewed commit and ends with a handover. What the session commits
+in between is its own.
+
+### 1. Before work starts
+
+Run `scripts/check.sh baseline`, on non-zero exit, pause work and relay the flags.
+
+### 2. Between units of work
+
+No rules: use your own judgement and the tests and checks at your disposal (see "Tests and checks"). Commit and push as
+you see fit, a session's hooks may ask for both at a turn's end, but neither is a handover.
+
+### 3. Handing over
+
+Only when asked for a handover or pull request:
+
+1. Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
+2. Run `scripts/check.sh`, which checks what the branch changed since it left `origin/main`, then tell the human of each
+   `flag:` it prints, and flip what the budget suggests when it feels right.
+3. Commit and push, and open the pull request if one was asked for.
 
 ## Handling errors and warnings
 
@@ -46,40 +68,37 @@ Tell user:
 - what's going on
 - what they can do now
 
-## Testing
+## Tests and checks
 
 ### Python
 
-- Baseline is `pytest` runs every test and takes ~110s;
+- `pytest` runs every test but the browser tests, in ~110s.
 - `pytest -m 'not slow'` takes ~22s.
 - `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
 - Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
   `src/chatddx/test/world.py`.
+- `basedpyright` for typecheck
+- `ruff check` for lint
 
 ### TypeScript
 
+- `pnpm --dir frontend check` type checks frontend
 - `pnpm --dir frontend test` tests frontend takes less than 2s
 
 ### Browser
 
-- `scripts/check.sh browser` builds the frontend for them first.
+- `pnpm --dir frontend build` if not already built.
 - `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s
 
 ### Nix
 
-- `nix flake check` runs `scripts/check.sh`'s docs, package and frontend stages, and boots the NixOS module in a VM for
-  its test (`nix/test.nix`), in ~7 minutes; agents aren't expected to run it.
+Agents aren't expected to run this, just know it exists.
 
-## Pre-commit checklist
+`nix flake check` runs:
 
-Remove all docstrings and comments that don't pass doc rule 3 and 4 respectively (pre-existing included).
-
-Run `scripts/check.sh`, which checks what git says has changed, then:
-
-- Tell the human of each `flag:` it prints.
-- Flip what the budget suggests when it feels right.
-
-Commit.
+- `scripts/check.sh`'s docs, package and frontend stages
+- `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
+- `nix/module-eval.nix`
 
 ## Development stages
 
@@ -93,13 +112,17 @@ A thing under development is in one of the following stages:
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
 8. Solidified:
-   - Docs under rule-1 in `docs/modules/<name>.md`
+   - Docs under rule 1 in `docs/modules/<name>.md`
    - Surface stamped in `docs/surfaces/<name>.md`
 9. Cemented: TBD
 10. Protected: TBD
 
-Things can bounce around freely across these stages but is only in one stage at once. Docs are never moved and reworked
-in the same commit: Move verbatim, commit, then insert suggestions or edit if permitted.
+Things can bounce around freely across these stages but is only in one stage at a time. Docs are never moved and
+reworked in the same commit:
+
+- when entering rule 1: Rework -> commit -> move -> commit -> insert suggestions.
+- when leaving rule 1: Move -> commit -> rework.
+- when moving within rule 1: Move -> commit -> insert suggestions.
 
 ## Documentation rules
 

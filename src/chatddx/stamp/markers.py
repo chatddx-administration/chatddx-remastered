@@ -1,9 +1,9 @@
 from difflib import SequenceMatcher
 
-OPENING = "<<<<<<< signed"
-DIVIDER = "======="
-CLOSING = ">>>>>>> @stamp"
-CONFLICT = ("<<<<<<<", ">>>>>>>")
+_OPENING = "<<<<<<< signed"
+_DIVIDER = "======="
+_CLOSING = ">>>>>>> @stamp"
+_CONFLICT = ("<<<<<<<", ">>>>>>>")
 
 
 def signed(text: str) -> list[str]:
@@ -11,13 +11,13 @@ def signed(text: str) -> list[str]:
     opened: int | None = None
     divided = False
     for n, line in enumerate(text.splitlines(), 1):
-        if opened is None and line == OPENING:
+        if opened is None and line == _OPENING:
             opened = n
-        elif opened is not None and not divided and line == DIVIDER:
+        elif opened is not None and not divided and line == _DIVIDER:
             divided = True
-        elif divided and line == CLOSING:
+        elif divided and line == _CLOSING:
             opened, divided = None, False
-        elif line.startswith(CONFLICT):
+        elif line.startswith(_CONFLICT):
             raise ValueError(f"line {n}: a conflict marker that isn't a stamp's")
         elif not divided:
             kept.append(line)
@@ -26,8 +26,18 @@ def signed(text: str) -> list[str]:
     return kept
 
 
-def pending(text: str) -> int:
-    return sum(1 for line in text.splitlines() if line == CLOSING)
+def stamps(text: str) -> list[tuple[str, ...]]:
+    found: list[tuple[str, ...]] = []
+    held: list[str] | None = None
+    for line in text.splitlines():
+        if held is None:
+            held = [] if line == _OPENING else None
+        elif line == _CLOSING:
+            found.append(tuple(held))
+            held = None
+        else:
+            held.append(line)
+    return found
 
 
 def _entries(lines: list[str]) -> int:
@@ -47,5 +57,5 @@ def stamped(current: str | None, written: str) -> str:
         if op == "equal":
             lines += old[i1:i2]
         else:
-            lines += [OPENING, *old[i1:i2], DIVIDER, *new[j1:j2], CLOSING]
+            lines += [_OPENING, *old[i1:i2], _DIVIDER, *new[j1:j2], _CLOSING]
     return "\n".join(lines) + "\n"

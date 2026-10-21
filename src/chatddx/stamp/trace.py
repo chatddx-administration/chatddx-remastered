@@ -8,8 +8,8 @@ from .code import Code, Def, decorated, private
 VALIDATORS = frozenset(
     {"field_validator", "model_validator", "validator", "root_validator"}
 )
-VALIDATION = "pydantic.ValidationError"
-CONVERSIONS = {ord("r"): "!r", ord("s"): "!s", ord("a"): "!a"}
+_VALIDATION = "pydantic.ValidationError"
+_CONVERSIONS = {ord("r"): "!r", ord("s"): "!s", ord("a"): "!a"}
 
 
 @dataclass(frozen=True)
@@ -92,7 +92,7 @@ class Trace:
             if validated or name == "__post_init__":
                 through = f"{cls.name}.{name}"
                 for r in self.of(member, cls).raised:
-                    kind = VALIDATION if validated else r.kind
+                    kind = _VALIDATION if validated else r.kind
                     found.append(
                         replace(r, kind=kind, through=through, validated=validated)
                     )
@@ -265,7 +265,7 @@ class _Walker:
         if isinstance(node, ast.JoinedStr):
             return "".join(self.text(v) or "" for v in node.values)
         if isinstance(node, ast.FormattedValue):
-            conversion = CONVERSIONS.get(node.conversion, "")
+            conversion = _CONVERSIONS.get(node.conversion, "")
             return f"{{{self.code.segment(self.function, node.value)}{conversion}}}"
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
             left, right = self.text(node.left), self.text(node.right)

@@ -1,6 +1,6 @@
 # `chatddx.inventory`
 
-Written by `chatddx stamp` from `src/chatddx/inventory/`; how to read it is in [docs/surfaces.md](surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/inventory/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `AnySource`
 `src/chatddx/inventory/inventory.py:AnySource`

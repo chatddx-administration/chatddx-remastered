@@ -31,18 +31,23 @@ STAMPED = (
     "factors",
     "facts",
     "identity",
+    "importers",
     "inventory",
     "ledger",
     "repl",
     "runner",
+    "scorers",
     "scripted",
+    "stamp",
     "store",
+    "tools",
     "worker",
 )
 
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)
-# Within the stop timeout of the service that runs the worker.
+# Policy: within the stop timeout of the service that runs the worker, TimeoutStopSec in
+# nix/module.nix.
 WORKER_DEADLINE = timedelta(seconds=60)
 
 

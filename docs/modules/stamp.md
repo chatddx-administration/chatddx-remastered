@@ -2,36 +2,26 @@
 
 `chatddx stamp` writes `docs/surfaces/<package>.md` for each package in `settings.STAMPED` from the code
 (`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
-last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/<package>.md`, and the surface
-replaces their `docs/<package>-api.md`. What those held that isn't Python (schemas, commands, file formats, conventions,
-tests) is dropped; their tables of finding codes are the surfaces' Finds.
-
-## Where it stands among the common ways
-
-- Reading the code: griffe (`src/chatddx/stamp/code.py:Code`), the static loader behind mkdocstrings and `griffe check`,
-  gives the names, what they are, their members, imports and line ranges. Their text, as the code spells it, is taken
-  from the AST, since griffe respells it (`Literal['current']` for `Literal["current"]`).
-- Rendering: its own, for the format below. griffe2md, the common renderer, writes about 490 lines for identity and says
-  nothing of what is raised.
-- What is raised: what pydoclint and ruff's DOC501 check a docstring's "Raises" against, a function's own `raise`
-  statements, and with them its private helpers'.
-- The workflow: Microsoft's API Extractor commits its API report the same way, and fails a build while it is behind.
-- What changed: a git conflict, the format editors and their conflict tools already read, so that one key, a conflict
-  tool's "theirs", applies a stamp and undo and redo flip between the two sides.
-- The name: `stamp`, since `reference` is also SQL's, the curation plan's (`REFERENCES`) and the factors' (`RefTo`), and
-  `signoff` is also git's (`Signed-off-by`). What it writes is a package's surface, AGENTS.md's word for its public
-  names.
-- griffe is in the `docs` dependency group: a deployed chatddx goes without it.
+last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/modules/<package>.md` (AGENTS.md,
+"Development stages").
 
 ## The workflow
 
-- Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`. `--check` writes nothing and fails while
-  a surface is behind the code, and so does
-  `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it`.
-- A surface that doesn't exist yet is written whole, and stamped as a whole in review.
-- A change in the generator's format is written whole too, deleting the surfaces and running `chatddx stamp`, and only
-  while `chatddx stamp --check` passes with no stamp pending: the signed sides are then the code as the old format
-  writes it, so nothing goes unstamped.
+- `chatddx stamp write` writes the surfaces behind the code, and says how many stamps it wrote to each, `new` for a
+  surface written whole, or "nothing to write".
+- `chatddx stamp check` writes nothing, and prints "ok" or what it flags. `scripts/check.sh` runs it in its package
+  stage, as a handover does (AGENTS.md, "3. Handing over"): it flags stamps pending, which wait for a human and are
+  normal as work goes on, and fails while a surface is behind the code, which `chatddx stamp write` settles, as
+  `chatddx openapi` settles `frontend/openapi.json`.
+  `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` fails then too.
+- `chatddx stamp check --baseline` is run on a fresh commit before work starts (`scripts/check.sh baseline`), and fails
+  on both: stamps pending are a human's to stamp before work proceeds, and a surface behind the code means a commit
+  skipped `chatddx stamp write`, which is looked into before work proceeds.
+- Both flag, and fail on, a stamp that isn't closed, a conflict marker that isn't a stamp's, and a surface no package of
+  `settings.STAMPED` writes.
+- A change in the generator's format is written whole too, deleting the surfaces and running `chatddx stamp write`, and
+  only while `chatddx stamp check --baseline` passes: the signed sides are then the code as the old format writes it, so
+  nothing goes unstamped.
 - After that, a change in the code is written in place of the lines it changes as a git conflict
   (`src/chatddx/stamp/markers.py:stamped`): `<<<<<<< signed`, the lines as last stamped, `=======`, what the code says
   now, `>>>>>>> @stamp`. A human takes the code's side, which is their stamp. Stamps left pending are worked out anew on
@@ -78,9 +68,9 @@ Raises:
 - A class's fields: annotated or assigned in its body, as written when on one line, and annotated on `self` in
   `__init__`. A constant or a type alias, without a bullet, since it is neither: as written when on one line. Else the
   annotation and the head of the value: `= Field(…)`, `= {…}`, `= Literal[…]`.
-- A docstring, as written. None of identity's or bench's names has one.
+- A docstring, as written (AGENTS.md, "4. When and how to write a docstring").
 
-## What it says is raised
+## Raises
 
 - The function's own `raise` statements, and those of the private helpers it calls, `(through <helper>)`, the one it
   calls, however deep the raise is: `_helper(…)`, and `self._helper(…)`, `cls._helper(…)` or `x._helper(…)` for a
@@ -94,28 +84,18 @@ Raises:
 - An exception caught around a raise or a call isn't said, unless the handler raises it again.
 - A class says what its validators raise, in a `ValidationError`, and what `__post_init__` raises.
 
-## What it says is found
+## Findings
 
 "Finds:" follows "Raises:", and is walked the same way (`src/chatddx/stamp/trace.py:Trace`): each
 `chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them, each
 once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the level is
-said when it isn't a warning, ``(`info`, through `_pair`)``. It replaces the tables of finding codes the API docs kept:
-every code the solidified packages make is in one surface or another.
+said when it isn't a warning, ``(`info`, through `_pair`)``. Every code the solidified packages make is in one surface
+or another, by name or as the expression that computes it.
 
 Not said:
 
 - What a public function or class it calls raises: its own entry says.
 - What is raised without a `raise`: a `KeyError` from a subscript, pydantic's own validation, a library's errors.
+- What a function nested in another raises or finds: the walk doesn't enter it.
 
-What isn't said is said with an explicit `raise`, or with a docstring if AGENTS.md takes the exception suggested for
-them.
-
-## Read by an agent
-
-An agent given only `docs/surfaces/bench.md` and `identity.md` answered ten questions on parameters, messages, order,
-bases and bound methods right, finding entries with `grep -n '^## '`. It had to work out the notation, so the legend
-says it now. What it found wanting and is left as is:
-
-- An exception from another package has no entry in the package's surface (`StructuralError`): grepping `docs/surfaces/`
-  finds it.
-- A message's values are the raising code's own names (`{word}`, `{name}` in a helper).
+What isn't said is said with an explicit `raise`, or in a docstring (AGENTS.md, "4. When and how to write a docstring").
