@@ -21,9 +21,9 @@ class Budget:
     def pytest_runtest_logstart(self, nodeid: str) -> None:
         self.running = nodeid
 
-    # A fixture wider than a test is set up for every test after it, so the one that
-    # happens to set it up isn't charged for it; nor is the last test for the session's
-    # teardown.
+    # Policy: a fixture wider than a test is set up for every test after it, so the one
+    # that happens to set it up isn't charged for it; nor is the last test for the
+    # session's teardown.
     @pytest.hookimpl(wrapper=True)
     def pytest_fixture_setup(
         self, fixturedef: pytest.FixtureDef[object]

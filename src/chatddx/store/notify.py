@@ -13,8 +13,8 @@ WORKERS = "worker"
 ROWS = "rows"
 JOB = "job "
 
-# NOTIFY refuses a payload of 8000 bytes or more. Payloads are ASCII, so a character is
-# a byte.
+# Accommodating for NOTIFY, which refuses a payload of 8000 bytes or more. Payloads are
+# ASCII, so a character is a byte.
 LIMIT = 7900
 _PART = LIMIT - 64
 

@@ -62,7 +62,7 @@ def edit_languages(rows: Reader, edits: Collection[Edit]) -> dict[int, str | Non
     return {e.id: voted[e.id] if e.id in voted else rest[e.digest] for e in edits}
 
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats these checks.
+# Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats these checks.
 def check_language(rows: Reader, digest: str, value: str) -> str:
     kind = rows.kind(digest)
     if kind is None:

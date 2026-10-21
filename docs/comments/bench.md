@@ -12,13 +12,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each
 ## `src/chatddx/bench/runs.py:start`
 
 ```
-# One transaction, so that a run the gate refuses leaves none of the start's begun.
+# Policy: one transaction, so that a run the gate refuses leaves none of the start's
+# begun.
 ```
 
 ## `src/chatddx/bench/seen.py:add_compilations`
 
 ```
-# src/chatddx/factors/lint.py:_made_for reads them from the registry.
+# Dependency: src/chatddx/factors/lint.py:_made_for reads them from the registry.
 ```
 
 ## `src/chatddx/bench/seen.py:judging`
@@ -58,7 +59,8 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each
 ## `src/chatddx/bench/seen.py:Seen.facts`
 
 ```
-# Read when asked, so that facts corrected while a connection lasts are used.
+# Policy: read when asked, so that facts corrected while a connection lasts are
+# used.
 ```
 
 ## `src/chatddx/bench/seen.py:Seen.served`
@@ -78,17 +80,5 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each
 ## `src/chatddx/bench/seen.py:WITH`
 
 ```
-# A case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
-```
-
-## `src/chatddx/bench/test/helpers.py:move_model`
-
-```
-# As init-data writes a corrected facts file: a new version of the archive's thread.
-```
-
-## `src/chatddx/bench/test/test_scorers.py:_archive_s`
-
-```
-# The archive's scorer of that name, with its JSON as an edge gets it.
+# Dependency: a case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 ```

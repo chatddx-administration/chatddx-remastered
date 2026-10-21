@@ -24,8 +24,8 @@ VOCABULARY = 151936
 
 _TRANSPORT = frozenset({"messages", "model", "stream", "stream_options"})
 
-# A word and the space after it. A thinking tag is a token of its own, as it is in
-# Qwen3's vocabulary, and vLLM streams it alone.
+# Accommodating for Qwen3's vocabulary, where a thinking tag is a token of its own,
+# which vLLM streams alone.
 _WORD = re.compile(r"</?think>|(?:(?!</?think>)\S)+\s*|\s+")
 
 
@@ -67,7 +67,6 @@ class Reply:
     content: str
     calls: tuple[Call, ...]
     finish: str
-    # the newlines it goes on with after its answer, a token each
     runaway: int = 0
     hang_up: int | None = None
 
@@ -242,7 +241,7 @@ def _tool(served: Served, body: dict[str, Any]) -> dict[str, Any] | None:
     if (name := _named(choice)) is not None:
         return next(f for f in functions if f.get("name") == name)
     if choice == "required":
-        # The compiler offers the answer tool last
+        # Dependency: the compiler offers the answer tool last
         # (src/chatddx/factors/request.py:compile_request).
         *toolset, answer = functions
         return next((f for f in toolset if f.get("name") not in called), answer)
@@ -289,8 +288,9 @@ def respond(served: Served, body: dict[str, Any], runaway: bool = False) -> Repl
 
     newlines = 0
     if runaway and finish == "stop" and not calls:
-        # As gpt-oss does on malborg at times, held to a grammar that lets whitespace in
-        # before a closing brace: the answer ends, the tokens don't.
+        # Accommodating for a discovered fact: gpt-oss does so on malborg at times, held
+        # to a grammar that lets whitespace in before a closing brace: the answer ends,
+        # the tokens don't.
         if schema is not None:
             answer = answer[:-1]
         room = (
@@ -330,7 +330,8 @@ def _placed(served: Served, body: dict[str, Any], reply: Reply) -> Reply:
     )
     if reasoning is not None and not separated:
         if served.family == "harmony":
-            # Harmony's channel markers are special tokens, skipped when detokenized.
+            # Accommodating for Harmony, whose channel markers are special tokens,
+            # skipped when detokenized.
             final = "assistantfinal" if finish != "length" or content else ""
             text = f"analysis{reasoning}{final}{content}"
         else:
@@ -507,8 +508,8 @@ def instance(
             if o.get("type") != "null"
         ]
         if options:
-            # A branch holds together with the keywords beside it, as `required` beside
-            # `type` and `properties` does.
+            # Accommodating for JSON Schema, where a branch holds together with the
+            # keywords beside it, as `required` beside `type` and `properties` does.
             beside = {k: v for k, v in schema.items() if k != union}
             return instance(beside | options[0], root, key, n, depth + 1, turn)
     kind = schema.get("type")
@@ -588,7 +589,6 @@ def _words(text: str) -> list[str]:
     return _WORD.findall(text)
 
 
-# What the model reads: the messages' text, and the tools the chat template lays out.
 def _prompt_words(body: dict[str, Any]) -> list[str]:
     texts = [
         _text(m.get("content"))

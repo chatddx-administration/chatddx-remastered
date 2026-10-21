@@ -13,7 +13,8 @@ CREATE TABLE identity.credential (
     hash text NOT NULL
 );
 
--- Only a digest of the token is stored; the token itself lives in the client's cookie.
+-- Policy: only a digest of the token is stored; the token itself lives in the client's
+-- cookie.
 CREATE TABLE identity.session (
     token_digest text PRIMARY KEY,
     person bigint NOT NULL REFERENCES identity.person,

@@ -24,7 +24,6 @@ function pointer(path: string[]): string {
   return path.map((p) => `/${p.replaceAll("~", "~0").replaceAll("/", "~1")}`).join("");
 }
 
-// The alternative a target takes when it may also be `false`, none expected.
 function shaped(schema: Schema, root: Schema): Schema {
   const found = deref(schema, root);
   const alternatives = found.oneOf ?? (found.properties ? undefined : found.anyOf);
@@ -85,7 +84,7 @@ function listed(name: string, items: Schema, root: Schema, values: unknown[], fo
   }
 }
 
-// A simple dotted path and the JSON Pointer to the same place pick the same, so either finds its choice.
+// Policy: a simple dotted path and the JSON Pointer to the same place pick the same, so either finds its choice.
 export function same(selector: string): string {
   const dotted = /^\$((?:\.[A-Za-z_]\w*)+)$/.exec(selector);
   return dotted?.[1] ? pointer(dotted[1].slice(1).split(".")) : selector;

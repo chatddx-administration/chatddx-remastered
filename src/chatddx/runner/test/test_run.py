@@ -78,7 +78,6 @@ class Heard:
         return [e for e in self.events if isinstance(e, kind)]
 
 
-# Runs `f` on a thread of its own, as a server's request thread would halt a run.
 def elsewhere(f: Callable[[], None]) -> None:
     thread = threading.Thread(target=f)
     thread.start()

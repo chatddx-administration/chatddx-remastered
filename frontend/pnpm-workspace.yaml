@@ -1,6 +1,7 @@
 minimumReleaseAge: 1440
 
-# pnpm 10 resolved these within a day of their release, which the flake's pnpm 11 refuses (minimumReleaseAge).
+# Accommodating for the flake's pnpm 11, which refuses these by minimumReleaseAge: pnpm 10 resolved them within a day of
+# their release.
 overrides:
   "@redocly/openapi-core": 1.34.20
   postcss: 8.5.29

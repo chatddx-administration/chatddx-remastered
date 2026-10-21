@@ -40,7 +40,7 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
     assert line_of(written, QWEN_BARE).split()[-1] == "test"
 
 
-# Wide enough that no configuration's name wraps.
+# Policy: wide enough that no configuration's name wraps.
 def listed(bench: Bench, line: str) -> str:
     repl = Repl(bench, console(record=True, width=400), seed=7)
     assert handle(repl, line)

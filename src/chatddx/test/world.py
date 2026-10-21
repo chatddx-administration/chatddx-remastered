@@ -50,7 +50,6 @@ CLINICIAN = "clinician"
 
 COMPARED = ("instructed", "instructed-greedy", "guided")
 
-# What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [
     *(
         f"[lint warning] model.local {name}: model.revision: revision {revision!r} is "
@@ -107,7 +106,6 @@ def free_world(world: Path = TEST) -> Inventory:
     return inventory.model_copy(update={"endpoints": endpoints})
 
 
-# For the commands, which read a World from its directory.
 def freed(to: Path, world: Path = TEST) -> Path:
     copy = copied(to, world)
     inventory = Inventory.load(world / "inventory.toml")

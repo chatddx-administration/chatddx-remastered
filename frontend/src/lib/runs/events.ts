@@ -26,7 +26,7 @@ export function watch(run: string, on: (name: Event, data: unknown) => void): Pr
     const events = new EventSource(`/api/runs/${run}/events`);
     for (const name of EVENTS) {
       events.addEventListener(name, (e) => {
-        // A lost connection is an "error" too, one without data.
+        // Accommodating for EventSource, where a lost connection is an "error" too, one without data.
         if (!(e instanceof MessageEvent)) return;
         on(name, JSON.parse((e as MessageEvent<string>).data));
         if (name === "done") {

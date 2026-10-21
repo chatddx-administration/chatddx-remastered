@@ -116,7 +116,6 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert language_of(rows, plan.named("recipe", LINES_GUIDED).digest) == "en"
     assert language_of(rows, plan.named("translations", "guided").digest) is None
 
-    # The rest of the cases, and their expectations, are left over.
     some = {id: CASES[id] for id in ("crlf", "svenska")}
     again = init(conn, world_plan(), some, vignettes(), alice)
     assert {v for v in tally(again) if v.startswith("archive")} == {
@@ -298,7 +297,8 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
     assert not [line for line in lines if "not in the data" in line]
 
 
-# What it loads is read in test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
+# Scope: what it loads is read in
+# test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
 @pytest.mark.slow
 def test_init_data_command(
     db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -466,7 +466,6 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     assert run("wipe-data", "alice") == ["[wipe] alice: nothing to delete or unshare"]
     assert counts() == (threads, entries + gifts + shares)
 
-    # Each later run writes an entry per gift and per share, and no thread.
     cost = gifts + shares
     for cycle in (1, 2):
         again = run(*argv)

@@ -74,7 +74,8 @@ def turn(where: str, value: object) -> Turn:
     )
 
 
-# A script's file may hold keys of its reader's: src/chatddx/scripted/read.py.
+# Dependency: a script's file may hold keys of its reader's:
+# src/chatddx/scripted/read.py.
 class Script:
     def __init__(self, turns: Iterable[Turn]) -> None:
         self.turns: tuple[Turn, ...] = tuple(turns)

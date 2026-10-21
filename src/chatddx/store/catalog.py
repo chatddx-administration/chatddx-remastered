@@ -484,8 +484,8 @@ class Catalog:
             (digest, kind, value, by),
         )
 
-    # src/chatddx/store/migrations/0012-t2-catalog.sql keeps each
-    # binding's source, and its id or fingerprint.
+    # Dependency: src/chatddx/store/migrations/0012-t2-catalog.sql keeps each binding's
+    # source, and its id or fingerprint.
     def _bind(self, family: int, vignette: Vignette, by: int) -> None:
         _ = self._conn.execute(
             """

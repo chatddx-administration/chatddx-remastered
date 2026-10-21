@@ -12,15 +12,15 @@ from .markers import stamped, stamps
 from .page import page
 from .trace import Trace
 
-__all__ = ["COMMENTS", "DOCS", "Surface", "check", "surfaces", "write"]
+__all__ = ["COMMENTS", "SURFACES", "Proof", "check", "proofs", "write"]
 
-DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"
+SURFACES = settings.PROJECT_ROOT / "docs" / "surfaces"
 COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"
 _FINDING = "chatddx.factors.base.Finding"
 
 
 @dataclass(frozen=True)
-class Surface:
+class Proof:
     path: Path
     current: str | None
     written: str
@@ -39,19 +39,22 @@ class Surface:
         return (Counter(stamps(self.written)) - held).total()
 
 
-def surfaces(packages: Iterable[str]) -> list[Surface]:
+def proofs(packages: Iterable[str]) -> list[Proof]:
     code = Code(settings.PROJECT_ROOT / "src", "chatddx")
     trace = Trace(code, _FINDING)
-    found: list[Surface] = []
+    found: list[Proof] = []
     for package in packages:
         name = f"chatddx.{package}"
         for path, written in (
-            (DOCS / f"{package}.md", page(code, trace, name, settings.PROJECT_ROOT)),
+            (
+                SURFACES / f"{package}.md",
+                page(code, trace, name, settings.PROJECT_ROOT),
+            ),
             (COMMENTS / f"{package}.md", index(code.src, name, settings.PROJECT_ROOT)),
         ):
             current = path.read_text() if path.exists() else None
             try:
-                found.append(Surface(path, current, stamped(current, written)))
+                found.append(Proof(path, current, stamped(current, written)))
             except ValueError as e:
                 raise ValueError(f"{_shown(path)}: {e}") from None
     return found
@@ -60,13 +63,13 @@ def surfaces(packages: Iterable[str]) -> list[Surface]:
 def check(packages: Sequence[str], baseline: bool) -> None:
     flags: list[str] = []
     try:
-        found = surfaces(packages or settings.STAMPED)
+        found = proofs(packages or settings.STAMPED)
     except ValueError as e:
         found, flags = [], [str(e)]
     if not packages:
         flags += [
             f"{_shown(p)}: no package of settings.STAMPED writes it"
-            for p in sorted([*DOCS.glob("*.md"), *COMMENTS.glob("*.md")])
+            for p in sorted([*SURFACES.glob("*.md"), *COMMENTS.glob("*.md")])
             if p.stem not in settings.STAMPED
         ]
     refused = bool(flags)
@@ -97,7 +100,7 @@ def check(packages: Sequence[str], baseline: bool) -> None:
 
 def write(packages: Sequence[str]) -> None:
     try:
-        found = surfaces(packages or settings.STAMPED)
+        found = proofs(packages or settings.STAMPED)
     except ValueError as e:
         raise SystemExit(f"stamp write: {e}") from None
     written: list[str] = []
@@ -120,9 +123,9 @@ def _stamps(count: int) -> str:
     return f"{count} stamp" if count == 1 else f"{count} stamps"
 
 
-def _change(surface: Surface) -> str:
-    if surface.current is None:
+def _change(proof: Proof) -> str:
+    if proof.current is None:
         return "not written"
-    if surface.new:
-        return f"{surface.new} new {'stamp' if surface.new == 1 else 'stamps'}"
+    if proof.new:
+        return f"{proof.new} new {'stamp' if proof.new == 1 else 'stamps'}"
     return "behind the code"

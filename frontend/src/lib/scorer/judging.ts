@@ -72,8 +72,8 @@ function field(schema: Schema | null, at: string): Schema | null {
   return typeof found === "object" && found !== null ? (found as Schema) : null;
 }
 
-// Starting params for a judged view: its verdict at the judge's first field that isn't text, and, when the metric
-// takes a most, that field's maximum.
+// Policy: starting params for a judged view: its verdict at the judge's first field that isn't text, and, when the
+// metric takes a most, that field's maximum.
 export function startingParams(params: Schema, schema: Schema | null): Record<string, unknown> {
   const wanted = typeof params.properties === "object" && params.properties !== null ? params.properties : {};
   const found: Record<string, unknown> = {};

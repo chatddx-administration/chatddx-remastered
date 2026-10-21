@@ -32,7 +32,8 @@ OWNED_FLAGS = frozenset(
 UNPINNED_FLAGS = frozenset({"--config"})
 
 
-# vLLM reads "_" as "-" in a flag's name, up to its first "." (FlexibleArgumentParser).
+# Accommodating for vLLM, which reads "_" as "-" in a flag's name, up to its first "."
+# (FlexibleArgumentParser).
 def flag_names(argv: tuple[str, ...]) -> frozenset[str]:
     names: set[str] = set()
     for arg in argv:
@@ -42,7 +43,8 @@ def flag_names(argv: tuple[str, ...]) -> frozenset[str]:
     return frozenset(names)
 
 
-# vLLM's parser expands an unambiguous prefix of a flag to the whole flag.
+# Accommodating for vLLM's parser, which expands an unambiguous prefix of a flag to the
+# whole flag.
 def _abbreviations(
     argv: tuple[str, ...], flags: frozenset[str]
 ) -> dict[str, list[str]]:
@@ -57,9 +59,10 @@ def _abbreviations(
 _NEGATIVE = re.compile(r"-\d")
 
 
-# `vllm serve` takes the model as its one bare argument, which the start-up script gives,
-# so another bare argument stops vLLM from starting. One that follows a flag written
-# without "=" may be that flag's value; telling them apart needs vLLM's list of flags.
+# Accommodating for `vllm serve`, which takes the model as its one bare argument, which
+# the start-up script gives, so another bare argument stops vLLM from starting. One that
+# follows a flag written without "=" may be that flag's value; telling them apart needs
+# vLLM's list of flags.
 def _bare_arguments(argv: tuple[str, ...]) -> list[str]:
     bare: list[str] = []
     value = False
@@ -94,7 +97,7 @@ class LocalModel(Component):
             raise ValueError("duplicate file paths")
         return tuple(sorted(files, key=lambda f: f.path))
 
-    # The name facts are keyed by, as a remote model's is.
+    # Dependency: facts are keyed by it, as by a remote model's.
     @property
     def name(self) -> str:
         return self.repo
@@ -194,7 +197,8 @@ def model_of(digest: str, get: Resolver) -> Model:
             )
 
 
-# Templates that insert the current date make the prompt depend on when a run happens.
+# Accommodating for templates that insert the current date, which make the prompt depend
+# on when a run happens.
 _READS_DATE = re.compile(r"strftime_now|date_string|\bnow\s*\(")
 
 

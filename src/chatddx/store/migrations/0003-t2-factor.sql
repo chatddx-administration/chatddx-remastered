@@ -5,7 +5,7 @@ ALTER TABLE factor.component ADD CHECK (
     AND v = (doc->>'v')::integer
 );
 
--- Deferred because a reference may be inserted before the component it points at.
+-- Policy: deferred because a reference may be inserted before the component it points at.
 CREATE FUNCTION factor.check_ref() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
     dst_kind text;
@@ -29,7 +29,7 @@ AFTER INSERT ON factor.component_ref
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION factor.check_ref();
 
--- Every schema's insert-only triggers call this.
+-- Dependency: every schema's insert-only triggers call this.
 CREATE FUNCTION factor.refuse_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     RAISE EXCEPTION '%.% is insert-only', TG_TABLE_SCHEMA, TG_TABLE_NAME;

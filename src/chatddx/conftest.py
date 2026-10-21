@@ -33,8 +33,9 @@ from chatddx.test.world import (
 )
 
 
-# The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped
-# for the whole session so that planning takes their entry points.
+# Dependency: the test World's tools are the runner's test tools
+# (worlds/test/_data/factors.toml), shipped for the whole session so that planning takes
+# their entry points.
 @pytest.fixture(scope="session", autouse=True)
 def shipped_test_tools() -> Iterator[None]:
     with pytest.MonkeyPatch.context() as patch:
@@ -42,8 +43,8 @@ def shipped_test_tools() -> Iterator[None]:
         yield
 
 
-# Passwords are hashed as cheaply as argon2 allows: the tests check what is hashed, not
-# how hard it is to reverse.
+# Optimization: passwords are hashed as cheaply as argon2 allows: the tests check what
+# is hashed, not how hard it is to reverse.
 @pytest.fixture(scope="session", autouse=True)
 def cheap_hashing() -> Iterator[None]:
     hasher = PasswordHasher(time_cost=1, memory_cost=8, parallelism=1)
@@ -54,7 +55,8 @@ def cheap_hashing() -> Iterator[None]:
         yield
 
 
-# What a test writes needn't outlive a crash, so no commit waits for the WAL to reach the disk.
+# Optimization: what a test writes needn't outlive a crash, so no commit waits for the
+# WAL to reach the disk.
 @pytest.fixture(scope="session", autouse=True)
 def unsynced_commits() -> Iterator[None]:
     with pytest.MonkeyPatch.context() as patch:
@@ -62,7 +64,7 @@ def unsynced_commits() -> Iterator[None]:
         yield
 
 
-# As src/chatddx/cli.py:_openapi makes it.
+# Duplication: as src/chatddx/cli.py:_openapi makes it.
 @pytest.fixture(scope="session")
 def described() -> dict[str, Any]:
     return app(Inventory(), "").openapi()
@@ -79,7 +81,7 @@ def fake(world: Inventory, conn: Connection) -> Iterator[None]:
         yield
 
 
-# Module-scoped, as tests add to its registry.
+# Policy: module-scoped, as tests add to its registry.
 @pytest.fixture(scope="module")
 def plan() -> Plan:
     return world_plan()

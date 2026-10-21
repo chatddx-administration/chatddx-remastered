@@ -226,8 +226,8 @@ def test_the_sample_loads_with_its_world_s_fakes(
     assert diverged.base.thread == plan_thread
 
 
-# The sample is the example a new World follows, so it uses everything a data set and a
-# World can hold at least once.
+# Policy: the sample is the example a new World follows, so it uses everything a data
+# set and a World can hold at least once.
 def test_the_sample_uses_every_table_a_data_set_and_a_world_hold() -> None:
     plan = sample_plan()
     assert {r.table for r in plan.stanzas} == {*PLANNED_TABLES, "facts"}

@@ -51,7 +51,8 @@ def used(call: Call) -> tuple[int, int]:
             return 0, _streamed(response)
 
 
-# A stream cut short ends before its usage, but its choice holds the token ids it streamed.
+# Accommodating for a stream cut short, which ends before its usage, though its choice
+# holds the token ids it streamed.
 def _streamed(response: dict[str, JsonValue]) -> int:
     ids = choice(response).get("token_ids")
     return len(ids) if isinstance(ids, list) else 0

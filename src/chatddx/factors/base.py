@@ -173,7 +173,8 @@ Resolver = Callable[[str], "Component"]
 
 
 class Component(Frozen):
-    # Bump when an existing field's meaning or default changes; additive fields don't.
+    # Policy: bump when an existing field's meaning or default changes; additive fields
+    # don't.
     schema_version: ClassVar[int] = 1
 
     @classmethod
@@ -184,8 +185,8 @@ class Component(Frozen):
         if field is not None and not isinstance(field.default, str):
             raise TypeError(f"{cls.__name__}.kind needs a literal default")
 
-    # The store keeps each component as jsonb, which can't hold U+0000
-    # (src/chatddx/store/migrations/0001-t0-factor.sql).
+    # Accommodating for jsonb, which the store keeps each component as and which can't
+    # hold U+0000 (src/chatddx/store/migrations/0001-t0-factor.sql).
     @model_validator(mode="after")
     def _storable(self) -> Self:
         if _holds_nul(self.canonical_doc()):

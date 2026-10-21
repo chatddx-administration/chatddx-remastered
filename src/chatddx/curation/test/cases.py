@@ -20,8 +20,6 @@ def vignettes(texts: Mapping[str, bytes] = TEXTS, **changed: bytes) -> Directory
     return DirectorySource(name="test", path=path)
 
 
-# What loading the cases lands beside each case and its expectation: the appendices, the
-# cases that send them, and those cases' expectations.
 def appended(cases: Mapping[str, DataCase]) -> tuple[int, int, int]:
     return (
         sum(len(c.appendices) for c in cases.values()),

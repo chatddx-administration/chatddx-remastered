@@ -1,4 +1,4 @@
-// The answer of a configuration whose output is worlds/sample/_data/schemas/management_plan_v1.json, read
+// Policy: the answer of a configuration whose output is worlds/sample/_data/schemas/management_plan_v1.json, read
 // defensively: an answer that breaks its schema, or was cut short, is shown as far as it goes.
 export const PLAN = "management_plan_v1";
 

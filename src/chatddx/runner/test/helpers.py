@@ -19,7 +19,7 @@ from chatddx.test.world import (
     TEST,
 )
 
-# Slow enough that calls sent together overlap: a fake answer is some 40 tokens.
+# Policy: slow enough that calls sent together overlap: a fake answer is some 40 tokens.
 DELAY = 0.002
 SERVED = Served.of(
     "Qwen/Qwen3-8B-AWQ",
@@ -96,8 +96,9 @@ def whole(url: str, request: dict[str, Any]) -> dict[str, Any]:
         return json.loads(response.read())
 
 
-# vLLM streams over HTTP/1.1 in chunks, the fake over HTTP/1.0 until it closes. An engine that
-# goes away mid-stream ends the stream either way.
+# Accommodating for vLLM, which streams over HTTP/1.1 in chunks, and the fake, over
+# HTTP/1.0 until it closes: an engine that goes away mid-stream ends the stream either
+# way.
 class _GoingAway(BaseHTTPRequestHandler):
     protocol_version: str = "HTTP/1.1"
     chunked: bool = False

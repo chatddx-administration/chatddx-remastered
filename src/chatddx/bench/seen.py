@@ -62,7 +62,7 @@ from .model import (
 )
 from .variation import TriedVariation
 
-# A case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
+# Dependency: a case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 WITH = re.compile(r"^(?P<family>.+?) with (?P<appendices>.+)$")
 
 NONE = "none"
@@ -90,7 +90,8 @@ class Seen:
             self._logins[person] = self.people.get(person).login
         return self._logins[person]
 
-    # Read when asked, so that facts corrected while a connection lasts are used.
+    # Policy: read when asked, so that facts corrected while a connection lasts are
+    # used.
     @property
     def facts(self) -> Facts:
         live = [(e, a) for e, a in threads.heads(self.rows, "facts") if not a.deleted]
@@ -970,7 +971,7 @@ def judging(seen: Seen, judge: Judge, registry: Registry) -> dict[str, str]:
     return {judge.digest: engine}
 
 
-# src/chatddx/factors/lint.py:_made_for reads them from the registry.
+# Dependency: src/chatddx/factors/lint.py:_made_for reads them from the registry.
 def add_compilations(seen: Seen, registry: Registry, skeleton: str) -> None:
     for compilation in seen.store.compilations(skeleton):
         _ = registry.add(compilation)

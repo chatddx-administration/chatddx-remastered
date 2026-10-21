@@ -1,6 +1,7 @@
--- src/chatddx/catalog/model.py: EntryField, Entry._shape, _VARIED, _REPLACED and _WITH, and
--- check_note in src/chatddx/catalog/threads.py.
--- A check passes when it is NULL, so NULL values are ruled out explicitly.
+-- Duplication: src/chatddx/catalog/model.py: EntryField, Entry._shape, _VARIED, _REPLACED
+-- and _WITH, and check_note in src/chatddx/catalog/threads.py.
+-- Accommodating for a check, which passes when it is NULL: NULL values are ruled out
+-- explicitly.
 ALTER TABLE catalog.entry
     DROP CONSTRAINT entry_field_check,
     ADD CONSTRAINT entry_field_check CHECK (field IN (
@@ -62,7 +63,8 @@ BEGIN
 END
 $$;
 
--- A constraint trigger fires after the row's checks, so the value has its shape.
+-- Dependency: a constraint trigger fires after the row's checks, so the value has its
+-- shape.
 CREATE CONSTRAINT TRIGGER entry_varied AFTER INSERT ON catalog.entry
 FOR EACH ROW WHEN (NEW.field IN ('varied', 'replaced', 'with'))
 EXECUTE FUNCTION catalog.check_varied();

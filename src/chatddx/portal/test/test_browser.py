@@ -78,7 +78,7 @@ def page(portal: str, alice: Person) -> Iterator[Page]:
     assert alice.login == "alice"
     with sync_playwright() as playwright:
         try:
-            browser = playwright.chromium.launch()
+            browser = playwright.chromium.launch(executable_path=settings.chromium())
         except Error as e:
             pytest.fail(f"no browser for Playwright: {e.message.splitlines()[0]}")
         opened = browser.new_page(base_url=portal)

@@ -67,7 +67,7 @@ TABLES: dict[str, type[Component]] = {
     "canary_set": CanarySet,
 }
 ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")
-# Planned after recipes and judges, as a view may name a judge.
+# Dependency: planned after recipes and judges, as a view may name a judge.
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
 DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)
@@ -343,8 +343,8 @@ def plan_factors(
             where = "factors.toml" if language is None else f"texts-{language}.toml"
             body = dict(raw)
             tags = _tags(body.pop("tags", []))
-            # A tool's description is a field, what the model reads; it's the entry
-            # too.
+            # Policy: a tool's description is a field, what the model reads; it's the
+            # entry too.
             if "description" in kind.model_fields:
                 description = body.get("description")
             else:

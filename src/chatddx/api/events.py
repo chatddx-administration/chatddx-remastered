@@ -146,7 +146,6 @@ def score_item_of(item: ScoreItem) -> Named:
     )
 
 
-# What a run's events tell that its rows don't, as they happen.
 def said_of(event: RunEvent) -> Named | None:
     match event:
         case ItemStarted(key=key, seed=seed):

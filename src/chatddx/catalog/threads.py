@@ -58,7 +58,8 @@ def check_edit(
         _check_labels(rows, found, digest, labels)
 
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats the language rule.
+# Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats the language
+# rule.
 def check_note(rows: Reader, subject: Subject, entry: Entry) -> None:
     if entry.field == EntryField.LANGUAGE and subject.family is None:
         raise ValueError(
@@ -71,7 +72,7 @@ def check_note(rows: Reader, subject: Subject, entry: Entry) -> None:
         _check_expectation(rows, found, entry=entry)
 
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats this check.
+# Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats this check.
 def _check_based_on(rows: Reader, thread: Thread, based_on: int) -> None:
     origin = None if thread.forked_from is None else rows.edit(thread.forked_from)
     if origin is None or not any(
@@ -80,7 +81,8 @@ def _check_based_on(rows: Reader, thread: Thread, based_on: int) -> None:
         raise ValueError(f"edit {based_on} is not in the origin of thread {thread.id}")
 
 
-# src/chatddx/store/migrations/0018-t2-catalog-label-edit.sql repeats the positions.
+# Duplication: src/chatddx/store/migrations/0018-t2-catalog-label-edit.sql repeats the
+# positions.
 def _check_labels(rows: Reader, thread: Thread, digest: str, labels: Labels) -> None:
     if thread.kind != "scorer":
         raise ValueError(f"a {thread.kind} has no views or resources to label")
@@ -93,7 +95,8 @@ def _check_labels(rows: Reader, thread: Thread, digest: str, labels: Labels) -> 
             raise ValueError(f"the label of {part} {position} is empty")
 
 
-# src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats this check.
+# Duplication: src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats
+# this check.
 def _check_ran(rows: Reader, subject: Subject, entry: Entry) -> None:
     if subject.run is None:
         raise ValueError(f"a {entry.field} entry is about a run, and what it ran")
@@ -102,7 +105,8 @@ def _check_ran(rows: Reader, subject: Subject, entry: Entry) -> None:
         if found is None or thread(rows, found.thread).kind != "skeleton":
             raise ValueError(f"edit {entry.value} is no configuration's")
         return
-    # Runs are the ledger's, which the catalog doesn't read: the store checks this one.
+    # Scope: runs are the ledger's, which the catalog doesn't read: the store checks
+    # this one.
     if entry.field == EntryField.WITH:
         return
     part, digest = (entry.value or "").split("=")
@@ -273,8 +277,8 @@ def behind(rows: Reader, thread: int) -> list[Behind]:
     return sorted([*ordered, *stale_cases(rows, refs)], key=lambda b: b.path)
 
 
-# Facts corrected where a configuration doesn't reach leave it as it is: following them
-# would write nothing (holds).
+# Policy: facts corrected where a configuration doesn't reach leave it as it is:
+# following them would write nothing (holds).
 def _sends_else(rows: Reader, made: Compilation, facts: Edit) -> bool:
     newer = resolve(rows.get, facts.digest, ModelFacts)
     try:

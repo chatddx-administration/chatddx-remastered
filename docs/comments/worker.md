@@ -2,16 +2,10 @@
 
 Written by `chatddx stamp write` from the comments in `src/chatddx/worker/`, each under its file and the name it is in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).
 
-## `src/chatddx/worker/publish.py:EVERY`
-
-```
-# Deltas wait this long, in seconds, to go out together.
-```
-
 ## `src/chatddx/worker/publish.py:Publisher._drop`
 
 ```
-# An item's row tells how it ended, so its deltas still held go unsaid.
+# Policy: an item's row tells how it ended, so its deltas still held go unsaid.
 ```
 
 ## `src/chatddx/worker/test/test_worker.py:start`

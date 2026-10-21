@@ -6,13 +6,13 @@ from urllib.parse import unquote
 
 from pydantic import JsonValue
 
-# A selector picks the values a view compares: a JSON Pointer (RFC 6901), which picks
-# at most one value, or a JSONPath query (RFC 9535) from a small subset: member names
-# (`.name`, `['name']`), indexes (`[0]`, `[-1]`), wildcards (`.*`, `[*]`), and filters
-# that test a relative path for existence (`[?@.critical]`) or compare it with a literal
-# (`[?@.critical == true]`, `!=`). Within the subset, every RFC 9535 implementation
-# selects the same nodes. RFC 9535 leaves the order of an object's members open; this
-# keeps the document's order.
+# Scope: a selector picks the values a view compares: a JSON Pointer (RFC 6901), which
+# picks at most one value, or a JSONPath query (RFC 9535) from a small subset: member
+# names (`.name`, `['name']`), indexes (`[0]`, `[-1]`), wildcards (`.*`, `[*]`), and
+# filters that test a relative path for existence (`[?@.critical]`) or compare it with a
+# literal (`[?@.critical == true]`, `!=`). Within the subset, every RFC 9535
+# implementation selects the same nodes. RFC 9535 leaves the order of an object's
+# members open; this keeps the document's order.
 
 
 @dataclass(frozen=True)
@@ -288,7 +288,8 @@ def select(document: JsonValue, selector: str) -> list[JsonValue]:
     return _select(document, parse_selector(selector))
 
 
-# Splits applied to selected text, one name per behavior as with text-cleanup ops.
+# Policy: splits applied to selected text, one name per behavior as with text-cleanup
+# ops.
 SplitOp = Literal["lines@1"]
 
 _MARKER = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+")

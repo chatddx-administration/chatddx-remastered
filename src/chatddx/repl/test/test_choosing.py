@@ -26,7 +26,6 @@ from chatddx.test.world import (
 __all__ = ["added_bob"]
 
 
-# Bob's own fork of the archive's native, as bobs-native, shared with alice when `shared`.
 def bobs(conn: Connection, bob: Person, alice: Person, shared: bool) -> None:
     catalog = Catalog(conn)
     rows = Rows(conn)
@@ -134,7 +133,6 @@ def test_set_puts_another_chunk_in_the_configuration(
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
 
-@pytest.mark.slow
 def test_setting_the_configuration_s_own_chunk_unsets_it(repl: Repl, say: Say):
     _ = say(f"use {LINES}", "set sampling greedy")
     assert repl.prompt == f"alice {LINES}+sampling=greedy #7> "

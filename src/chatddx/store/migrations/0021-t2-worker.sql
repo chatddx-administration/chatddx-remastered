@@ -1,4 +1,5 @@
--- src/chatddx/store/queue.py: Status, and the writes that move a job between them.
+-- Duplication: src/chatddx/store/queue.py: Status, and the writes that move a job between
+-- them.
 ALTER TABLE worker.job
     ADD CHECK (status IN ('queued', 'under way', 'finished', 'stopped', 'failed')),
     ADD CHECK (status <> 'queued' OR (worker IS NULL AND claimed IS NULL)),
@@ -7,7 +8,7 @@ ALTER TABLE worker.job
     ADD CHECK (status <> 'failed' OR why IS NOT NULL),
     ADD CHECK (score OR scorers IS NULL);
 
--- What a job is asked to do never changes; only how it stands does.
+-- Policy: what a job is asked to do never changes; only how it stands does.
 CREATE FUNCTION worker.keep_job() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF (NEW.id, NEW.owner, NEW.run, NEW.endpoint, NEW.slots, NEW.score, NEW.scorers, NEW.queued)

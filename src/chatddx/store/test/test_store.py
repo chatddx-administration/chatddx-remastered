@@ -243,7 +243,6 @@ def test_database_guards_the_ledger(conn: Connection) -> None:
         store.append(canary.model_copy(update={"call": call("other")}))
 
 
-@pytest.mark.slow
 def test_compilations_are_found_by_their_skeleton(conn: Connection) -> None:
     store, reg, _ = stored_world(conn)
     recipe = generation_recipe(reg)

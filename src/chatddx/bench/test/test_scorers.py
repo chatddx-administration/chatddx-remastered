@@ -21,7 +21,6 @@ from chatddx.test.world import LINES
 RAISED = metrics.score.version + 1
 
 
-# The archive's scorer of that name, with its JSON as an edge gets it.
 def _archive_s(bench: Bench, name: str) -> tuple[int, dict[str, Any]]:
     edit, about = bench.thread(name, "scorer")
     assert bench.login(about.owner) == "archive"

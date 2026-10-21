@@ -1,6 +1,6 @@
--- Labels named a scorer digest, and now name the edit of a scorer thread they were written
--- with. The old rows are dropped rather than moved: a store from before holds v1 scorers,
--- which can't be read any more, and is rebuilt by loading its data sets again.
+-- Compromise: labels named a scorer digest, and now name the edit of a scorer thread they
+-- were written with. The old rows are dropped rather than moved: a store from before holds
+-- v1 scorers, which can't be read any more, and is rebuilt by loading its data sets again.
 DROP TABLE catalog.label;
 
 CREATE TABLE catalog.label (

@@ -11,7 +11,7 @@ from chatddx.factors.base import Fingerprint, language_tag
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import RECIPE_PARTS
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
+# Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
 THREAD_KINDS = frozenset(
     {
         "chunk.instructions",
@@ -42,7 +42,7 @@ THREAD_KINDS = frozenset(
 )
 
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
+# Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
 LANGUAGE_KINDS = frozenset(
     {
         "chunk.instructions",
@@ -55,7 +55,8 @@ LANGUAGE_KINDS = frozenset(
 )
 
 
-# src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats these patterns.
+# Duplication: src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats
+# these patterns.
 _VARIED = re.compile(r"^[1-9][0-9]{0,17}$")
 _WITH = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")

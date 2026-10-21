@@ -5,8 +5,8 @@ from pydantic import JsonValue
 
 from .base import Frozen
 
-# vLLM 0.24 says `reasoning`, as the fake does; other OpenAI-compatible servers say
-# `reasoning_content`.
+# Accommodating for servers: vLLM 0.24 says `reasoning`, as the fake does; other
+# OpenAI-compatible servers say `reasoning_content`.
 REASONING = ("reasoning", "reasoning_content")
 
 

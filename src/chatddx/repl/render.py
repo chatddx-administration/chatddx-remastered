@@ -56,7 +56,7 @@ STYLES: dict[Outcome, str] = {
 
 TOKENS = len("tokens")
 
-# What the scoring pass notes of an answer, which show_answer says already.
+# Policy: what the scoring pass notes of an answer, which show_answer says already.
 ANSWERED = frozenset({"answer.unread", "answer.invalid", "answer.salvaged"})
 
 NAMED = 10
@@ -301,7 +301,7 @@ class JudgeLines:
             self.tally = None
 
 
-# `at` as the verdict metrics read it: src/chatddx/scorers/verdicts.py.
+# Dependency: `at` as the verdict metrics read it: src/chatddx/scorers/verdicts.py.
 def verdict_of(view: View, verdict: JsonValue | None) -> tuple[str | None, str | None]:
     if verdict is None:
         return None, None

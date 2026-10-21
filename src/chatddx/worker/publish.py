@@ -15,7 +15,6 @@ from chatddx.store.store import Connection
 
 log = logging.getLogger(__name__)
 
-# Deltas wait this long, in seconds, to go out together.
 EVERY = 0.1
 
 type _Delta = schemas.ItemDeltaData | schemas.JudgeDeltaData
@@ -68,7 +67,7 @@ class Publisher:
             break
         self._held.append((name, data))
 
-    # An item's row tells how it ended, so its deltas still held go unsaid.
+    # Policy: an item's row tells how it ended, so its deltas still held go unsaid.
     def _drop(self, case: str, replicate: int) -> None:
         with self._guard:
             self._held = [

@@ -38,7 +38,6 @@ def stored(conn: Connection, plan: Plan, inventory: Inventory) -> None:
     _ = Store(conn).add(plan.registry, engines)
 
 
-# Asks each endpoint what it serves once it answers, then presses Ctrl-C.
 def asking(
     inventory: Inventory,
     names: list[str],

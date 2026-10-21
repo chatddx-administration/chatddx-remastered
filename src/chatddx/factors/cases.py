@@ -51,7 +51,7 @@ class Case(Component):
 
 CaseRef = Annotated[Digest, RefTo("case")]
 
-# Each op name pins one behavior; a changed behavior gets a new name.
+# Policy: each op name pins one behavior; a changed behavior gets a new name.
 CleanupOp = Literal[
     "newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"
 ]

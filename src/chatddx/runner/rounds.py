@@ -166,8 +166,8 @@ def converse(
         first = ask(body, started_at)
     except Stopped as stopped:
         return Exchange(stopped.call, stopped=True)
-    # The round under way is always the last of turns, replaced whole as it grows, so an
-    # interrupt between two statements finds it as far as it got.
+    # Policy: the round under way is always the last of turns, replaced whole as it
+    # grows, so an interrupt between two statements finds it as far as it got.
     turns: list[Turn] = []
     previous = first
     try:

@@ -22,7 +22,7 @@ from .request import (
 from .scoring import Expectation, ExpectationSchema, Judge, Scorer, Scoring
 from .trial import CanarySet, Trial
 
-# Every kind of component, and the only ones stored bytes are read as.
+# Dependency: the only kinds stored bytes are read as.
 # src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases and compilations.
 KINDS: tuple[type[Component], ...] = (
     LocalModel,

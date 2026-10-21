@@ -5,11 +5,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/scripted/`, e
 ## `src/chatddx/scripted/fakes.py:_stand_in`
 
 ```
-# A hosted API parses tool calls, as the fake does under any parser.
-```
-
-## `src/chatddx/scripted/test/helpers.py:held`
-
-```
-# The ran template ran each scripted run.
+# Accommodating for a hosted API, which parses tool calls, as the fake does under any
+# parser.
 ```

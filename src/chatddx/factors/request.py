@@ -41,8 +41,8 @@ from .response import message, tool_calls
 
 SlotName = Literal["vignette", "appendices", "completion", "expectation"]
 InsertName = Literal["schema", "output_guidance", "tool_guidance"]
-# As with CleanupOp (cases.py), each op name pins one behavior; a changed behavior
-# gets a new name.
+# Policy: as with CleanupOp (cases.py), each op name pins one behavior; a changed
+# behavior gets a new name.
 SchemaOp = Literal["inline_refs@1"]
 Purpose = Literal["generation", "judge"]
 
@@ -81,8 +81,8 @@ MANAGED_KEYS = frozenset(
         "chat_template_kwargs",
     }
 )
-# vLLM request keys that would replace the engine's chat template, constrain the answer
-# outside the output contract, or put the prompt's text in the stored response.
+# Policy: vLLM request keys that would replace the engine's chat template, constrain the
+# answer outside the output contract, or put the prompt's text in the stored response.
 BYPASS_KEYS = frozenset(
     {"chat_template", "structured_outputs", "return_prompt_text", "prompt_logprobs"}
 )
@@ -819,7 +819,6 @@ def _tr_toolset(
     return toolset, tools
 
 
-# The recipe's text-bearing parts, with every text passed through tr.
 def _parts(recipe: Recipe, get: Resolver, tr: _Translate) -> _Parts:
     instructions = few_shot = None
     if recipe.instructions is not None:
@@ -955,7 +954,8 @@ def compile_request(
     role: Literal["system", "developer"] = "system"
     if instructions is not None:
         system, role = _fill_text(instructions.text, fills), instructions.role
-    # Guidance goes where it's inserted, or else after the instructions, in this order.
+    # Policy: guidance goes where it's inserted, or else after the instructions, in this
+    # order.
     guidances: tuple[InsertName, ...] = ("output_guidance", "tool_guidance")
     for name in guidances:
         if name in in_prompt and name in in_instructions:

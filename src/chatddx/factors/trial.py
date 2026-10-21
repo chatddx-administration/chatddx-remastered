@@ -49,7 +49,7 @@ class Trial(Component):
 
 
 def suggest_seeds(n: int) -> tuple[int, ...]:
-    # 31 bits keeps seeds within a signed 32-bit int, which some servers require.
+    # Accommodating for some servers, which require seeds within a signed 32-bit int.
     return tuple(secrets.SystemRandom().sample(range(2**31), n))
 
 

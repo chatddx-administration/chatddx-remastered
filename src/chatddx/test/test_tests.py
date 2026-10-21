@@ -90,7 +90,6 @@ def test_padding_is_told_from_a_line_s_indent_and_an_f_string_s_values() -> None
     assert [n for n, line in found if GAP.search(line)] == [1, 2]
 
 
-@pytest.mark.slow
 def test_a_name_tests_share_is_spelled_once_in_world_py() -> None:
     world = dict(_tests())[WORLD]
     spelled = {
@@ -154,7 +153,6 @@ def test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest() -> 
     )
 
 
-@pytest.mark.slow
 def test_what_tests_share_is_written_once() -> None:
     written: defaultdict[str, list[str]] = defaultdict(list)
     for path, tree in _tests():

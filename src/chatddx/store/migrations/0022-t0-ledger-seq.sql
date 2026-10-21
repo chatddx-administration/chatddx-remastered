@@ -1,6 +1,6 @@
--- One counter across the ledger's tables, so that a run's rows, its scores' included, are
--- read back in the order they were written. Rows from before are numbered in no
--- particular order.
+-- Policy: one counter across the ledger's tables, so that a run's rows, its scores'
+-- included, are read back in the order they were written. Rows from before are numbered in
+-- no particular order.
 CREATE SEQUENCE ledger.seq;
 
 ALTER TABLE ledger.run_stage ADD COLUMN seq bigint NOT NULL DEFAULT nextval('ledger.seq');

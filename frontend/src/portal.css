@@ -6,7 +6,7 @@
 
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
-/* swift-dx-guide's tokens, as whole colors: Tailwind 4 mixes them itself. */
+/* Accommodating for Tailwind 4, which mixes colors itself: swift-dx-guide's tokens, as whole colors. */
 :root {
   --radius: 1rem;
 

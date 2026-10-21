@@ -9,7 +9,8 @@ from chatddx.fake_vllm.served import Served
 from chatddx.test.world import QWEN_MODEL
 
 TOOLS = ("--enable-auto-tool-choice", "--tool-call-parser")
-# As the old chatddx served them (chatddx 7893656, src/chatddx/data/inventory/malborg.toml).
+# Provenance: as the old chatddx served them (chatddx 7893656,
+# src/chatddx/data/inventory/malborg.toml).
 QWEN_ARGV = ("--reasoning-parser", "qwen3", *TOOLS[:1], TOOLS[1], "hermes")
 SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}}
 

@@ -2,8 +2,8 @@ ALTER TABLE worker.job
     ADD CHECK (score OR cardinality(scored) = 0),
     ADD CHECK (scorers IS NULL OR scored <@ scorers);
 
--- What a job is asked to do never changes, and what it has scored only grows; only how
--- it stands changes.
+-- Policy: what a job is asked to do never changes, and what it has scored only grows; only
+-- how it stands changes.
 CREATE OR REPLACE FUNCTION worker.keep_job() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF (NEW.id, NEW.owner, NEW.run, NEW.endpoint, NEW.slots, NEW.score, NEW.scorers, NEW.queued)

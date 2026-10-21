@@ -143,8 +143,8 @@ class _Init:
         if found:
             self.forked(r, thread)
 
-    # A thread's origin is set when it is created (put), so a re-run only reports one
-    # that differs from the data's.
+    # Policy: a thread's origin is set when it is created (put), so a re-run only
+    # reports one that differs from the data's.
     def forked(self, r: Planned, thread: int) -> None:
         held = threads.origin(self.rows, thread)
         planned = None if r.fork_of is None else self.threads[(r.kind, r.fork_of)]
@@ -228,8 +228,8 @@ class _Init:
         self.sync(Subject(thread=thread))
         self.lines.append(f"[archive expectation] {named}: {verb} {short(expectation)}")
 
-    # An appendix is bound to the vignette its case was just read at, so it's built here
-    # rather than planned.
+    # Dependency: an appendix is bound to the vignette its case was just read at, so
+    # it's built here rather than planned.
     def appended(
         self, id: str, vignette: Vignette, data: DataCase, schema: str
     ) -> None:
@@ -267,8 +267,8 @@ class _Init:
             if ordered.targets is not None:
                 self.expect(named, digest, ordered.targets, schema)
 
-    # An appendix is named as its case's file names it, so two cases' may share a name;
-    # each is its vignette's, by the vignette's source and id.
+    # Policy: an appendix is named as its case's file names it, so two cases' may share
+    # a name; each is its vignette's, by the vignette's source and id.
     def binds(self, thread: int, vignette: Vignette) -> bool:
         held = self.store.get(threads.head(self.rows, thread).digest)
         assert isinstance(held, Appendix)

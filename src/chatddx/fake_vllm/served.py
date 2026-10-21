@@ -5,11 +5,10 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 VERSION = "0.24.0+fake"
-# The closure a fake engine's runtime names: the command that serves it
+# Dependency: the closure a fake engine's runtime names: the command that serves it
 # (worlds/sample/engines.toml).
 CLOSURE = "chatddx fake-vllm"
 
-# The context a model takes when --max-model-len doesn't say.
 CONTEXT: dict[str, int] = {
     "Qwen/Qwen3-8B-AWQ": 32768,
     "openai/gpt-oss-20b": 131072,
@@ -23,8 +22,9 @@ class Refused(ValueError):
     pass
 
 
-# vLLM reads "_" as "-" in a flag's name up to its first ".", and the last of a flag
-# given twice wins. Values run to the next flag, as for --served-model-name's nargs="+".
+# Accommodating for vLLM, which reads "_" as "-" in a flag's name up to its first ".",
+# and where the last of a flag given twice wins. Values run to the next flag, as for
+# --served-model-name's nargs="+".
 def _options(argv: Sequence[str]) -> dict[str, list[str]]:
     options: dict[str, list[str]] = {}
     i = 0
@@ -143,7 +143,8 @@ class Served:
     def name(self) -> str:
         return self.names[0]
 
-    # A tool parser exists only with both flags, whatever the error messages name.
+    # Accommodating for vLLM, where a tool parser exists only with both flags, whatever
+    # the error messages name.
     @property
     def parses_tools(self) -> bool:
         return self.auto_tools and self.tool_parser is not None

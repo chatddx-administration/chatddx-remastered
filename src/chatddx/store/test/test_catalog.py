@@ -282,7 +282,6 @@ def test_a_chunk_fork_diverges_by_its_fields(conn: Connection) -> None:
     )
 
 
-@pytest.mark.slow
 def test_threads_behind_are_proposed_not_moved(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     rows = Rows(conn)
@@ -693,7 +692,6 @@ def test_behind_looks_through_cases(conn: Connection) -> None:
     ]
 
 
-@pytest.mark.slow
 def test_renamed_vignettes_are_repaired(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     rows = Rows(conn)

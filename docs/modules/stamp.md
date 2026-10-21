@@ -1,21 +1,10 @@
 # Stamp
 
-```
-AGENT: rework
-`chatddx stamp` writes a comment index for each package too, and what is said below of a surface goes for it as well:
-`check` flags and fails on it, `write` writes it, a change in it waits for a stamp.
----
 `chatddx stamp` writes `docs/surfaces/<package>.md` and `docs/comments/<package>.md` for each package in
 `settings.STAMPED` from the code (`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds,
 each comment under the name it is in or right above, and what changed since a human last stamped them.
 `settings.STAMPED` holds the solidified packages, those with a `docs/modules/<package>.md` (AGENTS.md, "Development
 stages").
-```
-
-`chatddx stamp` writes `docs/surfaces/<package>.md` for each package in `settings.STAMPED` from the code
-(`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
-last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/modules/<package>.md` (AGENTS.md,
-"Development stages").
 
 ## The workflow
 
@@ -39,18 +28,9 @@ last stamped it. `settings.STAMPED` holds the solidified packages, those with a 
   now, `>>>>>>> @stamp`. A human takes the code's side, which is their stamp. Stamps left pending are worked out anew on
   the next run from the signed sides, so they neither pile up nor go stale, and a line edited by hand is stamped back to
   what the code says. A conflict marker that isn't a stamp's, from a merge, is refused.
-```
-AGENT: rework
-`.prettierignore` leaves `docs/comments/` out too, for the same reason.
----
 - `.prettierignore` leaves `docs/surfaces/` and `docs/comments/` out, since prettier reads a stamp as markdown:
   `=======` underlines the line above it as a heading, `>>>>>>>` is a quote seven deep. The root `.prettierrc` is there
   for conform.nvim, which runs prettier where it finds one, the only place prettier reads `.prettierignore` from.
-```
-
-- `.prettierignore` leaves `docs/surfaces/` out, since prettier reads a stamp as markdown: `=======` underlines the line
-  above it as a heading, `>>>>>>>` is a quote seven deep. The root `.prettierrc` is there for conform.nvim, which runs
-  prettier where it finds one, the only place prettier reads `.prettierignore` from.
 - Only the entries are stamped. What comes before the first, the title and a line saying how to read it, is the
   generator's own and written as it is: they change with the generator, in its commits, and aren't stamped.
 
@@ -121,10 +101,6 @@ Not said:
 
 What isn't said is said with an explicit `raise`, or in a docstring (AGENTS.md, "4. When and how to write a docstring").
 
-```
-AGENT: add
-A section on what a comment index holds, as "What a surface holds" says what a surface does.
----
 ## What a comment index holds
 
 Each comment in the package's Python, SQL and TOML files, tests included, as written, in a fenced block under a heading
@@ -139,4 +115,3 @@ Each comment in the package's Python, SQL and TOML files, tests included, as wri
   within its file stamps nothing; changing, adding or removing a comment, or what it is under, stamps it.
 - What isn't Python is read by its strings and comments alone (`src/chatddx/stamp/index.py:_SCANNED`): a body in dollar
   quotes is read as SQL. Files of other kinds aren't read.
-```

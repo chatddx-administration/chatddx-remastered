@@ -1,6 +1,6 @@
 CREATE SCHEMA ledger;
 
--- Item rows reference their log's started row; `stage` is a constant so that a
+-- Policy: item rows reference their log's started row; `stage` is a constant so that a
 -- foreign key can point at it.
 CREATE TABLE ledger.run_stage (
     run uuid NOT NULL,

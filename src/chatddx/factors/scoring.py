@@ -38,7 +38,8 @@ class Expectation(Component):
 
 ExpectationRef = Annotated[Digest, RefTo("expectation")]
 
-# How a judge's slots are written out, one name per behavior as with CleanupOp (cases.py).
+# Policy: how a judge's slots are written out, one name per behavior as with CleanupOp
+# (cases.py).
 FillOp = Literal["text@1"]
 
 

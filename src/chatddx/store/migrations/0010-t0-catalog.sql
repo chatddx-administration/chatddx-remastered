@@ -1,7 +1,8 @@
 CREATE SCHEMA catalog;
 
--- Targets for the composite foreign keys below: a thread's edits point at components of
--- the thread's kind, and an edit's compilation is a compilation of the edit's skeleton.
+-- Dependency: targets for the composite foreign keys below: a thread's edits point at
+-- components of the thread's kind, and an edit's compilation is a compilation of the edit's
+-- skeleton.
 ALTER TABLE factor.component ADD UNIQUE (digest, kind);
 ALTER TABLE factor.component_ref ADD UNIQUE (src, path, dst);
 
@@ -14,7 +15,8 @@ CREATE TABLE catalog.thread (
     UNIQUE (id, kind)
 );
 
--- src/chatddx/catalog/read.py: heads_of takes the edit with the highest id as a thread's head.
+-- Dependency: src/chatddx/catalog/read.py: heads_of takes the edit with the highest id as a
+-- thread's head.
 CREATE TABLE catalog.edit (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     thread bigint NOT NULL,
@@ -25,8 +27,8 @@ CREATE TABLE catalog.edit (
         CHECK (compilation_kind = 'compilation'),
     compilation_path text NOT NULL DEFAULT '/skeleton'
         CHECK (compilation_path = '/skeleton'),
-    -- src/chatddx/catalog/threads.py: variation takes a fork's latest based_on, else its
-    -- forked_from, as its base.
+    -- Dependency: src/chatddx/catalog/threads.py: variation takes a fork's latest based_on,
+    -- else its forked_from, as its base.
     based_on bigint,
     by bigint NOT NULL REFERENCES identity.person,
     at timestamptz NOT NULL DEFAULT now(),
@@ -51,8 +53,9 @@ CREATE TABLE catalog.family (
     at timestamptz NOT NULL DEFAULT now()
 );
 
--- src/chatddx/catalog/families.py: family_of matches a case to a binding by source, id and
--- vignette fingerprint; the binding with the highest id is where the family's vignette is now.
+-- Dependency: src/chatddx/catalog/families.py: family_of matches a case to a binding by
+-- source, id and vignette fingerprint; the binding with the highest id is where the
+-- family's vignette is now.
 CREATE TABLE catalog.binding (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     family bigint NOT NULL REFERENCES catalog.family,
@@ -65,7 +68,7 @@ CREATE TABLE catalog.binding (
 CREATE INDEX binding_family ON catalog.binding (family, id);
 CREATE INDEX binding_source ON catalog.binding (source, source_id);
 
--- src/chatddx/catalog/model.py: About.of folds a subject's entries in id order.
+-- Dependency: src/chatddx/catalog/model.py: About.of folds a subject's entries in id order.
 CREATE TABLE catalog.entry (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     thread bigint REFERENCES catalog.thread,
@@ -91,7 +94,7 @@ CREATE INDEX entry_family ON catalog.entry (family) WHERE family IS NOT NULL;
 CREATE INDEX entry_run ON catalog.entry (run) WHERE run IS NOT NULL;
 CREATE INDEX entry_score ON catalog.entry (score) WHERE score IS NOT NULL;
 
--- Positions only mean something inside one scorer digest, so labels key on it.
+-- Policy: positions only mean something inside one scorer digest, so labels key on it.
 CREATE TABLE catalog.label (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     scorer text NOT NULL,
@@ -105,8 +108,8 @@ CREATE TABLE catalog.label (
 );
 CREATE INDEX label_scorer ON catalog.label (scorer);
 
--- src/chatddx/catalog/language.py: languages_of takes a component's latest row here as its
--- language.
+-- Dependency: src/chatddx/catalog/language.py: languages_of takes a component's latest row
+-- here as its language.
 CREATE TABLE catalog.language (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     digest text NOT NULL,

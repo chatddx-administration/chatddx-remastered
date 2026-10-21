@@ -70,3 +70,8 @@ def world() -> Path | None:
 def portal_assets() -> Path:
     value = os.environ.get("CHATDDX_PORTAL_ASSETS")
     return Path(value) if value else PROJECT_ROOT / "frontend" / "dist"
+
+
+def chromium() -> Path | None:
+    value = os.environ.get("CHATDDX_CHROMIUM")
+    return Path(value) if value else None

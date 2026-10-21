@@ -59,7 +59,8 @@ def start(
         {p: variation.parts[p][0] for p in RECIPE_PARTS if p in variation.parts},
     )
     runs: list[tuple[Carried, Running]] = []
-    # One transaction, so that a run the gate refuses leaves none of the start's begun.
+    # Policy: one transaction, so that a run the gate refuses leaves none of the start's
+    # begun.
     with seen.conn.transaction():
         for each in sent:
             assert each.skeleton is not None

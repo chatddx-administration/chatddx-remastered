@@ -20,7 +20,6 @@ def went(bench: Bench, started: RunStarted) -> dict[str, tuple[str, str | None]]
     }
 
 
-# The ran template ran each scripted run.
 def held(bench: Bench, name: str) -> RunStarted:
     started = ran_before(bench, HELD[name])
     assert started is not None

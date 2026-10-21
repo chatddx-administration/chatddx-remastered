@@ -110,7 +110,6 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
     return other
 
 
-# As init-data writes a corrected facts file: a new version of the archive's thread.
 def move_model(bench: Bench, name: str, **changes: JsonValue) -> Edit:
     [thread] = threads.find(bench.rows, "model.local", name)
     held = resolve(bench.store.get, threads.head(bench.rows, thread).digest, LocalModel)

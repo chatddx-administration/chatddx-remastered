@@ -13,7 +13,6 @@ from chatddx.store import Catalog, People, Rows, Store
 from chatddx.test.world import LINES, QWEN_ARTIFACT
 
 
-# A new version of the expectation the person reads for a case, from their own thread.
 def retarget(bench: Bench, case: str, data: JsonValue) -> None:
     catalog, store = Catalog(bench.conn), Store(bench.conn)
     rows = Rows(bench.conn)

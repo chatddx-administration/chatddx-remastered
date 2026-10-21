@@ -41,7 +41,7 @@ def no_store(response: Response) -> None:
     response.headers.update(NO_STORE)
 
 
-# `named`: what may be missing of what a request's body or query names, a 422 where
+# Policy: what may be missing of what a request's body or query names is a 422, where
 # what its path names is a 404.
 @contextmanager
 def refused(*named: type[Exception]) -> Generator[None]:

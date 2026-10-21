@@ -21,7 +21,7 @@ pkgs.testers.runNixOSTest {
     networking.hosts."127.0.0.1" = [ host ];
     security.pki.certificateFiles = [ "${cert}/cert.pem" ];
 
-    # The admin as an org declares it: a user of its own, with a home, that the World is in.
+    # Policy: the admin as an org declares it: a user of its own, with a home, that the World is in.
     users.users.chatddx-test = {
       isSystemUser = true;
       group = "chatddx-test";

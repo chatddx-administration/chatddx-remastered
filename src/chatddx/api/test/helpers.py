@@ -20,8 +20,8 @@ from chatddx.test.world import LINES
 
 type Told = list[tuple[int | None, str, dict[str, Any]]]
 
-# A fake this slow keeps a run's job under way while a stream asked for at once joins
-# it: one asked for after it has ended is told the ledger's rows alone.
+# Policy: a fake this slow keeps a run's job under way while a stream asked for at once
+# joins it: one asked for after it has ended is told the ledger's rows alone.
 UNDER_WAY = 0.02
 
 
@@ -80,8 +80,8 @@ def followed(signed: TestClient, run: str, **headers: str) -> Told:
     return told(got.text)
 
 
-# What a stream is told from before its job is claimed, with the owner's queue paused
-# until the stream has said its first row: by then it listens.
+# Policy: the owner's queue stays paused until the stream has said its first row: by
+# then it listens.
 def joined(
     http: httpx2.Client, listening: str, run: str, unpause: Callable[[], None]
 ) -> Told:

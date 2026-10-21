@@ -51,7 +51,8 @@ def test_each_endpoint_serves_the_engine_planned_under_its_name(
     assert check(world.inventory, plan.registry.get) == []
 
 
-# The lint says harmony and Mistral models take tools unconstrained where vLLM refuses others.
+# Dependency: the lint says harmony and Mistral models take tools unconstrained where
+# vLLM refuses others.
 UNCONSTRAINED = ("harmony", "mistral")
 FILLS: dict[SlotName, str] = {
     "vignette": "A 72-year-old man.",

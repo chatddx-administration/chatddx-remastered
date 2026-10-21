@@ -17,11 +17,12 @@ from chatddx.store.store import Connection
 
 log = logging.getLogger(__name__)
 
-# How long, in seconds, the listener waits after losing its connection, and at most for
-# anything to happen.
+# Policy: how long, in seconds, the listener waits after losing its connection, and at
+# most for anything to happen.
 AGAIN = 1.0
 
-# A stream this many messages behind drops what it holds and reads the ledger again.
+# Policy: a stream this many messages behind drops what it holds and reads the ledger
+# again.
 BEHIND = 1000
 
 

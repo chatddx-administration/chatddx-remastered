@@ -6,9 +6,8 @@ CREATE TABLE worker.worker (
     seen timestamptz NOT NULL DEFAULT now()
 );
 
--- A job takes a started run to its finish, and scores it when asked. What the run did
--- is the ledger's; `stage` is a constant so that a foreign key can point at the run's
--- started row.
+-- Policy: what the run did is the ledger's; `stage` is a constant so that a foreign key can
+-- point at the run's started row.
 CREATE TABLE worker.job (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     owner bigint NOT NULL REFERENCES identity.person,
@@ -28,7 +27,7 @@ CREATE TABLE worker.job (
     ended timestamptz,
     FOREIGN KEY (run, stage) REFERENCES ledger.run_stage
 );
--- A run has one job queued or under way at a time.
+-- Policy: a run has one job queued or under way at a time.
 CREATE UNIQUE INDEX job_open ON worker.job (run) WHERE status IN ('queued', 'under way');
 CREATE INDEX job_waiting ON worker.job (queued, id) WHERE status IN ('queued', 'under way');
 CREATE INDEX job_owner ON worker.job (owner, queued);

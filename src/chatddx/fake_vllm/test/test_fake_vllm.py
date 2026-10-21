@@ -73,9 +73,6 @@ def valid(schema: Any, document: Any) -> bool:
     return not list(validator_for(schema)(schema).iter_errors(document))
 
 
-# ------------------------------------------------------------------ serving
-
-
 def test_it_reads_vllm_serve_s_flags_as_vllm_does() -> None:
     served = Served.of(
         QWEN_MODEL,
@@ -143,9 +140,6 @@ def test_it_answers_as_the_model_it_serves_or_not_at_all() -> None:
         missing.body()["error"]["message"]
         == f"The model `{QWEN_MODEL}` does not exist."
     )
-
-
-# ------------------------------------------------------------------ reasoning
 
 
 def test_qwen3_thinks_unless_told_not_to() -> None:
@@ -254,9 +248,6 @@ def test_it_leaves_the_reasoning_out_when_asked_to() -> None:
     assert reply(qwen(), body(include_reasoning=False)).reasoning is None
 
 
-# ------------------------------------------------------------------ sampling
-
-
 def test_only_an_exact_zero_temperature_is_greedy(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -270,9 +261,6 @@ def test_only_an_exact_zero_temperature_is_greedy(
     assert "temperature 0.001 is less than 0.01" in caplog.text
     assert "maxed it out to 0.01" in caplog.text
     assert answer(temperature=0.7, seed=5) == answer(temperature=0.7, seed=5)
-
-
-# ------------------------------------------------------------------ outputs
 
 
 def test_what_it_writes_follows_references_unions_and_counts() -> None:
@@ -310,9 +298,6 @@ def test_held_or_shown_a_schema_it_answers_with_a_document_that_holds() -> None:
     assert json.loads(reply(qwen(), body(messages=messages)).content) == {"ok": False}
     json_object = body(response_format={"type": "json_object"})
     assert json.loads(reply(qwen(), json_object).content) == {}
-
-
-# ------------------------------------------------------------------ tools
 
 
 def test_a_named_tool_is_called_and_stops() -> None:
@@ -407,9 +392,6 @@ def test_a_tool_choice_must_name_a_tool_it_is_offered() -> None:
     assert refusal(qwen(), body(tools=[function("x")], tool_choice="any")).param == (
         "tool_choice"
     )
-
-
-# ------------------------------------------------------------------ responses
 
 
 def test_it_returns_token_ids_only_when_asked() -> None:
@@ -553,9 +535,6 @@ def test_held_to_a_schema_it_runs_away_before_the_closing_brace() -> None:
     held = reply(qwen(), body(response_format=HELD), runaway=True)
     assert held.content == json.dumps({"ok": False}, indent=2).removesuffix("}")
     assert held.runaway > 0
-
-
-# ------------------------------------------------------------------ the sample
 
 
 def test_a_tool_round_goes_from_the_toolset_to_the_answer_tool() -> None:

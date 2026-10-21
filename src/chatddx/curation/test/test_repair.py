@@ -47,8 +47,6 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     ]
     assert repair(conn, moved, archive) == [f"[repair] nothing to repair {at}"]
 
-    # The data follows the rename, and init-data finds the archive whole again: a
-    # changed case keeps its expectation behind, and a renamed one takes it along.
     renamed = {**CASES, "noted2": CASES["noted"]}
     del renamed["noted"]
     lines = init(conn, world_plan(), renamed, moved, alice)

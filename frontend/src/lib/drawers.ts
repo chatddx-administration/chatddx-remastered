@@ -9,8 +9,6 @@ export function remembered(drawer: HTMLDetailsElement, page: string): void {
   drawer.addEventListener("toggle", () => {
     try {
       localStorage.setItem(key, drawer.open ? "open" : "closed");
-    } catch {
-      /* storage refused */
-    }
+    } catch {}
   });
 }

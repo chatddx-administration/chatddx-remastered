@@ -10,8 +10,10 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from pydantic import BaseModel, ConfigDict, field_validator
 
-# Lowercase, as Keycloak stores usernames, so logins carry over unchanged.
-# src/chatddx/store/migrations/0009-t2-identity.sql repeats this pattern and the role names.
+# Accommodating for Keycloak, which stores usernames lowercase, so logins carry over
+# unchanged.
+# Duplication: src/chatddx/store/migrations/0009-t2-identity.sql repeats this pattern
+# and the role names.
 LOGIN = re.compile(r"^[a-z0-9][a-z0-9._@-]*$")
 
 
@@ -40,7 +42,8 @@ class Person(BaseModel):
         return login
 
 
-# src/chatddx/catalog/model.py:About is one, said of a thread, family, run or score.
+# Dependency: src/chatddx/catalog/model.py:About is one, said of a thread, family, run
+# or score.
 class Owned(Protocol):
     @property
     def owner(self) -> int | None: ...
@@ -72,8 +75,8 @@ def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:
 _hasher = PasswordHasher()
 
 
-# Hashed when first needed rather than at import, which every process that imports the
-# catalog would pay for.
+# Optimization: hashed when first needed rather than at import, which every process that
+# imports the catalog would pay for.
 @cache
 def _dummy_hash() -> str:
     return _hasher.hash(secrets.token_urlsafe())

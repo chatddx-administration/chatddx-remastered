@@ -33,9 +33,9 @@ INSTRUCTION = (
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 
 
-# A session closed a moment ago may still be ending on the server, and neither a
-# template's copy nor DROP ... WITH (FORCE) waits for it: FORCE may not end a session
-# of DB_USER's as DB_ADMIN.
+# Accommodating for PostgreSQL: a session closed a moment ago may still be ending on the
+# server, and neither a template's copy nor DROP ... WITH (FORCE) waits for it: FORCE
+# may not end a session of DB_USER's as DB_ADMIN.
 def _settled(admin: Connection, name: str) -> None:
     for _ in range(500):
         row = admin.execute(
@@ -46,8 +46,8 @@ def _settled(admin: Connection, name: str) -> None:
         time.sleep(0.01)
 
 
-# `admin` is a conninfo taken before any test runs, since tests point DB_NAME at
-# their own database.
+# Dependency: `admin` is a conninfo taken before any test runs, since tests point
+# DB_NAME at their own database.
 def create_database(admin: str, template: str | None = None) -> str:
     name = f"chatddx_test_{uuid4().hex[:12]}"
     create = sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name))
@@ -60,8 +60,8 @@ def create_database(admin: str, template: str | None = None) -> str:
     return name
 
 
-# A run's or a scoring's job outlives the request that started it, and may connect again
-# between settling and dropping after its test has ended.
+# Accommodating for a run's or a scoring's job, which outlives the request that started
+# it, and may connect again between settling and dropping after its test has ended.
 def drop_database(admin: str, name: str) -> None:
     drop = sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
     with psycopg.connect(admin, autocommit=True) as conn:
@@ -79,8 +79,8 @@ def connect(name: str, admin: bool = False) -> Connection:
     return psycopg.connect(settings.database(admin), dbname=name)
 
 
-# Copies of a template are made ahead and dropped behind, on threads of their own, so
-# that a test waits for its database only when they fall behind.
+# Optimization: copies of a template are made ahead and dropped behind, on threads of
+# their own, so that a test waits for its database only when they fall behind.
 class Copies:
     AHEAD: int = 6
 
@@ -99,7 +99,7 @@ class Copies:
     def give_back(self, name: str) -> None:
         self._dropped.append(self._threads.submit(drop_database, self.admin, name))
 
-    # Before the template itself is dropped.
+    # Dependency: before the template itself is dropped.
     def forget(self, template: str) -> None:
         for made in self._ready.pop(template, deque()):
             self.give_back(made.result())
@@ -112,7 +112,6 @@ class Copies:
             dropped.result()
 
 
-# A template for the session, filled in the body of the `with`, from another or from nothing.
 @contextmanager
 def templated(copies: Copies, of: str | None = None) -> Generator[str]:
     name = create_database(copies.admin, template=of)
@@ -128,7 +127,6 @@ class Loaded(NamedTuple):
     said: list[str]
 
 
-# A test parametrized indirectly with a template's name, as "ran", starts from it.
 def chosen(request: pytest.FixtureRequest, otherwise: str) -> str:
     return request.getfixturevalue(getattr(request, "param", otherwise))
 

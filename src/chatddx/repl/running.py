@@ -314,7 +314,8 @@ class Held:
                 "scoring stopped: score scores what is left", style=LATER
             )
 
-    # A press goes through once, while scoring: the bench finishes the score under way.
+    # Policy: a press goes through once, while scoring: the bench finishes the score
+    # under way.
     def _pressed(self, _signal: int, _frame: FrameType | None) -> None:
         self.pressed += 1
         if self.pressed == 1:

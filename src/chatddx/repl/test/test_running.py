@@ -303,7 +303,6 @@ def pressing(say: Say, *lines: str) -> str:
         assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
 
 
-# Presses Ctrl-C as the `at`th token of the first call streams, `presses` times.
 def press_at(monkeypatch: pytest.MonkeyPatch, at: int, presses: int = 1) -> None:
     pressed = False
     count = Tally.count

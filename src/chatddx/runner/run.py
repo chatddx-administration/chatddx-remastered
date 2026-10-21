@@ -167,7 +167,8 @@ class Runner:
         return secret, toolbox, str(spec.url)
 
 
-# A run the request started and the worker sends is resumed with nothing written yet.
+# Policy: a run the request started and the worker sends is resumed with nothing written
+# yet.
 def _resumed(log: Run, trial: Trial) -> list[Finding]:
     said = (
         f"resumed after {len(log.items)} of {len(trial.cases) * len(trial.seeds)} items"
@@ -238,7 +239,8 @@ class Running:
         halt: Halt | None = None,
     ) -> None:
         emit: Callable[[RunEvent], None] = on_event or _ignore
-        # Its own halt, so that a worker's failure halts this run's calls and not the caller's.
+        # Policy: its own halt, so that a worker's failure halts this run's calls and
+        # not the caller's.
         self._halt = Halt()
         watching: AbstractContextManager[None] = (
             nullcontext() if halt is None else halt.watching(self._halt.set)

@@ -1,5 +1,6 @@
--- The roles every schema's tier 1 grants to. Roles are cluster-wide, so another database may
--- already have created them, or be creating them at this moment, as the tests' workers do.
+-- Accommodating for roles, which are cluster-wide: another database may already have
+-- created those every schema's tier 1 grants to, or be creating them at this moment, as the
+-- tests' workers do.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'chatddx_writer') THEN

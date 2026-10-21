@@ -41,7 +41,8 @@ from .events import (
 from .listening import Heard, Lagged
 from .state import AppState
 
-# Comment lines, which event readers skip, keep a proxy from cutting a quiet stream.
+# Accommodating for proxies, which cut a quiet stream: comment lines, which event
+# readers skip, keep it going.
 KEEP_ALIVE = 15.0
 
 type _Key = tuple[str, int]
@@ -68,7 +69,6 @@ class Telling:
     def run(self) -> UUID:
         return self._started.run
 
-    # A row's events end with the one that carries its id.
     def rows(self) -> list[str]:
         told: list[str] = []
         for seq, record in self._bench.store.rows_of(self.run, self.last):
@@ -161,7 +161,7 @@ class Telling:
         return [item_started_of(*at, self._trial.seeds[at[1]])]
 
 
-# It listens before it reads, so that no row lands unheard in between.
+# Policy: it listens before it reads, so that no row lands unheard in between.
 async def told(
     held: AppState, person: Person, run: UUID, after: int
 ) -> AsyncIterator[str]:

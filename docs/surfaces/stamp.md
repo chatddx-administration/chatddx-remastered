@@ -104,14 +104,11 @@ Raises:
 * `expr: ast.expr`
 * ∟`str | None`
 
-<<<<<<< signed
-=======
 ## `COMMENTS`
 `src/chatddx/stamp/__init__.py:COMMENTS`
 
 `COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"`
 
->>>>>>> @stamp
 ## `decorated`
 `src/chatddx/stamp/code.py:decorated`
 
@@ -124,11 +121,6 @@ Raises:
 
 `type Def = ast.FunctionDef | ast.AsyncFunctionDef`
 
-## `DOCS`
-`src/chatddx/stamp/__init__.py:DOCS`
-
-`DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"`
-
 ## `Found` `@dataclass(frozen=True)`
 `src/chatddx/stamp/trace.py:Found`
 
@@ -137,8 +129,6 @@ Raises:
 * `level: str | None = None`
 * `through: str | None = None`
 * `origin: str | None = None`
-<<<<<<< signed
-=======
 
 ## `index`
 `src/chatddx/stamp/index.py:index`
@@ -147,7 +137,6 @@ Raises:
 * `package: str`
 * `repo: Path`
 * ∟`str`
->>>>>>> @stamp
 
 ## `Node`
 `src/chatddx/stamp/code.py:Node`
@@ -168,6 +157,37 @@ Raises:
 
 * `name: str`
 * ∟`bool`
+
+## `Proof` `@dataclass(frozen=True)`
+`src/chatddx/stamp/__init__.py:Proof`
+
+* `path: Path`
+* `current: str | None`
+* `written: str`
+
+## `Proof.behind` `@property`
+`src/chatddx/stamp/__init__.py:Proof.behind`
+
+* ∟`bool`
+
+## `Proof.new` `@property`
+`src/chatddx/stamp/__init__.py:Proof.new`
+
+* ∟`int`
+
+## `Proof.pending` `@property`
+`src/chatddx/stamp/__init__.py:Proof.pending`
+
+* ∟`int`
+
+## `proofs`
+`src/chatddx/stamp/__init__.py:proofs`
+
+* `packages: Iterable[str]`
+* ∟`list[Proof]`
+
+Raises:
+1. `ValueError`: `"{_shown(path)}: {e}"` (from `ValueError`)
 
 ## `Raised` `@dataclass(frozen=True)`
 `src/chatddx/stamp/trace.py:Raised`
@@ -202,36 +222,10 @@ Raises:
 * `text: str`
 * ∟`list[tuple[str, ...]]`
 
-## `Surface` `@dataclass(frozen=True)`
-`src/chatddx/stamp/__init__.py:Surface`
+## `SURFACES`
+`src/chatddx/stamp/__init__.py:SURFACES`
 
-* `path: Path`
-* `current: str | None`
-* `written: str`
-
-## `Surface.behind` `@property`
-`src/chatddx/stamp/__init__.py:Surface.behind`
-
-* ∟`bool`
-
-## `Surface.new` `@property`
-`src/chatddx/stamp/__init__.py:Surface.new`
-
-* ∟`int`
-
-## `Surface.pending` `@property`
-`src/chatddx/stamp/__init__.py:Surface.pending`
-
-* ∟`int`
-
-## `surfaces`
-`src/chatddx/stamp/__init__.py:surfaces`
-
-* `packages: Iterable[str]`
-* ∟`list[Surface]`
-
-Raises:
-1. `ValueError`: `"{_shown(path)}: {e}"` (from `ValueError`)
+`SURFACES = settings.PROJECT_ROOT / "docs" / "surfaces"`
 
 ## `Trace`
 `src/chatddx/stamp/trace.py:Trace`

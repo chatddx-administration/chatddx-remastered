@@ -61,8 +61,8 @@ class Stream:
     def __init__(self, response: HTTPResponse) -> None:
         self._response: HTTPResponse = response
         self._guard: threading.Lock = threading.Lock()
-        # A socket of its own on the connection, so that another thread can shut it down
-        # without racing the response's close for its descriptor.
+        # Policy: a socket of its own on the connection, so that another thread can shut
+        # it down without racing the response's close for its descriptor.
         self._socket: socket.socket | None = socket.socket(
             fileno=os.dup(response.fileno())
         )

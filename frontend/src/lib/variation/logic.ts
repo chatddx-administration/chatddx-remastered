@@ -84,8 +84,7 @@ export type Carriage = {
   known: boolean;
 };
 
-// The look's languages are of the families it was asked about, not of those picked
-// beyond them.
+// Policy: the look's languages are of the families it was asked about, not of those picked beyond them.
 export function carried(sent: Schemas["Family"][], languages: Schemas["Carried"][]): Carriage[] {
   const byFamily = new Map<number, Schemas["Carried"]>();
   languages.forEach((c) => c.families.forEach((f) => byFamily.set(f, c)));

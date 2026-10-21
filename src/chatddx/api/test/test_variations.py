@@ -412,7 +412,8 @@ def test_a_look_s_queries_don_t_grow_with_its_cases(
     counted = [0]
     execute = psycopg.Cursor.execute
 
-    # Only the look's: the fixtures make the next test's database meanwhile.
+    # Accommodating for the fixtures, which make the next test's database meanwhile:
+    # only the look's database's queries count.
     def counting(cursor: psycopg.Cursor[Any], *args: Any, **kwargs: Any) -> Any:
         counted[0] += cursor.connection.info.dbname == db
         return execute(cursor, *args, **kwargs)

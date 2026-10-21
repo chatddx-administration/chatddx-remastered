@@ -24,7 +24,8 @@ def fake_at(inventory: Inventory, get: Resolver, name: str) -> Served:
         raise LookupError(f"{name} won't start: {e}") from None
 
 
-# A hosted API parses tool calls, as the fake does under any parser.
+# Accommodating for a hosted API, which parses tool calls, as the fake does under any
+# parser.
 def _stand_in(
     inventory: Inventory, get: Resolver, engine: RemoteEngine, name: str
 ) -> Served:

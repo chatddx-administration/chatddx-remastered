@@ -20,7 +20,8 @@ def drawn_seed() -> int:
     return secrets.randbelow(SEEDS)
 
 
-# Names, vignettes and answers may hold brackets, which rich would read as markup.
+# Accommodating for rich, which would read the brackets that names, vignettes and
+# answers may hold as markup.
 def console(record: bool = False, width: int | None = None) -> Console:
     return Console(markup=False, record=record, width=width)
 

@@ -4,7 +4,7 @@ from textwrap import dedent
 import pytest
 
 from chatddx import settings, stamp
-from chatddx.stamp import Surface, surfaces
+from chatddx.stamp import Proof, proofs
 from chatddx.stamp.code import Code
 from chatddx.stamp.index import index
 from chatddx.stamp.markers import signed, stamped
@@ -703,13 +703,13 @@ def test_an_unclosed_stamp_is_refused() -> None:
         _ = signed("<<<<<<< signed\na\n=======\nb\n")
 
 
-def test_a_surface_counts_the_stamps_it_holds_and_those_a_write_would_add() -> None:
+def test_a_proof_counts_the_stamps_it_holds_and_those_a_write_would_add() -> None:
     once = stamped("## e\na\nb\nc\n", "## e\nA\nb\nc\n")
     twice = stamped(once, "## e\nA\nb\nC\n")
-    assert Surface(Path("s.md"), once, twice).pending == 1
-    assert Surface(Path("s.md"), once, twice).new == 1
-    assert Surface(Path("s.md"), twice, twice).new == 0
-    assert Surface(Path("s.md"), None, "## e\na\n").new == 0
+    assert Proof(Path("s.md"), once, twice).pending == 1
+    assert Proof(Path("s.md"), once, twice).new == 1
+    assert Proof(Path("s.md"), twice, twice).new == 0
+    assert Proof(Path("s.md"), None, "## e\na\n").new == 0
 
 
 def faked(
@@ -718,27 +718,26 @@ def faked(
     docs = tmp_path / "docs" / "surfaces"
     docs.mkdir(parents=True)
     held = [
-        Surface(docs / f"{name}.md", current, written)
-        for name, current, written in found
+        Proof(docs / f"{name}.md", current, written) for name, current, written in found
     ]
     for s in held:
         if s.current is not None:
             _ = s.path.write_text(s.current)
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(settings, "STAMPED", tuple(name for name, _, _ in found))
-    monkeypatch.setattr(stamp, "DOCS", docs)
+    monkeypatch.setattr(stamp, "SURFACES", docs)
     monkeypatch.setattr(stamp, "COMMENTS", tmp_path / "docs" / "comments")
 
-    def listed(_: object) -> list[Surface]:
+    def listed(_: object) -> list[Proof]:
         return held
 
-    monkeypatch.setattr(stamp, "surfaces", listed)
+    monkeypatch.setattr(stamp, "proofs", listed)
 
 
 PENDING = stamped("## e\na\n", "## e\nb\n")
 
 
-def test_check_flags_stamps_pending_and_fails_on_a_surface_behind_the_code(
+def test_check_flags_stamps_pending_and_fails_on_a_proof_behind_the_code(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
@@ -780,7 +779,7 @@ def test_check_at_the_baseline_fails_on_stamps_pending_and_on_new_ones(
     ]
 
 
-def test_check_flags_a_page_no_package_writes_and_a_broken_stamp(
+def test_check_flags_a_proof_no_package_writes_and_a_broken_stamp(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
@@ -795,10 +794,10 @@ def test_check_flags_a_page_no_package_writes_and_a_broken_stamp(
         "flag: docs/surfaces/gone.md: no package of settings.STAMPED writes it",
     ]
 
-    def broken(_: object) -> list[Surface]:
+    def broken(_: object) -> list[Proof]:
         raise ValueError("docs/surfaces/a.md: line 2: a stamp isn't closed")
 
-    monkeypatch.setattr(stamp, "surfaces", broken)
+    monkeypatch.setattr(stamp, "proofs", broken)
     with pytest.raises(SystemExit):
         stamp.check(["a"], baseline=False)
     assert "flag: docs/surfaces/a.md: line 2: a stamp isn't closed" in (
@@ -806,7 +805,7 @@ def test_check_flags_a_page_no_package_writes_and_a_broken_stamp(
     )
 
 
-def test_write_says_how_many_stamps_it_wrote_to_each_surface(
+def test_write_says_how_many_stamps_it_wrote_to_each_proof(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(
@@ -832,5 +831,5 @@ def test_write_says_how_many_stamps_it_wrote_to_each_surface(
 
 @pytest.mark.slow
 def test_each_surface_is_as_chatddx_stamp_writes_it() -> None:
-    for s in surfaces(settings.STAMPED):
+    for s in proofs(settings.STAMPED):
         assert not s.behind, "chatddx stamp write"

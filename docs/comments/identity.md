@@ -5,19 +5,22 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/identity/`, e
 ## `src/chatddx/identity/identity.py:_dummy_hash`
 
 ```
-# Hashed when first needed rather than at import, which every process that imports the
-# catalog would pay for.
+# Optimization: hashed when first needed rather than at import, which every process that
+# imports the catalog would pay for.
 ```
 
 ## `src/chatddx/identity/identity.py:LOGIN`
 
 ```
-# Lowercase, as Keycloak stores usernames, so logins carry over unchanged.
-# src/chatddx/store/migrations/0009-t2-identity.sql repeats this pattern and the role names.
+# Accommodating for Keycloak, which stores usernames lowercase, so logins carry over
+# unchanged.
+# Duplication: src/chatddx/store/migrations/0009-t2-identity.sql repeats this pattern
+# and the role names.
 ```
 
 ## `src/chatddx/identity/identity.py:Owned`
 
 ```
-# src/chatddx/catalog/model.py:About is one, said of a thread, family, run or score.
+# Dependency: src/chatddx/catalog/model.py:About is one, said of a thread, family, run
+# or score.
 ```

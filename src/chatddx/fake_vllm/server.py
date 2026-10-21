@@ -124,8 +124,8 @@ class _Handler(BaseHTTPRequestHandler):
             )
         return scripted(served, body, turn)
 
-    # With --api-key, vLLM asks for one of its keys as a bearer on /v1 only, so /health and
-    # /version answer anyone.
+    # Accommodating for vLLM, which with --api-key asks for one of its keys as a bearer
+    # on /v1 only, so /health and /version answer anyone.
     def _authorized(self) -> bool:
         keys = {key for s in self.served for key in s.api_keys}
         if not keys or not self.path.startswith("/v1"):
@@ -136,8 +136,8 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(401, {"error": "Unauthorized"})
         return False
 
-    # Waits for the next token, and hears a hang-up from the socket meanwhile, as vLLM
-    # does, rather than at the next write.
+    # Accommodating for vLLM, which hears a hang-up from the socket while it waits for
+    # the next token, rather than at the next write.
     def _next_token(self) -> bool:
         ready, _, _ = select.select([self.connection], [], [], self.delay)
         if not ready:
@@ -155,8 +155,8 @@ class _Handler(BaseHTTPRequestHandler):
             return False
         return True
 
-    # Logged, not written to stderr: a request's thread can outlive its client, so what it logs
-    # goes to whoever listens then; `run` prints it.
+    # Policy: logged, not written to stderr: a request's thread can outlive its client,
+    # so what it logs goes to whoever listens then; `run` prints it.
     @override
     def log_message(self, format: str, *args: Any) -> None:
         LOG.info(
@@ -203,8 +203,6 @@ def server(
     return ThreadingHTTPServer(address, handler)
 
 
-# The fake in a thread of this process, for as long as the block lasts, at the address
-# it yields.
 @contextmanager
 def serving(
     served: Sequence[Served],
@@ -240,7 +238,6 @@ def run(
     run_all([served], delay, runaway, script)
 
 
-# Each model on a server of its own, at its own address, till Ctrl-C.
 def run_all(
     served: Sequence[Served],
     delay: float,
