@@ -39,7 +39,7 @@ def _code(text: str) -> str:
     return f"{fence} {text} {fence}"
 
 
-class Page:
+class _Page:
     def __init__(self, code: Code, trace: Trace, package: str, repo: Path) -> None:
         found = code.get(package)
         assert isinstance(found, griffe.Module)
@@ -302,4 +302,4 @@ class Page:
 
 
 def page(code: Code, trace: Trace, package: str, repo: Path) -> str:
-    return Page(code, trace, package, repo).render()
+    return _Page(code, trace, package, repo).render()

@@ -7,25 +7,14 @@ from pathlib import Path
 from chatddx import settings
 
 from .code import Code
-from .markers import signed, stamped, stamps
+from .markers import stamped, stamps
 from .page import page
 from .trace import Trace
 
-__all__ = [
-    "DOCS",
-    "Code",
-    "Surface",
-    "Trace",
-    "check",
-    "page",
-    "signed",
-    "stamped",
-    "surfaces",
-    "write",
-]
+__all__ = ["DOCS", "Surface", "check", "surfaces", "write"]
 
 DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"
-FINDING = "chatddx.factors.base.Finding"
+_FINDING = "chatddx.factors.base.Finding"
 
 
 @dataclass(frozen=True)
@@ -50,7 +39,7 @@ class Surface:
 
 def surfaces(packages: Iterable[str]) -> list[Surface]:
     code = Code(settings.PROJECT_ROOT / "src", "chatddx")
-    trace = Trace(code, FINDING)
+    trace = Trace(code, _FINDING)
     found: list[Surface] = []
     for package in packages:
         path = DOCS / f"{package}.md"

@@ -667,6 +667,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         _ = stamping_with.add_argument(
             "package",
             nargs="*",
+            choices=settings.STAMPED,
             help="the packages, such as bench (settings.STAMPED)",
         )
         stamping_with.set_defaults(run=_stamp, stamping=stamping_as)

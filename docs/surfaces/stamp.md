@@ -3,10 +3,16 @@
 Written by `chatddx stamp write` from `src/chatddx/stamp/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 <<<<<<< signed
+## `CLOSING`
+`src/chatddx/stamp/markers.py:CLOSING`
 =======
 ## `check`
 `src/chatddx/stamp/__init__.py:check`
+>>>>>>> @stamp
 
+<<<<<<< signed
+`CLOSING = ">>>>>>> @stamp"`
+=======
 * `packages: Sequence[str]`
 * `baseline: bool`
 * ∟`None`
@@ -14,12 +20,7 @@ Written by `chatddx stamp write` from `src/chatddx/stamp/`; how to read it is in
 Raises:
 1. `SystemExit`: `"stamp: {shown} behind the code: run chatddx stamp write"`
 2. `SystemExit`: `1`
-
 >>>>>>> @stamp
-## `CLOSING`
-`src/chatddx/stamp/markers.py:CLOSING`
-
-`CLOSING = ">>>>>>> @stamp"`
 
 ## `Code`
 `src/chatddx/stamp/code.py:Code`
@@ -112,6 +113,7 @@ Raises:
 * `expr: ast.expr`
 * ∟`str | None`
 
+<<<<<<< signed
 ## `CONFLICT`
 `src/chatddx/stamp/markers.py:CONFLICT`
 
@@ -122,6 +124,8 @@ Raises:
 
 `CONVERSIONS = {ord("r"): "!r", ord("s"): "!s", ord("a"): "!a"}`
 
+=======
+>>>>>>> @stamp
 ## `decorated`
 `src/chatddx/stamp/code.py:decorated`
 
@@ -134,20 +138,26 @@ Raises:
 
 `type Def = ast.FunctionDef | ast.AsyncFunctionDef`
 
+<<<<<<< signed
 ## `DIVIDER`
 `src/chatddx/stamp/markers.py:DIVIDER`
 
 `DIVIDER = "======="`
 
+=======
+>>>>>>> @stamp
 ## `DOCS`
 `src/chatddx/stamp/__init__.py:DOCS`
 
 `DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"`
+<<<<<<< signed
 
 ## `FINDING`
 `src/chatddx/stamp/__init__.py:FINDING`
 
 `FINDING = "chatddx.factors.base.Finding"`
+=======
+>>>>>>> @stamp
 
 ## `Found` `@dataclass(frozen=True)`
 `src/chatddx/stamp/trace.py:Found`
@@ -163,6 +173,7 @@ Raises:
 
 `type Node = Def | ast.ClassDef`
 
+<<<<<<< signed
 ## `OPENING`
 `src/chatddx/stamp/markers.py:OPENING`
 
@@ -177,6 +188,8 @@ Raises:
 * `repo: Path`
 * `bound: dict[str, tuple[griffe.Class, str]]`
 
+=======
+>>>>>>> @stamp
 ## `page`
 `src/chatddx/stamp/page.py:page`
 
@@ -185,6 +198,7 @@ Raises:
 * `package: str`
 * `repo: Path`
 * ∟`str`
+<<<<<<< signed
 
 ## `Page.__init__`
 `src/chatddx/stamp/page.py:Page.__init__`
@@ -294,15 +308,14 @@ Raises:
 * `obj: griffe.Object`
 * ∟`list[str]`
 
-<<<<<<< signed
 ## `pending`
 `src/chatddx/stamp/markers.py:pending`
 
 * `text: str`
 * ∟`int`
-
 =======
 >>>>>>> @stamp
+
 ## `private`
 `src/chatddx/stamp/code.py:private`
 
@@ -318,16 +331,16 @@ Raises:
 * `through: str | None = None`
 * `validated: bool = False`
 * `origin: str | None = None`
-<<<<<<< signed
 
+<<<<<<< signed
 ## `regenerated`
 `src/chatddx/stamp/__init__.py:regenerated`
 
 * `packages: Iterable[str]`
 * ∟`dict[Path, str]`
+
 =======
 >>>>>>> @stamp
-
 ## `signed`
 `src/chatddx/stamp/markers.py:signed`
 
@@ -423,11 +436,14 @@ Raises:
 * `raised: tuple[Raised, ...]`
 * `found: tuple[Found, ...]`
 
+<<<<<<< signed
 ## `VALIDATION`
 `src/chatddx/stamp/trace.py:VALIDATION`
 
 `VALIDATION = "pydantic.ValidationError"`
 
+=======
+>>>>>>> @stamp
 ## `VALIDATORS`
 `src/chatddx/stamp/trace.py:VALIDATORS`
 

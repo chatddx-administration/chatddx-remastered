@@ -4,7 +4,11 @@ from textwrap import dedent
 import pytest
 
 from chatddx import settings, stamp
-from chatddx.stamp import Code, Surface, Trace, page, signed, stamped, surfaces
+from chatddx.stamp import Surface, surfaces
+from chatddx.stamp.code import Code
+from chatddx.stamp.markers import signed, stamped
+from chatddx.stamp.page import page
+from chatddx.stamp.trace import Trace
 
 
 def written(tmp_path: Path, files: dict[str, str]) -> str:
