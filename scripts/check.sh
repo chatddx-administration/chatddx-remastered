@@ -2,7 +2,7 @@
 # Usage: scripts/check.sh [docs|package|frontend|browser|baseline]..., from the repository's root
 # in the dev shell with its database up (dev-db start). Each stage checks what a kind of
 # change can break and writes nothing git tracks; with no stage named, the stages of what
-# git says changed.
+# changed since the branch left origin/main, or $CHECK_BASE.
 set -euo pipefail
 
 docs() {
@@ -30,10 +30,18 @@ browser() {
   pytest -m browser -rs
 }
 
-# Policy: on a fresh commit before work starts; what it flags is for a human to settle
-# before work proceeds, so no change git sees runs it.
+# Policy: on a fresh commit before work starts, what it flags is for a human to settle
+# before work proceeds, so it flags all of it at once and no change git sees runs it.
 baseline() {
-  chatddx stamp check --baseline
+  local flagged=0
+  python scripts/refcheck.py | sed 's/^/flag: /' >&2 || flagged=1
+  chatddx openapi | cmp -s - frontend/openapi.json || {
+    echo "flag: frontend/openapi.json: behind the code at the baseline: the code changed without" \
+      "chatddx openapi; investigate before work proceeds" >&2
+    flagged=1
+  }
+  chatddx stamp check --baseline || flagged=1
+  return "$flagged"
 }
 
 # Policy: the API's Python surface and its OpenAPI document change together, so one
@@ -41,8 +49,8 @@ baseline() {
 crosscheck() {
   git rev-parse --git-dir >/dev/null 2>&1 || return 0
   local openapi surface
-  openapi="$(git status --porcelain -- frontend/openapi.json)"
-  surface="$(git status --porcelain -- docs/surfaces/api.md)"
+  openapi="$(git diff --name-only "$(base)" -- frontend/openapi.json)"
+  surface="$(git diff --name-only "$(base)" -- docs/surfaces/api.md)"
   if [[ -n $openapi && -z $surface ]] || [[ -z $openapi && -n $surface ]]; then
     echo "flag: one of frontend/openapi.json and docs/surfaces/api.md changed, the other didn't" >&2
   fi
@@ -53,10 +61,15 @@ fail() {
   exit 1
 }
 
+# Accommodating for commits between units of work, which squashing makes the branch's own.
+base() {
+  git merge-base HEAD "${CHECK_BASE:-origin/main}" 2>/dev/null || git rev-parse HEAD
+}
+
 # Accommodating for the docs referring to the code, which a change in the code can break.
 changed() {
   local paths
-  paths="$(git status --porcelain | cut -c4-)"
+  paths="$(git diff --name-only "$(base)" && git ls-files --others --exclude-standard)"
   grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|scripts/refcheck\.py|src/)' <<<"$paths" && echo docs
   grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
   grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
@@ -67,7 +80,7 @@ changed() {
 stages=("$@")
 if [[ ${#stages[@]} -eq 0 ]]; then
   mapfile -t stages < <(changed)
-  [[ ${#stages[@]} -gt 0 ]] || echo "• nothing to check: no stage reads what git says changed" >&2
+  [[ ${#stages[@]} -gt 0 ]] || echo "• nothing to check: no stage reads what the branch changed" >&2
 fi
 for stage in "${stages[@]}"; do
   case "$stage" in

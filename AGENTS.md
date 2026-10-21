@@ -50,6 +50,13 @@ Tell user:
 
 ### Python
 
+```
+AGENT: rewrite
+"Baseline" now names the check before work starts (see "Workflow"), and `pytest` skips the browser tests.
+---
+- `pytest` runs every test but the browser tests, in ~110s.
+```
+
 - Baseline is `pytest` runs every test and takes ~110s;
 - `pytest -m 'not slow'` takes ~22s.
 - `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
@@ -77,14 +84,61 @@ Agents aren't expected to run this, just know it exists.
 
 ## Workflow
 
+```
+AGENT: insert
+What the workflow spans, so that a turn's end isn't taken for a handover: a session's hooks may ask to commit and push
+at every turn's end.
+---
+The workflow is a session's: it starts from a commit a human made, and ends with a handover the human asks for. What
+the session commits in between is its own, and is squashed.
+```
+
 ### 1. Before work starts
+
+```
+AGENT: rewrite
+When work starts: a fresh session, and each request that names the commit to start from ("At <commit>"). The stage
+now also flags a doc reference that doesn't resolve and `frontend/openapi.json` behind the code.
+---
+When work starts from a commit a human made, a fresh session's or the one a request names ("At <commit>"), run
+`scripts/check.sh baseline` first. When it prints a `flag:`, stop and tell the human, before work proceeds: stamps
+pending are theirs to stamp, and a doc reference that doesn't resolve, or a surface or `frontend/openapi.json` behind
+the code, is to be looked into.
+```
 
 On a fresh commit, run `scripts/check.sh baseline`. When it prints a `flag:`, stop and tell the human: stamps pending
 are theirs to stamp, and a surface behind the code is to be looked into, before work proceeds.
 
+```
+AGENT: rewrite
+"units of works" is a typo; the quick checks are worth naming; and committing isn't handing over.
+---
+### 2. Between units of work
+
+No rules: use your own judgement and the tests and checks at your disposal (see "Testing"), such as a package's tests,
+`pytest -m 'not slow'` or `scripts/check.sh docs`. Commit and push as you see fit, since the commits are squashed, and
+a session's hooks may ask for both at a turn's end: neither is a handover.
+```
+
 ### 2. Between units of works
 
 No rules, use your own judgement and the tests and checks at your disposal, the commits will be squashed.
+
+```
+AGENT: rewrite
+A handover happens only when asked for. `scripts/check.sh` with no stage now checks what the branch changed since it
+left `origin/main`, so the session's commits are checked too. docs/modules/stamp.md cites the old "Pre-commit
+checklist", and has a suggestion to cite this heading.
+---
+### 3. Handing over
+
+Only when the human asks for the work, or for a pull request:
+
+1. Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
+2. Run `scripts/check.sh`, which checks what the branch changed since it left `origin/main`, then tell the human of
+   each `flag:` it prints, and flip what the budget suggests when it feels right.
+3. Commit and push, and open the pull request if one was asked for.
+```
 
 ### 3. Before work is handed over
 
