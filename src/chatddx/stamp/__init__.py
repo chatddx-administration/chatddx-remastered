@@ -7,13 +7,15 @@ from pathlib import Path
 from chatddx import settings
 
 from .code import Code
+from .index import index
 from .markers import stamped, stamps
 from .page import page
 from .trace import Trace
 
-__all__ = ["DOCS", "Surface", "check", "surfaces", "write"]
+__all__ = ["COMMENTS", "DOCS", "Surface", "check", "surfaces", "write"]
 
 DOCS = settings.PROJECT_ROOT / "docs" / "surfaces"
+COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"
 _FINDING = "chatddx.factors.base.Finding"
 
 
@@ -42,13 +44,16 @@ def surfaces(packages: Iterable[str]) -> list[Surface]:
     trace = Trace(code, _FINDING)
     found: list[Surface] = []
     for package in packages:
-        path = DOCS / f"{package}.md"
-        current = path.read_text() if path.exists() else None
-        written = page(code, trace, f"chatddx.{package}", settings.PROJECT_ROOT)
-        try:
-            found.append(Surface(path, current, stamped(current, written)))
-        except ValueError as e:
-            raise ValueError(f"{_shown(path)}: {e}") from None
+        name = f"chatddx.{package}"
+        for path, written in (
+            (DOCS / f"{package}.md", page(code, trace, name, settings.PROJECT_ROOT)),
+            (COMMENTS / f"{package}.md", index(code.src, name, settings.PROJECT_ROOT)),
+        ):
+            current = path.read_text() if path.exists() else None
+            try:
+                found.append(Surface(path, current, stamped(current, written)))
+            except ValueError as e:
+                raise ValueError(f"{_shown(path)}: {e}") from None
     return found
 
 
@@ -61,7 +66,7 @@ def check(packages: Sequence[str], baseline: bool) -> None:
     if not packages:
         flags += [
             f"{_shown(p)}: no package of settings.STAMPED writes it"
-            for p in sorted(DOCS.glob("*.md"))
+            for p in sorted([*DOCS.glob("*.md"), *COMMENTS.glob("*.md")])
             if p.stem not in settings.STAMPED
         ]
     refused = bool(flags)

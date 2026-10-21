@@ -104,6 +104,14 @@ Raises:
 * `expr: ast.expr`
 * ∟`str | None`
 
+<<<<<<< signed
+=======
+## `COMMENTS`
+`src/chatddx/stamp/__init__.py:COMMENTS`
+
+`COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"`
+
+>>>>>>> @stamp
 ## `decorated`
 `src/chatddx/stamp/code.py:decorated`
 
@@ -129,6 +137,17 @@ Raises:
 * `level: str | None = None`
 * `through: str | None = None`
 * `origin: str | None = None`
+<<<<<<< signed
+=======
+
+## `index`
+`src/chatddx/stamp/index.py:index`
+
+* `src: Path`
+* `package: str`
+* `repo: Path`
+* ∟`str`
+>>>>>>> @stamp
 
 ## `Node`
 `src/chatddx/stamp/code.py:Node`

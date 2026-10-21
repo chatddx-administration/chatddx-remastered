@@ -6,18 +6,27 @@ import pytest
 from chatddx import settings, stamp
 from chatddx.stamp import Surface, surfaces
 from chatddx.stamp.code import Code
+from chatddx.stamp.index import index
 from chatddx.stamp.markers import signed, stamped
 from chatddx.stamp.page import page
 from chatddx.stamp.trace import Trace
 
 
-def written(tmp_path: Path, files: dict[str, str]) -> str:
+def sourced(tmp_path: Path, files: dict[str, str]) -> Path:
     for name, source in files.items():
         path = tmp_path / "src" / name
         path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text(dedent(source))
-    code = Code(tmp_path / "src", "proj")
+    return tmp_path / "src"
+
+
+def written(tmp_path: Path, files: dict[str, str]) -> str:
+    code = Code(sourced(tmp_path, files), "proj")
     return page(code, Trace(code, "proj.base.Finding"), "proj.alpha", tmp_path)
+
+
+def indexed(tmp_path: Path, files: dict[str, str]) -> str:
+    return index(sourced(tmp_path, files), "proj.alpha", tmp_path)
 
 
 def entry(page: str, heading: str) -> list[str]:
@@ -454,6 +463,177 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
     ]
 
 
+def test_a_comment_is_indexed_under_the_name_it_is_in_or_right_above(
+    tmp_path: Path,
+) -> None:
+    found = indexed(
+        tmp_path,
+        {
+            "proj/alpha/__init__.py": "# Scope: the package.\n",
+            "proj/alpha/held.py": """
+                import json  # the standard library's
+
+                # Policy: one, ever.
+                LIMIT = 1
+
+
+                class Store:
+                    # Policy: the store's own.
+                    kind = "store"
+
+                    @property
+                    # Compromise: under the decorator.
+                    def name(self) -> str:
+                        # Policy: a name is its kind,
+                        # and stays it.
+                        return self.kind  # as it is
+
+                    def opened(self) -> None:
+                        def inner() -> None:
+                            # Scope: within.
+                            pass
+
+                        # Scope: the method's.
+                        inner()
+
+
+                # Scope: a section.
+
+                def after() -> None: ...
+            """,
+            "proj/alpha/test/test_held.py": """
+                # Policy: a test's are indexed too.
+                def test_held() -> None:
+                    _ = "# not a comment"
+            """,
+        },
+    )
+    assert (
+        found.splitlines()[3:]
+        == dedent(
+            """
+        ## `src/proj/alpha/__init__.py`
+
+        ```
+        # Scope: the package.
+        ```
+
+        ## `src/proj/alpha/held.py`
+
+        ```
+        # the standard library's
+        ```
+
+        ```
+        # Scope: a section.
+        ```
+
+        ## `src/proj/alpha/held.py:LIMIT`
+
+        ```
+        # Policy: one, ever.
+        ```
+
+        ## `src/proj/alpha/held.py:Store.kind`
+
+        ```
+        # Policy: the store's own.
+        ```
+
+        ## `src/proj/alpha/held.py:Store.name`
+
+        ```
+        # Compromise: under the decorator.
+        ```
+
+        ```
+        # Policy: a name is its kind,
+        # and stays it.
+        ```
+
+        ```
+        # as it is
+        ```
+
+        ## `src/proj/alpha/held.py:Store.opened`
+
+        ```
+        # Scope: the method's.
+        ```
+
+        ## `src/proj/alpha/held.py:Store.opened.inner`
+
+        ```
+        # Scope: within.
+        ```
+
+        ## `src/proj/alpha/test/test_held.py:test_held`
+
+        ```
+        # Policy: a test's are indexed too.
+        ```
+        """
+        ).splitlines()
+    )
+
+
+def test_sql_and_toml_comments_are_read_past_their_strings(tmp_path: Path) -> None:
+    found = indexed(
+        tmp_path,
+        {
+            "proj/alpha/setup.sql": """
+                -- Policy: one row,
+                -- ever.
+                CREATE TABLE "a--b" (c text DEFAULT 'it''s -- text'); -- trailing
+                /* Scope: a block
+                   of two lines. */
+            """,
+            "proj/alpha/models.toml": """
+                # Policy: shipped.
+                a = "# text"  # trailing
+                b = 'C#'
+                c = \"\"\"
+                # still text
+                \"\"\"
+            """,
+            "proj/alpha/notes.txt": "# not read\n",
+        },
+    )
+    assert entry(found, "## `src/proj/alpha/models.toml`") == [
+        "```",
+        "# Policy: shipped.",
+        "```",
+        "```",
+        "# trailing",
+        "```",
+    ]
+    assert entry(found, "## `src/proj/alpha/setup.sql`") == [
+        "```",
+        "-- Policy: one row,",
+        "-- ever.",
+        "```",
+        "```",
+        "-- trailing",
+        "```",
+        "```",
+        "/* Scope: a block",
+        "   of two lines. */",
+        "```",
+    ]
+    assert "notes.txt" not in found
+
+
+def test_a_comment_holding_backticks_is_fenced_with_more_of_them(
+    tmp_path: Path,
+) -> None:
+    found = indexed(tmp_path, {"proj/alpha/held.py": "# a ``` fence\n"})
+    assert entry(found, "## `src/proj/alpha/held.py`") == [
+        "````",
+        "# a ``` fence",
+        "````",
+    ]
+
+
 def test_a_first_surface_is_written_whole() -> None:
     assert stamped(None, "# a\n\n## b\n") == "# a\n\n## b\n"
 
@@ -547,6 +727,7 @@ def faked(
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(settings, "STAMPED", tuple(name for name, _, _ in found))
     monkeypatch.setattr(stamp, "DOCS", docs)
+    monkeypatch.setattr(stamp, "COMMENTS", tmp_path / "docs" / "comments")
 
     def listed(_: object) -> list[Surface]:
         return held
@@ -599,17 +780,20 @@ def test_check_at_the_baseline_fails_on_stamps_pending_and_on_new_ones(
     ]
 
 
-def test_check_flags_a_surface_no_package_writes_and_a_broken_stamp(
+def test_check_flags_a_page_no_package_writes_and_a_broken_stamp(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
     _ = (tmp_path / "docs" / "surfaces" / "gone.md").write_text("## e\n")
+    (tmp_path / "docs" / "comments").mkdir()
+    _ = (tmp_path / "docs" / "comments" / "gone.md").write_text("## e\n")
     with pytest.raises(SystemExit) as e:
         stamp.check([], baseline=False)
     assert e.value.code == 1
-    assert capsys.readouterr().err == (
-        "flag: docs/surfaces/gone.md: no package of settings.STAMPED writes it\n"
-    )
+    assert capsys.readouterr().err.splitlines() == [
+        "flag: docs/comments/gone.md: no package of settings.STAMPED writes it",
+        "flag: docs/surfaces/gone.md: no package of settings.STAMPED writes it",
+    ]
 
     def broken(_: object) -> list[Surface]:
         raise ValueError("docs/surfaces/a.md: line 2: a stamp isn't closed")

@@ -201,6 +201,7 @@
               (lib.fileset.unions [
                 ./src
                 ./worlds
+                ./docs/comments
                 ./docs/surfaces
                 ./frontend/openapi.json
                 ./pyproject.toml
