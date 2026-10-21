@@ -74,6 +74,7 @@ class Worker:
         beat: timedelta = settings.WORKER_BEAT,
         lost: timedelta = settings.WORKER_LOST,
         deadline: timedelta = settings.WORKER_DEADLINE,
+        jobs: int = settings.WORKER_JOBS,
     ) -> None:
         self.id: UUID = uuid4()
         self._conninfo: str = conninfo
@@ -81,6 +82,7 @@ class Worker:
         self._beat_every: float = beat.total_seconds()
         self._lost: timedelta = lost
         self._deadline: float = deadline.total_seconds()
+        self._jobs: int = jobs
         self._guard: threading.Lock = threading.Lock()
         self._held: dict[int, _Held] = {}
         self._waking: socket.socket | None = None
@@ -121,8 +123,10 @@ class Worker:
                         return
                     if not leaving:
                         while (
-                            job := queue.claim(self.id, capacity, self._lost)
-                        ) is not None:
+                            len(self._holding()) < self._jobs
+                            and (job := queue.claim(self.id, capacity, self._lost))
+                            is not None
+                        ):
                             self._take(job)
                     self._wait(conn, woken, deadline)
         finally:

@@ -52,8 +52,9 @@ def serving(
     world: Inventory,
     beat: timedelta = BEAT,
     deadline: timedelta = settings.WORKER_DEADLINE,
+    jobs: int = settings.WORKER_JOBS,
 ) -> Generator[Worker]:
-    worker = Worker(conninfo, world, beat, LOST, deadline)
+    worker = Worker(conninfo, world, beat, LOST, deadline, jobs)
     stopping = threading.Event()
     thread = threading.Thread(target=worker.serve, args=(stopping,))
     thread.start()
@@ -300,6 +301,30 @@ def test_a_job_that_can_t_connect_is_lost_and_claimed_again(
     assert refused.is_set()
     assert (done.status, done.worker) == ("finished", worker.id)
     assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.slow
+def test_a_worker_takes_a_job_only_while_it_holds_fewer_than_it_may(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, variation = Queue(conn), bench.variation(LINES)
+    lines = next(e.digest for e, a in bench.threads("scorer") if a.name == "lines")
+    finished: list[UUID] = []
+    with faked(world, Store(conn).get):
+        for _ in range(2):
+            running = bench.start(
+                variation, QWEN, [bench.family("crlf").case], (7,)
+            ).first
+            running.send()
+            _ = running.finish()
+            finished.append(running.run)
+    jobs = [queue.put(alice.id, run, QWEN, 0, True, [lines]) for run in finished]
+    with serving(conninfo, world, jobs=1):
+        first, second = (until(queue, job, ended) for job in jobs)
+
+    assert (first.status, second.status) == ("finished", "finished")
+    assert first.ended is not None and second.claimed is not None
+    assert second.claimed >= first.ended
 
 
 @pytest.mark.usefixtures("fake")

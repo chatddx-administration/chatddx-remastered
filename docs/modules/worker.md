@@ -30,6 +30,15 @@ the gate. Claims take turns, so that several workers count an endpoint's slots a
 that two workers never take the same one.
 
 ```
+AGENT: insert
+A worker now holds at most so many jobs at once (src/chatddx/settings.py:WORKER_JOBS), as a scoring alone holds no
+slots and a worker took every one queued at once, each with a thread and two connections.
+---
+A worker holds at most so many jobs at once, runs and scorings alike, whatever their slots or halts, and claims again
+as one ends, so that its threads and connections are bounded.
+```
+
+```
 AGENT: replace
 A job is lost by its own beat now, not its worker's (src/chatddx/store/queue.py:Queue.claim): a worker that can't end
 a job, as when it can't connect for it, still beats, and its job was under way, and its slots held, until a restart.

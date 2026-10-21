@@ -49,6 +49,9 @@ WORKER_LOST = timedelta(seconds=10)
 # Policy: within the stop timeout of the service that runs the worker, TimeoutStopSec in
 # nix/module.nix.
 WORKER_DEADLINE = timedelta(seconds=60)
+# Policy: bounds a worker's threads, and its connections at 1 + 2 per job
+# (src/chatddx/worker/worker.py:Worker._work).
+WORKER_JOBS = 8
 
 
 def host() -> str:
