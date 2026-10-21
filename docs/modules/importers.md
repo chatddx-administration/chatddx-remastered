@@ -1,18 +1,8 @@
 # Importers
 
-```
-AGENT: rewrite
-"Importing from a host" moved here, so the pointer is to this doc's section; refcheck fails on it as it stands.
----
 An importer reads what a host reports of the inference servers it runs, and writes them into a World: each server's
 model and engine, the endpoint it is reached at, and where its host keeps what they pin. There is one, for the reports
-of o11n.vllm, Kompismoln's NixOS module for vLLM, behind `chatddx import-engine` (see "Importing from a host").
-```
-
-An importer reads what a host reports of the inference servers it runs, and writes them into a World: each server's
-model and engine, the endpoint it is reached at, and where its host keeps what they pin. There is one, for the reports
-of o11n.vllm, Kompismoln's NixOS module for vLLM, behind `chatddx import-engine` (docs/modules/inventory.md, "Importing
-from a host").
+of o11n.vllm, Kompismoln's NixOS module for vLLM, behind `chatddx import-engine`.
 
 This document describes the code `chatddx.importers` (src/chatddx/importers/) and its command in src/chatddx/cli.py. Its
 surface is `docs/surfaces/importers.md`.
@@ -44,19 +34,10 @@ The import's findings have the engine's digest as subject:
 - `endpoint.version` (warning): the server says it is another vLLM version than its package.
 - `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
 
-```
-AGENT: rewrite
-"Reaching an engine" stayed in docs/modules/inventory.md; refcheck fails on the in-doc reference as it stands.
----
 Before it writes, the import also checks the endpoints and hosts it writes against the models and engines it writes,
-with the inventory check (docs/modules/inventory.md, "Reaching an engine"), and prints the findings after its own. As
-it refuses two servers at one address and says where each engine's model and template are, the check finds nothing in
-what it writes today.
-```
-
-Before it writes, the import also checks the endpoints and hosts it writes against the models and engines it writes,
-with the inventory check (see "Reaching an engine"), and prints the findings after its own. As it refuses two servers at
-one address and says where each engine's model and template are, the check finds nothing in what it writes today.
+with the inventory check (docs/modules/inventory.md, "Reaching an engine"), and prints the findings after its own. As it
+refuses two servers at one address and says where each engine's model and template are, the check finds nothing in what
+it writes today.
 
 ## The report
 

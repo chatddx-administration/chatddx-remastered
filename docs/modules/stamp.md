@@ -7,42 +7,21 @@ last stamped it. `settings.STAMPED` holds the solidified packages, those with a 
 
 ## The workflow
 
-```
-AGENT: rewrite
-`chatddx stamp` is now `chatddx stamp check` and `chatddx stamp write`, and the check has a baseline mode for before
-work starts (scripts/check.sh's `baseline` stage).
----
 - `chatddx stamp write` writes the surfaces behind the code, and says how many stamps it wrote to each, `new` for a
   surface written whole, or "nothing to write".
 - `chatddx stamp check` writes nothing, and prints "ok" or what it flags. `scripts/check.sh` runs it before a commit
   (AGENTS.md, "Pre-commit checklist"): it flags stamps pending, which wait for a human and are normal as work goes on,
   and fails while a surface is behind the code, which `chatddx stamp write` settles, as `chatddx openapi` settles
-  `frontend/openapi.json`. `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it`
-  fails then too.
+  `frontend/openapi.json`. `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` fails
+  then too.
 - `chatddx stamp check --baseline` is run on a fresh commit before work starts (`scripts/check.sh baseline`), and fails
   on both: stamps pending are a human's to stamp before work proceeds, and a surface behind the code means a commit
   skipped `chatddx stamp write`, which is looked into before work proceeds.
 - Both flag, and fail on, a stamp that isn't closed, a conflict marker that isn't a stamp's, and a surface no package of
   `settings.STAMPED` writes.
-```
-
-- Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`, and `scripts/check.sh` runs
-  `chatddx stamp --check` (AGENTS.md, "Pre-commit checklist"), which writes nothing and fails while a surface is behind
-  the code, as `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` does. Stamps left
-  pending don't fail it, since they wait for a human, not for the code; it says how many each surface has.
-- A surface that doesn't exist yet is written whole, and stamped as a whole in review.
-```
-AGENT: rewrite
-The commands' new names: "passes with no stamp pending" is what the baseline checks.
----
 - A change in the generator's format is written whole too, deleting the surfaces and running `chatddx stamp write`, and
-  only while `chatddx stamp check --baseline` passes: the signed sides are then the code as the old format writes it,
-  so nothing goes unstamped.
-```
-
-- A change in the generator's format is written whole too, deleting the surfaces and running `chatddx stamp`, and only
-  while `chatddx stamp --check` passes with no stamp pending: the signed sides are then the code as the old format
-  writes it, so nothing goes unstamped.
+  only while `chatddx stamp check --baseline` passes: the signed sides are then the code as the old format writes it, so
+  nothing goes unstamped.
 - After that, a change in the code is written in place of the lines it changes as a git conflict
   (`src/chatddx/stamp/markers.py:stamped`): `<<<<<<< signed`, the lines as last stamped, `=======`, what the code says
   now, `>>>>>>> @stamp`. A human takes the code's side, which is their stamp. Stamps left pending are worked out anew on
