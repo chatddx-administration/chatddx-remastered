@@ -1,6 +1,6 @@
 # `chatddx.runner`
 
-Written by `chatddx stamp` from `src/chatddx/runner/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/runner/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `admit`
 `src/chatddx/runner/gate.py:admit`

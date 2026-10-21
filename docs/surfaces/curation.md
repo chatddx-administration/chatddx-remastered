@@ -1,6 +1,6 @@
 # `chatddx.curation`
 
-Written by `chatddx stamp` from `src/chatddx/curation/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/curation/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `ARCHIVE`
 `src/chatddx/curation/write.py:ARCHIVE`

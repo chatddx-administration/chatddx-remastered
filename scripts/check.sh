@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: scripts/check.sh [docs|package|frontend|browser]..., from the repository's root
+# Usage: scripts/check.sh [docs|package|frontend|browser|baseline]..., from the repository's root
 # in the dev shell with its database up (dev-db start). Each stage checks what a kind of
 # change can break and writes nothing git tracks; with no stage named, the stages of what
 # git says changed.
@@ -12,7 +12,7 @@ docs() {
 package() {
   chatddx openapi | cmp -s - frontend/openapi.json ||
     fail "frontend/openapi.json is behind the code: run chatddx openapi > frontend/openapi.json"
-  chatddx stamp --check
+  chatddx stamp check
   crosscheck
   ruff check
   basedpyright
@@ -28,6 +28,12 @@ frontend() {
 browser() {
   pnpm --dir frontend build
   pytest -m browser -rs
+}
+
+# Policy: on a fresh commit before work starts; what it flags is for a human to settle
+# before work proceeds, so no change git sees runs it.
+baseline() {
+  chatddx stamp check --baseline
 }
 
 # Policy: the API's Python surface and its OpenAPI document change together, so one
@@ -65,10 +71,10 @@ if [[ ${#stages[@]} -eq 0 ]]; then
 fi
 for stage in "${stages[@]}"; do
   case "$stage" in
-  docs | package | frontend | browser)
+  docs | package | frontend | browser | baseline)
     echo "• $stage" >&2
     "$stage"
     ;;
-  *) fail "no stage $stage: docs, package, frontend or browser" ;;
+  *) fail "no stage $stage: docs, package, frontend, browser or baseline" ;;
   esac
 done

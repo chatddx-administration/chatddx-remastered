@@ -385,18 +385,10 @@ def _stamp(args: argparse.Namespace) -> None:
     # dependency, which a deployed chatddx goes without.
     from chatddx import stamp
 
-    held = stamp.regenerated(args.package or settings.STAMPED)
-    stale = {p: t for p, t in held.items() if not p.exists() or p.read_text() != t}
-    if args.check and stale:
-        named = ", ".join(str(p.relative_to(settings.PROJECT_ROOT)) for p in stale)
-        raise SystemExit(f"stamp: {named} behind the code: run chatddx stamp")
-    for path, text in held.items():
-        if not args.check and path in stale:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            _ = path.write_text(text)
-        print(
-            f"{path.relative_to(settings.PROJECT_ROOT)}: {stamp.pending(text)} stamps pending"
-        )
+    if args.stamping == "check":
+        stamp.check(args.package, args.baseline)
+    else:
+        stamp.write(args.package)
 
 
 def _fake_vllm(args: argparse.Namespace) -> None:
@@ -654,20 +646,30 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     stamping = commands.add_parser(
         "stamp",
-        help="write docs/surfaces/<package>.md from the code, marking what changed as "
-        + "a git conflict for a human to stamp",
+        help="the surfaces in docs/surfaces/, written from the code, with what changed "
+        + "as a git conflict for a human to stamp",
     )
-    _ = stamping.add_argument(
-        "--check",
+    stamp_commands = stamping.add_subparsers(required=True)
+    stamp_check = stamp_commands.add_parser(
+        "check",
+        help="write nothing; flag stamps pending, and fail while a surface is behind "
+        + "the code",
+    )
+    _ = stamp_check.add_argument(
+        "--baseline",
         action="store_true",
-        help="write nothing, and fail when a surface is behind the code",
+        help="on a fresh commit before work starts: fail on stamps pending too",
     )
-    _ = stamping.add_argument(
-        "package",
-        nargs="*",
-        help="the packages, such as bench (settings.STAMPED)",
+    stamp_write = stamp_commands.add_parser(
+        "write", help="write the surfaces behind the code, and say how many stamps"
     )
-    stamping.set_defaults(run=_stamp)
+    for stamping_with, stamping_as in ((stamp_check, "check"), (stamp_write, "write")):
+        _ = stamping_with.add_argument(
+            "package",
+            nargs="*",
+            help="the packages, such as bench (settings.STAMPED)",
+        )
+        stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
 
     fake = commands.add_parser(
         "fake-vllm",

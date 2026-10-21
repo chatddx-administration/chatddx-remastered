@@ -1,6 +1,6 @@
 # `chatddx.tools`
 
-Written by `chatddx stamp` from `src/chatddx/tools/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/tools/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `results`
 `src/chatddx/tools/web_search.py:results`

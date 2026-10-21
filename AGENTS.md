@@ -75,6 +75,16 @@ Agents aren't expected to run this, just know it exists.
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 
+```
+AGENT: insert
+A step before work starts, so that work begins from surfaces a human has stamped and the code agrees with.
+---
+## Before work starts
+
+On a fresh commit, run `scripts/check.sh baseline`. When it prints a `flag:`, stop and tell the human: stamps pending
+are theirs to stamp, and a surface behind the code is to be looked into, before work proceeds.
+```
+
 ## Pre-commit checklist
 
 Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).

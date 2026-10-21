@@ -1,6 +1,6 @@
 # `chatddx.facts`
 
-Written by `chatddx stamp` from `src/chatddx/facts/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/facts/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `BUNDLED`
 `src/chatddx/facts/models.py:BUNDLED`

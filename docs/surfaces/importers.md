@@ -1,6 +1,6 @@
 # `chatddx.importers`
 
-Written by `chatddx stamp` from `src/chatddx/importers/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/importers/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
 ## `checked`
 `src/chatddx/importers/o11n.py:checked`

@@ -96,7 +96,7 @@ class Page:
         lines = [
             f"# `{self.package.path}`",
             "",
-            f"Written by `chatddx stamp` from `{directory}/`; how to read it is in "
+            f"Written by `chatddx stamp write` from `{directory}/`; how to read it is in "
             + "[docs/surfaces.md](../surfaces.md).",
         ]
         for _, _, written in entries:

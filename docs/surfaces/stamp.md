@@ -1,7 +1,21 @@
 # `chatddx.stamp`
 
-Written by `chatddx stamp` from `src/chatddx/stamp/`; how to read it is in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from `src/chatddx/stamp/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
+<<<<<<< signed
+=======
+## `check`
+`src/chatddx/stamp/__init__.py:check`
+
+* `packages: Sequence[str]`
+* `baseline: bool`
+* ∟`None`
+
+Raises:
+1. `SystemExit`: `"stamp: {shown} behind the code: run chatddx stamp write"`
+2. `SystemExit`: `1`
+
+>>>>>>> @stamp
 ## `CLOSING`
 `src/chatddx/stamp/markers.py:CLOSING`
 
@@ -280,12 +294,15 @@ Written by `chatddx stamp` from `src/chatddx/stamp/`; how to read it is in [docs
 * `obj: griffe.Object`
 * ∟`list[str]`
 
+<<<<<<< signed
 ## `pending`
 `src/chatddx/stamp/markers.py:pending`
 
 * `text: str`
 * ∟`int`
 
+=======
+>>>>>>> @stamp
 ## `private`
 `src/chatddx/stamp/code.py:private`
 
@@ -301,12 +318,15 @@ Written by `chatddx stamp` from `src/chatddx/stamp/`; how to read it is in [docs
 * `through: str | None = None`
 * `validated: bool = False`
 * `origin: str | None = None`
+<<<<<<< signed
 
 ## `regenerated`
 `src/chatddx/stamp/__init__.py:regenerated`
 
 * `packages: Iterable[str]`
 * ∟`dict[Path, str]`
+=======
+>>>>>>> @stamp
 
 ## `signed`
 `src/chatddx/stamp/markers.py:signed`
@@ -324,6 +344,46 @@ Raises:
 * `current: str | None`
 * `written: str`
 * ∟`str`
+<<<<<<< signed
+=======
+
+## `stamps`
+`src/chatddx/stamp/markers.py:stamps`
+
+* `text: str`
+* ∟`list[tuple[str, ...]]`
+
+## `Surface` `@dataclass(frozen=True)`
+`src/chatddx/stamp/__init__.py:Surface`
+
+* `path: Path`
+* `current: str | None`
+* `written: str`
+
+## `Surface.behind` `@property`
+`src/chatddx/stamp/__init__.py:Surface.behind`
+
+* ∟`bool`
+
+## `Surface.new` `@property`
+`src/chatddx/stamp/__init__.py:Surface.new`
+
+* ∟`int`
+
+## `Surface.pending` `@property`
+`src/chatddx/stamp/__init__.py:Surface.pending`
+
+* ∟`int`
+
+## `surfaces`
+`src/chatddx/stamp/__init__.py:surfaces`
+
+* `packages: Iterable[str]`
+* ∟`list[Surface]`
+
+Raises:
+1. `ValueError`: `"{_shown(path)}: {e}"` (from `ValueError`)
+>>>>>>> @stamp
 
 ## `Trace`
 `src/chatddx/stamp/trace.py:Trace`
@@ -372,3 +432,15 @@ Raises:
 `src/chatddx/stamp/trace.py:VALIDATORS`
 
 `VALIDATORS = frozenset(…)`
+<<<<<<< signed
+=======
+
+## `write`
+`src/chatddx/stamp/__init__.py:write`
+
+* `packages: Sequence[str]`
+* ∟`None`
+
+Raises:
+1. `SystemExit`: `"stamp write: {e}"` (from `ValueError`)
+>>>>>>> @stamp

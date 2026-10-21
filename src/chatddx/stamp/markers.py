@@ -26,8 +26,18 @@ def signed(text: str) -> list[str]:
     return kept
 
 
-def pending(text: str) -> int:
-    return sum(1 for line in text.splitlines() if line == CLOSING)
+def stamps(text: str) -> list[tuple[str, ...]]:
+    found: list[tuple[str, ...]] = []
+    held: list[str] | None = None
+    for line in text.splitlines():
+        if held is None:
+            held = [] if line == OPENING else None
+        elif line == CLOSING:
+            found.append(tuple(held))
+            held = None
+        else:
+            held.append(line)
+    return found
 
 
 def _entries(lines: list[str]) -> int:
