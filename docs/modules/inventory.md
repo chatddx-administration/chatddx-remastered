@@ -169,6 +169,14 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name its
 engine is served under (docs/modules/runner.md); the inventory itself connects to nothing.
 
+```
+AGENT: move
+To docs/modules/importers.md, after its intro, now that importers is solidified: the command is the importer's, and
+importers.md would then point here only for "Includes". Moved, its `(see "Reaching an engine")` would point to
+docs/modules/inventory.md, and its list of findings could go, since docs/surfaces/importers.md lists them, with their
+messages, under `imported`.
+```
+
 ## Importing from a host
 
 `chatddx import-engine REPORT… [--server NAME]… [--endpoint-host HOST] --engines PATH --endpoints PATH`. A report is a

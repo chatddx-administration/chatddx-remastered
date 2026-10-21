@@ -1,5 +1,16 @@
 # Stamp
 
+```
+AGENT: rewrite
+The module docs moved to docs/modules/, and the API docs the surfaces replaced are gone, so the paragraph's last
+sentences are history.
+---
+`chatddx stamp` writes `docs/surfaces/<package>.md` for each package in `settings.STAMPED` from the code
+(`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
+last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/modules/<package>.md`
+(AGENTS.md, "Development stages").
+```
+
 `chatddx stamp` writes `docs/surfaces/<package>.md` for each package in `settings.STAMPED` from the code
 (`src/chatddx/stamp/`): each public name's signature, what it raises and what it finds, and what changed since a human
 last stamped it. `settings.STAMPED` holds the solidified packages, those with a `docs/<package>.md`, and the surface
@@ -24,6 +35,17 @@ tests) is dropped; their tables of finding codes are the surfaces' Finds.
 - griffe is in the `docs` dependency group: a deployed chatddx goes without it.
 
 ## The workflow
+
+```
+AGENT: rewrite
+scripts/check.sh runs the check now. A stamp left pending neither fails it nor prints a `flag:`, the only lines
+AGENTS.md's "Pre-commit checklist" has an agent relay to a human. Open: whether it should print one.
+---
+- Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`, and `scripts/check.sh` runs
+  `chatddx stamp --check` (AGENTS.md, "Pre-commit checklist"), which writes nothing and fails while a surface is behind
+  the code, as `src/chatddx/stamp/test/test_stamp.py:test_each_surface_is_as_chatddx_stamp_writes_it` does. Stamps left
+  pending don't fail it, since they wait for a human, not for the code; it says how many each surface has.
+```
 
 - Before a commit, an agent runs `chatddx stamp`, as it does `chatddx openapi`. `--check` writes nothing and fails while
   a surface is behind the code, and so does
@@ -78,6 +100,14 @@ Raises:
 - A class's fields: annotated or assigned in its body, as written when on one line, and annotated on `self` in
   `__init__`. A constant or a type alias, without a bullet, since it is neither: as written when on one line. Else the
   annotation and the head of the value: `= Field(…)`, `= {…}`, `= Literal[…]`.
+
+```
+AGENT: rewrite
+AGENTS.md now says what a docstring is for, and no solidified package has one.
+---
+- A docstring, as written (AGENTS.md, "4. When and how to write a docstring").
+```
+
 - A docstring, as written. None of identity's or bench's names has one.
 
 ## What it says is raised
@@ -96,16 +126,45 @@ Raises:
 
 ## What it says is found
 
+```
+AGENT: rewrite
+The last sentence holds but for codes computed at runtime, which show as the expression that computes them: `{code}` in
+docs/surfaces/runner.md stands for `answer.unread`, `answer.invalid`, `verdict.unread` and `verdict.invalid`. "It
+replaces the tables of finding codes the API docs kept" is history.
+---
+"Finds:" follows "Raises:", and is walked the same way (`src/chatddx/stamp/trace.py:Trace`): each
+`chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them, each
+once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the level is
+said when it isn't a warning, ``(`info`, through `_pair`)``. Every code the solidified packages make is in one surface
+or another, by name or as the expression that computes it.
+```
+
 "Finds:" follows "Raises:", and is walked the same way (`src/chatddx/stamp/trace.py:Trace`): each
 `chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them, each
 once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the level is
 said when it isn't a warning, ``(`info`, through `_pair`)``. It replaces the tables of finding codes the API docs kept:
 every code the solidified packages make is in one surface or another.
 
+```
+AGENT: insert
+A third thing not said, found as importers was solidified: its findings were made in a function nested in another, so
+its surface said none of them until they were made with `Finding` directly (src/chatddx/stamp/trace.py:_Walker.visit
+leaves nested functions out).
+---
+- What a function nested in another raises or finds: the walk doesn't enter it.
+```
+
 Not said:
 
 - What a public function or class it calls raises: its own entry says.
 - What is raised without a `raise`: a `KeyError` from a subscript, pydantic's own validation, a library's errors.
+
+```
+AGENT: rewrite
+AGENTS.md has taken it: a docstring fills in the blanks its signature, raises and findings leave.
+---
+What isn't said is said with an explicit `raise`, or in a docstring (AGENTS.md, "4. When and how to write a docstring").
+```
 
 What isn't said is said with an explicit `raise`, or with a docstring if AGENTS.md takes the exception suggested for
 them.
