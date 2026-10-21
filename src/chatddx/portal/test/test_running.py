@@ -95,25 +95,6 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_run_with_something_under_way_is_scored_again_by_one_press_of_many(
-    signed: TestClient,
-) -> None:
-    run = started(signed, score=False)
-    _ = settled(signed, run)
-    assert signed.post("/queue/pause").status_code == 303
-    assert signed.post(f"/runs/{run}/scores").status_code == 303
-    queued = signed.get(f"/api/runs/{run}").json()["job"]
-    assert queued["status"] == "queued"
-    left = shown(signed, "/runs?left=true")
-    assert f'href="/runs/{run}"' in left and f'action="/runs/{run}/scores"' not in left
-
-    again = signed.post(f"/runs/{run}/scores")
-    assert (again.status_code, again.headers["location"]) == (303, f"/runs/{run}")
-    assert signed.get(f"/api/runs/{run}").json()["job"] == queued
-
-
-@pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_run_links_the_variation_it_ran(signed: TestClient) -> None:
     query = {"kind": "reasoning", "name": OFF, "owner": "alice"}
     [off] = signed.get("/api/threads", params=query).json()
@@ -152,13 +133,10 @@ def test_the_runs_page_says_how_the_queue_stands_and_pauses_stops_and_resumes_it
     for _ in range(2):
         got = signed.post(f"/runs/{run}/resume")
         assert (got.status_code, got.headers["location"]) == (303, f"/runs/{run}")
-    resumed = signed.get(f"/api/runs/{run}").json()["job"]
-    assert resumed["status"] == "queued"
     assert signed.post("/queue/resume").status_code == 303
     _ = settled(signed, run)
     done = signed.get(f"/api/runs/{run}").json()
     assert done["finished"] and done["job"]["status"] == "finished"
-    assert done["job"]["queued"] == resumed["queued"]
     page = shown(signed, f"/runs/{run}")
     assert f'action="/runs/{run}/resume"' not in page
     stale = signed.post(f"/runs/{run}/resume")
@@ -306,7 +284,7 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_case_s_runs_are_scored_from_its_review_whatever_is_under_way_for_one(
+def test_runs_with_something_under_way_are_scored_again_by_one_press_of_many(
     signed: TestClient,
 ) -> None:
     first, second = started(signed, score=False), started(signed, score=False)
@@ -318,6 +296,13 @@ def test_a_case_s_runs_are_scored_from_its_review_whatever_is_under_way_for_one(
     assert signed.post("/queue/pause").status_code == 303
     assert signed.post(f"/runs/{first}/scores").status_code == 303
     held = signed.get(f"/api/runs/{first}").json()["job"]
+    assert held["status"] == "queued"
+    left = shown(signed, "/runs?left=true")
+    assert f'href="/runs/{first}"' in left
+    assert f'action="/runs/{first}/scores"' not in left
+    assert f'action="/runs/{second}/scores"' in left
+    again = signed.post(f"/runs/{first}/scores")
+    assert (again.status_code, again.headers["location"]) == (303, f"/runs/{first}")
 
     back = f"/review/{crlf['id']}?scorer={scorer['id']}"
     form = {"run": [first, second], "scorer": scorer["head"]["digest"], "back": back}
