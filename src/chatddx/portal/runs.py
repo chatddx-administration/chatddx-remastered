@@ -83,7 +83,8 @@ def comparing(
 
 @router.get("/runs/{run}")
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
-    # Asked before the run is read: a job ends once its run's rows are written.
+    # Accommodating for a job ending once its run's rows are written: asked before the run
+    # is read.
     under_way = Queue(bench.conn).open(run) is not None
     shown = api.run(bench, run)
     skeleton = resolve(bench.store.get, shown.skeleton, Skeleton)
@@ -159,8 +160,9 @@ def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
 @router.post("/runs/{run}/scores")
 def scoring(bench: BenchDep, run: UUID) -> Response:
     started = bench.run(run)
-    with refused():
-        _ = bench.queue_scoring(started, bench.unscored(started) or None)
+    if left := bench.unscored(started):
+        with refused():
+            _ = bench.queue_scoring(started, left)
     return RedirectResponse(f"/runs/{run}", 303)
 
 

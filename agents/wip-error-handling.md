@@ -98,9 +98,6 @@ Class 3 by the decision on shipped code, crashing or refused raw today: stored t
 running code can't read (`src/chatddx/factors/kinds.py:parse_component`); Judge and Scorer are at version 2, so a
 database holding version 1 judges fails at each read.
 
-A bug: `nix/module.nix` gives `chatddx portal` and `chatddx worker` `--facts`, which neither takes
-(`src/chatddx/cli.py`), so both services fail to start whenever `services.chatddx.facts` is set.
-
 ## Built: step 1, the way from a judge to its engine
 
 - **Class 1** (`src/chatddx/bench/handles.py:broken`, `src/chatddx/inventory/check.py:broken`): weights held by several

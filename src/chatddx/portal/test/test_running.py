@@ -27,9 +27,10 @@ def started(signed: TestClient, **more: Any) -> str:
 
 def settled(signed: TestClient, run: str) -> dict[str, Any]:
     for _ in range(500):
-        found = signed.get(f"/api/runs/{run}").json()
-        if found["finished"] and "under way" not in shown(signed, f"/runs/{run}"):
-            return found
+        if "under way" not in shown(signed, f"/runs/{run}"):
+            found = signed.get(f"/api/runs/{run}").json()
+            if found["finished"]:
+                return found
         time.sleep(0.02)
     raise AssertionError(f"run {run} is still under way")
 
@@ -73,6 +74,9 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
     assert (got.status_code, got.headers["location"]) == (303, f"/runs/{run}")
     scored = settled(signed, run)
     assert scored["scores"] and "Left to score by" not in shown(signed, f"/runs/{run}")
+    stale = signed.post(f"/runs/{run}/scores")
+    assert (stale.status_code, stale.headers["location"]) == (303, f"/runs/{run}")
+    assert signed.get(f"/api/runs/{run}").json()["job"] == scored["job"]
 
     got = signed.post(f"/runs/{run}/again")
     assert got.status_code == 303
@@ -247,10 +251,19 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
     edit = {"head": mine["head"]["id"], "component": component}
     assert signed.post(f"/api/threads/{mine['id']}/edits", json=edit).status_code == 201
 
+    def left() -> list[str]:
+        listed = signed.get("/api/runs", params={"unscored": True}).json()
+        return [u["scorer"] for r in listed if r["id"] == run for u in r["unscored"]]
+
     page = shown(signed, back)
+    lines = scorer["head"]["digest"]
     assert f'action="/review/{crlf["id"]}/scores"' in page
     assert f'name="run" value="{run}"' in page and "1 to score" in page
-    got = signed.post(f"/review/{crlf['id']}/scores", data={"run": run, "back": back})
+    assert f'name="scorer" value="{lines}"' in page
+    others = [s for s in left() if s != lines]
+    assert others and lines in left()
+    form = {"run": run, "scorer": lines, "back": back}
+    got = signed.post(f"/review/{crlf['id']}/scores", data=form)
     assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
     for _ in range(500):
         page = shown(signed, back)
@@ -258,6 +271,11 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
             break
         time.sleep(0.02)
     assert f'action="/review/{crlf["id"]}/scores"' not in page
+    assert left() == others
+    scored = signed.get(f"/api/runs/{run}").json()["job"]
+    got = signed.post(f"/review/{crlf['id']}/scores", data=form)
+    assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
+    assert signed.get(f"/api/runs/{run}").json()["job"] == scored
 
 
 @pytest.mark.slow

@@ -50,11 +50,12 @@ def _model(page: Page, name: str) -> dict[str, Any]:
 def built() -> Path:
     found = settings.portal_assets()
     if not Assets(found).built:
-        pytest.skip(f"nothing built in {found}: pnpm --dir frontend build")
+        pytest.fail(f"nothing built in {found}: pnpm --dir frontend build")
     return found
 
 
-# localhost, as a browser keeps the __Host- session cookie over plain HTTP only there.
+# Accommodating for a browser, which keeps the __Host- session cookie over plain HTTP
+# only on localhost.
 @pytest.fixture
 def portal(served: FastAPI) -> Iterator[str]:
     with socket.socket() as s:
@@ -79,7 +80,7 @@ def page(portal: str, alice: Person) -> Iterator[Page]:
         try:
             browser = playwright.chromium.launch()
         except Error as e:
-            pytest.skip(f"no browser for Playwright: {e.message.splitlines()[0]}")
+            pytest.fail(f"no browser for Playwright: {e.message.splitlines()[0]}")
         opened = browser.new_page(base_url=portal)
         opened.set_default_timeout(15_000)
         _ = opened.goto("/sign-in")

@@ -103,7 +103,7 @@ this flake (`lib.modules.importApply`), whose packages and revision are its defa
 `specialArgs`, and a system that has the flake under another name (Kompismoln's `chatddx-dev`) gets that flake's.
 `nix/test.nix`, the flake's `checks.<system>.module`, boots it in a VM.
 - **Options**: `package` and `frontend`, the flake's; `revision`, the flake's, as `CHATDDX_REVISION`; `admin`;
-  `world`; `facts`; `listen`; `workers`; `environmentFile`; `database` (`createLocally`, `host`, `name`, `tier`); and
+  `world`; `listen`; `workers`; `environmentFile`; `database` (`createLocally`, `host`, `name`, `tier`); and
   `nginx` (`enable`, `hostName`, `signInRate`).
 - **Services**, under `chatddx.target` (see "Services and commands"):
   - `chatddx-migrate`, a oneshot as the admin, after `postgresql.target`. The others require it, so a switch that

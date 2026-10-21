@@ -74,6 +74,7 @@ class Worker:
         beat: timedelta = settings.WORKER_BEAT,
         lost: timedelta = settings.WORKER_LOST,
         deadline: timedelta = settings.WORKER_DEADLINE,
+        jobs: int = settings.WORKER_JOBS,
     ) -> None:
         self.id: UUID = uuid4()
         self._conninfo: str = conninfo
@@ -81,6 +82,7 @@ class Worker:
         self._beat_every: float = beat.total_seconds()
         self._lost: timedelta = lost
         self._deadline: float = deadline.total_seconds()
+        self._jobs: int = jobs
         self._guard: threading.Lock = threading.Lock()
         self._held: dict[int, _Held] = {}
         self._waking: socket.socket | None = None
@@ -121,8 +123,10 @@ class Worker:
                         return
                     if not leaving:
                         while (
-                            job := queue.claim(self.id, capacity, self._lost)
-                        ) is not None:
+                            len(self._holding()) < self._jobs
+                            and (job := queue.claim(self.id, capacity, self._lost))
+                            is not None
+                        ):
                             self._take(job)
                     self._wait(conn, woken, deadline)
         finally:
@@ -223,14 +227,16 @@ class Worker:
                 graded = self._scored(conn, bench, started, publisher, held)
                 if held.cut and not held.halted:
                     return "queued"
-                scores = [graded_of(g) for g in graded]
+                latest = {g.scorer.digest: g for g in bench.scores_of(started)}
+                told = {**latest, **{g.scorer.digest: g for g in graded}}.values()
+                scores = [graded_of(g) for g in sorted(told, key=lambda g: g.name)]
                 publisher.put(("run.scored", schemas.RunScoredData(scores=scores)))
         finally:
             publisher.close()
         return "stopped" if held.halted else "finished"
 
-    # Scorer by scorer, so that the job keeps those it finished: queued again, it scores
-    # what is left.
+    # Policy: scorer by scorer, so that the job keeps those it finished: queued again, it
+    # scores what is left.
     def _scored(
         self,
         conn: Connection,
@@ -254,4 +260,4 @@ class Worker:
             )
             if not held.scoring.is_set():
                 _ = queue.scored(job.id, self.id, scorer)
-        return sorted(graded, key=lambda g: g.name)
+        return graded

@@ -74,8 +74,8 @@ it.
 
 ### The database
 
-`dev-db` runs PostgreSQL 16 from `./dev-db/`, on a socket only. The first start creates the cluster, the roles and the
-`chatddx` database:
+`dev-db` runs PostgreSQL 16 from `~/.local/state/dev-db/`, on a socket only. The first start creates the cluster, the
+roles and the `chatddx` database:
 
 ```sh
 dev-db start
@@ -122,7 +122,7 @@ chatddx repl alice
 ```
 
 ```text
-cell plan qwen3-8b-awq@fake
+use plan
 run DutchFall10w
 quit
 ```
@@ -174,7 +174,8 @@ chatddx repl alice --world worlds/kompismoln
 ```
 
 ```text
-cell plan qwen3-8b@pelle
+use plan
+set model qwen3-8b
 run DutchFall10w
 quit
 ```

@@ -10,7 +10,7 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   inherit (lib) mkOption types;
 
-  # Peer authentication on the socket maps each system user to the role of its name.
+  # Dependency: peer authentication on the socket maps each system user to the role of its name.
   inherit (cfg) admin;
   writer = "chatddx_writer";
 
@@ -26,12 +26,8 @@ let
   }
   // lib.optionalAttrs (cfg.revision != null) { CHATDDX_REVISION = cfg.revision; };
 
-  facts = lib.concatMap (f: [
-    "--facts"
-    "${f}"
-  ]) cfg.facts;
-
-  # The engine client follows a proxy named in its environment (src/chatddx/runner/wire.py).
+  # Accommodating for the engine client, which follows a proxy named in its environment
+  # (src/chatddx/runner/wire.py).
   proxies = [
     "http_proxy"
     "HTTP_PROXY"
@@ -88,13 +84,10 @@ let
     // {
       User = writer;
       Group = writer;
-      ExecStart = lib.escapeShellArgs (
-        [
-          "${cfg.package}/bin/chatddx"
-          command
-        ]
-        ++ facts
-      );
+      ExecStart = lib.escapeShellArgs [
+        "${cfg.package}/bin/chatddx"
+        command
+      ];
       EnvironmentFile = lib.optional (cfg.environmentFile != null) cfg.environmentFile;
       Restart = "on-failure";
     };
@@ -169,12 +162,6 @@ in
         read, and should be readable by no user but `${writer}` and the admin. It can't be under /home, which the
         services can't see.
       '';
-    };
-
-    facts = mkOption {
-      type = types.listOf types.path;
-      default = [ ];
-      description = "More model facts, beside the bundled ones and the World's (`--facts`).";
     };
 
     listen = mkOption {
@@ -324,7 +311,7 @@ in
               // {
                 description = "chatddx: worker ${toString i}";
                 serviceConfig = served "worker" // {
-                  # Above the worker's deadline for its scorings (src/chatddx/settings.py:WORKER_DEADLINE).
+                  # Policy: above the worker's deadline for its scorings (src/chatddx/settings.py:WORKER_DEADLINE).
                   TimeoutStopSec = "90s";
                 };
               }

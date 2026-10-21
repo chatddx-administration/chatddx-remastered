@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 import psycopg
@@ -38,7 +39,8 @@ def conninfo(db: str) -> str:
     return make_conninfo(settings.database(), dbname=db)
 
 
-# As the request starts a run, at an endpoint that answers, before it is queued.
+# Accommodating for the request, which starts a run before it is queued: as it does, at
+# an endpoint that answers.
 def start(bench: Bench) -> UUID:
     variation = bench.variation(LINES)
     cases = [bench.family(name).case for name in ("crlf", "bom")]
@@ -51,8 +53,9 @@ def serving(
     world: Inventory,
     beat: timedelta = BEAT,
     deadline: timedelta = settings.WORKER_DEADLINE,
+    jobs: int = settings.WORKER_JOBS,
 ) -> Generator[Worker]:
-    worker = Worker(conninfo, world, beat, LOST, deadline)
+    worker = Worker(conninfo, world, beat, LOST, deadline, jobs)
     stopping = threading.Event()
     thread = threading.Thread(target=worker.serve, args=(stopping,))
     thread.start()
@@ -261,14 +264,104 @@ def test_a_job_whose_worker_is_lost_is_claimed_and_its_run_resumed(
     assert queue.claim(ghost, {QWEN: 4}, LOST) is not None
     with admin.transaction():
         _ = admin.execute(
-            "UPDATE worker.worker SET seen = now() - interval '1 minute' WHERE id = %s",
-            (ghost,),
+            "UPDATE worker.job SET beat = now() - interval '1 minute' WHERE id = %s",
+            (job.id,),
         )
     with serving(conninfo, world) as worker:
         done = until(queue, job, ended)
 
     assert (done.status, done.worker) == ("finished", worker.id)
     assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_job_that_can_t_connect_is_lost_and_claimed_again(
+    conn: Connection,
+    conninfo: str,
+    world: Inventory,
+    bench: Bench,
+    alice: Person,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, False)
+    connect, refused = psycopg.connect, threading.Event()
+
+    def once_refused(*args: Any, **kwargs: Any) -> Connection:
+        on_a_job = threading.current_thread().name.startswith("chatddx-job-")
+        if on_a_job and not refused.is_set():
+            refused.set()
+            raise psycopg.OperationalError("too many connections for role")
+        return connect(*args, **kwargs)
+
+    monkeypatch.setattr(psycopg, "connect", once_refused)
+    with serving(conninfo, world) as worker:
+        done = until(queue, job, ended)
+
+    assert refused.is_set()
+    assert (done.status, done.worker) == ("finished", worker.id)
+    assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.slow
+def test_a_scoring_by_some_scorers_tells_the_latest_score_of_each_as_it_is_over(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, variation = Queue(conn), bench.variation(LINES)
+    lines = next(e.digest for e, a in bench.threads("scorer") if a.name == "lines")
+    with faked(world, Store(conn).get):
+        running = bench.start(variation, QWEN, [bench.family("crlf").case], (7,)).first
+        running.send()
+        _ = running.finish()
+        _ = bench.score(bench.run(running.run))
+    every = [g.name for g in bench.scores_of(bench.run(running.run))]
+    with psycopg.connect(conninfo, autocommit=True) as listener:
+        listen(listener, channel(running.run))
+        with serving(conninfo, world):
+            job = queue.put(alice.id, running.run, QWEN, 0, True, [lines])
+            _ = until(queue, job, ended)
+        assembler = Assembler()
+        heard = [
+            m
+            for n in listener.notifies(timeout=0.5)
+            if (m := assembler.message(n.channel, n.pid, n.payload)) is not None
+        ]
+
+    [told] = [
+        data
+        for m in heard
+        if isinstance(m, Events)
+        for name, data in m.said
+        if name == "run.scored"
+    ]
+    assert isinstance(told, dict) and isinstance(told["scores"], list)
+    assert len(every) > 1
+    assert [s["name"] for s in told["scores"] if isinstance(s, dict)] == every
+
+
+@pytest.mark.slow
+def test_a_worker_takes_a_job_only_while_it_holds_fewer_than_it_may(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, variation = Queue(conn), bench.variation(LINES)
+    lines = next(e.digest for e, a in bench.threads("scorer") if a.name == "lines")
+    finished: list[UUID] = []
+    with faked(world, Store(conn).get):
+        for _ in range(2):
+            running = bench.start(
+                variation, QWEN, [bench.family("crlf").case], (7,)
+            ).first
+            running.send()
+            _ = running.finish()
+            finished.append(running.run)
+    jobs = [queue.put(alice.id, run, QWEN, 0, True, [lines]) for run in finished]
+    with serving(conninfo, world, jobs=1):
+        first, second = (until(queue, job, ended) for job in jobs)
+
+    assert (first.status, second.status) == ("finished", "finished")
+    assert first.ended is not None and second.claimed is not None
+    assert second.claimed >= first.ended
 
 
 @pytest.mark.usefixtures("fake")

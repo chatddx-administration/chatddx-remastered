@@ -24,10 +24,10 @@ frontend() {
   pnpm --dir frontend test
 }
 
-# Compromise: on their own, for the browser they start, with what they say they skip.
+# Compromise: on their own, for the browser they start.
 browser() {
   pnpm --dir frontend build
-  pytest -m browser -rs
+  pytest -m browser
 }
 
 # Policy: on a fresh commit before work starts, what it flags is for a human to settle

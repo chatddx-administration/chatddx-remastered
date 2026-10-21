@@ -72,6 +72,7 @@ Written by `chatddx stamp write` from `src/chatddx/worker/`; how to read it is i
 * `beat: timedelta = settings.WORKER_BEAT`
 * `lost: timedelta = settings.WORKER_LOST`
 * `deadline: timedelta = settings.WORKER_DEADLINE`
+* `jobs: int = settings.WORKER_JOBS`
 
 ## `Worker.serve`
 `src/chatddx/worker/worker.py:Worker.serve`

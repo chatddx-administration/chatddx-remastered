@@ -357,7 +357,7 @@ done a finish record. Only ever added to. `src/chatddx/ledger/record.py:Log`
 runs under or why it can't run, its lints, the languages its cases are sent in and its reach.
 `src/chatddx/api/threads.py`
 
-:Lost — A job under way whose worker hasn't been seen for a while, so a claim takes it.
+:Lost — A job under way that its worker hasn't beaten for a while, so a claim takes it.
 `src/chatddx/store/queue.py:Queue.claim`
 
 :Metric — A measure the scorer's code publishes and a view names: what it measures, the parameters a view may give it,

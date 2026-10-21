@@ -233,13 +233,15 @@ def scoring_in_review(
     bench: BenchDep,
     family: int,
     run: Annotated[list[UUID], Form()],
+    scorer: Annotated[str, Form()],
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
     _ = bench.family(family)
     for found in run:
         started = bench.run(found)
-        with refused():
-            _ = bench.queue_scoring(started, bench.unscored(started) or None)
+        if scorer in bench.unscored(started):
+            with refused():
+                _ = bench.queue_scoring(started, [scorer])
     return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
 
 

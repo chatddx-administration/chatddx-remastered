@@ -164,7 +164,7 @@ A stream joined after its run's job ended, or for a run no job took, is told the
 | `judge.answered` | call is recorded    | the case, replicate, view, judge, seed's index, verdict read, and the call |
 | `score.item`     | score written       | the score, the case and replicate, the view, its value and detail          |
 | `score.noted`    | about done          | a finding of the scoring pass, such as an answer its schema refuses        |
-| `run.scored`     | scoring is over     | each scorer's score, or why not                                            |
+| `run.scored`     | scoring is over     | each scorer's latest score, or why this scoring gave none                  |
 | `error`          | before `done`       | why                                                                        |
 | `done`           | last                | whether the run's last job was asked to halt, `null` for a run no job took |
 
