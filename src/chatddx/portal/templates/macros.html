@@ -97,7 +97,7 @@
         <td class="whitespace-nowrap py-2 pr-4 align-top">{{ r.model or "—" }}</td>
         <td class="py-2 pr-4 align-top">{{ "yes" if r.finished else "no" }}</td>
         <td class="py-2 pr-4 align-top text-muted-foreground">{{ job(r.job) }}</td>
-        {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="rounded-md bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form></div></td>{% endif %}
+        {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}{% if r.job is none or r.job.status not in ("queued", "under way") %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="rounded-md bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form>{% endif %}</div></td>{% endif %}
       </tr>
       {% endfor %}
     </tbody>

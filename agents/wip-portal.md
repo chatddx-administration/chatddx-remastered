@@ -583,7 +583,9 @@ Phase 4, as decided (see "Starting and watching a run"):
   to the live view (`frontend/src/islands/RunLive.svelte`), which reloads the page when the run is done. **Halt**,
   **Score again** (by the scorers it is left to) and **Run again** are plain forms (`src/chatddx/portal/runs.py`:
   `halting`, `scoring`, `running_again`), which call the API's handlers and lead back to the run's page; **Score again**
-  is also in the runs left to score. The `run` island also draws the answers as management plans, as `answers` did.
+  is also in the runs left to score, but for a run with a job open. **Score again** (here and in the review), **Resume**
+  and **Halt** lead back as made when their run's job is open, or Halt's has ended (`pressed`); the API answers 409.
+  The `run` island also draws the answers as management plans, as `answers` did.
 - **Tests**: `src/chatddx/portal/test/test_running.py`; `test_browser.py`, the variation run from its page, followed,
   halted, scored again and run again in Chromium (Playwright, a test dependency at 1.56.0, failing without a build or
   a browser once asked for); `frontend/src/lib/runs/progress.test.ts`; and by hand on the sample World with its fake engines.

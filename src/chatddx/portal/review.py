@@ -25,7 +25,7 @@ from chatddx.scorers.shipped import unit_of
 
 from .families import appended, built, written_for
 from .pages import BenchDep, page, within
-from .runs import PLAN
+from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped
 
 ANSWERS = 50
@@ -240,7 +240,7 @@ def scoring_in_review(
     for found in run:
         started = bench.run(found)
         if scorer in bench.unscored(started):
-            with refused():
+            with pressed():
                 _ = bench.queue_scoring(started, [scorer])
     return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
 

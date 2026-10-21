@@ -64,26 +64,27 @@ These are for developers and ops, so:
 
 ### 3. Inform UX runtime
 
-Check first: Users should not be able to cause errors, if that's what's happened, an investigation to what lead here is
-needed. Once established the error is outside of the user's control, tell them:
+Check first: Users should not be able to cause errors. If that's what happened, the next course of action is to
+investigate what led to the issue. Once it's established that the error is outside the user's control, tell them:
 
 - what's going on
 - what they can do now
 
 ## Tests and checks
 
-Handover check tool is `scripts/check.sh` takes ~350s when diff against `origin/main` hits all stages, mostly due to
+Handover check tool is `scripts/check.sh`. It takes ~350s when diff against `origin/main` hits all stages, mostly due to
 browser tests and the budget run.
 
 ### Python
 
-- `pytest` runs every test but the browser tests, in ~110s.
-- `pytest -m 'not slow'` takes ~22s.
-- `pytest -n 4` runs the baseline in ~70s, the quick run gains nothing from it.
-- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`.
 - `basedpyright` for typecheck
 - `ruff check` for lint
+
+- `pytest` runs every test but the browser tests ~220s.
+- `pytest -m 'not slow'`, excludes the slowest tests making up 7/8 of the total test time, ~60s.
+- `pytest -n 4` fast given absence of other loads, ~110s.
+- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
+  `src/chatddx/test/world.py`.
 
 ### TypeScript
 

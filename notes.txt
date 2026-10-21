@@ -1,0 +1,30 @@
+uncaught loop (see file)
+re-running with the same seed is a thing and should be treated as such (see number of identical runs and diff them)
+confirmation for running again with a reveiw of what is about to run (also the run buttons should always be green)
+when salvaged, give reason
+init-data and run should apply migrations if not already applied
+upgrade to PG17
+
+Enforce it in code and drop the rule. A helper in test/helpers.py that splits a rendered table into cells fits this project's "the code speaks for itself" stance. AGENTS.md would then need, at most, "compare tables with helpers.<name>", or nothing.
+
+Also enforce that these covariate:
+- `chatddx openapi > frontend/openapi.json`
+- `chatddx stamp`
+
+Use unified diff or git conflict markers for reference's signoffs
+Pick Field descriptions? (RecipeBody)
+
+
+
+At 130d612
+
+adjust agents/wip-olofs-view.md, and rename it to wip-review.md, because that is the view it describes.
+
+then start with the judge editor. some threads already have editors like instructions and sampling, but neither scorer or judges. Expectations have, and even translations, even though they also have a dedicated page. Whereas scorers have a column.
+
+
+  File "/home/alex/Desktop/chatddx-remastered/src/chatddx/factors/bundle.py", line 28, in add_raw
+    component = parse_component(raw)
+  File "/home/alex/Desktop/chatddx-remastered/src/chatddx/factors/kinds.py", line 81, in parse_component
+    raise StructuralError(f"{kind} v{v} is not readable by v{cls.schema_version}")
+chatddx.factors.base.StructuralError: judge v1 is not readable by v2
