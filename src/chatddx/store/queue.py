@@ -162,8 +162,8 @@ class Queue:
         ).fetchone()
         return None if row is None else _job(row)
 
-    # A queued job's place: the jobs at its endpoint under way, or queued before it and
-    # to be claimed; none while its owner has paused.
+    # Policy: a queued job's place is the jobs at its endpoint under way, or queued before
+    # it and to be claimed; none while its owner has paused.
     def placed(self, runs: Collection[UUID]) -> dict[UUID, Placed]:
         rows = self._conn.execute(
             f"""
@@ -328,8 +328,6 @@ class Queue:
         assert claimed is not None
         return _job(claimed)
 
-    # The jobs `worker` still holds of `jobs`, each with whether it is to halt and whether
-    # its owner has paused; one another worker took over is left out.
     def beat(self, worker: UUID, jobs: Collection[int]) -> list[Held]:
         with self._conn.transaction():
             _ = self._conn.execute(

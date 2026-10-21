@@ -235,8 +235,8 @@ class Worker:
             publisher.close()
         return "stopped" if held.halted else "finished"
 
-    # Scorer by scorer, so that the job keeps those it finished: queued again, it scores
-    # what is left.
+    # Policy: scorer by scorer, so that the job keeps those it finished: queued again, it
+    # scores what is left.
     def _scored(
         self,
         conn: Connection,

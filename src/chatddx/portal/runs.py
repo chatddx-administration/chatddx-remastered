@@ -83,7 +83,8 @@ def comparing(
 
 @router.get("/runs/{run}")
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
-    # Asked before the run is read: a job ends once its run's rows are written.
+    # Accommodating for a job ending once its run's rows are written: asked before the run
+    # is read.
     under_way = Queue(bench.conn).open(run) is not None
     shown = api.run(bench, run)
     skeleton = resolve(bench.store.get, shown.skeleton, Skeleton)

@@ -54,7 +54,8 @@ def built() -> Path:
     return found
 
 
-# localhost, as a browser keeps the __Host- session cookie over plain HTTP only there.
+# Accommodating for a browser, which keeps the __Host- session cookie over plain HTTP
+# only on localhost.
 @pytest.fixture
 def portal(served: FastAPI) -> Iterator[str]:
     with socket.socket() as s:

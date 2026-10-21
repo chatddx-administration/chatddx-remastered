@@ -10,7 +10,7 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   inherit (lib) mkOption types;
 
-  # Peer authentication on the socket maps each system user to the role of its name.
+  # Dependency: peer authentication on the socket maps each system user to the role of its name.
   inherit (cfg) admin;
   writer = "chatddx_writer";
 
@@ -26,7 +26,8 @@ let
   }
   // lib.optionalAttrs (cfg.revision != null) { CHATDDX_REVISION = cfg.revision; };
 
-  # The engine client follows a proxy named in its environment (src/chatddx/runner/wire.py).
+  # Accommodating for the engine client, which follows a proxy named in its environment
+  # (src/chatddx/runner/wire.py).
   proxies = [
     "http_proxy"
     "HTTP_PROXY"
@@ -310,7 +311,7 @@ in
               // {
                 description = "chatddx: worker ${toString i}";
                 serviceConfig = served "worker" // {
-                  # Above the worker's deadline for its scorings (src/chatddx/settings.py:WORKER_DEADLINE).
+                  # Policy: above the worker's deadline for its scorings (src/chatddx/settings.py:WORKER_DEADLINE).
                   TimeoutStopSec = "90s";
                 };
               }

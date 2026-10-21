@@ -39,7 +39,8 @@ def conninfo(db: str) -> str:
     return make_conninfo(settings.database(), dbname=db)
 
 
-# As the request starts a run, at an endpoint that answers, before it is queued.
+# Accommodating for the request, which starts a run before it is queued: as it does, at
+# an endpoint that answers.
 def start(bench: Bench) -> UUID:
     variation = bench.variation(LINES)
     cases = [bench.family(name).case for name in ("crlf", "bom")]
