@@ -56,7 +56,7 @@ expectation per case and schema, or one it is asked to find threads by. The benc
 gives, and to what is in the store and the World (docs/modules/bench.md, "What a person sees").
 
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
-meaning (agents/wip-portal.md, "Below the UI").
+meaning.
 
 ## Managing people
 

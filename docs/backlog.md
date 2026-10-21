@@ -172,9 +172,8 @@ A finding for reasoning a parser missed, and the repl's word on it.
   missed.
 - **No finding for reasoning that wasn't heeded**, as the old chatddx had.
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`); the old
-  crossing of variations, which the portal is to start as several runs (agents/wip-portal.md, "Comparing variations");
-  and what holds a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Seen.runs(reaching=…)`
-  and `Seen.runs(scored_by=…)` cover.
+  crossing of variations, which the portal is to start as several runs; and what holds a configuration, the portal's ,
+  whose part for the repl `Seen.runs(reaching=…)` and `Seen.runs(scored_by=…)` cover.
 
 ### Tool rounds
 
@@ -507,7 +506,7 @@ yet, knows the leftovers meant to stay, and says why it skips a recipe.
 ### Exporting data sets
 
 What the archive or a person holds, written back into a data set's files, so that a change made in the portal can be
-kept in git (agents/wip-portal.md, "What the docs ask of it").
+kept in git.
 
 ### The data's stage, said in code
 
@@ -519,7 +518,7 @@ vetted without a new version, and a score reads the entries on its expectations 
 ### Missing tests
 
 Tests for what only the test World reaches, and for the scripted runs' and the runner's untested paths. A scripted run
-that sets a part is agents/wip-portal.md's ("Comparing variations").
+that sets a part is the portal's.
 
 - **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
   cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
@@ -683,7 +682,7 @@ Decided: a person's runs are read whole until that is slow, then paged in the st
 ### Execution settings as a component
 
 Execution settings named and picked, as a kind the start record references by digest, outside the trial's digest. Waits
-for the portal to offer them for picking (agents/wip-portal.md, "What the docs ask of it", and C3).
+for the portal to offer them for picking.
 
 - Today execution settings are a value inside each run's start record: recorded, sealed with the run's log, and compared
   by value. They have no digest, so the catalog can't name a set of settings (for example "sequential" or "8-way"), the
@@ -737,8 +736,7 @@ special case.
 ### The sample's judge
 
 Olof's work, not a PR: his prompt replaces the sample's draft judge, measured by his grades of real answers, and his
-notes revise the targets. agents/wip-judge-handle.md builds the page he writes it on, and holds grading by hand as an
-open design.
+notes revise the targets.
 
 - **The sample's judge** is a draft over Olof's notes until his prompt replaces it, as an edit. His prompt settles which
   of his comment and answer it reads, how a Swedish note is read against an English answer, whether a verdict is pass or

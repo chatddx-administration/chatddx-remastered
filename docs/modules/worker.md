@@ -90,4 +90,3 @@ A worker logs the inventory check's findings as it starts (docs/modules/inventor
   migrations (docs/migrations.md).
 - **A run's events**, numbered by its rows: docs/modules/api.md, "Its events"; docs/modules/ledger.md, "Storage".
 - **Resuming a run**: docs/modules/runner.md, "Resuming".
-- **The portal's runs page**: agents/wip-portal.md.

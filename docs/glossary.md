@@ -709,7 +709,7 @@ picks its model by handle and its fill rule), scoring, translations (as translat
 - Nobody authors compilations, and skeletons are compiled but for a hand-written configuration's. A World's model facts
   are written by whoever adds a model they don't know.
 - Ops write the inventory, but for the endpoints and hosts the engine import writes (:Inventory).
-- Translators are researchers (`agents/wip-translators-view.md`, T1); `docs/chatddx.md` named none.
+- Translators are researchers.
 - A person also stands to a thread, a family, a run or a score as its owner or a collaborator, and one person, the
   archive, owns what data sets load (:Owner, collaborator; :Archive).
 - Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, rule 6).

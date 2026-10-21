@@ -2,7 +2,7 @@
 
 The bench is what one person sees and does, whatever edge they reach it through. The threads, families and runs they
 see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the repl
-(docs/modules/repl.md), the API (docs/modules/api.md) and the portal (agents/wip-portal.md).
+(docs/modules/repl.md), the API (docs/modules/api.md) and the portal.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
@@ -263,11 +263,11 @@ earlier vignette awaits that replacement instead.
 ### Typed cases
 
 A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
-`database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
-the person's own are written with it, all at once, in the language the person says it is written in, and named when they
-say so. A typed case always has a language, since a configuration is sent in its case's (see "Translations"). It runs as
-any case: a vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the
-runner and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
+`database` kind, under a new id and never changed, and its case and a family of the person's own are written with it,
+all at once, in the language the person says it is written in, and named when they say so. A typed case always has a
+language, since a configuration is sent in its case's (see "Translations"). It runs as any case: a vignette is fetched
+from its source, a directory's file or a database source's text, wherever the bench, the runner and the edges read one
+(src/chatddx/store/texts.py:fetch_vignette).
 
 ### What is said about a thread
 
