@@ -687,16 +687,6 @@ Decided: a person's runs are read whole until that is slow, then paged in the st
   the group that a run over mixed-language cases forms is known by an entry, as variants were known by a name, one level
   up. Small today, and the same shape.
 
-### The object layer, if the split happens
-
-The questions docs/purist-object-layer.md leaves open. Waits for that document's trigger, the day an object kind has to
-import something above `factors`; `kind` as a class keyword can ride along whenever the component classes are touched.
-
-- The name, should the split happen (docs/purist-object-layer.md, "Naming").
-- `kind` as a class keyword (docs/purist-object-layer.md, "Kinds written down").
-- Whether canary sets and compilations ever move.
-- Where `refuse_change` lives.
-
 ### Execution settings as a component
 
 Execution settings named and picked, as a kind the start record references by digest, outside the trial's digest. Waits
