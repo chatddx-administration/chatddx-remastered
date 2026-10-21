@@ -238,8 +238,9 @@ def scoring_in_review(
     _ = bench.family(family)
     for found in run:
         started = bench.run(found)
-        with refused():
-            _ = bench.queue_scoring(started, bench.unscored(started) or None)
+        if left := bench.unscored(started):
+            with refused():
+                _ = bench.queue_scoring(started, left)
     return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
 
 

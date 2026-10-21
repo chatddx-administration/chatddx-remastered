@@ -159,8 +159,9 @@ def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
 @router.post("/runs/{run}/scores")
 def scoring(bench: BenchDep, run: UUID) -> Response:
     started = bench.run(run)
-    with refused():
-        _ = bench.queue_scoring(started, bench.unscored(started) or None)
+    if left := bench.unscored(started):
+        with refused():
+            _ = bench.queue_scoring(started, left)
     return RedirectResponse(f"/runs/{run}", 303)
 
 
