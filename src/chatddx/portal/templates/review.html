@@ -254,6 +254,7 @@
     {% if left and scorer %}
     <form method="post" action="{{ here }}/scores" class="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-warning/10 px-3 py-2 text-sm">
       {% for r in left %}<input type="hidden" name="run" value="{{ r }}">{% endfor %}
+      <input type="hidden" name="scorer" value="{{ scorer[0].head.digest }}">
       <input type="hidden" name="back" value="{{ back }}">
       <span class="min-w-0 flex-1">{{ left | length }} run{{ "" if left | length == 1 else "s" }} left to score by {{ scorer[0].name or scorer[0].title }} against what you expect now.</span>
       <button class="{{ button }}">Score again</button>

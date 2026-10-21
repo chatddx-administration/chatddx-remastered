@@ -307,7 +307,7 @@ the pattern is typed, a scorer saved, and its score.
 - **Left to score**: a finished run the scorer picked hasn't scored against the expectations as they are now
   (`Bench.unscored`), after an expectation's edit or because it never did. Its values are shown in italics, as what
   it scored before, the rail says how many, and **Score again** queues each of them (`POST /review/{family}/scores`,
-  `Bench.queue_scoring` by the scorers it is left to), and leads back to the record, which follows the scorings as it
+  `Bench.queue_scoring` by the scorer picked alone), and leads back to the record, which follows the scorings as it
   follows runs.
 - **The record's rows** say when each run started, since runs of one configuration read alike.
 - **Another model** runs the configuration with that model in its place, as the variation's page does
