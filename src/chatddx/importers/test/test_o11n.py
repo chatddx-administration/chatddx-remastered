@@ -45,7 +45,8 @@ def template(text: str = TEMPLATE, used: bool = True) -> dict[str, Any]:
     }
 
 
-# A report as o11n.vllm's vllm-report gives it for one server, pelle's qwen3-8b.
+# Accommodating for a discovered fact: a report as o11n.vllm's vllm-report gave it for
+# one server, pelle's qwen3-8b.
 def server(**changes: Any) -> dict[str, Any]:
     extra = [
         "--enforce-eager",
@@ -115,7 +116,6 @@ def report(
     }
 
 
-# Served under its digest, as it is once ops have put the digest in servedModelNames.
 def serving_its_digest(changes: dict[str, Any] | None = None) -> Imported:
     first = imported(report({"qwen3-8b": server(**(changes or {}))}), "qwen3-8b")
     served = {"version": "0.24.0", "models": [{"id": first.engine.digest}]}

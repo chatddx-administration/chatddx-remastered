@@ -6,7 +6,7 @@ import urllib.request
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 from chatddx.factors.base import Finding
 from chatddx.factors.bundle import Registry
@@ -21,12 +21,12 @@ from chatddx.factors.engine import (
 from chatddx.factors.lint import lint
 from chatddx.inventory import EndpointSpec, HostSpec, Inventory, broken, check
 
-# What o11n.vllm's report says about the vLLM servers on one host
+# Dependency: the report o11n.vllm writes about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).
 REPORT = "o11n.vllm.report/1"
 
-# Set by o11n.vllm for every server to find the model, the GPU and CUDA (which the
-# runtime closure covers): where an engine runs, not what it is.
+# Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,
+# which the runtime closure covers: where an engine runs, not what it is.
 HOST_ENV = frozenset(
     {"CUDA_HOME", "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_HUB_CACHE", "HF_HUB_OFFLINE"}
 )
@@ -60,7 +60,7 @@ def read(source: str) -> tuple[dict[str, Any], str | None]:
     return report, hostname
 
 
-# A part of the report that couldn't be gathered holds only the error.
+# Accommodating for o11n's report: a part it couldn't gather holds only the error.
 def _error(value: object) -> object | None:
     return (
         cast(dict[str, object], value).get("error") if isinstance(value, dict) else None
@@ -89,74 +89,86 @@ def _url(host: str, port: int) -> str:
 
 
 def _template(engine: LocalEngine, template: dict[str, Any]) -> Iterable[Finding]:
-    def finding(
-        code: str, message: str, level: Literal["info", "warning"] = "warning"
-    ) -> Finding:
-        return Finding(level=level, code=code, message=message, subject=engine.digest)
-
     if not template.get("used", True):
-        yield finding(
-            "engine.chat_template_unused",
-            "vLLM renders this model with Harmony and doesn't read the chat template, so "
-            + "its hash pins nothing",
-            "info",
+        yield Finding(
+            level="info",
+            code="engine.chat_template_unused",
+            message="vLLM renders this model with Harmony and doesn't read the chat "
+            + "template, so its hash pins nothing",
+            subject=engine.digest,
         )
         if "VLLM_SYSTEM_START_DATE" not in engine.env:
-            yield finding(
-                "engine.harmony_date",
-                "Harmony writes the current date into every prompt; set "
+            yield Finding(
+                code="engine.harmony_date",
+                message="Harmony writes the current date into every prompt; set "
                 + "VLLM_SYSTEM_START_DATE in the server's environment to fix it",
+                subject=engine.digest,
             )
     elif (text := template.get("text")) is None:
-        yield finding(
-            "engine.chat_template_unread",
-            "the report has no template text, so it wasn't checked",
-            "info",
+        yield Finding(
+            level="info",
+            code="engine.chat_template_unread",
+            message="the report has no template text, so it wasn't checked",
+            subject=engine.digest,
         )
     else:
         yield from check_chat_template(engine, cast(str, text).encode())
     own = template.get("model_template")
     if isinstance(own, dict) and cast(dict[str, Any], own).get("matches") is False:
-        yield finding(
-            "engine.chat_template_not_the_model_s",
-            "the chat template isn't the model's own at this revision ("
+        yield Finding(
+            level="info",
+            code="engine.chat_template_not_the_model_s",
+            message="the chat template isn't the model's own at this revision ("
             + f"{cast(dict[str, Any], own).get('path')})",
-            "info",
+            subject=engine.digest,
         )
 
 
 def _serving(engine: LocalEngine, server: dict[str, Any]) -> Iterable[Finding]:
-    def finding(code: str, message: str) -> Finding:
-        return Finding(code=code, message=message, subject=engine.digest)
-
     process = cast(dict[str, Any], server.get("process") or {})
     if (error := _error(process)) is not None:
-        yield finding("endpoint.process", f"the server's process wasn't seen: {error}")
+        yield Finding(
+            code="endpoint.process",
+            message=f"the server's process wasn't seen: {error}",
+            subject=engine.digest,
+        )
     elif not process.get("running"):
-        yield finding("endpoint.not_running", "the server isn't running")
+        yield Finding(
+            code="endpoint.not_running",
+            message="the server isn't running",
+            subject=engine.digest,
+        )
     elif not process.get("matches"):
-        yield finding(
-            "endpoint.argv",
-            "the running server's argv isn't the configured one, so it may predate "
-            + "the configuration",
+        yield Finding(
+            code="endpoint.argv",
+            message="the running server's argv isn't the configured one, so it may "
+            + "predate the configuration",
+            subject=engine.digest,
         )
     served = cast(dict[str, Any], server.get("served") or {})
     if (error := _error(served)) is not None:
-        yield finding("endpoint.unreachable", f"the server didn't answer: {error}")
+        yield Finding(
+            code="endpoint.unreachable",
+            message=f"the server didn't answer: {error}",
+            subject=engine.digest,
+        )
         return
     version = cast(dict[str, Any], server["package"])["version"]
     if served.get("version") != version:
-        yield finding(
-            "endpoint.version",
-            f"the server says it is vLLM {served.get('version')}, its package {version}",
+        yield Finding(
+            code="endpoint.version",
+            message=f"the server says it is vLLM {served.get('version')}, its "
+            + f"package {version}",
+            subject=engine.digest,
         )
     models = cast(list[dict[str, Any]], served.get("models") or [])
     names = [m.get("id") for m in models]
     if engine.digest not in names:
-        yield finding(
-            "endpoint.served_name",
-            f"the server answers as {', '.join(map(str, names)) or 'nothing'}; put "
-            + f"{engine.digest} first in its servedModelNames",
+        yield Finding(
+            code="endpoint.served_name",
+            message=f"the server answers as {', '.join(map(str, names)) or 'nothing'}; "
+            + f"put {engine.digest} first in its servedModelNames",
+            subject=engine.digest,
         )
 
 

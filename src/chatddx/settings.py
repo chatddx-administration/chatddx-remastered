@@ -31,12 +31,16 @@ STAMPED = (
     "factors",
     "facts",
     "identity",
+    "importers",
     "inventory",
     "ledger",
     "repl",
     "runner",
+    "scorers",
     "scripted",
+    "stamp",
     "store",
+    "tools",
     "worker",
 )
 

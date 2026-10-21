@@ -169,9 +169,6 @@ def test_each_aggregate_is_inspect_s(
     assert AGGREGATES[aggregate](values) == pytest.approx(expected, abs=1e-4)
 
 
-# ------------------------------------------------------------------ interface
-
-
 def plan_scorer(**changes: Any) -> Scorer:
     fields: dict[str, Any] = {
         "entry_point": SHIPPED,
@@ -257,8 +254,6 @@ def test_only_the_shipped_code_at_its_version_and_its_metrics_are_run() -> None:
         _ = function(plan_scorer(views=unknown))
 
 
-# A view's params go to its metric, and the scorer's own to every view; each is held to
-# the schema the code publishes for it, and the shipped metrics publish none.
 def test_params_are_held_to_the_schemas_the_code_publishes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -384,8 +379,6 @@ def test_a_judge_is_asked_only_when_it_has_what_it_reads() -> None:
         "expectation": "",
     }
 
-
-# ------------------------------------------------------------------ the test World
 
 TARGETS_SCHEMA = json.loads((DATA / "schemas" / "targets.json").read_text())
 

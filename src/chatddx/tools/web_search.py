@@ -44,7 +44,8 @@ def _text(fragment: str) -> str:
     return unescape(_TAG.sub("", fragment)).strip()
 
 
-# DuckDuckGo links a result through its own redirect, with the target in `uddg`.
+# Accommodating for a discovered fact: DuckDuckGo links a result through its own
+# redirect, with the target in `uddg`.
 def _target(href: str) -> str:
     if href.startswith("//"):
         href = f"https:{href}"
