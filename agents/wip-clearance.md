@@ -51,10 +51,8 @@ table. A `[cleared]` entry for a source that isn't sensitive clears nothing and 
 
 ### Completions derived from vignettes
 
-- Sensitive records are run items, score items and a score's finish `src/chatddx/ledger/record.py:Record.sensitive`):
-  completions, the arguments the model passed to tools and what the tools returned, judge responses, the scorer's
-  `detail`, and findings that quote the answer. Start records, a run's finish and canary calls are not. Compilations are
-  components (`src/chatddx/factors/request.py:Compilation`), not records, and hold no case text.
+- Which records are sensitive is in docs/modules/ledger.md, "Sensitive records". Compilations are components
+  (`src/chatddx/factors/request.py:Compilation`), not records, and hold no case text.
 - No policy has settled. Options: a database-level read restriction on sensitive tables; a destination check when
   records are exported.
 - Part of it exists: the sensitive tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read `factor` but
@@ -111,11 +109,8 @@ Where it is at each stage of a request, beyond the records above:
 
 ## What the code offers
 
-- `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
-  digest.
-- `prepare_case` produces the sensitive fills the hard block guards.
-- No factor holds an endpoint: every engine is located by the inventory. A remote engine names its provider and model
-  (`src/chatddx/factors/engine.py:RemoteEngine`); its address is its endpoint's.
+- What the factors hold of a vignette, the sensitive fills they make, and that no component holds where an engine is:
+  `docs/modules/factors.md` ("Sensitive content", "Engines and models").
 - `RunStarted.endpoint` and `ScoreStarted.endpoints` (`src/chatddx/ledger/run.py:Endpoint`) record where a run's and a
   scoring's calls went, by the endpoint's name and URL.
 - The old module had `EndpointBinding(engine, base_url, clearances)` and
@@ -193,8 +188,8 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
      counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as are queued.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
-     (`src/chatddx/bench/cases.py:127-134`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:129-138`). Scoring again has
-     no quota, beyond one job per run at a time.
+     (`src/chatddx/bench/cases.py:type_case`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:_check_quota`). Scoring
+     again has no quota, beyond one job per run at a time.
    - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
      (`agents/wip-deploy.md`, "Containers for Kubernetes").
 3. **Shutdown.** The worker resolved most of it: nothing in the app grows with each run, a stopping worker queues what
@@ -214,7 +209,7 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
      its text too.
    - Why a job failed is kept for good as well, since the writer can't delete from `worker.job`
      (`src/chatddx/store/migrations/0020-t1-worker.sql`), and it can quote what was sent (10).
-   - The fingerprints are unkeyed, the typed text's (`src/chatddx/bench/cases.py:136`) and a run's
+   - The fingerprints are unkeyed, the typed text's (`src/chatddx/bench/cases.py:type_case`) and a run's
      (`src/chatddx/runner/rounds.py:152-161`); see "Typed vignettes".
    - Untracked elsewhere: how long a typed text is kept, and how it is erased.
 5. **Headers.** There is no CSP, frame-ancestors, nosniff, Referrer-Policy or HSTS (`src/chatddx/api/app.py:app`,
@@ -259,7 +254,7 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
       nothing outside its no-store places carries any.
 11. **Writes** are unlimited. Appendices, threads, forks, edits, components and scorings have no count or size limit,
     and the app none on a request's body; a typed text's size is checked only once its body is parsed
-    (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds. Behind the NixOS
+    (`src/chatddx/bench/cases.py:type_case`). The only limits are runs a day, items a run and seeds. Behind the NixOS
     module's nginx, a body is held to nginx's default, 1 MB.
 12. **Proxies.** The engine client sends through urllib's default opener (`src/chatddx/runner/wire.py:112-116`), which
     follows `HTTP_PROXY` and `HTTPS_PROXY`, so vignette-bearing requests go through any proxy the environment names; so

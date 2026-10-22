@@ -42,8 +42,9 @@ A new schema gets its own section with all three tiers.
 ### Tier 1
 
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
-  gets nothing: `run_item` and `score_item` hold sensitive records (`src/chatddx/ledger/record.py:Record.sensitive`),
-  and the stage rows and canary calls sit beside them so that each log stays in one schema.
+  gets nothing: `run_item`, `score_item` and a score's finish in `score_stage` hold sensitive records
+  (`src/chatddx/ledger/record.py:Record.sensitive`), and the other stage rows and canary calls sit beside them so that
+  each log stays in one schema.
 - `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
   are read back in the order they were written; rows from before are numbered as the column is added, in no particular
   order. An index on `score_stage (run)`.

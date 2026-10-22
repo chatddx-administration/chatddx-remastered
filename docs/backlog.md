@@ -257,8 +257,8 @@ Decided: at the worker's deadline, and on a second press, the calls under way ar
 the items under way are recorded stopped, an outcome like any other, and the next claim resumes the rest.
 
 - **A call still waiting for its engine to answer at all**, under an execution with no timeout, waits on after a halt;
-  only a stream can be shut down. vLLM answers at once and streams after. The bench sends no execution, so its runs have
-  no timeout.
+  only a stream can be shut down. vLLM answers at once and streams after. A run takes its endpoint's execution, and no
+  World's sets a timeout, so runs have none.
 - **Tools have no time limit of their own**, and a halt waits for a tool that's running.
 - `Toolbox.run` has no time limit.
 
@@ -418,7 +418,8 @@ NUL and NaN refused where a component, a record or a typed text is built, rather
 Decided: floats refuse NaN and infinity throughout, and strings refuse NUL, as typed text already does
 (`src/chatddx/bench/cases.py`); nothing stored can hold either, so no stored digest changes.
 
-- The database can't keep text holding a NUL character, so a component or record containing one can't be stored.
+- The database can't keep text holding a NUL character. A component or a typed text holding one is refused when it is
+  built; a record holding one is built, and can't be stored.
 
 - NaN and infinity pass validation, and the canonical form writes them as `null`. The stored component reads back with
   the field unset, under the same digest, and `Bundle.load` reports `bundle.recanonicalized`. The request still carries

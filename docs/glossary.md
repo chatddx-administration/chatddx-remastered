@@ -715,7 +715,7 @@ PostgreSQL's roles, not people's: :Admin (database), :Writer and :Reader. "Admin
 ## Findings
 
 A finding (`src/chatddx/factors/base.py:Finding`) has a level, `warning` unless said, a code, a message and optionally a
-subject.
+subject. The factors' findings, and the errors beside them, are in `docs/modules/factors.md` ("Errors and findings").
 
 ### Lints
 

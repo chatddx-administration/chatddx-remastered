@@ -19,6 +19,14 @@ Written by `chatddx stamp write` from `src/chatddx/bench/`; how to read it is in
 ## `Bench.again`
 `src/chatddx/bench/runs.py:again`
 
+Begins a run of the run's skeleton and cases under other seeds, at its handle's
+latest endpoint, and sends nothing.
+
+Stores the run's trial, start record and entries once the gate has confirmed the
+endpoint with a request to it.
+
+Heads-up: the gate's `Refused` passes through.
+
 * `run: RunStarted`
 * `seeds: Sequence[int]`
 * ∟`Running`
@@ -258,6 +266,15 @@ Raises:
 ## `Bench.score`
 `src/chatddx/bench/runs.py:score`
 
+Scores the run under each scorer that applies, or each of those given, one after
+another in the calling thread.
+
+Sends each judged view's requests to its judge's endpoint once the gate has confirmed
+it with a request to it, and writes each score's records as it goes.
+
+Heads-up: a scorer refused is returned with why in `Graded.refused`, not raised, and
+so is each one after a halt or an interrupt, as stopped.
+
 * `run: RunStarted`
 * `scorers: Collection[str] | None = None`
 * `on_event: Callable[[ScoringEvent], None] | None = None`
@@ -266,6 +283,14 @@ Raises:
 
 ## `Bench.start`
 `src/chatddx/bench/runs.py:start`
+
+Begins a run for each language the cases are sent in, and sends nothing.
+
+Compiles the variation into each language, and stores each run's trial, start record
+and entries, and the compilations of what it begins, in one transaction, which holds
+while the gate confirms the endpoint with a request to it for each run.
+
+Heads-up: the gate's `Refused` passes through.
 
 * `variation: TriedVariation`
 * `endpoint: str | None`
@@ -286,6 +311,14 @@ Raises:
 
 ## `Bench.start_trials`
 `src/chatddx/bench/runs.py:start_trials`
+
+Begins a run of each trial version at the endpoint serving its engine, and sends
+nothing.
+
+Stores each run's start record and entries in one transaction, which holds while the
+gate confirms the endpoint with a request to it for each run.
+
+Heads-up: the gate's `Refused` passes through.
 
 * `versions: Sequence[int]`
 * `concurrency: int | None = None`

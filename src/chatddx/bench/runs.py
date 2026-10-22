@@ -36,6 +36,14 @@ def start(
     execution: Execution | None = None,
     canaries: str | None = None,
 ) -> Started:
+    """Begins a run for each language the cases are sent in, and sends nothing.
+
+    Compiles the variation into each language, and stores each run's trial, start record
+    and entries, and the compilations of what it begins, in one transaction, which holds
+    while the gate confirms the endpoint with a request to it for each run.
+
+    Heads-up: the gate's `Refused` passes through.
+    """
     if seen.skeleton(variation).purpose == "judge":
         raise ValueError(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
@@ -88,6 +96,14 @@ def start(
 
 
 def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
+    """Begins a run of the run's skeleton and cases under other seeds, at its handle's
+    latest endpoint, and sends nothing.
+
+    Stores the run's trial, start record and entries once the gate has confirmed the
+    endpoint with a request to it.
+
+    Heads-up: the gate's `Refused` passes through.
+    """
     if run.endpoint is None:
         raise ValueError(
             f"run {run.run} was sent to no endpoint, so it can't run again"
@@ -209,6 +225,14 @@ def start_trials(
     concurrency: int | None = None,
     order: Order | None = None,
 ) -> list[Running]:
+    """Begins a run of each trial version at the endpoint serving its engine, and sends
+    nothing.
+
+    Stores each run's start record and entries in one transaction, which holds while the
+    gate confirms the endpoint with a request to it for each run.
+
+    Heads-up: the gate's `Refused` passes through.
+    """
     found: list[tuple[Trial, str]] = []
     for id in dict.fromkeys(versions):
         held = seen.rows.edit(id)
@@ -289,6 +313,15 @@ def score(
     on_event: Callable[[ScoringEvent], None] | None = None,
     halt: Halt | None = None,
 ) -> list[Graded]:
+    """Scores the run under each scorer that applies, or each of those given, one after
+    another in the calling thread.
+
+    Sends each judged view's requests to its judge's endpoint once the gate has confirmed
+    it with a request to it, and writes each score's records as it goes.
+
+    Heads-up: a scorer refused is returned with why in `Graded.refused`, not raised, and
+    so is each one after a halt or an interrupt, as stopped.
+    """
     found: list[Graded] = []
     stopped = False
     for edit, about, scorer in seen.scorers(run):
