@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% from "macros.html" import drawer, mean, named, opened, pane, rail, upright with context %}
+{% from "runner.html" import runner %}
+
+{% set link = "text-primary hover:underline" %}
+{% set field = "h-8 rounded-md border border-input bg-transparent px-2" %}
+{% set button = "inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90" %}
+
+{% macro varies(k) -%}
+{{ k.varies | map(attribute="path") | map("replace", "/recipe/", "") | map("replace", "_", " ") | join(", ") }}
+{%- endmacro %}
+
+{% block title %}{{ "Lab · " ~ named(configuration) if configuration else "Lab" }} · ChatDDX{% endblock %}
+{% block main %}
+{% if not configuration %}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <p class="text-muted-foreground">No configuration to try: <a class="{{ link }}" href="/library/new?kind=configuration">write one from a recipe</a>, in the Library.</p>
+</div>
+{% else %}
+{% set here = "/lab/" ~ configuration.id %}
+<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] {{ 'xl:grid-cols-[auto_minmax(0,1fr)]' if judged else 'xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)]' }}">
+
+  {% call drawer("lineage", "Lineage") %}
+  <summary class="{{ rail }}">
+    <span class="{{ upright }}">Lineage <span class="font-normal text-muted-foreground">{{ lineage | length }}</span></span>
+  </summary>
+  <div class="{{ opened }} xl:w-72">
+    <ol class="space-y-0.5 text-sm">
+      {% for k, depth in lineage %}
+      <li style="padding-left: {{ depth }}rem">
+        <a href="/lab/{{ k.id }}{{ kept }}"{% if k.id == configuration.id %} aria-current="page"{% endif %}
+           class="block rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if k.id == configuration.id else 'hover:bg-muted' }}">
+          <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(k) }}</span>{% if fared %}<span class="font-mono text-xs text-muted-foreground">{{ mean(fared.mean_of.get(k.id)) }}</span>{% endif %}</span>
+          {% if k.varies or k.moved_on %}
+          <span class="block text-xs text-muted-foreground">
+            {%- if k.varies %}varies {{ varies(k) }}{% endif %}
+            {%- if k.moved_on %}{{ " · " if k.varies }}its origin moved on{% endif %}
+          </span>
+          {% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% if gone %}
+    <details class="mt-3 text-sm">
+      <summary class="cursor-pointer text-xs text-muted-foreground">Deleted, yours ({{ gone | length }})</summary>
+      <ol class="mt-1 space-y-0.5">
+        {% for k in gone %}<li><a class="{{ link }}" href="/threads/{{ k.id }}">{{ named(k) }}</a></li>{% endfor %}
+      </ol>
+    </details>
+    {% endif %}
+    <p class="mt-4 text-xs leading-relaxed text-muted-foreground">Its first origin and every fork below it{% if fared %}, each with its mean on the set{% if fared.by %} under the view sorted by{% endif %}, the higher first among its siblings{% endif %}.</p>
+  </div>
+  {% endcall %}
+
+  {% call pane("The configuration") %}
+  <header class="mb-4">
+    <h1 class="text-xl font-bold tracking-tight">{{ named(configuration) }}</h1>
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <span>{{ "a judge's" if judged else ("in " ~ configuration.language if configuration.language else "in no language known") }}</span>
+      {% if origin %}<span>·</span><span><a class="{{ link }}" href="/lab/{{ origin }}">a fork</a>{% if me.varies %}, varying {{ varies(me) }}{% endif %}</span>{% endif %}
+      <span>·</span><a class="{{ link }}" href="/threads/{{ configuration.id }}">its page in the Library</a>
+      {% if translations %}<span>·</span><span>translations: <a class="{{ link }}" href="/threads/{{ translations[0] }}">{{ translations[1] }}</a></span>{% endif %}
+    </p>
+    {% set last = versions | length - 1 %}
+    <nav class="mt-3 flex flex-wrap items-center gap-2 text-sm" aria-label="Versions">
+      {% if at > 0 %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" aria-label="The version before" href="{{ links[at - 1] }}" data-head="{{ versions[at - 1].id }}">◀</a>{% else %}<span class="rounded-md border border-border px-2 py-0.5 opacity-40" aria-hidden="true">◀</span>{% endif %}
+      <span class="font-medium">Version {{ at + 1 }} of {{ versions | length }}</span>
+      {% if at < last %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" aria-label="The version after" href="{{ links[at + 1] }}" data-head="{{ versions[at + 1].id }}">▶</a>{% else %}<span class="rounded-md border border-border px-2 py-0.5 opacity-40" aria-hidden="true">▶</span>{% endif %}
+      <span class="text-xs text-muted-foreground">{{ versions[at].at | when }}, {{ versions[at].by }}</span>
+    </nav>
+    {% if at < last %}
+    <p class="mt-2 rounded-lg bg-warning/10 p-3 text-sm">A newer version is saved: version {{ versions | length }}, {{ versions[last].at | when }} by {{ versions[last].by }}. <a class="{{ link }}" href="{{ links[last] }}" data-head="{{ versions[last].id }}">Open the latest</a></p>
+    {% endif %}
+  </header>
+
+  {% if proposal %}
+  <section class="mb-6 border-t border-border/60 pt-4">
+    <h2 class="mb-2 text-base font-semibold">Its origin has moved on</h2>
+    <p class="mb-3 text-sm">Following it keeps the origin's latest version with what yours changes of it{% if proposal.digest == configuration.head.digest %}, which is what yours holds already{% endif %}.</p>
+    {% if changes %}
+    <ul class="mb-4 space-y-1 text-sm">
+      {% for part, base, fork in changes %}<li><span class="font-medium">{{ part | replace("_", " ") }}</span>: yours keeps {{ fork }} over {{ base }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    <form method="post" action="/threads/{{ configuration.id }}/follow">
+      <input type="hidden" name="head" value="{{ configuration.head.id }}">
+      <input type="hidden" name="next" value="{{ here }}">
+      <button class="{{ button }}">Follow its origin</button>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if moved %}
+  <section class="mb-6 border-t border-border/60 pt-4">
+    <h2 class="mb-2 text-base font-semibold">What it was compiled for has moved on</h2>
+    <p class="mb-3 text-sm">{% if moved.model %}Its model, {{ moved.about }}, has a new version{% if moved.facts %}, and the facts about it were corrected since it was compiled, where they change what it sends{% endif %}.{% else %}It was compiled against facts about {{ moved.about }} that have been corrected since, where they change what it sends.{% endif %}{% if moved.refused %} The facts now refuse what it asks: {{ moved.refused }}. Set another chunk in its place to follow them.{% else %} Following keeps its recipe{% if moved.model %}, with the model's new version,{% endif %} compiled against the current facts.{% endif %}</p>
+    {% if not moved.refused %}
+    <form method="post" action="/threads/{{ configuration.id }}/moved/follow">
+      <input type="hidden" name="head" value="{{ configuration.head.id }}">
+      <input type="hidden" name="next" value="{{ here }}">
+      <button class="{{ button }}">Follow</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <div id="variation">
+    <p class="mb-6 border-t border-border/60 pt-4 text-sm text-muted-foreground">Trying it, running it and saving it take scripts.</p>
+  </div>
+  <script type="application/json" id="variation-props">{{ props | tojson }}</script>
+
+  {% if not judged %}
+  <section class="mb-6 border-t border-border/60 pt-4" aria-label="Its trials">
+    <h2 class="mb-2 text-base font-semibold">Its trials</h2>
+    {% if trials %}
+    {{ runner(trials, orders, true) }}
+    {% else %}
+    <p class="text-sm text-muted-foreground">None you see: a trial of it is begun of the cases picked on the Library's <a class="{{ link }}" href="/library?kind=case">case tab</a>.</p>
+    {% endif %}
+  </section>
+  {% else %}
+  <p class="border-t border-border/60 pt-4 text-sm text-muted-foreground">A judge's configuration isn't run on cases: its scorers' judges ask it of a run's answers.</p>
+  {% endif %}
+  {% endcall %}
+
+  {% if fared %}
+  {% call pane("How they fare") %}
+  <form method="get" action="{{ here }}" class="mb-4 flex flex-wrap items-end gap-3 text-sm" aria-label="The set">
+    <label class="grid gap-1"><span class="text-xs text-muted-foreground">Under</span>
+      <select name="handle" class="{{ field }}">
+        <option value="">each its own model</option>
+        {% for m in handles %}<option value="{{ m }}"{% if m == handle %} selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select></label>
+    <fieldset class="grid gap-1"><legend class="text-xs text-muted-foreground">Over the cases tagged</legend>
+      <span class="flex flex-wrap gap-2">
+        {% for t in every_tag %}<label class="inline-flex items-center gap-1"><input type="checkbox" name="tag" value="{{ t }}"{% if t in tags %} checked{% endif %}> {{ t }}</label>{% endfor %}
+      </span></fieldset>
+    {% for f in families %}<input type="hidden" name="family" value="{{ f.id }}">{% endfor %}
+    {% for name, value in varying %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    {% if versions[at].id != versions[-1].id %}<input type="hidden" name="head" value="{{ versions[at].id }}">{% endif %}
+    {% if fared.by %}<input type="hidden" name="by" value="{{ fared.by }}">{% endif %}
+    <button class="h-8 rounded-md border border-border px-3 font-medium hover:bg-muted">Show</button>
+  </form>
+  <p class="mb-3 text-xs text-muted-foreground">
+    {% if fared.cases is none %}Every case you see{% else %}{{ fared.cases }} case{{ "" if fared.cases == 1 else "s" }}{% for f in families %} · {{ f.name }}{% endfor %}{% endif %}{{ ", under " ~ handle if handle }}: each column is its latest run of yours at its model's latest engine.
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-left text-xs text-muted-foreground">
+        <tr>
+          <th class="pb-2 pr-4 font-medium"></th>
+          {% for c in fared.columns %}
+          <th class="pb-2 pr-4 align-bottom font-medium">
+            <span class="block text-foreground">{% if c.names %}{% for k in c.names %}{{ named(k) }}{{ " = " if not loop.last }}{% endfor %}{% else %}version {{ at + 1 }}{% endif %}</span>
+            {% if c.handle %}<span class="block font-normal">under {{ c.handle }}</span>{% endif %}
+            {% if c.said %}<span class="block font-normal text-warning">{{ c.said }}</span>{% endif %}
+            {% if c.run %}<a class="{{ link }} font-normal" href="/runs/{{ c.run.id }}">{{ c.run.at | when }}</a>{% else %}<span class="font-normal">not run</span>{% endif %}
+            {% if c.earlier %}
+            <details class="font-normal">
+              <summary class="cursor-pointer">{{ c.earlier | length }} at an earlier engine</summary>
+              <ul>{% for r in c.earlier %}<li><a class="{{ link }}" href="/runs/{{ r.id }}">{{ r.at | when }}</a></li>{% endfor %}</ul>
+            </details>
+            {% endif %}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if fared.compared %}
+        {% set kept_by = here ~ (kept or "?") ~ ("&" if kept else "") %}
+        {% for key, v, fares in fared.rows %}
+        <tr class="border-t border-border/60{{ ' bg-primary/5' if key == fared.by }}">
+          <th scope="row" class="py-1.5 pr-4 text-left align-top font-medium"><a class="{{ 'text-primary' if key == fared.by else 'hover:underline' }}" href="{{ kept_by }}by={{ key | urlencode }}">{{ v.name }} · {{ v.label }}</a></th>
+          {% for fare in fares %}
+          <td class="py-1.5 pr-4 align-top font-mono">
+            {%- if fare -%}{{ mean(fare[0]) }} <span class="text-xs text-muted-foreground">({{ fare[1] }})</span>
+            {%- else -%}<span class="text-muted-foreground">—</span>{%- endif -%}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="{{ fared.columns | length + 1 }}" class="py-2 text-muted-foreground">None of them has a run at its model's latest engine yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% if fared.compared %}
+  <p class="mt-3 text-xs text-muted-foreground">A mean is over the items every run holds ({{ fared.compared.items | length }}), with how many of them it has a value for.</p>
+  {% if fared.compared.apart %}
+  <details class="mt-3 text-sm">
+    <summary class="cursor-pointer">Only some hold {{ fared.compared.apart | length }} case{{ "" if fared.compared.apart | length == 1 else "s" }}</summary>
+    <ul class="mt-1 space-y-0.5 text-xs">{% for c in fared.compared.apart %}<li>{{ titles.get(c.case, c.case | short) }}: {{ c.runs | length }} of {{ fared.compared.runs | length }}</li>{% endfor %}</ul>
+  </details>
+  {% endif %}
+  {% endif %}
+  {% endcall %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

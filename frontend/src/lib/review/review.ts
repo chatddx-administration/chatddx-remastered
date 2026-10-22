@@ -30,7 +30,7 @@ export type Expecting = {
   composing: Composing | null;
 };
 
-export type Key = Pick<KeyboardEvent, "key" | "altKey" | "ctrlKey" | "metaKey" | "target">;
+type Key = Pick<KeyboardEvent, "key" | "altKey" | "ctrlKey" | "metaKey" | "target">;
 
 const TYPED = new Set(["INPUT", "TEXTAREA", "SELECT"]);
 

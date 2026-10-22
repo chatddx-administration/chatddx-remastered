@@ -8,7 +8,7 @@ from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.identity import Person
-from chatddx.inventory import Inventory
+from chatddx.inventory import World
 from chatddx.portal.app import app
 from chatddx.portal.test.helpers import signing_in
 from chatddx.test.helpers import alice_with_password, autocommitted, curated_template
@@ -37,7 +37,7 @@ def built(tmp_path: Path) -> Path:
 @pytest.fixture
 def served(db: str, built: Path) -> FastAPI:
     return app(
-        Inventory.load(TEST / "inventory.toml"),
+        World.load(TEST),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,

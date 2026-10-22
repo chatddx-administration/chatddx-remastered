@@ -1,6 +1,6 @@
 import { api, type Schemas, why } from "$lib/api/client";
 
-export type Mode = "new" | "edit" | "fork";
+type Mode = "new" | "edit" | "fork";
 export type Editing = { mode: Mode; thread?: number; head?: number; name: string };
 export type Component = Schemas["ComponentBody"];
 
@@ -23,7 +23,7 @@ export type Saved = (Extract<Written, { digest: string }> & { to: string }) | Ex
 
 export type Labelled = (string | null)[];
 
-export type Target = { thread: number | null; head?: number; mine?: boolean; name: string };
+type Target = { thread: number | null; head?: number; mine?: boolean; name: string };
 export type Written =
   | { digest: string; thread: number; head: number; cases: Record<string, string> }
   | { problem: string; moved: number | null };
@@ -59,7 +59,6 @@ export async function saved(
   name: string,
   component: Component,
   views?: Labelled,
-  language?: string | null,
 ): Promise<Saved> {
   const at = {
     thread: editing.mode === "new" ? null : (editing.thread ?? 0),
@@ -70,7 +69,6 @@ export async function saved(
   const got = await written(at, {
     component,
     ...(views ? { labels: { views } } : {}),
-    ...(language ? { language } : {}),
   });
   return "problem" in got ? got : { ...got, to: `/threads/${got.thread}` };
 }

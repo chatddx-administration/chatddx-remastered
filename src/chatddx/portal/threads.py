@@ -1,6 +1,7 @@
 import json
 from dataclasses import replace
 from typing import Annotated, Any, cast
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
@@ -12,9 +13,9 @@ from chatddx.api import families, schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Subject, read
-from chatddx.factors.base import Component, Finding, resolve
+from chatddx.factors.base import Component, Finding, language_tag, resolve
 from chatddx.factors.kinds import BY_KIND
-from chatddx.factors.request import RECIPE_PARTS, Recipe
+from chatddx.factors.request import RECIPE_PARTS, Recipe, Translations
 from chatddx.factors.scoring import Expectation, Judge, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.ledger import RunStarted
@@ -23,6 +24,7 @@ from .changes import changes
 from .fields import Field, choices, fields, fresh, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, within
 from .scoring import unshipped
+from .translations import begun, posted, translating, written as translated
 
 # Accommodating for configurations, which a person writes as recipes, not as components.
 AUTHORED = WRITTEN | {"skeleton"}
@@ -86,8 +88,16 @@ def library(
 
 
 @router.get("/library/new")
-def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
+def beginning(
+    request: Request,
+    bench: BenchDep,
+    kind: str,
+    configuration: int | None = None,
+    into: str | None = None,
+) -> Response:
     model = _begun(kind)
+    if model is Translations:
+        return _beginning_translations(request, bench, configuration, into)
     with refused(NotFound):
         found = _drawn(bench, model, fresh(model, _given(bench, request)))
     return page(
@@ -116,12 +126,22 @@ def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
 
 
 @router.post("/library/new")
-def writing(request: Request, bench: BenchDep, kind: str, form: FormDep) -> Response:
+def writing(
+    request: Request,
+    bench: BenchDep,
+    kind: str,
+    form: FormDep,
+    into: str | None = None,
+) -> Response:
     model = _begun(kind)
     name = str(form.get("name", "")).strip()
     with refused():
         if not name:
             raise ValueError(f"a new {kind.replace('_', ' ')} is named")
+        if model is Translations:
+            made = translated(None, into or "", posted(form))
+            written = bench.new(made, name)
+            return RedirectResponse(f"/threads/{written.edit.thread}", 303)
         made = model.model_validate(parsed(fresh(model, _given(bench, request)), form))
         language = str(form.get("language", "")).strip() or None
         labels = None
@@ -136,6 +156,31 @@ def writing(request: Request, bench: BenchDep, kind: str, form: FormDep) -> Resp
             labels,
         )
     return RedirectResponse(f"/threads/{written.edit.thread}", 303)
+
+
+def _beginning_translations(
+    request: Request, bench: Bench, configuration: int | None, into: str | None
+) -> Response:
+    entries = None
+    if configuration is not None and into:
+        with refused(NotFound):
+            entries = begun(bench, configuration, language_tag(into))
+    return page(
+        request,
+        "begun.html",
+        person=bench.person,
+        word="translations",
+        action=f"{request.url.path}?{request.url.query}",
+        configurations=[
+            (t.id, t.name or t.title)
+            for t in own_first(
+                bench, api.threads(bench, "configuration", purpose="generation")
+            )
+        ],
+        configuration=configuration,
+        into=into,
+        entries=entries,
+    )
 
 
 def _given(bench: Bench, request: Request) -> dict[str, str]:
@@ -181,7 +226,11 @@ def _begun(kind: str) -> type[Component] | type[Recipe]:
 
 @router.get("/threads/{thread}")
 def thread_page(
-    request: Request, bench: BenchDep, thread: int, version: int | None = None
+    request: Request,
+    bench: BenchDep,
+    thread: int,
+    version: int | None = None,
+    into: str | None = None,
 ) -> Response:
     shown = api.thread(bench, thread)
     word = word_of(shown.kind)
@@ -204,7 +253,11 @@ def thread_page(
     gone = unshipped(held) if isinstance(held, Scorer) else None
     editable = mine and latest and not shown.deleted and gone is None
     body = held.model_dump(mode="json")
-    written = editable and held.kind_name in WRITTEN
+    words = None
+    if isinstance(held, Translations):
+        with refused():
+            words = translating(bench, held, [v.digest for v in versions], into)
+    written = editable and held.kind_name in WRITTEN and words is None
     found = fields(type(held), body, body.keys() if written else ())
     recipe = _recipe(bench, edit.id) if shown.kind == "skeleton" else None
     parts = (
@@ -230,6 +283,8 @@ def thread_page(
         fields=found,
         parts=parts,
         editable=any(f.editable for f in every),
+        translating=words,
+        translatable=editable and words is not None,
         picked={
             f.name: choices(bench, f.kinds, f.value, purpose(type(held)))
             for f in every
@@ -339,6 +394,12 @@ def editing(bench: BenchDep, thread: int, form: FormDep) -> Response:
     held = bench.store.get(shown.head.digest)
     with refused():
         head = int(str(form.get("head", "")))
+        if isinstance(held, Translations):
+            into = str(form.get("into", ""))
+            made = translated(held, into, posted(form))
+            _ = bench.edit(thread, head, made)
+            kept = f"?{urlencode({'into': into})}" if into in made.into else ""
+            return _back(thread, f"/threads/{thread}{kept}")
         if shown.kind == "skeleton":
             recipe = _recipe(bench, shown.head.id)
             if recipe is None:

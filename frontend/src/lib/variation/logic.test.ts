@@ -4,6 +4,7 @@ import type { Schemas } from "$lib/api/client";
 import {
   carried,
   choicesOf,
+  keptWith,
   PARTS,
   type Picked,
   queryOf,
@@ -59,6 +60,19 @@ describe("a variation's address", () => {
       ["tag", "b"],
     ]);
     expect(queryOf({ picked: base, head: 7, under: null, tags: [] }, base, 7).toString()).toBe("");
+  });
+
+  it("keeps the Lab's own parameters from the address, and none of the variation's", () => {
+    const query = queryOf({ picked: base, head: 5, under: null, tags: ["a"] }, base, 7);
+    const kept = keptWith(query, "?head=3&tag=b&handle=qwen3-8b&family=1&family=2&by=s%3A0");
+    expect([...kept]).toEqual([
+      ["head", "5"],
+      ["tag", "a"],
+      ["handle", "qwen3-8b"],
+      ["family", "1"],
+      ["family", "2"],
+      ["by", "s:0"],
+    ]);
   });
 });
 

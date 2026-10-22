@@ -1,11 +1,40 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, section %}
 {% from "fields.html" import rows %}
+{% from "translations.html" import entry %}
 {% block title %}A new {{ word | replace("_", " ") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
   {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from what is given here.") }}
+  {% if word == "translations" %}
+  {% call section("What it holds", "holds") %}
+  {% if entries is none %}
+  <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
+    <input type="hidden" name="kind" value="translations">
+    <label class="grid gap-1"><span class="text-muted-foreground">configuration</span>
+      <select name="configuration" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+        {% for id, named in configurations %}<option value="{{ id }}"{% if id == configuration %} selected{% endif %}>{{ named }}</option>{% endfor %}
+      </select></label>
+    <label class="grid gap-1"><span class="text-muted-foreground">into</span>
+      <input name="into" required value="{{ into or '' }}" placeholder="such as sv" class="h-9 w-36 rounded-md border border-input bg-transparent px-2.5"></label>
+    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Show its texts</button>
+    <span class="basis-full text-xs text-muted-foreground">Translations are begun of a configuration's texts, into a language; its recipe holds them once it picks them, in the Library or the Lab.</span>
+  </form>
+  {% else %}
+  <p class="mb-3 text-sm text-muted-foreground">The texts of {% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}, into {{ into }}. <a class="text-primary hover:underline" href="/library/new?kind=translations">Pick another</a></p>
+  <form method="post" action="{{ action }}" class="grid gap-4">
+    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
+      <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    <div>{% for e in entries %}{{ entry(e, loop.index0, true, false) }}{% endfor %}</div>
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+      <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Write it</button>
+      <span class="text-muted-foreground">Writes a new thread of your own; a translation left empty isn't kept.</span>
+    </div>
+  </form>
+  {% endif %}
+  {% endcall %}
+  {% else %}
   {% call section("What it holds", "holds") %}
   <form method="post" action="{{ action }}" class="grid gap-4">
     <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
@@ -28,5 +57,6 @@
     </div>
   </form>
   {% endcall %}
+  {% endif %}
 </div>
 {% endblock %}

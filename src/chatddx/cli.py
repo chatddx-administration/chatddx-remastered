@@ -301,7 +301,7 @@ def _ran(bench: Bench, started: RunStarted) -> str:
 def _serve(
     command: str,
     args: argparse.Namespace,
-    made: Callable[[Inventory, str], FastAPI],
+    made: Callable[[World, str], FastAPI],
 ) -> None:
     world = _world(command, args.world)
     bind: str = args.bind or settings.host()
@@ -310,12 +310,12 @@ def _serve(
         raise SystemExit(f"{command}: bind to HOST:PORT, not {bind!r}")
     with psycopg.connect(settings.database()) as conn:
         _held(command, world, conn)
-    served = made(world.inventory, settings.database())
+    served = made(world, settings.database())
     uvicorn.run(served, host=host.strip("[]"), port=int(port))
 
 
 def _api(args: argparse.Namespace) -> None:
-    _serve("api", args, app)
+    _serve("api", args, lambda w, c: app(w.inventory, c))
 
 
 def _portal(args: argparse.Namespace) -> None:
@@ -328,7 +328,7 @@ def _run(args: argparse.Namespace) -> None:
         _unbuilt("run", "or --watch")
     watching = _watching() if args.watch else None
     try:
-        _serve("run", args, lambda i, c: portal(i, c, worker=True))
+        _serve("run", args, lambda w, c: portal(w, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()

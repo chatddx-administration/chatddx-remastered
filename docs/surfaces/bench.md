@@ -1011,18 +1011,6 @@ Raises:
 * `digest: str`
 * ∟`str`
 
-## `Seen.translation`
-`src/chatddx/bench/seen.py:Seen.translation`
-
-* `variation: TriedVariation`
-* `into: str`
-* `entries: Mapping[str, str] | None = None`
-* ∟`Skeleton`
-
-Raises:
-1. `ValueError`: `"{variation.label} has no recipe to translate"`
-2. `ValueError`: `"{variation.label} is written in {into}"`
-
 ## `Seen.under`
 `src/chatddx/bench/seen.py:Seen.under`
 

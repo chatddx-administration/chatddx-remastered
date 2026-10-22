@@ -1,6 +1,6 @@
 import { diffWords } from "diff";
 
-export type Words = { value: string; added: boolean; removed: boolean }[];
+type Words = { value: string; added: boolean; removed: boolean }[];
 
 export type Change =
   | { path: string; was: "added"; after: unknown }

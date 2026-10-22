@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, chip, json %}
+{% set link = "text-primary hover:underline" %}
+{% set card = "rounded-lg border border-border/60 bg-background/40 p-3" %}
+{% block title %}World · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  {{ heading("World", "What the portal was started in: where its vignettes are, the endpoints and hosts it sends to, what it binds, and the models a configuration can run under.") }}
+
+  {% call section("The World") %}
+  {% set read %}<ul class="space-y-0.5 font-mono text-xs">{% for f in files %}<li>{{ f }}</li>{% endfor %}</ul>{% endset %}
+  {{ facts([
+    ("Directory", world.path),
+    ("Read from", read),
+    ("Served by", rig.distribution ~ " " ~ rig.version ~ (" at " ~ rig.revision if rig.revision else "")),
+  ]) }}
+  {% endcall %}
+
+  {% call section("Sources", "sources") %}
+  <p class="mb-3 text-sm text-muted-foreground">Where the vignettes are fetched from. A sensitive source's cases are sent only to the endpoints cleared for it, and no vignette is shown here.</p>
+  <div class="space-y-2">
+    {% for s in sources %}
+    <div class="{{ card }} text-sm">
+      <p><span class="font-medium">{{ s.source.name }}</span> {{ chip("sensitive" if s.source.sensitive else "not sensitive") }}</p>
+      <div class="mt-2">
+      {% set where %}{% if s.source.kind == "directory" %}<span class="font-mono text-xs">{{ s.source.path }}</span>, a vignette a <span class="font-mono text-xs">{{ s.source.suffix }}</span> file{% else %}texts typed into the database{% endif %}{% endset %}
+      {% set held %}{% if s.unread %}<span class="text-warning">its directory can't be read: {{ s.unread }}</span>{% elif s.vignettes is not none %}{{ s.vignettes }} vignette{{ "" if s.vignettes == 1 else "s" }}{% else %}as many as are typed{% endif %}{% endset %}
+      {{ facts([
+        ("Where", where),
+        ("Holds", held),
+        ("Cleaned up by", s.source.cleanup | join(", ") or "—"),
+        ("Cleared for it", s.cleared | join(", ") or "no endpoint"),
+      ]) }}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm text-muted-foreground">None.</p>
+    {% endfor %}
+  </div>
+  {% endcall %}
+
+  {% call section("Endpoints", "endpoints") %}
+  <p class="mb-3 text-sm text-muted-foreground">Where each engine is served; a run goes to the endpoint serving its engine.</p>
+  <div class="space-y-2">
+    {% for s in endpoints %}
+    {% set e = s.endpoint %}
+    <details class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ e.name }}</span>
+        <span class="text-muted-foreground">{% if e.model %}serves {{ e.model }}{% endif %}</span>
+        {% if e.problem %}<span class="text-warning">{{ e.problem }}</span>{% endif %}</summary>
+      <div class="mt-3">
+      {% set engine %}{% if s.engine %}<a class="{{ link }}" href="/threads/{{ s.engine }}">{{ e.title or e.engine | short }}</a>{% else %}{{ e.title or e.engine | short }}{% endif %}{% endset %}
+      {{ facts([
+        ("Engine", engine),
+        ("Address", e.url),
+        ("Host", e.host or "none: a remote engine"),
+        ("Capacity", e.capacity ~ " at once"),
+        ("Runs by default", s.spec.execution.concurrency ~ " at once, " ~ s.spec.execution.order ~ ", " ~ s.spec.execution.retries ~ " retries"),
+        ("Canaries", s.canaries or "none"),
+        ("Its secret's variable", e.credential or "none: it takes no secret"),
+        ("Cleared for", e.cleared_for | join(", ") or "no source"),
+        ("Takes typed cases", "yes" if e.takes_typed else "no"),
+      ]) }}
+      </div>
+    </details>
+    {% else %}
+    <p class="text-sm text-muted-foreground">None.</p>
+    {% endfor %}
+  </div>
+  {% endcall %}
+
+  {% call section("Hosts", "hosts") %}
+  <p class="mb-3 text-sm text-muted-foreground">The machines that run local engines, and where each keeps the model files and chat templates its engines pin.</p>
+  <div class="space-y-2">
+    {% for name, h in hosts %}
+    <details class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ name }}</span> <span class="text-muted-foreground">listening on {{ h.bind }}</span></summary>
+      <div class="mt-3 grid gap-3 text-sm">
+        <div>
+          <h3 class="mb-1 font-medium">Models</h3>
+          <ul class="space-y-0.5">{% for digest, at in h.models.items() %}<li>{{ titles[digest] }} <span class="font-mono text-xs text-muted-foreground">{{ at }}</span></li>{% else %}<li class="text-muted-foreground">None.</li>{% endfor %}</ul>
+        </div>
+        <div>
+          <h3 class="mb-1 font-medium">Chat templates</h3>
+          <ul class="space-y-0.5">{% for sha, at in h.templates.items() %}<li><span class="font-mono text-xs">{{ sha[:12] }}</span> <span class="font-mono text-xs text-muted-foreground">{{ at }}</span></li>{% else %}<li class="text-muted-foreground">None.</li>{% endfor %}</ul>
+        </div>
+      </div>
+    </details>
+    {% else %}
+    <p class="text-sm text-muted-foreground">None.</p>
+    {% endfor %}
+  </div>
+  {% endcall %}
+
+  {% call section("Bindings", "bindings") %}
+  {% set judged %}{% for judge, handle in judges %}<span class="font-medium">{{ judge }}</span> to {{ handle }}{{ ", " if not loop.last }}{% else %}none{% endfor %}{% endset %}
+  {{ facts([
+    ("Configurations are made for", configurations or "no model"),
+    ("Judges are bound", judged),
+  ]) }}
+  {% endcall %}
+
+  {% call section("Models", "models") %}
+  <p class="mb-3 text-sm text-muted-foreground">The models a configuration can run under, each by its handle.</p>
+  <div class="space-y-2">
+    {% for m in models %}
+    <details class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ m.name }}</span>
+        <span class="text-muted-foreground">{% if m.facts is none %}no facts{% endif %}</span></summary>
+      {% if m.facts is not none %}<div class="mt-3">{{ json(m.facts) }}</div>{% endif %}
+    </details>
+    {% endfor %}
+  </div>
+  {% endcall %}
+</div>
+{% endblock %}

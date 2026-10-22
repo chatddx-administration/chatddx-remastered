@@ -4,9 +4,10 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
-from chatddx.portal.test.helpers import ran_template, shown
+from chatddx.portal.test.helpers import ran_template, shown, variation_props
 from chatddx.store import People
 from chatddx.store.store import Connection
+from chatddx.test.world import TEST
 
 __all__ = ["ran_template"]
 
@@ -70,27 +71,17 @@ def test_another_s_run_isn_t_found_by_a_page_or_the_api(
 
 
 @pytest.mark.slow
-def test_configurations_are_listed_by_purpose_and_read_with_their_recipe(
+def test_a_configuration_is_read_with_its_recipe_in_the_lab(
     signed: TestClient,
 ) -> None:
     query = {"kind": "configuration"}
-    generation = signed.get("/api/threads", params=query).json()
-    judges = signed.get("/api/threads", params={**query, "purpose": "judge"}).json()
-    listed = shown(signed, "/configurations")
-    judged = shown(signed, "/configurations?purpose=judge")
-    for c in generation:
-        assert f'href="/configurations/{c["id"]}"' in listed
-    for c in judges:
-        assert f'href="/configurations/{c["id"]}"' in judged
-    [first, *_] = generation
-    page = shown(signed, f"/configurations/{first['id']}")
+    [first, *_] = signed.get("/api/threads", params=query).json()
+    page = shown(signed, f"/lab/{first['id']}")
     parts = signed.get(f"/api/threads/{first['id']}/variation").json()["parts"]
-    for part in parts:
-        if part["title"]:
-            assert escape(part["title"]) in page
-    assert "Version 1" in page
+    assert variation_props(page)["look"]["parts"] == parts
+    assert "Version 1" in page and "take scripts" in page
     scorer = signed.get("/api/threads", params={"kind": "scorer"}).json()[0]
-    assert signed.get(f"/configurations/{scorer['id']}").status_code == 404
+    assert signed.get(f"/lab/{scorer['id']}").status_code == 404
 
 
 @pytest.mark.slow
@@ -120,14 +111,19 @@ def test_cases_are_listed_by_tag_in_the_library_and_read_without_their_vignette(
 
 
 @pytest.mark.slow
-def test_models_are_listed_by_their_handles_and_no_endpoint_is_shown(
+def test_the_world_lists_what_the_portal_started_in_and_its_models_by_handle(
     signed: TestClient,
 ) -> None:
-    page = shown(signed, "/models")
+    page = shown(signed, "/world")
+    assert str(TEST / "inventory.toml") in page and str(TEST / "facts.toml") in page
     for m in signed.get("/api/models").json():
         assert escape(m["name"]) in page
     for e in signed.get("/api/endpoints").json():
-        assert escape(e["name"]) not in page
+        assert escape(e["name"]) in page and escape(e["url"]) in page
+    assert str(TEST / "vignettes") in page and "texts typed into the database" in page
+    assert "CHATDDX_TEST_REMOTE" in page and "Qwen/Qwen3-8B-AWQ" in page
+    assert '<span class="font-medium">verdict</span> to qwen3-8b-awq' in page
+    assert 'href="/world"' in page and signed.get("/models").status_code == 404
 
 
 @pytest.mark.usefixtures("alice")

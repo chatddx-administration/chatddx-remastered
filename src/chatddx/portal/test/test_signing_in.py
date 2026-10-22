@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from chatddx import cli
 from chatddx.api.people import COOKIE
 from chatddx.identity import Person
-from chatddx.inventory import Inventory
+from chatddx.inventory import World
 from chatddx.portal.app import app
 from chatddx.portal.test.helpers import signing_in
 from chatddx.store import People
@@ -122,9 +122,9 @@ def test_chatddx_portal_and_run_serve_the_portal_and_the_api(
     heard: list[tuple[object, str, int]] = []
     workers: list[bool] = []
 
-    def portal(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
+    def portal(world: World, conninfo: str, worker: bool = False) -> FastAPI:
         workers.append(worker)
-        return app(inventory, conninfo, worker=worker)
+        return app(world, conninfo, worker=worker)
 
     def run(served: object, host: str, port: int) -> None:
         heard.append((served, host, port))

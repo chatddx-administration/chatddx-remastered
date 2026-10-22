@@ -12,13 +12,13 @@ export interface Diagnosis {
   short_rationale?: string;
 }
 
-export interface WorkupItem {
+interface WorkupItem {
   type?: string;
   investigations?: string[];
   priority?: Priority;
 }
 
-export interface Treatment {
+interface Treatment {
   indication?: string;
   treatment?: string;
   important?: string;

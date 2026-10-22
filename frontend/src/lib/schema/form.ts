@@ -1,6 +1,6 @@
 export type Schema = Record<string, unknown>;
 
-export type Widget =
+type Widget =
   | { is: "object"; properties: { name: string; schema: Schema; required: boolean }[] }
   | { is: "text"; long: boolean }
   | { is: "number"; integer: boolean }

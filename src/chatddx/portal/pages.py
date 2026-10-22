@@ -17,6 +17,8 @@ from chatddx.bench import Bench
 from chatddx.identity import Person
 from chatddx.store import People
 
+from .translations import visible
+
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
@@ -32,7 +34,7 @@ def _pretty(value: JsonValue) -> str:
     return json.dumps(value, indent=2, ensure_ascii=False)
 
 
-templates.env.filters.update(when=_when, short=_short, pretty=_pretty)
+templates.env.filters.update(when=_when, short=_short, pretty=_pretty, visible=visible)
 
 router = APIRouter()
 

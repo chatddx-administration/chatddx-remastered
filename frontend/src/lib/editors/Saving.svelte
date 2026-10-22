@@ -13,23 +13,19 @@
     component,
     digest = null,
     same = true,
-    blocked = false,
     after,
     to,
     made,
     labels,
-    language,
   }: {
     editing: Editing;
     component: () => Component | null;
     digest?: string | null;
     same?: boolean;
-    blocked?: boolean;
     after?: (cases: number) => string;
     to?: (saved: Wrote) => string;
     made?: (saved: Wrote, name: string) => void;
     labels?: () => Labelled;
-    language?: () => string | null;
   } = $props();
 
   let name = $state(untrack(() => editing.name));
@@ -63,7 +59,7 @@
     if (sent === null) return;
     busy = true;
     problem = null;
-    const got = await saved({ ...editing, head }, name, sent, labels?.(), language?.());
+    const got = await saved({ ...editing, head }, name, sent, labels?.());
     busy = false;
     if ("to" in got) {
       if (made) {
@@ -98,7 +94,7 @@
     <p class="text-sm" aria-live="polite">{said(editing, name, unchanged)}</p>
     {#if problem}<p class="text-sm text-destructive">{problem}</p>{/if}
     {#if note}<p class="text-sm text-success">{note}</p>{/if}
-    <Button type="submit" disabled={busy || blocked || unready || nameless || (editing.mode === "edit" && unchanged)}>
+    <Button type="submit" disabled={busy || unready || nameless || (editing.mode === "edit" && unchanged)}>
       {#if busy}<LoaderCircleIcon class="animate-spin" />{/if}
       Save
     </Button>

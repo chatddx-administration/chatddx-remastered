@@ -172,17 +172,18 @@ def test_an_appendix_is_written_and_a_case_built_of_it_without_leaving_review(
     query = {"kind": "appendix", "owner": "alice", "name": "ultrasound"}
     [made] = signed.get("/api/threads", params=query).json()
     page = shown(signed, back)
-    assert f'name="appendix" value="{made["head"]["digest"]}"' in page
+    assert f'name="f.appendices" value="{made["head"]["digest"]}"' in page
+    assert f'name="back" value="{back}"' in page
 
     got = signed.post(
-        f"/review/{crlf['id']}/cases",
-        data={"appendix": made["head"]["digest"], "tag": "targets"},
+        f"/cases/{crlf['id']}/cases",
+        data={"f.appendices": made["head"]["digest"], "back": back},
     )
     cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
     [built] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
     assert (got.status_code, got.headers["location"]) == (
         303,
-        f"/review/{crlf['id']}?{urlencode({'case': built['case'], 'tag': 'targets'})}",
+        f"{back}&{urlencode({'case': built['case']})}",
     )
     page = shown(signed, got.headers["location"])
     assert "Gallstones on ultrasound." in page
@@ -198,7 +199,7 @@ def test_an_appendix_is_written_and_a_case_built_of_it_without_leaving_review(
     assert (editor["mode"], editor["case"]) == ("new", built["case"])
     assert editor["data"] == default["expectations"][0]["data"]
 
-    refused = signed.post(f"/review/{crlf['id']}/cases", data={"back": back})
+    refused = signed.post(f"/cases/{crlf['id']}/cases", data={"back": back})
     assert refused.status_code == 422
 
 

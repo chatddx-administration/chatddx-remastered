@@ -1,6 +1,11 @@
 import { mount } from "svelte";
+import { remembered } from "$lib/drawers";
 import type { Props } from "$lib/variation/props";
 import Variation from "./Variation.svelte";
+
+for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) {
+  remembered(drawer, "lab");
+}
 
 const target = document.getElementById("variation");
 const held = document.getElementById("variation-props");

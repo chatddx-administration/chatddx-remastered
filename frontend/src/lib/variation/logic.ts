@@ -16,7 +16,7 @@ export const PARTS = [
 export type Part = (typeof PARTS)[number];
 export type Picked = Record<Part, string | null>;
 
-export type State = {
+type State = {
   picked: Picked;
   head: number;
   under: string | null;
@@ -36,6 +36,16 @@ export function queryOf(state: State, base: Picked, latest: number): URLSearchPa
   if (state.under !== null) query.append("under", state.under);
   for (const tag of state.tags) query.append("tag", tag);
   return query;
+}
+
+// Duplication: src/chatddx/portal/lab.py:FARING names the Lab's own parameters too.
+const FARING = ["handle", "family", "by"];
+
+export function keptWith(query: URLSearchParams, search: string): URLSearchParams {
+  const held = new URLSearchParams(search);
+  const found = new URLSearchParams(query);
+  for (const key of FARING) for (const value of held.getAll(key)) found.append(key, value);
+  return found;
 }
 
 export function named(thread: Schemas["Thread"], me: string): string {
@@ -76,7 +86,7 @@ export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["
   return tags.length ? families.filter((f) => f.tags.some((t) => tags.includes(t))) : families;
 }
 
-export type Carriage = {
+type Carriage = {
   language: string | null;
   families: Schemas["Family"][];
   translated: boolean;

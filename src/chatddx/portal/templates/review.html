@@ -125,13 +125,11 @@
       <div><button class="{{ button }}">Write the appendix</button></div>
     </form>
     {% if written %}
-    <form method="post" action="{{ here }}/cases" class="mt-4 border-t border-border/60 pt-3">
-      {% for t in keep.tag or [] %}<input type="hidden" name="tag" value="{{ t }}">{% endfor %}
-      {% if keep.schema %}<input type="hidden" name="schema" value="{{ keep.schema }}">{% endif %}
-      {% if keep.scorer %}<input type="hidden" name="scorer" value="{{ keep.scorer }}">{% endif %}
+    <form method="post" action="/cases/{{ family.id }}/cases" class="mt-4 border-t border-border/60 pt-3">
+      <input type="hidden" name="back" value="{{ here }}{{ query(**keep) }}">
       <p class="mb-2 font-medium">A case of the vignette and these, in the order listed</p>
       {% for t in written %}
-      <label class="flex items-center gap-2 py-0.5"><input type="checkbox" name="appendix" value="{{ t.head.digest }}"{% if t.head.digest in case.appendices %} checked{% endif %}> {{ t.name or t.title }}{% if t.owner and t.owner != person.login %} <span class="text-muted-foreground">({{ t.owner }})</span>{% endif %}</label>
+      <label class="flex items-center gap-2 py-0.5"><input type="checkbox" name="f.appendices" value="{{ t.head.digest }}"{% if t.head.digest in case.appendices %} checked{% endif %}> {{ t.name or t.title }}{% if t.owner and t.owner != person.login %} <span class="text-muted-foreground">({{ t.owner }})</span>{% endif %}</label>
       {% endfor %}
       <button class="mt-2 {{ button }}">Build the case</button>
     </form>

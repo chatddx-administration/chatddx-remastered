@@ -1,7 +1,7 @@
 [prompt.case]
 segments = [{ slot = "vignette" }, { slot = "appendices" }]
 
-# No guidance and no schema: a recipe of it and `case` holds no text, so its language is unknown.
+# Scope: a recipe of it and `case` holds no text, so its language is unknown.
 [output.raw]
 contract = { kind = "text" }
 
@@ -11,7 +11,7 @@ recommended = true
 [sampling.greedy]
 temperature = 0
 
-# vLLM 0.24 raises a temperature below 0.01 to 0.01.
+# Scope: vLLM 0.24 raising a temperature below 0.01 to 0.01.
 [sampling.near-greedy]
 temperature = 0.005
 
@@ -55,7 +55,6 @@ properties.max_results = { type = "integer", default = 5 }
 required = ["query"]
 additionalProperties = false
 
-# Recipes, one per output contract and per way a recipe is made or skipped.
 [recipe.native]
 description = "A native contract, sampled as the model's makers recommend."
 tags = ["structured"]
@@ -116,7 +115,6 @@ output = "lines"
 sampling = "greedy"
 toolset = "lookup"
 
-# Runs in en only: it names no translations.
 [recipe.lines-instructed]
 description = "Free text under instructions."
 tags = ["text"]
@@ -125,7 +123,6 @@ prompt = "case"
 output = "lines"
 sampling = "greedy"
 
-# Runs in en, and in sv translated: its translations cover every text it holds.
 [recipe.lines-guided]
 description = "Free text under instructions, with a worked example, a passthrough and an appendix layout."
 tags = ["text"]
@@ -139,7 +136,6 @@ passthrough = "min-tokens"
 translations = "guided"
 appendix_layout = { before = "\n\nAppendices:\n", between = "\n\n" }
 
-# Runs in en only: its prompt holds text, and it names no translations.
 [recipe.headed]
 description = "Free text after tool rounds, the toolset's guidance placed in the prompt."
 tags = ["text", "tools"]
@@ -195,7 +191,6 @@ prompt = "judge"
 output = "grade"
 sampling = "recommended"
 
-# Judges: a recipe, compiled for the engine of the endpoint the World binds it to (inventory.toml), and seeds.
 [judge.verdict]
 description = "Whether the answer meets the expectation, greedy, so one seed."
 recipe = "judge"
@@ -206,7 +201,7 @@ description = "A grade from 0 to 2, sampled under three seeds."
 recipe = "judge-graded"
 seeds = [1, 2, 3]
 
-# Never reached: the gate refuses it, as unknown@remote is cleared for nothing and its secret is unset.
+# Scope: a judge the gate refuses, as unknown@remote is cleared for nothing and its secret is unset.
 [judge.remote]
 description = "A judge on the remote engine."
 recipe = "judge"
@@ -215,7 +210,6 @@ seeds = [1]
 [expectation_schema.targets]
 json_schema_path = "schemas/targets.json"
 
-# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines`, `whole` and `judged` free text.
 [scorer.answer]
 description = "The answer's differential, warning, disposition and critical diagnoses, against the targets."
 entry_point = "chatddx.scorers.metrics:score"
@@ -254,7 +248,7 @@ views = [
   { label = "text", expectation = "/diagnosis", metric = "first_mention" }
 ]
 
-# Pattern and judged views side by side; only `noted` has notes, and carol's are the ones judged.
+# Scope: pattern and judged views side by side; only `noted` has notes, and carol's are the ones judged.
 [scorer.judged]
 description = "Free text: the differential line by line, and carol's note judged as met and graded."
 entry_point = "chatddx.scorers.metrics:score"
@@ -266,7 +260,7 @@ views = [
   { label = "note-graded", expectation = "$.notes[?@.author == 'carol'].comment", metric = "points", judge = "graded", params = { at = "/points", max = 2 } },
 ]
 
-# Applies to no run: unknown@remote is cleared for nothing, which bars its judge for as long as the World says so.
+# Scope: no run, as unknown@remote is cleared for nothing, which bars its judge for as long as the World says so.
 [scorer.judged-remote]
 description = "Free text: carol's note judged on the remote engine."
 entry_point = "chatddx.scorers.metrics:score"
@@ -275,7 +269,6 @@ views = [
   { label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "remote", params = { at = "/meets" } }
 ]
 
-# A canary set: fixed probes a run can send before and after its items.
 [canary_set.probe]
 description = "One probe, seeded, that says whether the engine still answers the same."
 canaries = [

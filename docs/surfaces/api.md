@@ -1697,21 +1697,6 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
-## `Translating` `(Parts)`
-`src/chatddx/api/schemas.py:Translating`
-
-* `head: int | None = Field(…)`
-* `into: str = Field(description="the language it is translated into, such as 'sv'")`
-* `entries: dict[str, str] | None = Field(…)`
-
-## `translation` `@router.post("/threads/{thread}/translation")`
-`src/chatddx/api/threads.py:translation`
-
-* `bench: BenchDep`
-* `thread: int`
-* `given: schemas.Translating`
-* ∟`dict[str, JsonValue]`
-
 ## `Tried` `(_Schema)`
 `src/chatddx/api/schemas.py:Tried`
 

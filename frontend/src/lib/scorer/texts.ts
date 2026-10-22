@@ -1,5 +1,5 @@
-export type Slot = { slot: string };
-export type Insert = { insert: string; before?: string; after?: string };
+type Slot = { slot: string };
+type Insert = { insert: string; before?: string; after?: string };
 export type Seg = string | Slot | Insert;
 
 export const SLOTS: Record<string, string> = {

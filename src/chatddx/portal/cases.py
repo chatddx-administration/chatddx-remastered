@@ -16,7 +16,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix, Case
 
 from .changes import changes
-from .pages import BenchDep, page
+from .pages import BenchDep, page, within
 
 router = APIRouter()
 
@@ -179,14 +179,21 @@ def leaving(bench: BenchDep, family: int) -> Response:
     return RedirectResponse("/library?kind=case", 303)
 
 
+# Policy: a page that builds a case is given it back as `case` in its address.
 @router.post("/cases/{family}/cases")
 def building(
     bench: BenchDep,
     family: int,
     appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None,
+    back: Annotated[str | None, Form()] = None,
 ) -> Response:
-    _ = built(bench, family, [a for a in appendices or [] if a])
-    return RedirectResponse(f"/cases/{family}", 303)
+    made = built(bench, family, [a for a in appendices or [] if a])
+    if back is None:
+        return RedirectResponse(f"/cases/{family}", 303)
+    kept = within(back)
+    return RedirectResponse(
+        kept + ("&" if "?" in kept else "?") + urlencode({"case": made}), 303
+    )
 
 
 @router.post("/cases/{family}/replacement")

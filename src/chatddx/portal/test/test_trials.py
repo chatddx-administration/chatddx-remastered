@@ -8,7 +8,7 @@ from markupsafe import escape
 
 from chatddx.api.test.helpers import endpoint, family, thread
 from chatddx.portal.test.helpers import shown, submitted, world_served
-from chatddx.test.world import JUDGE, LINES_GUIDED, QWEN, QWEN_ARTIFACT
+from chatddx.test.world import JUDGE, LINES, LINES_GUIDED, QWEN, QWEN_ARTIFACT
 
 __all__ = ["world_served"]
 
@@ -31,7 +31,7 @@ def written(signed: TestClient, action: str, name: str) -> Any:
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_trial_is_begun_of_the_picked_cases_and_run_on_a_page_of_its_own(
+def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     signed: TestClient,
 ) -> None:
     tab = shown(signed, "/library?kind=case")
@@ -54,7 +54,7 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_on_a_page_of_its_own(
     assert made["language"] == "sv"
     page = shown(signed, path)
     assert f">{escape(LINES_GUIDED)}, in sv</option>" in page
-    assert f'href="/runs/new?trial={made["id"]}"' in page and "None of yours." in page
+    assert f'href="/lab/run?trial={made["id"]}"' in page and "None of yours." in page
     again = signed.post(f"{path}/edit", data=submitted(page, f"{path}/edit"))
     assert again.status_code == 303
     assert len(signed.get(f"/api{path}/edits").json()) == 1
@@ -64,10 +64,10 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_on_a_page_of_its_own(
 
     tab = shown(signed, "/library?kind=trial")
     assert f'name="trial" value="{made["id"]}"' in tab
-    page = shown(signed, f"/runs/new?trial={made['id']}")
+    page = shown(signed, f"/lab/run?trial={made['id']}")
     assert QWEN in page and "Run it" in page
-    form = {**submitted(page, "/runs/new"), "score": []}
-    got = signed.post("/runs/new", data=form)
+    form = {**submitted(page, "/lab/run"), "score": []}
+    got = signed.post("/lab/run", data=form)
     assert got.status_code == 303, got.text[:500]
     run = got.headers["location"]
     for _ in range(500):
@@ -77,12 +77,34 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_on_a_page_of_its_own(
     assert f'href="{path}">swedish</a>' in shown(signed, run)
     assert f'href="{run}"' in shown(signed, path)
 
-    assert signed.get("/runs/new?trial=1").status_code == 404
-    got = signed.post("/runs/new", data={"version": [], "order": "sideways"})
+    assert signed.get("/lab/run?trial=1").status_code == 404
+    got = signed.post("/lab/run", data={"version": [], "order": "sideways"})
     assert got.status_code == 422 and escape("no order 'sideways'") in got.text
+    got = signed.post("/lab/run", data={"version": [""]})
+    assert got.status_code == 422 and "pick a trial to run" in got.text
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_configuration_s_trials_are_run_from_the_lab(signed: TestClient) -> None:
+    got = written(signed, begun(signed, "nfd", "svenska"), "swedish")
+    assert got.status_code == 303, got.text[:500]
+    made = signed.get(f"/api{got.headers['location']}").json()
+    guided = thread(signed, "configuration", LINES_GUIDED)
+    page = shown(signed, f"/lab/{guided['id']}")
+    assert 'aria-label="version of swedish"' in page and "Run the picked" in page
+    form = submitted(page, "/lab/run")
+    assert form["version"] == [""]
+    assert signed.post("/lab/run", data=form).status_code == 422
+
+    [version] = signed.get(f"/api/threads/{made['id']}/edits").json()
+    got = signed.post("/lab/run", data={**form, "version": [str(version["id"])]})
+    assert got.status_code == 303 and got.headers["location"].startswith("/runs/")
+    lines = thread(signed, "configuration", LINES)
+    assert 'aria-label="version of swedish"' not in shown(signed, f"/lab/{lines['id']}")
 
 
 @pytest.mark.slow
 def test_a_trial_s_forms_from_another_site_start_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
-    assert signed.post("/runs/new", headers=elsewhere).status_code == 403
+    assert signed.post("/lab/run", headers=elsewhere).status_code == 403

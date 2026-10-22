@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, section, facts, chip, findings %}
 {% from "fields.html" import rows %}
+{% from "translations.html" import translations %}
 {% block title %}{{ thread.name or thread.title }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
@@ -26,7 +27,7 @@
     ("Tags", tagged),
     ("Description", thread.description or "—"),
   ]) }}
-  {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm"><a class="text-primary hover:underline" href="/configurations/{{ thread.id }}">Try variations of it on its page</a></p>{% endif %}
+  {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm"><a class="text-primary hover:underline" href="/lab/{{ thread.id }}">Try it in the Lab</a>, where it is varied, run and saved</p>{% endif %}
   {% endcall %}
 
   {% if proposal %}
@@ -58,7 +59,7 @@
 
   {% set last = versions | length %}
   {% set shown = versions[at - 1] %}
-  {% set link = "/threads/" ~ thread.id ~ "?version=" %}
+  {% set link = "/threads/" ~ thread.id ~ "?" ~ ("into=" ~ (translating.into | urlencode) ~ "&" if translating and translating.into else "") ~ "version=" %}
   {% call section("What it holds", "holds") %}
   <nav class="mb-4 flex flex-wrap items-center gap-3 text-sm" aria-label="Versions">
     {% if at > 1 %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ link ~ (at - 1) }}" aria-label="The version before">◀</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">◀</span>{% endif %}
@@ -84,7 +85,11 @@
   <form method="post" action="/threads/{{ thread.id }}/edit" class="grid gap-4">
     <input type="hidden" name="head" value="{{ thread.head.id }}">
   {% endif %}
+  {% if translating %}
+  {{ translations(thread, translating, translatable, at, at == last) }}
+  {% else %}
   {{ rows(fields, picked, titles) }}
+  {% endif %}
   {% if parts %}
   <h3 class="mb-2 mt-2 text-sm font-medium">Its recipe</h3>
   {{ rows(parts, picked, titles) }}
@@ -153,7 +158,7 @@
 
   {% if ran is not none %}
   {% call section("Its runs", "runs") %}
-  {% if not thread.deleted %}<p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/runs/new?trial={{ thread.id }}">Run it</a>, on a page of its own</p>{% endif %}
+  {% if not thread.deleted %}<p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/lab/run?trial={{ thread.id }}">Run it</a>, in the Lab</p>{% endif %}
   <ul class="space-y-1 text-sm">
     {% for i, r, described in ran %}
     <li class="flex flex-wrap gap-x-3"><a class="text-primary hover:underline" href="/runs/{{ r.run }}">{{ described }}</a><span class="text-muted-foreground">version {{ i }}, {{ r.at | when }}</span></li>

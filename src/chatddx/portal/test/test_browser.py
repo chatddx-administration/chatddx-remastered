@@ -108,7 +108,7 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     lines = page.request.get("/api/threads", params=query).json()[0]
 
     with faked(world, Store(conn).get, delay=0.3):
-        _ = page.goto(f"/configurations/{lines['id']}")
+        _ = page.goto(f"/lab/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
         expect(page.get_by_text(f"Runs under {QWEN_ARTIFACT}.")).to_be_visible()
         expect(
@@ -170,7 +170,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
         }
         return page.request.get("/api/threads", params=query).json()[0]["id"]
 
-    _ = page.goto(f"/configurations/{configuration(LINES)}?tag=swedish")
+    _ = page.goto(f"/lab/{configuration(LINES)}?tag=swedish")
     expect(
         page.get_by_text(
             "Left out: 3 cases in sv, as lines has no translations into sv."
@@ -178,7 +178,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
     ).to_be_visible()
 
     with faked(world, Store(conn).get):
-        _ = page.goto(f"/configurations/{configuration(LINES_GUIDED)}?tag=swedish")
+        _ = page.goto(f"/lab/{configuration(LINES_GUIDED)}?tag=swedish")
         expect(
             page.get_by_text(
                 "A run per language: in en, 1 case; in sv, 3 cases, translated."
@@ -519,7 +519,7 @@ def test_what_a_judge_is_asked_is_rewritten_and_asked_through_a_judge_of_one_s_o
     assert errors == []
 
 
-def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
+def test_a_translator_carries_an_edited_instruction_over_and_the_lab_takes_it(
     page: Page,
 ) -> None:
     errors: list[str] = []
@@ -550,11 +550,11 @@ def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
     )
     assert moved.status == 201, moved.json()
 
-    _ = page.goto(f"/translate/{guided['id']}?into=sv")
-    expect(page.get_by_text("· 1 missing")).to_be_visible()
-    page.get_by_role("button", name="Start from its translation").click()
+    held: dict[str, str | float | bool] = {"kind": "translations", "owner": "alice"}
+    [translations] = page.request.get("/api/threads", params=held).json()
+    _ = page.goto(f"/threads/{translations['id']}?into=sv")
     expect(
-        page.get_by_text("Started from a similar text's translation")
+        page.get_by_text(re.compile("started from the translation of a similar text"))
     ).to_be_visible()
     swedish = page.get_by_label("Its translation").first
     expect(swedish).to_have_value(
@@ -564,21 +564,17 @@ def test_a_translator_carries_an_edited_instruction_over_and_saves_it(
         "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning "
         + "och plan."
     )
-    expect(page.get_by_text("· every text translated")).to_be_visible()
-    expect(page.get_by_text("Started from a similar text's translation")).to_have_count(
-        0
-    )
-    request = page.get_by_role("group", name="Request")
-    expect(request).to_contain_text("din bedömning och plan.")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Not translated yet")).to_have_count(0)
+
+    page.locator(f'a[href^="/lab/{guided["id"]}?translations="]').click()
+    page.wait_for_url(re.compile(rf"/lab/{guided['id']}\?translations="))
     expect(
-        page.get_by_text(
-            re.compile(r"^Saves .*guided.*, and a new version of your lines-guided")
-        )
+        page.get_by_text(re.compile(r"^Saves version \d+ of this configuration"))
     ).to_be_visible()
     with page.expect_navigation():
-        page.get_by_role("button", name="Save").click()
-    expect(page.get_by_text("· every text translated")).to_be_visible()
-    expect(page.get_by_text(re.compile(r"^Not used by it: 1,"))).to_be_visible()
+        page.get_by_role("button", name="Save", exact=True).click()
 
     look = page.request.get(
         f"/api/threads/{guided['id']}/variation", params={"tag": "swedish"}
@@ -624,8 +620,8 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
         page.request.get(f"/api/components/{warm}").json()["body"]["temperature"] == 0.3
     )
 
-    _ = page.goto("/configurations")
-    page.get_by_role("link", name="Write a new one from a recipe").click()
+    _ = page.goto("/library?kind=configuration")
+    page.get_by_role("link", name="Write a new one").click()
     _ = page.get_by_label("prompt", exact=True).select_option(prompt)
     _ = page.get_by_label("output", exact=True).select_option(label=LINES)
     _ = page.get_by_label("sampling", exact=True).select_option(warm)
@@ -662,7 +658,7 @@ def test_a_trial_is_begun_of_the_picked_cases_in_their_language_and_run(
     )
 
     page.get_by_role("link", name="Run it").click()
-    page.wait_for_url(re.compile(r"/runs/new\?"))
+    page.wait_for_url(re.compile(r"/lab/run\?"))
     page.get_by_label("Score it once it is done").uncheck()
     with faked(world, Store(conn).get):
         page.get_by_role("button", name="Run it").click()

@@ -16,10 +16,10 @@ public. The surface is stamped in `docs/surfaces/api.md`.
   the cookie. A cookie's unsafe requests, and every sign-in, must come from this site's pages
   (`src/chatddx/api/people.py:same_origin`, by `Sec-Fetch-Site`, else `Origin`, and one saying neither, as a script's,
   passes); a bearer's needn't. Sessions are rows in the database, so every process serving it knows them.
+
 - **Strict schemas.** A request with a field the API doesn't know is a 422. A component is written as its JSON, `kind`
   included, as `GET /api/components/{digest}` gives its `body`; `GET /api/kinds` gives each kind's JSON Schema. Checking
-  a component or a recipe, picking, trying a scorer, what a judge is asked and a translation are POSTs that write
-  nothing.
+  a component or a recipe, picking, trying a scorer and what a judge is asked are POSTs that write nothing.
 - **One error shape.** Every error is an `Error`, `{"detail", "code"}`: a bench exception by
   `src/chatddx/api/app.py:STATUSES`, an HTTP status by `src/chatddx/api/app.py:CODES`, a request that doesn't validate
   as `unprocessable` with where. What a request's body or query names that is missing is a 422, what its path names a

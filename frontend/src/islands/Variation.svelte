@@ -14,6 +14,7 @@
   import {
     carried,
     choicesOf,
+    keptWith,
     named,
     PARTS,
     type Part,
@@ -108,7 +109,7 @@
   function relink(): void {
     for (const a of document.querySelectorAll<HTMLAnchorElement>("a[data-head]")) {
       const query = queryOf({ picked, head: Number(a.dataset.head), under, tags }, base, latest);
-      a.href = `?${query}`;
+      a.href = `?${keptWith(query, location.search)}`;
     }
   }
 
@@ -130,7 +131,7 @@
     failure = null;
     const moved = got.data.skeleton !== look.skeleton;
     look = got.data;
-    history.replaceState(null, "", `?${query}`);
+    history.replaceState(null, "", `?${keptWith(query, location.search)}`);
     relink();
     if (moved) {
       const found = await api.GET("/api/runs", {
@@ -208,11 +209,11 @@
     }
     const kept = to === "version" ? configuration.id : got.data.id;
     const query = queryOf({ picked: base, head: latest, under, tags }, base, latest);
-    location.assign(`/configurations/${kept}?${query}`);
+    location.assign(`/lab/${kept}?${keptWith(query, location.search)}`);
   }
 </script>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+<section class="mb-6 border-t border-border/60 pt-4">
   <div class="mb-4 flex flex-wrap items-center gap-3">
     <h2 class="text-lg font-semibold">Trying it</h2>
     {#if looking}<LoaderCircleIcon class="size-4 animate-spin text-muted-foreground" aria-label="Looking" />{/if}
@@ -228,7 +229,7 @@
     {#if look.held_by && (changed || head !== latest)}
       <span>
         This is
-        <a class="text-primary hover:underline" href="/configurations/{look.held_by.id}">{named(look.held_by, me)}</a>
+        <a class="text-primary hover:underline" href="/lab/{look.held_by.id}">{named(look.held_by, me)}</a>
         already.
       </span>
     {/if}
@@ -293,7 +294,7 @@
   </div>
 </section>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+<section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">What it makes</h2>
   <div class="mb-4 flex flex-wrap items-end gap-4">
     {#if !compiled}
@@ -415,7 +416,7 @@
   </details>
 </section>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+<section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Running it</h2>
   <form class="space-y-4" onsubmit={run}>
     <fieldset class="space-y-2">
@@ -521,7 +522,7 @@
   </form>
 </section>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+<section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Saving it</h2>
   <form class="space-y-3" onsubmit={save}>
     <div class="space-y-1.5">
@@ -557,7 +558,7 @@
   </form>
 </section>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+<section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Its runs</h2>
   {#if runs.length === 0}
     <p class="text-sm text-muted-foreground">No runs of it.</p>

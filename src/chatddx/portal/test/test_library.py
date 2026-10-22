@@ -66,7 +66,7 @@ def test_a_thread_s_page_holds_its_versions_and_what_is_said(
     lines = thread(signed, "configuration", LINES)
     page = shown(signed, f"/threads/{lines['id']}")
     assert "What is said of it" in page
-    assert f'href="/configurations/{lines["id"]}"' in page
+    assert f'href="/lab/{lines["id"]}"' in page
 
 
 @pytest.mark.slow
@@ -176,7 +176,8 @@ def test_every_kind_a_person_writes_is_begun_from_the_library(
         assert f'href="/library/new?kind={word}"' in shown(
             signed, f"/library?kind={word}"
         )
-        assert "Write it" in shown(signed, f"/library/new?kind={word}")
+        begun = shown(signed, f"/library/new?kind={word}")
+        assert ("Show its texts" if word == "translations" else "Write it") in begun
     for word in ("tool", "expectation_schema", "canary_set", "model", "engine"):
         assert "/library/new" not in shown(signed, f"/library?kind={word}")
         assert signed.get(f"/library/new?kind={word}").status_code == 404
@@ -405,7 +406,7 @@ def test_a_configuration_is_written_from_a_recipe(signed: TestClient) -> None:
     assert got.status_code == 303
     again = signed.get(f"/api{got.headers['location']}").json()
     assert again["recipe"] == recipe
-    page = shown(signed, "/configurations")
+    page = shown(signed, "/library?kind=configuration")
     assert 'href="/library/new?kind=configuration"' in page
 
 

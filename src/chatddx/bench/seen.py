@@ -14,7 +14,6 @@ from chatddx.factors.base import (
     Finding,
     StructuralError,
     iter_refs,
-    language_tag,
     resolve,
 )
 from chatddx.factors.bundle import Registry
@@ -28,11 +27,9 @@ from chatddx.factors.request import (
     Purpose,
     Recipe,
     Skeleton,
-    Translations,
     compile_request,
     compiled as compile_recipe,
     landings,
-    texts,
     translated,
 )
 from chatddx.factors.scoring import Expectation, Judge, JudgeEngine, Scorer, Scoring
@@ -498,31 +495,6 @@ class Seen:
                 if finding not in found:
                     found.append(finding)
         return found + missing(self, variation, carried)
-
-    def translation(
-        self,
-        variation: TriedVariation,
-        into: str,
-        entries: Mapping[str, str] | None = None,
-    ) -> Skeleton:
-        recipe = variation.varied
-        if recipe is None:
-            raise ValueError(f"{variation.label} has no recipe to translate")
-        if language_tag(into) == recipe_language(self.rows, recipe):
-            raise ValueError(f"{variation.label} is written in {into}")
-        registry = self.store.load(s.digest for s in iter_refs(recipe))
-        if entries is None:
-            entries = translated(recipe, registry.get).get(into, {})
-        needed = {t for found in texts(recipe, registry.get).values() for t in found}
-        if not needed:
-            return self.skeleton(variation)
-        # Policy: a text without a translation is sent as written, where compiling
-        # refuses it.
-        filled = Translations(into={into: {t: entries.get(t) or t for t in needed}})
-        recipe = recipe.model_copy(update={"translations": registry.add(filled)})
-        return compile_request(
-            recipe, registry.get, compiled_with(self, variation), into
-        )
 
     # Accommodating for a discovered fact: a schema's title is translated with its
     # other texts.

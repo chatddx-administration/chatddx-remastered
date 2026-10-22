@@ -1,7 +1,6 @@
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
-from dataclasses import dataclass
-from typing import Annotated, cast, get_args
+from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -9,20 +8,19 @@ from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
-from chatddx.api import queue as api_queue, runs as api, schemas, threads as threads_api
+from chatddx.api import queue as api_queue, runs as api, schemas
 from chatddx.api.state import refused
-from chatddx.bench import Bench, Endpoint, NotFound
+from chatddx.bench import Bench, NotFound
 from chatddx.catalog import threads
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
-from chatddx.factors.trial import Order, Trial, suggest_seeds
+from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.store import Queue, UnderWay
 
-from .configurations import linked
+from .lab import linked, viewed
 from .pages import BenchDep, page
-from .refine import viewed
 
 PLAN = "management_plan_v1"
 SHOWN = 50
@@ -82,68 +80,6 @@ def comparing(
         grouped=grouped,
         kept="?" + urlencode([("run", str(r)) for r in run]),
     )
-
-
-@dataclass(frozen=True)
-class Starting:
-    thread: schemas.Thread
-    versions: list[schemas.Edit]
-    trial: Trial
-    endpoint: Endpoint | None
-    refused: str | None
-
-
-@router.get("/runs/new")
-def beginning(
-    request: Request,
-    bench: BenchDep,
-    trial: Annotated[list[int] | None, Query()] = None,
-) -> Response:
-    return page(
-        request,
-        "starting.html",
-        person=bench.person,
-        trials=[_starting(bench, t) for t in dict.fromkeys(trial or ())],
-        orders=get_args(Order),
-    )
-
-
-def _starting(bench: Bench, thread: int) -> Starting:
-    shown = threads_api.thread(bench, thread)
-    if shown.kind != "trial":
-        raise HTTPException(404, f"no trial {thread} for {bench.person.login}")
-    held = resolve(bench.store.get, shown.head.digest, Trial)
-    versions = threads_api.edits(bench, thread)
-    try:
-        at = bench.endpoint(bench.inventory.serving(held.engine))
-    except LookupError:
-        named = shown.name or shown.title
-        why = f"no endpoint here serves the engine of {named}: follow its handle"
-        return Starting(shown, versions, held, None, why)
-    return Starting(shown, versions, held, at, None)
-
-
-@router.post("/runs/new")
-def starting(
-    bench: BenchDep,
-    version: Annotated[list[int] | None, Form()] = None,
-    concurrency: Annotated[str, Form()] = "",
-    order: Annotated[str, Form()] = "",
-    score: Annotated[bool, Form()] = False,
-) -> Response:
-    with refused():
-        if order and order not in get_args(Order):
-            raise ValueError(
-                f"no order {order!r}: the orders are {', '.join(get_args(Order))}"
-            )
-        runs = bench.start_trials(
-            version or [],
-            int(concurrency) if concurrency.strip() else None,
-            cast(Order, order) if order else None,
-        )
-    for running in runs:
-        _ = bench.queue(running, score)
-    return RedirectResponse(f"/runs/{runs[0].run}", 303)
 
 
 @router.get("/runs/{run}")
@@ -271,7 +207,7 @@ def _configuration(
     latest = threads.head(bench.rows, ran.configuration).id
     query = schemas.Varying.model_validate({p: d or "" for p, d in ran.parts.items()})
     given = linked(query, ran.head, latest).removesuffix("?")
-    link = f"/configurations/{ran.configuration}{given}"
+    link = f"/lab/{ran.configuration}{given}"
     if ran.head == latest:
         return link, tried.label
     return link, f"{tried.label}, an earlier version"
@@ -292,9 +228,9 @@ def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
     )
     title = bench.title(skeleton)
     if heads[found.thread][0].id == found.id:
-        return f"/configurations/{found.thread}", title
+        return f"/lab/{found.thread}", title
     return (
-        f"/configurations/{found.thread}?head={found.id}",
+        f"/lab/{found.thread}?head={found.id}",
         f"{title}, an earlier version",
     )
 

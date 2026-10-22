@@ -30,6 +30,7 @@ STAMPED = (
     "curation",
     "factors",
     "facts",
+    "fake_vllm",
     "identity",
     "importers",
     "inventory",
@@ -40,6 +41,7 @@ STAMPED = (
     "scripted",
     "stamp",
     "store",
+    "test",
     "tools",
     "worker",
 )

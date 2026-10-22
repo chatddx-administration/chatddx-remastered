@@ -2,7 +2,6 @@ import pytest
 
 from chatddx.bench import Bench, Carried
 from chatddx.bench.configurations import keep_compilation
-from chatddx.bench.model import PLACEHOLDERS
 from chatddx.factors.base import resolve
 from chatddx.factors.request import (
     Compilation,
@@ -11,57 +10,7 @@ from chatddx.factors.request import (
     Translations,
     untranslated,
 )
-from chatddx.identity import Person
-from chatddx.test.helpers import INSTRUCTION
-from chatddx.test.world import LINES, LINES_GUIDED, NATIVE, QWEN
-
-
-def swedish(bench: Bench) -> dict[str, str]:
-    recipe = bench.variation(LINES_GUIDED).recipe
-    assert recipe is not None and recipe.translations is not None
-    return resolve(bench.store.get, recipe.translations, Translations).into["sv"]
-
-
-def first_message(skeleton: Skeleton) -> object:
-    rendered = skeleton.render(model="m", seed=None, fills=PLACEHOLDERS)
-    messages = rendered["messages"]
-    assert isinstance(messages, list) and isinstance(messages[0], dict)
-    return messages[0]["content"]
-
-
-def test_a_configuration_is_translated_by_its_translations(bench: Bench) -> None:
-    guided = bench.variation(LINES_GUIDED)
-    made = bench.translation(guided, "sv")
-
-    assert made.digest == bench.skeleton(guided, "sv").digest
-    content = first_message(made)
-    assert isinstance(content, str) and content.startswith(swedish(bench)[INSTRUCTION])
-
-
-def test_a_text_without_an_entry_as_typed_is_sent_as_written(bench: Bench) -> None:
-    typed = {t: tr for t, tr in swedish(bench).items() if t != INSTRUCTION}
-    made = bench.translation(bench.variation(LINES_GUIDED), "sv", typed)
-
-    content = first_message(made)
-    assert isinstance(content, str) and content.startswith(INSTRUCTION)
-    assert "Lista de tänkbara diagnoserna" in content
-
-    lines = bench.variation(LINES)
-    assert bench.translation(lines, "sv").digest == lines.configuration.digest
-
-
-def test_a_translation_needs_a_recipe_and_another_language(
-    bench: Bench, alice: Person
-) -> None:
-    guided = bench.variation(LINES_GUIDED)
-    with pytest.raises(ValueError, match="lines-guided is written in en"):
-        _ = bench.translation(guided, "en")
-    with pytest.raises(ValueError, match="'svenska!' is not a language tag"):
-        _ = bench.translation(guided, "svenska!")
-
-    _ = bench.catalog.create(guided.configuration.digest, alice.id, name="by hand")
-    with pytest.raises(ValueError, match="by hand has no recipe to translate"):
-        _ = bench.translation(bench.variation("by hand"), "sv")
+from chatddx.test.world import LINES_GUIDED, NATIVE, QWEN
 
 
 @pytest.mark.slow

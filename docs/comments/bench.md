@@ -84,13 +84,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each
 # (src/chatddx/inventory/check.py:broken), so none does.
 ```
 
-## `src/chatddx/bench/seen.py:Seen.translation`
-
-```
-# Policy: a text without a translation is sent as written, where compiling
-# refuses it.
-```
-
 ## `src/chatddx/bench/seen.py:WITH`
 
 ```

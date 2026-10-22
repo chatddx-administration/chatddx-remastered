@@ -12,7 +12,8 @@ This document contains project-wide instructions written by humans for agents.
   - Setup database and roles with `src/chatddx/store/setup.sql`
 
 - Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered.
-- Archeology is not allowed except when said otherwise, the commit has all you need.
+
+- Archeology is not allowed unless said otherwise, the commit given has all you need.
 
 ## Workflow
 
@@ -46,12 +47,12 @@ How to handle a warning or error, in order of preference:
 
 Consider not handling an error or warning if:
 
-- it's out of scope
+- it's out of scope of the current task
 - its timing, fallout and message are already about right
 
 ### 1. Crash at boot
 
-If a runtime error can be known at boot:
+If it's a runtime error that could have been known at boot:
 
 1. write a check that crashes it at boot
 2. attach a "fix boot-check <boot-check>" message, should it occur at runtime
@@ -109,6 +110,10 @@ Agents aren't expected to run this, just know it exists.
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 
+### Docs
+
+- `python scripts/refcheck.py` checks for broken references.
+
 ## Development stages
 
 A thing under development is in one of the following stages:
@@ -140,7 +145,7 @@ A move entails deduplication and updating references.
 
 ### 1. Humans write, agents suggest.
 
-In all docs, except `agents/*` and stage change moves, agents are only allowed to insert suggestions.
+In all docs, except `agents/*`, agents are only allowed to insert suggestions.
 
 A suggestion is as a fenced code-block immediately above the subject to change. The backticks are part of the template,
 use 4 backticks as envelope if the suggestion contains a code-block.
@@ -168,10 +173,12 @@ provide options.
 
 - A) Every line of comment imposes a readability tax.
 - B) A future reader can be saved work by knowing about non-evident details.
-- When B is considerable enough to offset A, a comment is justified.
+- ∟ When B is considerable enough to offset A, a comment is justified.
 
 1. Prefix with the comment's nature
 2. Tell what's non-evident and only what the code doesn't already tell
+
+Comments are reported by `chatddx stamp` for a stamp.
 
 ### 4. When and how to write a docstring
 
@@ -179,11 +186,11 @@ Public solidified entry points may have a docstring that describes their cost an
 invokes, locks it holds and complexity of its operations. The utility is derived from its responsibility without any
 assumptions about the caller.
 
-It should be written as a direct continuation of its signature, raises and findings and only fill in the blanks:
+It is written as a direct continuation of its signature, raises and findings; only fill in the blanks.
 
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
-- When B outweighs A, a docstring by that amount is justified.
+- ∟ When B outweighs A, a docstring by that amount is justified.
 
 Docstrings are reported by `chatddx stamp` for a stamp.
 

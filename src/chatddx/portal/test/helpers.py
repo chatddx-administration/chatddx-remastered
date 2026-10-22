@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, override
@@ -10,9 +11,10 @@ from httpx2 import Response
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
-from chatddx.inventory import Inventory
+from chatddx.inventory import Inventory, World
 from chatddx.portal.app import app
 from chatddx.test.helpers import PASSWORD
+from chatddx.test.world import TEST
 
 
 def signing_in(
@@ -43,7 +45,8 @@ def submitted(page: str, action: str) -> dict[str, list[str]]:
 
 
 # Accommodating for what a browser sends of a form: a select's chosen option, else its
-# first, and a textarea's text without the line break that follows its opening tag.
+# first, a checkbox only when checked, and a textarea's text without the line break that
+# follows its opening tag.
 class _Submitted(HTMLParser):
     def __init__(self, action: str) -> None:
         super().__init__()
@@ -62,7 +65,10 @@ class _Submitted(HTMLParser):
         if not self.inside:
             return
         name = given.get("name")
-        if tag == "input" and name is not None:
+        unchecked = (
+            given.get("type") in ("checkbox", "radio") and "checked" not in given
+        )
+        if tag == "input" and name is not None and not unchecked:
             self.fields.setdefault(name, []).append(given.get("value") or "")
         elif tag in ("select", "textarea"):
             self.named = name
@@ -100,7 +106,7 @@ def ran_template(ran: str) -> str:
 @pytest.fixture(name="served")
 def world_served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
-        world,
+        replace(World.load(TEST), inventory=world),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,

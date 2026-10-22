@@ -59,7 +59,7 @@
   {% if begun %}<p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/library/new?kind={{ word }}">Write a new one</a></p>{% endif %}
   {% if threads %}
   {% set runnable = word == "trial" %}
-  {% if runnable %}<form method="get" action="/runs/new">{% endif %}
+  {% if runnable %}<form method="get" action="/lab/run">{% endif %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -81,7 +81,7 @@
     </table>
   </div>
   {% if runnable %}
-  <div class="mt-4 border-t border-border/60 pt-4 text-sm"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Run the picked</button> <span class="ml-2 text-muted-foreground">together, as one start, on a page of their own.</span></div>
+  <div class="mt-4 border-t border-border/60 pt-4 text-sm"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Run the picked</button> <span class="ml-2 text-muted-foreground">together, as one start, in the Lab.</span></div>
   </form>
   {% endif %}
   {% else %}

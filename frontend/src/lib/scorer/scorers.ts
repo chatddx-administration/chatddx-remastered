@@ -20,7 +20,7 @@ export type ScorerBody = {
   resources?: string[];
   params?: Record<string, unknown>;
 };
-export type Output = { title: string | null; json_schema: Schema | null; by: string[] };
+type Output = { title: string | null; json_schema: Schema | null; by: string[] };
 export type Scoring = {
   metrics: Schemas["Metric"][];
   outputs: Output[];

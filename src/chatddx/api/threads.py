@@ -19,7 +19,6 @@ from chatddx.bench import (
     Written,
     word_of,
 )
-from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog import Subject, read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
@@ -266,16 +265,6 @@ def variation(
         ],
         reach=[_reach_of(r) for r in bench.reach(varied, families)],
     )
-
-
-@router.post("/threads/{thread}/translation")
-def translation(
-    bench: BenchDep, thread: int, given: schemas.Translating
-) -> dict[str, JsonValue]:
-    with refused():
-        varied = bench.variation(thread, given.given(), given.head)
-        made = bench.translation(varied, given.into, given.entries)
-    return made.render(model=MODEL, seed=None, fills=PLACEHOLDERS)
 
 
 def made(

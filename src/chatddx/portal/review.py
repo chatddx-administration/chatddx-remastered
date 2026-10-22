@@ -23,7 +23,7 @@ from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
-from .cases import appended, built, written_for
+from .cases import appended, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped
@@ -184,20 +184,6 @@ def appending_in_review(
 ) -> Response:
     appended(bench, family, name, text)
     return RedirectResponse(within(back or f"/review/{family}"), 303)
-
-
-@router.post("/review/{family}/cases")
-def building_in_review(
-    bench: BenchDep,
-    family: int,
-    appendix: Annotated[list[str] | None, Form()] = None,
-    tag: Annotated[list[str] | None, Form()] = None,
-    under: Annotated[str | None, Form(alias="schema")] = None,
-    scorer: Annotated[int | None, Form()] = None,
-) -> Response:
-    made = built(bench, family, appendix)
-    given = _query(case=made, tag=tag, schema=under, scorer=scorer)
-    return RedirectResponse(f"/review/{family}{given}", 303)
 
 
 @router.post("/review/{family}/runs")

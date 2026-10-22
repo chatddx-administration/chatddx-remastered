@@ -812,7 +812,6 @@ CANARIES = CanarySet(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize("concurrency", [1, 2])
-@pytest.mark.slow
 def test_canaries_bracket_the_items_and_are_stored_with_the_run(
     conn: Connection,
     inventory: Inventory,
