@@ -24,15 +24,14 @@ destination is cleared as this plan builds it.
 
 ### Vetted endpoints
 
-Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/modules/inventory.md`, "Clearance")
-says which sensitive sources each endpoint may receive sensitive content from.
+Until clearance has a database grant, a World inventory's `[cleared]` table says which sensitive sources each endpoint
+may receive sensitive content from.
 
 Decided: Kompismoln's endpoints, `qwen3-8b@pelle` and `gpt-oss-20b@malborg`, are cleared for the sample World's
 vignettes, in `worlds/kompismoln/inventory.toml`. Kompismoln will need to be cleared for the sample World in the
 clearance pipeline when it is up, as the table goes.
 
-Before a run or a judged scoring writes anything, the gate refuses (`docs/modules/runner.md`, "The gate";
-`src/chatddx/runner/gate.py`):
+Before a run or a judged scoring writes anything, the gate refuses (`src/chatddx/runner/gate.py`):
 
 - an endpoint serving another engine than the one asked for;
 - a sensitive source of the cases the endpoint isn't cleared for;
@@ -41,8 +40,7 @@ Before a run or a judged scoring writes anything, the gate refuses (`docs/module
 - an endpoint the inventory can't confirm serves its engine, for runs, canaries and judges alike.
 
 The first three hold for as long as the World is as it is (`gate.bar`); the last two may pass later (`gate.admit` adds
-them). The bench leaves a judged scorer that `bar` refuses out of what applies to a run (`docs/modules/runner.md`, "What
-applies to a run").
+them). The bench leaves a judged scorer that `bar` refuses out of what applies to a run.
 
 ### Sensitive sources
 
@@ -53,23 +51,20 @@ table. A `[cleared]` entry for a source that isn't sensitive clears nothing and 
 
 ### Completions derived from vignettes
 
-- Sensitive records are run items, score items and a score's finish (`docs/modules/ledger.md`, "Sensitive records";
-  `src/chatddx/ledger/record.py:Record.sensitive`): completions, the arguments the model passed to tools and what the
-  tools returned, judge responses, the scorer's `detail`, and findings that quote the answer. Start records, a run's
-  finish and canary calls are not. Compilations are components (`src/chatddx/factors/request.py:Compilation`), not
-  records, and hold no case text.
+- Sensitive records are run items, score items and a score's finish `src/chatddx/ledger/record.py:Record.sensitive`):
+  completions, the arguments the model passed to tools and what the tools returned, judge responses, the scorer's
+  `detail`, and findings that quote the answer. Start records, a run's finish and canary calls are not. Compilations are
+  components (`src/chatddx/factors/request.py:Compilation`), not records, and hold no case text.
 - No policy has settled. Options: a database-level read restriction on sensitive tables; a destination check when
   records are exported.
 - Part of it exists: the sensitive tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read `factor` but
   not `ledger` (`src/chatddx/store/migrations/0005-t1-ledger.sql`), nor the typed texts in `source`
-  (`0015-t1-source.sql`). Nothing uses the reader yet (`docs/modules/store.md`, "Roles and connections"), and who gets
-  it is open.
+  (`0015-t1-source.sql`). Nothing uses the reader yet, and who gets it is open.
 
 ### Typed vignettes
 
 - A clinician may type about a real patient on the portal's home page. The text is a vignette, kept in the store as a
-  database source's (`docs/modules/store.md`, "Texts"; `docs/modules/bench.md`, "Typed cases"), so the database holds
-  vignettes now, not only what is derived from them.
+  database source's, so the database holds vignettes now, not only what is derived from them.
 - Each World clears its endpoints for `typed` as it does for its directory source: the test and sample Worlds clear
   their fakes, not the sample's remote engine nor the test World's `qwen3-bare@fake`. Kompismoln has no database source,
   so nothing can be typed there.
@@ -86,8 +81,8 @@ table. A `[cleared]` entry for a source that isn't sensitive clears nothing and 
   clearance pipeline can clear a tool by its entry point and version, with the endpoints it reaches. Nothing declares
   those yet; that belongs to clearance, not to the factor.
 - Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the responses.
-- The runner runs tools (`docs/modules/runner.md`, "Tool rounds"), and the gate refuses them on a sensitive source until
-  a tool can be cleared. What ships a tool is in `docs/surfaces/factors.md` (`Tool`).
+- The runner runs tools, and the gate refuses them on a sensitive source until a tool can be cleared. What ships a tool
+  is in `docs/surfaces/factors.md` (`Tool`).
 
 ### Judges
 
@@ -100,16 +95,15 @@ table. A `[cleared]` entry for a source that isn't sensitive clears nothing and 
 
 ### A request's sensitive content
 
-Where it is at each stage of a request (`docs/modules/factors.md`, "Requests"), beyond the records above:
+Where it is at each stage of a request, beyond the records above:
 
 - **Fills and the rendered request**: in the runner's memory only. The ledger keeps the request's fingerprint
   (`Call.request`), not the request, nor the prompt's token ids.
-- **The wire body**: sent to the endpoint the run's start record names, every tool round's and attempt's included
-  (`docs/modules/runner.md`, "The gate").
+- **The wire body**: sent to the endpoint the run's start record names, every tool round's and attempt's included.
 - **Attempts**: only their count is kept. A refusal's body is kept as the call's response, the last attempt's only; an
   earlier attempt's is dropped (`src/chatddx/runner/send.py`).
 - **A tool round**: the model's arguments go wherever the tool's code sends them; the results are kept in the ledger.
-- **Live deltas and tool runs**: through the database's notification queue, as they come (`docs/modules/worker.md`).
+- **Live deltas and tool runs**: through the database's notification queue, as they come.
 - **Rendered again**: an item's first request rendered with its real fills, in memory, and only compared with the call's
   fingerprint; nothing is sent (`chatddx.runner.prepare.rendered_again`).
 - **Not sensitive**: the chunks, the recipe, the skeleton and the trial, which names its cases by fingerprint; a
@@ -119,10 +113,9 @@ Where it is at each stage of a request (`docs/modules/factors.md`, "Requests"), 
 
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
   digest.
-- `prepare_case` produces the sensitive fills the hard block guards (`docs/modules/factors.md`, "Preparing a case").
-- No factor holds an endpoint: every engine is located by the inventory (`docs/modules/inventory.md`, "Endpoints"). A
-  remote engine names its provider and model (`src/chatddx/factors/engine.py:RemoteEngine`); its address is its
-  endpoint's.
+- `prepare_case` produces the sensitive fills the hard block guards.
+- No factor holds an endpoint: every engine is located by the inventory. A remote engine names its provider and model
+  (`src/chatddx/factors/engine.py:RemoteEngine`); its address is its endpoint's.
 - `RunStarted.endpoint` and `ScoreStarted.endpoints` (`src/chatddx/ledger/run.py:Endpoint`) record where a run's and a
   scoring's calls went, by the endpoint's name and URL.
 - The old module had `EndpointBinding(engine, base_url, clearances)` and
@@ -141,8 +134,8 @@ Where it is at each stage of a request (`docs/modules/factors.md`, "Requests"), 
 
 ## Open
 
-1. **What a grant keys on.** This blocks the schema. Endpoints live in the inventory (`docs/modules/inventory.md`):
-   ops-authored TOML, mutable, no ids. Candidates:
+1. **What a grant keys on.** This blocks the schema. Endpoints live in the inventory: ops-authored TOML, mutable, no
+   ids. Candidates:
    - the URL (simple, but a local host serves different engines over time, and one engine may have several hosts);
    - an inventory entry name (stable for humans, but the inventory isn't in the database, so no foreign key);
    - the engine digest plus URL (what the old `EndpointBinding` did).
@@ -152,21 +145,20 @@ Where it is at each stage of a request (`docs/modules/factors.md`, "Requests"), 
    `EndpointBinding` did. Today `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance without
    warning, and its runs appear under two names.
 
-2. **Where vetting is declared.** Decided for now (`docs/modules/inventory.md`, "Clearance"): in the inventory, as
-   `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a database grant (through
-   the portal, logged) gives an audit trail and fits the append-only store.
+2. **Where vetting is declared.** Decided for now: in the inventory, as `[cleared]`. For the long term: the inventory
+   keeps all location facts in one place, while a database grant (through the portal, logged) gives an audit trail and
+   fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.
 4. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that.
 5. **Edges as destinations.** The repl shows sensitive content at its terminal: `show case` prints the vignette and
    `run` streams the completion. The API sends it over the network to whoever signed in, but only from its own places,
-   each with `Cache-Control: no-store` (`docs/modules/api.md`, "Sensitive content": the vignette, a run's items, a
-   score's items and findings, and a run's events). The portal is an edge too: every page is `no-store`, the vignette
-   has a page of its own, its fonts are served by the app so that a page fetches nothing from a third party, and copying
-   an answer as text wasn't ported, since it puts sensitive content on the clipboard. The takes count a database and an
-   export target as endpoints to vet, but nothing says whether an edge's client is one, nor who may read the vignette or
-   a run's items through it. Open: whether edges are vetted like endpoints, by what (the edge, the person, or the
-   client's address), and whether the repl falls under the same rule.
+   each with `Cache-Control: no-store`. The portal is an edge too: every page is `no-store`, the vignette has a page of
+   its own, its fonts are served by the app so that a page fetches nothing from a third party, and copying an answer as
+   text wasn't ported, since it puts sensitive content on the clipboard. The takes count a database and an export target
+   as endpoints to vet, but nothing says whether an edge's client is one, nor who may read the vignette or a run's items
+   through it. Open: whether edges are vetted like endpoints, by what (the edge, the person, or the client's address),
+   and whether the repl falls under the same rule.
 6. **A clearance withdrawn during a run.** The gate decides as a run starts and as it resumes, and as a judged scoring
    starts, so a run under way keeps sending after its endpoint's clearance is withdrawn. Asking the gate at every send,
    a round's, an attempt's and a judge call's, would stop it. Take: as is, since a dated grant tells whether a run was
@@ -206,7 +198,7 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
    - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
      (`agents/wip-deploy.md`, "Containers for Kubernetes").
 3. **Shutdown.** The worker resolved most of it: nothing in the app grows with each run, a stopping worker queues what
-   it holds again, and a killed one's jobs are claimed again once lost (`docs/modules/worker.md`, "Stopping"). Left:
+   it holds again, and a killed one's jobs are claimed again once lost. Left:
    - a stopping worker's sending has no deadline (`docs/backlog.md`, "Stopping: halts, deadlines and time limits");
    - past its deadline, a stopping worker waits with a timeout of 0 (`src/chatddx/worker/worker.py:144-147`), so it
      beats the queue, a transaction each time, as fast as it can until its last run stops;
@@ -214,8 +206,8 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
      does (`src/chatddx/api/telling.py:174-185`), so under `chatddx portal` a watched run may hold a shutdown up until
      it ends. Read, not tried.
 4. **Typed cases** are kept for good.
-   - `source.text` is insert-only (`src/chatddx/store/migrations/0016-t2-source.sql`), only the admin can delete a text
-     (`docs/modules/store.md`, "Texts"), and no route or command erases a text or its family.
+   - `source.text` is insert-only (`src/chatddx/store/migrations/0016-t2-source.sql`), only the admin can delete a text,
+     and no route or command erases a text or its family.
    - A refused run leaves its text stored and counted against `TYPED_PER_DAY` (the healthcheck's bug 7): the home page
      stores the text (`frontend/src/islands/Home.svelte:78`) before it starts the run (:83-85). A retry of the same text
      reuses its family, but an edited text or a reloaded page makes a new one, and a job that fails in the worker leaves
@@ -263,8 +255,8 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
       traceback (:190). A scoring's refusal carries its exception's text in `run.scored`.
     - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:44-48`), answered as a 422 and shown on the
       portal's error page.
-    - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending;
-      `docs/modules/api.md` ("Sensitive content") says nothing outside its no-store places carries any.
+    - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending; says
+      nothing outside its no-store places carries any.
 11. **Writes** are unlimited. Appendices, threads, forks, edits, components and scorings have no count or size limit,
     and the app none on a request's body; a typed text's size is checked only once its body is parsed
     (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds. Behind the NixOS

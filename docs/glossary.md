@@ -682,10 +682,7 @@ missing. `src/chatddx/store/setup.sql`
 ### People
 
 The roles live in code (`src/chatddx/identity/identity.py:Role`) and are stored on the person by name; a person may hold
-several, and nothing checks a role yet (`docs/modules/identity.md`, "Roles"). Each entry gives what `docs/chatddx.md`
-said under "Roles mentioned", verbatim, which lives only here now, then what `docs/modules/factors.md` and
-`docs/modules/bench.md` make the role principal author of. `docs/chatddx.md` said: "These roles are distinct and not
-overlapping, a person may inhabit more than one role."
+several, and nothing checks a role yet.
 
 :Admin (person) — Not mentioned; identity's own, for administering people. Principal author of nothing.
 
@@ -718,10 +715,7 @@ PostgreSQL's roles, not people's: :Admin (database), :Writer and :Reader. "Admin
 ## Findings
 
 A finding (`src/chatddx/factors/base.py:Finding`) has a level, `warning` unless said, a code, a message and optionally a
-subject. What findings are is in `docs/chatddx.md` ("Findings"), `docs/modules/factors.md` ("Errors and findings"),
-`docs/modules/ledger.md` and `docs/modules/runner.md` ("Findings"); the o11n import's are in
-`docs/modules/inventory.md`. This is every code made in `src/chatddx/`, by where it is raised: when, then its level and
-subject. A code raised in more than one place has an entry in each.
+subject.
 
 ### Lints
 

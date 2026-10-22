@@ -182,7 +182,7 @@ A new schema gets its own section with all three tiers.
   tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since why
   a job failed can quote what it was sending.
 - `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
-  scores what is left (docs/modules/worker.md, "Stopping").
+  scores what is left.
 
 ### Tier 2
 

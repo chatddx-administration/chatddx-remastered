@@ -29,7 +29,7 @@ It must be possible to deliver the cage together with the results, for scientifi
   translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and
   monitoring runs.
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
-  scorer is put together by researchers in the portal (docs/modules/factors.md, "Scorer").
+  scorer is put together by researchers in the portal.
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
@@ -44,8 +44,7 @@ The researchers will want to iterate and continuously refine configurations acco
 4. A configuration with several successful variations branch out
 5. Unsuccessful configurations are deleted
 
-What a configuration and a variation are, and how a variation is kept, is the catalog's (docs/modules/catalog.md,
-"Configurations and variations").
+What a configuration and a variation are, and how a variation is kept, is the catalog's.
 
 ## Release
 

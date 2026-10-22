@@ -30,19 +30,18 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
   | `chatddx portal`       | the portal at `/` and the API at `/api/`, with no worker; `chatddx worker` runs beside it                                                 |
   | `chatddx api`          | the API at `/api/`, with no worker; `chatddx worker` runs beside it                                                                       |
   | `chatddx worker`       | the queue for a World, until SIGTERM or SIGINT; what it holds then is queued again                                                        |
-  | `chatddx migrate`      | the migrations, as the admin, up to a tier (`docs/modules/store.md`, "Tiers")                                                             |
+  | `chatddx migrate`      | the migrations, as the admin, up to a tier                                                                                                |
   | `chatddx fake-engines` | the World's fake engines, for development                                                                                                 |
 
 - **Stopping a worker**: its scorings go on for `settings.WORKER_DEADLINE` (60 s), which is to be "within the stop
   timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop timeout is 90 s;
   Kubernetes' default grace period is 30 s.
-- **Several processes may serve one database**: workers take turns to claim (`docs/modules/worker.md`, "Where it runs"),
-  and a run's events reach every app through `LISTEN`/`NOTIFY` (`src/chatddx/api/listening.py`). Sessions are in the
-  database.
+- **Several processes may serve one database**: workers take turns to claim, and a run's events reach every app through
+  `LISTEN`/`NOTIFY` (`src/chatddx/api/listening.py`). Sessions are in the database.
 - **What a process reads from its environment**: `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_ADMIN` (`settings.database`);
   `HOST`, where to listen; `CHATDDX_WORLD`, `CHATDDX_PORTAL_ASSETS` and `CHATDDX_REVISION`; and each endpoint's secret,
-  under the variable its `credential` names (`docs/modules/inventory.md`, "Endpoints"), read in
-  `src/chatddx/runner/gate.py` and `src/chatddx/scripted/fakes.py`, not through `chatddx.settings`.
+  under the variable its `credential` names, read in `src/chatddx/runner/gate.py` and `src/chatddx/scripted/fakes.py`,
+  not through `chatddx.settings`.
 - **The database**: `src/chatddx/store/setup.sql` makes the admin `chatddx`, the writer `chatddx_writer` and the
   database. Development connects on a socket with peer authentication, OS users mapped to roles (AGENTS.md,
   "Environment"). `settings.database` names a host, a user and a database only, so a password or TLS can come only from
@@ -51,13 +50,12 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
   which are sensitive unless declared otherwise (`docs/surfaces/inventory.md`, `Source`). Every process but `migrate`
   reads one.
 - **Where it is to run**: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with
-  the module's stop timeout above the worker's deadline, which is the worker's own (`docs/modules/worker.md`,
-  "Stopping"). What the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front
-  of both.
-- **Identity**: "The deployment is to sit behind Keycloak" (`docs/modules/identity.md`, "Keycloak"), which isn't decided
-  further. Take: a proxy in front, such as oauth2-proxy, passes the login in a header the app believes from it alone,
-  mapped onto `person.login`, and Keycloak's own tokens are bearers for scripts when they come. Whether roles then come
-  from Keycloak's realm roles instead of the column isn't decided.
+  the module's stop timeout above the worker's deadline, which is the worker's own. What the HTTP server is was left
+  open: the portal's pages served apart from the API, or a proxy in front of both.
+- **Identity**: "The deployment is to sit behind Keycloak", which isn't decided further. Take: a proxy in front, such as
+  oauth2-proxy, passes the login in a header the app believes from it alone, mapped onto `person.login`, and Keycloak's
+  own tokens are bearers for scripts when they come. Whether roles then come from Keycloak's realm roles instead of the
+  column isn't decided.
 
 ## What a deployment runs
 
@@ -212,8 +210,8 @@ chatddx stays on helsinki meanwhile.
 ## Open
 
 - Which target serves real patient data first, and whether the other stays (`docs/chatddx.md` puts the orchestrator in
-  Kubernetes; `docs/modules/worker.md` decides systemd on NixOS).
-- Keycloak in front (`docs/modules/identity.md`, "Keycloak": which target runs it, and how it hands the app a login.
+  Kubernetes; decides systemd on NixOS).
+- Keycloak in front: which target runs it, and how it hands the app a login.
 - CI: what builds the image and the module's test, and runs `pytest` and the frontend's checks, before a deployment
   takes a revision. The VM test needs KVM: a self-hosted runner on one of Kompismoln's hosts is among the options in
   o11n's `agents/wip-self-hosted-kvm.md`.

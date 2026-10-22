@@ -12,6 +12,7 @@ This document contains project-wide instructions written by humans for agents.
   - Setup database and roles with `src/chatddx/store/setup.sql`
 
 - Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered.
+- Archeology is not allowed except when said otherwise, the commit has all you need.
 
 ## Workflow
 
