@@ -1,7 +1,7 @@
 description = "A server that goes away halfway through the answer: what came is kept, and the call's error says how it ended."
 configuration = "free-text"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["Dutchfall13w"]
+cases = ["dutch-13"]
 seed = 13
 
 [[turn]]

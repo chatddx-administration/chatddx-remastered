@@ -221,6 +221,10 @@ can be done now; facts keyed by runtime wait for a second runtime.
 - **A model or a model on a runtime.** Some facts are really about a model on a runtime, such as harmony ignoring the
   response format. They live on the model for now; facts keyed by runtime can be added when a second runtime appears.
 
+- **The context and the thinking budget from the command line.** Done for vLLM 0.24 where every engine serving a model
+  says so: the context is the longest `--max-model-len` they serve, and a thinking budget is refused where none has
+  `--reasoning-parser` or `--reasoning-config`.
+
 - **Defaults from the command line.** An engine's own default chat template arguments and generation config change the
   model's defaults. Facts describe the model's own defaults, and only the grammar-before-reasoning lint accounts for the
   change.
@@ -706,6 +710,6 @@ notes revise the targets.
 - **The sample's judge** is a draft over Olof's notes until his prompt replaces it, as an edit. His prompt settles which
   of his comment and answer it reads, how a Swedish note is read against an English answer, whether a verdict is pass or
   fail, a scale or one per aspect, how strict it is about extra or harmful advice, and the judge's engine and seeds. It
-  is measured by real answers from pelle and malborg on `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`, graded by
-  Olof with a line on why. Open beside it: notes on more cases, and revising the targets where his notes disagree, as on
-  `Dutchfall11w` (shock, most likely sepsis, where the targets have an aortic aneurysm or a dissection).
+  is measured by real answers from pelle and malborg on `dutch-11`, `dutch-01` and `akm-01`, graded by Olof with a line
+  on why. Open beside it: notes on more cases, and revising the targets where his notes disagree, as on `dutch-11`
+  (shock, most likely sepsis, where the targets have an aortic aneurysm or a dissection).

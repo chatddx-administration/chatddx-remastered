@@ -27,16 +27,16 @@ describe("a form drawn from a JSON Schema", () => {
   it("offers a blank of each, and leaves out what an optional text left empty", () => {
     expect(blank(TARGETS, TARGETS)).toEqual({ diagnosis: {} });
     const note = deref((at("notes") as { items: Schema }).items, TARGETS);
-    expect(blank(note, TARGETS)).toEqual({ author: "", language: "", comment: "" });
+    expect(blank(note, TARGETS)).toEqual({ author: "", comment: "" });
     const typed = {
       diagnosis: { pattern: "biliary & colic", text: "" },
       warning: false,
-      notes: [{ author: "alice", language: "en", comment: "Ok.", answer: "" }],
+      notes: [{ author: "alice", comment: "Ok.", answer: "" }],
     };
     expect(kept(typed, TARGETS, TARGETS)).toEqual({
       diagnosis: { pattern: "biliary & colic" },
       warning: false,
-      notes: [{ author: "alice", language: "en", comment: "Ok." }],
+      notes: [{ author: "alice", comment: "Ok." }],
     });
   });
 

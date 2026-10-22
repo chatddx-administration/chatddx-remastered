@@ -283,8 +283,8 @@ Nothing built so far waits on it:
 It becomes the next blocker at:
 
 - tool rounds on a sensitive source: the gate refuses tools on a sensitive source until a tool can be cleared ("Tools").
-  The runner's tests declare the test World's source not sensitive for them, and `plan-web` can't call its tool on vLLM
-  0.24 anyway (`docs/vllm.md`, item 10);
+  The runner's tests declare the test World's source not sensitive for them, and no configuration of the sample's holds
+  a tool;
 - the first real sensitive source, typed cases from clinicians included, or the first runs on `pelle` and `malborg`
   whose clearance should be auditable from the database rather than from the inventory's git history;
 - a deployment: `agents/wip-deploy.md` is solidified only once this plan, "Before real patient data" included, is

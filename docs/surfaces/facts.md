@@ -51,6 +51,12 @@ Raises:
 * `found: Iterable[ModelFacts]`
 * ∟`Self`
 
+## `Facts.served`
+`src/chatddx/facts/models.py:Facts.served`
+
+* `engines: Mapping[str, Mapping[str, Component]]`
+* ∟`Self`
+
 ## `lints`
 `src/chatddx/facts/lint.py:lints`
 

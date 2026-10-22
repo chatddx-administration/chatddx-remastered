@@ -9,13 +9,14 @@ from chatddx.catalog import threads
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
 from chatddx.factors.base import Fingerprint, StructuralError, resolve
+from chatddx.factors.facts import ModelFacts, Refusal
 from chatddx.factors.request import Compilation, Translations, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.rig import rig
 from chatddx.store import People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.helpers import Loaded, sampled_template
-from chatddx.test.world import SAMPLE, WORLDS, world_plan
+from chatddx.test.world import GPT_OSS_MODEL, QWEN_MODEL, SAMPLE, WORLDS, world_plan
 
 __all__ = ["sampled_template"]
 
@@ -56,7 +57,6 @@ def test_the_sample_s_texts_are_english_and_translated_into_swedish() -> None:
         "plan",
         "plan-shown",
         "plan-prompted",
-        "plan-web",
         "diagnoses",
         "diagnoses-tool",
         "free-text",
@@ -96,10 +96,26 @@ def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
     }
 
 
-def test_kompismoln_takes_the_sample_s_vignettes() -> None:
+def test_kompismoln_s_facts_are_the_bundled_ones_as_its_engines_serve_them() -> None:
+    assert World.load(WORLDS / "kompismoln").facts == ()
+    plan = world_plan(WORLDS / "kompismoln", SAMPLE)
+    qwen, gpt_oss = (plan.facts.models[m] for m in (QWEN_MODEL, GPT_OSS_MODEL))
+    assert (qwen.context_length, gpt_oss.context_length) == (8192, 32768)
+    assert isinstance(qwen.reasoning.budget, Refusal)
+    assert qwen.reasoning.budget.refused.startswith("qwen3-8b@pelle serves it without")
+    stored = plan.named("facts", QWEN_MODEL).digest
+    assert resolve(plan.registry.get, stored, ModelFacts) == qwen
+
+
+def test_kompismoln_s_sources_are_the_sample_s() -> None:
     kompismoln = Inventory.load(WORLDS / "kompismoln" / "inventory.toml")
-    assert kompismoln.sources["sample"] == DirectorySource(
-        name="sample", path=(WORLDS / "sample" / "vignettes").resolve()
+    sample = Inventory.load(WORLDS / "sample" / "inventory.toml")
+    assert kompismoln.sources == sample.sources
+    assert sample.sources["typed"].cleanup == sample.sources["sample"].cleanup
+    assert sample.sources["sample"] == DirectorySource(
+        name="sample",
+        path=(WORLDS / "sample" / "vignettes").resolve(),
+        cleanup=("newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"),
     )
 
 
@@ -129,20 +145,16 @@ def test_the_targets_schema_takes_the_old_chatddx_s_target_kinds() -> None:
         assert not valid(invalid), invalid
 
 
-def test_a_case_s_notes_keep_their_author_language_comment_and_answer() -> None:
+def test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language() -> None:
     valid = validators.validator_for(TARGETS_SCHEMA)(TARGETS_SCHEMA).is_valid
-    note: dict[str, JsonValue] = {
-        "author": "Olof",
-        "language": "sv",
-        "comment": "Chock.",
-    }
+    note: dict[str, JsonValue] = {"author": "Olof", "comment": "Chock."}
     pneumonia: JsonValue = {"pattern": "pneumonia"}
     assert valid({"diagnosis": pneumonia, "notes": [note]})
     assert valid({"diagnosis": pneumonia, "notes": [note | {"answer": "Rundodla."}]})
     invalid_notes: list[JsonValue] = [
         [],
         [{k: v for k, v in note.items() if k != "author"}],
-        [note | {"language": "Swedish"}],
+        [note | {"language": "sv"}],
         [note | {"comment": ""}],
         [note | {"answer": ""}],
         [note | {"date": "2026-09-28"}],
@@ -160,14 +172,14 @@ def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
         for id, case in cases.items()
         if isinstance(case.targets, dict) and "notes" in case.targets
     }
-    assert sorted(noted) == ["Dutchfall11w", "Dutchfall1w", "casesfromedn1"]
+    assert sorted(noted) == ["akm-01", "dutch-01", "dutch-11"]
     for id, notes in noted.items():
         assert isinstance(notes, list) and len(notes) == 1
         [note] = notes
         assert isinstance(note, dict)
-        assert (note["author"], note["language"]) == ("Olof", "sv")
-        assert ("answer" in note) == (id != "Dutchfall1w")
-    [eleven] = cast(list[dict[str, str]], noted["Dutchfall11w"])
+        assert note["author"] == "Olof"
+        assert ("answer" in note) == (id != "dutch-01")
+    [eleven] = cast(list[dict[str, str]], noted["dutch-11"])
     assert eleven["comment"].startswith("identifiera tecken på prechock eller chock")
     assert eleven["answer"].endswith("påbörja empirisk bredspektrumantibiotika.")
 
@@ -185,16 +197,17 @@ def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
     )
     assert (
         Fingerprint.of(listing.encode()).hex
-        == "ce41d6b218347d2b792c86160969f937c6926c8bff255b8644c7159402d7028c"
+        == "28a71609459f02f5391a54114fe5bb3dcc9a03353c75c4105ffe8ce0a7d37846"
     )
 
 
-def test_the_sample_s_cases_are_79_english_and_20_swedish() -> None:
+def test_the_sample_s_cases_are_81_english_and_18_swedish() -> None:
     cases = load_cases(SAMPLE)
     assert len(cases) == 99
-    assert sum(c.language == "sv" for c in cases.values()) == 20
-    assert cases["casesfromedn1"].language == "sv"
-    assert cases["Dutchfall11w"].language == "en"
+    assert sum(c.language == "sv" for c in cases.values()) == 18
+    assert cases["akm-01"].language == "sv"
+    assert cases["akm-05"].language == cases["akm-13"].language == "en"
+    assert cases["dutch-11"].language == "en"
 
 
 def test_the_sample_loads_with_its_world_s_fakes(

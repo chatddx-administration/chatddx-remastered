@@ -1,7 +1,7 @@
 description = "A case sent with an appendix that changes the right answer: the ultrasound finds a normal aorta and a blocked kidney."
 configuration = "diagnoses"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["Dutchfall11w with ultrasound"]
+cases = ["dutch-11 with ultrasound"]
 seed = 31
 
 [[turn]]

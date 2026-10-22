@@ -1,11 +1,15 @@
 description = "Four cases in one run, answered in the order the run sends them, by case: two answered well, one the server refuses while it loads, and one it goes away from halfway."
 configuration = "diagnoses"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["Dutchfall12w", "Dutchfall13w", "Dutchfall14w", "Dutchfall15w"]
+cases = ["dutch-12", "dutch-13", "dutch-14", "dutch-15"]
 seed = 37
 
 [[turn]]
 content = '{"diagnoses": ["COPD exacerbation", "Pneumonia", "Pulmonary embolism"]}'
+
+[[turn]]
+content = '{"diagnoses": ["Gastroenteritis", "Appendicitis", "Diverticulitis"]}'
+hang_up = 2
 
 [[turn]]
 status = 503
@@ -13,7 +17,3 @@ content = "the engine is loading"
 
 [[turn]]
 content = '{"diagnoses": ["Ovarian torsion", "Renal colic", "Diverticulitis"]}'
-
-[[turn]]
-content = '{"diagnoses": ["Gastroenteritis", "Appendicitis", "Diverticulitis"]}'
-hang_up = 2

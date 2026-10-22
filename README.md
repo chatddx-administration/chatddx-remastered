@@ -123,7 +123,7 @@ chatddx repl alice
 
 ```text
 use plan
-run DutchFall10w
+run dutch-10
 quit
 ```
 
@@ -176,7 +176,7 @@ chatddx repl alice --world worlds/kompismoln
 ```text
 use plan
 set model qwen3-8b
-run DutchFall10w
+run dutch-10
 quit
 ```
 

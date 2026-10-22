@@ -61,8 +61,8 @@ EOF
 chatddx repl alice <<'EOF'
 use plan-off
 seed 7
-run DutchFall10w
-run tag dutch-fall
+run dutch-10
+run tag dutch
 EOF
 ```
 

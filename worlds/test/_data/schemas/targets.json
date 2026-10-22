@@ -24,11 +24,10 @@
     },
     "note": {
       "type": "object",
-      "required": ["author", "language", "comment"],
+      "required": ["author", "comment"],
       "additionalProperties": false,
       "properties": {
         "author": { "type": "string", "minLength": 1 },
-        "language": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$", "examples": ["sv", "en"] },
         "comment": { "type": "string", "minLength": 1 },
         "answer": { "type": "string", "minLength": 1 }
       }

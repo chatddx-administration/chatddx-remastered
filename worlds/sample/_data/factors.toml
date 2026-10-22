@@ -89,16 +89,6 @@ output = "management-plan-prompted"
 sampling = "recommended"
 translations = "sample"
 
-[recipe.plan-web]
-description = "The management plan, with a web search to call."
-tags = ["ddx"]
-fork_of = "plan"
-prompt = "case"
-output = "management-plan"
-sampling = "recommended"
-toolset = "web"
-translations = "sample"
-
 [recipe.diagnoses]
 description = "The differential alone, as the medical-assistant agents ask for it."
 tags = ["ddx"]

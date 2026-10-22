@@ -424,6 +424,13 @@ Raises:
 * `argv: tuple[str, ...]`
 * ∟`frozenset[str]`
 
+## `flag_value`
+`src/chatddx/factors/engine.py:flag_value`
+
+* `argv: tuple[str, ...]`
+* `flag: str`
+* ∟`str | None`
+
 ## `Frozen` `(BaseModel)`
 `src/chatddx/factors/base.py:Frozen`
 
@@ -936,6 +943,11 @@ Raises:
 
 * `said: Mapping[str, JsonValue]`
 * ∟`str | None`
+
+## `REASONING_FLAGS`
+`src/chatddx/factors/engine.py:REASONING_FLAGS`
+
+`REASONING_FLAGS = frozenset({"--reasoning-parser", "--reasoning-config"})`
 
 ## `ReasoningFact`
 `src/chatddx/factors/facts.py:ReasoningFact`
@@ -1598,6 +1610,12 @@ Raises:
 * `source: str`
 * `id: str`
 * `fingerprint: Fingerprint`
+
+## `vllm_024`
+`src/chatddx/factors/engine.py:vllm_024`
+
+* `engine: Component`
+* ∟`LocalEngine | None`
 
 ## `Wild` `@dataclass(frozen=True)`
 `src/chatddx/factors/select.py:Wild`

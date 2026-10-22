@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel
+from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel, RemoteEngine
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     Message,
@@ -95,6 +95,40 @@ def test_recommended_sampling_is_per_reasoning_level(facts: Facts) -> None:
     )
     with pytest.raises(Refused, match="no sampling is recommended for reasoning 'on'"):
         _ = unrecommended.recommended("on")
+
+
+def test_the_engines_serving_a_model_narrow_its_facts_where_all_of_them_do(
+    facts: Facts,
+) -> None:
+    reg = Registry()
+    bare = local_engine(reg)
+
+    def given(*argv: str) -> LocalEngine:
+        return LocalEngine.model_validate({**bare.model_dump(), "argv": argv})
+
+    def served(model: str, **engines: LocalEngine | RemoteEngine) -> ModelFacts:
+        return facts.served({model: engines}).models[model]
+
+    qwen, gpt_oss = facts.models[QWEN_MODEL], facts.models[GPT_OSS_MODEL]
+    alone = served(QWEN_MODEL, pelle=bare)
+    assert alone.context_length == 8192
+    assert alone.reasoning.budget == Refusal(
+        refused="pelle serves it without --reasoning-parser or --reasoning-config, and "
+        + "vLLM 0.24 refuses a thinking budget without one"
+    )
+    parsing = given("--max_model_len=16384", "--reasoning-parser", "qwen3")
+    both = served(QWEN_MODEL, pelle=bare, other=parsing)
+    assert (both.context_length, both.reasoning.budget) == (
+        16384,
+        "thinking_token_budget",
+    )
+    assert served(QWEN_MODEL, pelle=bare, remote=remote_engine(reg, QWEN_MODEL)) is qwen
+    assert served(QWEN_MODEL, auto=given("--max-model-len", "-1")).context_length == (
+        qwen.context_length
+    )
+    harmony = served(GPT_OSS_MODEL, malborg=bare)
+    assert (harmony.context_length, harmony.reasoning) == (8192, gpt_oss.reasoning)
+    assert facts.served({}).models == facts.models
 
 
 def test_facts_are_checked(tmp_path: Path) -> None:

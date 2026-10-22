@@ -4,14 +4,16 @@ configurations = "qwen3-8b"
 [source.sample]
 path = "../sample/vignettes"
 sensitive = true
+cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
 
 [source.typed]
 kind = "database"
+cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
 
 [cleared]
 "qwen3-8b@pelle" = ["sample", "typed"]
 "gpt-oss-20b@malborg" = ["sample", "typed"]
 
 [judge]
-verdict = "qwen3-8b"
+verdict = "gpt-oss-20b"
 graded = "gpt-oss-20b"

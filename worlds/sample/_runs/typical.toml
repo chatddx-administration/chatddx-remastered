@@ -1,7 +1,7 @@
 description = "A management plan as it should come: thought through once, then answered in one go and held to the plan's schema."
 configuration = "plan"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["DutchFall10w"]
+cases = ["dutch-10"]
 seed = 7
 
 [[turn]]

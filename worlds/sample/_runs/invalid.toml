@@ -1,7 +1,7 @@
 description = "A plan asked for as text, with the schema shown and nothing enforcing it, that the model doesn't hold to: a probability the schema doesn't know, and no sources."
 configuration = "plan-prompted"
 endpoint = "gpt-oss-20b@fake"
-cases = ["Dutchfall12w"]
+cases = ["dutch-12"]
 seed = 11
 
 [[turn]]

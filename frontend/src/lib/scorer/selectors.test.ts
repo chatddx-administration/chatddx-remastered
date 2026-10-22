@@ -9,8 +9,8 @@ const PLAN = JSON.parse(
 const DATA = {
   diagnosis: { pattern: "sepsis" },
   notes: [
-    { author: "carol", language: "sv", comment: "Chock." },
-    { author: "dave", language: "sv", comment: "UVI." },
+    { author: "carol", comment: "Chock." },
+    { author: "dave", comment: "UVI." },
   ],
 };
 
@@ -29,7 +29,7 @@ describe("choices", () => {
     expect(by["each of notes › comment"]).toBe("$.notes[*].comment");
     expect(by["notes where author is carol › comment"]).toBe("$.notes[?@.author == 'carol'].comment");
     expect(by["notes where author is dave › answer"]).toBe("$.notes[?@.author == 'dave'].answer");
-    expect(by["notes where language is sv › author"]).toBe("$.notes[?@.language == 'sv'].author");
+    expect(by["notes where comment is UVI. › author"]).toBe("$.notes[?@.comment == 'UVI.'].author");
     expect(found.some((c) => c.label.includes("where author is carol › author"))).toBe(false);
   });
 

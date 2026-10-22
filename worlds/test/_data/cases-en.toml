@@ -38,11 +38,9 @@ targets.diagnosis.pattern = "sepsis | septic & shock"
 
 [[case.noted.targets.notes]]
 author = "carol"
-language = "sv"
 comment = "Chock, troligen septisk. Odla, ge bred antibiotika och vätska."
 answer = "Septisk chock: odla, antibiotika, vätska."
 
 [[case.noted.targets.notes]]
 author = "dave"
-language = "sv"
 comment = "Uteslut urinvägsinfektion som fokus."

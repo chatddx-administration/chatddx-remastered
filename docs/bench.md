@@ -57,8 +57,8 @@ bench.edit(first.edit.thread, first.edit.id, Instructions(text="Be terse."), "en
   them. A recipe or a variation names its parts by digest, checked for their kind only, seen or not (`Seen.variation`;
   `agents/wip-clearance.md`, "Before real patient data").
 - **Words**: threads are asked for by `:Word` (`src/chatddx/bench/model.py:KINDS`). A person writes components of the
-  kinds in `WRITTEN`, and configurations as recipes compiled or variations kept; the other kinds come by `:Loading`,
-  and a person forks none of them.
+  kinds in `WRITTEN`, and configurations as recipes compiled or variations kept; the other kinds come by `:Loading`, and
+  a person forks none of them.
 - **Names**: a thread or a family is found by its id, its name or `OWNER/NAME`. Where a name holds several, the person's
   own win (`src/chatddx/identity/identity.py:preferred`), and several left are `Ambiguous`. A case is found by its
   `:Case title` (`Seen.case_titled`). A digest is shown by the name of a thread the person sees holding it, their own
@@ -68,15 +68,15 @@ bench.edit(first.edit.thread, first.edit.id, Instructions(text="Be terse."), "en
 from chatddx.catalog import Subject
 
 # alice's own, though the archive's is named plan-web too
-mine, _ = bench.thread("plan-web", "configuration")
+mine, _ = bench.thread("plan-shown", "configuration")
 bench.say(Subject(thread=mine.thread), deleted=True)
-_, about = bench.thread("plan-web", "configuration")
+_, about = bench.thread("plan-shown", "configuration")
 bench.login(about.owner)  # 'archive'
-bench.thread("alice/plan-web")
+bench.thread("alice/plan-shown")
 # NotFound: no thread 'alice/plan-web' for alice
 [a.name for _, a in bench.threads("configuration", deleted=True)]  # ['plan-web']
 bench.say(Subject(thread=mine.thread), deleted=False)
-bench.thread("plan-web", "configuration")[0] == mine  # True
+bench.thread("plan-shown", "configuration")[0] == mine  # True
 ```
 
 ## Model handles
@@ -143,7 +143,7 @@ from chatddx.bench.model import MODEL, PLACEHOLDERS
 
 sample, _ = bench.thread("sample", "translations")
 translating = bench.variation("plan", {"translations": sample.digest})
-en, sv = bench.family("DutchFall10w"), bench.family("casesfromedn1")
+en, sv = bench.family("dutch-10"), bench.family("akm-01")
 for carried in bench.languages(translating, [en.case, sv.case]):
     print(carried.language, carried.translated, carried.refused)
 # en False None
@@ -160,10 +160,10 @@ swedish.render(model=MODEL, seed=7, fills=PLACEHOLDERS)["messages"][0]
 - A `:Typed case` stores its text in a database source of the inventory and adopts its case into a family of the
   person's own, in the language they say (`src/chatddx/bench/cases.py:type_case`). A text holds at most
   `settings.TYPED_TEXT_LIMIT` characters, and a person types at most `settings.TYPED_PER_DAY` a day.
-- A case with appendices is made of a family and appendices the person sees (`case`), and a stale case's
-  `:Replacement` is stored when asked for (`replacement`).
-- An appendix is bound to the current vignette of a family the person sees (`src/chatddx/bench/components.py:bound`).
-  A new version of it stores again each case that held the old one, returned in `Written.cases`.
+- A case with appendices is made of a family and appendices the person sees (`case`), and a stale case's `:Replacement`
+  is stored when asked for (`replacement`).
+- An appendix is bound to the current vignette of a family the person sees (`src/chatddx/bench/components.py:bound`). A
+  new version of it stores again each case that held the old one, returned in `Written.cases`.
 - A person has one live expectation of a case under a schema: a write, a follow or a restore that would make two is
   refused (`src/chatddx/bench/seen.py:check_expecting`), and an expectation's new version stays on a case of its family
   (`:Carrying`). `take` forks the one expectation shared with them of each case, and says which cases they keep their
@@ -173,14 +173,14 @@ swedish.render(model=MODEL, seed=7, fills=PLACEHOLDERS)["messages"][0]
 ```python
 from chatddx.factors.cases import Appendix
 
-family = bench.family("DutchFall10w")
+family = bench.family("dutch-10")
 hb = bench.new(Appendix(vignette=family.vignette, text="Hb 98 g/L"), "hb")
 case = bench.case(family.id, [hb.edit.digest])
 bench.title(case)  # 'DutchFall10w with hb'
-bench.case_titled("DutchFall10w with hb")[1] == case  # True
+bench.case_titled("dutch-10 with hb")[1] == case  # True
 lower = Appendix(vignette=family.vignette, text="Hb 96 g/L")
 again = bench.edit(hb.edit.thread, hb.edit.id, lower).cases[case]
-again in bench.family("DutchFall10w").cases  # True
+again in bench.family("dutch-10").cases  # True
 
 (schema,) = bench.expectation_schemas(family.case)
 bench.title(schema)  # 'targets'
@@ -190,10 +190,10 @@ bench.expectation(family.case, schema).data["diagnosis"]
 
 ## Runs and scoring
 
-- `start` begins a run of a variation's cases for each language they're sent in
-  (`src/chatddx/bench/runs.py:start`), with the endpoint's execution and canary set unless given, and the text cleanup
-  their sources ask for (`Seen.cleanup`). Each is named by the variation's `:Label (variation)` and says the edit and
-  parts it varies, and the runs after the first name it (`started_with`).
+- `start` begins a run of a variation's cases for each language they're sent in (`src/chatddx/bench/runs.py:start`),
+  with the endpoint's execution and canary set unless given, and the text cleanup their sources ask for
+  (`Seen.cleanup`). Each is named by the variation's `:Label (variation)` and says the edit and parts it varies, and the
+  runs after the first name it (`started_with`).
 - `again` begins a run of a run's skeleton and cases under other seeds at its handle's latest endpoint, and is refused
   once the handle holds other weights. `start_trials` begins stored trials at the endpoint serving each one's engine.
 - Runs a day and items a run are held to `settings.RUNS_PER_DAY` and `settings.ITEMS_PER_RUN`
@@ -206,7 +206,7 @@ bench.expectation(family.case, schema).data["diagnosis"]
 
 ```python
 plan = bench.variation("plan")
-case = bench.family("DutchFall10w").case
+case = bench.family("dutch-10").case
 running = bench.start(plan, bench.at(plan).name, [case], seeds=(7,)).first
 running.send()  # as a worker does with what bench.queue(running) puts
 running.finish()  # []

@@ -50,6 +50,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/factors/`, ea
 # vLLM's list of flags.
 ```
 
+## `src/chatddx/factors/engine.py:_flag`
+
+```
+# Accommodating for vLLM, which reads "_" as "-" in a flag's name, up to its first "."
+# (FlexibleArgumentParser).
+```
+
 ## `src/chatddx/factors/engine.py:_READS_DATE`
 
 ```
@@ -57,11 +64,10 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/factors/`, ea
 # on when a run happens.
 ```
 
-## `src/chatddx/factors/engine.py:flag_names`
+## `src/chatddx/factors/engine.py:flag_value`
 
 ```
-# Accommodating for vLLM, which reads "_" as "-" in a flag's name, up to its first "."
-# (FlexibleArgumentParser).
+# Accommodating for vLLM, where the last of a flag given twice wins.
 ```
 
 ## `src/chatddx/factors/engine.py:LocalModel.name`

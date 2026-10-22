@@ -13,25 +13,25 @@ __all__ = ["sampled_template"]
 PATH = WORLDS / "sample"
 VALID = ("valid", None)
 OUTCOMES = {
-    "appendix": {"Dutchfall11w with ultrasound": VALID},
-    "broken": {"Dutchfall13w": ("completed", UNFINISHED)},
+    "appendix": {"dutch-11 with ultrasound": VALID},
+    "broken": {"dutch-13": ("completed", UNFINISHED)},
     "invalid": {
-        "Dutchfall12w": ("invalid", "at the root: 'sources' is a required property")
+        "dutch-12": ("invalid", "at the root: 'sources' is a required property")
     },
-    "judged": {"Dutchfall11w": ("completed", None)},
-    "remote": {"Dutchfall14w": ("completed", None)},
+    "judged": {"dutch-11": ("completed", None)},
+    "remote": {"dutch-14": ("completed", None)},
     "runaway": {
-        "Dutchfall14w": ("salvaged", "stopped: nothing but whitespace for 100 tokens")
+        "dutch-14": ("salvaged", "stopped: nothing but whitespace for 100 tokens")
     },
     "several": {
-        "Dutchfall12w": ("errored", "HTTP 503: the engine is loading"),
-        "Dutchfall13w": VALID,
-        "Dutchfall14w": VALID,
-        "Dutchfall15w": ("salvaged", UNFINISHED),
+        "dutch-12": ("errored", "HTTP 503: the engine is loading"),
+        "dutch-13": VALID,
+        "dutch-14": VALID,
+        "dutch-15": ("salvaged", UNFINISHED),
     },
-    "stopped": {"casesfromedn2": ("stopped", None)},
-    "typical": {"DutchFall10w": VALID},
-    "unfinished": {"Dutchfall15w": VALID},
+    "stopped": {"akm-02": ("stopped", None)},
+    "typical": {"dutch-10": VALID},
+    "unfinished": {"dutch-15": VALID},
 }
 
 

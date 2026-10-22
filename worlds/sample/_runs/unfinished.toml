@@ -1,7 +1,7 @@
 description = "A run that never finished, as when the process running it dies: its item is there, and nothing closes it or scores it."
 configuration = "diagnoses"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["Dutchfall15w"]
+cases = ["dutch-15"]
 seed = 23
 unfinished = true
 

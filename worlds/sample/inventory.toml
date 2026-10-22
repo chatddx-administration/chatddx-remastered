@@ -4,9 +4,11 @@ configurations = "qwen3-8b-awq"
 [source.sample]
 path = "vignettes"
 sensitive = true
+cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
 
 [source.typed]
 kind = "database"
+cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
 
 [cleared]
 "qwen3-8b-awq@fake" = ["sample", "typed"]

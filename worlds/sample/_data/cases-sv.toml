@@ -1,21 +1,20 @@
-[case.casesfromedn1]
-tags = ["edn"]
+[case.akm-01]
+tags = ["akm", "copd"]
 targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
 targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
 targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
 
-[case.casesfromedn1.appendices]
+[case.akm-01.appendices]
 blood-gas = "Blodgas efter 20 minuters maskventilation: pH 7,18, pCO2 11,2 kPa, pO2 9,8 kPa, BE +6, laktat 1,4 mmol/l."
 
-[[case.casesfromedn1.with]]
+[[case.akm-01.with]]
 appendices = ["blood-gas"]
 targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
 targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
 targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
 
-[[case.casesfromedn1.targets.notes]]
+[[case.akm-01.targets.notes]]
 author = "Olof"
-language = "sv"
 comment = '''
 Medvetande sänkt patient med hypoventilation och låg syrenivå efter behandling med högt syrgasflöde då patienten mådde bra, har KOL. Misstänkt koldioxidnarkos med upphävd andning.
 Åtg: ta bort syrgas, försök smärtstimulera pat till att andas själv, om ingen effekt mask-blåsa-ventilation, försök även starta NIV.
@@ -26,117 +25,105 @@ Misstänkt koldioxidnarkos.
 Vädra ur patienten, snabba luftvägsmanövrar: haklyft, näskantarell, svalgtub, mask &blåsa, överväg muskelrelaxation om du inte kan ventilera. narkoslarma. sista utväg: akut coniotomi.
 varning för de-skill konsultation.'''
 
-[case.casesfromedn10]
-tags = ["edn"]
-targets.diagnosis.pattern = "scad | dissection | dissektion"
-targets.warning.pattern = "stemi | st & elevation | myocardial & infarction | dissection | hjärtinfarkt"
-targets.disposition.pattern = "cath* | pci | angiograph* | angiografi | ccu | coronary & care | hia | hjärtintensiv*"
-
-[case.casesfromedn11]
-tags = ["edn"]
-targets.diagnosis.pattern = "delirium | abstinens"
-targets.warning.pattern = "delirium & tremens | withdrawal | seizure* | dissection | abstinens | kramp*"
-targets.disposition.pattern = "icu | intensive & care | iva | intensivvård* | admit* | admission | hospital*"
-
-[case.casesfromedn12]
-tags = ["edn"]
-targets.diagnosis.pattern = "depression"
-targets.warning.pattern = "suicid* | självmord* | postpartum | psychos* | psykos"
-targets.disposition.pattern = "outpatient | primary & care | follow* | psychiatr* | vårdcentral* | öppenvård*"
-
-[case.casesfromedn13]
-tags = ["edn"]
-targets.diagnosis.pattern = "leptospirosis"
-targets.warning.pattern = "kidney & failure | renal & failure | kidney & injury | hemorrhag* | haemorrhag* | sepsis | meningit* | weil*"
-targets.disposition.pattern = "admit* | admission | hospital* | icu | intensive & care | infect*"
-
-[case.casesfromedn14]
-tags = ["edn"]
-targets.diagnosis.pattern = "ektopisk & graviditet | ektopisk"
-targets.warning.pattern = "rupture* | hemorrhag* | haemorrhag* | shock | hypovolem* | blödning | chock"
-targets.disposition.pattern = "surg* | operat* | laparo* | gyn* | kirurg* | operation"
-
-[case.casesfromedn15]
-tags = ["edn"]
-targets.diagnosis.pattern = "hematom | hematoma"
-targets.warning.pattern = "bleed* | hemorrhag* | haemorrhag* | blödning | anticoag*"
-targets.disposition.pattern = "discharge* | home | outpatient | observation | hemgång"
-
-[case.casesfromedn16]
-tags = ["edn"]
-targets.diagnosis.pattern = "tarmperforation | perforation"
-targets.warning.pattern = "perforat* | peritonitis | free & (air | gas) | sepsis | shock | fri & gas"
-targets.disposition.pattern = "surg* | operat* | laparotom* | kirurg* | operation"
-
-[case.casesfromedn17]
-tags = ["edn"]
-targets.diagnosis.pattern = "porfyri"
-targets.warning.pattern = "paralys* | respiratory & failure | seizure* | hyponatrem* | neuropath* | förlamning"
-targets.disposition.pattern = "admit* | admission | hospital* | inlägg* | vårdavdelning"
-
-[case.casesfromedn18]
-tags = ["edn"]
-targets.diagnosis.pattern = "malaria"
-targets.warning.pattern = "falciparum | severe & malaria | cerebral & malaria | allvarlig & malaria"
-targets.disposition.pattern = "admit* | admission | hospital* | infect* | infektion* | inlägg* | vårdavdelning"
-
-[case.casesfromedn19]
-tags = ["edn"]
-targets.diagnosis.pattern = "meningit*"
-targets.warning.pattern = "meningit* | encephalit* | sepsis | septic | herniat*"
-targets.disposition.pattern = "admit* | admission | hospital* | icu | intensive & care | iva | intensivvård* | infekt*"
-
-[case.casesfromedn2]
-tags = ["edn"]
+[case.akm-02]
+tags = ["akm"]
 targets.diagnosis.pattern = "psychosis | psychotic | psykos | psykotisk"
 targets.warning.pattern = "encephalit* | autoimmune | nmda | suicid* | catatoni*"
 targets.disposition.pattern = "psychiatr* | psykiatri* | neurolog* | admit* | admission | hospital*"
 targets.dont_miss.pattern = "encephalit* | encefalit* | nmda | autoimmun*"
 
-[case.casesfromedn20]
-tags = ["edn"]
-targets.diagnosis.pattern = "viral & meningit* | meningit*"
-targets.warning.pattern = "encephalit* | herpes | hsv | bacterial & meningit*"
-targets.disposition.pattern = "admit* | admission | hospital* | infect* | infekt* | inlägg* | vårdavdelning"
-
-[case.casesfromedn3]
-tags = ["edn"]
+[case.akm-03]
+tags = ["akm"]
 targets.diagnosis.pattern = "psychosis | psychotic | psykos | psykotisk"
 targets.warning.pattern = "organic | delirium | encephalit* | tumo* | stroke | suicid*"
 targets.disposition.pattern = "psychiatr* | psykiatri* | involuntary | compulsory | tvångsvård* | lpt"
 
-[case.casesfromedn4]
-tags = ["edn"]
+[case.akm-04]
+tags = ["akm"]
 targets.diagnosis.pattern = "sepsis | septic"
 targets.warning.pattern = "septic & shock | shock | sepsis | multi* & organ | hyperkal* | hypoglyc*"
 targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
 
-[case.casesfromedn5]
-tags = ["edn"]
-targets.diagnosis.pattern = "acl | (cruciate | ligament) & (tear* | injur*)"
-targets.warning.pattern = "fracture* | dislocat* | popliteal | compartment & syndrome"
-targets.disposition.pattern = "discharge* | home | outpatient | orthop* | physio* | follow*"
-
-[case.casesfromedn6]
-tags = ["edn"]
+[case.akm-06]
+tags = ["akm"]
 targets.diagnosis.pattern = "lungbleeding | bleeding | lungblödning | blödning"
 targets.warning.pattern = "hemoptys* | haemoptys* | massive | sepsis | pulmonary & embolism | lungblödning | blödning"
 targets.disposition.pattern = "admit* | admission | hospital* | inlägg* | vårdavdelning"
 
-[case.casesfromedn7]
-tags = ["edn"]
+[case.akm-07]
+tags = ["akm"]
 targets.diagnosis.pattern = "epidural & abscess | abscess | compression | discitis | epiduralabscess"
 targets.warning.pattern = "cord & compression | compression | paralys* | cauda | sepsis | ryggmärgskompression"
 targets.disposition.pattern = "surg* | operat* | neurosurg* | decompress* | neurokirurg*"
 
-[case.casesfromedn8]
-tags = ["edn"]
+[case.akm-08]
+tags = ["akm"]
 targets.diagnosis.pattern = "hjärntumör | tumör| brain & (tumour | tumor)"
 targets.warning.pattern = "intracranial & pressure | icp | herniat* | tumo* | hydroceph* | tumör"
 targets.disposition.pattern = "admit* | admission | hospital* | neurosurg* | neurokirurg* | neurolog* | inlägg* | vårdavdelning"
 
-[case.casesfromedn9]
-tags = ["edn"]
+[case.akm-09]
+tags = ["akm"]
 targets.diagnosis.pattern = "ileus | tarmvred | obstruction | obstruktion"
 targets.warning.pattern = "ischemi* | ischaemi* | strangulat* | perforat* | volvulus | necro*"
 targets.disposition.pattern = "surg* | operat* | laparotom* | kirurg* | operation"
+
+[case.akm-10]
+tags = ["akm"]
+targets.diagnosis.pattern = "scad | dissection | dissektion"
+targets.warning.pattern = "stemi | st & elevation | myocardial & infarction | dissection | hjärtinfarkt"
+targets.disposition.pattern = "cath* | pci | angiograph* | angiografi | ccu | coronary & care | hia | hjärtintensiv*"
+
+[case.akm-11]
+tags = ["akm"]
+targets.diagnosis.pattern = "delirium | abstinens"
+targets.warning.pattern = "delirium & tremens | withdrawal | seizure* | dissection | abstinens | kramp*"
+targets.disposition.pattern = "icu | intensive & care | iva | intensivvård* | admit* | admission | hospital*"
+
+[case.akm-12]
+tags = ["akm"]
+targets.diagnosis.pattern = "depression"
+targets.warning.pattern = "suicid* | självmord* | postpartum | psychos* | psykos"
+targets.disposition.pattern = "outpatient | primary & care | follow* | psychiatr* | vårdcentral* | öppenvård*"
+
+[case.akm-14]
+tags = ["akm"]
+targets.diagnosis.pattern = "ektopisk & graviditet | ektopisk"
+targets.warning.pattern = "rupture* | hemorrhag* | haemorrhag* | shock | hypovolem* | blödning | chock"
+targets.disposition.pattern = "surg* | operat* | laparo* | gyn* | kirurg* | operation"
+
+[case.akm-15]
+tags = ["akm"]
+targets.diagnosis.pattern = "hematom | hematoma"
+targets.warning.pattern = "bleed* | hemorrhag* | haemorrhag* | blödning | anticoag*"
+targets.disposition.pattern = "discharge* | home | outpatient | observation | hemgång"
+
+[case.akm-16]
+tags = ["akm"]
+targets.diagnosis.pattern = "tarmperforation | perforation"
+targets.warning.pattern = "perforat* | peritonitis | free & (air | gas) | sepsis | shock | fri & gas"
+targets.disposition.pattern = "surg* | operat* | laparotom* | kirurg* | operation"
+
+[case.akm-17]
+tags = ["akm"]
+targets.diagnosis.pattern = "porfyri"
+targets.warning.pattern = "paralys* | respiratory & failure | seizure* | hyponatrem* | neuropath* | förlamning"
+targets.disposition.pattern = "admit* | admission | hospital* | inlägg* | vårdavdelning"
+
+[case.akm-18]
+tags = ["akm"]
+targets.diagnosis.pattern = "malaria"
+targets.warning.pattern = "falciparum | severe & malaria | cerebral & malaria | allvarlig & malaria"
+targets.disposition.pattern = "admit* | admission | hospital* | infect* | infektion* | inlägg* | vårdavdelning"
+
+[case.akm-19]
+tags = ["akm"]
+targets.diagnosis.pattern = "meningit*"
+targets.warning.pattern = "meningit* | encephalit* | sepsis | septic | herniat*"
+targets.disposition.pattern = "admit* | admission | hospital* | icu | intensive & care | iva | intensivvård* | infekt*"
+
+[case.akm-20]
+tags = ["akm"]
+targets.diagnosis.pattern = "viral & meningit* | meningit*"
+targets.warning.pattern = "encephalit* | herpes | hsv | bacterial & meningit*"
+targets.disposition.pattern = "admit* | admission | hospital* | infect* | infekt* | inlägg* | vårdavdelning"

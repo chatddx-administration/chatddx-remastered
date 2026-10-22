@@ -32,8 +32,8 @@ from chatddx.test.world import (
 NOTED = {
     "diagnosis": {"pattern": "sepsis | septic & shock"},
     "notes": [
-        {"author": "carol", "language": "sv", "comment": "Chock."},
-        {"author": "dave", "language": "sv", "comment": "Uteslut UVI."},
+        {"author": "carol", "comment": "Chock."},
+        {"author": "dave", "comment": "Uteslut UVI."},
     ],
 }
 

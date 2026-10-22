@@ -30,17 +30,31 @@ OWNED_FLAGS = frozenset(
     }
 )
 UNPINNED_FLAGS = frozenset({"--config"})
+REASONING_FLAGS = frozenset({"--reasoning-parser", "--reasoning-config"})
 
 
 # Accommodating for vLLM, which reads "_" as "-" in a flag's name, up to its first "."
 # (FlexibleArgumentParser).
+def _flag(arg: str) -> str:
+    name, dot, rest = arg.split("=", 1)[0].partition(".")
+    return name.replace("_", "-") + dot + rest
+
+
 def flag_names(argv: tuple[str, ...]) -> frozenset[str]:
-    names: set[str] = set()
-    for arg in argv:
-        if arg.startswith("--"):
-            name, dot, rest = arg.split("=", 1)[0].partition(".")
-            names.add(name.replace("_", "-") + dot + rest)
-    return frozenset(names)
+    return frozenset(_flag(arg) for arg in argv if arg.startswith("--"))
+
+
+# Accommodating for vLLM, where the last of a flag given twice wins.
+def flag_value(argv: tuple[str, ...], flag: str) -> str | None:
+    found = None
+    for i, arg in enumerate(argv):
+        if not arg.startswith("--") or _flag(arg) != flag:
+            continue
+        if "=" in arg:
+            found = arg.split("=", 1)[1]
+        elif i + 1 < len(argv) and not argv[i + 1].startswith("--"):
+            found = argv[i + 1]
+    return found
 
 
 # Accommodating for vLLM's parser, which expands an unambiguous prefix of a flag to the
@@ -171,6 +185,16 @@ class RemoteEngine(Component):
 
 
 EngineRef = Annotated[Digest, RefTo("engine.local", "engine.remote")]
+
+
+def vllm_024(engine: Component) -> LocalEngine | None:
+    if (
+        isinstance(engine, LocalEngine)
+        and engine.runtime.server == "vllm"
+        and engine.runtime.version.startswith("0.24.")
+    ):
+        return engine
+    return None
 
 
 def served_model_name(engine: str, get: Resolver) -> str:

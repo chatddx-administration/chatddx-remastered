@@ -1,7 +1,7 @@
 description = "A free-text answer to a case Olof wrote notes on, scored by the judges as well as the patterns."
 configuration = "free-text"
 endpoint = "qwen3-8b-awq@fake"
-cases = ["Dutchfall11w"]
+cases = ["dutch-11"]
 seed = 29
 
 [[turn]]

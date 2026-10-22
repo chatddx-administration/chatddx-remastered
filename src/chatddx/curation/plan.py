@@ -481,9 +481,12 @@ def plan_factors(
         return model, engines[inventory.endpoint(endpoint).engine]
 
     served: dict[str, list[str]] = {}
+    serving: dict[str, dict[str, Component]] = {}
     for r in engines.values():
         model = model_of(r.digest, plan.registry.get).name
         served.setdefault(model, []).append(f"{r.kind} {r.name}")
+        serving.setdefault(model, {})[r.name] = plan.registry.get(r.digest)
+    plan.facts = facts = facts.served(serving)
     facts_of: dict[str, ModelFacts] = {}
     for model in sorted(served):
         if (about := facts.models.get(model)) is None:

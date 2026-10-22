@@ -91,7 +91,7 @@ in one shell, each on what the one before it set, with curl's `--json` (7.82 or 
    following the run until it is scored:
 
    ```sh
-   FAMILY=$(curl -s "$API/families?tag=dutch-fall" -H "$AUTH" | jq '.[0].id')
+   FAMILY=$(curl -s "$API/families?tag=dutch" -H "$AUTH" | jq '.[0].id')
    SCHEMA=$(curl -s $API/families/$FAMILY -H "$AUTH" | jq -r '.cases[0].expectations[0].expectation_schema')
    curl -s $API/takes -H "$AUTH" --json "{\"families\": [$FAMILY], \"expectation_schema\": \"$SCHEMA\"}"
    RUN=$(curl -s $API/runs -H "$AUTH" --json "{\"configuration\": $CONFIGURATION, \"families\": [$FAMILY]}" |

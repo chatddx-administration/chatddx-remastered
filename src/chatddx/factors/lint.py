@@ -10,7 +10,14 @@ from referencing.jsonschema import UnknownDialect, specification_with
 
 from .base import Component, Finding, resolve
 from .bundle import Registry
-from .engine import LocalEngine, LocalModel, flag_names, model_of
+from .engine import (
+    REASONING_FLAGS,
+    LocalEngine,
+    LocalModel,
+    flag_names,
+    model_of,
+    vllm_024,
+)
 from .facts import ModelFacts
 from .request import Compilation, NativeOutput, Output, Skeleton, ToolOutput
 from .scoring import Expectation, ExpectationSchema, Judge, Scorer
@@ -197,11 +204,8 @@ def _runtime(
     subject: str, skeleton: Skeleton, engine: Component, by_default: bool | None
 ) -> Iterable[Finding]:
     constrained = isinstance(skeleton.contract, NativeOutput | ToolOutput)
-    if not (
-        isinstance(engine, LocalEngine)
-        and engine.runtime.server == "vllm"
-        and engine.runtime.version.startswith("0.24.")
-    ):
+    local = vllm_024(engine)
+    if local is None:
         if constrained and _has_ref(skeleton.output_schema):
             yield Finding(
                 code="schema.ref_unverified",
@@ -218,7 +222,7 @@ def _runtime(
             )
         return
 
-    flags = flag_names(engine.argv)
+    flags = flag_names(local.argv)
     t = skeleton.body.get("temperature")
     if isinstance(t, int | float) and 0 < t < 0.01:
         yield Finding(
@@ -226,10 +230,7 @@ def _runtime(
             message=f"vLLM 0.24 raises temperature {t} to 0.01",
             subject=subject,
         )
-    if "thinking_token_budget" in skeleton.body and not flags & {
-        "--reasoning-parser",
-        "--reasoning-config",
-    }:
+    if "thinking_token_budget" in skeleton.body and not flags & REASONING_FLAGS:
         yield Finding(
             code="vllm.thinking_budget_refused",
             message="vLLM 0.24 refuses thinking_token_budget without "

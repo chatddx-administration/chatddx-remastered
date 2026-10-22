@@ -482,8 +482,8 @@ Written by `chatddx stamp write` from `src/chatddx/test/`; how to read it is in 
 
 `TEST = WORLDS / "test"`
 
-## `test_a_case_s_notes_keep_their_author_language_comment_and_answer`
-`src/chatddx/test/test_sample.py:test_a_case_s_notes_keep_their_author_language_comment_and_answer`
+## `test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
+`src/chatddx/test/test_sample.py:test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
 
 * ∟`None`
 
@@ -534,8 +534,18 @@ Written by `chatddx stamp write` from `src/chatddx/test/`; how to read it is in 
 * `capsys: pytest.CaptureFixture[str]`
 * ∟`None`
 
+## `test_kompismoln_s_facts_are_the_bundled_ones_as_its_engines_serve_them`
+`src/chatddx/test/test_sample.py:test_kompismoln_s_facts_are_the_bundled_ones_as_its_engines_serve_them`
+
+* ∟`None`
+
+<<<<<<< signed
 ## `test_kompismoln_takes_the_sample_s_vignettes`
 `src/chatddx/test/test_sample.py:test_kompismoln_takes_the_sample_s_vignettes`
+=======
+## `test_kompismoln_s_sources_are_the_sample_s`
+`src/chatddx/test/test_sample.py:test_kompismoln_s_sources_are_the_sample_s`
+>>>>>>> @stamp
 
 * ∟`None`
 
@@ -562,8 +572,8 @@ Written by `chatddx stamp write` from `src/chatddx/test/`; how to read it is in 
 * `sampled: Loaded`
 * ∟`None`
 
-## `test_the_sample_s_cases_are_79_english_and_20_swedish`
-`src/chatddx/test/test_sample.py:test_the_sample_s_cases_are_79_english_and_20_swedish`
+## `test_the_sample_s_cases_are_81_english_and_18_swedish`
+`src/chatddx/test/test_sample.py:test_the_sample_s_cases_are_81_english_and_18_swedish`
 
 * ∟`None`
 
