@@ -119,7 +119,6 @@ def test_a_remote_engine_on_this_machine_is_stood_in_for_asking_for_its_key(
     assert heard == {REMOTE: [served_model_name(remote, Store(conn).get)]}
 
 
-@pytest.mark.slow
 def test_only_a_fake_s_endpoint_whose_engine_is_stored_is_served(
     db: str,
     conn: Connection,

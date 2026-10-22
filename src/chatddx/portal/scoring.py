@@ -25,7 +25,7 @@ from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.factors.scoring import Judge, Scorer, fill_text
 from chatddx.factors.select import select
-from chatddx.scorers.shipped import problems
+from chatddx.scorers.shipped import problems, unit_of
 
 from .pages import BenchDep, own_first, page, within
 
@@ -75,6 +75,10 @@ def unshipped(scorer: Scorer) -> str | None:
             "; ".join(found) + ": write a new scorer from the Library to score with it"
         )
     return None
+
+
+def unit_in(bench: Bench, scorer: str, view: int) -> str:
+    return unit_of(resolve(bench.store.get, scorer, Scorer), view)
 
 
 def blank(code: schemas.ScorerCode, schema: str) -> dict[str, Any]:

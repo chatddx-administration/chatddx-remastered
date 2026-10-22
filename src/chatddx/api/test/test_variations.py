@@ -541,6 +541,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     assert signed.get(edits).json()[-1] == mine["head"]
 
 
+@pytest.mark.slow
 def test_trying_forking_and_editing_need_a_session(
     client: TestClient, bench: Bench
 ) -> None:

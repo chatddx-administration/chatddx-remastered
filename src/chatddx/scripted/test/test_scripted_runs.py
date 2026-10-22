@@ -42,7 +42,6 @@ def test_each_scripted_run_runs_as_its_script_answers(
     assert bool(bench.scores_of(started)) == (finished and scripted.scored)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["ran"], indirect=True)
 def test_a_scripted_run_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
     started = held(bench, "judged")

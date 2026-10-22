@@ -539,13 +539,8 @@ Written by `chatddx stamp write` from `src/chatddx/test/`; how to read it is in 
 
 * ∟`None`
 
-<<<<<<< signed
-## `test_kompismoln_takes_the_sample_s_vignettes`
-`src/chatddx/test/test_sample.py:test_kompismoln_takes_the_sample_s_vignettes`
-=======
 ## `test_kompismoln_s_sources_are_the_sample_s`
 `src/chatddx/test/test_sample.py:test_kompismoln_s_sources_are_the_sample_s`
->>>>>>> @stamp
 
 * ∟`None`
 

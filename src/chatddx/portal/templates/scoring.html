@@ -29,7 +29,7 @@
   <p class="text-muted-foreground">No scorer or judge you see: a scorer is composed on a case in <a class="{{ link }}" href="/review">Review</a>, or <a class="{{ link }}" href="/library/new?kind=scorer">written in the Library</a>.</p>
 </div>
 {% else %}
-<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[18rem_minmax(0,1fr)]">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[18rem_minmax(0,1fr)]">
 
   {% call pane("Scorers and judges") %}
   <h2 class="mb-1 text-sm font-semibold">Scorers</h2>
@@ -119,7 +119,7 @@
           {% for f in scorer.fared %}
           <tr class="border-t border-border/60">
             <td class="{{ td }}"><a class="{{ link }}" href="/runs/{{ f.run.id }}">{{ f.run.described }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
-            {% for m in f.means %}<td class="{{ td }} font-mono">{{ mean(m) }}</td>{% endfor %}
+            {% for m in f.means %}<td class="{{ td }} font-mono">{{ mean(m, scorer.views[loop.index0].unit) }}</td>{% endfor %}
           </tr>
           {% endfor %}
         </tbody>

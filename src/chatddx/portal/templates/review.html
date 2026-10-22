@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, drawer, opened, outcome, pane, rail, upright %}
+{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, upright %}
 
 {% macro datum(value, key=None) %}
 {%- if value is mapping -%}
@@ -20,10 +20,6 @@
 {%- endif -%}
 {% endmacro %}
 
-{% macro scored(value, unit) -%}
-{%- if value is none -%}—{%- elif unit == "@" -%}@{{ value | int }}{%- else -%}{{ "%.2f" | format(value) }}{%- endif -%}
-{%- endmacro %}
-
 {% set link = "text-primary hover:underline" %}
 {% set button = "inline-flex h-8 items-center rounded-md border border-border bg-card px-3 text-sm font-medium hover:bg-muted" %}
 {% set field = "rounded-md border border-input bg-transparent px-2.5" %}
@@ -36,7 +32,7 @@
 </div>
 {% else %}
 {% set here = "/review/" ~ family.id %}
-<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
 
   {% call drawer("cases", "Cases") %}
   <summary class="{{ rail }}">
@@ -161,10 +157,14 @@
   <p class="mb-3 text-xs text-muted-foreground">No scorer you see reads this schema.</p>
   {% endif %}
 
-  {% if expected and expected.shared and not expected.expectation %}
-  <div class="mb-3 flex flex-wrap items-center gap-2 text-sm"><span class="text-muted-foreground">Shared with you to take:</span>
-    {% for t in expected.shared %}
-    <form method="post" action="/threads/{{ t.id }}/take"><input type="hidden" name="next" value="{{ back }}"><button class="rounded-full border border-border px-2.5 py-0.5 text-xs hover:bg-muted">Take {{ (t.owner ~ "/" if t.owner else "") ~ (t.name or t.title) }}</button></form>
+  {% if offered %}
+  <div class="mb-3 space-y-2 text-sm">
+    <p class="text-muted-foreground">Shared with you to take:</p>
+    {% for t, data in offered %}
+    <div data-offered="{{ t.id }}" class="rounded-lg border border-border/60 p-2.5">
+      <form method="post" action="/threads/{{ t.id }}/take" class="mb-2"><input type="hidden" name="next" value="{{ back }}"><button class="rounded-full border border-border px-2.5 py-0.5 text-xs hover:bg-muted">Take {{ (t.owner ~ "/" if t.owner else "") ~ (t.name or t.title) }}</button></form>
+      <div class="text-xs">{{ datum(data) }}</div>
+    </div>
     {% endfor %}
   </div>
   {% endif %}
@@ -263,7 +263,7 @@
     {% if means and answers %}
     <dl class="mb-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-1 rounded-lg bg-muted/40 p-2.5 text-xs">
       {% for m in means %}
-      <dt>{{ m.label }}</dt><dd class="text-right tabular-nums">{{ scored(m.mean, m.unit) }}</dd><dd class="text-muted-foreground">mean of {{ m.of }}</dd>
+      <dt>{{ m.label }}</dt><dd class="text-right tabular-nums">{{ mean(m.mean, m.unit) }}</dd><dd class="text-muted-foreground">mean of {{ m.of }}</dd>
       {% endfor %}
     </dl>
     {% endif %}
@@ -282,7 +282,7 @@
         {% if a["values"] is none %}
         <span class="text-right text-xs text-muted-foreground" style="grid-column: span {{ views | length }}">{{ "left to score" if a.left else "not scored by it" }}</span>
         {% else %}
-        {% for value, unit in a["values"] %}<span class="text-right tabular-nums{{ ' italic text-muted-foreground' if a.left else '' }}"{% if a.left %} title="scored against what was expected before"{% endif %}>{{ scored(value, unit) }}</span>{% endfor %}
+        {% for value, unit in a["values"] %}<span class="text-right tabular-nums{{ ' italic text-muted-foreground' if a.left else '' }}"{% if a.left %} title="scored against what was expected before"{% endif %}>{{ mean(value, unit) }}</span>{% endfor %}
         {% endif %}
         {% endif %}
       </summary>

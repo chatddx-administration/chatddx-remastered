@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
 from typing import Annotated
@@ -17,13 +18,24 @@ from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
 from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.runner import Outcome, outcome
 from chatddx.store import Queue, UnderWay
 
 from .lab import linked, viewed
 from .pages import BenchDep, page
+from .scoring import unit_in
 
 PLAN = "management_plan_v1"
 SHOWN = 50
+TALLIED: tuple[Outcome, ...] = (
+    "valid",
+    "completed",
+    "salvaged",
+    "invalid",
+    "unread",
+    "errored",
+    "stopped",
+)
 
 router = APIRouter()
 
@@ -41,6 +53,7 @@ def runs(
         "runs.html",
         person=bench.person,
         runs=found[:SHOWN],
+        tallies={r.id: _tally(bench, r) for r in found[:SHOWN]},
         number=number,
         more=len(found) > SHOWN,
         left=left,
@@ -78,6 +91,7 @@ def comparing(
         by=picked,
         at=at,
         grouped=grouped,
+        units=[unit_in(bench, v.scorer, v.view) for v in compared.views],
         kept="?" + urlencode([("run", str(r)) for r in run]),
     )
 
@@ -112,7 +126,14 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         engine=bench.title(shown.engine),
         configuration=_configuration(bench, shown.ran, shown.skeleton),
         plan=bench.answers(skeleton) == PLAN,
-        scores=[(graded, _rows(graded)) for graded in shown.scores],
+        scores=[
+            (
+                graded,
+                _rows(graded),
+                [unit_in(bench, graded.scorer, v) for v in range(len(graded.labels))],
+            )
+            for graded in shown.scores
+        ],
         said=_said,
         under_way=under_way,
         resumable=resumable,
@@ -122,6 +143,13 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         live={"run": str(run), "titles": titles},
         island="run",
     )
+
+
+def _tally(bench: Bench, run: schemas.Run) -> tuple[list[tuple[Outcome, int]], int]:
+    skeleton = resolve(bench.store.get, run.skeleton, Skeleton)
+    counted = Counter(outcome(skeleton, i)[0] for i in bench.store.run(run.id).items)
+    rest = len(run.cases) * len(run.seeds) - counted.total()
+    return [(o, counted[o]) for o in TALLIED if counted[o]], rest
 
 
 def _trial_of(bench: Bench, digest: str) -> tuple[int, str] | None:

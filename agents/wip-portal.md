@@ -1,20 +1,16 @@
 # The portal: work in progress
 
-The portal is the bench's web edge, beside the repl and the API: HTML rendered on the server from the bench, with Svelte
-islands where a page needs a round trip. What each page is for is in "Its pages". This starts from the Library, the Lab
-and Scoring, which are drafted (see "The Library today", "The Lab today" and "Scoring today"), and has what is next in
-"Next". "Decided" means the user said so. "Take" is the agent's recommendation and still open.
+The portal is where clinicians review and researchers research, assume they're tech-illiterate with little time and
+cognitive reserves.
 
 ## Its pages
 
-Decided:
-
-- **Review**: where clinicians check their vignettes against appendices, scorers and expectations. Self-contained but for
-  judges' configurations, which it picks and doesn't edit.
+- **Review**: where clinicians check their vignettes against appendices, scorers and expectations. Self-contained but
+  for judges' configurations, which it picks and doesn't edit.
 - **Lab**: the evolution of configurations, and queueing trials and seeing how they fare against each other.
 - **Scoring**: managing judges and scorers more deeply than Review does.
 - **Runs**: everything run-related: what is under way and what is queued, its order, pausing and halting.
-- **Library**: drawn from schemas, instructive of the data model rather than practical; still the best place to manage
+- **Library**: schema driven, instructive of the data model rather than practical; still the best place to manage
   translations.
 - **World**: a read-only view of the World the portal runs in.
 
@@ -37,36 +33,20 @@ Take, the moves it asks for:
    picks (`JudgeEditor`), and asking another, and links a judge to its page. Built.
 2. **A judge's configuration** is still varied in the Lab, beside every other configuration. How its judges fare, which
    the Lab leaves out, is on Scoring, and the Lab links to it.
-3. **The code a scorer pins**, its metrics and what each measures and takes, is shipped, so it is the World's to show, as
-   models are, and Scoring links to it.
+3. **The code a scorer pins**, its metrics and what each measures and takes, is shipped, so it is the World's to show,
+   as models are, and Scoring links to it.
 4. **Scoring again** stays on Runs, and Scoring links to what is left to score.
-5. **The navigation** reads Review, Lab, Scoring, Runs, Library, World: the three benches by who works at them, then what
-   runs, the data model and the World. Built.
+5. **The navigation** reads Review, Lab, Scoring, Runs, Library, World: the three benches by who works at them, then
+   what runs, the data model and the World. Built.
 6. **The name** Scoring, over Judging or Scorers: a run's scoring is what its scorer and judges make of it. Decided, as
    no namespace collides with it: the kind `scoring` stays derived, is a thread kind of the catalog but no word of the
    bench's (`src/chatddx/bench/model.py:KINDS`), so it has no Library tab, no `kind` of the API's threads and no page,
    and nothing plans one.
 
-## Configuration and actions
+## The Library
 
-Decided: the Library is where each component is written, one at a time; the Lab is where researchers combine what exists
-already and try to run it, the evolution of configurations (`docs/chatddx.md`, "Intended evolution of configurations").
-
-Decided, built: a run is composed as a trial, a thread of its own whose fields are its skeleton, its engine by handle,
-cases, cleanup and seeds, and starting is queueing that trial's head under an execution. A trial is in one language, as
-it names one skeleton, so a start over several languages is a start of several trials. A trial is begun of the cases
-picked on the case tab; its tab, its page and its configuration's Lab start it on `/lab/run`
-(`src/chatddx/portal/test/test_trials.py`).
-
-Composed but not kept:
-
-- **The variation**: a configuration's edit with parts replaced, a plain value nothing stores until it is kept.
-- **The execution and the canary set**: the endpoint's, with a concurrency and an order a start may give
-  (`src/chatddx/api/schemas.py:NewRun`; `docs/backlog.md`, "Execution settings as a component").
-- **The scoring**: built when a run is scored, from the person's own expectations and the scorer, rather than written by
-  hand. It is derived, not configured.
-
-## The Library today
+The Library is for schema driven views, threads fit right in, but cases, runs, configurations and translations do not
+and are squeezed in for completeness.
 
 Drafted: every page of it is rendered on the server, with no island, and every form but translations' is drawn from its
 kind's JSON Schema (`src/chatddx/portal/test/test_library.py`, `src/chatddx/portal/test/test_clinicians.py`).
@@ -132,18 +112,10 @@ appendices and, under each schema, their expectations, and at an earlier binding
 begun of it: a case of its appendices, an appendix of its vignette, and an expectation of a case under a schema. Writing
 an appendix or an expectation in place is Review's, which the section links. The API calls a case a family.
 
-### Beside it
+## The Lab
 
-- **Review**, `/review/{id}`: a case's vignette, appendices, expectations, runs and scores, its appendices and
-  expectations written in place with `AppendixEditor` and `ExpectationEditor`, and scorers with `Composer`
-  (`frontend/src/lib/`).
-- **Runs**: a run's page halts, resumes, scores again and runs again.
-- **Scoring**, `/scoring/{id}`: see "Scoring today".
-- **World**, `/world` (`src/chatddx/portal/world.py`): what the portal was started in: the World's directory and the
-  files it read, the build serving it, its sources, endpoints and hosts, which handle configurations are made for and
-  each judge is bound to, and the models by handle. Decided: the portal shows its World whole.
-
-## The Lab today
+The Lab is where researchers combine what exists already and try to run it, the evolution of configurations
+(`docs/chatddx.md`, "Intended evolution of configurations").
 
 Drafted: `/lab/{id}` (`src/chatddx/portal/lab.py`; `src/chatddx/portal/test/test_lab.py`) is where a configuration is
 varied, run and compared with its lineage, and `/lab` leads to the person's first configuration. In its address are the
@@ -157,40 +129,40 @@ variation's query (`schemas.Varying`, its parts, `head`, `under`, `tag`) and its
 - **How they fare**: each configuration of the lineage as a column on a set of cases, under each its own model or one
   handle, by its latest run, sorted by a view.
 
-A judge's configuration is tried and saved there too, without how they fare or trials.
+A judge's configuration is tried and saved there too, without how they fare, running it, its runs or trials.
 
-## Scoring today
+## Scoring
 
-Drafted: `/scoring/{id}` (`src/chatddx/portal/scoring.py`; `src/chatddx/portal/test/test_scoring.py`) shows a scorer or a
-judge the person sees, rendered on the server with no island, and writes nothing yet. `/scoring` leads to the person's
+Drafted: `/scoring/{id}` (`src/chatddx/portal/scoring.py`; `src/chatddx/portal/test/test_scoring.py`) shows a scorer or
+a judge the person sees, rendered on the server with no island, and writes nothing yet. `/scoring` leads to the person's
 first scorer, and the Library's page of a scorer or a judge and Review's scorer lead to theirs.
 
-- **Scorers and judges**: each the person sees, their own first, the scorers by the expectation schema they grade against
-  and the judges by the model they are asked under.
+- **Scorers and judges**: each the person sees, their own first, the scorers by the expectation schema they grade
+  against and the judges by the model they are asked under.
 - **A scorer**: its views, each with its metric and what it measures, what it picks of an answer and of an expectation,
   its judge, flagged where it asks an earlier version, and its parameters. The configurations whose answers it reads and
   those it doesn't (`src/chatddx/factors/scoring.py:View.offered_by`). How many of the cases the person sees they expect
-  something of under its schema, with those to choose from and those without, each linking to Review. How it scored:
-  the person's runs scored by this version, by their mean under each view, compared on `/runs/compare`. Its findings.
+  something of under its schema, with those to choose from and those without, each linking to Review. How it scored: the
+  person's runs scored by this version, by their mean under each view, compared on `/runs/compare`. Its findings.
 - **A judge**: its configuration, linking to the Lab, its model, seeds, fill rule, and the endpoint it is served at now
   or why none. The views of the scorers asking it, by the version of it each asks, or the judge it is forked from, and
   for each scorer asking another, following its latest version: the views asking another are pointed at it, in a new
-  version of the person's own scorer or a fork of another's, with its labels. What it is asked, rendered with its
-  first seed, a placeholder for the answer, and what a view asking it picks of what a case expects, both picked on the
-  page and by default the first such view and the first case it reads something of. What it is asked is changed in
-  place with `JudgeTexts` (`frontend/src/islands/scoring.ts`), previewed against the same pick: saving keeps the texts,
-  the judge's configuration and the judge as the person's own, and leads to that judge's page. Its verdicts, over the latest score of the person's runs under each scorer
-  asking any version of it: the items judged, how many its seeds agree on, how many a seed gave none for, the mean, and
-  the items where its seeds disagree. These are the values a view's metric read of each seed's verdict, kept in the
-  item's detail, never the verdicts, which are sensitive. Its findings.
+  version of the person's own scorer or a fork of another's, with its labels. What it is asked, rendered with its first
+  seed, a placeholder for the answer, and what a view asking it picks of what a case expects, both picked on the page
+  and by default the first such view and the first case it reads something of. What it is asked is changed in place with
+  `JudgeTexts` (`frontend/src/islands/scoring.ts`), previewed against the same pick: saving keeps the texts, the judge's
+  configuration and the judge as the person's own, and leads to that judge's page. Its verdicts, over the latest score
+  of the person's runs under each scorer asking any version of it: the items judged, how many its seeds agree on, how
+  many a seed gave none for, the mean, and the items where its seeds disagree. These are the values a view's metric read
+  of each seed's verdict, kept in the item's detail, never the verdicts, which are sensitive. Its findings.
 
 ## Next
 
 Take: the Library's forms first.
 
 1. **What Review writes already.** Take: an expectation's `data` drawn from its schema with `ExpectationEditor`, and a
-   scorer's `views` and `params` with `Composer`, each an island over its text box that writes its JSON
-   into it, so that the form posts as it does without scripts.
+   scorer's `views` and `params` with `Composer`, each an island over its text box that writes its JSON into it, so that
+   the form posts as it does without scripts.
 2. **The rest of the table.** Open: which of its fields earns a control of its own, and whether a form drawn from the
    JSON Schema (`frontend/src/lib/schema/`) takes the rest.
 3. **The Lab.** Open:
@@ -202,8 +174,8 @@ Take: the Library's forms first.
 4. **Scoring.** Take, in order:
    - Making and changing a judge on its page with `JudgeEditor`, and its versions by link as the Lab's, each with how it
      scored; how a scorer scored lists its shown version's runs only.
-   - A judge against a judge: two judges, or two versions of one, on the same items. It takes scoring the same runs under
-     a scorer asking the other, which Runs does a run at a time. Open: judging scored items again without a run.
+   - A judge against a judge: two judges, or two versions of one, on the same items. It takes scoring the same runs
+     under a scorer asking the other, which Runs does a run at a time. Open: judging scored items again without a run.
    - A judge against a clinician: measuring a judge by real answers (`docs/backlog.md`, "The sample's judge") compares
      its verdicts with a clinician's on the same answers, and nothing stores a clinician's verdict on an answer: an
      expectation is written of a case, before any answer. Open, where it is kept: a kind of its own, of an answer and a

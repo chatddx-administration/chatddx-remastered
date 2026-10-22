@@ -143,7 +143,8 @@ def check_execution(
         findings.append(
             Finding(
                 code="execution.timeout",
-                message=f"{late} attempts took longer than the {limit} s timeout",
+                message=f"{late} attempt{'' if late == 1 else 's'} took longer than "
+                + f"the {limit} s timeout",
             )
         )
 
@@ -162,7 +163,9 @@ def check_execution(
         findings.append(
             Finding(
                 code="execution.order",
-                message=f"{early} items were sent before items scheduled ahead of them",
+                message=f"{early} "
+                + ("item was" if early == 1 else "items were")
+                + " sent before items scheduled ahead of them",
             )
         )
 

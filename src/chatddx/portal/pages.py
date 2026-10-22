@@ -20,6 +20,9 @@ from chatddx.store import People
 from .translations import visible
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+# Accommodating for Jinja, whose tojson sorts keys: an island sends back what it's given,
+# and a component's digest holds the order of its keys.
+templates.env.policies["json.dumps_kwargs"] = {"sort_keys": False}
 
 
 def _when(at: datetime | None) -> str:

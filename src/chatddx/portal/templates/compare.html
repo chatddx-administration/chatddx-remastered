@@ -25,9 +25,10 @@
       <tbody>
         {% for v in compared.views %}
         {% set key = v.scorer ~ ":" ~ v.view %}
+        {% set unit = units[loop.index0] %}
         <tr class="border-t border-border/60{{ ' bg-primary/5' if key == by }}">
           <th scope="row" class="py-1.5 pr-4 text-left align-top font-medium"><a class="{{ 'text-primary' if key == by else 'hover:underline' }}" href="{{ kept }}&by={{ key | urlencode }}">{{ v.name }} · {{ v.label }}</a></th>
-          {% for m in v.means %}<td class="py-1.5 pr-4 align-top font-mono">{{ mean(m) }} <span class="text-xs text-muted-foreground">({{ v["values"][loop.index0] | reject("none") | list | length }})</span></td>{% endfor %}
+          {% for m in v.means %}<td class="py-1.5 pr-4 align-top font-mono">{{ mean(m, unit) }} <span class="text-xs text-muted-foreground">({{ v["values"][loop.index0] | reject("none") | list | length }})</span></td>{% endfor %}
         </tr>
         {% else %}
         <tr><td colspan="{{ compared.runs | length + 1 }}" class="py-2 text-muted-foreground">None of them is scored.</td></tr>
@@ -41,7 +42,7 @@
         {% set row = loop.index0 %}
         <tr class="border-t border-border/60">
           <th scope="row" class="py-1.5 pr-4 text-left align-top font-medium">{{ titles.get(i.case, i.case | short) }}{% if i.replicate %} #{{ i.replicate }}{% endif %}</th>
-          {% for values in view["values"] %}<td class="py-1.5 pr-4 align-top font-mono">{{ mean(values[row]) }}</td>{% endfor %}
+          {% for values in view["values"] %}<td class="py-1.5 pr-4 align-top font-mono">{{ mean(values[row], units[at]) }}</td>{% endfor %}
         </tr>
         {% endfor %}
       </tbody>

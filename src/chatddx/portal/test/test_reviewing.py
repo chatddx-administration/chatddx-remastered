@@ -159,6 +159,47 @@ def test_the_expectation_is_edited_in_place_with_its_versions_and_what_reads_it(
 
 
 @pytest.mark.slow
+def test_an_island_is_given_its_json_in_the_order_it_is_stored(
+    signed: TestClient,
+) -> None:
+    noted = family(signed, "noted")
+    expected = props(shown(signed, f"/review/{noted['id']}"))["expected"]
+    editor = expected["editor"]
+    expectation = signed.get(f"/api/components/{expected['digest']}").json()
+    schema = signed.get(f"/api/components/{editor['schema']}").json()
+    assert json.dumps(editor["data"]) == json.dumps(expectation["body"]["data"])
+    assert json.dumps(editor["json_schema"]) == json.dumps(
+        schema["body"]["json_schema"]
+    )
+
+
+@pytest.mark.slow
+def test_what_is_shared_to_take_is_shown_with_its_take(signed: TestClient) -> None:
+    noted = family(signed, "noted")
+    [expected] = signed.get(f"/api/families/{noted['id']}").json()["cases"][0][
+        "expectations"
+    ]
+    query = {"kind": "expectation", "owner": "alice"}
+    mine = next(
+        t
+        for t in signed.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    )
+    page = shown(signed, f"/review/{noted['id']}")
+    assert "data-offered" not in page
+    assert signed.patch(f"/api/threads/{mine['id']}", json={"deleted": True}).is_success
+    [shared] = signed.get(f"/api/families/{noted['id']}").json()["cases"][0][
+        "expectations"
+    ][0]["shared"]
+    page = shown(signed, f"/review/{noted['id']}")
+    offered = page.split(f'data-offered="{shared["id"]}"', 1)[1]
+    offered = offered.split('id="review-expected"', 1)[0]
+    assert f'action="/threads/{shared["id"]}/take"' in offered
+    for note in expected["data"]["notes"]:
+        assert escape(note["comment"]) in offered
+
+
+@pytest.mark.slow
 def test_an_appendix_is_written_and_a_case_built_of_it_without_leaving_review(
     signed: TestClient,
 ) -> None:

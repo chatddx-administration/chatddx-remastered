@@ -24,6 +24,7 @@ from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 from chatddx.factors.trial import Order, Trial
 
 from .pages import BenchDep, own_first, page
+from .scoring import unit_in
 
 router = APIRouter()
 
@@ -152,6 +153,7 @@ def lab(
     )
     props: dict[str, Any] = {
         "configuration": shown.model_dump(mode="json"),
+        "judged": judged,
         "me": bench.person.login,
         "versions": [v.model_dump(mode="json") for v in versions],
         "base": base,
@@ -214,6 +216,9 @@ def lab(
         gone=[k for k, _ in ordered if k.deleted],
         me=next(k for k in lineage if k.id == thread),
         fared=fared,
+        units={}
+        if fared is None
+        else {key: unit_in(bench, v.scorer, v.view) for key, v, _ in fared.rows},
         handle=handle,
         handles=[m.name for m in models],
         every_tag=sorted({t for f in families for t in f.tags}),

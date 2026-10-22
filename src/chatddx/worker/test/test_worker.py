@@ -365,7 +365,6 @@ def test_a_worker_takes_a_job_only_while_it_holds_fewer_than_it_may(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_run_the_gate_now_refuses_fails_with_why(
     conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
 ) -> None:

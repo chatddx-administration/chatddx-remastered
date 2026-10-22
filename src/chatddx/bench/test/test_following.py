@@ -84,7 +84,6 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
     assert bench.expectation(case, schema) == corrected
 
 
-@pytest.mark.slow
 def test_only_what_has_something_to_follow_is_followed(
     bench: Bench, archive: Bench
 ) -> None:

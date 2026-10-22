@@ -22,6 +22,7 @@ from chatddx.store.store import Connection
 from chatddx.test.helpers import PASSWORD
 from chatddx.test.world import (
     GPT_OSS_ARTIFACT,
+    JUDGE,
     LINES,
     LINES_GUIDED,
     QWEN_ARTIFACT,
@@ -198,6 +199,22 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
     assert errors == []
 
 
+def test_a_judge_s_lab_offers_no_run(page: Page) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "purpose": "judge",
+        "name": JUDGE,
+    }
+    judge = page.request.get("/api/threads", params=query).json()[0]
+    _ = page.goto(f"/lab/{judge['id']}")
+    expect(page.get_by_role("heading", name="Saving it")).to_be_visible()
+    expect(page.get_by_role("heading", name="Running it")).to_have_count(0)
+    expect(page.get_by_role("heading", name="Its runs")).to_have_count(0)
+    assert errors == []
+
+
 def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     page: Page,
 ) -> None:
@@ -272,6 +289,7 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
     assert page.evaluate("document.documentElement.scrollHeight") == 900
     notes = page.get_by_role("list", name="What reads notes")
     expect(notes).to_contain_text("Chock, troligen septisk.")
+    expect(page.get_by_text("Nothing to save: it holds this already.")).to_be_visible()
     page.get_by_label("comment").first.fill("Septisk chock: odla, ge antibiotika.")
     expect(notes).to_contain_text("Septisk chock: odla, ge antibiotika.")
     diagnosis = page.get_by_role("list", name="What reads diagnosis")
@@ -296,6 +314,38 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
 
     page.locator("body").press("j")
     page.wait_for_url(lambda url: f"/review/{noted['id']}" not in url)
+    assert errors == []
+
+
+def test_a_case_with_none_of_one_s_own_shows_the_shared_one_and_waits_for_typing(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
+    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
+    query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
+    mine = next(
+        t
+        for t in page.request.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    )
+    path = f"/api/threads/{mine['id']}"
+    assert page.request.patch(path, data={"deleted": True}).status == 200
+
+    with page.expect_response(lambda r: r.url.endswith("/api/components/check")):
+        _ = page.goto(f"/review/{crlf['id']}")
+    expect(page.get_by_role("button", name="Save")).to_be_enabled()
+    pattern = expected["data"]["diagnosis"]["pattern"]
+    expect(page.locator("[data-offered]")).to_contain_text(pattern)
+    expect(page.get_by_text("a new thread of your own")).to_be_visible()
+    expect(page.get_by_text("Nothing to say of it.")).to_have_count(0)
+    expect(page.get_by_text("expectation.invalid")).to_have_count(0)
+    page.get_by_role("button", name="+ pattern").first.click()
+    page.get_by_label("pattern").first.fill(pattern)
+    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
     assert errors == []
 
 
@@ -399,6 +449,15 @@ def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
     assert edits[-1]["labels"]["views"] == ["named"]
     expect(page.get_by_role("navigation", name="Scorers")).to_contain_text("mine")
     assert errors == []
+
+
+def test_a_scorer_s_page_fits_a_phone(page: Page) -> None:
+    query: dict[str, str | float | bool] = {"kind": "scorer", "name": LINES}
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    page.set_viewport_size({"width": 390, "height": 844})
+    _ = page.goto(f"/scoring/{lines['id']}")
+    expect(page.get_by_role("heading", name="Its views")).to_be_visible()
+    assert page.evaluate("document.documentElement.scrollWidth") == 390
 
 
 def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worker(

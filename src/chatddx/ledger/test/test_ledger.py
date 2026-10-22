@@ -89,7 +89,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
             reg,
         )
         if f.code == "run.incomplete"
-    ] == ["1 canary calls missing"]
+    ] == ["1 canary call missing"]
     assert run.items[0].call.response == {"model": engine.digest}
     unnamed = items[0].call.model_copy(update={"response": {"choices": []}})
     silent = Run(
@@ -119,7 +119,9 @@ def test_run_and_score_checks(reg: Registry) -> None:
             item(1, items[1].call.model_copy(update={"prompt_tokens": None})),
         ),
     )
-    assert "attestation.prompt_tokens" in [f.code for f in check_run(rerun, reg)]
+    assert ("attestation.prompt_tokens", "1 item has no prompt token fingerprint") in [
+        (f.code, f.message) for f in check_run(rerun, reg)
+    ]
 
     with pytest.raises(StructuralError, match="outside the trial"):
         _ = check_run(Run(started=started, items=(*items, item(2, call("m")))), reg)
@@ -329,10 +331,10 @@ def test_execution_is_checked_against_the_calls(reg: Registry) -> None:
     assert check(Execution(retries=1), item(0, 0, 5, attempts=2)) == []
     assert check(Execution(timeout_s=5), item(0, 0, 5), item(1, 5, 9)) == []
     assert check(Execution(timeout_s=4.5), item(0, 0, 5), item(1, 5, 9)) == [
-        ("execution.timeout", "1 attempts took longer than the 4.5 s timeout")
+        ("execution.timeout", "1 attempt took longer than the 4.5 s timeout")
     ]
     assert check(sequential, item(0, 5, 9), item(1, 0, 5)) == [
-        ("execution.order", "1 items were sent before items scheduled ahead of them")
+        ("execution.order", "1 item was sent before items scheduled ahead of them")
     ]
     shuffled = Execution(order="shuffled@1", shuffle_seed=7)
     first, second = (r for _, r in shuffled.schedule((ids["case"],), 2))

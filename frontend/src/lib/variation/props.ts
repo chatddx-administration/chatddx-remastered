@@ -3,6 +3,7 @@ import type { Part, Picked } from "./logic";
 
 export type Props = {
   configuration: Schemas["ThreadDetail"];
+  judged: boolean;
   me: string;
   versions: Schemas["Edit"][];
   base: Picked;

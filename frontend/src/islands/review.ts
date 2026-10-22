@@ -24,6 +24,16 @@ if (held) {
   for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) {
     remembered(drawer, "review");
   }
+  const cases = document.querySelector<HTMLDetailsElement>('details[data-drawer="cases"]');
+  const list = cases?.querySelector<HTMLElement>(":scope > div");
+  const current = list?.querySelector<HTMLElement>('a[aria-current="page"]');
+  if (cases && list && current) {
+    const centred = () => {
+      if (cases.open) list.scrollTop = current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
+    };
+    centred();
+    cases.addEventListener("toggle", centred);
+  }
   const record = document.querySelector<HTMLDetailsElement>('details[data-drawer="record"]');
   if (record && location.hash === "#record") {
     record.open = true;

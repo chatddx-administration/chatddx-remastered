@@ -1,5 +1,3 @@
-import pytest
-
 from chatddx.bench import Bench, Carried
 from chatddx.bench.configurations import keep_compilation
 from chatddx.factors.base import resolve
@@ -13,7 +11,6 @@ from chatddx.factors.request import (
 from chatddx.test.world import LINES_GUIDED, NATIVE, QWEN
 
 
-@pytest.mark.slow
 def test_translations_that_leave_a_text_out_are_said_whatever_the_cases(
     bench: Bench,
 ) -> None:

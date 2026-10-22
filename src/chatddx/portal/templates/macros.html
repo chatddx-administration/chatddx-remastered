@@ -27,7 +27,7 @@
   {% for f in found %}
   <li class="flex flex-wrap gap-2">
     <span class="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs {{ 'bg-warning/15 text-warning' if f.level == 'warning' else 'bg-muted text-muted-foreground' }}">{{ f.code }}</span>
-    <span class="text-muted-foreground">{{ f.message }}</span>
+    <span class="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">{{ f.message }}</span>
   </li>
   {% endfor %}
 </ul>
@@ -36,7 +36,7 @@
 {% endif %}
 {% endmacro %}
 
-{% macro outcome(said) %}
+{% macro outcome(said, label=none) %}
 {% set tones = {
   "valid": "border-success/30 bg-success/10 text-success",
   "completed": "border-success/30 bg-success/10 text-success",
@@ -46,7 +46,7 @@
   "unread": "border-destructive/30 bg-destructive/10 text-destructive",
   "stopped": "border-border bg-muted text-muted-foreground",
 } %}
-<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ said }}</span>
+<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ label or said }}</span>
 {% endmacro %}
 
 {% macro job(j) -%}
@@ -69,7 +69,7 @@
 </nav>
 {% endmacro %}
 
-{% macro runs_table(runs, left=False) %}
+{% macro runs_table(runs, tallies, left=False) %}
 {% if runs %}
 <form id="compare" method="get" action="/runs/compare" class="mb-3 flex items-center gap-3 text-sm">
   <button class="h-8 rounded-md border border-border px-3 font-medium hover:bg-muted">Compare</button>
@@ -82,7 +82,7 @@
         <th class="pb-2 pr-2 font-medium"><span class="sr-only">Compare</span></th>
         <th class="pb-2 pr-4 font-medium">Started</th>
         <th class="pb-2 pr-4 font-medium">Run</th>
-        <th class="pb-2 pr-4 font-medium">Model</th>
+        <th class="pb-2 pr-4 font-medium">Outcomes</th>
         <th class="pb-2 pr-4 font-medium">Finished</th>
         <th class="pb-2 pr-4 font-medium">Job</th>
         {% if left %}<th class="pb-2 font-medium">Left to score by</th>{% endif %}
@@ -94,7 +94,8 @@
         <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="Compare {{ r.described }}"></td>
         <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ r.at | when }}</td>
         <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}" class="text-primary hover:underline">{{ r.described }}</a></td>
-        <td class="whitespace-nowrap py-2 pr-4 align-top">{{ r.model or "—" }}</td>
+        {% set counted, rest = tallies[r.id] %}
+        <td class="py-2 pr-4 align-top"><div class="flex flex-wrap items-center gap-1">{% for said, n in counted %}{{ outcome(said, n ~ " " ~ said) }}{% endfor %}{% if rest %}<span class="whitespace-nowrap text-xs text-muted-foreground">{{ rest }} {{ "missing" if r.finished else "to go" }}</span>{% endif %}</div></td>
         <td class="py-2 pr-4 align-top">{{ "yes" if r.finished else "no" }}</td>
         <td class="py-2 pr-4 align-top text-muted-foreground">{{ job(r.job) }}</td>
         {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}{% if r.job is none or r.job.status not in ("queued", "under way") %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="rounded-md bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form>{% endif %}</div></td>{% endif %}
@@ -128,6 +129,6 @@
 {{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
 {%- endmacro %}
 
-{% macro mean(value) -%}
-{{ "—" if value is none else "%.2f" | format(value) }}
+{% macro mean(value, unit="") -%}
+{%- if value is none -%}—{%- elif unit == "@" -%}@{{ value | int }}{%- else -%}{{ "%.2f" | format(value) }}{%- endif -%}
 {%- endmacro %}

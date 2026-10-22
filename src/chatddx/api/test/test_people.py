@@ -157,7 +157,6 @@ def raising(error: Exception) -> Callable[[], None]:
     return raised
 
 
-@pytest.mark.slow
 def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code(
     served: FastAPI, client: TestClient
 ) -> None:

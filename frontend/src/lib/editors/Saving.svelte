@@ -41,6 +41,8 @@
   );
   const unready = $derived(component() === null || found === null || "problem" in found);
   const nameless = $derived(editing.mode !== "edit" && !name.trim());
+  const first = JSON.stringify(untrack(() => $state.snapshot(component())));
+  const touched = $derived(JSON.stringify($state.snapshot(component())) !== first);
 
   $effect(() => {
     const sent = $state.snapshot(component());
@@ -83,7 +85,7 @@
 </script>
 
 <div class="mt-3 space-y-3">
-  <Findings {found} />
+  {#if editing.mode !== "new" || touched}<Findings {found} />{/if}
   <form class="space-y-3" onsubmit={save}>
     {#if editing.mode !== "edit"}
       <label class="grid max-w-md gap-1 text-sm">

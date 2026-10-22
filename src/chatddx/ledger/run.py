@@ -171,13 +171,14 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     findings = check_seal(run, str(started.run))
     if run.finished is not None:
         for missing, what in (
-            (expected - set(keys), "items"),
-            (planned - set(probes), "canary calls"),
+            (expected - set(keys), "item"),
+            (planned - set(probes), "canary call"),
         ):
-            if missing:
+            if n := len(missing):
                 findings.append(
                     Finding(
-                        code="run.incomplete", message=f"{len(missing)} {what} missing"
+                        code="run.incomplete",
+                        message=f"{n} {what}{'' if n == 1 else 's'} missing",
                     )
                 )
     for item in run.items:
@@ -217,7 +218,9 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
         findings.append(
             Finding(
                 code="attestation.prompt_tokens",
-                message=f"{unfingerprinted} items have no prompt token fingerprint",
+                message=f"{unfingerprinted} "
+                + ("item has" if unfingerprinted == 1 else "items have")
+                + " no prompt token fingerprint",
             )
         )
     calls = [*(c for i in run.items for c in i.calls), *(c.call for c in run.canaries)]

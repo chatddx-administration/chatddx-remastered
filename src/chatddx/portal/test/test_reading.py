@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,6 +30,11 @@ def test_a_person_s_runs_are_listed_and_each_is_read_on_its_page(
         assert escape(r["described"]) in page
         for item in detail["items"]:
             assert f">{item['outcome']}</span>" in page
+        row = listed.split(f'value="{r["id"]}"', 1)[1].split("</tr>", 1)[0]
+        counted = Counter(item["outcome"] for item in detail["items"])
+        assert all(f">{n} {said}</span>" in row for said, n in counted.items())
+        if rest := len(r["cases"]) * len(r["seeds"]) - len(detail["items"]):
+            assert f"{rest} {'missing' if r['finished'] else 'to go'}" in row
         for graded in detail["scores"]:
             assert escape(graded["name"]) in page
         assert 'id="item-1"' in page or not detail["items"]
@@ -50,6 +56,28 @@ def test_a_run_s_page_shows_its_answers_and_what_its_scores_hold(
         elif answer is not None:
             assert escape(json.dumps(answer, indent=2, ensure_ascii=False)) in page
     assert ">Mean</td>" in page
+
+
+@pytest.mark.slow
+def test_a_first_mention_is_shown_where_it_is_in_the_answer(signed: TestClient) -> None:
+    for r in signed.get("/api/runs").json():
+        for graded in signed.get(f"/api/runs/{r['id']}").json()["scores"]:
+            body = signed.get(f"/api/components/{graded['scorer']}").json()["body"]
+            at = {
+                i for i, v in enumerate(body["views"]) if v["metric"] == "first_mention"
+            }
+            found = [
+                i["value"]
+                for i in graded["items"]
+                if i["view"] in at and i["value"] is not None
+            ]
+            if found:
+                page = shown(signed, f"/runs/{r['id']}")
+                assert all(f">@{int(v)}</td>" in page for v in found)
+                compared = shown(signed, f"/runs/compare?run={r['id']}")
+                assert all(f">@{int(graded['means'][v])} " in compared for v in at)
+                return
+    pytest.fail("no run is scored with a first mention")
 
 
 @pytest.mark.slow

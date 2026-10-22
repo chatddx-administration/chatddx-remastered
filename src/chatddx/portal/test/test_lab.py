@@ -119,8 +119,10 @@ def test_a_judge_s_configuration_is_tried_but_not_fared_and_a_chunk_isn_t_found(
     page = shown(signed, f"/lab/{judge['id']}")
     assert "A judge's configuration isn't run on cases" in page
     assert 'aria-label="How they fare"' not in page and "Its trials" not in page
-    assert variation_props(page)["configuration"]["id"] == judge["id"]
+    given = variation_props(page)
+    assert (given["configuration"]["id"], given["judged"]) == (judge["id"], True)
     lines = thread(signed, "configuration", LINES)
+    assert variation_props(shown(signed, f"/lab/{lines['id']}"))["judged"] is False
     assert signed.get(f"/lab/{lines['id']}?handle=nowhere").status_code == 422
 
 

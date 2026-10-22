@@ -165,7 +165,10 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
     expected = {(k, v) for k in run_keys for v in range(len(scorer.views))}
     if score.finished is not None and (missing := expected - set(scored)):
         findings.append(
-            Finding(code="score.incomplete", message=f"{len(missing)} items missing")
+            Finding(
+                code="score.incomplete",
+                message=f"{len(missing)} item{'' if len(missing) == 1 else 's'} missing",
+            )
         )
     calls = [jc.call for i in score.items for jc in i.judge_calls]
     sent: dict[ItemKey, datetime] = {}

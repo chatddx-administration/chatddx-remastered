@@ -92,6 +92,14 @@ def review(
         if r.job is not None and r.job.status in OPEN
     ]
     own = _own(bench, expected)
+    offered = (
+        []
+        if expected is None or expected.expectation is not None
+        else [
+            (t, resolve(bench.store.get, t.head.digest, Expectation).data)
+            for t in expected.shared
+        ]
+    )
     appendices = _appendices(bench, picked.appendices)
     views = [] if held is None else _views(bench, held, expected)
     query = request.url.query
@@ -153,6 +161,7 @@ def review(
         schema=under,
         expected=expected,
         own=own,
+        offered=offered,
         carried=_carried(bench, shown, picked, under, expected),
         scorers=scorers,
         scorer=held,

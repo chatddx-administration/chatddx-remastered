@@ -19,7 +19,7 @@
   {% endcall %}
   {{ tabs([("/runs", "All", not left), ("/runs?left=true", "Left to score", left)]) }}
   {% call section("Left to score" if left else "All runs") %}
-  {{ runs_table(runs, left) }}
+  {{ runs_table(runs, tallies, left) }}
   {% if number > 1 or more %}
   <div class="mt-4 flex justify-between text-sm">
     {% if number > 1 %}<a class="text-primary hover:underline" href="/runs?page={{ number - 1 }}{{ '&left=true' if left else '' }}">Newer</a>{% else %}<span></span>{% endif %}

@@ -64,8 +64,8 @@ Raises:
 
 Finds:
 1. `execution.retries`: `"{over} calls took more than the {allowed} attempts allowed"`
-2. `execution.timeout`: `"{late} attempts took longer than the {limit} s timeout"`
-3. `execution.order`: `"{early} items were sent before items scheduled ahead of them"`
+2. `execution.timeout`: `"{late} attempt{'' if late == 1 else 's'} took longer than the {limit} s timeout"`
+3. `execution.order`: `"{early} {"item was" if early == 1 else "items were"} sent before items scheduled ahead of them"`
 4. `execution.concurrency`: `"{peak} calls were in flight at once, declared {execution.concurrency}"`
 
 ## `check_log`
@@ -99,13 +99,13 @@ Raises:
 10. `StructuralError`: `"tool code recorded for tools the skeleton lacks: {stray}"` (through `_tool_code`)
 
 Finds:
-1. `run.incomplete`: `"{len(missing)} {what} missing"`
+1. `run.incomplete`: `"{n} {what}{'' if n == 1 else 's'} missing"`
 2. `case.drift`: `"the vignette read differs from the case's"`
 3. `call.failed`: `error`
 4. `tools.stopped`: `"round {len(item.turns)} stopped after {len(item.turns[-1].tools)} of {len(asked)} tool calls, before its call"` (through `_rounds`)
 5. `tools.unanswered`: `"the last response still calls {', '.join(left)} after {len(item.turns)} of {skeleton.max_rounds} rounds"` (through `_rounds`)
 6. `tools.code`: `message` (through `_tool_code`)
-7. `attestation.prompt_tokens`: `"{unfingerprinted} items have no prompt token fingerprint"`
+7. `attestation.prompt_tokens`: `"{unfingerprinted} {"item has" if unfingerprinted == 1 else "items have"} no prompt token fingerprint"`
 8. `canary.phase`: `message` (through `_bracketed`)
 
 ## `check_score`
@@ -131,7 +131,7 @@ Finds:
 3. `score.scorer_code`: `"the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"`
 4. `score.run_unfinished`: `"the run hasn't finished" if ended is None else 'the score started before the run finished'`
 5. `score.no_expectation`: `"{len(uncovered)} of the run's cases have no expectation in the scoring"`
-6. `score.incomplete`: `"{len(missing)} items missing"`
+6. `score.incomplete`: `"{len(missing)} item{'' if len(missing) == 1 else 's'} missing"`
 
 ## `check_seal`
 `src/chatddx/ledger/record.py:check_seal`

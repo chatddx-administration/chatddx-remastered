@@ -247,8 +247,7 @@
       <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
         <tr>
           <th class="pb-2 pr-4 font-medium">Part</th>
-          <th class="pb-2 pr-4 font-medium">Chunk</th>
-          <th class="pb-2 font-medium">Holds</th>
+          <th class="pb-2 font-medium">Chunk</th>
         </tr>
       </thead>
       <tbody>
@@ -257,12 +256,12 @@
             <td class="whitespace-nowrap py-2 pr-4 align-top font-medium">
               <label for="part-{part}">{part.replace("_", " ")}</label>
             </td>
-            <td class="py-2 pr-4 align-top">
+            <td class="py-2 align-top">
               <div class="flex items-center gap-2">
                 <NativeSelect.Root
                   id="part-{part}"
                   size="sm"
-                  class="max-w-md"
+                  class="w-full max-w-md"
                   value={picked[part] ?? ""}
                   onchange={(e) => pick(part, e.currentTarget.value)}
                 >
@@ -277,14 +276,16 @@
                 </NativeSelect.Root>
                 {#if picked[part] !== base[part]}<Badge variant="outline">replaced</Badge>{/if}
               </div>
-            </td>
-            <td class="py-2 align-top text-muted-foreground">
-              {shown[part]?.summary ?? ""}
-              {#if shown[part]?.landed}
-                <span class="font-medium text-foreground">→ {shown[part]?.landed}</span>
-                {#each shown[part]?.nearest ?? [] as reason (reason)}
-                  <span class="block text-xs text-warning">its nearest: {reason}</span>
-                {/each}
+              {#if shown[part]?.summary || shown[part]?.landed}
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {shown[part]?.summary ?? ""}
+                  {#if shown[part]?.landed}
+                    <span class="font-medium text-foreground">→ {shown[part]?.landed}</span>
+                    {#each shown[part]?.nearest ?? [] as reason (reason)}
+                      <span class="block text-warning">its nearest: {reason}</span>
+                    {/each}
+                  {/if}
+                </p>
               {/if}
             </td>
           </tr>
@@ -314,7 +315,7 @@
       <p class="text-sm text-warning">{look.problem}</p>
     {/if}
   </div>
-  {#if given.everyTag.length}
+  {#if !given.judged && given.everyTag.length}
     <div class="mb-4">
       <p class="mb-1.5 text-sm font-medium">Over the cases tagged</p>
       <div class="flex flex-wrap gap-1.5">
@@ -416,6 +417,7 @@
   </details>
 </section>
 
+{#if !given.judged}
 <section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Running it</h2>
   <form class="space-y-4" onsubmit={run}>
@@ -521,6 +523,7 @@
     </Button>
   </form>
 </section>
+{/if}
 
 <section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Saving it</h2>
@@ -558,6 +561,7 @@
   </form>
 </section>
 
+{#if !given.judged}
 <section class="mb-6 border-t border-border/60 pt-4">
   <h2 class="mb-4 text-lg font-semibold">Its runs</h2>
   {#if runs.length === 0}
@@ -589,3 +593,4 @@
     </div>
   {/if}
 </section>
+{/if}

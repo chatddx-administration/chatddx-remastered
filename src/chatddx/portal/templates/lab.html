@@ -18,7 +18,7 @@
 </div>
 {% else %}
 {% set here = "/lab/" ~ configuration.id %}
-<div class="grid gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] {{ 'xl:grid-cols-[auto_minmax(0,1fr)]' if judged else 'xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)]' }}">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] {{ 'xl:grid-cols-[auto_minmax(0,1fr)]' if judged else 'xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)]' }}">
 
   {% call drawer("lineage", "Lineage") %}
   <summary class="{{ rail }}">
@@ -174,7 +174,7 @@
           <th scope="row" class="py-1.5 pr-4 text-left align-top font-medium"><a class="{{ 'text-primary' if key == fared.by else 'hover:underline' }}" href="{{ kept_by }}by={{ key | urlencode }}">{{ v.name }} · {{ v.label }}</a></th>
           {% for fare in fares %}
           <td class="py-1.5 pr-4 align-top font-mono">
-            {%- if fare -%}{{ mean(fare[0]) }} <span class="text-xs text-muted-foreground">({{ fare[1] }})</span>
+            {%- if fare -%}{{ mean(fare[0], units[key]) }} <span class="text-xs text-muted-foreground">({{ fare[1] }})</span>
             {%- else -%}<span class="text-muted-foreground">—</span>{%- endif -%}
           </td>
           {% endfor %}
