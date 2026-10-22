@@ -10,8 +10,8 @@ from chatddx.api import app as api
 from chatddx.inventory import Inventory
 
 from . import (
+    cases,
     configurations,
-    families,
     pages,
     refine,
     review,
@@ -46,7 +46,7 @@ def app(
         translate.router,
         runs.router,
         configurations.router,
-        families.router,
+        cases.router,
         threads.router,
         world.router,
     ):

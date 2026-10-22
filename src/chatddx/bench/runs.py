@@ -1,17 +1,17 @@
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import get_args
 from uuid import UUID
 
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, read, titles
 from chatddx.catalog.families import family_of
 from chatddx.factors.base import resolve
-from chatddx.factors.cases import Case, CleanupOp
+from chatddx.factors.bundle import Registry
+from chatddx.factors.cases import CleanupOp
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import RECIPE_PARTS, Skeleton
-from chatddx.factors.trial import CanarySet, Execution, Trial
+from chatddx.factors.trial import CanarySet, Execution, Order, Trial
 from chatddx.ledger import RunStarted
 from chatddx.ledger.run import PHASES, Phase
 from chatddx.runner import STOPPED, Grading, Halt, Refused, Runner, Running, ScoreEvent
@@ -74,9 +74,7 @@ def start(
                 seeds,
                 variation.label,
                 [*said, *with_first],
-                cleanup=_cleanup_of(seen, each.cases)
-                if cleanup is None
-                else tuple(cleanup),
+                cleanup=seen.cleanup(each.cases) if cleanup is None else tuple(cleanup),
                 execution=execution or at.spec.execution,
                 canaries=None
                 if canaries is None
@@ -87,20 +85,6 @@ def start(
                 _ = keep_compilation(seen, variation, each.language)
         _ = keep_compilation(seen, variation)
     return Started(runs, left_out)
-
-
-def _cleanup_of(seen: Seen, cases: Sequence[str]) -> tuple[CleanupOp, ...]:
-    if not any(s.cleanup for s in seen.inventory.sources.values()):
-        return ()
-    registry = seen.store.load(cases)
-    asked = {
-        op
-        for case in cases
-        for op in seen.inventory.source(
-            resolve(registry.get, case, Case).vignette.source
-        ).cleanup
-    }
-    return tuple(op for op in get_args(CleanupOp) if op in asked)
 
 
 def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
@@ -193,14 +177,82 @@ def _begun(
     canaries: CanarySet | None,
     verify_at: tuple[Phase, ...] = PHASES,
 ) -> Running:
-    _check_quota(seen, [len(cases) * len(seeds)])
     registry, made = trial(seen, skeleton, engine, cases, seeds, cleanup)
+    return _ran(
+        seen, made, registry, endpoint, name, said, execution, canaries, verify_at
+    )
+
+
+def _ran(
+    seen: Seen,
+    made: Trial,
+    registry: Registry,
+    endpoint: str,
+    name: str,
+    said: Sequence[Entry],
+    execution: Execution | None,
+    canaries: CanarySet | None,
+    verify_at: tuple[Phase, ...] = PHASES,
+) -> Running:
+    _check_quota(seen, [len(made.cases) * len(made.seeds)])
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(made, registry, endpoint, execution, canaries, verify_at)
     with seen.conn.transaction():
         for entry in (Entry(field=EntryField.NAME, value=name), *said):
             seen.catalog.note(Subject(run=running.run), entry, seen.person.id)
     return running
+
+
+def start_trials(
+    seen: Seen,
+    versions: Sequence[int],
+    concurrency: int | None = None,
+    order: Order | None = None,
+) -> list[Running]:
+    found: list[tuple[Trial, str]] = []
+    for id in dict.fromkeys(versions):
+        held = seen.rows.edit(id)
+        if held is None:
+            raise NotFound(f"no trial version {id} for {seen.person.login}")
+        _, about = seen.thread(held.thread, "trial")
+        name = about.name or titles.title(seen.rows, held.thread)
+        found.append((resolve(seen.store.get, held.digest, Trial), name))
+    if not found:
+        raise ValueError("a start runs one trial or more")
+    seen_cases = {c for f in seen.families() for c in f.cases}
+    for made, _ in found:
+        if missing := [c for c in made.cases if c not in seen_cases]:
+            raise NotFound(f"no case {missing[0]} for {seen.person.login}")
+    _check_quota(seen, [len(t.cases) * len(t.seeds) for t, _ in found])
+    runs: list[Running] = []
+    # Policy: one transaction, so that a run the gate refuses leaves none of the start's
+    # begun.
+    with seen.conn.transaction():
+        for made, name in found:
+            try:
+                serving = seen.inventory.serving(made.engine)
+            except LookupError:
+                raise ValueError(
+                    f"no endpoint here serves the engine of {name}: follow its handle"
+                ) from None
+            at = seen.endpoint(serving)
+            canaries = at.spec.canaries
+            with_first = [Entry.started_with(runs[0].run)] if runs else []
+            runs.append(
+                _ran(
+                    seen,
+                    made,
+                    seen.store.load([made.digest]),
+                    at.name,
+                    name,
+                    with_first,
+                    at.spec.execution.overlaid(concurrency, order),
+                    None
+                    if canaries is None
+                    else resolve(seen.store.get, canaries, CanarySet),
+                )
+            )
+    return runs
 
 
 def _check_quota(seen: Seen, runs: Sequence[int]) -> None:

@@ -18,10 +18,9 @@ It holds nothing sensitive, so the reader role may read all of catalog.
 
 ### Append-only, and the latest wins
 
-Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
-current version, a name, a binding, a language), the latest row is what holds now and the earlier rows are its history.
-"Latest" means written last, in the order the database numbered the rows, not by the time a row records, which is shown,
-and counts the runs a person started in the last day.
+For anything that can change (a thread's current version, a name, a binding, a language), the latest row is what holds
+now and the earlier rows are its history. "Latest" means written last, in the order the database numbered the rows, not
+by the time a row records, which is shown, and counts the runs a person started in the last day.
 
 Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
 (docs/modules/store.md, "Tiers"); a garbage collector for unreferenced items waits (docs/backlog.md, "Garbage
@@ -262,8 +261,7 @@ The rig never tells a model which language a request is in; what is sent is simp
 which one, so that each case is sent in its own language (docs/modules/bench.md) and lints can check that a trial
 doesn't mix languages (docs/modules/factors.md, "Lints").
 
-A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
-of two places:
+A language is a tag such as "sv" or "pt-BR". It can be replaced and the latest wins. It is kept in one of two places:
 
 - A vignette's language is said about its family; no other subject takes a language entry.
 - A component's language is kept on the component, so it belongs to the text itself: forking a chunk keeps it, and

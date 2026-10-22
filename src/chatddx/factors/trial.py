@@ -102,6 +102,22 @@ class Execution(Frozen):
             raise ValueError("shuffle_seed goes with shuffled order, and only with it")
         return self
 
+    def overlaid(
+        self, concurrency: int | None = None, order: Order | None = None
+    ) -> "Execution":
+        if concurrency is None and order is None:
+            return self
+        order = order or self.order
+        shuffled = self.shuffle_seed if order == self.order else suggest_seeds(1)[0]
+        return Execution.model_validate(
+            {
+                **self.model_dump(),
+                "concurrency": concurrency or self.concurrency,
+                "order": order,
+                "shuffle_seed": shuffled if order == "shuffled@1" else None,
+            }
+        )
+
     def schedule(self, cases: Sequence[str], replicates: int) -> list[tuple[str, int]]:
         if self.order == "replicate_major@1":
             return [(c, r) for r in range(replicates) for c in cases]

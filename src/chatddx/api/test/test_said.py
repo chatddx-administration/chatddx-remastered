@@ -30,8 +30,11 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     assert (said["tags"], said["collaborators"]) == (["ddx", "short"], ["bob"])
     assert signed.get(path, headers=bob).json()["name"] == "terse"
 
-    cleared = signed.patch(path, json={"name": None, "collaborators": []}).json()
+    cleared = signed.patch(
+        path, json={"name": None, "description": None, "collaborators": []}
+    ).json()
     assert cleared["name"] is None and cleared["title"]
+    assert cleared["description"] is None
     assert (cleared["tags"], cleared["collaborators"]) == (["ddx", "short"], [])
     assert signed.get(path, headers=bob).status_code == 404
 
@@ -42,7 +45,7 @@ def test_what_isn_t_the_owner_s_to_say_is_refused(signed: TestClient) -> None:
     archives = thread(signed, "configuration", LINES, "archive")
     path = f"/api/threads/{mine['id']}"
     for asked, status, said in (
-        ({"description": None}, 422, "a description is replaced, never taken away"),
+        ({"description": ""}, 422, "a description can't be empty"),
         ({"collaborators": ["nobody"]}, 422, "no person 'nobody'"),
         ({"name": ""}, 422, "a name can't be empty"),
         ({"collaborators": ["alice"]}, 422, "is yours"),
@@ -85,4 +88,32 @@ def test_an_owner_deletes_and_restores_a_thread(
         False,
         "back",
         ["bob"],
+    )
+
+
+@pytest.mark.slow
+def test_a_collaborator_leaves_a_thread_shared_with_them(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    path = f"/api/threads/{mine['id']}"
+    _ = signed.patch(path, json={"collaborators": ["bob"]})
+    assert signed.get(path, headers=bob).status_code == 200
+
+    got = signed.post(f"{path}/leave", headers=bob)
+    assert (got.status_code, got.content) == (204, b"")
+    assert signed.get(path, headers=bob).status_code == 404
+    assert signed.get(path).json()["collaborators"] == []
+    got = signed.post(f"{path}/leave", headers=bob)
+    assert (got.status_code, got.json()) == (
+        404,
+        {
+            "detail": f"no configuration {mine['id']} shared with bob",
+            "code": "not_found",
+        },
+    )
+    got = signed.post(f"{path}/leave")
+    assert (got.status_code, got.json()["detail"]) == (
+        404,
+        f"no configuration {mine['id']} shared with alice",
     )

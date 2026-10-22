@@ -47,6 +47,7 @@ from chatddx.factors.scoring import Expectation, Judge, Scoring
 from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe
 from chatddx.ledger import RunStarted, ScoreStarted
 from chatddx.store import People, Rows, Store
+from chatddx.store.migrate import migrate
 from chatddx.store.store import Connection
 from chatddx.store.test.helpers import stored_world
 
@@ -832,6 +833,9 @@ def test_changed_vignettes_are_repaired(conn: Connection) -> None:
         {"field": "name", "value": ""},
         {"field": "name", "value": "x", "present": False},
         {"field": "name", "value": None, "present": True},
+        {"field": "description"},
+        {"field": "description", "value": ""},
+        {"field": "description", "value": "x", "present": False},
         {"field": "owner", "value": "alice"},
         {"field": "owner", "person": 1, "present": False},
         {"field": "collaborator"},
@@ -847,6 +851,47 @@ def test_changed_vignettes_are_repaired(conn: Connection) -> None:
 def test_entry_shapes(entry: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
         _ = Entry.model_validate(entry)
+
+
+def test_a_description_is_taken_away_as_a_name_is(conn: Connection) -> None:
+    catalog, _, _, ids, alice = stored_world(conn)
+    subject = Subject(thread=catalog.create(ids["trial"], alice.id).thread)
+    described = Entry(field=EntryField.DESCRIPTION, value="first try")
+    catalog.note(subject, described, alice.id)
+    catalog.note(subject, Entry(field=EntryField.DESCRIPTION, present=False), alice.id)
+    assert read.about(Rows(conn), subject).description is None
+    for value, present in (("", True), (None, True), ("first try", False)):
+        with pytest.raises(errors.CheckViolation), conn.transaction():
+            _ = conn.execute(
+                """
+                INSERT INTO catalog.entry (thread, field, value, present, by)
+                VALUES (%s, 'description', %s, %s, %s)
+                """,
+                (subject.thread, value, present, alice.id),
+            )
+
+
+@pytest.mark.slow
+def test_a_store_holding_an_empty_description_still_migrates(empty: Connection) -> None:
+    migration = "0027-t2-catalog-description"
+    _ = migrate(empty, tier=0)
+    with empty.transaction():
+        _ = empty.execute(
+            "INSERT INTO public.migration (name, tier) VALUES (%s, 2)", (migration,)
+        )
+    _ = migrate(empty)
+    catalog, _, _, ids, alice = stored_world(empty)
+    thread = catalog.create(ids["trial"], alice.id).thread
+    emptied = """
+        INSERT INTO catalog.entry (thread, field, value, by)
+        VALUES (%s, 'description', '', %s)
+    """
+    with empty.transaction():
+        _ = empty.execute(emptied, (thread, alice.id))
+        _ = empty.execute("DELETE FROM public.migration WHERE name = %s", (migration,))
+    assert migrate(empty) == [migration]
+    with pytest.raises(errors.CheckViolation), empty.transaction():
+        _ = empty.execute(emptied, (thread, alice.id))
 
 
 def test_cases_have_a_language(conn: Connection) -> None:

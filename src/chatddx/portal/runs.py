@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
-from typing import Annotated
+from dataclasses import dataclass
+from typing import Annotated, cast, get_args
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -8,15 +9,15 @@ from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
-from chatddx.api import queue as api_queue, runs as api, schemas
+from chatddx.api import queue as api_queue, runs as api, schemas, threads as threads_api
 from chatddx.api.state import refused
-from chatddx.bench import Bench, NotFound
+from chatddx.bench import Bench, Endpoint, NotFound
 from chatddx.catalog import threads
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
-from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.factors.trial import Order, Trial, suggest_seeds
 from chatddx.store import Queue, UnderWay
 
 from .configurations import linked
@@ -83,6 +84,68 @@ def comparing(
     )
 
 
+@dataclass(frozen=True)
+class Starting:
+    thread: schemas.Thread
+    versions: list[schemas.Edit]
+    trial: Trial
+    endpoint: Endpoint | None
+    refused: str | None
+
+
+@router.get("/runs/new")
+def beginning(
+    request: Request,
+    bench: BenchDep,
+    trial: Annotated[list[int] | None, Query()] = None,
+) -> Response:
+    return page(
+        request,
+        "starting.html",
+        person=bench.person,
+        trials=[_starting(bench, t) for t in dict.fromkeys(trial or ())],
+        orders=get_args(Order),
+    )
+
+
+def _starting(bench: Bench, thread: int) -> Starting:
+    shown = threads_api.thread(bench, thread)
+    if shown.kind != "trial":
+        raise HTTPException(404, f"no trial {thread} for {bench.person.login}")
+    held = resolve(bench.store.get, shown.head.digest, Trial)
+    versions = threads_api.edits(bench, thread)
+    try:
+        at = bench.endpoint(bench.inventory.serving(held.engine))
+    except LookupError:
+        named = shown.name or shown.title
+        why = f"no endpoint here serves the engine of {named}: follow its handle"
+        return Starting(shown, versions, held, None, why)
+    return Starting(shown, versions, held, at, None)
+
+
+@router.post("/runs/new")
+def starting(
+    bench: BenchDep,
+    version: Annotated[list[int] | None, Form()] = None,
+    concurrency: Annotated[str, Form()] = "",
+    order: Annotated[str, Form()] = "",
+    score: Annotated[bool, Form()] = False,
+) -> Response:
+    with refused():
+        if order and order not in get_args(Order):
+            raise ValueError(
+                f"no order {order!r}: the orders are {', '.join(get_args(Order))}"
+            )
+        runs = bench.start_trials(
+            version or [],
+            int(concurrency) if concurrency.strip() else None,
+            cast(Order, order) if order else None,
+        )
+    for running in runs:
+        _ = bench.queue(running, score)
+    return RedirectResponse(f"/runs/{runs[0].run}", 303)
+
+
 @router.get("/runs/{run}")
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     # Accommodating for a job ending once its run's rows are written: asked before the run
@@ -119,9 +182,18 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         resumable=resumable,
         left=[bench.title(s) for s in left],
         together=sorted(together, key=lambda r: str(r[1])),
+        trial=_trial_of(bench, shown.trial),
         live={"run": str(run), "titles": titles},
         island="run",
     )
+
+
+def _trial_of(bench: Bench, digest: str) -> tuple[int, str] | None:
+    held = bench.holder(digest)
+    if held is None:
+        return None
+    edit, about = held
+    return edit.thread, about.name or bench.title(digest)
 
 
 # Policy: a press made while something is under way for its run, from a second tab, a

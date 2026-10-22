@@ -1,13 +1,32 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading %}
+{% from "macros.html" import heading, section %}
+{% from "fields.html" import rows %}
 {% block title %}A new {{ word | replace("_", " ") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
-  {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from nothing.") }}
-  <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6" data-{{ word if word in ("judge", "scorer") else "chunk" }}-editor>
-    <p class="text-sm text-muted-foreground">Writing one takes scripts.</p>
-    <script type="application/json">{{ editor | tojson }}</script>
-  </section>
+  {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from what is given here.") }}
+  {% call section("What it holds", "holds") %}
+  <form method="post" action="{{ action }}" class="grid gap-4">
+    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
+      <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    {{ rows(fields, picked, titles) }}
+    {% if languaged %}
+    <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">language</span>
+      <input name="language" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="none">
+      <span class="text-xs text-muted-foreground">The text's, kept with it.</span></label>
+    {% endif %}
+    {% if labels is not none %}
+    <label class="grid gap-1 text-sm"><span class="text-muted-foreground">labels</span>
+      <textarea name="labels" rows="4" class="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 font-mono text-xs">
+{{ labels | pretty }}</textarea>
+      <span class="text-xs text-muted-foreground">What its views and resources are called, by position, kept with its first version.</span></label>
+    {% endif %}
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+      <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Write it</button>
+      <span class="text-muted-foreground">Writes a new thread of your own.</span>
+    </div>
+  </form>
+  {% endcall %}
 </div>
 {% endblock %}

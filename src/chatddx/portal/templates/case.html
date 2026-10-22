@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, chip %}
+{% block title %}{{ case.name }} · ChatDDX{% endblock %}
+{% block main %}
+{% set link = "text-primary hover:underline" %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="/library?kind=case" class="text-sm {{ link }}">← case</a>
+  {{ heading(case.name) }}
+
+  {% if case.deleted %}
+  <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+    <span>You deleted it: nobody else sees it, and it isn't offered anywhere.</span>
+    <form method="post" action="/cases/{{ case.id }}/restore"><button class="rounded-md bg-primary px-3 py-1 font-medium text-primary-foreground hover:bg-primary/90">Restore</button></form>
+  </div>
+  {% endif %}
+
+  {% call section("About it") %}
+  {% set tagged %}{% for t in case.tags %}{{ chip(t) }} {% else %}—{% endfor %}{% endset %}
+  {{ facts([
+    ("Kind", "case"),
+    ("Owner", case.owner or "—"),
+    ("Shared with", case.collaborators | join(", ") or "—"),
+    ("Language", case.language or "—"),
+    ("Tags", tagged),
+    ("Description", case.description or "—"),
+  ]) }}
+  {% if not case.deleted %}
+  <p class="mt-3 text-sm"><a class="{{ link }}" href="/review/{{ case.id }}">Review it</a> · <a class="{{ link }}" href="/cases/{{ case.id }}/vignette">its vignette's text, on a page of its own</a></p>
+  {% endif %}
+  {% endcall %}
+
+  {% set last = bindings | length %}
+  {% set versioned = "/cases/" ~ case.id ~ "?version=" %}
+  {% call section("What it holds", "holds") %}
+  <nav class="mb-4 flex flex-wrap items-center gap-3 text-sm" aria-label="Versions">
+    {% if at > 1 %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ versioned ~ (at - 1) }}" aria-label="The version before">◀</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">◀</span>{% endif %}
+    <span class="font-medium">Version {{ at }} of {{ last }}</span>
+    {% if at < last %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ versioned ~ (at + 1) }}" aria-label="The version after">▶</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">▶</span>{% endif %}
+    <span class="text-muted-foreground">{{ bound.at | when }}, {{ by }}</span>
+  </nav>
+  {% if not latest %}
+  <p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">A repair has moved its vignette since: version {{ last }}, {{ bindings[-1].at | when }}. <a class="{{ link }}" href="/cases/{{ case.id }}">Open the latest</a></p>
+  {% endif %}
+  <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[max-content_1fr]">
+    <dt class="text-muted-foreground">source</dt><dd>{{ bound.vignette.source }}</dd>
+    <dt class="text-muted-foreground">id</dt><dd class="break-words">{{ bound.vignette.id }}</dd>
+    <dt class="text-muted-foreground">fingerprint</dt><dd class="break-all font-mono text-xs">{{ bound.vignette.fingerprint.alg }}{% if bound.vignette.fingerprint.key_id %} ({{ bound.vignette.fingerprint.key_id }}){% endif %}:{{ bound.vignette.fingerprint.hex }}</dd>
+  </dl>
+
+  <h3 class="mb-2 mt-6 text-sm font-medium">What this version changed</h3>
+  {% if changed is none %}
+  <p class="text-sm text-muted-foreground">It is the first.</p>
+  {% else %}
+  <ul class="space-y-1 text-sm">
+    {% for c in changed %}<li><span class="font-mono text-xs text-muted-foreground">{{ c.path }}</span> <span class="font-mono text-xs"><del class="bg-destructive/10 text-destructive">{{ c.before | pretty }}</del> → <ins class="bg-success/15 text-success no-underline">{{ c.after | pretty }}</ins></span></li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <h3 class="mb-2 mt-6 text-sm font-medium">Its cases at this vignette</h3>
+  <ul class="space-y-3 text-sm" aria-label="Its cases">
+    {% for c in cases %}
+    <li class="rounded-lg border border-border/60 p-3">
+      <div class="flex flex-wrap items-baseline gap-x-3"><span class="font-medium">{{ c.title }}</span><span class="font-mono text-xs text-muted-foreground">{{ c.case | short }}</span></div>
+      <p class="mt-1 text-muted-foreground">appendices: {% for a in c.appendices %}{% if held[a] %}<a class="{{ link }}" href="/threads/{{ held[a] }}">{{ titles[a] }}</a>{% else %}{{ titles[a] }}{% endif %}{{ ", " if not loop.last }}{% else %}none{% endfor %}</p>
+      {% if latest %}
+      {% set expected = c.expectations | map(attribute="expectation_schema") | list %}
+      <ul class="mt-2 space-y-1">
+        {% for e in c.expectations %}
+        <li><span class="text-muted-foreground">{{ e.title }}:</span>
+          {% if e.ambiguous %}<span class="text-warning">{{ e.ambiguous }}</span>
+          {% elif e.expectation %}{% if held[e.expectation] %}<a class="{{ link }}" href="/threads/{{ held[e.expectation] }}">{{ "yours" if e.expectation in own else "the one picked" }}</a>{% else %}the one picked{% endif %}{% endif %}
+          {% if not e.ambiguous and e.expectation not in own and not case.deleted %}{{ " · " if e.expectation }}<a class="{{ link }}" href="{{ begin('expectation', case=c.case, expectation_schema=e.expectation_schema) }}">write yours</a>{% endif %}
+          {% for t in e.shared %} · <a class="{{ link }}" href="/threads/{{ t.id }}">{{ t.owner }}'s</a>{% endfor %}
+        </li>
+        {% endfor %}
+        {% for digest, titled in schemas if digest not in expected and not case.deleted %}
+        <li><span class="text-muted-foreground">{{ titled }}:</span> <a class="{{ link }}" href="{{ begin('expectation', case=c.case, expectation_schema=digest) }}">write yours</a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mt-1">its replacement, at the current vignette: <span class="font-mono text-xs">{{ c.replacement | short }}</span>
+        {% if c.stored %}<span class="text-muted-foreground">stored</span>{% else %}
+        <form method="post" action="/cases/{{ case.id }}/replacement" class="inline"><input type="hidden" name="case" value="{{ c.case }}"><input type="hidden" name="version" value="{{ at }}"><button class="ml-2 rounded-md border border-border px-2.5 py-0.5 text-xs font-medium hover:bg-muted">Store its replacement</button></form>{% endif %}
+      </p>
+      {% endif %}
+    </li>
+    {% else %}
+    <li class="text-muted-foreground">None stored.</li>
+    {% endfor %}
+  </ul>
+
+  {% if latest and not case.deleted %}
+  <h3 class="mb-2 mt-6 text-sm font-medium">Begun of it</h3>
+  {% if picked %}
+  <form method="post" action="/cases/{{ case.id }}/cases" class="mb-3 grid max-w-xl gap-1.5 text-sm" aria-label="A case of its appendices">
+    <span class="text-muted-foreground">A case of its appendices, picked one a line, in order:</span>
+    {% for _ in range(picked | length) %}
+    <select name="f.appendices" aria-label="appendix {{ loop.index }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+      <option value="">none</option>
+      {% for digest, titled in picked %}<option value="{{ digest }}">{{ titled }}</option>{% endfor %}
+    </select>
+    {% endfor %}
+    <div><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Build it</button></div>
+  </form>
+  {% endif %}
+  <p class="text-sm"><a class="{{ link }}" href="{{ appendix }}">A new appendix of its vignette</a></p>
+  {% endif %}
+
+  <h3 class="mb-2 mt-6 text-sm font-medium">Its versions</h3>
+  <ol class="space-y-1 text-sm">
+    {% for b in bindings | reverse %}
+    {% set i = last - loop.index0 %}
+    <li class="flex flex-wrap gap-x-3">
+      {% if i == at %}<span class="font-medium" aria-current="true">Version {{ i }}</span>{% else %}<a class="{{ link }}" href="{{ versioned ~ i }}">Version {{ i }}</a>{% endif %}
+      <span class="text-muted-foreground">{{ b.at | when }}</span>
+      <span class="break-all text-muted-foreground">{{ b.vignette.id }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endcall %}
+
+  {% if mine and not case.deleted %}
+  {% call section("What is said of it", "said") %}
+  <form method="post" action="/cases/{{ case.id }}/said" class="grid max-w-xl gap-3 text-sm">
+    <label class="grid gap-1"><span class="font-medium">Name</span>
+      <input name="name" value="{{ named or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ bindings[-1].vignette.source }}/{{ bindings[-1].vignette.id }}">
+      <span class="text-xs text-muted-foreground">Left empty, it goes by its vignette's place.</span></label>
+    <label class="grid gap-1"><span class="font-medium">Description</span>
+      <textarea name="description" rows="3" class="rounded-md border border-input bg-transparent px-2.5 py-1.5">
+{{ case.description or '' }}</textarea></label>
+    <label class="grid gap-1"><span class="font-medium">Tags</span>
+      <input name="tags" value="{{ case.tags | join(', ') }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="comma separated"></label>
+    <label class="grid gap-1"><span class="font-medium">Shared with</span>
+      <input name="shared" value="{{ case.collaborators | join(', ') }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="logins, comma separated"></label>
+    <label class="grid gap-1"><span class="font-medium">Language</span>
+      <input name="language" value="{{ case.language or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+      <span class="text-xs text-muted-foreground">Its vignette's: its cases are sent in it.</span></label>
+    <div><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Save what is said</button></div>
+  </form>
+  <form method="post" action="/cases/{{ case.id }}/delete" class="mt-6 border-t border-border/60 pt-4 text-sm">
+    <button class="inline-flex h-9 items-center rounded-md border border-destructive/40 px-4 font-medium text-destructive hover:bg-destructive/10">Delete it</button>
+    <span class="ml-2 text-muted-foreground">It stays in the runs that ran it, and you can restore it from the Library.</span>
+  </form>
+  {% endcall %}
+  {% endif %}
+
+  {% if not mine and person.login in case.collaborators %}
+  {% call section("Shared with you", "shared") %}
+  <form method="post" action="/cases/{{ case.id }}/leave" class="flex flex-wrap items-center gap-3 text-sm">
+    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Leave it</button>
+    <span class="text-muted-foreground">{{ case.owner }} shares it with you. Leaving takes it out of what you see, here and wherever it is offered, until {{ case.owner }} shares it again.</span>
+  </form>
+  {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -234,7 +234,6 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert rebuilt is not None and edited in rebuilt.expectations
 
 
-@pytest.mark.slow
 def test_only_a_finished_score_counts_against_what_is_left_to_score(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:

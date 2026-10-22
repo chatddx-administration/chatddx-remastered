@@ -581,9 +581,6 @@ split. `src/chatddx/factors/select.py:SplitOp`
 :Stanza — A named table of a data set's factors or texts files, or of a World's engines files, such as `[prompt.plan]`,
 loaded as a thread. `src/chatddx/curation/plan.py:Planned`
 
-:Start — The runs one start of a variation makes: a run per language its cases are sent in, the later ones `with` the
-first. `src/chatddx/bench/runs.py:start`
-
 :Start-up — What starting a local engine's endpoint takes: vLLM's arguments, the engine's environment and the runtime,
 joining the engine with where its host keeps what it pins. `src/chatddx/inventory/serving.py:StartUp`
 

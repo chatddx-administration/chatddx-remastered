@@ -7,6 +7,7 @@ from chatddx.bench.test.helpers import owned
 from chatddx.catalog import About, Subject
 from chatddx.identity import Person, sees
 from chatddx.store import Rows
+from chatddx.test.helpers import TYPED
 from chatddx.test.world import LINES
 
 
@@ -24,7 +25,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
 ) -> None:
     mine = _mine(bench)
     said = bench.say(
-        mine,
+        Subject(thread=mine),
         name="terse",
         description="Short answers.",
         tags=["ddx", "short"],
@@ -35,10 +36,12 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     assert sees(bob.id, said)
 
     written = _entries(bench, mine)
-    again = bench.say(mine, name="terse", tags=["short", "ddx"], collaborators=["bob"])
+    again = bench.say(
+        Subject(thread=mine), name="terse", tags=["short", "ddx"], collaborators=["bob"]
+    )
     assert (again, _entries(bench, mine)) == (said, written)
 
-    cleared = bench.say(mine, name=None, tags=[], collaborators=[])
+    cleared = bench.say(Subject(thread=mine), name=None, tags=[], collaborators=[])
     assert (cleared.name, cleared.tags, cleared.collaborators) == (None, set(), set())
     assert cleared.description == "Short answers."
     assert not sees(bob.id, cleared)
@@ -50,19 +53,27 @@ def test_only_what_the_owner_may_say_is_said(bench: Bench) -> None:
     archives = bench.thread(f"archive/{LINES}", "configuration")[0].thread
     written = _entries(bench, mine)
     refused: list[tuple[Callable[[], About], type[Exception], str]] = [
-        (lambda: bench.say(mine, name=""), ValueError, "a name can't be empty"),
         (
-            lambda: bench.say(mine, name="kept", tags=["ddx", ""]),
+            lambda: bench.say(Subject(thread=mine), name=""),
+            ValueError,
+            "a name can't be empty",
+        ),
+        (
+            lambda: bench.say(Subject(thread=mine), name="kept", tags=["ddx", ""]),
             ValueError,
             "a tag can't be empty",
         ),
         (
-            lambda: bench.say(mine, name="kept", collaborators=["nobody"]),
+            lambda: bench.say(
+                Subject(thread=mine), name="kept", collaborators=["nobody"]
+            ),
             NotFound,
             "no person 'nobody'",
         ),
         (
-            lambda: bench.say(mine, name="kept", collaborators=["alice"]),
+            lambda: bench.say(
+                Subject(thread=mine), name="kept", collaborators=["alice"]
+            ),
             ValueError,
             f"configuration {mine} is yours",
         ),
@@ -73,14 +84,14 @@ def test_only_what_the_owner_may_say_is_said(bench: Bench) -> None:
     assert _entries(bench, mine) == written
 
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
-        _ = bench.say(archives, name="mine now")
+        _ = bench.say(Subject(thread=archives), name="mine now")
     with pytest.raises(NotFound, match="no thread 999999 of yours"):
-        _ = bench.say(999999, deleted=True)
+        _ = bench.say(Subject(thread=999999), deleted=True)
 
 
 def test_an_owner_deletes_and_restores_a_thread(bench: Bench) -> None:
     mine = _mine(bench)
-    assert bench.say(mine, deleted=True).deleted
+    assert bench.say(Subject(thread=mine), deleted=True).deleted
     assert mine not in [e.thread for e, _ in bench.threads("configuration")]
     deleted = bench.threads("configuration", deleted=True)
     assert [e.thread for e, _ in deleted] == [mine]
@@ -90,8 +101,8 @@ def test_an_owner_deletes_and_restores_a_thread(bench: Bench) -> None:
     assert about.deleted
 
     with pytest.raises(ValueError, match="is deleted: restore it to say more of it"):
-        _ = bench.say(mine, name="gone")
-    back = bench.say(mine, deleted=False, name="back")
+        _ = bench.say(Subject(thread=mine), name="gone")
+    back = bench.say(Subject(thread=mine), deleted=False, name="back")
     assert (back.deleted, back.name) == (False, "back")
     assert bench.threads("configuration", deleted=True) == []
 
@@ -103,10 +114,77 @@ def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
     [schema] = bench.expectation_schemas(case)
     [mine] = owned(bench, case, schema)
     [(archives, _)] = bench.shared(case, schema)
-    _ = bench.say(mine, deleted=True)
+    _ = bench.say(Subject(thread=mine), deleted=True)
     taken = bench.take_from(archives.thread)
 
     with pytest.raises(ValueError, match=f"in thread {taken}: delete that one"):
-        _ = bench.say(mine, deleted=False)
-    _ = bench.say(taken, deleted=True)
-    assert not bench.say(mine, deleted=False).deleted
+        _ = bench.say(Subject(thread=mine), deleted=False)
+    _ = bench.say(Subject(thread=taken), deleted=True)
+    assert not bench.say(Subject(thread=mine), deleted=False).deleted
+
+
+def test_a_description_is_taken_away_as_a_name_is(bench: Bench) -> None:
+    mine = _mine(bench)
+    written = _entries(bench, mine)
+    assert bench.say(Subject(thread=mine), description=None).description is None
+    assert _entries(bench, mine) == written
+
+    _ = bench.say(Subject(thread=mine), description="Short answers.")
+    with pytest.raises(ValueError, match="a description can't be empty: none takes"):
+        _ = bench.say(Subject(thread=mine), description="")
+    assert bench.say(Subject(thread=mine), name="kept").description == "Short answers."
+    assert bench.say(Subject(thread=mine), description=None).description is None
+    assert _entries(bench, mine) == written + 3
+
+
+def test_a_collaborator_leaves_a_share_until_it_is_shared_again(
+    bench: Bench, bob: Person
+) -> None:
+    mine = _mine(bench)
+    _ = bench.say(Subject(thread=mine), collaborators=["bob"])
+    bobs = Bench(bench.conn, bob, bench.inventory)
+    with pytest.raises(NotFound, match=f"no configuration {mine} shared with alice"):
+        _ = bench.leave(Subject(thread=mine))
+
+    left = bobs.leave(Subject(thread=mine))
+    assert (left.owner, left.collaborators) == (bench.person.id, set())
+    assert mine not in [e.thread for e, _ in bobs.threads("configuration")]
+    with pytest.raises(NotFound, match=f"no configuration {mine} shared with bob"):
+        _ = bobs.leave(Subject(thread=mine))
+
+    assert sees(bob.id, bench.say(Subject(thread=mine), collaborators=["bob"]))
+
+
+def test_an_owner_corrects_a_case_s_language_and_deletes_it(bench: Bench) -> None:
+    typed = bench.type_case(TYPED, name="flight", language="en").id
+    case = Subject(family=typed)
+    said = bench.say(case, name="breathless", language="sv")
+    assert (said.name, said.language) == ("breathless", "sv")
+    assert bench.say(case, language="sv") == said
+    with pytest.raises(ValueError):
+        _ = bench.say(case, language="Swedish")
+    with pytest.raises(ValueError, match="a language entry is for a family's vignette"):
+        _ = bench.say(Subject(thread=_mine(bench)), language="sv")
+
+    assert bench.say(case, deleted=True).deleted
+    assert typed not in [f.id for f in bench.families()]
+    assert [f.id for f in bench.families(deleted=True)] == [typed]
+    with pytest.raises(NotFound, match=f"no case {typed} for alice"):
+        _ = bench.family(typed)
+    assert bench.family(typed, deleted=True).about.deleted
+    with pytest.raises(ValueError, match=f"case {typed} is deleted: restore it"):
+        _ = bench.say(case, name="gone")
+
+
+def test_a_collaborator_leaves_a_case_and_says_nothing_of_it(bench: Bench) -> None:
+    shared = bench.family("crlf")
+    assert shared.about.owner != bench.person.id
+    with pytest.raises(NotFound, match=f"no case {shared.id} of yours"):
+        _ = bench.say(Subject(family=shared.id), name="mine now")
+    left = bench.leave(Subject(family=shared.id))
+    assert not sees(bench.person.id, left)
+    assert shared.id not in [f.id for f in bench.families()]
+    with pytest.raises(NotFound, match=f"no case {shared.id} shared with alice"):
+        _ = bench.leave(Subject(family=shared.id))
+    with pytest.raises(NotFound, match="no case 999999 of yours"):
+        _ = bench.say(Subject(family=999999), name="nowhere")

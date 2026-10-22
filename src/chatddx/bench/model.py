@@ -21,6 +21,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "expectation_schema": ("expectation_schema",),
     "expectation": ("expectation",),
     "appendix": ("appendix",),
+    "trial": ("trial",),
     "canary_set": ("canary_set",),
     "model": ("model.local", "model.remote"),
     "engine": ("engine.local", "engine.remote"),
@@ -39,6 +40,7 @@ WRITTEN: frozenset[str] = frozenset(
         "appendix",
         "scorer",
         "judge",
+        "trial",
     }
 )
 

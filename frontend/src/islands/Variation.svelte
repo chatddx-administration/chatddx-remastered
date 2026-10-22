@@ -390,14 +390,14 @@
                     <details class="mt-1">
                       <summary class="cursor-pointer text-xs">{view.missing.length} without one</summary>
                       <p class="mt-1 text-xs">
-                        {#each view.missing as family, j (family)}<a class="text-primary hover:underline" href="/families/{family}">{familyNames[family] ?? family}</a>{j < view.missing.length - 1 ? ", " : ""}{/each}
+                        {#each view.missing as family, j (family)}<a class="text-primary hover:underline" href="/cases/{family}">{familyNames[family] ?? family}</a>{j < view.missing.length - 1 ? ", " : ""}{/each}
                       </p>
                     </details>
                   {/if}
                   {#if view.choosing.length}
                     <p class="mt-1 text-xs text-warning">
                       Several to choose from:
-                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/families/{family}">{familyNames[family] ?? family}</a>{j < view.choosing.length - 1 ? ", " : ""}{/each}
+                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/cases/{family}">{familyNames[family] ?? family}</a>{j < view.choosing.length - 1 ? ", " : ""}{/each}
                     </p>
                   {/if}
                 </td>

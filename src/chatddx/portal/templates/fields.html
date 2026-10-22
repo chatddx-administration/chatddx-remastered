@@ -1,0 +1,69 @@
+{% from "macros.html" import json %}
+{% set box = "w-full rounded-md border border-input bg-transparent px-2.5 py-1.5" %}
+
+{% macro value(v, titles) -%}
+{%- if v is none %}—
+{%- elif v is string and v in titles %}{{ titles[v] }} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ v | short }}</span>
+{%- elif v is string %}<div class="whitespace-pre-wrap break-words">{{ v }}</div>
+{%- elif v is sequence and v is not mapping and v and v | reject("string") | list | length == 0 and v | reject("in", titles) | list | length == 0 %}<ol class="space-y-0.5">{% for d in v %}<li>{{ titles[d] }} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ d | short }}</span></li>{% endfor %}</ol>
+{%- elif v is mapping or v is sequence %}{{ json(v) }}
+{%- else %}{{ v | pretty }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro pick(name, held, options, nullable) -%}
+<select name="f.{{ name }}" aria-label="{{ name | replace('_', ' ') }}" class="{{ box }} h-9">
+  {% if nullable or held is none %}<option value="">{{ "none" if nullable else "pick one" }}</option>{% endif %}
+  {% for digest, label in options %}<option value="{{ digest }}"{% if digest == held %} selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{% macro control(f, picked) -%}
+{% set label = f.name | replace("_", " ") %}
+{%- if f.shape == "pick" %}{{ pick(f.name, f.value, picked[f.name], f.nullable) }}
+{%- elif f.shape == "picks" %}
+<div class="grid gap-1.5">
+  {% for held in (f.value or []) + [""] %}{{ pick(f.name, held, picked[f.name], true) }}{% endfor %}
+  <span class="text-xs text-muted-foreground">One a line, in order; none takes one out, and the last adds one.</span>
+</div>
+{%- elif f.shape == "chooses" %}
+<div class="grid gap-1.5">
+  {% for held in (f.value or []) + [""] %}
+  <select name="f.{{ f.name }}" aria-label="{{ label }} {{ loop.index }}" class="{{ box }} h-9">
+    <option value="">none</option>
+    {% for o in f.options %}<option value="{{ o }}"{% if o == held %} selected{% endif %}>{{ o }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  <span class="text-xs text-muted-foreground">One a line, in order; none takes one out, and the last adds one.</span>
+</div>
+{%- elif f.shape == "choose" %}
+<select name="f.{{ f.name }}" aria-label="{{ label }}" class="{{ box }} h-9">
+  {% if f.nullable or f.value is none %}<option value="">{{ "none" if f.nullable else "pick one" }}</option>{% endif %}
+  {% for o in f.options %}<option value="{{ o }}"{% if o == f.value %} selected{% endif %}>{{ o }}</option>{% endfor %}
+</select>
+{%- elif f.shape == "text" %}
+<textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [3, (f.value or '').count('\n') + 2] | max }}" class="{{ box }}">
+{{ f.value or "" }}</textarea>
+{%- if f.nullable %}<span class="text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
+{%- else %}
+{% set text = f.shape == "either" and (f.value is string or f.value is none) %}
+{% if f.shape == "either" %}
+<select name="as.{{ f.name }}" aria-label="{{ label }}, read as" class="mb-1 h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+  <option value="text"{% if text %} selected{% endif %}>as text</option>
+  <option value="json"{% if not text %} selected{% endif %}>as JSON</option>
+</select>
+{% endif %}
+{% set shown = (f.value or "") if text else (f.value | pretty) if f.given else "" %}
+<textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, shown.count('\n') + 2] | max }}" class="{{ box }}{% if not text %} font-mono text-xs{% endif %}">
+{{ shown }}</textarea>
+{%- endif %}
+{%- endmacro %}
+
+{% macro rows(found, picked, titles) %}
+<dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[max-content_1fr]">
+  {% for f in found %}
+  <dt class="text-muted-foreground">{{ f.name | replace("_", " ") }}</dt>
+  <dd class="min-w-0">{% if f.editable %}{{ control(f, picked) }}{% else %}{{ value(f.value, titles) }}{% endif %}</dd>
+  {% endfor %}
+</dl>
+{% endmacro %}

@@ -175,15 +175,13 @@ class Entry(_Frozen):
 
     @model_validator(mode="after")
     def _shape(self) -> Self:
-        text = self.field in (
-            EntryField.DESCRIPTION,
-            EntryField.TAG,
-            EntryField.LANGUAGE,
-            *RUN_FIELDS,
-        ) or (self.field == EntryField.NAME and self.present)
+        text = self.field in (EntryField.TAG, EntryField.LANGUAGE, *RUN_FIELDS) or (
+            self.field in (EntryField.NAME, EntryField.DESCRIPTION) and self.present
+        )
         person = self.field in (EntryField.OWNER, EntryField.COLLABORATOR)
         removable = self.field in (
             EntryField.NAME,
+            EntryField.DESCRIPTION,
             EntryField.TAG,
             EntryField.COLLABORATOR,
             EntryField.DELETED,
@@ -192,7 +190,10 @@ class Entry(_Frozen):
             raise ValueError(f"wrong value or person for {self.field}")
         if not (self.present or removable):
             raise ValueError(f"{self.field} can't be removed, only replaced")
-        if self.field in (EntryField.NAME, EntryField.TAG) and self.value == "":
+        if (
+            self.field in (EntryField.NAME, EntryField.DESCRIPTION, EntryField.TAG)
+            and self.value == ""
+        ):
             raise ValueError(f"{self.field} can't be empty")
         if self.field == EntryField.LANGUAGE:
             _ = language_tag(self.value or "")

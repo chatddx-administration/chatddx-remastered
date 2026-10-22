@@ -1,233 +1,286 @@
-from typing import Annotated, Any
+import json
+from dataclasses import replace
+from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import JsonValue
+from starlette.datastructures import FormData
 
-from chatddx.api import schemas, threads as api
+from chatddx import catalog
+from chatddx.api import families, schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
-from chatddx.catalog import LANGUAGE_KINDS
-from chatddx.factors.base import resolve
-from chatddx.factors.cases import Appendix
-from chatddx.factors.request import CHUNK_PARTS, Translations
-from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
+from chatddx.catalog import LANGUAGE_KINDS, Subject, read
+from chatddx.factors.base import Component, Finding, resolve
+from chatddx.factors.kinds import BY_KIND
+from chatddx.factors.request import RECIPE_PARTS, Recipe
+from chatddx.factors.scoring import Expectation, Judge, Scorer
+from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.ledger import RunStarted
 
+from .changes import changes
+from .fields import Field, choices, fields, fresh, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, within
-from .scoring import blank, code_of, judge_choices, scorer_choices, unshipped
+from .scoring import unshipped
 
-WORDS = [w for w in KINDS if w != "configuration"]
-# Policy: A translations chunk is begun on /translate, beside what it translates.
-CHUNKS = [p for p in CHUNK_PARTS if p != "translations"]
-BEGUN = [*CHUNKS, "judge", "scorer"]
+# Accommodating for configurations, which a person writes as recipes, not as components.
+AUTHORED = WRITTEN | {"skeleton"}
+BEGUN = [w for w in KINDS if set(KINDS[w]) & AUTHORED]
 
 router = APIRouter()
 
 
+async def _form(request: Request) -> FormData:
+    return await request.form()
+
+
+FormDep = Annotated[FormData, Depends(_form)]
+
+
 @router.get("/library")
-def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Response:
-    if kind == "configuration":
-        return RedirectResponse("/configurations", 303)
-    if kind not in KINDS:
-        raise HTTPException(404, f"no kind {kind!r}: the kinds are {', '.join(KINDS)}")
-    deleted = [t for w in KINDS for t in api.threads(bench, w, deleted=True)]
+def library(
+    request: Request,
+    bench: BenchDep,
+    kind: str = "instructions",
+    tag: Annotated[list[str] | None, Query()] = None,
+) -> Response:
+    words = [*KINDS, "case"]
+    if kind not in words:
+        raise HTTPException(404, f"no kind {kind!r}: the kinds are {', '.join(words)}")
+    found = [] if kind == "case" else listed(bench, kind)
+    every = families.families(bench) if kind == "case" else []
+    picked = set(tag or ())
     return page(
         request,
         "library.html",
         person=bench.person,
-        listed=[("/configurations", "configurations", False)]
-        + [(f"/library?kind={w}", w.replace("_", " "), w == kind) for w in WORDS],
+        listed=[(f"/library?kind={w}", w.replace("_", " "), w == kind) for w in words],
         word=kind,
-        threads=own_first(bench, api.threads(bench, kind)),
-        written=bool(set(KINDS[kind]) & WRITTEN),
+        threads=own_first(bench, [t for t, _ in found]),
+        purposes={t.id: p for t, p in found if p is not None},
+        written=bool(set(KINDS.get(kind, ())) & AUTHORED),
         begun=kind in BEGUN,
-        deleted=deleted,
-        word_of=word_of,
+        cases=sorted(
+            (f for f in every if not picked or picked & set(f.tags)),
+            key=lambda f: (f.owner != bench.person.login, f.name.lower()),
+        ),
+        tags=sorted({t for f in every for t in f.tags}),
+        picked=picked,
+        schemas=[
+            (t.head.digest, t.name or t.title)
+            for t in api.threads(bench, "expectation_schema")
+        ]
+        if kind == "case"
+        else [],
+        deleted=[
+            (f"/threads/{t.id}", t.name or t.title, word_of(t.kind))
+            for w in KINDS
+            for t, _ in listed(bench, w, deleted=True)
+        ]
+        + [
+            (f"/cases/{f.id}", f.name, "case")
+            for f in families.families(bench, deleted=True)
+        ],
     )
 
 
 @router.get("/library/new")
 def beginning(request: Request, bench: BenchDep, kind: str) -> Response:
-    if kind not in BEGUN:
-        raise HTTPException(
-            404, f"no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"
-        )
-    match kind:
-        case "judge":
-            held = _judge(bench, None)
-        case "scorer":
-            held = _scorer(bench, None, None)
-        case _:
-            held = {"body": None, "language": None, **_chunk(bench, f"chunk.{kind}")}
-    editor = {"mode": "new", "name": ""} | held
+    model = _begun(kind)
+    with refused(NotFound):
+        found = _drawn(bench, model, fresh(model, _given(bench, request)))
     return page(
         request,
         "begun.html",
         person=bench.person,
         word=kind,
-        editor=editor,
-        island="thread",
+        action=f"{request.url.path}?{request.url.query}",
+        fields=found,
+        picked={
+            f.name: choices(bench, f.kinds, f.value, purpose(model))
+            for f in found
+            if f.editable and f.kinds
+        },
+        titles={
+            d: bench.title(d)
+            for f in found
+            if not f.editable and f.kinds
+            for d in (f.value if isinstance(f.value, list) else [f.value])
+            if isinstance(d, str)
+        },
+        languaged=model is not Recipe
+        and model.model_fields["kind"].default in LANGUAGE_KINDS,
+        labels=schemas.Labels().model_dump(mode="json") if model is Scorer else None,
     )
 
 
-@router.get("/threads/{thread}")
-def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
-    shown = api.thread(bench, thread)
-    if shown.kind == "skeleton":
-        return RedirectResponse(f"/configurations/{thread}", 303)
-    versions = api.edits(bench, thread)
-    bodies = {v.digest: bench.store.get(v.digest) for v in versions}
-    titles = {
-        site.digest: bench.title(site.digest)
-        for held in bodies.values()
-        for site in held.refs()
+@router.post("/library/new")
+def writing(request: Request, bench: BenchDep, kind: str, form: FormDep) -> Response:
+    model = _begun(kind)
+    name = str(form.get("name", "")).strip()
+    with refused():
+        if not name:
+            raise ValueError(f"a new {kind.replace('_', ' ')} is named")
+        made = model.model_validate(parsed(fresh(model, _given(bench, request)), form))
+        language = str(form.get("language", "")).strip() or None
+        labels = None
+        if isinstance(made, Scorer):
+            labels = schemas.Labels.model_validate_json(
+                str(form.get("labels", "{}"))
+            ).given()
+        written = bench.new(
+            cast(Component | Recipe, made),
+            name,
+            language if isinstance(made, Component) else None,
+            labels,
+        )
+    return RedirectResponse(f"/threads/{written.edit.thread}", 303)
+
+
+def _given(bench: Bench, request: Request) -> dict[str, str]:
+    given = {
+        k.removeprefix("f."): v
+        for k, v in request.query_params.items()
+        if k.startswith("f.")
     }
+    if families := request.query_params.getlist("family"):
+        held = [bench.family(int(f)).case for f in families]
+        given["cases"] = json.dumps(list(dict.fromkeys(held)))
+    return given
+
+
+# Policy: a new trial is begun with what a start of a variation takes when none is
+# given.
+def _drawn(
+    bench: Bench, model: type[Component] | type[Recipe], found: list[Field]
+) -> list[Field]:
+    if model is not Trial:
+        return found
+    cases = next(f.value for f in found if f.name == "cases")
+    begun: dict[str, JsonValue] = {"seeds": list(suggest_seeds(1))}
+    if isinstance(cases, list) and cases:
+        begun["cleanup"] = list(bench.cleanup([str(c) for c in cases]))
+    return [
+        replace(f, value=begun[f.name], given=True)
+        if f.editable and f.name in begun
+        else f
+        for f in found
+    ]
+
+
+def _begun(kind: str) -> type[Component] | type[Recipe]:
+    if kind not in BEGUN:
+        raise HTTPException(
+            404, f"no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"
+        )
+    if kind == "configuration":
+        return Recipe
+    return BY_KIND[KINDS[kind][0]]
+
+
+@router.get("/threads/{thread}")
+def thread_page(
+    request: Request, bench: BenchDep, thread: int, version: int | None = None
+) -> Response:
+    shown = api.thread(bench, thread)
+    word = word_of(shown.kind)
+    versions = api.edits(bench, thread)
+    at = len(versions) if version is None else version
+    if not 1 <= at <= len(versions):
+        raise HTTPException(
+            404, f"no version {at} of {word} {thread}: it has {len(versions)}"
+        )
+    edit = versions[at - 1]
+    held = bench.store.get(edit.digest)
+    before = None if at == 1 else bench.store.get(versions[at - 2].digest)
     origin = None
     if shown.forked_from is not None:
         found = bench.rows.edit(shown.forked_from)
         origin = None if found is None else found.thread
     mine = shown.owner == bench.person.login
-    proposal = None
-    if mine and origin is not None and not shown.deleted:
-        proposal = api.follows(bench, thread).origin
-    last = bodies[shown.head.digest]
-    held: dict[str, Any] = {
-        "word": word_of(shown.kind),
-        "versions": [
-            {
-                **v.model_dump(mode="json"),
-                "body": bodies[v.digest].model_dump(mode="json"),
-            }
-            for v in versions
-        ],
-        "titles": titles,
-        "editor": None if shown.deleted else _editor(bench, shown, mine),
-        "unshipped": unshipped(last)
-        if isinstance(last, Scorer) and not shown.deleted
-        else None,
+    follows = api.follows(bench, thread) if mine and not shown.deleted else None
+    latest = at == len(versions)
+    gone = unshipped(held) if isinstance(held, Scorer) else None
+    editable = mine and latest and not shown.deleted and gone is None
+    body = held.model_dump(mode="json")
+    written = editable and held.kind_name in WRITTEN
+    found = fields(type(held), body, body.keys() if written else ())
+    recipe = _recipe(bench, edit.id) if shown.kind == "skeleton" else None
+    parts = (
+        None
+        if recipe is None
+        else fields(Recipe, recipe, RECIPE_PARTS if editable else ())
+    )
+    every = [*found, *(parts or [])]
+    titles = {site.digest: bench.title(site.digest) for site in held.refs()}
+    titles |= {
+        f.value: bench.title(f.value)
+        for f in parts or []
+        if f.kinds and isinstance(f.value, str)
     }
     return page(
         request,
         "thread.html",
         person=bench.person,
         thread=shown,
-        word=word_of(shown.kind),
+        word=word,
         versions=versions,
-        head=last.model_dump(mode="json"),
+        at=at,
+        fields=found,
+        parts=parts,
+        editable=any(f.editable for f in every),
+        picked={
+            f.name: choices(bench, f.kinds, f.value, purpose(type(held)))
+            for f in every
+            if f.editable and f.kinds
+        },
+        titles=titles,
+        languaged=written and held.kind_name in LANGUAGE_KINDS,
+        labels=None
+        if not written or not isinstance(held, Scorer)
+        else (edit.labels or schemas.Labels()).model_dump(mode="json"),
+        checked=_checked(bench, held)
+        if held.kind_name in WRITTEN and not gone
+        else None,
+        changed=None
+        if before is None
+        else changes(before.model_dump(mode="json"), body),
+        revertible=mine and not latest and not shown.deleted and shown.kind in AUTHORED,
+        authored=shown.kind in AUTHORED,
         origin=origin,
         mine=mine,
-        proposal=proposal,
-        held=held,
-        island="thread",
+        proposal=None if follows is None else follows.origin,
+        moved=None if follows is None else follows.moved,
+        unshipped=gone if latest and not shown.deleted else None,
+        ran=_ran(bench, versions) if shown.kind == "trial" else None,
     )
 
 
-def _editor(
-    bench: Bench, shown: schemas.ThreadDetail, mine: bool
-) -> dict[str, Any] | None:
-    held = bench.store.get(shown.head.digest)
-    given: dict[str, Any] = {
-        "mode": "edit" if mine else "fork",
-        "thread": shown.id,
-        "head": shown.head.id,
-        "name": shown.name or shown.title,
-    }
-    match held:
-        case Appendix():
-            return {
-                **given,
-                "kind": "appendix",
-                "vignette": held.vignette.model_dump(mode="json"),
-                "text": held.text,
-            }
-        case Expectation():
-            schema = resolve(
-                bench.store.get, held.expectation_schema, ExpectationSchema
-            )
-            return {
-                **given,
-                "kind": "expectation",
-                "case": held.case,
-                "schema": held.expectation_schema,
-                "json_schema": schema.json_schema,
-                "data": held.data,
-            }
-        case Translations():
-            return {**given, "kind": "translations", "into": held.into}
-        case Judge():
-            return {**given, **_judge(bench, held)}
-        case Scorer() if unshipped(held) is None:
-            return {**given, **_scorer(bench, held, shown.head.digest)}
-        case _ if held.kind_name.removeprefix("chunk.") in CHUNKS:
-            return {
-                **given,
-                **_chunk(bench, held.kind_name),
-                "body": held.model_dump(mode="json"),
-                "language": shown.language,
-            }
-        case _:
-            return None
+def _ran(
+    bench: Bench, versions: list[schemas.Edit]
+) -> list[tuple[int, RunStarted, str]]:
+    at = {v.digest: i for i, v in enumerate(versions, 1)}
+    return [(at[r.trial], r, bench.described(r)) for r in bench.runs() if r.trial in at]
 
 
-def _chunk(bench: Bench, kind: str) -> dict[str, Any]:
-    tools = api.threads(bench, "tool") if kind == "chunk.toolset" else []
-    return {
-        "kind": "chunk",
-        "chunk": kind,
-        "languaged": kind in LANGUAGE_KINDS,
-        "tools": [t.model_dump(mode="json") for t in tools],
-        "me": bench.person.login,
-    }
+def _recipe(bench: Bench, edit: int) -> dict[str, JsonValue] | None:
+    found = bench.rows.edit(edit)
+    held = None if found is None else catalog.threads.recipe(bench.rows, found)
+    return None if held is None else held.model_dump(mode="json")
 
 
-def _judge(bench: Bench, held: Judge | None) -> dict[str, Any]:
-    handle, problem = None, None
-    if held is not None:
+def _checked(bench: Bench, held: Component) -> tuple[list[Finding], list[str]]:
+    refused: list[str] = []
+    if isinstance(held, Judge):
         try:
-            handle = bench.handle(held.model).name
             _ = bench.judged(held)
         except ValueError as e:
-            problem = str(e)
-    return {
-        "kind": "judge",
-        "body": None if held is None else held.model_dump(mode="json"),
-        "configuration": None if held is None else bench.title(held.skeleton),
-        "handle": handle,
-        "problem": problem,
-        **judge_choices(bench),
-        "me": bench.person.login,
-    }
-
-
-def _scorer(bench: Bench, held: Scorer | None, labelled: str | None) -> dict[str, Any]:
-    code = code_of(bench, None if held is None else held.entry_point)
-    read = [
-        (t.head.digest, t.name or t.title)
-        for t in own_first(bench, api.threads(bench, "expectation_schema"))
-    ]
-    if held is not None and held.expectation_schema not in {d for d, _ in read}:
-        read.append((held.expectation_schema, bench.title(held.expectation_schema)))
-    if not read:
-        raise HTTPException(
-            404, "a scorer reads an expectation schema, and you see none"
-        )
-    body = blank(code, read[0][0]) if held is None else held.model_dump(mode="json")
-    named = {} if labelled is None else bench.labels(labelled)
-    return {
-        "kind": "scorer",
-        "body": body,
-        "labels": [named.get(i, f"view {i}") for i in range(len(body["views"]))],
-        "schemas": [
-            {
-                "digest": digest,
-                "name": name,
-                "json_schema": resolve(
-                    bench.store.get, digest, ExpectationSchema
-                ).json_schema,
-            }
-            for digest, name in read
-        ],
-        **scorer_choices(bench, code, () if held is None else held.judges),
-    }
+            refused.append(str(e))
+    try:
+        return bench.check(held).findings, refused
+    except (LookupError, ValueError) as e:
+        return [], [*refused, str(e)]
 
 
 def _back(thread: int, next: str | None) -> RedirectResponse:
@@ -250,7 +303,7 @@ def saying(
         "collaborators": _listed_words(shared),
     }
     with refused(NotFound):
-        _ = bench.say(thread, **given)
+        _ = bench.say(Subject(thread=thread), **given)
     return _back(thread, None)
 
 
@@ -261,14 +314,82 @@ def _listed_words(given: str) -> list[str]:
 @router.post("/threads/{thread}/delete")
 def deleting(bench: BenchDep, thread: int) -> Response:
     with refused():
-        _ = bench.say(thread, deleted=True)
+        _ = bench.say(Subject(thread=thread), deleted=True)
     return _back(thread, None)
 
 
 @router.post("/threads/{thread}/restore")
 def restoring(bench: BenchDep, thread: int) -> Response:
     with refused():
-        _ = bench.say(thread, deleted=False)
+        _ = bench.say(Subject(thread=thread), deleted=False)
+    return _back(thread, None)
+
+
+@router.post("/threads/{thread}/leave")
+def leaving(bench: BenchDep, thread: int) -> Response:
+    word = word_of(api.thread(bench, thread).kind)
+    with refused(NotFound):
+        _ = bench.leave(Subject(thread=thread))
+    return RedirectResponse(f"/library?kind={word}", 303)
+
+
+@router.post("/threads/{thread}/edit")
+def editing(bench: BenchDep, thread: int, form: FormDep) -> Response:
+    shown = api.thread(bench, thread)
+    held = bench.store.get(shown.head.digest)
+    with refused():
+        head = int(str(form.get("head", "")))
+        if shown.kind == "skeleton":
+            recipe = _recipe(bench, shown.head.id)
+            if recipe is None:
+                raise ValueError(
+                    f"configuration {thread} is written by hand: it has no recipe "
+                    + "to pick parts of"
+                )
+            picked = parsed(fields(Recipe, recipe, RECIPE_PARTS), form)
+            replaced = {p: picked.get(p) for p in RECIPE_PARTS}
+            given = {p: d for p, d in replaced.items() if d != recipe.get(p)}
+            variation = bench.variation(
+                thread, cast(dict[str, str | None], given), head
+            )
+            _ = bench.edit(thread, head, variation)
+            return _back(thread, None)
+        body = held.model_dump(mode="json")
+        made = type(held).model_validate(parsed(fields(type(held), body, body), form))
+        language = str(form.get("language", "")).strip() or None
+        labels = None
+        if isinstance(made, Scorer):
+            labels = schemas.Labels.model_validate_json(
+                str(form.get("labels", "{}"))
+            ).given()
+        _ = bench.edit(
+            thread,
+            head,
+            made,
+            language=language if held.kind_name in LANGUAGE_KINDS else None,
+            labels=labels,
+        )
+    return _back(thread, None)
+
+
+@router.post("/threads/{thread}/revert")
+def reverting(
+    bench: BenchDep,
+    thread: int,
+    head: Annotated[int, Form()],
+    edit: Annotated[int, Form()],
+) -> Response:
+    earlier = next((v for v in api.edits(bench, thread) if v.id == edit), None)
+    if earlier is None:
+        raise HTTPException(422, f"edit {edit} isn't a version of thread {thread}")
+    held = (
+        bench.variation(thread, None, edit)
+        if api.thread(bench, thread).kind == "skeleton"
+        else bench.store.get(earlier.digest)
+    )
+    labels = read.labels(bench.rows, edit) if isinstance(held, Scorer) else None
+    with refused():
+        _ = bench.edit(thread, head, held, labels=labels)
     return _back(thread, None)
 
 

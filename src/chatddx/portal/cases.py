@@ -1,0 +1,262 @@
+import json
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Annotated
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Form, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
+
+from chatddx import catalog
+from chatddx.api import families as api, schemas, threads
+from chatddx.api.state import refused
+from chatddx.bench import Bench, NotFound
+from chatddx.catalog import Subject
+from chatddx.factors.base import resolve
+from chatddx.factors.cases import Appendix, Case
+
+from .changes import changes
+from .pages import BenchDep, page
+
+router = APIRouter()
+
+
+@router.get("/cases/{family}")
+def case_page(
+    request: Request, bench: BenchDep, family: int, version: int | None = None
+) -> Response:
+    shown = api.family(bench, family)
+    bindings = bench.rows.bindings([family])
+    at = len(bindings) if version is None else version
+    if not 1 <= at <= len(bindings):
+        raise HTTPException(
+            404, f"no version {at} of case {family}: it has {len(bindings)}"
+        )
+    bound = bindings[at - 1]
+    before = None if at == 1 else bindings[at - 2]
+    latest = at == len(bindings)
+    mine = shown.owner == bench.person.login
+    login = bench.person.login
+    cases: Sequence[schemas.FamilyCase | Earlier] = (
+        shown.cases
+        if latest
+        else [
+            _earlier(bench, c) for c, _ in bench.rows.bound_to([bound.vignette], "case")
+        ]
+    )
+    written = written_for(bench, family) if latest and not shown.deleted else []
+    appendices = {a for c in cases for a in c.appendices}
+    expected = {
+        e.expectation
+        for c in shown.cases
+        if latest
+        for e in c.expectations
+        if e.expectation is not None
+    }
+    return page(
+        request,
+        "case.html",
+        person=bench.person,
+        case=shown,
+        named=bench.family(family, deleted=True).about.name,
+        mine=mine,
+        bindings=bindings,
+        at=at,
+        bound=bound,
+        by=bench.login(bound.by),
+        changed=None
+        if before is None
+        else changes(
+            before.vignette.model_dump(mode="json"),
+            bound.vignette.model_dump(mode="json"),
+        ),
+        latest=latest,
+        cases=cases,
+        held={a: _thread_of(bench, a) for a in appendices | expected},
+        titles={a: bench.title(a) for a in appendices},
+        own={t.head.digest for t in threads.threads(bench, "expectation", owner=login)},
+        schemas=[
+            (t.head.digest, t.name or t.title)
+            for t in threads.threads(bench, "expectation_schema")
+        ],
+        picked=[(t.head.digest, t.name or t.title) for t in written],
+        appendix=_begin(
+            "appendix",
+            vignette=json.dumps(bindings[-1].vignette.model_dump(mode="json")),
+        ),
+        begin=_begin,
+    )
+
+
+def _begin(kind: str, **given: str) -> str:
+    return "/library/new?" + urlencode(
+        [("kind", kind), *((f"f.{k}", v) for k, v in given.items())]
+    )
+
+
+def _thread_of(bench: Bench, digest: str) -> int | None:
+    held = bench.holder(digest)
+    return None if held is None else held[0].thread
+
+
+@dataclass(frozen=True)
+class Earlier:
+    case: str
+    title: str
+    appendices: list[str]
+    replacement: str
+    stored: bool
+
+
+def _earlier(bench: Bench, case: str) -> Earlier:
+    held = resolve(bench.store.get, case, Case)
+    made, _ = catalog.families.replacement(bench.rows, case)
+    return Earlier(
+        case,
+        bench.title(case),
+        list(held.appendices),
+        made,
+        bench.rows.kind(made) is not None,
+    )
+
+
+@router.get("/cases/{family}/vignette")
+def vignette(request: Request, bench: BenchDep, family: int) -> Response:
+    return page(
+        request,
+        "vignette.html",
+        person=bench.person,
+        case=api.family(bench, family),
+        vignette=api.vignette(bench, family),
+    )
+
+
+@router.post("/cases/{family}/said")
+def saying(
+    bench: BenchDep,
+    family: int,
+    name: Annotated[str, Form()] = "",
+    description: Annotated[str, Form()] = "",
+    tags: Annotated[str, Form()] = "",
+    shared: Annotated[str, Form()] = "",
+    language: Annotated[str, Form()] = "",
+) -> Response:
+    with refused(NotFound):
+        _ = bench.say(
+            Subject(family=family),
+            name=name.strip() or None,
+            description=description.strip() or None,
+            tags=_words(tags),
+            collaborators=_words(shared),
+            language=language.strip() or None,
+        )
+    return RedirectResponse(f"/cases/{family}", 303)
+
+
+def _words(given: str) -> list[str]:
+    return sorted({w.strip() for w in given.split(",") if w.strip()})
+
+
+@router.post("/cases/{family}/delete")
+def deleting(bench: BenchDep, family: int) -> Response:
+    with refused():
+        _ = bench.say(Subject(family=family), deleted=True)
+    return RedirectResponse(f"/cases/{family}", 303)
+
+
+@router.post("/cases/{family}/restore")
+def restoring(bench: BenchDep, family: int) -> Response:
+    with refused():
+        _ = bench.say(Subject(family=family), deleted=False)
+    return RedirectResponse(f"/cases/{family}", 303)
+
+
+@router.post("/cases/{family}/leave")
+def leaving(bench: BenchDep, family: int) -> Response:
+    _ = api.family(bench, family)
+    with refused(NotFound):
+        _ = bench.leave(Subject(family=family))
+    return RedirectResponse("/library?kind=case", 303)
+
+
+@router.post("/cases/{family}/cases")
+def building(
+    bench: BenchDep,
+    family: int,
+    appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None,
+) -> Response:
+    _ = built(bench, family, [a for a in appendices or [] if a])
+    return RedirectResponse(f"/cases/{family}", 303)
+
+
+@router.post("/cases/{family}/replacement")
+def replacing(
+    bench: BenchDep,
+    family: int,
+    case: Annotated[str, Form()],
+    version: Annotated[int, Form()],
+) -> Response:
+    with refused(LookupError):
+        _ = bench.replacement(case)
+    return RedirectResponse(f"/cases/{family}?version={version}", 303)
+
+
+@router.post("/library/takes")
+def taking(
+    request: Request,
+    bench: BenchDep,
+    expectation_schema: Annotated[str, Form()],
+    families: Annotated[list[int] | None, Form(alias="family")] = None,
+    owner: Annotated[str, Form()] = "",
+    tag: Annotated[list[str] | None, Form()] = None,
+) -> Response:
+    if not families:
+        raise HTTPException(422, "pick one case or more to take for")
+    listed = {f.id: f for f in api.families(bench)}
+    if missing := [f for f in families if f not in listed]:
+        raise HTTPException(404, f"no case {missing[0]} for {bench.person.login}")
+    named = {listed[f].case: listed[f].name for f in families}
+    with refused(NotFound):
+        taken = bench.take(named, expectation_schema, owner.strip() or None)
+    return page(
+        request,
+        "taken.html",
+        person=bench.person,
+        schema=bench.title(expectation_schema),
+        named=named,
+        taken=taken,
+        owners={
+            t: threads.thread(bench, t).owner
+            for held in taken.choosing.values()
+            for t in held
+        },
+        back="/library?"
+        + urlencode([("kind", "case"), *(("tag", t) for t in sorted(tag or ()))]),
+    )
+
+
+def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
+    current = bench.family(family).vignette
+    return [
+        t
+        for t in threads.threads(bench, "appendix")
+        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
+    ]
+
+
+def appended(bench: Bench, family: int, name: str, text: str) -> None:
+    if not name.strip():
+        raise HTTPException(422, "an appendix is named")
+    if not text:
+        raise HTTPException(422, "an appendix holds a text")
+    with refused():
+        held = Appendix(vignette=bench.family(family).vignette, text=text)
+        _ = bench.new(held, name.strip())
+
+
+def built(bench: Bench, family: int, appendices: list[str] | None) -> str:
+    if not appendices:
+        raise HTTPException(422, "a case is built of one appendix or more")
+    with refused():
+        made = bench.case(family, appendices)
+    return made

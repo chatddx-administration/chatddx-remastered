@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, json %}
+{% from "macros.html" import heading, section, facts, chip, findings %}
+{% from "fields.html" import rows %}
 {% block title %}{{ thread.name or thread.title }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
@@ -25,6 +26,7 @@
     ("Tags", tagged),
     ("Description", thread.description or "—"),
   ]) }}
+  {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm"><a class="text-primary hover:underline" href="/configurations/{{ thread.id }}">Try variations of it on its page</a></p>{% endif %}
   {% endcall %}
 
   {% if proposal %}
@@ -42,18 +44,131 @@
   {% endcall %}
   {% endif %}
 
-  <div id="thread-view">
-    {% call section("What it holds") %}
-    {{ json(head) }}
-    <h3 class="mb-2 mt-4 text-sm font-medium">Its versions</h3>
-    <ol class="space-y-1 text-sm">
-      {% for v in versions | reverse %}
-      <li class="flex flex-wrap gap-x-3"><span class="font-medium">Version {{ versions | length - loop.index0 }}</span><span class="text-muted-foreground">{{ v.at | when }}, {{ v.by }}</span><span class="font-mono text-xs text-muted-foreground">{{ v.digest | short }}</span></li>
-      {% endfor %}
-    </ol>
-    {% endcall %}
+  {% if moved %}
+  {% call section("What it was compiled for has moved on") %}
+  <p class="mb-3 text-sm">{% if moved.model %}Its model, {{ moved.about }}, has a new version{% if moved.facts %}, and the facts about it were corrected since it was compiled, where they change what it sends{% endif %}.{% else %}It was compiled against facts about {{ moved.about }} that have been corrected since, where they change what it sends.{% endif %}{% if moved.refused %} The facts now refuse what it asks: {{ moved.refused }}. Set another chunk in its place to follow them.{% else %} Following keeps its recipe{% if moved.model %}, with the model's new version,{% endif %} compiled against the current facts.{% endif %}</p>
+  {% if not moved.refused %}
+  <form method="post" action="/threads/{{ thread.id }}/moved/follow">
+    <input type="hidden" name="head" value="{{ thread.head.id }}">
+    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow</button>
+  </form>
+  {% endif %}
+  {% endcall %}
+  {% endif %}
+
+  {% set last = versions | length %}
+  {% set shown = versions[at - 1] %}
+  {% set link = "/threads/" ~ thread.id ~ "?version=" %}
+  {% call section("What it holds", "holds") %}
+  <nav class="mb-4 flex flex-wrap items-center gap-3 text-sm" aria-label="Versions">
+    {% if at > 1 %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ link ~ (at - 1) }}" aria-label="The version before">◀</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">◀</span>{% endif %}
+    <span class="font-medium">Version {{ at }} of {{ last }}</span>
+    {% if at < last %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ link ~ (at + 1) }}" aria-label="The version after">▶</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">▶</span>{% endif %}
+    <span class="text-muted-foreground">{{ shown.at | when }}, {{ shown.by }}</span>
+    <span class="font-mono text-xs text-muted-foreground">{{ shown.digest | short }}</span>
+  </nav>
+  {% if at < last %}
+  <div class="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+    <span>A newer version is saved: version {{ last }}, {{ versions[-1].at | when }} by {{ versions[-1].by }}.</span>
+    <a class="text-primary hover:underline" href="/threads/{{ thread.id }}">Open the latest</a>
+    {% if revertible %}
+    <form method="post" action="/threads/{{ thread.id }}/revert">
+      <input type="hidden" name="head" value="{{ thread.head.id }}">
+      <input type="hidden" name="edit" value="{{ shown.id }}">
+      <button class="rounded-md bg-primary px-3 py-1 font-medium text-primary-foreground hover:bg-primary/90">Make it the latest</button>
+    </form>
+    {% endif %}
   </div>
-  <script type="application/json" id="thread-props">{{ held | tojson }}</script>
+  {% endif %}
+  {% if editable %}
+  <form method="post" action="/threads/{{ thread.id }}/edit" class="grid gap-4">
+    <input type="hidden" name="head" value="{{ thread.head.id }}">
+  {% endif %}
+  {{ rows(fields, picked, titles) }}
+  {% if parts %}
+  <h3 class="mb-2 mt-2 text-sm font-medium">Its recipe</h3>
+  {{ rows(parts, picked, titles) }}
+  {% endif %}
+  {% if editable %}
+    {% if languaged %}
+    <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">language</span>
+      <input name="language" value="{{ thread.language or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="none">
+      <span class="text-xs text-muted-foreground">The text's, kept with it.</span></label>
+    {% endif %}
+    {% if labels is not none %}
+    <label class="grid gap-1 text-sm"><span class="text-muted-foreground">labels</span>
+      <textarea name="labels" rows="4" class="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 font-mono text-xs">
+{{ labels | pretty }}</textarea>
+      <span class="text-xs text-muted-foreground">What its views and resources are called, by position, kept with this edit.</span></label>
+    {% endif %}
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+      <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Save it</button>
+      <span class="text-muted-foreground">Saves a new version of it.</span>
+    </div>
+  </form>
+  {% endif %}
+  {% if checked is not none %}
+  <h3 class="mb-2 mt-6 text-sm font-medium">Its findings</h3>
+  {% set found, refused = checked %}
+  {% for r in refused %}<p class="mb-2 text-sm text-warning">{{ r }}</p>{% endfor %}
+  {{ findings(found) }}
+  {% endif %}
+  <h3 class="mb-2 mt-6 text-sm font-medium">What this version changed</h3>
+  {% if changed is none %}
+  <p class="text-sm text-muted-foreground">It is the first.</p>
+  {% elif not changed %}
+  <p class="text-sm text-muted-foreground">Nothing of what it holds; only what is said of it, or its labels.</p>
+  {% else %}
+  <ul class="space-y-2 text-sm">
+    {% for c in changed %}
+    <li>
+      <span class="font-mono text-xs text-muted-foreground">{{ c.path }}</span>
+      {% if c.was == "added" %}
+      <span class="text-success">added</span>
+      <div class="mt-0.5 whitespace-pre-wrap break-words font-mono text-xs">{{ c.after if c.after is string else c.after | pretty }}</div>
+      {% elif c.was == "removed" %}
+      <span class="text-destructive">removed</span>
+      <div class="mt-0.5 whitespace-pre-wrap break-words font-mono text-xs line-through">{{ c.before if c.before is string else c.before | pretty }}</div>
+      {% elif c.words %}
+      <div class="mt-0.5 whitespace-pre-wrap break-words">{% for mark, text in c.words %}{% if mark == "+" %}<ins class="bg-success/15 text-success no-underline">{{ text }}</ins>{% elif mark == "-" %}<del class="bg-destructive/10 text-destructive">{{ text }}</del>{% else %}{{ text }}{% endif %}{% endfor %}</div>
+      {% else %}
+      <div class="mt-0.5 font-mono text-xs"><del class="bg-destructive/10 text-destructive">{{ c.before | pretty }}</del> → <ins class="bg-success/15 text-success no-underline">{{ c.after | pretty }}</ins></div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <h3 class="mb-2 mt-6 text-sm font-medium">Its versions</h3>
+  <ol class="space-y-1 text-sm">
+    {% for v in versions | reverse %}
+    {% set i = last - loop.index0 %}
+    <li class="flex flex-wrap gap-x-3">
+      {% if i == at %}<span class="font-medium" aria-current="true">Version {{ i }}</span>{% else %}<a class="text-primary hover:underline" href="{{ link ~ i }}">Version {{ i }}</a>{% endif %}
+      <span class="text-muted-foreground">{{ v.at | when }}, {{ v.by }}</span>
+      <span class="font-mono text-xs text-muted-foreground">{{ v.digest | short }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endcall %}
+
+  {% if ran is not none %}
+  {% call section("Its runs", "runs") %}
+  {% if not thread.deleted %}<p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/runs/new?trial={{ thread.id }}">Run it</a>, on a page of its own</p>{% endif %}
+  <ul class="space-y-1 text-sm">
+    {% for i, r, described in ran %}
+    <li class="flex flex-wrap gap-x-3"><a class="text-primary hover:underline" href="/runs/{{ r.run }}">{{ described }}</a><span class="text-muted-foreground">version {{ i }}, {{ r.at | when }}</span></li>
+    {% else %}
+    <li class="text-muted-foreground">None of yours.</li>
+    {% endfor %}
+  </ul>
+  {% endcall %}
+  {% endif %}
+
+  {% if unshipped %}
+  {% call section("Change it", "edit") %}
+  <p class="text-sm text-warning">{{ unshipped }}</p>
+  {% endcall %}
+  {% endif %}
 
   {% if mine and not thread.deleted %}
   {% call section("What is said of it", "said") %}
@@ -76,7 +191,16 @@
   {% endcall %}
   {% endif %}
 
-  {% if not thread.deleted %}
+  {% if not mine and person.login in thread.collaborators %}
+  {% call section("Shared with you", "shared") %}
+  <form method="post" action="/threads/{{ thread.id }}/leave" class="flex flex-wrap items-center gap-3 text-sm">
+    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Leave it</button>
+    <span class="text-muted-foreground">{{ thread.owner }} shares it with you. Leaving takes it out of what you see, here and wherever it is offered, until {{ thread.owner }} shares it again.</span>
+  </form>
+  {% endcall %}
+  {% endif %}
+
+  {% if authored and not thread.deleted %}
   {% call section("Fork it", "fork") %}
   <form method="post" action="/threads/{{ thread.id }}/fork" class="flex flex-wrap items-end gap-3 text-sm">
     <label class="grid gap-1"><span class="font-medium">Name</span>

@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.portal.test.helpers import shown
+from chatddx.portal.test.helpers import shown, submitted
 from chatddx.test.helpers import INSTRUCTION
 from chatddx.test.world import JUDGE, LINES, LINES_GUIDED
 
@@ -120,15 +120,10 @@ def test_the_page_is_given_where_a_save_goes(signed: TestClient) -> None:
 def test_a_translations_thread_s_page_edits_its_entries(signed: TestClient) -> None:
     query = {"kind": "translations", "owner": "alice"}
     [guided] = signed.get("/api/threads", params=query).json()
-    page = shown(signed, f"/threads/{guided['id']}")
-    held = page.split('<script type="application/json" id="thread-props">', 1)[1]
-    editor = json.loads(held.split("</script>", 1)[0])["editor"]
+    path = f"/threads/{guided['id']}"
+    given = submitted(shown(signed, path), f"{path}/edit")
     body = signed.get(f"/api/components/{guided['head']['digest']}").json()["body"]
-    assert (editor["kind"], editor["mode"], editor["into"]) == (
-        "translations",
-        "edit",
-        body["into"],
-    )
+    assert json.loads(given["f.into"][0]) == body["into"]
 
 
 @pytest.mark.slow

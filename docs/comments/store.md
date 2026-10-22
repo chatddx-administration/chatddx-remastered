@@ -258,6 +258,17 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/store/`, each
 -- shape.
 ```
 
+## `src/chatddx/store/migrations/0027-t2-catalog-description.sql`
+
+```
+-- Duplication: src/chatddx/catalog/model.py: Entry._shape, where a description is taken
+-- away as a name is.
+-- Accommodating for a check, which passes when it is NULL: NULL values are ruled out
+-- explicitly.
+-- Accommodating for a store holding an empty description, which the API wrote before a
+-- description could be taken away: NOT VALID leaves the rows already written unchecked.
+```
+
 ## `src/chatddx/store/notify.py:LIMIT`
 
 ```

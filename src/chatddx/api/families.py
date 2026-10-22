@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from chatddx import bench as benches, catalog
 from chatddx.bench import Ambiguous, Bench, NotFound
+from chatddx.catalog import Subject
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.store import fetch_vignette
@@ -11,7 +12,7 @@ from chatddx.store import fetch_vignette
 from . import schemas
 from .people import BenchDep
 from .state import no_store, refused
-from .threads import login, made, thread_of
+from .threads import login, made, said, thread_of
 
 router = APIRouter(tags=["families"])
 
@@ -62,23 +63,52 @@ def families(
     bench: BenchDep,
     tag: Annotated[list[str] | None, Query(description="any of these")] = None,
     name: str | None = None,
+    deleted: Annotated[
+        bool, Query(description="the person's own deleted families instead")
+    ] = False,
 ) -> list[schemas.Family]:
     return [
         _family_of(bench, f)
-        for f in bench.families(tag or ())
+        for f in bench.families(tag or (), deleted=deleted)
         if name is None or f.name == name
     ]
 
 
 @router.get("/families/{family}")
 def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
-    found = bench.family(family)
+    return _detail(bench, family)
+
+
+def _detail(bench: Bench, family: int) -> schemas.FamilyDetail:
+    found = bench.family(family, deleted=True)
     return schemas.FamilyDetail(
         **_family_of(bench, found).model_dump(),
         description=found.about.description,
         collaborators=sorted(bench.login(c) for c in found.about.collaborators),
+        deleted=found.about.deleted,
         cases=[_case_of(bench, c, found.case) for c in found.cases],
     )
+
+
+@router.patch("/families/{family}")
+def say_of_family(
+    bench: BenchDep, family: int, given: schemas.FamilySaid
+) -> schemas.FamilyDetail:
+    """Writes what the request changes of the person's own family, its language too, a
+    field left out staying as it is, and answers what holds afterwards.
+
+    Costs a lookup per collaborator and what `Bench.say` reads and writes, then a read
+    of the family: each of its cases, and the expectations of each the person sees, by
+    expectation schema.
+    """
+    said(bench, Subject(family=family), given)
+    return _detail(bench, family)
+
+
+@router.post("/families/{family}/leave", status_code=204)
+def leave_family(bench: BenchDep, family: int) -> Response:
+    _ = bench.leave(Subject(family=family))
+    return Response(status_code=204)
 
 
 @router.post(

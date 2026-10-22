@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section %}
+{% block title %}Run trials · ChatDDX{% endblock %}
+{% block main %}
+{% set link = "text-primary hover:underline" %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="/library?kind=trial" class="text-sm {{ link }}">← trial</a>
+  {{ heading("Run " ~ ("it" if trials | length == 1 else "them"), "Each trial's version at the endpoint serving its engine, as one start, queued as your job.") }}
+  {% if not trials %}
+  <p class="text-sm text-muted-foreground">No trial is given: pick them on the <a class="{{ link }}" href="/library?kind=trial">trial tab</a> of the Library.</p>
+  {% else %}
+  <form method="post" action="/runs/new" class="grid gap-6">
+    {% call section("The trials") %}
+    <ul class="space-y-4 text-sm">
+      {% for s in trials %}
+      <li class="grid gap-1.5 rounded-lg border border-border/60 p-3">
+        <div class="flex flex-wrap items-baseline gap-x-3"><a class="font-medium {{ link }}" href="/threads/{{ s.thread.id }}">{{ s.thread.name or s.thread.title }}</a><span class="text-muted-foreground">{{ s.thread.language or "a language unknown" }}, {{ s.trial.cases | length }} case{{ "" if s.trial.cases | length == 1 else "s" }}, {{ s.trial.seeds | length }} seed{{ "" if s.trial.seeds | length == 1 else "s" }}</span></div>
+        <label class="flex flex-wrap items-center gap-2"><span class="text-muted-foreground">version</span>
+          <select name="version" aria-label="version of {{ s.thread.name or s.thread.title }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+            {% for v in s.versions | reverse %}<option value="{{ v.id }}">Version {{ s.versions | length - loop.index0 }}, {{ v.at | when }}</option>{% endfor %}
+          </select></label>
+        {% if s.endpoint %}
+        <p class="text-muted-foreground">at {{ s.endpoint.name }}: {{ s.endpoint.spec.execution.concurrency }} at once, {{ s.endpoint.spec.execution.order }}</p>
+        {% else %}
+        <p class="text-warning">{{ s.refused }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endcall %}
+    {% call section("How it is sent") %}
+    <div class="flex flex-wrap items-end gap-3 text-sm">
+      <label class="grid gap-1"><span class="text-muted-foreground">concurrency</span>
+        <input name="concurrency" type="number" min="1" class="h-9 w-32 rounded-md border border-input bg-transparent px-2.5" placeholder="each endpoint's"></label>
+      <label class="grid gap-1"><span class="text-muted-foreground">order</span>
+        <select name="order" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+          <option value="">each endpoint's</option>
+          {% for o in orders %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select></label>
+      <label class="flex h-9 items-center gap-2"><input type="checkbox" name="score" value="true" checked> Score it once it is done</label>
+    </div>
+    <p class="mt-2 text-xs text-muted-foreground">Left empty, each endpoint's execution; a shuffled order's seed is drawn.</p>
+    {% endcall %}
+    <div><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Run {{ "it" if trials | length == 1 else "them" }}</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

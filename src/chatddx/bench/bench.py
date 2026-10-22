@@ -4,8 +4,8 @@ from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
 from .following import follow, follow_moved, lineage, moved, proposal
-from .runs import again, queue, queue_scoring, resume, score, start
-from .saying import say
+from .runs import again, queue, queue_scoring, resume, score, start, start_trials
+from .saying import leave, say
 from .seen import Seen
 from .taking import take, take_from
 
@@ -26,6 +26,7 @@ class Bench(Seen):
     take_from = take_from
 
     say = say
+    leave = leave
 
     proposal = proposal
     lineage = lineage
@@ -34,6 +35,7 @@ class Bench(Seen):
     follow_moved = follow_moved
 
     start = start
+    start_trials = start_trials
     again = again
     resume = resume
     queue = queue

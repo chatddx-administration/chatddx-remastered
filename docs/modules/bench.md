@@ -34,8 +34,8 @@ to read, and they need the bench's connection in autocommit mode.
   vignette makes alone, else the first, by digest, that holds the vignette, and holds that vignette and its cases. A
   family without a case isn't shown.
 
-- **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else finds
-  them: not names, not lists, not what is run or scored against.
+- **Their own deleted threads and families**, listed apart and found by id, so that they can be read and restored.
+  Nothing else finds them: not names, not lists, not what is run or scored against.
 - **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
 - **The World's endpoints**, which are everyone's, and read from the World. The bench gives an endpoint with its spec
   and the model its engine serves, once that engine is in the store (`Endpoint`), whether it is named or is the one a
@@ -175,10 +175,9 @@ the old entry stops matching and the new text has none.
 
 ## Writes for the person
 
-The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed cases,
-what is said about a thread, runs and scores. Tools, expectation schemas, engines, models, the facts about models and
-canary sets are developers' and ops', written through data sets and facts files (docs/chatddx.md, "Requirements";
-docs/modules/facts.md), and a scoring is built when a run is scored rather than written by hand.
+Tools, expectation schemas, engines, models, the facts about models and canary sets are developers' and ops', written
+through data sets and facts files (docs/chatddx.md, "Requirements"; docs/modules/facts.md), and a scoring is built when
+a run is scored rather than written by hand.
 
 What every write has in common:
 
@@ -218,6 +217,13 @@ JSON as the store gives it:
 
 What a component refers to must be stored already, so a toolset can't bring a tool of its own, and a judge is written
 over a judge configuration already kept, which its own rule holds it to (docs/modules/factors.md, "Judge").
+
+### Trials
+
+A trial is written as a component is, held in its cases' language: the configuration its skeleton holds is carried into
+it through its translations, as a start carries a variation, against the facts its compilation pinned, and that
+compilation is kept. Cases the person doesn't see are "not found", and cases in several languages are refused, as are
+cases in a language the configuration's translations don't go into.
 
 ### Languages
 
@@ -271,12 +277,12 @@ from its source, a directory's file or a database source's text, wherever the be
 
 ### What is said about a thread
 
-Only its owner says what holds of a thread, as only they edit it: a collaborator may fork it, but not rename, share or
-delete it. One write says what is to hold afterwards, any of: the name, or none so the title takes over; the
-description, which is replaced but never taken away; the tags and the collaborators, each as the whole set, the
-collaborators by login; and whether it is deleted. Only what changes what holds is written, all at once, so saying the
-same again writes nothing. A form shows the whole thread and sends it back; a write per field would ask the edge to tell
-what changed, and leave half a change when one of several fails.
+Owners edit their threads, a collaborator may fork it, or leave it, which takes it out of what they see until it is
+shared with them again. A family is said of and left the same way, by its owner and its collaborators, and its owner
+says its language too, the vignette's, which decides what its cases are sent in.
+
+The description, the tags and the collaborators (by login) are passed as the whole set. The deleted-flag as a bool. Only
+what changes what holds is written, so saying the same again writes nothing.
 
 ### Following an origin
 
@@ -302,9 +308,9 @@ with the model's head compiled against the current facts (`Bench.follow_moved`, 
 - **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
   the worker (docs/modules/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is
   refused.
+
 - **Starting** runs a variation under its model's handle. A run for each language its cases are sent in (see
-  "Translations"). As it starts, each is named by the variation's label and says what it varied:
-  (docs/modules/catalog.md, "What a run ran").
+  "Translations").
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/modules/runner.md,
   "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is

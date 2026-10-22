@@ -2,6 +2,13 @@
 
 Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each under its file and the name it is in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).
 
+## `src/chatddx/bench/components.py:_carried`
+
+```
+# Policy: as a start does, a skeleton of no language of its own is sent as
+# written into a language its translations don't go into.
+```
+
 ## `src/chatddx/bench/handles.py:broken`
 
 ```
@@ -10,6 +17,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, each
 ```
 
 ## `src/chatddx/bench/runs.py:start`
+
+```
+# Policy: one transaction, so that a run the gate refuses leaves none of the start's
+# begun.
+```
+
+## `src/chatddx/bench/runs.py:start_trials`
 
 ```
 # Policy: one transaction, so that a run the gate refuses leaves none of the start's

@@ -45,7 +45,6 @@ in agents/ tracks is that plan's, not this document's.
   - [Exporting data sets](#exporting-data-sets)
   - [The data's stage, said in code](#the-datas-stage-said-in-code)
   - [Missing tests](#missing-tests)
-  - [A collaborator leaves a share](#a-collaborator-leaves-a-share)
   - [The archive's configuration under another name](#the-archives-configuration-under-another-name)
 - [Waiting](#waiting)
   - [Splits beyond `lines@1`](#splits-beyond-lines1)
@@ -527,14 +526,6 @@ that sets a part is the portal's.
   tests in src/chatddx/scorers/test/test_scorers.py use a synthetic judge.
 - **`set` and `--again` have no test**, and no scripted run sets a part.
 - `send` again after a worker's exception isn't tested.
-
-### A collaborator leaves a share
-
-A collaborator may take a shared thread out of what they see, as an entry the catalog holds like any other.
-
-Decided: a collaborator may withdraw themselves.
-
-- **Leaving a share**: a collaborator can't take a shared thread out of what they see; only the owner can.
 
 ### The archive's configuration under another name
 

@@ -20,7 +20,7 @@ from chatddx.bench import (
     word_of,
 )
 from chatddx.bench.model import MODEL, PLACEHOLDERS
-from chatddx.catalog import read, titles
+from chatddx.catalog import Subject, read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Component, Finding, resolve
@@ -413,21 +413,32 @@ def take(
 
 @router.patch("/threads/{thread}")
 def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDetail:
-    if "description" in given.model_fields_set and given.description is None:
-        raise HTTPException(422, "a description is replaced, never taken away")
+    """Writes what the request changes of the person's own thread, a field left out
+    staying as it is, and answers what holds afterwards.
+
+    Costs a lookup per collaborator and what `Bench.say` reads and writes, then a read
+    of the thread.
+    """
+    said(bench, Subject(thread=thread), given)
+    return _detail(bench, thread)
+
+
+def said(bench: Bench, subject: Subject, given: schemas.Said) -> None:
+    """Says through `Bench.say` what `given` sets, leaving what it leaves unset as it
+    is. Each collaborator is looked up here as well as by the bench, so that an unknown
+    login is unprocessable rather than not found.
+    """
     people = bench.people
     if missing := [c for c in given.collaborators or () if people.find(c) is None]:
         raise HTTPException(422, f"no person {missing[0]!r}")
     with refused():
-        _ = bench.say(
-            thread,
-            name=given.name if "name" in given.model_fields_set else ...,
-            description=given.description,
-            tags=given.tags,
-            collaborators=given.collaborators,
-            deleted=given.deleted,
-        )
-    return _detail(bench, thread)
+        _ = bench.say(subject, **given.model_dump(exclude_unset=True))
+
+
+@router.post("/threads/{thread}/leave", status_code=204)
+def leave(bench: BenchDep, thread: int) -> Response:
+    _ = bench.leave(Subject(thread=thread))
+    return Response(status_code=204)
 
 
 @router.get("/threads/{thread}/lineage")

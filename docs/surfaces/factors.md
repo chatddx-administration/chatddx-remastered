@@ -313,6 +313,13 @@ Raises:
 Raises:
 1. `ValueError`: `"shuffle_seed goes with shuffled order, and only with it"` (through `Execution._shuffle_seed`, in a `ValidationError`)
 
+## `Execution.overlaid`
+`src/chatddx/factors/trial.py:Execution.overlaid`
+
+* `concurrency: int | None = None`
+* `order: Order | None = None`
+* ∟`"Execution"`
+
 ## `Execution.schedule`
 `src/chatddx/factors/trial.py:Execution.schedule`
 

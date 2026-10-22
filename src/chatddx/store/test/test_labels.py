@@ -15,7 +15,6 @@ LABELS: Labels = {
 }
 
 
-@pytest.mark.slow
 def test_a_scorer_s_labels_are_written_with_its_edit(conn: Connection) -> None:
     catalog, _, reg, ids, alice = stored_world(conn)
     rows = Rows(conn)

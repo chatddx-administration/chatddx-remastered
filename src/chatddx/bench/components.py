@@ -1,12 +1,14 @@
 from functools import partial
 
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, families, read, threads
-from chatddx.catalog.language import language_of
+from chatddx.catalog.language import language_of, languages_of, recipe_language
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.request import RECIPE_PARTS, Recipe
+from chatddx.factors.facts import ModelFacts
+from chatddx.factors.request import RECIPE_PARTS, Recipe, translated
 from chatddx.factors.scoring import Expectation, Judge, Scorer
+from chatddx.factors.trial import Trial
 from chatddx.facts import lints
 from chatddx.identity import owns, sees
 
@@ -47,6 +49,10 @@ def check(seen: Seen, component: Component | Recipe) -> Checked:
             registry, digest = _registered(seen, component)
             add_compilations(seen, registry, component.skeleton)
             engines = judging(seen, component, registry)
+        case Trial():
+            held, registry, _ = _carried(seen, component)
+            digest = registry.add(held)
+            add_compilations(seen, registry, held.skeleton)
         case _:
             registry, digest = _registered(seen, component)
     languages = partial(language_of, seen.rows)
@@ -184,10 +190,14 @@ def _written(
         check_expecting(seen, component, thread)
     if isinstance(component, Appendix):
         component = bound(seen, component)
-    registry = seen.store.load(s.digest for s in component.refs())
+    compilations: list[str] = []
+    if isinstance(component, Trial):
+        component, registry, compilations = _carried(seen, component)
+    else:
+        registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
     with seen.conn.transaction():
-        _ = seen.store.add(registry, [component.digest])
+        _ = seen.store.add(registry, [component.digest, *compilations])
         if language is not None:
             keep_language(seen, component.digest, language)
         edit, kept = seen.catalog.keep(
@@ -205,6 +215,49 @@ def _written(
             else {}
         )
     return Written(edit, SAVED[kept], linted(seen, component.digest), replaced)
+
+
+def _carried(seen: Seen, trial: Trial) -> tuple[Trial, Registry, list[str]]:
+    seen_cases = {c for f in seen.families() for c in f.cases}
+    if missing := [c for c in trial.cases if c not in seen_cases]:
+        raise NotFound(f"no case {missing[0]} for {seen.person.login}")
+    held = languages_of(seen.rows, [*trial.cases, trial.skeleton])
+    known = sorted(set(filter(None, (held[c] for c in trial.cases))))
+    if len(known) > 1:
+        raise ValueError(
+            f"a trial's cases are in one language, not in {' and '.join(known)}"
+        )
+    made = seen.rows.compilations(trial.skeleton)
+    recipe = made[0].recipe if made else None
+    own = held[trial.skeleton] if recipe is None else recipe_language(seen.rows, recipe)
+    into = None if not known or known[0] == own else known[0]
+    if into is not None and (
+        recipe is None or into not in translated(recipe, seen.store.get)
+    ):
+        if own is not None:
+            raise ValueError(
+                f"{seen.title(trial.skeleton)} has no translations into {into}, its "
+                + "cases' language"
+            )
+        # Policy: as a start does, a skeleton of no language of its own is sent as
+        # written into a language its translations don't go into.
+        into = None
+    if recipe is None or any(m.into == into for m in made):
+        return trial, seen.store.load(s.digest for s in trial.refs()), []
+    pinned = made[0].facts
+    facts = None if pinned is None else resolve(seen.store.get, pinned, ModelFacts)
+    registry, compilation = compiled(seen, recipe, facts, into)
+    loaded = seen.store.load([trial.engine, *trial.cases])
+    for digest in loaded:
+        _ = registry.add(loaded.get(digest))
+    carried = Trial(
+        skeleton=compilation.skeleton,
+        engine=trial.engine,
+        cases=trial.cases,
+        cleanup=trial.cleanup,
+        seeds=trial.seeds,
+    )
+    return carried, registry, [compilation.digest]
 
 
 def _check_family(seen: Seen, old: Expectation, new: Expectation) -> None:

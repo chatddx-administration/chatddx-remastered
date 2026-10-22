@@ -11,7 +11,6 @@ from chatddx.store import People, Texts, fetch_vignette
 from chatddx.store.store import Connection
 
 
-@pytest.mark.slow
 def test_a_database_source_s_texts_are_kept_and_fetched_through_the_store(
     conn: Connection, tmp_path: Path
 ) -> None:

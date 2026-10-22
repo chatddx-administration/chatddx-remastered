@@ -9,6 +9,7 @@ from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import load_cases
 from chatddx.store import Catalog
+from chatddx.test.helpers import TYPED
 from chatddx.test.world import DATA
 
 
@@ -122,3 +123,41 @@ def test_a_case_the_person_doesn_t_see_isn_t_found(
             "code": "not_found",
         }
     assert signed.get("/api/families", headers=bob).json() == []
+
+
+@pytest.mark.slow
+def test_an_owner_says_what_a_typed_case_is_and_a_collaborator_leaves_it(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    typed = signed.post(
+        "/api/families", json={"text": TYPED, "language": "en", "name": "flight"}
+    ).json()
+    path = f"/api/families/{typed['id']}"
+    asked = {"name": "breathless", "tags": ["typed"], "collaborators": ["bob"]}
+    said = signed.patch(path, json={**asked, "language": "sv"})
+    assert said.status_code == 200
+    held = said.json()
+    assert (held["name"], held["tags"], held["collaborators"], held["language"]) == (
+        "breathless",
+        ["typed"],
+        ["bob"],
+        "sv",
+    )
+    assert signed.get(path, headers=bob).status_code == 200
+    got = signed.post(f"{path}/leave", headers=bob)
+    assert (got.status_code, got.content) == (204, b"")
+    assert signed.get(path, headers=bob).status_code == 404
+
+    assert signed.patch(path, json={"deleted": True}).json()["deleted"] is True
+    assert typed["id"] not in [f["id"] for f in signed.get("/api/families").json()]
+    gone = signed.get("/api/families", params={"deleted": True}).json()
+    assert [f["id"] for f in gone] == [typed["id"]]
+    got = signed.patch(path, json={"name": "gone"})
+    assert got.status_code == 422 and "is deleted" in got.json()["detail"]
+
+    shared = family(signed, "crlf")
+    got = signed.patch(f"/api/families/{shared['id']}", json={"name": "mine"})
+    assert (got.status_code, got.json()["detail"]) == (
+        404,
+        f"no case {shared['id']} of yours",
+    )

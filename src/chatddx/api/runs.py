@@ -12,7 +12,7 @@ from chatddx.catalog.language import language_of
 from chatddx.catalog.read import about as about_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
-from chatddx.factors.trial import Execution, Trial, suggest_seeds
+from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.ledger import RunStarted, check_run
 from chatddx.runner import Running, outcome, rendered_again as rendered
 from chatddx.scorers.answer import read
@@ -49,21 +49,6 @@ def _seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]:
     return suggest_seeds(given.replicates or replicates)
 
 
-def _execution(held: Execution, given: schemas.NewRun) -> Execution | None:
-    if given.concurrency is None and given.order is None:
-        return None
-    order = given.order or held.order
-    shuffled = held.shuffle_seed if order == held.order else suggest_seeds(1)[0]
-    return Execution.model_validate(
-        {
-            **held.model_dump(),
-            "concurrency": given.concurrency or held.concurrency,
-            "order": order,
-            "shuffle_seed": shuffled if order == "shuffled@1" else None,
-        }
-    )
-
-
 def _new(bench: Bench, given: schemas.NewRun) -> Started:
     with refused(NotFound):
         variation = bench.variation(
@@ -76,7 +61,7 @@ def _new(bench: Bench, given: schemas.NewRun) -> Started:
             _cases(bench, given),
             _seeds(given, 1),
             given.cleanup,
-            _execution(at.spec.execution, given),
+            at.spec.execution.overlaid(given.concurrency, given.order),
         )
 
 
@@ -119,6 +104,26 @@ def start(
             if c.language is not None and c.refused is not None
         ],
     )
+
+
+@router.post(
+    "/runs/trials",
+    status_code=202,
+    responses={
+        202: {
+            "description": "The runs, started and queued, a run per trial's version in "
+            + "the order given, `Location` the first's."
+        }
+    },
+)
+def start_trials(
+    request: Request, response: Response, bench: BenchDep, given: schemas.NewTrialRuns
+) -> schemas.StartedRuns:
+    with refused():
+        started = bench.start_trials(given.trials, given.concurrency, given.order)
+    runs = [_queued(request, response, bench, r, given.score) for r in started]
+    response.headers["Location"] = request.app.url_path_for("run", run=str(runs[0].run))
+    return schemas.StartedRuns(runs=runs, left_out=[])
 
 
 @router.post(

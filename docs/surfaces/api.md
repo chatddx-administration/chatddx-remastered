@@ -340,6 +340,7 @@ Raises:
 * `bench: BenchDep`
 * `tag: Annotated[list[str] | None, Query(description="any of these")] = None`
 * `name: str | None = None`
+* `deleted: Annotated[bool, Query(description="the person's own deleted families instead")] = False`
 * ∟`list[schemas.Family]`
 
 ## `Family` `(_Schema)`
@@ -373,7 +374,13 @@ Raises:
 
 * `description: str | None`
 * `collaborators: list[str]`
+* `deleted: bool`
 * `cases: list[FamilyCase] = Field(…)`
+
+## `FamilySaid` `(Said)`
+`src/chatddx/api/schemas.py:FamilySaid`
+
+* `language: str | None = Field(…)`
 
 ## `Finding` `(_Schema)`
 `src/chatddx/api/schemas.py:Finding`
@@ -694,6 +701,20 @@ Raises:
 
 `Language`
 
+## `leave` `@router.post("/threads/{thread}/leave", status_code=204)`
+`src/chatddx/api/threads.py:leave`
+
+* `bench: BenchDep`
+* `thread: int`
+* ∟`Response`
+
+## `leave_family` `@router.post("/families/{family}/leave", status_code=204)`
+`src/chatddx/api/families.py:leave_family`
+
+* `bench: BenchDep`
+* `family: int`
+* ∟`Response`
+
 ## `LeftOut` `(_Schema)`
 `src/chatddx/api/schemas.py:LeftOut`
 
@@ -937,6 +958,14 @@ Raises:
 
 Raises:
 1. `ValueError`: `"a new thread holds a component or a recipe, not both"` (through `NewThread._one`, in a `ValidationError`)
+
+## `NewTrialRuns` `(_Schema)`
+`src/chatddx/api/schemas.py:NewTrialRuns`
+
+* `trials: list[int] = Field(…)`
+* `concurrency: int | None = Field(…)`
+* `order: Order | None = Field(…)`
+* `score: bool = Field(…)`
 
 ## `NewTyped` `(_Schema)`
 `src/chatddx/api/schemas.py:NewTyped`
@@ -1235,10 +1264,25 @@ Raises:
 `src/chatddx/api/schemas.py:Said`
 
 * `name: str | None = Field(…)`
-* `description: str | None = Field(None, description="replaced, never taken away")`
+* `description: str | None = Field(None, description="null takes it away")`
 * `tags: list[str] | None = Field(None, description="its tags")`
 * `collaborators: list[str] | None = Field(…)`
 * `deleted: bool | None = None`
+
+## `said`
+`src/chatddx/api/threads.py:said`
+
+Says through `Bench.say` what `given` sets, leaving what it leaves unset as it
+is. Each collaborator is looked up here as well as by the bench, so that an unknown
+login is unprocessable rather than not found.
+
+* `bench: Bench`
+* `subject: Subject`
+* `given: schemas.Said`
+* ∟`None`
+
+Raises:
+1. `HTTPException`: `422, "no person {missing[0]!r}"`
 
 ## `said_of`
 `src/chatddx/api/events.py:said_of`
@@ -1258,14 +1302,31 @@ Raises:
 ## `say` `@router.patch("/threads/{thread}")`
 `src/chatddx/api/threads.py:say`
 
+Writes what the request changes of the person's own thread, a field left out
+staying as it is, and answers what holds afterwards.
+
+Costs a lookup per collaborator and what `Bench.say` reads and writes, then a read
+of the thread.
+
 * `bench: BenchDep`
 * `thread: int`
 * `given: schemas.Said`
 * ∟`schemas.ThreadDetail`
 
-Raises:
-1. `HTTPException`: `422, "a description is replaced, never taken away"`
-2. `HTTPException`: `422, "no person {missing[0]!r}"`
+## `say_of_family` `@router.patch("/families/{family}")`
+`src/chatddx/api/families.py:say_of_family`
+
+Writes what the request changes of the person's own family, its language too, a
+field left out staying as it is, and answers what holds afterwards.
+
+Costs a lookup per collaborator and what `Bench.say` reads and writes, then a read
+of the family: each of its cases, and the expectations of each the person sees, by
+expectation schema.
+
+* `bench: BenchDep`
+* `family: int`
+* `given: schemas.FamilySaid`
+* ∟`schemas.FamilyDetail`
 
 ## `score_item_of`
 `src/chatddx/api/events.py:score_item_of`
@@ -1445,6 +1506,15 @@ Raises:
 
 Raises:
 1. `ValueError`: `"no case tagged {' or '.join(given.tags)} for {bench.person.login}"` (through `_new`)
+
+## `start_trials` `@router.post("/runs/trials", …)`
+`src/chatddx/api/runs.py:start_trials`
+
+* `request: Request`
+* `response: Response`
+* `bench: BenchDep`
+* `given: schemas.NewTrialRuns`
+* ∟`schemas.StartedRuns`
 
 ## `started_of`
 `src/chatddx/api/events.py:started_of`

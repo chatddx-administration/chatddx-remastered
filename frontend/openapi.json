@@ -117,10 +117,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts",
+              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, trial, canary_set, model, engine, facts",
               "title": "Kind"
             },
-            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts"
+            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, trial, canary_set, model, engine, facts"
           },
           {
             "name": "name",
@@ -359,6 +359,7 @@
           "threads"
         ],
         "summary": "Say",
+        "description": "Writes what the request changes of the person's own thread, a field left out\nstaying as it is, and answers what holds afterwards.\n\nCosts a lookup per collaborator and what `Bench.say` reads and writes, then a read\nof the thread.",
         "operationId": "say_api_threads__thread__patch",
         "security": [
           {
@@ -916,6 +917,49 @@
         }
       }
     },
+    "/api/threads/{thread}/leave": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Leave",
+        "operationId": "leave_api_threads__thread__leave_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/lineage": {
       "get": {
         "tags": [
@@ -1133,6 +1177,18 @@
               ],
               "title": "Name"
             }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "the person's own deleted families instead",
+              "default": false,
+              "title": "Deleted"
+            },
+            "description": "the person's own deleted families instead"
           }
         ],
         "responses": {
@@ -1249,6 +1305,108 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Say Of Family",
+        "description": "Writes what the request changes of the person's own family, its language too, a\nfield left out staying as it is, and answers what holds afterwards.\n\nCosts a lookup per collaborator and what `Bench.say` reads and writes, then a read\nof the family: each of its cases, and the expectations of each the person sees, by\nexpectation schema.",
+        "operationId": "say_of_family_api_families__family__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilySaid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families/{family}/leave": {
+      "post": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Leave Family",
+        "operationId": "leave_family_api_families__family__leave_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -2023,6 +2181,55 @@
             }
           }
         }
+      }
+    },
+    "/api/runs/trials": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Start Trials",
+        "operationId": "start_trials_api_runs_trials_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTrialRuns"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "The runs, started and queued, a run per trial's version in the order given, `Location` the first's.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartedRuns"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
       }
     },
     "/api/runs/{run}/again": {
@@ -3659,6 +3866,10 @@
             "type": "array",
             "title": "Collaborators"
           },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
           "cases": {
             "items": {
               "$ref": "#/components/schemas/FamilyCase"
@@ -3679,9 +3890,94 @@
           "case",
           "description",
           "collaborators",
+          "deleted",
           "cases"
         ],
         "title": "FamilyDetail"
+      },
+      "FamilySaid": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "null takes the name away, and the title takes over"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "null takes it away"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "its tags"
+          },
+          "collaborators": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborators",
+            "description": "the logins it is shared with"
+          },
+          "deleted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its vignette's: replaced, never taken away"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FamilySaid"
       },
       "Finding": {
         "additionalProperties": false,
@@ -5256,6 +5552,61 @@
         ],
         "title": "NewThread"
       },
+      "NewTrialRuns": {
+        "properties": {
+          "trials": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Trials",
+            "description": "the trials' versions to run, by edit id, as one start"
+          },
+          "concurrency": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concurrency",
+            "description": "how many requests at once, up to each endpoint's capacity: each endpoint's when not given"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "case_major@1",
+                  "replicate_major@1",
+                  "shuffled@1"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order",
+            "description": "the order the items are sent in, a shuffled one's seed drawn: each endpoint's when not given"
+          },
+          "score": {
+            "type": "boolean",
+            "title": "Score",
+            "description": "under every scorer that applies, once it is finished",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trials"
+        ],
+        "title": "NewTrialRuns"
+      },
       "NewTyped": {
         "properties": {
           "text": {
@@ -6284,7 +6635,7 @@
               }
             ],
             "title": "Description",
-            "description": "replaced, never taken away"
+            "description": "null takes it away"
           },
           "tags": {
             "anyOf": [

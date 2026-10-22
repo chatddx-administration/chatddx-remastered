@@ -50,6 +50,9 @@ Raises:
 Raises:
 1. `ValueError`: `"{digest} isn't a stored {what}"` (through `_stored_parts`)
 2. `ValueError`: `"a person doesn't write {component.kind_name} components"`
+3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_carried`)
+4. `ValueError`: `"a trial's cases are in one language, not in {' and '.join(known)}"` (through `_carried`)
+5. `ValueError`: `"{seen.title(trial.skeleton)} has no translations into {into}, its cases' language"` (through `_carried`)
 
 ## `Bench.edit`
 `src/chatddx/bench/components.py:edit`
@@ -68,6 +71,9 @@ Raises:
 4. `ValueError`: `"a person doesn't write {kind} components"` (through `_written`)
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
+7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
+8. `ValueError`: `"a trial's cases are in one language, not in {' and '.join(known)}"` (through `_written`)
+9. `ValueError`: `"{seen.title(trial.skeleton)} has no translations into {into}, its cases' language"` (through `_written`)
 
 ## `Bench.follow`
 `src/chatddx/bench/following.py:follow`
@@ -113,6 +119,23 @@ Raises:
 4. `ValueError`: `"a person doesn't write {kind} components"` (through `_written`)
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
+7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
+8. `ValueError`: `"a trial's cases are in one language, not in {' and '.join(known)}"` (through `_written`)
+9. `ValueError`: `"{seen.title(trial.skeleton)} has no translations into {into}, its cases' language"` (through `_written`)
+
+## `Bench.leave`
+`src/chatddx/bench/saying.py:leave`
+
+Takes the person out of what they see of a thread or a family shared with them,
+by an entry of their own, until its owner shares it with them again.
+
+Reads the subject's entries before and after, and writes one entry.
+
+* `subject: Subject`
+* ∟`About`
+
+Raises:
+1. `NotFound`: `"no {_what(seen, subject)} shared with {seen.person.login}"`
 
 ## `Bench.lineage`
 `src/chatddx/bench/following.py:lineage`
@@ -142,6 +165,9 @@ Raises:
 4. `ValueError`: `"a person doesn't write {kind} components"` (through `_written`)
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
+7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
+8. `ValueError`: `"a trial's cases are in one language, not in {' and '.join(known)}"` (through `_written`)
+9. `ValueError`: `"{seen.title(trial.skeleton)} has no translations into {into}, its cases' language"` (through `_written`)
 
 ## `Bench.proposal`
 `src/chatddx/bench/following.py:proposal`
@@ -199,22 +225,35 @@ Raises:
 ## `Bench.say`
 `src/chatddx/bench/saying.py:say`
 
-* `thread: int`
+Writes what holds of the thread or family itself in one transaction.
+`...` leaves a name or a description as it is and `None` takes it away.
+
+Reads the subject's entries before and after, a person per collaborator, and for a
+restored expectation thread the person's expectations of its case and schema.
+
+Heads-up:
+- Only families take language.
+- An expectation thread is refused while the person owns another of its case and
+  schema.
+
+* `subject: Subject`
 * `*`
 * `name: str | None | EllipsisType = ...`
-* `description: str | None = None`
+* `description: str | None | EllipsisType = ...`
 * `tags: Collection[str] | None = None`
 * `collaborators: Collection[str] | None = None`
 * `deleted: bool | None = None`
+* `language: str | None = None`
 * ∟`About`
 
 Raises:
-1. `NotFound`: `"no {word} {thread} of yours"`
-2. `ValueError`: `"{word} {thread} is deleted: restore it to say more of it"`
+1. `NotFound`: `"no {what} of yours"`
+2. `ValueError`: `"{what} is deleted: restore it to say more of it"`
 3. `ValueError`: `"a name can't be empty: none takes it away"`
-4. `ValueError`: `"a tag can't be empty"`
-5. `NotFound`: `"no person {login!r}"` (through `_sharing`)
-6. `ValueError`: `"{word} {thread} is yours: it is shared with others"`
+4. `ValueError`: `"a description can't be empty: none takes it away"`
+5. `ValueError`: `"a tag can't be empty"`
+6. `NotFound`: `"no person {login!r}"` (through `_sharing`)
+7. `ValueError`: `"{what} is yours: it is shared with others"`
 
 ## `Bench.score`
 `src/chatddx/bench/runs.py:score`
@@ -244,6 +283,23 @@ Raises:
 4. `OverQuota`: `"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"` (through `_check_quota`)
 5. `OverQuota`: `"{said}, as many as a day takes"` (through `_check_quota`)
 6. `OverQuota`: `"{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more"` (through `_check_quota`)
+
+## `Bench.start_trials`
+`src/chatddx/bench/runs.py:start_trials`
+
+* `versions: Sequence[int]`
+* `concurrency: int | None = None`
+* `order: Order | None = None`
+* ∟`list[Running]`
+
+Raises:
+1. `NotFound`: `"no trial version {id} for {seen.person.login}"`
+2. `ValueError`: `"a start runs one trial or more"`
+3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
+4. `OverQuota`: `"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"` (through `_check_quota`)
+5. `OverQuota`: `"{said}, as many as a day takes"` (through `_check_quota`)
+6. `OverQuota`: `"{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more"` (through `_check_quota`)
+7. `ValueError`: `"no endpoint here serves the engine of {name}: follow its handle"`
 
 ## `Bench.take`
 `src/chatddx/bench/taking.py:take`
@@ -664,6 +720,12 @@ Raises:
 1. `NotFound`: `"no appendix {', '.join(missing)} of {family.name}"`
 2. `NotFound`: `"no case {title} for {self.person.login}"`
 
+## `Seen.cleanup`
+`src/chatddx/bench/seen.py:Seen.cleanup`
+
+* `cases: Sequence[str]`
+* ∟`tuple[CleanupOp, ...]`
+
 ## `Seen.described`
 `src/chatddx/bench/seen.py:Seen.described`
 
@@ -702,12 +764,16 @@ Raises:
 `src/chatddx/bench/seen.py:Seen.families`
 
 * `tags: Iterable[str] = ()`
+* `*`
+* `deleted: bool = False`
 * ∟`list[Family]`
 
 ## `Seen.family`
 `src/chatddx/bench/seen.py:Seen.family`
 
 * `found: int | str`
+* `*`
+* `deleted: bool = False`
 * ∟`Family`
 
 Raises:

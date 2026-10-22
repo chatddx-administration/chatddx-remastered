@@ -23,7 +23,7 @@ from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
-from .families import appended, built, written_for
+from .cases import appended, built, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped

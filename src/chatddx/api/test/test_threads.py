@@ -91,7 +91,6 @@ def test_a_thread_is_shown_with_its_recipe_and_its_versions(signed: TestClient) 
     assert edits[-1] == mine["head"]
 
 
-@pytest.mark.slow
 def test_a_thread_the_person_doesn_t_see_isn_t_found(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

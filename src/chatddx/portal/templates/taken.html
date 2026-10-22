@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section %}
+{% block title %}Taken · ChatDDX{% endblock %}
+{% block main %}
+{% set link = "text-primary hover:underline" %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="{{ back }}" class="text-sm {{ link }}">← case</a>
+  {{ heading("Taken", "Under " ~ schema ~ ", for each picked case.") }}
+  {% call section("What became of each") %}
+  <ul class="space-y-1.5 text-sm">
+    {% for case, name in named.items() %}
+    <li><span class="font-medium">{{ name }}</span>:
+      {% if case in taken.taken %}taken, into <a class="{{ link }}" href="/threads/{{ taken.taken[case] }}">your thread {{ taken.taken[case] }}</a>
+      {% elif case in taken.kept %}<a class="{{ link }}" href="/threads/{{ taken.kept[case] }}">yours</a>, left as it is
+      {% elif case in taken.choosing %}shared by several, to take from one: {% for t in taken.choosing[case] %}<a class="{{ link }}" href="/threads/{{ t }}">{{ owners[t] }}'s</a>{{ ", " if not loop.last }}{% endfor %}
+      {% else %}none shared with you{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endcall %}
+</div>
+{% endblock %}

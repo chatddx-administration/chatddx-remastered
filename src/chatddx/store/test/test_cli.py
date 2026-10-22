@@ -61,6 +61,7 @@ def test_migrate_command(
         "applied 0021-t2-worker",
         "applied 0025-t2-worker-scored",
         "applied 0026-t2-catalog-run-variation",
+        "applied 0027-t2-catalog-description",
     ]
     with pytest.raises(SystemExit):
         main(["migrate", "--tier", "3"])

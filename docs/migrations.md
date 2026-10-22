@@ -144,6 +144,9 @@ A new schema gets its own section with all three tiers.
     one a run that has started (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_note`, which leaves
     `with` to the database, as the catalog doesn't read the ledger). The engine and `with` were added in place, as
     `0012`'s `facts` was.
+  - `0027-t2-catalog-description.sql`: a description is taken away as a name is (no value, `present` false), and is
+    never empty (`src/chatddx/catalog/model.py:Entry._shape`): `entry_shape_check` dropped and made again with it,
+    `NOT VALID`, so that a store holding an empty description, which the API wrote before, still migrates.
 
 ## source
 

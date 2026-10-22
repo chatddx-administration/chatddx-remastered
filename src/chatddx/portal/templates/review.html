@@ -85,7 +85,7 @@
       {% if family.language %}<span>{{ family.language }}</span>{% endif %}
       {% for t in family.tags %}{{ chip(t) }}{% endfor %}
       {% if family.owner and family.owner != person.login %}<span>owned by {{ family.owner }}</span>{% endif %}
-      <a class="{{ link }}" href="/families/{{ family.id }}">the family's page</a>
+      <a class="{{ link }}" href="/cases/{{ family.id }}">in the Library</a>
     </p>
   </header>
   {% if cases | length > 1 %}
@@ -97,7 +97,7 @@
   </nav>
   {% endif %}
   <div id="review-vignette" class="leading-relaxed">
-    <p class="text-sm text-muted-foreground">The vignette is shown with scripts, or on <a class="{{ link }}" href="/families/{{ family.id }}/vignette">a page of its own</a>.</p>
+    <p class="text-sm text-muted-foreground">The vignette is shown with scripts, or on <a class="{{ link }}" href="/cases/{{ family.id }}/vignette">a page of its own</a>.</p>
   </div>
   <h2 id="appendices" class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Appendices, in order</h2>
   {% for a in appendices %}
@@ -189,7 +189,7 @@
     <p class="mt-3 text-xs text-muted-foreground">Yours, version of {{ own.head.at | when }}. <a class="{{ link }}" href="/threads/{{ own.id }}#edit">Change it</a></p>
     {% endif %}
     {% else %}
-    <p class="text-sm text-muted-foreground">None of your own. <a class="{{ link }}" href="/families/{{ family.id }}#cases">Write yours</a> on the family's page.</p>
+    <p class="text-sm text-muted-foreground">None of your own. <a class="{{ link }}" href="/cases/{{ family.id }}#holds">Write yours</a> in the Library.</p>
     {% endif %}
     {% if scorer %}
     <h3 class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">What {{ scorer[0].name or scorer[0].title }} reads of it</h3>

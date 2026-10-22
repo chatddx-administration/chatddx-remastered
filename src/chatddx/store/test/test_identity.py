@@ -43,7 +43,6 @@ def test_passwords(conn: Connection) -> None:
     assert people.authenticate("alice", "changed") is None
 
 
-@pytest.mark.slow
 def test_sessions(conn: Connection) -> None:
     people = People(conn)
     alice = people.add("alice", "Alice")

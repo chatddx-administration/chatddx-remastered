@@ -1,3 +1,4 @@
+import json
 import re
 import socket
 import threading
@@ -227,23 +228,24 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     assert page.request.patch(path, data=deleted).status == 200
     gone = missing()
     assert held < gone
-    _ = page.goto(f"/families/{crlf['id']}")
-    written = page.locator(f'form[action="/families/{crlf["id"]}/appendices"]')
-    written.locator('input[name="name"]').fill("ultrasound")
-    written.locator("textarea").fill("Gallstones on ultrasound.")
-    written.get_by_role("button", name="Write it").click()
-    page.get_by_label("ultrasound").check()
-    page.get_by_role("button", name="Build the case").click()
-    expect(page.get_by_role("button", name="Write yours")).to_have_count(2)
-
-    page.get_by_role("button", name="Write yours").first.click()
-    page.get_by_role("button", name="+ pattern").first.click()
-    page.get_by_label("pattern").first.fill("biliary & colic")
-    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
-    expect(page.get_by_text("a new thread of your own")).to_be_visible()
-    page.get_by_role("button", name="Save").click()
+    _ = page.goto("/library?kind=case")
+    page.get_by_role("link", name="crlf", exact=True).click()
+    page.get_by_role("link", name="A new appendix of its vignette").click()
+    page.get_by_label("name", exact=True).fill("ultrasound")
+    page.get_by_label("text", exact=True).fill("Gallstones on ultrasound.")
+    page.get_by_role("button", name="Write it").click()
     page.wait_for_url(re.compile(r"/threads/\d+$"))
-    expect(page.get_by_role("heading", name="Change it")).to_be_visible()
+    _ = page.goto(f"/cases/{crlf['id']}")
+    _ = page.get_by_label("appendix 1").select_option(label="ultrasound")
+    page.get_by_role("button", name="Build it").click()
+    expect(page.get_by_role("link", name="write yours")).to_have_count(2)
+
+    page.get_by_role("link", name="write yours").first.click()
+    page.get_by_label("name", exact=True).fill("mine again")
+    page.get_by_label("data", exact=True).fill(json.dumps(expected["data"]))
+    page.get_by_role("button", name="Write it").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
+    expect(page.get_by_role("button", name="Save it")).to_be_visible()
 
     written_now = missing()
     assert held <= written_now < gone
@@ -599,11 +601,9 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
 
     case = mine("prompt", "case")
     _ = page.goto(f"/threads/{case['id']}")
-    edit = page.locator("#edit")
-    edit.get_by_label("Its text, text 1").fill("The case:\n")
-    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
-    expect(edit.get_by_text("Nothing to say of it.")).to_be_visible()
-    edit.get_by_role("button", name="Save").click()
+    segments = ["The case:\n", {"slot": "vignette"}, {"slot": "appendices"}]
+    page.get_by_label("segments", exact=True).fill(json.dumps(segments))
+    page.get_by_role("button", name="Save it").click()
     expect(page.get_by_text("Version 2 of 2")).to_be_visible()
     prompt = mine("prompt", "case")["head"]["digest"]
     held = page.request.get(f"/api/components/{prompt}").json()["body"]
@@ -615,12 +615,9 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
 
     _ = page.goto("/library?kind=sampling")
     page.get_by_role("link", name="Write a new one").click()
-    page.get_by_label("Start from the sampling").uncheck()
-    page.get_by_label("temperature").fill("0.3")
-    page.get_by_label("Name").fill("warm")
-    expect(page.get_by_text("Writes “warm”, a new thread of your own.")).to_be_visible()
-    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
-    page.get_by_role("button", name="Save").click()
+    page.get_by_label("temperature", exact=True).fill("0.3")
+    page.get_by_label("name", exact=True).fill("warm")
+    page.get_by_role("button", name="Write it").click()
     page.wait_for_url(re.compile(r"/threads/\d+$"))
     warm = mine("sampling", "warm")["head"]["digest"]
     assert (
@@ -628,98 +625,47 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
     )
 
     _ = page.goto("/configurations")
-    made = page.get_by_role("form", name="A new configuration")
-    _ = made.get_by_label("prompt, required").select_option(prompt)
-    _ = made.get_by_label("output, required").select_option(label=LINES)
-    _ = made.get_by_label("sampling, required").select_option(warm)
+    page.get_by_role("link", name="Write a new one from a recipe").click()
+    _ = page.get_by_label("prompt", exact=True).select_option(prompt)
+    _ = page.get_by_label("output", exact=True).select_option(label=LINES)
+    _ = page.get_by_label("sampling", exact=True).select_option(warm)
     model = _model(page, QWEN_ARTIFACT)["weights"]
-    _ = made.get_by_label("model, required").select_option(model)
-    expect(made.get_by_text("It compiles to")).to_be_visible()
-    made.get_by_label("Name").fill("lines-warm")
-    made.get_by_role("button", name="Save").click()
-    page.wait_for_url(re.compile(r"/configurations/\d+$"))
+    _ = page.get_by_label("model", exact=True).select_option(model)
+    page.get_by_label("name", exact=True).fill("lines-warm")
+    page.get_by_role("button", name="Write it").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
     configuration = mine("configuration", "lines-warm")
     recipe = page.request.get(f"/api/threads/{configuration['id']}").json()["recipe"]
     assert (recipe["prompt"], recipe["sampling"]) == (prompt, warm)
     assert errors == []
 
 
-def test_a_judge_is_forked_and_changed_on_its_thread_s_page(page: Page) -> None:
+def test_a_trial_is_begun_of_the_picked_cases_in_their_language_and_run(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-
-    def judge(owner: str) -> list[dict[str, Any]]:
-        query: dict[str, str | float | bool] = {"kind": "judge", "owner": owner}
-        return page.request.get("/api/threads", params=query).json()
-
-    [graded] = [t for t in judge("archive") if t["name"] == "graded"]
-    _ = page.goto(f"/threads/{graded['id']}")
-    edit = page.locator("#edit")
-    expect(edit.get_by_role("heading", name="Make it yours")).to_be_visible()
-    edit.get_by_label("Seeds, a call each").fill("3")
-    edit.get_by_label("Name").fill("strict")
-    expect(
-        edit.get_by_text("Saves it as “strict”, a fork of your own.")
-    ).to_be_visible()
-    expect(edit.get_by_text("Nothing to say of it.")).to_be_visible()
-    with page.expect_navigation():
-        edit.get_by_role("button", name="Save").click()
-    [strict] = judge("alice")
-    assert page.url.endswith(f"/threads/{strict['id']}")
-
-    edit = page.locator("#edit")
-    expect(edit.get_by_role("heading", name="Change it")).to_be_visible()
-    _ = edit.get_by_label("Asked under the model").select_option(label=GPT_OSS_ARTIFACT)
-    expect(edit.get_by_text("judge.model_unmatched")).to_be_visible()
-    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
-    edit.get_by_role("button", name="Save").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
-    [strict] = judge("alice")
-    held = page.request.get(f"/api/components/{strict['head']['digest']}").json()
-    models = {m["name"]: m["weights"] for m in page.request.get("/api/models").json()}
-    assert (held["body"]["seeds"], held["body"]["model"]) == (
-        [3],
-        models[GPT_OSS_ARTIFACT],
+    _ = page.goto("/library?kind=case")
+    page.get_by_label("pick nfd").check()
+    page.get_by_label("pick svenska").check()
+    page.get_by_role("button", name="Begin a trial of the picked").click()
+    page.wait_for_url(re.compile(r"/library/new\?"))
+    page.get_by_label("name", exact=True).fill("swedish")
+    _ = page.get_by_label("skeleton").select_option(label=LINES_GUIDED)
+    _ = page.get_by_label("engine").select_option(label=QWEN_ARTIFACT)
+    page.get_by_role("button", name="Write it").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
+    expect(page.get_by_label("skeleton")).to_have_text(
+        re.compile(f"{LINES_GUIDED}, in sv")
     )
-    assert errors == []
 
-
-def test_a_scorer_is_forked_and_changed_on_its_thread_s_page(page: Page) -> None:
-    errors: list[str] = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-
-    def scorers(owner: str) -> list[dict[str, Any]]:
-        query: dict[str, str | float | bool] = {"kind": "scorer", "owner": owner}
-        return page.request.get("/api/threads", params=query).json()
-
-    [lines] = [t for t in scorers("archive") if t["name"] == "lines"]
-    _ = page.goto(f"/threads/{lines['id']}")
-    edit = page.locator("#edit")
-    expect(edit.get_by_role("heading", name="Make it yours")).to_be_visible()
-    edit.get_by_label("Its label").first.fill("first")
-    edit.get_by_label("Name").fill("my lines")
-    expect(
-        edit.get_by_text("Saves it as “my lines”, a fork of your own.")
-    ).to_be_visible()
-    expect(edit.get_by_role("button", name="Save")).to_be_enabled()
-    with page.expect_navigation():
-        edit.get_by_role("button", name="Save").click()
-    [mine] = scorers("alice")
-    assert page.url.endswith(f"/threads/{mine['id']}")
-
-    edit = page.locator("#edit")
-    expect(edit.get_by_role("heading", name="Change it")).to_be_visible()
-    edit.get_by_role("button", name="Move it down").first.click()
-    expect(edit.get_by_text("Saves a new version of it.")).to_be_visible()
-    expect(edit.get_by_role("button", name="Save")).to_be_enabled()
-    edit.get_by_role("button", name="Save").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
-    [mine] = scorers("alice")
-    held = page.request.get(f"/api/components/{mine['head']['digest']}").json()
-    assert [v["metric"] for v in held["body"]["views"]] == [
-        "reciprocal_rank",
-        "first_mention",
-        "mentions",
-    ]
-    assert mine["head"]["labels"]["views"] == ["differential", "first", "dont-miss"]
+    page.get_by_role("link", name="Run it").click()
+    page.wait_for_url(re.compile(r"/runs/new\?"))
+    page.get_by_label("Score it once it is done").uncheck()
+    with faked(world, Store(conn).get):
+        page.get_by_role("button", name="Run it").click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        expect(page.get_by_role("link", name="swedish")).to_be_visible()
     assert errors == []

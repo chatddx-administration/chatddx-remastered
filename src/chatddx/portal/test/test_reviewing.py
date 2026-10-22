@@ -39,7 +39,7 @@ def test_a_case_is_reviewed_with_what_is_expected_and_what_each_view_reads_of_it
     page = shown(signed, f"/review/{noted['id']}")
     vignette = signed.get(f"/api/families/{noted['id']}/vignette").json()["text"]
     assert escape(vignette.strip().splitlines()[0]) not in page
-    assert f'href="/families/{noted["id"]}/vignette"' in page
+    assert f'href="/cases/{noted["id"]}/vignette"' in page
 
     [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
     [expected] = case["expectations"]

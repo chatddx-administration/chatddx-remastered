@@ -133,12 +133,18 @@ class Said(_Schema):
     name: str | None = Field(
         None, description="null takes the name away, and the title takes over"
     )
-    description: str | None = Field(None, description="replaced, never taken away")
+    description: str | None = Field(None, description="null takes it away")
     tags: list[str] | None = Field(None, description="its tags")
     collaborators: list[str] | None = Field(
         None, description="the logins it is shared with"
     )
     deleted: bool | None = None
+
+
+class FamilySaid(Said):
+    language: str | None = Field(
+        None, description="its vignette's: replaced, never taken away"
+    )
 
 
 type Chunk = Annotated[
@@ -507,6 +513,7 @@ class NewCase(_Schema):
 class FamilyDetail(Family):
     description: str | None
     collaborators: list[str]
+    deleted: bool
     cases: list[FamilyCase] = Field(
         description="its cases at its current vignette, the one it stands for first"
     )
@@ -721,6 +728,27 @@ class NewRun(Seeds):
         if [self.families, self.tags, self.cases].count(None) != 2:
             raise ValueError("a run takes one of families, tags or cases")
         return self
+
+
+class NewTrialRuns(_Schema):
+    trials: list[int] = Field(
+        min_length=1,
+        description="the trials' versions to run, by edit id, as one start",
+    )
+    concurrency: int | None = Field(
+        None,
+        ge=1,
+        description="how many requests at once, up to each endpoint's capacity: each "
+        + "endpoint's when not given",
+    )
+    order: Order | None = Field(
+        None,
+        description="the order the items are sent in, a shuffled one's seed drawn: "
+        + "each endpoint's when not given",
+    )
+    score: bool = Field(
+        True, description="under every scorer that applies, once it is finished"
+    )
 
 
 class Rig(_Schema):

@@ -104,7 +104,7 @@ def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
 
 
 @pytest.mark.slow
-def test_a_configuration_follows_its_corrected_facts_from_its_page(
+def test_a_configuration_follows_its_corrected_facts_from_its_pages(
     signed: TestClient, conn: Connection, alice: Person
 ) -> None:
     mine = thread(signed, "configuration", LINES)
@@ -117,6 +117,8 @@ def test_a_configuration_follows_its_corrected_facts_from_its_page(
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
     page = shown(signed, path)
     assert corrected in page and ">Follow<" in page
+    page = shown(signed, f"/threads/{mine['id']}")
+    assert corrected in page and f'action="/threads/{mine["id"]}/moved/follow"' in page
 
     got = signed.post(
         f"/threads/{mine['id']}/moved/follow",

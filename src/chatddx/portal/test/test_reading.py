@@ -94,26 +94,29 @@ def test_configurations_are_listed_by_purpose_and_read_with_their_recipe(
 
 
 @pytest.mark.slow
-def test_families_are_listed_by_tag_and_read_with_their_cases_and_vignette(
+def test_cases_are_listed_by_tag_in_the_library_and_read_without_their_vignette(
     signed: TestClient,
 ) -> None:
     families = signed.get("/api/families").json()
-    listed = shown(signed, "/families")
+    listed = shown(signed, "/library?kind=case")
+    assert "None is begun here" in listed
     for f in families:
-        assert f'href="/families/{f["id"]}"' in listed
+        assert f'href="/cases/{f["id"]}"' in listed
     tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
-    page = shown(signed, "/families?tag=swedish")
-    assert {f["id"] for f in families if f'href="/families/{f["id"]}"' in page} == {
+    page = shown(signed, "/library?kind=case&tag=swedish")
+    assert {f["id"] for f in families if f'href="/cases/{f["id"]}"' in page} == {
         f["id"] for f in tagged
     }
     [noted] = [f for f in families if f["name"] == "noted"]
-    page = shown(signed, f"/families/{noted['id']}")
+    vignette = signed.get(f"/api/families/{noted['id']}/vignette").json()
+    first = escape(vignette["text"].strip().splitlines()[0])
+    page = shown(signed, f"/cases/{noted['id']}")
+    assert first not in page and f'href="/cases/{noted["id"]}/vignette"' in page
     for case in signed.get(f"/api/families/{noted['id']}").json()["cases"]:
         for expected in case["expectations"]:
             assert escape(expected["title"]) in page
-    vignette = signed.get(f"/api/families/{noted['id']}/vignette").json()
-    page = shown(signed, f"/families/{noted['id']}/vignette")
-    assert escape(vignette["text"].strip().splitlines()[0]) in page
+    assert first in shown(signed, f"/cases/{noted['id']}/vignette")
+    assert signed.get("/families").status_code == 404
 
 
 @pytest.mark.slow

@@ -65,7 +65,6 @@ def test_what_can_t_be_typed_is_refused(
         _ = bench.type_case(TYPED, language="en")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_typed_case_runs_as_any_case(
     bench: Bench, world: Inventory, alice: Person

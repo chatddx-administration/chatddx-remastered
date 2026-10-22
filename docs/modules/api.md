@@ -57,9 +57,13 @@ expectation whose data its schema refuses, which is written all the same.
 
 ## What is said about a thread
 
-Its owner says what holds of a thread in one request, giving only what changes (docs/modules/bench.md, "What is said
-about a thread"). What holds afterwards comes back. Another's thread is "not found", as "no expectation N of yours" for
-an expectation, and what the bench refuses there is unprocessable.
+Its owner says what holds of a thread or a family in one request, giving only what changes (docs/modules/bench.md, "What
+is said about a thread"), and of a family its language too. What holds afterwards comes back. Another's thread or family
+is "not found", as "no expectation N of yours" for an expectation, and what the bench refuses there is unprocessable.
+Its owner reads a thread or a family they deleted, and lists those apart.
+
+A collaborator leaves a thread or a family shared with them in a request of its own, answered with nothing, as it is no
+longer theirs to read; one that isn't shared with them is "not found".
 
 ## Typed cases
 
@@ -128,6 +132,10 @@ why; `Location` is the first run's path.
 A run is sent under its endpoint's execution and canary set (docs/modules/inventory.md, "Endpoints"), with the
 concurrency and the order the request gives, a shuffled order's seed drawn, and with the cleanup steps the request gives
 (docs/modules/inventory.md, "Sources").
+
+Trials' versions are started as one start (`POST /api/runs/trials`): a run each, in the order given, at the endpoint
+serving its engine, under its execution with the concurrency and the order the request gives, named by its trial, and
+queued as a start of a variation's runs are.
 
 ### Its events
 

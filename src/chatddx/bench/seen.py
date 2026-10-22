@@ -1,7 +1,7 @@
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
-from typing import Literal
+from typing import Literal, get_args
 from uuid import UUID
 
 from pydantic import JsonValue
@@ -380,6 +380,19 @@ class Seen:
             recipe, registry.get, compiled_with(self, variation), into
         )
 
+    def cleanup(self, cases: Sequence[str]) -> tuple[CleanupOp, ...]:
+        if not any(s.cleanup for s in self.inventory.sources.values()):
+            return ()
+        registry = self.store.load(cases)
+        asked = {
+            op
+            for case in cases
+            for op in self.inventory.source(
+                resolve(registry.get, case, Case).vignette.source
+            ).cleanup
+        }
+        return tuple(op for op in get_args(CleanupOp) if op in asked)
+
     def landed(self, variation: TriedVariation) -> dict[str, Landing]:
         recipe = variation.varied
         if recipe is None:
@@ -582,19 +595,24 @@ class Seen:
         }
         return data, several
 
-    def families(self, tags: Iterable[str] = ()) -> list[Family]:
+    def families(
+        self, tags: Iterable[str] = (), *, deleted: bool = False
+    ) -> list[Family]:
         wanted = set(tags)
-        tagged = [(f, a) for f, a in self._families() if not wanted or wanted & a.tags]
+        tagged = [
+            (f, a) for f, a in self._families(deleted) if not wanted or wanted & a.tags
+        ]
         held = self._cases([f for f, _ in tagged])
         found = [Family(f, a, *held[f]) for f, a in tagged if f in held]
         return sorted(found, key=lambda f: f.name)
 
-    def _families(self) -> list[tuple[int, About]]:
+    def _families(self, deleted: bool = False) -> list[tuple[int, About]]:
         ids = self.rows.families()
         known = read.abouts(self.rows, [Subject(family=f) for f in ids])
-        return [
-            (f, a) for f in ids if sees(self.person.id, a := known[Subject(family=f)])
-        ]
+        found = [(f, known[Subject(family=f)]) for f in ids]
+        if deleted:
+            return [(f, a) for f, a in found if a.deleted and a.owner == self.person.id]
+        return [(f, a) for f, a in found if sees(self.person.id, a)]
 
     def _cases(
         self, families: list[int]
@@ -611,13 +629,16 @@ class Seen:
                 found[family] = (vignette, tuple(cases))
         return found
 
-    def family(self, found: int | str) -> Family:
+    def family(self, found: int | str, *, deleted: bool = False) -> Family:
         if isinstance(found, str):
             return self._named(
                 [(f, f.name, f.about) for f in self.families()], found, "case"
             )
         about = read.about(self.rows, Subject(family=found))
-        held = self._cases([found]).get(found) if sees(self.person.id, about) else None
+        seen = sees(self.person.id, about) or (
+            deleted and about.deleted and about.owner == self.person.id
+        )
+        held = self._cases([found]).get(found) if seen else None
         if held is None:
             raise NotFound(f"no case {found} for {self.person.login}")
         return Family(found, about, *held)
