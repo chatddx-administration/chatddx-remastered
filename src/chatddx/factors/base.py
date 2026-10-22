@@ -71,6 +71,10 @@ def distinct[T](values: tuple[T, ...]) -> tuple[T, ...]:
     return values
 
 
+def ascending(values: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(sorted(values))
+
+
 Settings = Annotated[dict[str, JsonValue], AfterValidator(sorted_keys)]
 
 

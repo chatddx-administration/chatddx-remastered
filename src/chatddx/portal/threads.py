@@ -13,17 +13,17 @@ from chatddx.api import families, schemas, threads as api
 from chatddx.api.state import refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Subject, read
-from chatddx.factors.base import Component, Finding, language_tag, resolve
+from chatddx.factors.base import Component, language_tag, resolve
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import RECIPE_PARTS, Recipe, Translations
-from chatddx.factors.scoring import Expectation, Judge, Scorer
+from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.ledger import RunStarted
 
 from .changes import changes
 from .fields import Field, choices, fields, fresh, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, within
-from .scoring import unshipped
+from .scoring import checked, unshipped
 from .translations import begun, posted, translating, written as translated
 
 # Accommodating for configurations, which a person writes as recipes, not as components.
@@ -295,7 +295,7 @@ def thread_page(
         labels=None
         if not written or not isinstance(held, Scorer)
         else (edit.labels or schemas.Labels()).model_dump(mode="json"),
-        checked=_checked(bench, held)
+        checked=checked(bench, held)
         if held.kind_name in WRITTEN and not gone
         else None,
         changed=None
@@ -323,19 +323,6 @@ def _recipe(bench: Bench, edit: int) -> dict[str, JsonValue] | None:
     found = bench.rows.edit(edit)
     held = None if found is None else catalog.threads.recipe(bench.rows, found)
     return None if held is None else held.model_dump(mode="json")
-
-
-def _checked(bench: Bench, held: Component) -> tuple[list[Finding], list[str]]:
-    refused: list[str] = []
-    if isinstance(held, Judge):
-        try:
-            _ = bench.judged(held)
-        except ValueError as e:
-            refused.append(str(e))
-    try:
-        return bench.check(held).findings, refused
-    except (LookupError, ValueError) as e:
-        return [], [*refused, str(e)]
 
 
 def _back(thread: int, next: str | None) -> RedirectResponse:

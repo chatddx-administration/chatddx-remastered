@@ -1,4 +1,3 @@
-import json
 import time
 from typing import Any
 
@@ -45,7 +44,7 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     assert judges
     assert not [j for j in judges if f'value="{j["head"]["digest"]}"' in page]
     [seeds] = submitted(page, action)["f.seeds"]
-    assert len(json.loads(seeds)) == 1
+    assert len(seeds.split()) == 1
 
     got = written(signed, action, "swedish")
     assert got.status_code == 303, got.text[:500]

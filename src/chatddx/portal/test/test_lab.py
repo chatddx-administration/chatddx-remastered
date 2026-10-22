@@ -13,7 +13,7 @@ from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.portal.test.helpers import ran_template, shown, variation_props
+from chatddx.portal.test.helpers import ran_template, said, shown, variation_props
 from chatddx.scripted.test.helpers import held
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
@@ -32,11 +32,6 @@ from chatddx.test.world import (
 )
 
 __all__ = ["alices_bench", "ran_template"]
-
-
-def said(page: str) -> str:
-    main = page.split("<main", 1)[1]
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", main))
 
 
 @pytest.mark.slow
@@ -293,7 +288,7 @@ def test_a_variation_the_bench_refuses_is_a_page_of_its_own(
     archives = thread(signed, "configuration", LINES, "archive")
     off = thread(signed, "reasoning", OFF)["head"]["digest"]
     path = f"/lab/{mine['id']}"
-    for query, status, said in (
+    for query, status, why in (
         (f"prompt={off}", 422, f"{off} isn&#39;t a stored chunk of prompt"),
         (f"head={archives['head']['id']}", 404, "no edit"),
         ("stack=x", 422, "query.stack: Extra inputs are not permitted"),
@@ -301,7 +296,7 @@ def test_a_variation_the_bench_refuses_is_a_page_of_its_own(
         got = signed.get(f"{path}?{query}")
         assert got.status_code == status, query
         assert got.headers["content-type"].startswith("text/html")
-        assert said in got.text, (query, got.text[:2000])
+        assert why in got.text, (query, got.text[:2000])
 
 
 @pytest.mark.slow

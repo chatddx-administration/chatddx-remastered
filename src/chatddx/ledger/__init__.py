@@ -1,4 +1,4 @@
-from .call import Call, ToolRun, Turn, fingerprint_request
+from .call import Attempt, Call, ToolRun, Turn, fingerprint_request
 from .record import ItemKey, Record
 from .run import (
     CanaryCall,
@@ -21,6 +21,7 @@ from .score import (
 )
 
 __all__ = [
+    "Attempt",
     "Call",
     "CanaryCall",
     "Endpoint",

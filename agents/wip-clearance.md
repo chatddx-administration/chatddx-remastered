@@ -64,8 +64,8 @@ table. A `[cleared]` entry for a source that isn't sensitive clears nothing and 
 - A clinician may type about a real patient on the portal's home page. The text is a vignette, kept in the store as a
   database source's, so the database holds vignettes now, not only what is derived from them.
 - Each World clears its endpoints for `typed` as it does for its directory source: the test and sample Worlds clear
-  their fakes, not the sample's remote engine nor the test World's `qwen3-bare@fake`. Kompismoln has no database source,
-  so nothing can be typed there.
+  their fakes, not the sample's remote engine nor the test World's `qwen3-bare@fake`. Decided: Kompismoln clears both
+  its endpoints for `typed`, which is the clinicians' sandbox there, and no real patient data goes into it.
 - Their fingerprints are plain, as the sample's, since nothing manages keys yet: a short text's hash can be guessed by
   anyone who reads the factors, the reader included, while the text itself is kept from them. Open: a keyed one.
 

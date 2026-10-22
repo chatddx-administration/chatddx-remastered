@@ -28,6 +28,7 @@
     ("Description", thread.description or "—"),
   ]) }}
   {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm"><a class="text-primary hover:underline" href="/lab/{{ thread.id }}">Try it in the Lab</a>, where it is varied, run and saved</p>{% endif %}
+  {% if thread.kind in ("scorer", "judge") and not thread.deleted %}<p class="mt-3 text-sm"><a class="text-primary hover:underline" href="/scoring/{{ thread.id }}">Weigh it on Scoring</a>, beside the scorers and judges it works with and how they scored</p>{% endif %}
   {% endcall %}
 
   {% if proposal %}

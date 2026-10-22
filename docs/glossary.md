@@ -39,8 +39,8 @@ other texts; a variation doesn't replace it. `src/chatddx/factors/request.py:App
 :Archive — The person who owns everything a data set loads, and shares it with each person a loading names. Never wiped.
 `src/chatddx/curation/write.py:ARCHIVE`
 
-:Attempt — One try at sending a call's request. A call is tried again only when the request didn't get through: no
-connection, a 429 or a 5xx. `src/chatddx/ledger/call.py:Call.attempts`
+:Attempt — One try at sending a call's request, kept with its times, status and error. A call is tried again only when
+the request didn't get through: no connection, a 429 or a 5xx. `src/chatddx/ledger/call.py:Attempt`
 
 :Attestation — What the engine says about itself in its responses, the model it answered as and the prompt it read, set
 beside what was declared. `src/chatddx/ledger/call.py:attest_model`
@@ -535,7 +535,8 @@ variable holding it, the endpoint's credential; the gate refuses an endpoint who
 stored holds it. `src/chatddx/inventory/inventory.py:EndpointSpec.credential`
 
 :Seed — A number that fixes the sampler's randomness, not sent when sampling is greedy. Each seed of a trial is one
-replicate; a judge's seeds and an execution's shuffle seed are not. `src/chatddx/factors/trial.py:Trial.seeds`
+replicate, and a greedy trial's seeds are its replicates' positions, from 0, since none is sent; a judge's seeds and an
+execution's shuffle seed are not. `src/chatddx/factors/trial.py:Trial.seeds`
 
 :Sees — Owns or collaborates on; a run only when one owns it. `src/chatddx/identity/identity.py:sees`
 
@@ -897,6 +898,8 @@ repeatable, so never stored.
 
 :attestation.prompt_tokens — Items without a prompt token fingerprint. (warning)
 
+:execution.timeout — Attempts took longer than the execution's timeout. (warning)
+
 :execution.retries — Calls took more attempts than allowed. (warning)
 
 :execution.order — Items were sent before items scheduled ahead of them. (warning)
@@ -926,6 +929,8 @@ Raised by `src/chatddx/ledger/score.py:check_score`, with `src/chatddx/ledger/ca
 :score.no_expectation — Some of the run's cases have no expectation in the scoring. (warning; score)
 
 :score.incomplete — A finished score lacks items. (warning)
+
+:execution.timeout — Judge calls' attempts took longer than the execution's timeout. (warning)
 
 :execution.retries — Judge calls took more attempts than allowed. (warning)
 

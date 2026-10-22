@@ -1,9 +1,51 @@
 # The portal: work in progress
 
 The portal is the bench's web edge, beside the repl and the API: HTML rendered on the server from the bench, with Svelte
-islands where a page needs a round trip. This starts from the Library and the Lab, which are drafted (see "The Library
-today" and "The Lab today"), and has what is next in "Next". "Decided" means the user said so. "Take" is the agent's
-recommendation and still open.
+islands where a page needs a round trip. What each page is for is in "Its pages". This starts from the Library, the Lab
+and Scoring, which are drafted (see "The Library today", "The Lab today" and "Scoring today"), and has what is next in
+"Next". "Decided" means the user said so. "Take" is the agent's recommendation and still open.
+
+## Its pages
+
+Decided:
+
+- **Review**: where clinicians check their vignettes against appendices, scorers and expectations. Self-contained but for
+  judges' configurations, which it picks and doesn't edit.
+- **Lab**: the evolution of configurations, and queueing trials and seeing how they fare against each other.
+- **Scoring**: managing judges and scorers more deeply than Review does.
+- **Runs**: everything run-related: what is under way and what is queued, its order, pausing and halting.
+- **Library**: drawn from schemas, instructive of the data model rather than practical; still the best place to manage
+  translations.
+- **World**: a read-only view of the World the portal runs in.
+
+Take: each page by what it writes, what it weighs and what it only picks, so that a thing is written in one place and
+weighed where its consequences show.
+
+| Page    | For                     | Writes                                                          | Weighs                                                     | Picks                  |
+| ------- | ----------------------- | --------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------- |
+| Review  | clinicians              | appendices, expectations, a scorer's views tried on a case      | a case's answers under each view                           | judges, configurations |
+| Lab     | researchers             | configurations of either purpose, as variations; trials         | a lineage on a set of cases                                | parts, models          |
+| Scoring | researchers             | judges; a scorer's code, resources, parameters and labels       | what a scorer reads and how it scored; a judge's verdicts  | judges' configurations |
+| Runs    | whoever runs and scores | the queue: its order, pausing, halting, stopping; scoring again | what is under way, queued and left to score; runs compared | —                      |
+| Library | everyone                | any kind, a field at a time; translations                       | versions, what each changed, findings                      | —                      |
+| World   | everyone                | nothing                                                         | the World whole                                            | —                      |
+
+Take, the moves it asks for:
+
+1. **What a judge is asked** is changed on Scoring rather than in Review: `JudgeTexts` left `Composer`
+   (`frontend/src/lib/scorer/`) for a judge's page. Review keeps making a judge of a configuration, a model and seeds it
+   picks (`JudgeEditor`), and asking another, and links a judge to its page. Built.
+2. **A judge's configuration** is still varied in the Lab, beside every other configuration. How its judges fare, which
+   the Lab leaves out, is on Scoring, and the Lab links to it.
+3. **The code a scorer pins**, its metrics and what each measures and takes, is shipped, so it is the World's to show, as
+   models are, and Scoring links to it.
+4. **Scoring again** stays on Runs, and Scoring links to what is left to score.
+5. **The navigation** reads Review, Lab, Scoring, Runs, Library, World: the three benches by who works at them, then what
+   runs, the data model and the World. Built.
+6. **The name** Scoring, over Judging or Scorers: a run's scoring is what its scorer and judges make of it. Decided, as
+   no namespace collides with it: the kind `scoring` stays derived, is a thread kind of the catalog but no word of the
+   bench's (`src/chatddx/bench/model.py:KINDS`), so it has no Library tab, no `kind` of the API's threads and no page,
+   and nothing plans one.
 
 ## Configuration and actions
 
@@ -57,24 +99,22 @@ Each thread has a page, `/threads/{id}` (`src/chatddx/portal/threads.py:thread_p
 
 A field is drawn by its shape (`src/chatddx/portal/fields.py:Field`): a reference picked from the heads of the threads
 of its kinds the person sees, an engine by its model's handle; a list of references or of choices one a line; a choice
-from its options; a text in a text box, or as text or as JSON where it may be either; and anything else as JSON in a
-text box. The fields still written as JSON:
+from its options; a number in a number box held to its schema's type and minimum, empty for none where it may be none; a
+boolean as a checkbox; a list of texts or of whole numbers one a line, whole numbers apart by commas too, but a list
+holding an empty text or a line break as JSON, which one a line can't write; a text in a text box, or as text or as JSON
+where it may be either; and anything else as JSON in a text box. The fields still written as JSON:
 
-| Word          | Its fields written as JSON                                                                                                                          |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| configuration | `appendix_layout`                                                                                                                                   |
-| few_shot      | `messages`                                                                                                                                          |
-| prompt        | `segments`                                                                                                                                          |
-| output        | `contract`, `json_schema`, `schema_ops`                                                                                                             |
-| sampling      | `temperature`, `top_p`, `top_k`, `min_p`, `presence_penalty`, `frequency_penalty`, `repetition_penalty`, `stop`, `max_output_tokens`, `recommended` |
-| reasoning     | `thinking_token_budget`, `chat_template_kwargs`                                                                                                     |
-| passthrough   | `body`                                                                                                                                              |
-| toolset       | `max_rounds`                                                                                                                                        |
-| scorer        | `version`, `views`, `resources`, `params`                                                                                                           |
-| judge         | `seeds`                                                                                                                                             |
-| expectation   | `data`                                                                                                                                              |
-| appendix      | `vignette`, given by a case's section                                                                                                               |
-| trial         | `seeds`                                                                                                                                             |
+| Word          | Its fields written as JSON            |
+| ------------- | ------------------------------------- |
+| configuration | `appendix_layout`                     |
+| few_shot      | `messages`                            |
+| prompt        | `segments`                            |
+| output        | `contract`, `json_schema`             |
+| reasoning     | `chat_template_kwargs`                |
+| passthrough   | `body`                                |
+| scorer        | `views`, `params`                     |
+| expectation   | `data`                                |
+| appendix      | `vignette`, given by a case's section |
 
 Translations are drawn on the server (`src/chatddx/portal/translations.py`): a language at a time, each text beside its
 translation with its edges shown, **Leave it out**, and another language by its tag. Above what it holds, the texts the
@@ -98,6 +138,7 @@ an appendix or an expectation in place is Review's, which the section links. The
   expectations written in place with `AppendixEditor` and `ExpectationEditor`, and scorers with `Composer`
   (`frontend/src/lib/`).
 - **Runs**: a run's page halts, resumes, scores again and runs again.
+- **Scoring**, `/scoring/{id}`: see "Scoring today".
 - **World**, `/world` (`src/chatddx/portal/world.py`): what the portal was started in: the World's directory and the
   files it read, the build serving it, its sources, endpoints and hosts, which handle configurations are made for and
   each judge is bound to, and the models by handle. Decided: the portal shows its World whole.
@@ -118,21 +159,56 @@ variation's query (`schemas.Varying`, its parts, `head`, `under`, `tag`) and its
 
 A judge's configuration is tried and saved there too, without how they fare or trials.
 
+## Scoring today
+
+Drafted: `/scoring/{id}` (`src/chatddx/portal/scoring.py`; `src/chatddx/portal/test/test_scoring.py`) shows a scorer or a
+judge the person sees, rendered on the server with no island, and writes nothing yet. `/scoring` leads to the person's
+first scorer, and the Library's page of a scorer or a judge and Review's scorer lead to theirs.
+
+- **Scorers and judges**: each the person sees, their own first, the scorers by the expectation schema they grade against
+  and the judges by the model they are asked under.
+- **A scorer**: its views, each with its metric and what it measures, what it picks of an answer and of an expectation,
+  its judge, flagged where it asks an earlier version, and its parameters. The configurations whose answers it reads and
+  those it doesn't (`src/chatddx/factors/scoring.py:View.offered_by`). How many of the cases the person sees they expect
+  something of under its schema, with those to choose from and those without, each linking to Review. How it scored:
+  the person's runs scored by this version, by their mean under each view, compared on `/runs/compare`. Its findings.
+- **A judge**: its configuration, linking to the Lab, its model, seeds, fill rule, and the endpoint it is served at now
+  or why none. The views of the scorers asking it, by the version of it each asks, or the judge it is forked from, and
+  for each scorer asking another, following its latest version: the views asking another are pointed at it, in a new
+  version of the person's own scorer or a fork of another's, with its labels. What it is asked, rendered with its
+  first seed, a placeholder for the answer, and what a view asking it picks of what a case expects, both picked on the
+  page and by default the first such view and the first case it reads something of. What it is asked is changed in
+  place with `JudgeTexts` (`frontend/src/islands/scoring.ts`), previewed against the same pick: saving keeps the texts,
+  the judge's configuration and the judge as the person's own, and leads to that judge's page. Its verdicts, over the latest score of the person's runs under each scorer
+  asking any version of it: the items judged, how many its seeds agree on, how many a seed gave none for, the mean, and
+  the items where its seeds disagree. These are the values a view's metric read of each seed's verdict, kept in the
+  item's detail, never the verdicts, which are sensitive. Its findings.
+
 ## Next
 
 Take: the Library's forms first.
 
-1. **Scalars written as JSON**: the numbers, booleans and lists of texts or integers in the table above, for which
-   `src/chatddx/portal/fields.py:Field` has no shape. Take: shapes of their own, on the server: a number box held to its
-   schema's type and minimum, a checkbox, and a list one a line.
-2. **What Review writes already.** Take: an expectation's `data` drawn from its schema with `ExpectationEditor`, and a
-   scorer's `views`, `resources` and `params` with `Composer`, each an island over its text box that writes its JSON
+1. **What Review writes already.** Take: an expectation's `data` drawn from its schema with `ExpectationEditor`, and a
+   scorer's `views` and `params` with `Composer`, each an island over its text box that writes its JSON
    into it, so that the form posts as it does without scripts.
-3. **The rest of the table.** Open: which of its fields earns a control of its own, and whether a form drawn from the
+2. **The rest of the table.** Open: which of its fields earns a control of its own, and whether a form drawn from the
    JSON Schema (`frontend/src/lib/schema/`) takes the rest.
-4. **The Lab.** Open:
+3. **The Lab.** Open:
    - Its cases are picked twice: the island's tags and the tags how they fare is shown over are one `tag` in its
      address, but each has its control, and the island's changes it without showing how they fare again.
    - What `/translate` did that the Library's translations don't: the request a configuration sends into a language, how
      many texts each configuration lacks by language, and that a case in a regional tag, such as `sv-SE`, wants
      translations of its own.
+4. **Scoring.** Take, in order:
+   - Making and changing a judge on its page with `JudgeEditor`, and its versions by link as the Lab's, each with how it
+     scored; how a scorer scored lists its shown version's runs only.
+   - A judge against a judge: two judges, or two versions of one, on the same items. It takes scoring the same runs under
+     a scorer asking the other, which Runs does a run at a time. Open: judging scored items again without a run.
+   - A judge against a clinician: measuring a judge by real answers (`docs/backlog.md`, "The sample's judge") compares
+     its verdicts with a clinician's on the same answers, and nothing stores a clinician's verdict on an answer: an
+     expectation is written of a case, before any answer. Open, where it is kept: a kind of its own, of an answer and a
+     view, or an expectation written of an answer rather than of a case.
+   - A scorer's coverage said before a run is scored, as its page says it, which the backlog asks of the scoring
+     (`docs/backlog.md`, "Scoring: coverage and judges").
+   - Cost: a judge's verdicts read every score of every run any of its versions scored, which is fine for the test World
+     and wants a query of its own once measured (`docs/backlog.md`, "Performance, once measured").

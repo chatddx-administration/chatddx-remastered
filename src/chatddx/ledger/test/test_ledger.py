@@ -15,6 +15,7 @@ from chatddx.factors.scoring import Scorer, Scoring, View
 from chatddx.factors.test.sample import NOW, RIG, fp, world
 from chatddx.factors.trial import Execution
 from chatddx.ledger import (
+    Attempt,
     Call,
     CanaryCall,
     Endpoint,
@@ -36,7 +37,7 @@ from chatddx.ledger import (
     fingerprint_request,
 )
 from chatddx.ledger.test.rounds import ran, rounds
-from chatddx.test.helpers import registry
+from chatddx.test.helpers import one_attempt, registry
 
 __all__ = ["registry"]
 
@@ -52,6 +53,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
             request=fp("body"),
             started_at=NOW,
             finished_at=NOW,
+            attempts=one_attempt(NOW),
             status=200,
             response={"model": model, "prompt_token_ids": tokens or [2, 106, 1645]},
         )
@@ -225,7 +227,12 @@ def test_run_and_score_checks(reg: Registry) -> None:
 def test_seal_survives_a_storage_roundtrip() -> None:
     run_id = uuid4()
     local = datetime(2026, 9, 29, 2, tzinfo=timezone(timedelta(hours=2)))
-    c = Call(request=fp("body"), started_at=local, finished_at=local)
+    c = Call(
+        request=fp("body"),
+        started_at=local,
+        finished_at=local,
+        attempts=one_attempt(local),
+    )
     started = RunStarted(run=run_id, at=local, rig=RIG, trial="sha256:" + "0" * 64)
     items = tuple(
         RunItem(
@@ -249,7 +256,7 @@ def test_seal_survives_a_storage_roundtrip() -> None:
         canaries=tuple(CanaryCall.parse(c.canonical) for c in reversed(canaries)),
     )
     assert stored.seal() == run.seal()
-    assert "attempts" not in json.loads(items[0].canonical)["call"]
+    assert stored.items[0].call.attempts == c.attempts
 
 
 def test_where_a_run_went_and_its_cutoff_are_added_without_moving_old_seals() -> None:
@@ -297,7 +304,7 @@ def test_execution_is_checked_against_the_calls(reg: Registry) -> None:
             request=fp("body"),
             started_at=at(start),
             finished_at=at(end),
-            attempts=attempts,
+            attempts=one_attempt(at(start), at(end)) * attempts,
             prompt_tokens=fp("tokens"),
         )
         return RunItem(
@@ -320,6 +327,10 @@ def test_execution_is_checked_against_the_calls(reg: Registry) -> None:
         ("execution.retries", "1 calls took more than the 1 attempts allowed")
     ]
     assert check(Execution(retries=1), item(0, 0, 5, attempts=2)) == []
+    assert check(Execution(timeout_s=5), item(0, 0, 5), item(1, 5, 9)) == []
+    assert check(Execution(timeout_s=4.5), item(0, 0, 5), item(1, 5, 9)) == [
+        ("execution.timeout", "1 attempts took longer than the 4.5 s timeout")
+    ]
     assert check(sequential, item(0, 5, 9), item(1, 0, 5)) == [
         ("execution.order", "1 items were sent before items scheduled ahead of them")
     ]
@@ -341,10 +352,12 @@ def test_canaries_bracket_the_items(reg: Registry) -> None:
     vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
 
     def call(start: int, end: int) -> Call:
+        at, until = NOW + timedelta(seconds=start), NOW + timedelta(seconds=end)
         return Call(
             request=fp("body"),
-            started_at=NOW + timedelta(seconds=start),
-            finished_at=NOW + timedelta(seconds=end),
+            started_at=at,
+            finished_at=until,
+            attempts=one_attempt(at, until),
         )
 
     item = RunItem(
@@ -386,7 +399,12 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
                 run=run_id,
                 key=k,
                 vignette=vignette,
-                call=Call(request=fp("body"), started_at=NOW, finished_at=NOW),
+                call=Call(
+                    request=fp("body"),
+                    started_at=NOW,
+                    finished_at=NOW,
+                    attempts=one_attempt(NOW),
+                ),
             )
             for k in keys
         ),
@@ -395,11 +413,12 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
     run = run.model_copy(update={"finished": run.finish(NOW)})
 
     def judged(replicate: int, start: int, end: int, attempts: int = 1) -> ScoreItem:
+        at, until = NOW + timedelta(seconds=start), NOW + timedelta(seconds=end)
         call = Call(
             request=fp("judge"),
-            started_at=NOW + timedelta(seconds=start),
-            finished_at=NOW + timedelta(seconds=end),
-            attempts=attempts,
+            started_at=at,
+            finished_at=until,
+            attempts=one_attempt(at, until) * attempts,
         )
         return ScoreItem(
             score=score_id,
@@ -435,7 +454,16 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
 def test_records_refuse_what_cannot_have_happened() -> None:
     later = NOW + timedelta(seconds=1)
     with pytest.raises(ValidationError, match="finished before it started"):
-        _ = Call(request=fp("body"), started_at=later, finished_at=NOW)
+        _ = Call(
+            request=fp("body"),
+            started_at=later,
+            finished_at=NOW,
+            attempts=one_attempt(NOW),
+        )
+    with pytest.raises(ValidationError, match="finished before it started"):
+        _ = Attempt(started_at=later, finished_at=NOW)
+    with pytest.raises(ValidationError, match="at least 1"):
+        _ = Call(request=fp("body"), started_at=NOW, finished_at=NOW, attempts=())
     with pytest.raises(ValidationError, match="result"):
         _ = ToolRun.model_validate(
             {"id": "c0", "name": "t", "started_at": NOW, "finished_at": NOW}
@@ -495,6 +523,7 @@ def test_a_call_keeps_only_a_fingerprint_of_the_prompt_token_ids() -> None:
             request=fp("body"),
             started_at=NOW,
             finished_at=NOW,
+            attempts=one_attempt(NOW),
             response=response,
             prompt_tokens=tokens,
         )

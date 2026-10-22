@@ -1,4 +1,6 @@
 import json
+import math
+import re
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, replace
 from typing import Any, Literal, cast, get_args
@@ -13,7 +15,18 @@ from chatddx.factors.request import Purpose
 
 from .pages import own_first
 
-type Shape = Literal["pick", "picks", "choose", "chooses", "text", "either", "json"]
+type Shape = Literal[
+    "pick",
+    "picks",
+    "choose",
+    "chooses",
+    "number",
+    "check",
+    "lines",
+    "text",
+    "either",
+    "json",
+]
 
 
 @dataclass(frozen=True)
@@ -26,6 +39,8 @@ class Field:
     kinds: tuple[str, ...] = ()
     options: tuple[str, ...] = ()
     given: bool = True
+    whole: bool = False
+    minimum: int | float | None = None
 
 
 def fields(
@@ -57,7 +72,17 @@ def fresh(
 
 
 def _read(f: Field, given: str) -> JsonValue:
-    return _json(f.name, given) if f.shape in ("json", "picks", "chooses") else given
+    match f.shape:
+        case "json" | "picks" | "chooses":
+            return _json(f.name, given)
+        case "number":
+            return _number(f, given)
+        case "check":
+            return given == "true"
+        case "lines":
+            return _lines(f, given)
+        case _:
+            return given
 
 
 def defaults(model: type[BaseModel]) -> dict[str, JsonValue]:
@@ -85,13 +110,25 @@ def _field(name: str, held: dict[str, Any], value: JsonValue, editable: bool) ->
         return Field(name, "pick", value, editable, nullable, kinds)
     if "x-kind" in items:
         return Field(name, "picks", value, editable, nullable, tuple(items["x-kind"]))
-    if "enum" in items:
-        options = tuple(items["enum"])
+    if "enum" in items or "const" in items:
+        options = tuple(items.get("enum", [items.get("const")]))
         return Field(name, "chooses", value, editable, nullable, options=options)
     if rest and all("enum" in m or "const" in m for m in rest):
         options = [o for m in rest for o in m.get("enum", [m.get("const")])]
         return Field(name, "choose", value, editable, nullable, options=tuple(options))
     types = {m.get("type") for m in rest}
+    if len(rest) == 1 and types <= {"integer", "number"} and types:
+        whole = types == {"integer"}
+        minimum = rest[0].get("minimum")
+        return Field(
+            name, "number", value, editable, nullable, whole=whole, minimum=minimum
+        )
+    if types == {"boolean"} and not nullable:
+        return Field(name, "check", value, editable)
+    if types == {"array"} and set(items) == {"type"} and items["type"] in LISTED:
+        whole = items["type"] == "integer"
+        if whole or _one_a_line(value):
+            return Field(name, "lines", value, editable, nullable, whole=whole)
     if types == {"string"}:
         return Field(name, "text", value, editable, nullable)
     if "string" in types:
@@ -134,6 +171,13 @@ def choices(
 
 
 ENGINES = frozenset({"engine.local", "engine.remote"})
+LISTED = frozenset({"string", "integer"})
+
+
+def _one_a_line(value: JsonValue) -> bool:
+    if not isinstance(value, list):
+        return True
+    return all(isinstance(v, str) and v and "\n" not in v for v in value)
 
 
 # Policy: an engine is picked by its model's handle, as researchers see handles, not
@@ -203,6 +247,15 @@ def parsed(found: list[Field], form: FormData) -> dict[str, JsonValue]:
             case "pick" | "choose":
                 if given or f.nullable:
                     body[f.name] = given or None
+            case "number":
+                if given.strip():
+                    body[f.name] = _number(f, given.strip())
+                elif f.nullable:
+                    body[f.name] = None
+            case "check":
+                body[f.name] = given == "true"
+            case "lines":
+                body[f.name] = _lines(f, given)
             case "text":
                 body[f.name] = None if given == "" and f.nullable else given
             case "either" if form.get(f"as.{f.name}") == "text":
@@ -217,6 +270,23 @@ def _given(form: FormData, name: str) -> str:
     value = form.get(f"f.{name}", "")
     # Accommodating for browsers, which send a textarea's line breaks as CRLF.
     return value.replace("\r\n", "\n") if isinstance(value, str) else ""
+
+
+def _number(f: Field, given: str) -> int | float:
+    try:
+        found = int(given) if f.whole else float(given)
+    except ValueError:
+        found = math.nan
+    if not math.isfinite(found):
+        what = "a whole number" if f.whole else "a number"
+        raise ValueError(f"{f.name} isn't {what}: {given!r}")
+    return found
+
+
+def _lines(f: Field, given: str) -> list[JsonValue]:
+    if f.whole:
+        return [_number(f, held) for held in re.split(r"[\s,]+", given) if held]
+    return [line for line in given.split("\n") if line]
 
 
 def _json(name: str, given: str) -> JsonValue:

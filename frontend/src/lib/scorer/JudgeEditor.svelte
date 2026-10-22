@@ -54,7 +54,6 @@
     made?.({
       digest: saved.digest,
       thread: saved.thread,
-      head: saved.head,
       name,
       owner: given.me,
       configuration: from?.name ?? "",

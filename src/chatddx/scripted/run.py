@@ -4,7 +4,7 @@ from contextlib import ExitStack, contextmanager
 from chatddx.bench import Bench, Carried, TriedVariation
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Judge
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, replicates
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import RunStarted
@@ -37,7 +37,7 @@ def ran_before(bench: Bench, scripted: ScriptedRun) -> RunStarted | None:
         skeleton=skeleton.digest,
         engine=engine,
         cases=tuple(cases),
-        seeds=(scripted.seed,),
+        seeds=replicates(skeleton, (scripted.seed,)),
     )
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
 

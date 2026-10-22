@@ -241,6 +241,7 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     }
     verdict = next(j for j in composing["judges"] if j["name"] == "verdict")
     assert verdict["output_schema"]["title"] == "Verdict" and verdict["seeds"] == [1]
+    assert not any("texts" in j for j in composing["judges"])
     query = {"kind": "configuration", "purpose": "judge"}
     judging = signed.get("/api/threads", params=query).json()
     assert {j["digest"] for j in composing["judging"]} == {
@@ -260,39 +261,6 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     assert composing["runs"] == [r["id"] for r in runs]
     assert composing["case"] == noted["case"]
     assert None in {o["title"] for o in composing["outputs"]}
-
-
-@pytest.mark.slow
-def test_a_judge_is_offered_with_the_texts_it_is_asked_through(
-    signed: TestClient,
-) -> None:
-    noted = family(signed, "noted")
-    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
-    judged = next(t for t in scorers if t["name"] == "judged")
-    given = props(shown(signed, f"/review/{noted['id']}?scorer={judged['id']}"))
-    judges = given["expected"]["composing"]["judges"]
-    verdict = next(j for j in judges if j["name"] == "verdict")
-    [held] = signed.get(
-        "/api/threads", params={"kind": "judge", "name": "verdict"}
-    ).json()
-    body = signed.get(f"/api/components/{verdict['digest']}").json()["body"]
-    assert (verdict["thread"], verdict["head"]) == (held["id"], held["head"]["id"])
-    assert verdict["body"] == body
-    texts = verdict["texts"]
-    asked = texts["configuration"]
-    query = {"kind": "configuration", "purpose": "judge"}
-    judging = {t["id"]: t for t in signed.get("/api/threads", params=query).json()}
-    assert judging[asked["thread"]]["head"]["digest"] == body["skeleton"]
-    assert asked["head"] == judging[asked["thread"]]["head"]["id"]
-    for part in ("instructions", "prompt", "output"):
-        digest = texts["recipe"][part]
-        chunk = texts["parts"][part]
-        if digest is None:
-            assert chunk is None
-            continue
-        held = signed.get(f"/api/components/{digest}").json()
-        assert (chunk["digest"], chunk["body"]) == (digest, held["body"])
-    assert texts["parts"]["prompt"]["thread"] is not None
 
 
 @pytest.mark.slow

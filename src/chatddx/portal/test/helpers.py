@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import replace
 from html.parser import HTMLParser
 from pathlib import Path
@@ -30,6 +31,11 @@ def shown(client: TestClient, path: str) -> str:
     assert got.headers["content-type"].startswith("text/html")
     assert got.headers["cache-control"] == "no-store"
     return got.text
+
+
+def said(page: str) -> str:
+    main = page.split("<main", 1)[1]
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", main))
 
 
 def variation_props(page: str) -> dict[str, Any]:

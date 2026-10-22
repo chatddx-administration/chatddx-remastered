@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 from collections.abc import Sequence
-from typing import Annotated, Literal, override
+from typing import Annotated, ClassVar, Literal, override
 
 from pydantic import AfterValidator, Field, JsonValue, field_validator, model_validator
 
@@ -12,6 +12,7 @@ from .base import (
     RefTo,
     Resolver,
     Settings,
+    ascending,
     distinct,
     resolve,
 )
@@ -22,16 +23,13 @@ from .request import RUNTIME_KEYS, Skeleton, SkeletonRef
 Order = Literal["case_major@1", "replicate_major@1", "shuffled@1"]
 
 
-def _sorted(cases: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(sorted(cases))
-
-
 class Trial(Component):
     kind: Literal["trial"] = "trial"
+    schema_version: ClassVar[int] = 2
     skeleton: SkeletonRef
     engine: EngineRef
     cases: Annotated[
-        tuple[CaseRef, ...], AfterValidator(distinct), AfterValidator(_sorted)
+        tuple[CaseRef, ...], AfterValidator(distinct), AfterValidator(ascending)
     ] = Field(min_length=1)
     cleanup: tuple[CleanupOp, ...] = ()
     seeds: Annotated[tuple[int, ...], AfterValidator(distinct)] = Field(min_length=1)
@@ -45,7 +43,15 @@ class Trial(Component):
         skeleton = resolve(get, self.skeleton, Skeleton)
         if skeleton.purpose != "generation":
             return [f"trial uses a {skeleton.purpose} skeleton"]
+        if self.seeds != replicates(skeleton, self.seeds):
+            return ["a greedy trial's seeds are its replicates' positions, from 0"]
         return []
+
+
+# Policy: a greedy request is sent without its seed, so a greedy trial's replicates are
+# named by their positions, and the same greedy trial started twice is one trial.
+def replicates(skeleton: Skeleton, seeds: Sequence[int]) -> tuple[int, ...]:
+    return tuple(range(len(seeds))) if skeleton.greedy else tuple(seeds)
 
 
 def suggest_seeds(n: int) -> tuple[int, ...]:

@@ -18,6 +18,7 @@ from chatddx.factors.response import ToolCall
 from chatddx.ledger import Call
 from chatddx.runner.rounds import Toolbox, load
 from chatddx.runner.test import tools
+from chatddx.test.helpers import one_attempt
 from chatddx.test.world import LINES
 
 FUNCTIONS = {"lookup": tools.lookup, "broken": tools.broken, "counted": tools.counted}
@@ -85,6 +86,7 @@ def response(*names: str) -> Call:
         request=Fingerprint.of(b"request"),
         started_at=at,
         finished_at=at,
+        attempts=one_attempt(at),
         status=200,
         response={"choices": [{"index": 0, "message": message}]},
     )

@@ -31,13 +31,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, each 
 # Dependency: before the template itself is dropped.
 ```
 
-## `src/chatddx/test/helpers.py:create_database`
-
-```
-# Dependency: `admin` is a conninfo taken before any test runs, since tests point
-# DB_NAME at their own database.
-```
-
 ## `src/chatddx/test/helpers.py:curated_template`
 
 ```
@@ -51,6 +44,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, each 
 ```
 # Accommodating for a run's or a scoring's job, which outlives the request that started
 # it, and may connect again between settling and dropping after its test has ended.
+```
+
+## `src/chatddx/test/helpers.py:one_attempt`
+
+```
+# Dependency: `admin` is a conninfo taken before any test runs, since tests point
+# DB_NAME at their own database.
 ```
 
 ## `src/chatddx/test/test_sample.py:test_the_sample_uses_every_table_a_data_set_and_a_world_hold`

@@ -12,6 +12,7 @@ from .base import (
     Resolver,
     Settings,
     StructuralError,
+    ascending,
     distinct,
     resolve,
 )
@@ -135,8 +136,11 @@ class JudgeEngine(Frozen):
 
 class Scoring(Component):
     kind: Literal["scoring"] = "scoring"
+    schema_version: ClassVar[int] = 2
     scorer: ScorerRef
-    expectations: tuple[ExpectationRef, ...] = Field(min_length=1)
+    expectations: Annotated[tuple[ExpectationRef, ...], AfterValidator(ascending)] = (
+        Field(min_length=1)
+    )
     engines: tuple[JudgeEngine, ...] = ()
 
     def engine_of(self, judge: str) -> str:

@@ -12,7 +12,7 @@ from chatddx.ledger import Call, ItemKey, RunItem
 from chatddx.runner import ItemEnded
 from chatddx.store.notify import Assembler, Events, channel, listen
 from chatddx.store.store import Connection
-from chatddx.test.helpers import NOW
+from chatddx.test.helpers import NOW, one_attempt
 from chatddx.worker import publish
 from chatddx.worker.publish import Publisher
 
@@ -54,7 +54,9 @@ def test_deltas_go_out_together_by_item_and_kind_and_an_ended_item_s_go_unsaid(
         delta(A, "content", "lic", 4),
     ):
         publisher.put(("item.delta", said))
-    call = Call(request=fp("body"), started_at=NOW, finished_at=NOW)
+    call = Call(
+        request=fp("body"), started_at=NOW, finished_at=NOW, attempts=one_attempt(NOW)
+    )
     key = ItemKey(case=B, replicate=0)
     publisher.run_event(
         ItemEnded(RunItem(run=run, key=key, vignette=fp("v"), call=call))

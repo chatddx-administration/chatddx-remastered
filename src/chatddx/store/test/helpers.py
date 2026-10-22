@@ -4,6 +4,7 @@ from chatddx.identity import Person
 from chatddx.ledger import Call
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
+from chatddx.test.helpers import one_attempt
 
 
 def stored_world(
@@ -21,6 +22,7 @@ def call(model: str) -> Call:
         request=fp("body"),
         started_at=NOW,
         finished_at=NOW,
+        attempts=one_attempt(NOW),
         status=200,
         response={"model": model},
         prompt_tokens=fp("tokens"),

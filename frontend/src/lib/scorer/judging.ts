@@ -1,5 +1,4 @@
 import type { Schema } from "$lib/schema/form";
-import type { Texts } from "./rewriting";
 import { choices } from "./selectors";
 
 export type Judging = {
@@ -20,9 +19,6 @@ export type JudgeChoice = {
   model: string | null;
   seeds: number[];
   output_schema: Schema | null;
-  head?: number;
-  body?: Record<string, unknown>;
-  texts?: Texts | null;
 };
 export type Option = { key: string; value: string; label: string };
 export type Holding = { skeleton: string; configuration: string; weights: string; handle: string | null };

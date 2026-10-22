@@ -3,16 +3,17 @@ import pytest
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, replicates
 from chatddx.test.world import JUDGE, LINES, LINES_GUIDED, QWEN
 
 
 def composed(bench: Bench, configuration: str, *families: str) -> Trial:
+    held = bench.skeleton(bench.variation(configuration))
     return Trial(
-        skeleton=bench.variation(configuration).configuration.digest,
+        skeleton=held.digest,
         engine=bench.endpoint(QWEN).engine,
         cases=tuple(bench.family(f).case for f in families),
-        seeds=(7,),
+        seeds=replicates(held, (7,)),
     )
 
 

@@ -57,10 +57,10 @@ def test_trials_are_written_in_their_cases_language_and_run_as_one_start(
         assert names(followed(signed, run["run"]))[-1] == "done"
     listed = signed.get("/api/runs", params={"with": first["run"]}).json()
     assert {(r["id"], r["described"], r["started_with"]) for r in listed} == {
-        (first["run"], "english × qwen3-8b-awq × crlf (seed 7)", None),
+        (first["run"], "english × qwen3-8b-awq × crlf (greedy)", None),
         (
             second["run"],
-            "swedish × qwen3-8b-awq × nfd, in sv, translated (seed 7)",
+            "swedish × qwen3-8b-awq × nfd, in sv, translated (greedy)",
             first["run"],
         ),
     }

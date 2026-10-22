@@ -10,7 +10,7 @@ from pydantic import JsonValue
 
 from chatddx.factors.response import REASONING, reasoning
 from chatddx.factors.trial import Execution
-from chatddx.ledger import Call, fingerprint_request
+from chatddx.ledger import Attempt, Call, fingerprint_request
 
 from .wire import Chunk, Rejected, assemble, post
 
@@ -118,14 +118,24 @@ def send(
     execution = execution or Execution()
     request = fingerprint_request(dict(body))
     started = started_at or _now()
-    attempts = 0
+    attempts: list[Attempt] = []
+    opened: datetime | None = None
     received: list[Chunk] = []
+
+    def tried(status: int | None, error: str | None) -> None:
+        nonlocal opened
+        if opened is None:
+            return
+        at = Attempt(started_at=opened, finished_at=_now(), status=status, error=error)
+        attempts.append(at)
+        opened = None
 
     def call(
         status: int | None,
         error: str | None,
         response: dict[str, JsonValue] | None = None,
     ) -> Call:
+        tried(status, error)
         if response is None and received:
             response = assemble(received)
         return Call(
@@ -134,13 +144,13 @@ def send(
             finished_at=_now(),
             status=status,
             response=response,
-            attempts=attempts,
+            attempts=tuple(attempts),
             error=error,
         )
 
     try:
         while True:
-            attempts += 1
+            opened = _now()
             try:
                 stream = post(
                     url,
@@ -150,12 +160,15 @@ def send(
                 )
                 break
             except Rejected as e:
-                if attempts > execution.retries or not _retryable(e.status):
+                if len(attempts) >= execution.retries or not _retryable(e.status):
                     return call(e.status, str(e), e.body)
+                tried(e.status, str(e))
             except OSError as e:
-                if attempts > execution.retries:
-                    return call(None, f"{type(e).__name__}: {e}")
-            delay = backoff * 2 ** (attempts - 1)
+                error = f"{type(e).__name__}: {e}"
+                if len(attempts) >= execution.retries:
+                    return call(None, error)
+                tried(None, error)
+            delay = backoff * 2 ** (len(attempts) - 1)
             if halt is None:
                 time.sleep(delay)
             elif halt.wait(delay):

@@ -364,6 +364,13 @@ Written by `chatddx stamp write` from `src/chatddx/test/`; how to read it is in 
 
 `OFF = "off"`
 
+## `one_attempt`
+`src/chatddx/test/helpers.py:one_attempt`
+
+* `at: datetime`
+* `until: datetime | None = None`
+* ∟`tuple[Attempt, ...]`
+
 ## `PASSWORD`
 `src/chatddx/test/helpers.py:PASSWORD`
 

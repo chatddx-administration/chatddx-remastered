@@ -44,7 +44,11 @@ def test_a_call_records_the_body_s_fingerprint_and_the_answer_without_the_prompt
     deltas: list[Delta] = []
     call = send(url, body(), on_delta=deltas.append)
     assert call.request == fingerprint_request(body())
-    assert (call.status, call.error, call.attempts) == (200, None, 1)
+    assert (call.status, call.error) == (200, None)
+    [attempt] = call.attempts
+    assert (attempt.status, attempt.error) == (200, None)
+    assert call.started_at <= attempt.started_at <= attempt.finished_at
+    assert attempt.finished_at <= call.finished_at
     assert call.response is not None and "prompt_token_ids" not in call.response
     ids = whole(url, body())["prompt_token_ids"]
     assert call.prompt_tokens == Fingerprint.of(canonical_bytes(ids))
@@ -192,7 +196,9 @@ def test_a_halt_ends_the_wait_between_attempts() -> None:
         _ = send(closed, body(), execution=Execution(retries=3), backoff=30, halt=halt)
     assert time.monotonic() - began < 10
     call = caught.value.call
-    assert (call.error, call.status, call.attempts) == (STOPPED, None, 1)
+    assert (call.error, call.status) == (STOPPED, None)
+    [attempt] = call.attempts
+    assert attempt.error is not None and "Connection refused" in attempt.error
 
 
 def test_a_call_counts_from_when_the_caller_says_it_was_sent(url: str) -> None:
@@ -205,12 +211,19 @@ def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:
         s.bind(("127.0.0.1", 0))
         closed = at("127.0.0.1", s.getsockname()[1])
     refused = send(closed, body(), execution=Execution(retries=2), backoff=0)
-    assert refused.attempts == 3
+    assert len(refused.attempts) == 3
+    assert all(
+        a.error is not None and "Connection refused" in a.error
+        for a in refused.attempts
+    )
+    times = [t for a in refused.attempts for t in (a.started_at, a.finished_at)]
+    assert times == sorted(times)
     assert refused.status is None and refused.response is None
     assert refused.error is not None and "Connection refused" in refused.error
 
     rejected = send(url, body(model="sha256:other"), execution=Execution(retries=2))
-    assert (rejected.attempts, rejected.status) == (1, 404)
+    [attempt] = rejected.attempts
+    assert (attempt.status, rejected.status) == (404, 404)
     assert rejected.response is not None and "error" in rejected.response
     assert rejected.error is not None and rejected.error.startswith("HTTP 404: ")
 
@@ -219,4 +232,6 @@ def test_a_call_past_its_timeout_is_cut_short() -> None:
     with serving([SERVED], "127.0.0.1", 0, delay=0.02) as address:
         call = send(at(*address), body(), execution=Execution(timeout_s=0.1))
     assert call.error == "stopped: no end after 0.1 s"
+    [attempt] = call.attempts
+    assert attempt.error == call.error
     assert choice(call.response)["finish_reason"] is None

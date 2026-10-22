@@ -6,9 +6,9 @@ from chatddx.factors.base import Component, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.facts import ModelFacts
-from chatddx.factors.request import RECIPE_PARTS, Recipe, translated
+from chatddx.factors.request import RECIPE_PARTS, Recipe, Skeleton, translated
 from chatddx.factors.scoring import Expectation, Judge, Scorer
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, replicates
 from chatddx.facts import lints
 from chatddx.identity import owns, sees
 
@@ -221,6 +221,9 @@ def _carried(seen: Seen, trial: Trial) -> tuple[Trial, Registry, list[str]]:
     seen_cases = {c for f in seen.families() for c in f.cases}
     if missing := [c for c in trial.cases if c not in seen_cases]:
         raise NotFound(f"no case {missing[0]} for {seen.person.login}")
+    skeleton = resolve(seen.store.get, trial.skeleton, Skeleton)
+    if (seeds := replicates(skeleton, trial.seeds)) != trial.seeds:
+        trial = trial.model_copy(update={"seeds": seeds})
     held = languages_of(seen.rows, [*trial.cases, trial.skeleton])
     known = sorted(set(filter(None, (held[c] for c in trial.cases))))
     if len(known) > 1:

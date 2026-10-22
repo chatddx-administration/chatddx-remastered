@@ -41,6 +41,15 @@
   {% if f.nullable or f.value is none %}<option value="">{{ "none" if f.nullable else "pick one" }}</option>{% endif %}
   {% for o in f.options %}<option value="{{ o }}"{% if o == f.value %} selected{% endif %}>{{ o }}</option>{% endfor %}
 </select>
+{%- elif f.shape == "number" %}
+<input type="number" name="f.{{ f.name }}" aria-label="{{ label }}" value="{{ '' if f.value is none else f.value }}" step="{{ 1 if f.whole else 'any' }}"{% if f.minimum is not none %} min="{{ f.minimum }}"{% endif %} class="{{ box }} h-9 max-w-xs">
+{%- if f.nullable %}<span class="block text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
+{%- elif f.shape == "check" %}
+<input type="checkbox" name="f.{{ f.name }}" value="true" aria-label="{{ label }}"{% if f.value %} checked{% endif %} class="h-4 w-4">
+{%- elif f.shape == "lines" %}
+<textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, (f.value or []) | length + 1] | max }}" class="{{ box }} font-mono text-xs">
+{{ (f.value or []) | join("\n") }}</textarea>
+<span class="text-xs text-muted-foreground">{{ "Whole numbers, one a line or apart by commas." if f.whole else "One a line; an empty line is none." }}</span>
 {%- elif f.shape == "text" %}
 <textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [3, (f.value or '').count('\n') + 2] | max }}" class="{{ box }}">
 {{ f.value or "" }}</textarea>

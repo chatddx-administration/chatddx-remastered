@@ -9,7 +9,7 @@ from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.outcome import outcome, usage
 from chatddx.runner.send import STOPPED
-from chatddx.test.helpers import NOW, skeleton
+from chatddx.test.helpers import NOW, one_attempt, skeleton
 from chatddx.test.world import LINES, NATIVE
 
 
@@ -24,6 +24,7 @@ def call(
         request=Fingerprint.of(b"request"),
         started_at=NOW,
         finished_at=NOW,
+        attempts=one_attempt(NOW),
         response=None
         if content is None
         else {"choices": [{"index": 0, "message": message}], "usage": used},

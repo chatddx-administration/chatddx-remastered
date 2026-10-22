@@ -110,16 +110,6 @@ Checking a run or a score holds every call to what it should have been: each lat
 rebuilt, in `src/chatddx/runner/prepare.py` since it needs the vignette, and the prompt-token and model checks for judge
 and canary calls.
 
-### Each attempt recorded
-
-A call records each attempt's times, status and error, so that a timeout can be checked. It changes `Call`, so it is
-cheapest before real runs are stored.
-
-- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
-  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
-  response;
-- `Execution.timeout_s` isn't checked: a call's times span all its attempts.
-
 ### Aggregation
 
 What may be pooled and what aggregates scores: runs grouped by their recorded factors, the evidence of the observed ones
@@ -134,16 +124,6 @@ analysis needs frozen: languages and titles. Nothing plans it yet.
   for example for publication, isn't specified.
 
 - How scores are aggregated and exported together with the factors and the ledger for publication.
-
-### Digests to settle before real data
-
-What names a greedy trial's replicates, and a scoring whose digest doesn't depend on the order of its expectations. Both
-change what is stored, so they go in one bump, before trials and scorings are stored for real; a bump after that needs
-"Old versions readable".
-
-- **A scoring's digest depends on the order of its expectations.** Its expectations aren't put in a fixed order as a
-  trial's cases are, so the same expectations in another order make another scoring. The person reads build them in the
-  trial's case order.
 
 ### Scoring: coverage and judges
 
@@ -628,8 +608,7 @@ mean it to. Erasing a typed text is agents/wip-clearance.md's ("Before real pati
 
 ### Old versions readable
 
-Stored rows of an older schema version read after a bump. Waits for the first bump once real data is stored, after
-"Digests to settle before real data".
+Stored rows of an older schema version read after a bump. Next, before the deployment's data is kept.
 
 Decided: upgrade on read: a kind keeps a reader for each of its older versions, returning the current shape, and the
 stored bytes and their digest stay as they are.

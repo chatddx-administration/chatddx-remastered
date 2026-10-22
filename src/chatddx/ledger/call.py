@@ -16,6 +16,18 @@ from chatddx.factors.trial import Execution, Trial
 from .record import ItemKey, UtcDatetime, in_order
 
 
+class Attempt(Frozen):
+    started_at: UtcDatetime
+    finished_at: UtcDatetime
+    status: int | None = None
+    error: str | None = None
+
+    @model_validator(mode="after")
+    def _times(self) -> "Attempt":
+        in_order(self.started_at, self.finished_at)
+        return self
+
+
 class Call(Frozen):
     request: Fingerprint
     started_at: UtcDatetime
@@ -23,7 +35,7 @@ class Call(Frozen):
     status: int | None = None
     response: dict[str, JsonValue] | None = None
     prompt_tokens: Fingerprint | None = None
-    attempts: int = Field(default=1, ge=1)
+    attempts: tuple[Attempt, ...] = Field(min_length=1)
     error: str | None = None
 
     @model_validator(mode="before")
@@ -112,11 +124,26 @@ def check_execution(
 ) -> list[Finding]:
     findings: list[Finding] = []
     allowed = execution.retries + 1
-    if over := sum(1 for c in calls if c.attempts > allowed):
+    if over := sum(1 for c in calls if len(c.attempts) > allowed):
         findings.append(
             Finding(
                 code="execution.retries",
                 message=f"{over} calls took more than the {allowed} attempts allowed",
+            )
+        )
+    limit = execution.timeout_s
+    if limit is not None and (
+        late := sum(
+            1
+            for c in calls
+            for a in c.attempts
+            if (a.finished_at - a.started_at).total_seconds() > limit
+        )
+    ):
+        findings.append(
+            Finding(
+                code="execution.timeout",
+                message=f"{late} attempts took longer than the {limit} s timeout",
             )
         )
 

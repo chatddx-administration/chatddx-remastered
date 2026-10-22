@@ -131,6 +131,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/factors/`, ea
 # ops.
 ```
 
+## `src/chatddx/factors/trial.py:replicates`
+
+```
+# Policy: a greedy request is sent without its seed, so a greedy trial's replicates are
+# named by their positions, and the same greedy trial started twice is one trial.
+```
+
 ## `src/chatddx/factors/trial.py:suggest_seeds`
 
 ```

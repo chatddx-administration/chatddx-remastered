@@ -2,6 +2,14 @@
 
 Written by `chatddx stamp write` from `src/chatddx/ledger/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
+## `Attempt` `(Frozen)`
+`src/chatddx/ledger/call.py:Attempt`
+
+* `started_at: UtcDatetime`
+* `finished_at: UtcDatetime`
+* `status: int | None = None`
+* `error: str | None = None`
+
 ## `attest_model`
 `src/chatddx/ledger/call.py:attest_model`
 
@@ -24,7 +32,7 @@ Finds:
 * `status: int | None = None`
 * `response: dict[str, JsonValue] | None = None`
 * `prompt_tokens: Fingerprint | None = None`
-* `attempts: int = Field(default=1, ge=1)`
+* `attempts: tuple[Attempt, ...] = Field(min_length=1)`
 * `error: str | None = None`
 
 Raises:
@@ -38,6 +46,7 @@ Raises:
 ## `CanaryCall` `(Record)`
 `src/chatddx/ledger/run.py:CanaryCall`
 
+* `schema_version: ClassVar[int] = 2`
 * `sensitive: ClassVar[bool] = False`
 * `run: UUID`
 * `phase: Phase`
@@ -55,8 +64,9 @@ Raises:
 
 Finds:
 1. `execution.retries`: `"{over} calls took more than the {allowed} attempts allowed"`
-2. `execution.order`: `"{early} items were sent before items scheduled ahead of them"`
-3. `execution.concurrency`: `"{peak} calls were in flight at once, declared {execution.concurrency}"`
+2. `execution.timeout`: `"{late} attempts took longer than the {limit} s timeout"`
+3. `execution.order`: `"{early} items were sent before items scheduled ahead of them"`
+4. `execution.concurrency`: `"{peak} calls were in flight at once, declared {execution.concurrency}"`
 
 ## `check_log`
 `src/chatddx/ledger/record.py:check_log`
@@ -269,6 +279,7 @@ Raises:
 ## `RunItem` `(Record)`
 `src/chatddx/ledger/run.py:RunItem`
 
+* `schema_version: ClassVar[int] = 2`
 * `run: UUID`
 * `key: ItemKey`
 * `vignette: Fingerprint`
@@ -333,6 +344,7 @@ Raises:
 ## `ScoreItem` `(Record)`
 `src/chatddx/ledger/score.py:ScoreItem`
 
+* `schema_version: ClassVar[int] = 2`
 * `score: UUID`
 * `key: ItemKey`
 * `view: int = Field(ge=0)`

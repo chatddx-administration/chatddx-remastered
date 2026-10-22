@@ -116,9 +116,12 @@ def test_facts_are_checked(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="only 'model' tables"):
         _ = load("[llm.m]\n")
     other = tmp_path / "other.toml"
-    _ = other.write_text(f'[model."{QWEN_MODEL}"]\n')
+    _ = other.write_text(f'[model."{QWEN_MODEL}"]\ncontext_length = 8192\n')
+    assert Facts.load(BUNDLED, other).models[QWEN_MODEL].context_length == 8192
+    again = tmp_path / "again.toml"
+    _ = again.write_text(f'[model."{QWEN_MODEL}"]\n')
     with pytest.raises(ValueError, match="more than one file"):
-        _ = Facts.load(BUNDLED, other)
+        _ = Facts.load(BUNDLED, other, again)
 
 
 def test_facts_check_pairs(facts: Facts) -> None:

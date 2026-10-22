@@ -48,8 +48,8 @@ A `src/chatddx/ledger/call.py:Call` is one exchange with an engine: an item's, a
   schema is part of what the model reads.
 - `response` is the response as it came back, but its `prompt_token_ids`: the call keeps a fingerprint of them in
   `prompt_tokens` instead, which is how a prompt read can be compared without keeping it.
-- `started_at` and `finished_at` span all the call's attempts; `attempts`, `status` and `error` tell how it went, and an
-  error stands for why nothing, or not all, came back (docs/backlog.md, "Each attempt recorded").
+- `started_at` and `finished_at` span all the call's attempts, and `attempts` holds each one's times, status and error;
+  `status` and `error` tell how the call went, and an error stands for why nothing, or not all, came back.
 
 `RunItem.turns` are the item's tool rounds, each a `src/chatddx/ledger/call.py:Turn`: the tools the previous response
 called, each run as a `src/chatddx/ledger/call.py:ToolRun` with its result and, if it failed, its error; then the call
@@ -175,8 +175,8 @@ What the item is kept as, its `payload`, pretty-printed:
 }
 ```
 
-`attempts` is left out at its default of 1, and so is each fingerprint's `alg`. `RunItem.parse(item.canonical)` gives
-the item back. Leaving an item out of the finished run:
+`attempts` is left out at its default of 1, and so is each fingerprint's `alg` is left out at its default.
+`RunItem.parse(item.canonical)` gives the item back. Leaving an item out of the finished run:
 
 ```python
 run = store.run(started.run)
@@ -191,7 +191,9 @@ from chatddx.ledger import check_score
 
 score = store.score(score_id)
 run = store.run(score.started.run)
-findings = check_score(score, run, store.load([run.started.trial, score.started.scoring]))
+findings = check_score(
+    score, run, store.load([run.started.trial, score.started.scoring])
+)
 ```
 
 Look at a run's items in the database, as the writer:
@@ -221,6 +223,7 @@ id, an item's key as `case='sha256:…' replicate=0`, or a component's digest.
 | `attestation.model`         | item                                   | `src/chatddx/ledger/call.py:attest_model`    | the model each of the item's responses names, against the :Served model name of the trial's engine; a response that names none is a finding of its own                                 |
 | `attestation.prompt_tokens` |                                        | `src/chatddx/ledger/run.py:check_run`        | each item's calls, for a prompt-token fingerprint; one finding counts the items with a call that lacks it                                                                              |
 | `execution.retries`         |                                        | `src/chatddx/ledger/call.py:check_execution` | each call's attempts, canary calls included, against the attempts `Execution.retries` allows                                                                                           |
+| `execution.timeout`         |                                        | `src/chatddx/ledger/call.py:check_execution` | each attempt's times, canary calls included, against the run's `Execution.timeout_s`                                                                                                   |
 | `execution.order`           |                                        | `src/chatddx/ledger/call.py:check_execution` | when each item's first call started, against the order of `Execution.schedule`                                                                                                         |
 | `execution.concurrency`     |                                        | `src/chatddx/ledger/call.py:check_execution` | the most calls in flight at once, canary calls included, against `Execution.concurrency`                                                                                               |
 | `canary.phase`              |                                        | `src/chatddx/ledger/run.py:check_run`        | start canary calls' finish, against the first item call's start; end canary calls' start, against the last item call's finish                                                          |

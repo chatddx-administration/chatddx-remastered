@@ -79,12 +79,12 @@ def test_a_thread_s_fields_are_edited_by_its_owner_and_read_by_others(
     assert given == {
         "head": [str(off["head"]["id"])],
         "f.effort": [""],
-        "f.thinking_token_budget": ["null"],
+        "f.thinking_token_budget": [""],
         "f.chat_template_kwargs": ["{}"],
         "f.level": ["off"],
     }
     for typed, said in (
-        ("[", "thinking_token_budget isn&#39;t JSON"),
+        ("a few", "thinking_token_budget isn&#39;t a whole number"),
         ("-1", "greater than or equal to 0"),
     ):
         changed = {**given, "f.thinking_token_budget": [typed]}
@@ -190,7 +190,7 @@ def test_a_chunk_is_written_from_nothing(signed: TestClient) -> None:
     given = submitted(shown(signed, action), action)
     assert (given["name"], given["f.temperature"], given["f.max_tokens_key"]) == (
         [""],
-        ["null"],
+        [""],
         ["max_completion_tokens"],
     )
     got = signed.post(action, data={**given, "f.temperature": ["0.3"]})
@@ -235,7 +235,7 @@ def test_a_judge_s_configuration_model_and_seeds_are_edited_on_its_page(
         [models[QWEN_ARTIFACT]],
     )
     assert f'value="{models[GPT_OSS_ARTIFACT]}"' in shown_page
-    changed = {**given, "f.model": [models[GPT_OSS_ARTIFACT]], "f.seeds": ["[3]"]}
+    changed = {**given, "f.model": [models[GPT_OSS_ARTIFACT]], "f.seeds": ["3"]}
     assert signed.post(f"{path}/edit", data=changed).status_code == 303
     head = signed.get(f"/api{path}").json()["head"]["digest"]
     held = signed.get(f"/api/components/{head}").json()["body"]
@@ -263,6 +263,55 @@ def test_a_judge_s_configuration_model_and_seeds_are_edited_on_its_page(
 
 
 @pytest.mark.slow
+def test_numbers_checks_and_lists_are_written_as_such(signed: TestClient) -> None:
+    action = "/library/new?kind=sampling"
+    page = shown(signed, action)
+    for control in (
+        '<input type="number" name="f.temperature" aria-label="temperature" value="" '
+        + 'step="any"',
+        'name="f.max_output_tokens" aria-label="max output tokens" value="" step="1" '
+        + 'min="1"',
+        '<input type="checkbox" name="f.recommended" value="true"',
+    ):
+        assert control in page
+    given = submitted(page, action)
+    assert "f.recommended" not in given and given["f.stop"] == [""]
+    written = {
+        **given,
+        "name": ["stopping"],
+        "f.temperature": ["0.5"],
+        "f.max_output_tokens": ["256"],
+        "f.stop": ["</s>\r\n\r\nEND\r\n"],
+        "f.recommended": ["true"],
+    }
+    got = signed.post(action, data=written)
+    assert got.status_code == 303
+    path = got.headers["location"]
+    made = signed.get(f"/api{path}").json()
+    body = signed.get(f"/api/components/{made['head']['digest']}").json()["body"]
+    assert (body["temperature"], body["max_output_tokens"]) == (0.5, 256)
+    assert (body["stop"], body["recommended"]) == (["</s>", "END"], True)
+
+    given = submitted(shown(signed, path), f"{path}/edit")
+    assert (given["f.temperature"], given["f.stop"], given["f.recommended"]) == (
+        ["0.5"],
+        ["</s>\nEND"],
+        ["true"],
+    )
+    got = signed.post(f"{path}/edit", data={**given, "f.max_output_tokens": ["1.5"]})
+    assert (
+        got.status_code == 422
+        and "max_output_tokens isn&#39;t a whole number" in got.text
+    )
+    unchecked = {k: v for k, v in given.items() if k != "f.recommended"}
+    got = signed.post(f"{path}/edit", data={**unchecked, "f.temperature": [""]})
+    assert got.status_code == 303
+    head = signed.get(f"/api{path}").json()["head"]["digest"]
+    body = signed.get(f"/api/components/{head}").json()["body"]
+    assert (body["recommended"], body["temperature"]) == (False, None)
+
+
+@pytest.mark.slow
 def test_a_judge_is_written_from_nothing(signed: TestClient) -> None:
     action = "/library/new?kind=judge"
     given = submitted(shown(signed, action), action)
@@ -273,11 +322,11 @@ def test_a_judge_is_written_from_nothing(signed: TestClient) -> None:
     )
     verdict = thread(signed, "judge", "verdict", "archive")
     body = signed.get(f"/api/components/{verdict['head']['digest']}").json()["body"]
-    got = signed.post(action, data={**given, "name": ["strict"], "f.seeds": ["[2]"]})
+    got = signed.post(action, data={**given, "name": ["strict"], "f.seeds": ["2"]})
     assert got.status_code == 422 and "skeleton" in got.text
     picked = {"f.skeleton": [body["skeleton"]], "f.model": [body["model"]]}
     got = signed.post(
-        action, data={**given, **picked, "name": ["strict"], "f.seeds": ["[2]"]}
+        action, data={**given, **picked, "name": ["strict"], "f.seeds": ["2"]}
     )
     assert got.status_code == 303
     strict = signed.get(f"/api{got.headers['location']}").json()

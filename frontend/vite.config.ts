@@ -20,6 +20,7 @@ export default defineConfig({
         run: "src/islands/run.ts",
         lab: "src/islands/lab.ts",
         review: "src/islands/review.ts",
+        scoring: "src/islands/scoring.ts",
       },
     },
   },

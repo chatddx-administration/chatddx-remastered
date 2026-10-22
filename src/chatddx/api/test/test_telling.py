@@ -20,7 +20,7 @@ from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.store import Store
 from chatddx.store.notify import Events, JobChanged, Rows, channel, tell
 from chatddx.store.store import Connection
-from chatddx.test.helpers import NOW
+from chatddx.test.helpers import NOW, one_attempt
 from chatddx.test.world import LINES
 
 
@@ -55,7 +55,9 @@ def test_a_stream_joined_mid_item_is_told_it_began_and_each_tool_once(
     assert said[0][2] == {"case": case, "replicate": 0, "seed": 7}
     assert told("".join(telling.said([("item.delta", delta)])))[0][1] == "item.delta"
 
-    call = Call(request=fp("body"), started_at=NOW, finished_at=NOW)
+    call = Call(
+        request=fp("body"), started_at=NOW, finished_at=NOW, attempts=one_attempt(NOW)
+    )
     vignette = resolve(plan.registry.get, case, Case).vignette.fingerprint
     turn = Turn(tools=(tool("first"), tool("second")), call=call)
     item = RunItem(

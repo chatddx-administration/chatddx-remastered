@@ -92,6 +92,7 @@ class RunFinished(Record):
 
 
 class RunItem(Record):
+    schema_version: ClassVar[int] = 2
     run: UUID
     key: ItemKey
     vignette: Fingerprint
@@ -110,6 +111,7 @@ class RunItem(Record):
 
 
 class CanaryCall(Record):
+    schema_version: ClassVar[int] = 2
     sensitive: ClassVar[bool] = False
     run: UUID
     phase: Phase

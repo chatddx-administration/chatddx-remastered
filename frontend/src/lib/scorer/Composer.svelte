@@ -27,7 +27,6 @@
   import { said, valued, withScorer } from "$lib/review/review";
   import JudgeAsked from "./JudgeAsked.svelte";
   import type { JudgeChoice } from "./judging";
-  import JudgeTexts from "./JudgeTexts.svelte";
   import ScorerViews from "./ScorerViews.svelte";
   import { answeredChoices, type ScorerView } from "./scorers";
   import { choices } from "./selectors";
@@ -50,7 +49,6 @@
   const metrics = new Map(given.metrics.map((m) => [m.name, m]));
 
   let judges = $state<JudgeChoice[]>([...given.judges]);
-  let rewriting = $state<number | null>(null);
   const titles = $derived({ ...given.titles, ...Object.fromEntries(judges.map((j) => [j.digest, j.name])) });
 
   let mode = $state<"edit" | "fork" | "new">(start ? start.mode : "new");
@@ -152,31 +150,11 @@
         </span>
       {/if}
     {/snippet}
-    {#snippet below(view: ScorerView, at: number, judge: JudgeChoice | undefined)}
-      {#if rewriting === at && judge?.texts && judge.body && judge.head !== undefined && view.judge}
-        <JudgeTexts
-          judge={{ ...judge, texts: judge.texts, body: judge.body, head: judge.head }}
-          expectation={view.expectation ?? ""}
-          {data}
-          me={given.me}
-          made={(j) => {
-            const known = judges.findIndex((k) => k.thread === j.thread);
-            if (known === -1) judges.push(j);
-            else judges[known] = j;
-            const was = view.judge;
-            for (const v of body.views) if (v.judge === was) v.judge = j.digest;
-            rewriting = null;
-          }}
-          left={() => (rewriting = null)}
-        />
-      {:else if view.judge}
+    {#snippet below(view: ScorerView, _at: number, judge: JudgeChoice | undefined)}
+      {#if view.judge}
         <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
-        {#if judge?.texts}
-          <button
-            type="button"
-            class="rounded-md border border-border px-2.5 py-0.5 hover:bg-muted"
-            onclick={() => (rewriting = at)}>Change what it is asked</button
-          >
+        {#if judge}
+          <a class="text-primary hover:underline" href="/scoring/{judge.thread}">What it is asked is changed on Scoring</a>
         {/if}
       {/if}
     {/snippet}

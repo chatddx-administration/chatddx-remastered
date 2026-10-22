@@ -15,6 +15,7 @@ from . import (
     pages,
     review,
     runs,
+    scoring,
     threads,
     world as world_page,
 )
@@ -42,6 +43,7 @@ def app(
     for router in (
         review.router,
         lab.router,
+        scoring.router,
         runs.router,
         cases.router,
         threads.router,

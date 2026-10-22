@@ -1,14 +1,18 @@
+<script lang="ts" module>
+  import type { JudgeChoice } from "./judging";
+  import type { Texts } from "./rewriting";
+
+  export type Rewriting = JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number };
+</script>
+
 <script lang="ts">
   import { untrack } from "svelte";
   import { api } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
-  import type { JudgeChoice } from "./judging";
-  import { type Part, rewritten, type Texts } from "./rewriting";
+  import { type Part, rewritten } from "./rewriting";
   import TextSegments from "./TextSegments.svelte";
   import { asked, type Seg, segmentsOf, textOf } from "./texts";
-
-  type Rewriting = JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number };
 
   let {
     judge,
@@ -75,6 +79,7 @@
 
   $effect(() => {
     const document = JSON.parse(JSON.stringify(data ?? null)) as unknown;
+    if (document === null) return;
     const at = ++picking;
     const timer = setTimeout(async () => {
       const got = await api.POST("/api/picks", { body: { document: document as never, selectors: [expectation] } });
@@ -109,8 +114,8 @@
 <section class="space-y-3 rounded-lg border border-dashed border-primary/40 p-2.5" aria-label="What its judge is asked, as you write it">
   <p class="text-muted-foreground">
     What {given.name} is asked, written as you would have it. Saving keeps each text you change as a version of your own,
-    the judge's request with them, and a judge of your own asked through it, picked wherever this scorer asks
-    {given.name}.
+    the judge's request with them, and a judge of your own asked through it. The scorers asking {given.name} keep asking
+    the version they ask until they follow yours, from its page.
   </p>
   <div class="grid gap-3 lg:grid-cols-2">
     <div class="space-y-3">

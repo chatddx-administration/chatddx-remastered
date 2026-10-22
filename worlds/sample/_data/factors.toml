@@ -69,6 +69,7 @@ tags = ["ddx"]
 prompt = "case"
 output = "management-plan"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.plan-shown]
 description = "The same, with the schema shown to the model in the instructions."
@@ -77,6 +78,7 @@ fork_of = "plan"
 prompt = "case"
 output = "management-plan-shown"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.plan-prompted]
 description = "The same, with the schema shown and nothing enforcing it."
@@ -85,6 +87,7 @@ fork_of = "plan"
 prompt = "case"
 output = "management-plan-prompted"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.plan-web]
 description = "The management plan, with a web search to call."
@@ -94,6 +97,7 @@ prompt = "case"
 output = "management-plan"
 sampling = "recommended"
 toolset = "web"
+translations = "sample"
 
 [recipe.diagnoses]
 description = "The differential alone, as the medical-assistant agents ask for it."
@@ -101,6 +105,7 @@ tags = ["ddx"]
 prompt = "case"
 output = "diagnoses"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.diagnoses-tool]
 description = "The same, answered through the final-result tool."
@@ -109,6 +114,7 @@ fork_of = "diagnoses"
 prompt = "case"
 output = "diagnoses-tool"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.free-text]
 description = "The differential as plain lines."
@@ -116,6 +122,7 @@ tags = ["ddx"]
 prompt = "case"
 output = "free-text"
 sampling = "recommended"
+translations = "sample"
 
 [recipe.free-text-guided]
 description = "The differential as plain lines, with instructions placing the guidance and a worked example."

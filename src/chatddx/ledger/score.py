@@ -66,6 +66,7 @@ class ScoreFinished(Record):
 
 
 class ScoreItem(Record):
+    schema_version: ClassVar[int] = 2
     score: UUID
     key: ItemKey
     view: int = Field(ge=0)

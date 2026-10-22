@@ -190,7 +190,7 @@
     <p class="text-sm text-muted-foreground">None of your own. <a class="{{ link }}" href="/cases/{{ family.id }}#holds">Write yours</a> in the Library.</p>
     {% endif %}
     {% if scorer %}
-    <h3 class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">What {{ scorer[0].name or scorer[0].title }} reads of it</h3>
+    <h3 class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">What {{ scorer[0].name or scorer[0].title }} reads of it <a class="normal-case tracking-normal {{ link }}" href="/scoring/{{ scorer[0].id }}">on Scoring</a></h3>
     <ol class="space-y-2 text-sm">
       {% for v in views %}
       <li class="rounded-lg border border-border/60 p-2.5">

@@ -19,6 +19,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.ledger import Attempt
 from chatddx.store import People
 from chatddx.store.store import Connection
 
@@ -48,6 +49,10 @@ def _settled(admin: Connection, name: str) -> None:
 
 # Dependency: `admin` is a conninfo taken before any test runs, since tests point
 # DB_NAME at their own database.
+def one_attempt(at: datetime, until: datetime | None = None) -> tuple[Attempt, ...]:
+    return (Attempt(started_at=at, finished_at=until or at),)
+
+
 def create_database(admin: str, template: str | None = None) -> str:
     name = f"chatddx_test_{uuid4().hex[:12]}"
     create = sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name))

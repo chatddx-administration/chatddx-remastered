@@ -163,6 +163,10 @@ flake's `checks.<system>.module`, boots it in a VM.
 Decided: chatddx-dev first, on stationary, from this repository's `main`, with the World `worlds/kompismoln`; the old
 chatddx stays on helsinki meanwhile.
 
+Built, in use: chatddx-dev runs with `CHATDDX_WORLD=worlds/kompismoln`, and its runs on the sample's vignettes go to
+pelle and malborg. Its store is dropped and loaded again when a stored kind's version goes up, for now: what it holds is
+to be kept soon, which wants old versions read (`docs/backlog.md`, "Old versions readable") before the next bump.
+
 - **Where it is**: Kompismoln's org (`Kompismoln/org`), in `apps/chatddx-remastered.nix`, the app file of
   `[app.chatddx-dev]` in its `org.toml`, which o11n's app-scheduler role imports on the app's hosts. It adapts the org's
   app to `services.chatddx`; o11n has nothing of chatddx's.

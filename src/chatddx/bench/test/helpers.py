@@ -14,8 +14,9 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalModel
 from chatddx.factors.facts import ModelFacts
 from chatddx.factors.kinds import BY_KIND
+from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Expectation
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, replicates
 from chatddx.identity import Person, owns
 from chatddx.inventory import DirectorySource, World
 from chatddx.ledger import Endpoint, Run, RunStarted
@@ -30,11 +31,12 @@ UNSERVED = "http://127.0.0.1:9/v1/"
 
 def trial(conn: Connection, plan: Plan, recipe: str, *ids: str) -> Trial:
     cases = [c for c in SOURCE.cases() if c.vignette.id in ids]
+    held = resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)
     made = Trial(
-        skeleton=plan.named("recipe", recipe).digest,
+        skeleton=held.digest,
         engine=plan.named("local_engine", QWEN).digest,
         cases=tuple(plan.registry.add(c) for c in cases),
-        seeds=(7,),
+        seeds=replicates(held, (7,)),
     )
     _ = Store(conn).add(plan.registry, [plan.registry.add(made)])
     return made

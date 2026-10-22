@@ -33,7 +33,7 @@ from chatddx.factors.request import (
     translated,
 )
 from chatddx.factors.scoring import Expectation, Judge, JudgeEngine, Scorer, Scoring
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, replicates
 from chatddx.facts import Facts, lints
 from chatddx.identity import Person, collaborates, owns, preferred, sees
 from chatddx.inventory import Inventory
@@ -766,7 +766,12 @@ class Seen:
             if len(trial.cases) == 1
             else f"{len(trial.cases)} cases"
         )
-        seeds = ", ".join(str(seed) for seed in trial.seeds)
+        n = len(trial.seeds)
+        seeds = (
+            ("greedy" if n == 1 else f"greedy, {n} replicates")
+            if resolve(self.store.get, trial.skeleton, Skeleton).greedy
+            else "seed " + ", ".join(str(seed) for seed in trial.seeds)
+        )
         name = read.about(self.rows, Subject(run=run.run)).name or self.title(
             trial.skeleton
         )
@@ -776,7 +781,7 @@ class Seen:
             if len(into) == 1 and None not in into
             else ""
         )
-        return f"{name} × {where} × {cases}{sent} (seed {seeds})"
+        return f"{name} × {where} × {cases}{sent} ({seeds})"
 
     def unscored(self, run: RunStarted) -> list[str]:
         given = self.store.scores_of(run.run)
@@ -935,7 +940,7 @@ def trial(
         engine=engine,
         cases=tuple(cases),
         cleanup=cleanup,
-        seeds=tuple(seeds),
+        seeds=replicates(skeleton, seeds),
     )
     _ = registry.add(made)
     return registry, made

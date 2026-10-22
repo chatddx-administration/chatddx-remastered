@@ -9,7 +9,9 @@ from typing import Any, override
 from psycopg import sql
 
 from chatddx.curation import Plan
-from chatddx.factors.trial import Trial
+from chatddx.factors.base import resolve
+from chatddx.factors.request import Skeleton
+from chatddx.factors.trial import Trial, replicates
 from chatddx.fake_vllm.served import Served
 from chatddx.inventory import DirectorySource
 from chatddx.test.helpers import connect
@@ -45,11 +47,12 @@ def trial(
 ) -> Trial:
     source = DirectorySource(name="test", path=TEST / "vignettes")
     refs = [plan.registry.add(c) for c in source.cases() if c.vignette.id in cases]
+    held = resolve(plan.registry.get, plan.named("recipe", skeleton).digest, Skeleton)
     made = Trial(
-        skeleton=plan.named("recipe", skeleton).digest,
+        skeleton=held.digest,
         engine=plan.named("local_engine", engine).digest,
         cases=tuple(refs),
-        seeds=seeds,
+        seeds=replicates(held, seeds),
     )
     _ = plan.registry.add(made)
     return made

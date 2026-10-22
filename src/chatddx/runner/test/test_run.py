@@ -22,7 +22,7 @@ from chatddx.factors.request import (
     next_request,
 )
 from chatddx.factors.response import tool_calls
-from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
+from chatddx.factors.trial import Canary, CanarySet, Execution, Trial, replicates
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.ledger import (
@@ -139,8 +139,8 @@ def test_a_greedy_skeleton_is_sent_without_its_seed(
     )
     skeleton = compile_request(greedy, plan.registry.get)
     assert skeleton.greedy
-    made = trial(plan, cases=CASES[:1], seeds=(7,)).model_copy(
-        update={"skeleton": plan.registry.add(skeleton)}
+    made = trial(plan, cases=CASES[:1]).model_copy(
+        update={"skeleton": plan.registry.add(skeleton), "seeds": (0,)}
     )
     _ = plan.registry.add(made)
     running = Runner(conn, inventory, alice).start(made, plan.registry, QWEN)
@@ -581,7 +581,10 @@ def tooled(
         plan.facts.about(compiled.model, plan.registry.get),
     )
     made = trial(plan, cases=cases, seeds=seeds).model_copy(
-        update={"skeleton": plan.registry.add(skeleton)}
+        update={
+            "skeleton": plan.registry.add(skeleton),
+            "seeds": replicates(skeleton, seeds),
+        }
     )
     _ = plan.registry.add(made)
     return made

@@ -21,6 +21,7 @@ from chatddx.ledger import (
     Turn,
     check_run,
 )
+from chatddx.test.helpers import one_attempt
 
 
 def ran(
@@ -59,6 +60,7 @@ class Rounds:
             request=fp("body"),
             started_at=NOW,
             finished_at=NOW,
+            attempts=one_attempt(NOW),
             status=200,
             response={
                 "model": model or self.served,

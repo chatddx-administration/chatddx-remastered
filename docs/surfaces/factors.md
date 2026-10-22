@@ -32,6 +32,12 @@ Written by `chatddx stamp write` from `src/chatddx/factors/`; how to read it is 
 
 `AppendixRef = Annotated[Digest, RefTo("appendix")]`
 
+## `ascending`
+`src/chatddx/factors/base.py:ascending`
+
+* `values: tuple[str, ...]`
+* ∟`tuple[str, ...]`
+
 ## `Bundle` `(Frozen)`
 `src/chatddx/factors/bundle.py:Bundle`
 
@@ -1116,6 +1122,13 @@ Raises:
 
 `RemoteModelRef = Annotated[Digest, RefTo("model.remote")]`
 
+## `replicates`
+`src/chatddx/factors/trial.py:replicates`
+
+* `skeleton: Skeleton`
+* `seeds: Sequence[int]`
+* ∟`tuple[int, ...]`
+
 ## `REQUIRED_SLOTS`
 `src/chatddx/factors/request.py:REQUIRED_SLOTS`
 
@@ -1224,8 +1237,9 @@ Raises:
 `src/chatddx/factors/scoring.py:Scoring`
 
 * `kind: Literal["scoring"] = "scoring"`
+* `schema_version: ClassVar[int] = 2`
 * `scorer: ScorerRef`
-* `expectations: tuple[ExpectationRef, ...] = Field(min_length=1)`
+* `expectations: Annotated[tuple[ExpectationRef, ...], AfterValidator(ascending)] = Field(…)`
 * `engines: tuple[JudgeEngine, ...] = ()`
 
 ## `Scoring.cross_check` `@override`
@@ -1509,9 +1523,10 @@ Raises:
 `src/chatddx/factors/trial.py:Trial`
 
 * `kind: Literal["trial"] = "trial"`
+* `schema_version: ClassVar[int] = 2`
 * `skeleton: SkeletonRef`
 * `engine: EngineRef`
-* `cases: Annotated[tuple[CaseRef, ...], AfterValidator(distinct), AfterValidator(_sorted)] = Field(…)`
+* `cases: Annotated[tuple[CaseRef, ...], AfterValidator(distinct), AfterValidator(ascending)] = Field(…)`
 * `cleanup: tuple[CleanupOp, ...] = ()`
 * `seeds: Annotated[tuple[int, ...], AfterValidator(distinct)] = Field(min_length=1)`
 
