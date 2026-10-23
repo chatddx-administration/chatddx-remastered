@@ -129,7 +129,8 @@ time, so that Babel matches a changed message only to one translated.
   - a table of words defined at a module's top is translated there, as an island's script runs once the page that
     holds its catalog is parsed.
 - **A whoops**, built, is `Whoops(message, pass_on)`: the API answers it with `detail`, its message, and `pass_on`, as
-  it is; the error page says the one in the request's locale and the other after `Pass this on to ops, as it is:`, and
+  it is; the error page says the one in the request's locale and the other after `Copy this and send it to
+  drift@chatddx.com:`, and
   so does an island (`frontend/src/lib/api/client.ts:why`).
 - **Dates and numbers** an island writes are written as the server writes them, whatever the locale (see "Start with
   this"): a date `%Y-%m-%d %H:%M`, and a number, as yet, without the space between thousands (see "Steps").
@@ -176,7 +177,7 @@ time, so that Babel matches a changed message only to one translated.
 - **Said where it is shown**, built, by `src/chatddx/locale/locale.py:refusal`: the error page (`error.html`), a
   refusal shown on the page that was sent (`src/chatddx/portal/pages.py:refusal_of`), a field's, from pydantic's
   context (`src/chatddx/portal/fields.py:_refusal`), and an island's (`frontend/src/lib/api/client.ts:why`). What
-  isn't worded is its code's title and `Pass this on to ops, as it is:` with the English.
+  isn't worded is its code's title and `Copy this and send it to drift@chatddx.com:` with the English.
 - **Take: left unworded**: what a person can't cause through the portal (the API's shape, an id they don't see, the
   kinds a person doesn't write, the store's integrity); the facts' reasons, which are data; a scorer's problems,
   which the Composer is to prevent; and the gate's secret and engine, which boot is to check. pydantic's own
@@ -244,7 +245,7 @@ Each step leaves the portal working in English, and Swedish appearing only where
    - **Decided: the split.** What a person can cause through the portal, typing something wrong, the world moving
      under them or a quota, is worded; what the portal can keep them from, it keeps them from; what is known at boot
      crashes at boot; and the rest, which a person couldn't have caused, is shown as its code's title and
-     `Pass this on to ops, as it is:` with the English, as a whoops is.
+     `Copy this and send it to drift@chatddx.com:` with the English, as a whoops is.
    - **Refusals**, built: 130 wordings, 45 of them the portal's own; 1097 messages in all (see "Refusals").
    - **Decided: no boot checks.** Of what looked known at boot, the shipped scorers' code and an endpoint's engine
      being a trial's turn on what a person writes and picks, and the two that are, an endpoint's engine missing
@@ -262,14 +263,21 @@ Each step leaves the portal working in English, and Swedish appearing only where
      them, which Babel's catalog checks and the boot check pass with every mark cleared; the portal says nothing in
      Swedish until a mark is cleared.
    - **Take: the words**, as the glossary's terms are drafted, for a reviewer to hold the rest to: case *fall*,
-     family *familj*, vignette *vinjett*, appendix *bilaga*, expectation *förväntan*, expectation schema
-     *förväntningsschema*, configuration *konfiguration*, recipe *recept*, skeleton *skelett*, part *del*, chunk
-     *block*, output *svarsform*, passthrough *genomsläpp*, toolset *verktygsuppsättning*, few shot *exempel*,
-     trial *försök*, run *körning*, item *post*, replicate *replikat*, seed *frö*, scorer *bedömare*, score and
-     Scoring *bedömning*, judge *domare*, view *vy*, metric *mått*, verdict *utslag*, finding *anmärkning*, lint
-     *kontroll*, model *modell*, engine *motor*, endpoint *ändpunkt*, handle *handtag*, thread *tråd*, fork
-     *förgrening*, follow *följa*, origin *ursprung*, kind *sort*, cleared *godkänd*, sensitive *känslig*, ops
-     *drift*, the Library *Biblioteket*, the Lab *Labbet*, Review *Granskning*, the World *Världen*.
+     family *familj*, vignette *vinjett*, appendix *bilaga*, configuration *konfiguration*, recipe *recept*,
+     skeleton *skelett*, part *del*, chunk *block*, output *svarsform*, passthrough *genomsläpp*, toolset
+     *verktygsuppsättning*, few shot *exempel*, run *körning*, item *post*, replicate *replikat*, seed *frö*, view
+     *vy*, metric *mått*, finding *anmärkning*, lint *kontroll*, model *modell*, engine *motor*, endpoint
+     *ändpunkt*, thread *tråd*, fork *förgrening*, origin *ursprung*, cleared *godkänd*, sensitive *känslig*, the
+     Library *Biblioteket*, the Lab *Labbet*, Review *Granskning*.
+   - **Decided: the words reviewed**: the World *Miljön*; scorer *rättare*, score and Scoring *rättning*, to score
+     *rätta*; judge *bedömare*, its grading *bedöma*, verdict *omdöme*; expectation *facit*, expectation schema
+     *facitschema*; trial *försök*, an attempt always *anropsförsök*; kind *typ*; follow *uppdatera*; handle
+     *alias*; the outcomes *giltig*, *slutförd*, *räddad*, *ogiltig*, *med fel*, *oläsbar* and *stoppad*, cut
+     short *avkortat*, and halt *avbryta*; what you see *det du har tillgång till*.
+   - **Decided: no "it" in a button or a heading**, where Swedish would say *den* or *det* by a word the message
+     doesn't know: `Delete it` is *Radera*, `Its versions` *Versioner*.
+   - **Decided: one message for ops**, `Copy this and send it to drift@chatddx.com:`, wherever a page or an island
+     passes something on, the address written into it until it is a setting.
    - **Open: the kinds' words** (see "Open") are drafted translated, as `kind` messages a reviewer can leave
      unreviewed to keep them English.
 8. **Numbers**: the global default, `1 000.34`, wherever the server and the islands write a number, counts put into
