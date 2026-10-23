@@ -138,6 +138,5 @@ def test_a_world_broken_under_a_running_app_is_paged_with_its_boot_check(
         got = paged.get(path)
         assert got.status_code == 500, (path, said(got.text)[:300])
         assert said(got.text).startswith(
-            f"> Something went wrong {broken} "
-            + "It's for ops to mend: tell them what it says."
+            f"> Something went wrong Copy this and send it to drift@chatddx.com: {broken} "
         )

@@ -112,18 +112,18 @@ def test_a_refusal_is_said_by_its_wording_and_what_isn_t_worded_is_passed_on(
             msgid "That can't be done"
             msgstr "Det går inte"
 
-            msgid "%(title)s. Pass this on to ops, as it is: %(pass_on)s"
-            msgstr "%(title)s. Skicka det här vidare som det är: %(pass_on)s"
+            msgid "%(title)s. Copy this and send it to drift@chatddx.com: %(pass_on)s"
+            msgstr "%(title)s. Kopiera och skicka detta till drift@chatddx.com: %(pass_on)s"
             """,
         )
     ).negotiate("sv")
     with localizing(sv):
         assert refusal_of(Invalid.of("a fork is named")) == "en förgrening har ett namn"
         assert refusal_of(ValueError("slots used twice")) == (
-            "Det går inte. Skicka det här vidare som det är: slots used twice"
+            "Det går inte. Kopiera och skicka detta till drift@chatddx.com: slots used twice"
         )
     assert refusal_of(ValueError("slots used twice")) == (
-        "That can't be done. Pass this on to ops, as it is: slots used twice"
+        "That can't be done. Copy this and send it to drift@chatddx.com: slots used twice"
     )
 
 

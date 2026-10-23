@@ -135,7 +135,7 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
     got = paged.get(f"/lab/{lines['id']}?model={weights}")
     assert got.status_code == 500, said(got.text)[:300]
     assert said(got.text).startswith(
-        f"> That shouldn't have happened {whoops} Pass this on to ops, as it is: {pass_on} "
+        f"> That shouldn't have happened {whoops} Copy this and send it to drift@chatddx.com: {pass_on} "
     )
     asked = paged.get(f"/api/threads/{lines['id']}/variation?model={weights}")
     assert (asked.status_code, asked.json()) == (
@@ -157,7 +157,7 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
         f"/lab/{lines['id']}?model={weights}", headers={"accept-language": "sv"}
     )
     assert (
-        f"Ingen modell i biblioteket håller vikterna: ta en annan så länge. Pass this on to ops, as it is: {pass_on} "
+        f"Ingen modell i biblioteket håller vikterna: ta en annan så länge. Copy this and send it to drift@chatddx.com: {pass_on} "
         in said(sv.text)
     )
 
