@@ -33,6 +33,13 @@ you see fit, a session's hooks may ask for both at a turn's end, but neither is 
 
 When asked for a handover or pull request:
 
+```
+AGENT: amend
+Rules 3 and 4 become "Comments" and "Docstrings" under "Documentation".
+---
+1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" respectively (pre-existing included).
+```
+
 1. Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
 2. Run `scripts/check.sh`:
    - relay flags
@@ -115,6 +122,14 @@ Agents aren't expected to run this, just know it exists.
 
 ### Docs
 
+```
+AGENT: amend
+refcheck now also flags a commit the docs name that isn't on origin/main, taking one a shallow clone doesn't reach to be
+on it.
+---
+- `python scripts/refcheck.py` checks for broken references and commits off main.
+```
+
 - `python scripts/refcheck.py` checks for broken references.
 
 ## Development stages
@@ -128,6 +143,16 @@ A thing under development is in one of the following stages:
 5. Itemized - Has one or more items in `docs/backlog.md`
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in `src/chatddx/<name>*` and `agents/wip-<name>.md`
+
+```
+AGENT: replace
+"Under rule 1" goes with rule 1, and Solidified is what `chatddx stamp` sees: 11 modules at Solidified in STAGES have no
+module doc (bench, cli, conftest, locale, portal, rig, runner, scorers, scripted, settings, whoops). To require one
+instead, `chatddx stamp check` could flag it missing.
+---
+8. Solidified - Its surface stamped, and its docs, if any, in `docs/modules/<name>.md`
+```
+
 8. Solidified - Docs under rule 1 in `docs/modules/<name>.md`
 9. Cemented: TBD
 10. Protected: TBD
@@ -135,6 +160,16 @@ A thing under development is in one of the following stages:
 Drafts and above are declared in `src/chatddx/settings.py:STAGES`, and `chatddx stamp check` fails on a module in
 `src/chatddx/` without one. What `chatddx stamp` writes of a module from which stage on is
 `src/chatddx/settings.py:STAMPED_FROM`.
+
+```
+AGENT: replace
+The three sequences are for crossing rule 1, which goes. One stage at a time is checkable of a module, and broken now:
+portal and locale are Solidified in STAGES with a wip each.
+---
+Things can bounce around freely across these stages but are only in one stage at a time, which `chatddx stamp check`
+checks of a module: an `agents/wip-<name>.md` past Drafted, or a `docs/modules/<name>.md` before Solidified, is a module
+in two. A doc is moved in a commit of its own, and a move entails deduplication and updating references.
+```
 
 Things can bounce around freely across these stages but are only in one stage at a time. Docs are moved and reworked in
 separate commits:
@@ -145,7 +180,24 @@ separate commits:
 
 A move entails deduplication and updating references.
 
+```
+AGENT: replace
+With a universal doc stamp, every doc is the agents' to write and the humans' to stamp, so rule 1, its suggestions and
+the exemption of `agents/*` go, and what is left of rules 2-6 are conventions. Not built yet: `chatddx stamp` stamps
+only what it writes from the code.
+---
+## Documentation
+
+Every doc is stamped: an agent writes it, and `chatddx stamp write` keeps each change since the human-reviewed commit
+the session starts from as a stamp pending, a git conflict for a human to stamp.
+```
+
 ## Documentation rules
+
+```
+AGENT: remove
+Its suggestions become stamps, and its locations stamped are `src/chatddx/settings.py:STAMPED_FROM`'s.
+```
 
 ### 1. Humans write, agents suggest.
 
@@ -167,6 +219,18 @@ Locations stamped (tracked by `chatddx stamp [write|check]`):
 - `docs/comments/*`
 - `docs/whoopses/*`
 
+```
+AGENT: replace
+Rules 2, 5 and 6 as the bullets under "Documentation", the module docs' place being the stages'.
+---
+- The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
+  provide options.
+- Docs refer to code `concepts` or directly to a file, `src/chatddx/file.py:Class.prop`, and to commits on main alone,
+  as a branch's are squashed. The code never refers to the docs.
+- Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
+  collaborator-one, admin).
+```
+
 ### 2. Docs refer to the code, the code speaks for itself.
 
 The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
@@ -175,6 +239,22 @@ provide options.
 - The module-scoped documentation is in `docs/modules/<module>.md`.
 - The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
 - References from code to docs are never allowed.
+
+```
+AGENT: amend
+Named, the prefixes in use spelled out by count, and "Comments are stamped" left to STAMPED_FROM. `chatddx stamp check`
+could flag a prefix not listed.
+---
+### Comments
+
+- A) Every line of comment imposes a readability tax.
+- B) A future reader can be saved work by knowing about non-evident details.
+- ∟ When B is considerable enough to offset A, a comment is justified.
+
+1. Prefix with the comment's nature: Policy, Accommodating for, Dependency, Duplication, Scope, Compromise,
+   Optimization, Usage, Provenance or Convenience
+2. Tell what's non-evident and only what the code doesn't already tell
+```
 
 ### 3. When and how to write a comment.
 
@@ -186,6 +266,13 @@ provide options.
 2. Tell what's non-evident and only what the code doesn't already tell
 
 Comments are stamped.
+
+```
+AGENT: amend
+Named, and without its last line, which STAMPED_FROM and the surfaces' own header say.
+---
+### Docstrings
+```
 
 ### 4. When and how to write a docstring
 
@@ -201,9 +288,19 @@ It is written as a direct continuation of its signature, raises and findings; on
 
 Docstrings are stamped along with signature, raises and findings.
 
+```
+AGENT: remove
+A bullet under "Documentation", and checked by `scripts/refcheck.py`.
+```
+
 ### 5. Don't reference branch commits
 
 They'll be squashed.
+
+```
+AGENT: remove
+A bullet under "Documentation".
+```
 
 ### 6. Placeholder username
 

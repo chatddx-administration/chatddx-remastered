@@ -1,5 +1,7 @@
 import argparse
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -8,6 +10,10 @@ CODE = re.compile(r"(?<![\w/.-])(src/chatddx/[\w./-]+(?::[A-Za-z_][\w.]*)?)")
 SECTIONS = re.compile(r'^`?(?:,\s*|\s*\(\s*)((?:"[^"]+"(?:\s*(?:,|and|or)\s*)?)+)')
 SEE = re.compile(r'\(see ((?:"[^"]+"(?:\s*(?:,|and|or)\s*)?)+)')
 TERM = re.compile(r"(?:(?<=[\s(`])|^):(?=[A-Z])")
+COMMIT = re.compile(
+    r"(?<![\w/.:-])(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?![\w-])"
+)
+MAIN = "origin/main"
 # Accommodating for references the docs make on purpose to what isn't here: another repository's files, a
 # repository at a commit, an earlier commit's code, and files planned or gone.
 ELSEWHERE_BEFORE = re.compile(r"(?:o11n's|future|former|was|for a|git show \w+:)\s*`?$")
@@ -92,6 +98,38 @@ def code_problem(root: Path, ref: str) -> str | None:
     return None
 
 
+# Accommodating for a checkout without git or main, such as nix's, where commits go
+# unchecked, and a shallow one, which holds main only so far back: a commit it doesn't
+# hold, or one older than the oldest of main it holds, is taken to be on main.
+def off_main(root: Path, shas: set[str]) -> dict[str, str]:
+    if shutil.which("git") is None:
+        return {}
+
+    def git(*args: str) -> str | None:
+        done = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
+        )
+        return done.stdout.strip() if done.returncode == 0 else None
+
+    if git("rev-parse", "--verify", "--quiet", MAIN) is None:
+        return {}
+    shallow = git("rev-parse", "--is-shallow-repository") == "true"
+    held = min(
+        map(int, (git("log", "--format=%ct", "--max-parents=0", MAIN) or "0").split())
+    )
+    problems: dict[str, str] = {}
+    for sha in shas:
+        full = git("rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}")
+        if full is None:
+            if not shallow:
+                problems[sha] = "no such commit"
+        elif git("merge-base", "--is-ancestor", full, MAIN) is None and not (
+            shallow and int(git("show", "-s", "--format=%ct", full) or 0) < held
+        ):
+            problems[sha] = f"not on {MAIN}"
+    return problems
+
+
 def check(root: Path) -> list[str]:
     docs: dict[Path, Doc] = {}
 
@@ -102,6 +140,7 @@ def check(root: Path) -> list[str]:
 
     glossary = doc(root / "docs/glossary.md").entries
     found: list[str] = []
+    commits: dict[str, list[str]] = {}
     for path in sources(root):
         rel = path.relative_to(root)
         lines = prose(path)
@@ -140,6 +179,8 @@ def check(root: Path) -> list[str]:
                     continue
                 if problem := code_problem(root, ref):
                     found.append(f"{here}: code: {ref}: {problem}")
+            for m in COMMIT.finditer(line):
+                commits.setdefault(m.group(), []).append(here)
             if line.startswith(":"):
                 continue
             for m in TERM.finditer(line):
@@ -148,12 +189,14 @@ def check(root: Path) -> list[str]:
                     re.match(re.escape(t) + r"(?![\w])", rest) for t in glossary
                 ):
                     found.append(f"{here}: term: :{rest.split()[0]}")
+    for sha, problem in off_main(root, set(commits)).items():
+        found += [f"{here}: commit: {sha}: {problem}" for here in commits[sha]]
     return found
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Check what the docs and agents/ refer to: files, their sections, code and the glossary's terms."
+        description="Check what the docs and agents/ refer to: files, their sections, code, the glossary's terms and commits on main."
     )
     _ = parser.add_argument("root", nargs="?", default=".", type=Path)
     found = check(parser.parse_args().root)
