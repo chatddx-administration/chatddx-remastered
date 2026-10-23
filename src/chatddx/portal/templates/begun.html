@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section %}
+{% from "macros.html" import heading, section, refusal %}
 {% from "fields.html" import rows %}
 {% from "translations.html" import entry %}
 {% block title %}A new {{ word | replace("_", " ") }} · ChatDDX{% endblock %}
@@ -7,7 +7,20 @@
 <div class="mx-auto max-w-5xl px-4 py-8">
   <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
   {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from what is given here.") }}
-  {% if word == "translations" %}
+  {{ refusal(typed, request) }}
+  {% if cases is defined %}
+  {% call section("Its case", "case") %}
+  <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
+    <input type="hidden" name="kind" value="{{ word }}">
+    <label class="grid gap-1"><span class="text-muted-foreground">case</span>
+      <select name="family" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+        {% for id, named in cases %}<option value="{{ id }}">{{ named }}</option>{% endfor %}
+      </select></label>
+    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Write one for it</button>
+    <span class="basis-full text-xs text-muted-foreground">An appendix is written for one case's vignette, and sent with it by the cases that include it: pick the case first. A case's page begins one too.</span>
+  </form>
+  {% endcall %}
+  {% elif word == "translations" %}
   {% call section("What it holds", "holds") %}
   {% if entries is none %}
   <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
@@ -38,17 +51,17 @@
   {% call section("What it holds", "holds") %}
   <form method="post" action="{{ action }}" class="grid gap-4">
     <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
-      <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
-    {{ rows(fields, picked, titles) }}
+      <input name="name" required value="{{ typed.name or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    {{ rows(fields, picked, titles, links) }}
     {% if languaged %}
     <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">language</span>
-      <input name="language" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="none">
+      <input name="language" value="{{ typed.language or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="none">
       <span class="text-xs text-muted-foreground">The text's, kept with it.</span></label>
     {% endif %}
     {% if labels is not none %}
     <label class="grid gap-1 text-sm"><span class="text-muted-foreground">labels</span>
       <textarea name="labels" rows="4" class="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 font-mono text-xs">
-{{ labels | pretty }}</textarea>
+{{ typed.labels if typed and typed.labels is not none else labels | pretty }}</textarea>
       <span class="text-xs text-muted-foreground">What its views and resources are called, by position, kept with its first version.</span></label>
     {% endif %}
     <div class="flex flex-wrap items-center gap-3 text-sm">
@@ -59,4 +72,5 @@
   {% endcall %}
   {% endif %}
 </div>
+{% if editing %}<script type="application/json" id="library-props">{{ editing | tojson }}</script>{% endif %}
 {% endblock %}

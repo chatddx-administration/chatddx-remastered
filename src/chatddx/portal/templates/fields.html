@@ -1,11 +1,16 @@
 {% from "macros.html" import json %}
 {% set box = "w-full rounded-md border border-input bg-transparent px-2.5 py-1.5" %}
 
-{% macro value(v, titles) -%}
+{% macro titled(d, titles, links) -%}
+{%- if d in links %}<a class="text-primary hover:underline" href="{{ links[d] }}">{{ titles[d] }}</a>{% else %}{{ titles[d] }}{% endif %} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ d | short }}</span>
+{%- endmacro %}
+
+{% macro value(v, titles, links={}) -%}
 {%- if v is none %}—
-{%- elif v is string and v in titles %}{{ titles[v] }} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ v | short }}</span>
+{%- elif v is string and v in titles %}{{ titled(v, titles, links) }}
 {%- elif v is string %}<div class="whitespace-pre-wrap break-words">{{ v }}</div>
-{%- elif v is sequence and v is not mapping and v and v | reject("string") | list | length == 0 and v | reject("in", titles) | list | length == 0 %}<ol class="space-y-0.5">{% for d in v %}<li>{{ titles[d] }} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ d | short }}</span></li>{% endfor %}</ol>
+{%- elif v is mapping and v.source is string and v.fingerprint is mapping %}{{ v.source }}/{{ v.id }} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ v.fingerprint.hex[:12] }}</span>
+{%- elif v is sequence and v is not mapping and v and v | reject("string") | list | length == 0 and v | reject("in", titles) | list | length == 0 %}<ol class="space-y-0.5">{% for d in v %}<li>{{ titled(d, titles, links) }}</li>{% endfor %}</ol>
 {%- elif v is mapping or v is sequence %}{{ json(v) }}
 {%- else %}{{ v | pretty }}
 {%- endif -%}
@@ -18,9 +23,10 @@
 </select>
 {%- endmacro %}
 
-{% macro control(f, picked) -%}
+{% macro control(f, picked, links) -%}
 {% set label = f.name | replace("_", " ") %}
 {%- if f.shape == "pick" %}{{ pick(f.name, f.value, picked[f.name], f.nullable) }}
+{%- if f.value in links %}<a class="mt-0.5 inline-block text-xs text-primary hover:underline" href="{{ links[f.value] }}">Open the one picked</a>{% endif %}
 {%- elif f.shape == "picks" %}
 <div class="grid gap-1.5">
   {% for held in (f.value or []) + [""] %}{{ pick(f.name, held, picked[f.name], true) }}{% endfor %}
@@ -42,37 +48,39 @@
   {% for o in f.options %}<option value="{{ o }}"{% if o == f.value %} selected{% endif %}>{{ o }}</option>{% endfor %}
 </select>
 {%- elif f.shape == "number" %}
-<input type="number" name="f.{{ f.name }}" aria-label="{{ label }}" value="{{ '' if f.value is none else f.value }}" step="{{ 1 if f.whole else 'any' }}"{% if f.minimum is not none %} min="{{ f.minimum }}"{% endif %} class="{{ box }} h-9 max-w-xs">
+<input type="number" name="f.{{ f.name }}" aria-label="{{ label }}" value="{{ f.typed if f.typed is not none else '' if f.value is none else f.value }}" step="{{ 1 if f.whole else 'any' }}"{% if f.minimum is not none %} min="{{ f.minimum }}"{% endif %} class="{{ box }} h-9 max-w-xs">
 {%- if f.nullable %}<span class="block text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
 {%- elif f.shape == "check" %}
 <input type="checkbox" name="f.{{ f.name }}" value="true" aria-label="{{ label }}"{% if f.value %} checked{% endif %} class="h-4 w-4">
 {%- elif f.shape == "lines" %}
-<textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, (f.value or []) | length + 1] | max }}" class="{{ box }} font-mono text-xs">
-{{ (f.value or []) | join("\n") }}</textarea>
+{% set shown = f.typed if f.typed is not none else (f.value or []) | join("\n") %}
+<textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, shown.count('\n') + 2] | max }}" class="{{ box }} font-mono text-xs">
+{{ shown }}</textarea>
 <span class="text-xs text-muted-foreground">{{ "Whole numbers, one a line or apart by commas." if f.whole else "One a line; an empty line is none." }}</span>
 {%- elif f.shape == "text" %}
 <textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [3, (f.value or '').count('\n') + 2] | max }}" class="{{ box }}">
 {{ f.value or "" }}</textarea>
 {%- if f.nullable %}<span class="text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
 {%- else %}
-{% set text = f.shape == "either" and (f.value is string or f.value is none) %}
+{% set text = f.shape == "either" and f.typed is none and (f.value is string or f.value is none) %}
 {% if f.shape == "either" %}
 <select name="as.{{ f.name }}" aria-label="{{ label }}, read as" class="mb-1 h-8 rounded-md border border-input bg-transparent px-2 text-xs">
   <option value="text"{% if text %} selected{% endif %}>as text</option>
   <option value="json"{% if not text %} selected{% endif %}>as JSON</option>
 </select>
 {% endif %}
-{% set shown = (f.value or "") if text else (f.value | pretty) if f.given else "" %}
+{% set shown = f.typed if f.typed is not none else (f.value or "") if text else (f.value | pretty) if f.given else "" %}
 <textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, shown.count('\n') + 2] | max }}" class="{{ box }}{% if not text %} font-mono text-xs{% endif %}">
 {{ shown }}</textarea>
 {%- endif %}
 {%- endmacro %}
 
-{% macro rows(found, picked, titles) %}
+{% macro rows(found, picked, titles, links={}) %}
 <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[max-content_1fr]">
   {% for f in found %}
-  <dt class="text-muted-foreground">{{ f.name | replace("_", " ") }}</dt>
-  <dd class="min-w-0">{% if f.editable %}{{ control(f, picked) }}{% else %}{{ value(f.value, titles) }}{% endif %}</dd>
+  <dt class="{{ 'text-destructive' if f.refused else 'text-muted-foreground' }}">{{ f.name | replace("_", " ") }}</dt>
+  <dd class="min-w-0">{% if f.editable %}{{ control(f, picked, links) }}{% else %}{{ value(f.value, titles, links) }}{% endif %}
+    {%- if f.refused %}<p class="mt-1 text-xs text-destructive">{{ f.refused }}</p>{% endif %}</dd>
   {% endfor %}
 </dl>
 {% endmacro %}

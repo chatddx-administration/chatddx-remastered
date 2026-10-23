@@ -55,6 +55,7 @@ def alice_s(conn: Connection) -> int:
     return thread
 
 
+@pytest.mark.slow
 def test_set_model_swaps_the_model_keeping_every_pick_and_runs_under_its_handle(
     repl: Repl, bench: Bench, say: Say
 ):
@@ -176,8 +177,8 @@ def test_set_says_what_it_can_t_set(say: Say):
         + "reasoning, passthrough, translations, toolset, model"
     ) in written
     assert "no reasoning 'nope' for alice" in written
-    assert "a configuration always has a prompt: only instructions" in written
-    assert "a configuration always has a model" in written
+    assert "a configuration always holds its prompt" in written
+    assert "a configuration always holds its model" in written
     assert "no model 'nope' for alice" in written
 
 

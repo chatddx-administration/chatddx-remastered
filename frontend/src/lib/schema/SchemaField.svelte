@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import SchemaField from "./SchemaField.svelte";
-  import { blank, deref, type Schema, widget } from "./form";
+  import { blank, chosen, deref, type Schema, widget, without as leaving } from "./form";
 
   let {
     schema,
@@ -90,6 +90,36 @@
       {/if}
     {/each}
   </fieldset>
+{:else if shape.is === "union"}
+  {@const at = chosen(shape, value)}
+  {@const rest = leaving(at.schema, shape.key)}
+  <fieldset class={quiet && !named ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3"}>
+    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
+    {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
+    <label class="grid gap-1 text-sm">
+      <span class="font-medium">{shape.key.replaceAll("_", " ")}</span>
+      <select
+        class="h-9 rounded-md border border-input bg-transparent px-2.5"
+        aria-label={shape.key.replaceAll("_", " ")}
+        value={String(at.value)}
+        onchange={(e) => {
+          const picked = shape.options.find((o) => String(o.value) === e.currentTarget.value);
+          if (picked) set({ [shape.key]: picked.value, ...(blank(picked.schema, root) as Record<string, unknown>) });
+        }}
+      >
+        {#each shape.options as o (String(o.value))}<option value={String(o.value)}>{String(o.value)}</option>{/each}
+      </select>
+    </label>
+    {#if Object.keys(rest.properties ?? {}).length}
+      <SchemaField
+        schema={rest}
+        {root}
+        {value}
+        set={(v) => set({ ...(v as Record<string, unknown>), [shape.key]: at.value })}
+        {quiet}
+      />
+    {/if}
+  </fieldset>
 {:else if shape.is === "or-none"}
   <div class="space-y-2">
     <label class="flex items-center gap-2 text-sm">
@@ -164,6 +194,7 @@
     {:else if shape.is === "choice"}
       <select
         class="h-9 w-fit rounded-md border border-input bg-transparent px-2.5"
+        aria-label={named || undefined}
         value={JSON.stringify(value)}
         onchange={(e) => set(JSON.parse(e.currentTarget.value))}
       >

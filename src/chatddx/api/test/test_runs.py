@@ -291,7 +291,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
         ({"under": "nowhere"}, "runs under its model's handle: set its model instead"),
-        ({"parts": {"model": None}}, "a configuration always has a model"),
+        ({"parts": {"model": None}}, "a configuration always holds its model"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
         ({"configuration": judge["id"]}, "judge is a judge configuration"),

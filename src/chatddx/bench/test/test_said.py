@@ -125,6 +125,7 @@ def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
 
 def test_a_description_is_taken_away_as_a_name_is(bench: Bench) -> None:
     mine = _mine(bench)
+    assert bench.say(Subject(thread=mine), description=None).description is None
     written = _entries(bench, mine)
     assert bench.say(Subject(thread=mine), description=None).description is None
     assert _entries(bench, mine) == written

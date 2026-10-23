@@ -9,7 +9,7 @@ from chatddx.api.test.helpers import digest, endpoint, sign_in, thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
-from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Translations
+from chatddx.factors.request import RECIPE_PARTS, Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -364,12 +364,8 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
     path = f"/api/threads/{mine['id']}/variation"
     for params, said in (
         ({"prompt": off}, f"{off} isn't a stored chunk of prompt"),
-        (
-            {"prompt": ""},
-            "a configuration always has a prompt: only "
-            + f"{', '.join(OPTIONAL_PARTS)} can be taken out",
-        ),
-        ({"model": ""}, "a configuration always has a model"),
+        ({"prompt": ""}, "a configuration always holds its prompt"),
+        ({"model": ""}, "a configuration always holds its model"),
     ):
         got = signed.get(path, params=params)
         assert got.status_code == 422, params

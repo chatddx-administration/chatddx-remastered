@@ -33,6 +33,8 @@ def written(signed: TestClient, action: str, name: str) -> Any:
 def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     signed: TestClient,
 ) -> None:
+    none = shown(signed, "/library?kind=trial")
+    assert "None you see yet" in none and 'href="/lab">Lab</a>' in none
     tab = shown(signed, "/library?kind=case")
     assert 'formaction="/library/new"' in tab and 'name="kind" value="trial"' in tab
     action = begun(signed, "nfd", "svenska")

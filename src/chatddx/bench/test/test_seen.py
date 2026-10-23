@@ -130,7 +130,7 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
         _ = bench.variation(thread, {"model": off})
     with pytest.raises(ValueError, match="no part 'stack'"):
         _ = bench.variation(thread, {"stack": off})
-    with pytest.raises(ValueError, match="can be taken out"):
+    with pytest.raises(ValueError, match="always holds its prompt"):
         _ = bench.variation(thread, {"prompt": None})
     chunk = bench.thread("off", "reasoning")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {chunk} for alice"):

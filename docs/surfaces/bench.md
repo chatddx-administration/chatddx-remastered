@@ -1095,7 +1095,7 @@ Raises:
 
 Raises:
 1. `ValueError`: `"{self.name} has no recipe to set its {part} in"`
-2. `ValueError`: `"'{part}' is required but digest was None"`
+2. `ValueError`: `"a configuration always holds its {part}"`
 
 ## `TriedVariation.varied` `@property`
 `src/chatddx/bench/variation.py:TriedVariation.varied`

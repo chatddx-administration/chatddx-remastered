@@ -199,6 +199,20 @@ def test_init_data_updates_and_gives_forks(
         read.about(rows, Subject(thread=t)).owner for t in threads.forks(rows, archived)
     ]
     assert owners.count(alice.id) == 1
+    [native] = threads.find(rows, "skeleton", NATIVE, owner=archive.id)
+    [gift] = threads.find(rows, "skeleton", NATIVE, owner=alice.id)
+    held, given = (read.about(rows, Subject(thread=t)) for t in (native, gift))
+    assert held.description and held.tags
+    assert (given.description, given.tags) == (held.description, held.tags)
+    gifts = [
+        (t.id, threads.origin(rows, t.id))
+        for t in rows.threads("expectation")
+        if read.about(rows, Subject(thread=t.id)).owner == alice.id
+    ]
+    assert gifts and all(
+        origin is not None and titles.title(rows, gift) == titles.title(rows, origin)
+        for gift, origin in gifts
+    )
     again = init(
         conn,
         plan,

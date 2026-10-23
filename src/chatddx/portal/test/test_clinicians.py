@@ -79,6 +79,7 @@ def test_an_appendix_is_begun_of_a_case_s_vignette_and_a_case_built_of_it(
 
     got = signed.post(f"{path}/cases", data={"f.appendices": [""]})
     assert got.status_code == 422 and "one appendix or more" in got.text
+    assert f'action="{path}/cases"' in got.text
     got = signed.get("/library/new", params={"kind": "appendix", "f.vignettes": "{}"})
     assert got.status_code == 422 and escape("no field 'vignettes'") in got.text
 
@@ -226,6 +227,7 @@ def test_expectations_shared_with_one_are_taken_for_the_picked_cases(
 
     got = signed.post("/library/takes", data={"expectation_schema": schema})
     assert got.status_code == 422 and "pick one case or more" in got.text
+    assert 'formaction="/library/new"' in got.text
     got = signed.post(
         "/library/takes", data={"family": [0], "expectation_schema": schema}
     )

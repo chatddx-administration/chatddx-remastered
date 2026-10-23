@@ -5,11 +5,13 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass, replace
 from typing import Any, Literal, cast, get_args
 
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, JsonValue, ValidationError
+from pydantic_core import ErrorDetails
 from starlette.datastructures import FormData
 
 from chatddx.api import schemas, threads as api
 from chatddx.bench import Bench, word_of
+from chatddx.factors.cases import Case
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Purpose
 
@@ -41,6 +43,14 @@ class Field:
     given: bool = True
     whole: bool = False
     minimum: int | float | None = None
+    typed: str | None = None
+    refused: str | None = None
+
+
+class _Unparsed(ValueError):
+    def __init__(self, field: str, message: str) -> None:
+        super().__init__(message)
+        self.field: str = field
 
 
 def fields(
@@ -145,8 +155,10 @@ def choices(
     found: dict[str, str] = {}
     if kinds == ("case",):
         for family in bench.families():
+            bare = Case(vignette=family.vignette).digest
             for case in family.cases:
-                _ = found.setdefault(case, f"{family.name} · {case[7:19]}")
+                named = family.name if case == bare else bench.title(case)
+                _ = found.setdefault(case, named)
     elif set(kinds) <= ENGINES:
         found = _engines(bench)
     else:
@@ -279,7 +291,7 @@ def _number(f: Field, given: str) -> int | float:
         found = math.nan
     if not math.isfinite(found):
         what = "a whole number" if f.whole else "a number"
-        raise ValueError(f"{f.name} isn't {what}: {given!r}")
+        raise _Unparsed(f.name, f"{f.name} isn't {what}: {given!r}")
     return found
 
 
@@ -293,4 +305,60 @@ def _json(name: str, given: str) -> JsonValue:
     try:
         return cast(JsonValue, json.loads(given))
     except json.JSONDecodeError as e:
-        raise ValueError(f"{name} isn't JSON: {e}") from None
+        raise _Unparsed(name, f"{name} isn't JSON: {e}") from None
+
+
+def kept(
+    found: list[Field], form: FormData, e: ValueError
+) -> tuple[list[Field], list[str]]:
+    by_field, rest = _refusals(e, [f.name for f in found if f.editable])
+    return [_kept(f, form, by_field.get(f.name)) for f in found], rest
+
+
+def _refusals(
+    e: ValueError, names: Collection[str]
+) -> tuple[dict[str, str], list[str]]:
+    if isinstance(e, _Unparsed) and e.field in names:
+        return {e.field: str(e)}, []
+    if not isinstance(e, ValidationError):
+        return {}, [str(e)]
+    by_field: dict[str, list[str]] = {}
+    rest: list[str] = []
+    for error in e.errors():
+        at = [str(p) for p in error["loc"]]
+        if at and at[0] in names:
+            within = ".".join(at[1:])
+            said = _said(error)
+            by_field.setdefault(at[0], []).append(
+                f"{within}: {said}" if within else said
+            )
+        else:
+            rest.append(f"{'.'.join(at)}: {_said(error)}" if at else _said(error))
+    return {n: "; ".join(said) for n, said in by_field.items()}, rest
+
+
+def _said(error: ErrorDetails) -> str:
+    if error["type"] == "missing":
+        return "This is needed."
+    return error["msg"].removeprefix("Value error, ")
+
+
+def _kept(f: Field, form: FormData, refused: str | None) -> Field:
+    if not f.editable:
+        return replace(f, refused=refused)
+    given = _given(form, f.name)
+    match f.shape:
+        case "picks" | "chooses":
+            picks = form.getlist(f"f.{f.name}")
+            value: JsonValue = [v for v in picks if isinstance(v, str) and v]
+        case "pick" | "choose":
+            value = given or None
+        case "check":
+            value = given == "true"
+        case "text":
+            value = given
+        case "either" if form.get(f"as.{f.name}") == "text":
+            value = given
+        case _:
+            return replace(f, typed=given, refused=refused)
+    return replace(f, value=value, refused=refused)

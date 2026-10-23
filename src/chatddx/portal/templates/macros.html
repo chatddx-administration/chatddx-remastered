@@ -132,3 +132,13 @@
 {% macro mean(value, unit="") -%}
 {%- if value is none -%}—{%- elif unit == "@" -%}@{{ value | int }}{%- else -%}{{ "%.2f" | format(value) }}{%- endif -%}
 {%- endmacro %}
+
+{% macro refusal(typed, request) %}
+{% if typed %}
+<div role="alert" class="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+  <p class="font-medium text-destructive">{{ "Nothing is saved yet" if request.method == "POST" else "That can't be shown" }}</p>
+  {% for said in typed.said %}<p class="mt-1 [overflow-wrap:anywhere]">{{ said }}</p>{% endfor %}
+  {% if request.method == "POST" and typed.kept %}<p class="mt-1 text-muted-foreground">What you typed is kept below, and what was refused is marked there: set it right and send it again.</p>{% endif %}
+</div>
+{% endif %}
+{% endmacro %}

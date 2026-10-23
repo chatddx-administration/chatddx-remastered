@@ -157,7 +157,6 @@ def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 
-@pytest.mark.slow
 def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:

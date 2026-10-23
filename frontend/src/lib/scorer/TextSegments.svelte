@@ -7,7 +7,15 @@
     slots = [],
     inserts = [],
     label,
-  }: { segs: Seg[]; set: (segs: Seg[]) => void; slots?: string[]; inserts?: string[]; label: string } = $props();
+    quiet = false,
+  }: {
+    segs: Seg[];
+    set: (segs: Seg[]) => void;
+    slots?: string[];
+    inserts?: string[];
+    label: string;
+    quiet?: boolean;
+  } = $props();
 
   const shown = $derived(editable(segs));
   const missing = $derived([
@@ -27,7 +35,7 @@
 </script>
 
 <div class="space-y-1" role="group" aria-label={label}>
-  <p class="font-medium">{label}</p>
+  {#if !quiet}<p class="font-medium">{label}</p>{/if}
   {#each shown as s, at (at)}
     {#if typeof s === "string"}
       <textarea

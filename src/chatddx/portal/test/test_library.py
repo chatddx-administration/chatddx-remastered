@@ -1,21 +1,25 @@
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
+from markupsafe import escape
 
-from chatddx.api.test.helpers import thread
+from chatddx.api.test.helpers import family, thread
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.request import CHUNK_PARTS, RECIPE_PARTS
 from chatddx.factors.scoring import Scorer
 from chatddx.identity import Person
-from chatddx.portal.test.helpers import shown, submitted
+from chatddx.portal.shelves import SHELVES
+from chatddx.portal.test.helpers import said, shown, submitted
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS_ARTIFACT,
     JUDGE,
     LINES,
+    NATIVE,
     OFF,
     QWEN_ARTIFACT,
     QWEN_MODEL,
@@ -35,6 +39,85 @@ def test_the_library_lists_each_kind_one_s_own_first(signed: TestClient) -> None
     )
     assert 'href="/library?kind=appendix"' in page and "Library" in page
     assert signed.get("/library?kind=stack").status_code == 404
+
+
+@pytest.mark.slow
+def test_the_library_shelves_every_kind_under_its_heading_with_what_it_is(
+    signed: TestClient,
+) -> None:
+    page = shown(signed, "/library")
+    for shelf in SHELVES:
+        assert f"{shelf.heading}</h2>" in page and escape(shelf.about) in page
+        for word, about in shelf.kinds.items():
+            assert f'href="/library?kind={word}"' in page and escape(about) in page
+    listed = signed.get("/api/threads", params={"kind": "reasoning"}).json()
+    mine = sum(t["owner"] == "alice" for t in listed)
+    assert (
+        f"reasoning How much the model thinks before it answers. {mine} yours · "
+        + f"{len(listed) - mine} shared with you"
+    ) in said(page)
+    for word in ("tool", "expectation_schema", "canary_set", "model", "reasoning"):
+        [entry, *_] = re.findall(
+            rf'href="/library\?kind={word}"[^>]*>(.*?)</a>', page, re.DOTALL
+        )
+        assert ("loaded with data sets" in entry) == (word != "reasoning"), word
+
+    tab = shown(signed, "/library?kind=reasoning")
+    assert 'href="/library?kind=reasoning" aria-current="page"' in tab
+    assert escape("How much the model thinks before it answers.") in tab
+    assert re.findall(r'href="/library"( aria-current="page")?[^>]*>Overview', tab) == [
+        "",
+        "",
+    ]
+
+
+@pytest.mark.slow
+def test_a_shelf_is_found_in_by_what_is_said_and_its_cases_narrowed_by_tags(
+    signed: TestClient,
+) -> None:
+    listed = [
+        t
+        for purpose in ("generation", "judge")
+        for t in signed.get(
+            "/api/threads", params={"kind": "configuration", "purpose": purpose}
+        ).json()
+    ]
+    native = thread(signed, "configuration", NATIVE)
+    detail = signed.get(f"/api/threads/{native['id']}").json()
+    page = shown(signed, "/library?kind=configuration")
+    assert escape(detail["description"]) in page
+    assert f"Find {len(listed)} of {len(listed)}" in said(page)
+    words = detail["description"].split()[:2]
+    found = shown(signed, f"/library?kind=configuration&q={' '.join(words).upper()}")
+    assert f'href="/threads/{native["id"]}"' in found
+    hidden = [t for t in listed if t["id"] != native["id"]]
+    assert any(f'href="/threads/{t["id"]}"' not in found for t in hidden)
+    nothing = shown(signed, "/library?kind=configuration&q=no-such-thing")
+    assert "None you see of these." in nothing and "show every one" in nothing
+
+    families = signed.get("/api/families").json()
+    both = {f["id"] for f in families if {"bytes", "swedish"} <= set(f["tags"])}
+    page = shown(signed, "/library?kind=case&tag=bytes&tag=swedish")
+    assert (
+        both
+        and {f["id"] for f in families if f'href="/cases/{f["id"]}"' in page} == both
+    )
+    assert 'href="/library?kind=case&amp;tag=swedish"' in page
+    assert (
+        'href="/library?kind=case&amp;tag=bytes&amp;tag=swedish&amp;pick=all"' in page
+    )
+    assert " checked>" not in page
+    every = shown(signed, "/library?kind=case&tag=bytes&tag=swedish&pick=all")
+    assert every.count(" checked>") == len(both) and "Pick none" in every
+
+    [targets] = signed.get("/api/threads", params={"kind": "expectation_schema"}).json()
+    expected = signed.get("/api/threads", params={"kind": "expectation"}).json()
+    under = shown(
+        signed, f"/library?kind=expectation&schema={targets['head']['digest']}"
+    )
+    assert f"{len(expected)} of {len(expected)}" in said(under)
+    none = shown(signed, "/library?kind=expectation&schema=sha256:0")
+    assert f"0 of {len(expected)}" in said(none) and "None you see of these." in none
 
 
 @pytest.mark.slow
@@ -83,13 +166,13 @@ def test_a_thread_s_fields_are_edited_by_its_owner_and_read_by_others(
         "f.chat_template_kwargs": ["{}"],
         "f.level": ["off"],
     }
-    for typed, said in (
+    for typed, message in (
         ("a few", "thinking_token_budget isn&#39;t a whole number"),
         ("-1", "greater than or equal to 0"),
     ):
         changed = {**given, "f.thinking_token_budget": [typed]}
         got = signed.post(f"{path}/edit", data=changed)
-        assert got.status_code == 422 and said in got.text
+        assert got.status_code == 422 and message in got.text
     changed = {**given, "f.thinking_token_budget": ["64"]}
     got = signed.post(f"{path}/edit", data=changed)
     assert (got.status_code, got.headers["location"]) == (303, path)
@@ -132,6 +215,64 @@ def test_a_thread_s_form_sent_as_it_is_writes_nothing(signed: TestClient) -> Non
 
 
 @pytest.mark.slow
+def test_a_refused_form_is_shown_again_with_what_was_typed_and_why(
+    signed: TestClient,
+) -> None:
+    off = thread(signed, "reasoning", OFF)
+    path = f"/threads/{off['id']}"
+    given = submitted(shown(signed, path), f"{path}/edit")
+    broken = '{"enable_thinking": fals'
+    typed = {
+        **given,
+        "f.chat_template_kwargs": [broken],
+        "f.thinking_token_budget": ["64"],
+    }
+    got = signed.post(f"{path}/edit", data=typed)
+    assert got.status_code == 422 and "Nothing is saved yet" in got.text
+    assert '<dt class="text-destructive">chat template kwargs</dt>' in got.text
+    assert "chat_template_kwargs isn&#39;t JSON" in got.text
+    again = submitted(got.text, f"{path}/edit")
+    assert (again["f.chat_template_kwargs"], again["f.thinking_token_budget"]) == (
+        [broken],
+        ["64"],
+    )
+    assert len(signed.get(f"/api{path}/edits").json()) == 1
+
+    action = "/library/new?kind=sampling"
+    written = {
+        **submitted(shown(signed, action), action),
+        "name": ["capped"],
+        "f.max_output_tokens": ["0"],
+        "f.stop": ["</s>"],
+    }
+    got = signed.post(action, data=written)
+    assert got.status_code == 422
+    assert '<dt class="text-destructive">max output tokens</dt>' in got.text
+    assert "greater than or equal to 1" in got.text
+    again = submitted(got.text, action)
+    assert (again["name"], again["f.max_output_tokens"], again["f.stop"]) == (
+        ["capped"],
+        ["0"],
+        ["</s>"],
+    )
+
+    said = {"name": "quiet", "description": "Thinks not.", "tags": "a"}
+    got = signed.post(f"{path}/said", data={**said, "shared": "nobody-at-all"})
+    assert got.status_code == 422 and "no person" in got.text
+    assert submitted(got.text, f"{path}/said") == {
+        **{k: [v] for k, v in said.items()},
+        "shared": ["nobody-at-all"],
+    }
+    assert signed.get(f"/api{path}").json()["name"] != "quiet"
+
+    lines = thread(signed, "configuration", LINES)
+    asked = {"kind": "translations", "configuration": lines["id"], "into": "swedish"}
+    got = signed.get("/library/new", params=asked)
+    assert got.status_code == 422 and "is not a language tag" in got.text
+    assert 'name="into"' in got.text and "Nothing is saved yet" not in got.text
+
+
+@pytest.mark.slow
 def test_a_toolset_s_tools_are_picked_one_a_line(signed: TestClient) -> None:
     toolset = signed.get(
         "/api/threads", params={"kind": "toolset", "owner": "alice"}
@@ -156,16 +297,53 @@ def test_a_toolset_s_tools_are_picked_one_a_line(signed: TestClient) -> None:
 def test_a_configuration_s_recipe_parts_are_picked(signed: TestClient) -> None:
     lines = thread(signed, "configuration", LINES)
     path = f"/threads/{lines['id']}"
-    given = submitted(shown(signed, path), f"{path}/edit")
+    page = shown(signed, path)
+    given = submitted(page, f"{path}/edit")
     assert set(given) == {"head", *(f"f.{p}" for p in RECIPE_PARTS)}
+    assert (
+        page.index("Its recipe")
+        < page.index("What it sends")
+        < page.index(">messages<")
+    )
     recipe = signed.get(f"/api{path}").json()["recipe"]
     assert given["f.model"] == [recipe["model"]]
-    off = thread(signed, "reasoning", OFF)["head"]["digest"]
-    got = signed.post(f"{path}/edit", data={**given, "f.reasoning": [off]})
+    prompt = signed.get("/api/threads", params={"kind": "prompt", "owner": "alice"})
+    held = {t["head"]["digest"]: t["id"] for t in prompt.json()}
+    assert f'href="/threads/{held[recipe["prompt"]]}">Open the one picked' in page
+    off = thread(signed, "reasoning", OFF)
+    got = signed.post(
+        f"{path}/edit", data={**given, "f.reasoning": [off["head"]["digest"]]}
+    )
     assert got.status_code == 303
     recipe = signed.get(f"/api{path}").json()["recipe"]
-    assert recipe["reasoning"] == off
-    assert "Version 2 of 2" in shown(signed, path)
+    assert recipe["reasoning"] == off["head"]["digest"]
+    page = shown(signed, path)
+    assert "Version 2 of 2" in page
+    assert "What this version changed in its recipe" in said(page)
+    assert f"/reasoning none → {OFF}" in said(page)
+
+
+@pytest.mark.slow
+def test_what_a_thread_refers_to_is_linked_where_it_is_seen(signed: TestClient) -> None:
+    lines = thread(signed, "scorer", "lines", "archive")
+    [targets] = signed.get("/api/threads", params={"kind": "expectation_schema"}).json()
+    page = shown(signed, f"/threads/{lines['id']}")
+    assert f'href="/threads/{targets["id"]}">{targets["name"]}</a>' in page
+
+    [mine] = signed.get(
+        "/api/threads", params={"kind": "expectation", "owner": "alice"}
+    ).json()[:1]
+    case = signed.get(f"/api/components/{mine['head']['digest']}").json()["body"][
+        "case"
+    ]
+    [family] = [
+        f
+        for f in signed.get("/api/families").json()
+        if case
+        in [c["case"] for c in signed.get(f"/api/families/{f['id']}").json()["cases"]]
+    ]
+    page = shown(signed, f"/threads/{mine['id']}")
+    assert f'href="/cases/{family["id"]}">' in page
 
 
 @pytest.mark.slow
@@ -176,7 +354,7 @@ def test_every_kind_a_person_writes_is_begun_from_the_library(
         assert f'href="/library/new?kind={word}"' in shown(
             signed, f"/library?kind={word}"
         )
-        begun = shown(signed, f"/library/new?kind={word}")
+        begun = signed.get(f"/library/new?kind={word}", follow_redirects=True).text
         assert ("Show its texts" if word == "translations" else "Write it") in begun
     for word in ("tool", "expectation_schema", "canary_set", "model", "engine"):
         assert "/library/new" not in shown(signed, f"/library?kind={word}")
@@ -384,16 +562,18 @@ def test_a_scorer_of_code_that_isn_t_shipped_says_to_write_a_new_one(
 
 @pytest.mark.slow
 def test_a_scorer_is_written_from_nothing_with_its_labels(signed: TestClient) -> None:
-    action = "/library/new?kind=scorer"
-    given = submitted(shown(signed, action), action)
-    assert json.loads(given["labels"][0]) == {"views": [], "resources": []}
     lines = thread(signed, "scorer", "lines", "archive")
     body = signed.get(f"/api/components/{lines['head']['digest']}").json()["body"]
+    got = signed.get("/library/new?kind=scorer", follow_redirects=False)
+    assert got.status_code == 303
+    action = got.headers["location"]
+    page = shown(signed, action)
+    assert 'name="f.entry_point"' not in page and body["entry_point"] in page
+    given = submitted(page, action)
+    assert json.loads(given["labels"][0]) == {"views": [], "resources": []}
     written = {
         **given,
         "name": ["mine"],
-        "f.entry_point": [body["entry_point"]],
-        "f.version": [str(body["version"])],
         "f.expectation_schema": [body["expectation_schema"]],
         "f.views": [json.dumps(body["views"])],
         "labels": [json.dumps({"views": ["a", "b", "c"]})],
@@ -409,17 +589,21 @@ def test_a_scorer_is_written_from_nothing_with_its_labels(signed: TestClient) ->
 def test_an_appendix_and_an_expectation_are_written_from_nothing(
     signed: TestClient,
 ) -> None:
-    [shared] = signed.get("/api/threads", params={"kind": "appendix"}).json()[:1]
-    body = signed.get(f"/api/components/{shared['head']['digest']}").json()["body"]
-    action = "/library/new?kind=appendix"
-    given = submitted(shown(signed, action), action)
-    vignette = json.dumps(body["vignette"])
-    written = {**given, "name": ["fluid"], "f.vignette": [vignette]}
+    crlf = family(signed)
+    [case, *_] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+    vignette = signed.get(f"/api/components/{case['case']}").json()["body"]["vignette"]
+    picking = shown(signed, "/library/new?kind=appendix")
+    assert 'name="f.vignette"' not in picking and 'name="f.text"' not in picking
+    assert f'<option value="{crlf["id"]}">crlf</option>' in picking
+    action = f"/library/new?kind=appendix&family={crlf['id']}"
+    page = shown(signed, action)
+    assert 'name="f.vignette"' not in page
+    written = {**submitted(page, action), "name": ["fluid"]}
     got = signed.post(action, data={**written, "f.text": ["Free fluid.\r\n"]})
     assert got.status_code == 303
     fluid = signed.get(f"/api{got.headers['location']}").json()
     held = signed.get(f"/api/components/{fluid['head']['digest']}").json()["body"]
-    assert (held["vignette"], held["text"]) == (body["vignette"], "Free fluid.\n")
+    assert (held["vignette"], held["text"]) == (vignette, "Free fluid.\n")
 
     [mine] = signed.get(
         "/api/threads", params={"kind": "expectation", "owner": "alice"}
@@ -437,6 +621,31 @@ def test_an_appendix_and_an_expectation_are_written_from_nothing(
     }
     got = signed.post(action, data=written)
     assert got.status_code == 422 and "edit that one" in got.text
+
+
+@pytest.mark.slow
+def test_an_expectation_stays_of_its_case_and_a_case_is_picked_by_its_title(
+    signed: TestClient,
+) -> None:
+    [mine] = signed.get(
+        "/api/threads", params={"kind": "expectation", "owner": "alice"}
+    ).json()[:1]
+    path = f"/threads/{mine['id']}"
+    page = shown(signed, path)
+    assert 'name="f.case"' not in page and 'name="f.expectation_schema"' not in page
+    assert 'name="f.data"' in page and 'id="library-props"' in page
+    given = submitted(page, f"{path}/edit")
+    assert signed.post(f"{path}/edit", data=given).status_code == 303
+    assert len(signed.get(f"/api{path}/edits").json()) == 1
+
+    crlf = family(signed)
+    begun = shown(signed, "/library/new?kind=expectation")
+    for c in signed.get(f"/api/families/{crlf['id']}").json()["cases"]:
+        assert re.search(
+            rf'<option value="{c["case"]}">crlf( with [^<]+)?</option>', begun
+        )
+    archives = thread(signed, "reasoning", OFF, "archive")
+    assert 'id="library-props"' not in shown(signed, f"/threads/{archives['id']}")
 
 
 @pytest.mark.slow
@@ -490,7 +699,8 @@ def test_what_is_said_of_a_thread_is_changed_and_it_is_deleted_and_restored(
     assert signed.post(f"{path}/delete").status_code == 303
     page = shown(signed, path)
     assert "You deleted it" in page and "What is said of it" not in page
-    assert f'action="{path}/restore"' in shown(signed, "/library")
+    assert f'action="{path}/restore"' in shown(signed, "/library?kind=reasoning")
+    assert f'action="{path}/restore"' not in shown(signed, "/library?kind=sampling")
     assert signed.post(f"{path}/restore").status_code == 303
     assert "You deleted it" not in shown(signed, path)
 
@@ -549,7 +759,10 @@ def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> Non
     assert got.status_code == 303
     fork = int(got.headers["location"].removeprefix("/threads/"))
     page = shown(signed, f"/threads/{fork}")
-    assert f'href="/threads/{off["id"]}">a fork' in page
+    assert f'href="/threads/{off["id"]}">{OFF}</a>' in page
+    listed = said(shown(signed, "/library?kind=reasoning"))
+    assert f"mine too forked from {OFF} alice" in listed
+    assert f"{OFF} forked from archive/{OFF} alice" in listed
     assert "Its origin has moved on" not in page
 
     body = signed.get(f"/api/components/{off['head']['digest']}").json()["body"]

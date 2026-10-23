@@ -21,6 +21,7 @@ export default defineConfig({
         lab: "src/islands/lab.ts",
         review: "src/islands/review.ts",
         scoring: "src/islands/scoring.ts",
+        library: "src/islands/library.ts",
       },
     },
   },

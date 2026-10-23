@@ -17,6 +17,7 @@ from chatddx.factors.cases import Appendix, Case
 
 from .changes import changes
 from .pages import BenchDep, page, within
+from .threads import Typed, library_page
 
 router = APIRouter()
 
@@ -24,6 +25,16 @@ router = APIRouter()
 @router.get("/cases/{family}")
 def case_page(
     request: Request, bench: BenchDep, family: int, version: int | None = None
+) -> Response:
+    return _case_page(request, bench, family, version)
+
+
+def _case_page(
+    request: Request,
+    bench: Bench,
+    family: int,
+    version: int | None = None,
+    typed: Typed | None = None,
 ) -> Response:
     shown = api.family(bench, family)
     bindings = bench.rows.bindings([family])
@@ -56,7 +67,9 @@ def case_page(
     return page(
         request,
         "case.html",
+        200 if typed is None else 422,
         person=bench.person,
+        typed=typed,
         case=shown,
         named=bench.family(family, deleted=True).about.name,
         mine=mine,
@@ -182,12 +195,17 @@ def leaving(bench: BenchDep, family: int) -> Response:
 # Policy: a page that builds a case is given it back as `case` in its address.
 @router.post("/cases/{family}/cases")
 def building(
+    request: Request,
     bench: BenchDep,
     family: int,
     appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None,
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
-    made = built(bench, family, [a for a in appendices or [] if a])
+    picked = [a for a in appendices or [] if a]
+    if not picked and back is None:
+        typed = Typed(["a case is built of one appendix or more: pick one"], kept=False)
+        return _case_page(request, bench, family, typed=typed)
+    made = built(bench, family, picked)
     if back is None:
         return RedirectResponse(f"/cases/{family}", 303)
     kept = within(back)
@@ -218,7 +236,8 @@ def taking(
     tag: Annotated[list[str] | None, Form()] = None,
 ) -> Response:
     if not families:
-        raise HTTPException(422, "pick one case or more to take for")
+        typed = Typed(["pick one case or more to take for"], kept=False)
+        return library_page(request, bench, "case", tag, typed)
     listed = {f.id: f for f in api.families(bench)}
     if missing := [f for f in families if f not in listed]:
         raise HTTPException(404, f"no case {missing[0]} for {bench.person.login}")

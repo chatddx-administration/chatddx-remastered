@@ -8,6 +8,7 @@ type Widget =
   | { is: "choice"; options: unknown[] }
   | { is: "list"; items: Schema }
   | { is: "or-none"; schema: Schema }
+  | { is: "union"; key: string; options: { value: unknown; schema: Schema }[] }
   | { is: "json" };
 
 function held(value: unknown): value is Schema {
@@ -33,7 +34,9 @@ export function widget(given: Schema, root: Schema): Widget {
     const none = alternatives.filter((a) => held(a) && a.const === false);
     const others = alternatives.filter((a): a is Schema => held(a) && a.const !== false);
     if (none.length === 1 && others.length === 1 && others[0]) return { is: "or-none", schema: others[0] };
-    return { is: "json" };
+    const given = alternatives.filter((a): a is Schema => held(a) && a.type !== "null");
+    if (given.length === 1 && given[0] && given.length < alternatives.length) return widget(given[0], root);
+    return discriminated(others, root) ?? { is: "json" };
   }
   if (Array.isArray(schema.enum)) return { is: "choice", options: schema.enum };
   switch (schema.type) {
@@ -63,6 +66,31 @@ export function widget(given: Schema, root: Schema): Widget {
   }
 }
 
+function discriminated(alternatives: Schema[], root: Schema): Widget | null {
+  const shaped = alternatives.map((a) => deref(a, root));
+  const fields = shaped.map((s) => (s.type === "object" && held(s.properties) ? s.properties : null));
+  const [first] = fields;
+  if (!first || fields.some((f) => f === null)) return null;
+  const key = Object.keys(first).find((k) => fields.every((f) => held(f?.[k]) && "const" in f[k]));
+  if (key === undefined) return null;
+  return {
+    is: "union",
+    key,
+    options: shaped.map((s, i) => ({ value: (fields[i]?.[key] as Schema).const, schema: s })),
+  };
+}
+
+export function chosen(shape: Extract<Widget, { is: "union" }>, value: unknown): { value: unknown; schema: Schema } {
+  const at = held(value) ? value[shape.key] : undefined;
+  return shape.options.find((o) => o.value === at) ?? (shape.options[0] as { value: unknown; schema: Schema });
+}
+
+export function without(schema: Schema, key: string): Schema {
+  const properties = held(schema.properties) ? schema.properties : {};
+  const required = Array.isArray(schema.required) ? schema.required.filter((r) => r !== key) : [];
+  return { ...schema, properties: Object.fromEntries(Object.entries(properties).filter(([k]) => k !== key)), required };
+}
+
 export function blank(schema: Schema, root: Schema): unknown {
   const shape = widget(schema, root);
   switch (shape.is) {
@@ -80,6 +108,11 @@ export function blank(schema: Schema, root: Schema): unknown {
       return [];
     case "or-none":
       return blank(shape.schema, root);
+    case "union": {
+      const [first] = shape.options;
+      if (!first) return null;
+      return { [shape.key]: first.value, ...(blank(first.schema, root) as Record<string, unknown>) };
+    }
     case "json":
       return null;
   }
@@ -100,5 +133,6 @@ export function kept(value: unknown, schema: Schema, root: Schema): unknown {
   }
   if (shape.is === "list" && Array.isArray(value)) return value.map((v) => kept(v, shape.items, root));
   if (shape.is === "or-none" && value !== false) return kept(value, shape.schema, root);
+  if (shape.is === "union") return kept(value, chosen(shape, value).schema, root);
   return value;
 }

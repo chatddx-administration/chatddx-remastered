@@ -111,6 +111,7 @@ Raises:
 
 Raises:
 1. `HTTPException`: `404, "no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"` (through `_begun`)
+2. `HTTPException`: `422, str(e)` (from `NotFound`, through `_beginning_translations`)
 
 ## `BEGUN`
 `src/chatddx/portal/threads.py:BEGUN`
@@ -143,11 +144,15 @@ Raises:
 ## `building` `@router.post("/cases/{family}/cases")`
 `src/chatddx/portal/cases.py:building`
 
+* `request: Request`
 * `bench: BenchDep`
 * `family: int`
 * `appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None`
 * `back: Annotated[str | None, Form()] = None`
 * ∟`Response`
+
+Raises:
+1. `HTTPException`: `404, "no version {at} of case {family}: it has {len(bindings)}"` (through `_case_page`)
 
 ## `built`
 `src/chatddx/portal/cases.py:built`
@@ -180,7 +185,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, "no version {at} of case {family}: it has {len(bindings)}"`
+1. `HTTPException`: `404, "no version {at} of case {family}: it has {len(bindings)}"` (through `_case_page`)
 
 ## `Change` `@dataclass(frozen=True)`
 `src/chatddx/portal/changes.py:Change`
@@ -306,13 +311,24 @@ Raises:
 ## `editing` `@router.post("/threads/{thread}/edit")`
 `src/chatddx/portal/threads.py:editing`
 
+* `request: Request`
 * `bench: BenchDep`
 * `thread: int`
 * `form: FormDep`
 * ∟`Response`
 
 Raises:
-1. `ValueError`: `"configuration {thread} is written by hand: it has no recipe to pick parts of"`
+1. `HTTPException`: `404, "no version {at} of {word} {thread}: it has {len(versions)}"` (through `_thread_page`)
+2. `HTTPException`: `422, "configuration {thread} is written by hand: it has no recipe to pick parts of"`
+3. `ValueError`: `"labels: {e.errors()[0]['msg']}"` (from `ValidationError`, through `_labels`)
+
+## `editors`
+`src/chatddx/portal/editors.py:editors`
+
+* `bench: Bench`
+* `model: type[BaseModel]`
+* `found: list[Field]`
+* ∟`dict[str, Any] | None`
 
 ## `ENGINES`
 `src/chatddx/portal/fields.py:ENGINES`
@@ -367,6 +383,8 @@ Raises:
 * `given: bool = True`
 * `whole: bool = False`
 * `minimum: int | float | None = None`
+* `typed: str | None = None`
+* `refused: str | None = None`
 
 ## `fields`
 `src/chatddx/portal/fields.py:fields`
@@ -432,8 +450,8 @@ Raises:
 
 Raises:
 1. `ValueError`: `"no field {unknown[0]!r} to give: the fields are {', '.join(properties)}"`
-2. `ValueError`: `"{name} isn't JSON: {e}"` (from `json.JSONDecodeError`, through `_read`)
-3. `ValueError`: `"{f.name} isn't {what}: {given!r}"` (through `_read`)
+2. `_Unparsed`: `name, "{name} isn't JSON: {e}"` (from `json.JSONDecodeError`, through `_read`)
+3. `_Unparsed`: `f.name, "{f.name} isn't {what}: {given!r}"` (through `_read`)
 
 ## `Given`
 `src/chatddx/portal/review.py:Given`
@@ -511,6 +529,14 @@ Raises:
 * `disagreed: list[Disagreed]`
 * `editing: dict[str, Any]`
 
+## `kept`
+`src/chatddx/portal/fields.py:kept`
+
+* `found: list[Field]`
+* `form: FormData`
+* `e: ValueError`
+* ∟`tuple[list[Field], list[str]]`
+
 ## `keyed`
 `src/chatddx/portal/lab.py:keyed`
 
@@ -559,8 +585,24 @@ Raises:
 
 * `request: Request`
 * `bench: BenchDep`
-* `kind: str = "instructions"`
+* `kind: str | None = None`
 * `tag: Annotated[list[str] | None, Query()] = None`
+* `q: str = ""`
+* `pick: Literal["all"] | None = None`
+* `schema: str | None = None`
+* ∟`Response`
+
+## `library_page`
+`src/chatddx/portal/threads.py:library_page`
+
+* `request: Request`
+* `bench: Bench`
+* `kind: str | None`
+* `tag: list[str] | None`
+* `typed: Typed | None = None`
+* `q: str = ""`
+* `pick: Literal["all"] | None = None`
+* `schema: str | None = None`
 * ∟`Response`
 
 Raises:
@@ -586,6 +628,27 @@ Raises:
 * `word: str`
 * `deleted: bool = False`
 * ∟`list[tuple[schemas.Thread, Purpose | None]]`
+
+## `Listing` `@dataclass(frozen=True)`
+`src/chatddx/portal/threads.py:Listing`
+
+* `kind: str`
+* `tags: list[str]`
+* `q: str`
+* `schema: str | None`
+
+## `Listing.link`
+`src/chatddx/portal/threads.py:Listing.link`
+
+* `tags: list[str] | None = None`
+* `**more: str`
+* ∟`str`
+
+## `Listing.toggled`
+`src/chatddx/portal/threads.py:Listing.toggled`
+
+* `tag: str`
+* ∟`str`
 
 ## `MANIFEST`
 `src/chatddx/portal/assets.py:MANIFEST`
@@ -640,8 +703,8 @@ Raises:
 * ∟`dict[str, JsonValue]`
 
 Raises:
-1. `ValueError`: `"{f.name} isn't {what}: {given!r}"` (through `_number`)
-2. `ValueError`: `"{name} isn't JSON: {e}"` (from `json.JSONDecodeError`, through `_json`)
+1. `_Unparsed`: `f.name, "{f.name} isn't {what}: {given!r}"` (through `_number`)
+2. `_Unparsed`: `name, "{name} isn't JSON: {e}"` (from `json.JSONDecodeError`, through `_json`)
 
 ## `pausing` `@router.post("/queue/pause")`
 `src/chatddx/portal/runs.py:pausing`
@@ -684,6 +747,12 @@ Raises:
 * `families: list[schemas.Family]`
 * `data: JsonValue`
 * `picked: list[JsonValue]`
+
+## `refusable`
+`src/chatddx/portal/pages.py:refusable`
+
+* `e: ValueError`
+* ∟`bool`
 
 ## `replacing` `@router.post("/cases/{family}/replacement")`
 `src/chatddx/portal/cases.py:replacing`
@@ -852,6 +921,7 @@ Raises:
 ## `threads.saying` `@router.post("/threads/{thread}/said")`
 `src/chatddx/portal/threads.py:saying`
 
+* `request: Request`
 * `bench: BenchDep`
 * `thread: int`
 * `name: Annotated[str, Form()] = ""`
@@ -859,6 +929,9 @@ Raises:
 * `tags: Annotated[str, Form()] = ""`
 * `shared: Annotated[str, Form()] = ""`
 * ∟`Response`
+
+Raises:
+1. `HTTPException`: `404, "no version {at} of {word} {thread}: it has {len(versions)}"` (through `_thread_page`)
 
 ## `scorer_choices`
 `src/chatddx/portal/scoring.py:scorer_choices`
@@ -933,6 +1006,34 @@ Raises:
 `src/chatddx/portal/fields.py:Shape`
 
 `Shape`
+
+## `Shelf` `@dataclass(frozen=True)`
+`src/chatddx/portal/shelves.py:Shelf`
+
+* `heading: str`
+* `about: str`
+* `kinds: dict[str, str]`
+
+## `Shelved` `@dataclass(frozen=True)`
+`src/chatddx/portal/shelves.py:Shelved`
+
+* `word: str`
+* `about: str`
+* `mine: int`
+* `seen: int`
+* `written: bool`
+
+## `shelved`
+`src/chatddx/portal/shelves.py:shelved`
+
+* `bench: Bench`
+* `written: list[str]`
+* ∟`list[tuple[Shelf, list[Shelved]]]`
+
+## `SHELVES`
+`src/chatddx/portal/shelves.py:SHELVES`
+
+`SHELVES = (…)`
 
 ## `runs.SHOWN`
 `src/chatddx/portal/runs.py:SHOWN`
@@ -1049,8 +1150,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `422, "pick one case or more to take for"`
-2. `HTTPException`: `404, "no case {missing[0]} for {bench.person.login}"`
+1. `HTTPException`: `404, "no case {missing[0]} for {bench.person.login}"`
 
 ## `threads.taking` `@router.post("/threads/{thread}/take")`
 `src/chatddx/portal/threads.py:taking`
@@ -1081,7 +1181,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, "no version {at} of {word} {thread}: it has {len(versions)}"`
+1. `HTTPException`: `404, "no version {at} of {word} {thread}: it has {len(versions)}"` (through `_thread_page`)
 
 ## `to_sign_in`
 `src/chatddx/portal/pages.py:to_sign_in`
@@ -1107,6 +1207,16 @@ Raises:
 * `versions: list[str]`
 * `into: str | None`
 * ∟`Translating`
+
+## `Typed` `@dataclass(frozen=True)`
+`src/chatddx/portal/threads.py:Typed`
+
+* `said: list[str]`
+* `name: str | None = None`
+* `language: str | None = None`
+* `labels: str | None = None`
+* `about: dict[str, str] | None = None`
+* `kept: bool = True`
 
 ## `unit_in`
 `src/chatddx/portal/scoring.py:unit_in`
@@ -1182,12 +1292,16 @@ Raises:
 * `bench: BenchDep`
 * `kind: str`
 * `form: FormDep`
+* `configuration: int | None = None`
 * `into: str | None = None`
 * ∟`Response`
 
 Raises:
 1. `HTTPException`: `404, "no {kind} is begun here: what is begun here is {', '.join(BEGUN)}"` (through `_begun`)
-2. `ValueError`: `"a new {kind.replace('_', ' ')} is named"`
+2. `ValueError`: `"new translations are named"`
+3. `HTTPException`: `422, str(e)` (from `NotFound`, through `_beginning_translations`)
+4. `ValueError`: `"a new {kind.replace('_', ' ')} is named"`
+5. `ValueError`: `"labels: {e.errors()[0]['msg']}"` (from `ValidationError`, through `_labels`)
 
 ## `written`
 `src/chatddx/portal/translations.py:written`

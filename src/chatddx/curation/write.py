@@ -371,13 +371,20 @@ class _Init:
                 continue
             head = threads.head(self.rows, thread)
             about = read.about(self.rows, Subject(thread=thread))
-            _ = self.catalog.create(
-                head.digest,
-                user.id,
-                compilation=head.compilation,
-                forked_from=head.id,
-                name=about.name,
+            made = Subject(
+                thread=self.catalog.create(
+                    head.digest,
+                    user.id,
+                    compilation=head.compilation,
+                    forked_from=head.id,
+                    name=about.name or titles.title(self.rows, thread),
+                ).thread
             )
+            for tag in sorted(about.tags):
+                self.catalog.note(made, Entry(field=EntryField.TAG, value=tag), user.id)
+            if about.description is not None:
+                said = Entry(field=EntryField.DESCRIPTION, value=about.description)
+                self.catalog.note(made, said, user.id)
             self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
 
     def _expecting(self, user: Person, thread: int) -> bool:

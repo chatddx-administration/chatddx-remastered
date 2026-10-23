@@ -10,7 +10,6 @@ export {
 	Description,
 	Header,
 	Title,
-	//
 	Root as Card,
 	Content as CardContent,
 	Description as CardDescription,

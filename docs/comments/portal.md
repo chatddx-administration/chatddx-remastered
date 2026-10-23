@@ -8,6 +8,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # Policy: a page that builds a case is given it back as `case` in its address.
 ```
 
+## `src/chatddx/portal/editors.py:_FORMED`
+
+```
+# Policy: a field earns its schema's form where what it holds is shaped by the schema;
+# one that holds whatever a request or a template takes, or mostly whitespace, is
+# clearer as JSON.
+```
+
 ## `src/chatddx/portal/fields.py:_engines`
 
 ```
@@ -53,6 +61,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 ```
 # Accommodating for Jinja, whose tojson sorts keys: an island sends back what it's given,
 # and a component's digest holds the order of its keys.
+```
+
+## `src/chatddx/portal/pages.py:refusable`
+
+```
+# Policy: what a person can set right on the page they sent, which shows it again with
+# what they typed and why it was refused; the rest is answered as the API answers it.
 ```
 
 ## `src/chatddx/portal/runs.py:halting`
@@ -107,6 +122,19 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 ```
 # Policy: a new trial is begun with what a start of a variation takes when none is
 # given.
+```
+
+## `src/chatddx/portal/threads.py:_editable`
+
+```
+# Policy: an expectation stays of the case and the schema it was written for; Review
+# carries it to a case that replaces its own.
+```
+
+## `src/chatddx/portal/threads.py:_shipped`
+
+```
+# Policy: a new scorer pins the code chatddx ships, as it is shown and not asked.
 ```
 
 ## `src/chatddx/portal/threads.py:AUTHORED`

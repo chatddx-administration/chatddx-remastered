@@ -259,6 +259,7 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
 
     page.get_by_role("link", name="write yours").first.click()
     page.get_by_label("name", exact=True).fill("mine again")
+    page.get_by_role("button", name="Write it as JSON").click()
     page.get_by_label("data", exact=True).fill(json.dumps(expected["data"]))
     page.get_by_role("button", name="Write it").click()
     page.wait_for_url(re.compile(r"/threads/\d+$"))
@@ -657,6 +658,122 @@ def test_a_translator_carries_an_edited_instruction_over_and_the_lab_takes_it(
     assert errors == []
 
 
+def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def mine(kind: str, name: str | None = None) -> dict[str, Any]:
+        query: dict[str, str | float | bool] = {"kind": kind, "owner": "alice"}
+        listed = page.request.get("/api/threads", params=query).json()
+        return next(t for t in listed if name in (None, t["name"]))
+
+    def body(thread: dict[str, Any]) -> dict[str, Any]:
+        head = page.request.get(f"/api/threads/{thread['id']}").json()["head"]
+        return page.request.get(f"/api/components/{head['digest']}").json()["body"]
+
+    clinician = mine("instructions", "clinician")
+    _ = page.goto(f"/threads/{clinician['id']}")
+    expect(page.get_by_text("‹what it is told to answer›")).to_be_visible()
+    page.get_by_label("text, text 1").fill("Be brief.")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    [text, insert] = body(clinician)["text"]
+    assert (text, insert["insert"]) == ("Be brief.", "output_guidance")
+
+    expectation = mine("expectation")
+    was = body(expectation)
+    _ = page.goto(f"/threads/{expectation['id']}")
+    diagnosis = page.get_by_role("group", name="diagnosis", exact=True)
+    diagnosis.get_by_label("pattern", exact=True).fill("pneumonitis")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    now = body(expectation)
+    assert now["data"]["diagnosis"]["pattern"] == "pneumonitis"
+    assert (now["case"], now["expectation_schema"]) == (
+        was["case"],
+        was["expectation_schema"],
+    )
+
+    _ = page.goto("/library/new?kind=expectation")
+    expect(page.get_by_text("Pick its expectation schema first")).to_be_visible()
+    _ = page.get_by_label("expectation schema", exact=True).select_option(index=1)
+    expect(page.get_by_role("group", name="diagnosis", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Write it as JSON").click()
+    expect(page.get_by_label("data", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Back to the form").click()
+    expect(page.get_by_role("group", name="diagnosis", exact=True)).to_be_visible()
+
+    query: dict[str, str | float | bool] = {"kind": "scorer", "name": "lines"}
+    [lines] = page.request.get("/api/threads", params=query).json()
+    forks = f"/api/threads/{lines['id']}/forks"
+    scorer = page.request.post(forks, data={"name": "my lines"}).json()
+    _ = page.goto(f"/threads/{scorer['id']}")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 1 of 1")).to_be_visible()
+    edits = f"/api/threads/{scorer['id']}/edits"
+    assert len(page.request.get(edits).json()) == 1
+    page.get_by_label("Its label").first.fill("first")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    assert page.request.get(edits).json()[-1]["labels"]["views"][0] == "first"
+    assert body(scorer)["views"] == body(lines)["views"]
+    assert errors == []
+
+
+def test_few_shot_messages_and_a_contract_are_written_in_forms_and_json_checked_as_typed(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def mine(kind: str, name: str) -> dict[str, Any]:
+        query: dict[str, str | float | bool] = {"kind": kind, "owner": "alice"}
+        listed = page.request.get("/api/threads", params=query).json()
+        return next(t for t in listed if t["name"] == name)
+
+    def body(thread: dict[str, Any]) -> dict[str, Any]:
+        head = page.request.get(f"/api/threads/{thread['id']}").json()["head"]
+        return page.request.get(f"/api/components/{head['digest']}").json()["body"]
+
+    worked = mine("few_shot", "worked-example")
+    was = body(worked)["messages"]
+    _ = page.goto(f"/threads/{worked['id']}")
+    page.get_by_role("button", name="+ messages").click()
+    added = page.get_by_role("group", name=f"messages {len(was) + 1}", exact=True)
+    _ = added.get_by_label("role", exact=True).select_option(label="user")
+    added.get_by_label("content", exact=True).fill("And now?")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    assert body(worked)["messages"] == [*was, {"role": "user", "content": "And now?"}]
+
+    native = mine("output", "native")
+    _ = page.goto(f"/threads/{native['id']}")
+    _ = page.get_by_label("kind", exact=True).select_option("tool")
+    page.get_by_label("name", exact=True).fill("final_result")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    assert body(native)["contract"]["kind"] == "tool"
+    assert body(native)["contract"]["name"] == "final_result"
+
+    off = mine("reasoning", "off")
+    _ = page.goto(f"/threads/{off['id']}")
+    kwargs = page.get_by_label("chat template kwargs", exact=True)
+    kwargs.fill('{"enable_thinking": fals')
+    expect(page.get_by_text("It isn't JSON yet")).to_be_visible()
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 1 of 1")).to_be_visible()
+    assert len(page.request.get(f"/api/threads/{off['id']}/edits").json()) == 1
+    kwargs.fill('{"enable_thinking": false}')
+    expect(page.get_by_text("It isn't JSON yet")).to_be_hidden()
+    _ = page.get_by_label("level", exact=True).select_option(label="none")
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    assert body(off)["chat_template_kwargs"] == {"enable_thinking": False}
+    assert errors == []
+
+
 def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_configuration(
     page: Page,
 ) -> None:
@@ -671,6 +788,7 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
     case = mine("prompt", "case")
     _ = page.goto(f"/threads/{case['id']}")
     segments = ["The case:\n", {"slot": "vignette"}, {"slot": "appendices"}]
+    page.get_by_role("button", name="Write it as JSON").click()
     page.get_by_label("segments", exact=True).fill(json.dumps(segments))
     page.get_by_role("button", name="Save it").click()
     expect(page.get_by_text("Version 2 of 2")).to_be_visible()

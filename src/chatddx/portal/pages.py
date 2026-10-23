@@ -13,9 +13,9 @@ from pydantic import JsonValue
 from chatddx.api import schemas
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
 from chatddx.api.state import NO_STORE, state
-from chatddx.bench import Bench
+from chatddx.bench import Bench, Conflict, MovedOn, OverQuota
 from chatddx.identity import Person
-from chatddx.store import People
+from chatddx.store import People, UnderWay
 
 from .translations import visible
 
@@ -93,6 +93,12 @@ def page_bench(request: Request, conn: ConnDep, person: PersonDep) -> Bench:
 
 
 type BenchDep = Annotated[Bench, Depends(page_bench)]
+
+
+# Policy: what a person can set right on the page they sent, which shows it again with
+# what they typed and why it was refused; the rest is answered as the API answers it.
+def refusable(e: ValueError) -> bool:
+    return not isinstance(e, (Conflict, MovedOn, OverQuota, UnderWay))
 
 
 def own_first(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:

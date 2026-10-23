@@ -58,9 +58,9 @@ def test_only_an_optional_part_can_be_taken_out() -> None:
     )
 
     assert plan.set("toolset", None, "none").held("toolset") is None
-    with pytest.raises(ValueError, match="only .* can be taken out"):
+    with pytest.raises(ValueError, match="always holds its prompt"):
         _ = plan.set("prompt", None, "none")
-    with pytest.raises(ValueError, match="always has an engine"):
+    with pytest.raises(ValueError, match="always holds its engine"):
         _ = plan.set("engine", None, "none")
     with pytest.raises(ValueError, match="has no recipe"):
         _ = TriedVariation(HEAD, "by hand").set("prompt", digest("5"), "terse")

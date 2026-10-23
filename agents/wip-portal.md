@@ -10,8 +10,8 @@ cognitive reserves.
 - **Lab**: the evolution of configurations, and queueing trials and seeing how they fare against each other.
 - **Scoring**: managing judges and scorers more deeply than Review does.
 - **Runs**: everything run-related: what is under way and what is queued, its order, pausing and halting.
-- **Library**: schema driven, instructive of the data model rather than practical; still the best place to manage
-  translations.
+- **Library**: schema driven, instructive of the data model rather than practical. Translations stay in the Library,
+  which is the de facto translation page as long as its UX and the Library's philosophy are aligned.
 - **World**: a read-only view of the World the portal runs in.
 
 Take: each page by what it writes, what it weighs and what it only picks, so that a thing is written in one place and
@@ -51,28 +51,59 @@ and are squeezed in for completeness.
 Drafted: every page of it is rendered on the server, with no island, and every form but translations' is drawn from its
 kind's JSON Schema (`src/chatddx/portal/test/test_library.py`, `src/chatddx/portal/test/test_clinicians.py`).
 
+Decided, for the internal deploy where clinicians and researchers work on the sample data from the first `init-data`:
+
+- **The sidebar**: the kinds under headings, the headings and the kinds under each sorted alphabetically, always open,
+  no deeper tree: what refers to what is a graph, not a hierarchy, and a collapsed branch hides a kind from a person
+  with little time.
+- **The giftbag stays**: the deploy loads each person with `init-data <login> --giftbag`, so what it forks reads as
+  theirs, beside the archive's.
+- **A vignette's text stays out of the Library**, deliberately: a case's section links to it on a page of its own.
+- **No sample trials for now**: data sets load none, so the trial shelf starts empty, says how a trial is begun, and
+  points to the Lab, which runs a configuration on cases straight away.
+
 ### What it holds
 
-`/library?kind=WORD` has a tab for each word and one for cases (`src/chatddx/portal/threads.py:library`). A word's tab
-lists every thread of it the person sees, their own first, configurations of either purpose with their purpose; on the
-trial tab, the picked are run together on `/lab/run`. Every kind's deleted threads, and deleted cases, are listed apart
-with **Restore**.
+`/library` is an overview of the shelves (`src/chatddx/portal/shelves.py:SHELVES`): each kind under its heading with
+what it is in a line, how many of it are the person's own and how many are shared with them, and whether data sets load
+it. The same shelves, with how many of each the person sees, are the sidebar of `/library?kind=WORD`
+(`src/chatddx/portal/threads.py:library`), which says what the kind is and lists every thread of it the person sees,
+their own first, a fork with what it is forked from, configurations of either purpose with their purpose; on the trial
+tab, the picked are run together on `/lab/run`, and with none it says how one is begun. The kind's deleted threads, or
+deleted cases, are listed under it with **Restore**.
+
+A shelf is found in by words, `q`, each of which its name, owner, tags or description holds, and says how many of how
+many it shows; an expectation's by the schema it is written to as well, picked where the person sees more than one. Each
+row says under its name what is said of it, and the columns a phone has no room for are left out there. On the case and
+trial shelves, **Pick every one shown** picks them without scripts, and what is done with the picked stays in view below
+the list as it scrolls.
+
+What the giftbag forks for a person carries its origin's tags and description, and an unnamed origin's title as its name
+(`src/chatddx/curation/write.py:_Init.giftbag`), so that the person's shelves read as the archive's do.
 
 Each kind a person writes is begun at `/library/new?kind=WORD` (`src/chatddx/portal/threads.py:beginning`), a
-configuration from a recipe, a trial of the cases picked on the case tab, and translations of a configuration's texts. A
-field given in the address as `f.NAME` is shown and not asked (`src/chatddx/portal/fields.py:fresh`), as a case's
-section gives an appendix its vignette.
+configuration from a recipe, a trial of the cases picked on the case tab, an appendix of the case picked first, and
+translations of a configuration's texts. A field given in the address as `f.NAME` is shown and not asked
+(`src/chatddx/portal/fields.py:fresh`), as a case's section gives an appendix its vignette.
+
+A form refused for what was typed in it is shown again, with what was typed and why it was refused, by the field it
+concerns where it concerns one (`src/chatddx/portal/fields.py:kept`), and so are an empty pick on the case tab or a
+case's section and a language that isn't a tag; what isn't the person's to set right is answered as the API answers it
+(`src/chatddx/portal/pages.py:refusable`).
 
 Each thread has a page, `/threads/{id}` (`src/chatddx/portal/threads.py:thread_page`;
 `src/chatddx/portal/templates/thread.html`), with:
 
-- **About it**: its kind, owner, collaborators, language, origin, tags and description, read-only; a configuration's
-  links to it in the Lab.
+- **About it**: its kind, owner, collaborators, language, origin by name, tags and description, read-only; a
+  configuration's links to it in the Lab.
 - **Its origin has moved on** and **What it was compiled for has moved on**, to its owner, each with its **Follow**.
-- **What it holds**: version N of M by link, each field one level deep, a reference by its title, and what the version
-  changed from the one before (`src/chatddx/portal/changes.py:changes`). To its owner, at the latest version, the fields
-  are a form that saves a new version, with a text's language and a scorer's labels, and a configuration's recipe parts
-  picked; at an earlier one, **Make it the latest**. The findings of what a person writes.
+- **What it holds**: version N of M by link, each field one level deep, a reference by its title, linked to the thread
+  holding it where the person sees one and a case to its section, and what the version changed from the one before
+  (`src/chatddx/portal/changes.py:changes`). A configuration's recipe comes first, what it sends folded under it, and
+  what a version changed is what it changed in its recipe, by the parts' titles, where it changed any. To its owner, at
+  the latest version, the fields are a form that saves a new version, with a text's language and a scorer's labels, and
+  a configuration's recipe parts picked, each linked to the one picked; at an earlier one, **Make it the latest**. The
+  findings of what a person writes.
 - **Its runs**, a trial's, with **Run it**.
 - **What is said of it** and **Delete it**, to its owner; **Leave it**, to a collaborator; **Fork it as it is**, to
   everyone, for what a person writes.
@@ -84,17 +115,27 @@ boolean as a checkbox; a list of texts or of whole numbers one a line, whole num
 holding an empty text or a line break as JSON, which one a line can't write; a text in a text box, or as text or as JSON
 where it may be either; and anything else as JSON in a text box. The fields still written as JSON:
 
-| Word          | Its fields written as JSON            |
-| ------------- | ------------------------------------- |
-| configuration | `appendix_layout`                     |
-| few_shot      | `messages`                            |
-| prompt        | `segments`                            |
-| output        | `contract`, `json_schema`             |
-| reasoning     | `chat_template_kwargs`                |
-| passthrough   | `body`                                |
-| scorer        | `views`, `params`                     |
-| expectation   | `data`                                |
-| appendix      | `vignette`, given by a case's section |
+| Word          | Its fields written as JSON |
+| ------------- | -------------------------- |
+| configuration | `appendix_layout`          |
+| output        | `json_schema`              |
+| reasoning     | `chat_template_kwargs`     |
+| passthrough   | `body`                     |
+| scorer        | `params`                   |
+
+Take: these stay JSON, as what they hold is whatever a request, a template or a schema takes, or mostly whitespace,
+which JSON shows; each is checked as it is typed, and its form isn't sent while it doesn't hold JSON of its shape.
+
+With scripts, the Library's island (`frontend/src/islands/library.ts`) draws an editor over the text box of what the
+page asks it to (`src/chatddx/portal/editors.py:editors`), and writes into the box only what is changed in it, so that a
+form posts as it does without scripts and one sent as it is writes nothing; **Write it as JSON** shows the box again. A
+text with inserts or slots, an instructions' `text`, an output's `guidance` and a prompt's `segments`, is written as
+text with the inserts and slots it may hold as markers (`TextSegments`); an expectation's `data` by its schema's form
+(`SchemaField`), once its schema is picked, and a few-shot's `messages` and an output's `contract` by theirs, a union of
+contracts by the kind each fixes; a scorer's `views` and their labels as Review composes them (`ScorerViews`), and its
+`params` by the schema its code publishes, where it publishes properties. A new scorer pins the code chatddx ships,
+shown and not asked. An expectation's case and schema are shown and not asked on its page, as Review carries it to a
+case that replaces its own, and a case is picked by its title.
 
 Translations are drawn on the server (`src/chatddx/portal/translations.py`): a language at a time, each text beside its
 translation with its edges shown, **Leave it out**, and another language by its tag. Above what it holds, the texts the
@@ -102,15 +143,16 @@ configurations holding any of its versions send that it doesn't translate, each 
 similar text where one is near enough. A configuration holding an earlier version links to the Lab with this one tried
 in its place. Translations are begun of a configuration's texts, into a language.
 
-The case tab lists the cases a person sees by their families, their own first and filtered by tag; over the picked, it
-takes the expectations shared with them under a schema, from an owner or any, and begins a trial. The Library begins no
-case: a case is typed on Home or loaded with a data set. A case's section is `/cases/{id}`, a family's id
-(`src/chatddx/portal/cases.py`; `src/chatddx/portal/test/test_clinicians.py`), with what is said of it as a thread's,
-its language among it; its bindings as its versions by link, each with its vignette's source, id and fingerprint whole
-and what changed from the one before, the text alone at `/cases/{id}/vignette`; its cases at that vignette, with their
-appendices and, under each schema, their expectations, and at an earlier binding each case's replacement; and what is
-begun of it: a case of its appendices, an appendix of its vignette, and an expectation of a case under a schema. Writing
-an appendix or an expectation in place is Review's, which the section links. The API calls a case a family.
+The case tab lists the cases a person sees by their families, their own first and narrowed by the tags picked, each of
+them; over the picked, it takes the expectations shared with them under a schema, from an owner or any, and begins a
+trial. The Library begins no case: a case is typed on Home or loaded with a data set. A case's section is `/cases/{id}`,
+a family's id (`src/chatddx/portal/cases.py`; `src/chatddx/portal/test/test_clinicians.py`), with what is said of it as
+a thread's, its language among it; its bindings as its versions by link, each with its vignette's source, id and
+fingerprint whole and what changed from the one before, the text alone at `/cases/{id}/vignette`; its cases at that
+vignette, with their appendices and, under each schema, their expectations, and at an earlier binding each case's
+replacement; and what is begun of it: a case of its appendices, an appendix of its vignette, and an expectation of a
+case under a schema. Writing an appendix or an expectation in place is Review's, which the section links. The API calls
+a case a family.
 
 ## The Lab
 
@@ -160,11 +202,10 @@ first scorer, and the Library's page of a scorer or a judge and Review's scorer 
 
 Take: the Library's forms first.
 
-1. **What Review writes already.** Take: an expectation's `data` drawn from its schema with `ExpectationEditor`, and a
-   scorer's `views` and `params` with `Composer`, each an island over its text box that writes its JSON into it, so that
-   the form posts as it does without scripts.
-2. **The rest of the table.** Open: which of its fields earns a control of its own, and whether a form drawn from the
-   JSON Schema (`frontend/src/lib/schema/`) takes the rest.
+1. **What Review writes already.** Built: an expectation's `data`, a scorer's `views` and a text's inserts, each an
+   editor over its text box.
+2. **The rest of the table.** Built: a few-shot's `messages` and an output's `contract` by their schema's form, the
+   rest as JSON checked as it is typed.
 3. **The Lab.** Open:
    - Its cases are picked twice: the island's tags and the tags how they fare is shown over are one `tag` in its
      address, but each has its control, and the island's changes it without showing how they fare again.
