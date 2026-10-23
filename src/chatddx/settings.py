@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from enum import IntEnum
 from pathlib import Path
 
 from psycopg.conninfo import make_conninfo
@@ -23,30 +24,56 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
-STAMPED = (
-    "api",
-    "bench",
-    "catalog",
-    "curation",
-    "factors",
-    "facts",
-    "fake_vllm",
-    "identity",
-    "importers",
-    "inventory",
-    "ledger",
-    "locale",
-    "portal",
-    "repl",
-    "runner",
-    "scorers",
-    "scripted",
-    "stamp",
-    "store",
-    "test",
-    "tools",
-    "worker",
-)
+
+class Stage(IntEnum):
+    FELT = 1
+    IMPLIED = 2
+    MENTIONED = 3
+    NAMED = 4
+    ITEMIZED = 5
+    PLANNED = 6
+    DRAFTED = 7
+    SOLIDIFIED = 8
+    CEMENTED = 9
+    PROTECTED = 10
+
+
+STAGES = {
+    "api": Stage.SOLIDIFIED,
+    "bench": Stage.SOLIDIFIED,
+    "catalog": Stage.SOLIDIFIED,
+    "clearance": Stage.DRAFTED,
+    "cli": Stage.SOLIDIFIED,
+    "conftest": Stage.SOLIDIFIED,
+    "curation": Stage.SOLIDIFIED,
+    "factors": Stage.SOLIDIFIED,
+    "facts": Stage.SOLIDIFIED,
+    "fake_vllm": Stage.SOLIDIFIED,
+    "identity": Stage.SOLIDIFIED,
+    "importers": Stage.SOLIDIFIED,
+    "inventory": Stage.SOLIDIFIED,
+    "ledger": Stage.SOLIDIFIED,
+    "locale": Stage.SOLIDIFIED,
+    "portal": Stage.SOLIDIFIED,
+    "repl": Stage.SOLIDIFIED,
+    "rig": Stage.SOLIDIFIED,
+    "runner": Stage.SOLIDIFIED,
+    "scorers": Stage.SOLIDIFIED,
+    "scripted": Stage.SOLIDIFIED,
+    "settings": Stage.SOLIDIFIED,
+    "stamp": Stage.SOLIDIFIED,
+    "store": Stage.SOLIDIFIED,
+    "test": Stage.SOLIDIFIED,
+    "tools": Stage.SOLIDIFIED,
+    "whoops": Stage.SOLIDIFIED,
+    "worker": Stage.SOLIDIFIED,
+}
+
+STAMPED_FROM = {
+    "comments": Stage.DRAFTED,
+    "surfaces": Stage.SOLIDIFIED,
+    "whoopses": Stage.DRAFTED,
+}
 
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)

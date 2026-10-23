@@ -9,6 +9,7 @@ from textwrap import dedent
 import griffe
 
 from .code import Code
+from .markers import PENDING
 
 # Compromise: what isn't Python is read by its strings and comments alone: a body in
 # dollar quotes is read as SQL, as a function's body is, and an E'' string's \' throws
@@ -119,11 +120,20 @@ def _written(heading: list[str], held: dict[tuple[str, str], list[list[str]]]) -
     return "\n".join(lines) + "\n"
 
 
+def _sources(code: Code, package: str, repo: Path) -> tuple[Path, str, list[Path]]:
+    path = code.src.joinpath(*package.split("."))
+    if path.is_dir():
+        files = sorted(p for p in path.rglob("*") if p.is_file())
+        return path, f"{path.relative_to(repo)}/", files
+    path = path.with_suffix(".py")
+    return path, str(path.relative_to(repo)), [path]
+
+
 def index(code: Code, package: str, repo: Path) -> str:
-    directory = code.src.joinpath(*package.split("."))
+    _, within, files = _sources(code, package, repo)
     held: dict[tuple[str, str], list[list[str]]] = {}
-    for path in sorted(directory.rglob("*")):
-        if path.is_file() and (path.suffix == ".py" or path.suffix in _SCANNED):
+    for path in files:
+        if path.suffix == ".py" or path.suffix in _SCANNED:
             shown = str(path.relative_to(repo))
             for anchor, block in _read(code, path):
                 fenced = _fenced("\n".join(c.text for c in block))
@@ -132,9 +142,20 @@ def index(code: Code, package: str, repo: Path) -> str:
         [
             f"# Comments in `{package}`",
             "",
-            "Written by `chatddx stamp write` from the comments in "
-            + f"`{directory.relative_to(repo)}/`, each under its file and the name it is "
-            + "in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).",
+            f"Written by `chatddx stamp write` from the comments in `{within}`, sorted by "
+            + "file and then by name whatever its case:",
+            "",
+            "````",
+            "## `<file>:<the name it is in or right above>`",
+            "",
+            "```",
+            "<the comment, as written>",
+            "```",
+            "````",
+            "",
+            "- A comment in or above no name is under its file alone, and comments on lines "
+            + "one after another are one.",
+            PENDING,
         ],
         held,
     )
@@ -179,10 +200,10 @@ def _claims(code: Code, path: Path, whoops: str) -> list[tuple[str, str]]:
 
 
 def whoopses(code: Code, package: str, repo: Path, whoops: str) -> str:
-    directory = code.src.joinpath(*package.split("."))
+    where, within, files = _sources(code, package, repo)
     held: dict[tuple[str, str], list[list[str]]] = {}
-    for path in sorted(directory.rglob("*.py")):
-        if not _tested(path, directory):
+    for path in files:
+        if path.suffix == ".py" and not _tested(path, where):
             shown = str(path.relative_to(repo))
             for anchor, written in _claims(code, path, whoops):
                 held.setdefault((shown, anchor), []).append(_fenced(written))
@@ -191,9 +212,20 @@ def whoopses(code: Code, package: str, repo: Path, whoops: str) -> str:
             f"# Whoopses and asserts in `{package}`",
             "",
             "Written by `chatddx stamp write` from the `raise Whoops` and `assert` "
-            + f"statements in `{directory.relative_to(repo)}/`, its tests left out, each "
-            + "under its file and the name it is in; a stamp reads as in "
-            + "[docs/surfaces.md](../surfaces.md).",
+            + f"statements in `{within}`, its tests left out, sorted by file and then by "
+            + "name whatever its case:",
+            "",
+            "````",
+            "## `<file>:<the name it is in>`",
+            "",
+            "```",
+            "<the statement, as written>",
+            "```",
+            "````",
+            "",
+            "- A statement in no name is under its file alone, and a `Whoops` is any of its "
+            + "subclasses too.",
+            PENDING,
         ],
         held,
     )

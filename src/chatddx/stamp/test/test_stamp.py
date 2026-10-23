@@ -4,7 +4,8 @@ from textwrap import dedent
 import pytest
 
 from chatddx import settings, stamp
-from chatddx.stamp import Proof, proofs
+from chatddx.settings import Stage
+from chatddx.stamp import Proof, markers, proofs
 from chatddx.stamp.code import Code
 from chatddx.stamp.index import index, whoopses
 from chatddx.stamp.markers import signed, stamped
@@ -20,20 +21,24 @@ def sourced(tmp_path: Path, files: dict[str, str]) -> Path:
     return tmp_path / "src"
 
 
+def entries(proof: str) -> str:
+    return proof.partition(f"{markers.PENDING}\n")[2]
+
+
 def written(tmp_path: Path, files: dict[str, str]) -> str:
     code = Code(sourced(tmp_path, files), "proj")
     trace = Trace(code, "proj.base.Finding", "proj.whoops.Whoops")
-    return page(code, trace, "proj.alpha", tmp_path)
+    return entries(page(code, trace, "proj.alpha", tmp_path))
 
 
 def indexed(tmp_path: Path, files: dict[str, str]) -> str:
     code = Code(sourced(tmp_path, {"proj/__init__.py": "", **files}), "proj")
-    return index(code, "proj.alpha", tmp_path)
+    return entries(index(code, "proj.alpha", tmp_path))
 
 
 def whooped(tmp_path: Path, files: dict[str, str]) -> str:
     code = Code(sourced(tmp_path, files), "proj")
-    return whoopses(code, "proj.alpha", tmp_path, "proj.whoops.Whoops")
+    return entries(whoopses(code, "proj.alpha", tmp_path, "proj.whoops.Whoops"))
 
 
 def entry(page: str, heading: str) -> list[str]:
@@ -46,13 +51,16 @@ def entry(page: str, heading: str) -> list[str]:
     return [line for line in lines[start + 1 : end] if line]
 
 
+CLOSING = stamped("## e\n", "## e\na\n").splitlines()[-1]
+
+
 def applied(text: str) -> str:
     kept: list[str] = []
     dropping = False
     for line in text.splitlines():
         if line in ("<<<<<<< signed", "======="):
             dropping = line == "<<<<<<< signed"
-        elif line != ">>>>>>> @stamp" and not dropping:
+        elif line != CLOSING and not dropping:
             kept.append(line)
     return "\n".join(kept) + "\n"
 
@@ -516,7 +524,7 @@ def test_a_comment_is_indexed_under_the_name_it_is_in_or_right_above(
         },
     )
     assert (
-        found.splitlines()[3:]
+        found.splitlines()
         == dedent(
             """
         ## `src/proj/alpha/__init__.py`
@@ -687,7 +695,7 @@ def test_a_whoops_or_an_assert_is_indexed_under_the_name_it_is_in_as_written(
         },
     )
     assert (
-        found.splitlines()[3:]
+        found.splitlines()
         == dedent(
             """
         ## `src/proj/alpha/__init__.py`
@@ -755,33 +763,33 @@ def test_a_first_surface_is_written_whole() -> None:
 
 def test_what_changed_is_stamped_in_its_place_as_a_git_conflict() -> None:
     assert stamped("## e\na\nb\nc\n", "## e\nA\nb\nd\n") == dedent(
-        """\
+        f"""\
         ## e
         <<<<<<< signed
         a
         =======
         A
-        >>>>>>> @stamp
+        {CLOSING}
         b
         <<<<<<< signed
         c
         =======
         d
-        >>>>>>> @stamp
+        {CLOSING}
         """
     )
     assert stamped("## e\na\nb\n", "## e\nb\nc\n") == dedent(
-        """\
+        f"""\
         ## e
         <<<<<<< signed
         a
         =======
-        >>>>>>> @stamp
+        {CLOSING}
         b
         <<<<<<< signed
         =======
         c
-        >>>>>>> @stamp
+        {CLOSING}
         """
     )
 
@@ -793,6 +801,31 @@ def test_what_comes_before_the_first_entry_is_written_as_it_is_and_not_stamped()
     assert stamped(old, "# a\n\nread it otherwise\n\n## e\nb\n") == (
         "# a\n\nread it otherwise\n\n## e\nb\n"
     )
+
+
+def test_a_heading_in_a_fence_is_still_before_the_first_entry() -> None:
+    old = "# a\n\n````\n## `<x>`\n```\n## y\n```\n````\n\n## e\nb\n"
+    new = old.replace("<x>", "<z>")
+    assert stamped(old, new) == new
+
+
+def test_each_kind_of_proof_says_how_to_read_it_before_its_first_entry(
+    tmp_path: Path,
+) -> None:
+    files = {
+        "proj/__init__.py": "",
+        "proj/alpha.py": "# Policy: one.\ndef f() -> None:\n    assert True\n",
+    }
+    code = Code(sourced(tmp_path, files), "proj")
+    trace = Trace(code, "proj.base.Finding", "proj.whoops.Whoops")
+    for proof in (
+        page(code, trace, "proj.alpha", tmp_path),
+        index(code, "proj.alpha", tmp_path),
+        whoopses(code, "proj.alpha", tmp_path, "proj.whoops.Whoops"),
+    ):
+        assert markers.PENDING in proof.splitlines()
+        reread = proof.replace(markers.PENDING, "- read it otherwise")
+        assert stamped(proof, reread) == reread
 
 
 def test_stamping_again_gives_the_same_stamps_and_applying_them_none() -> None:
@@ -827,6 +860,44 @@ def test_a_proof_counts_the_stamps_it_holds_and_those_a_write_would_add() -> Non
     assert Proof(Path("s.md"), None, "## e\na\n").new == 0
 
 
+def test_a_module_s_stage_says_what_is_written_of_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _ = sourced(
+        tmp_path,
+        {
+            "chatddx/__init__.py": "",
+            "chatddx/alpha/__init__.py": "def f() -> None:\n    pass\n",
+            "chatddx/beta.py": "# Policy: one.\ndef g() -> None:\n    assert True\n",
+            "chatddx/gamma/__init__.py": "",
+        },
+    )
+    stages = {
+        "alpha": Stage.SOLIDIFIED,
+        "beta": Stage.DRAFTED,
+        "gamma": Stage.PLANNED,
+        "delta": Stage.SOLIDIFIED,
+    }
+    monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(settings, "STAGES", stages)
+    for docs in ("surfaces", "comments", "whoopses"):
+        monkeypatch.setattr(stamp, docs.upper(), tmp_path / docs)
+    found = {str(s.path.relative_to(tmp_path)): s.written for s in proofs(stages)}
+    assert list(found) == [
+        "surfaces/alpha.md",
+        "comments/alpha.md",
+        "whoopses/alpha.md",
+        "comments/beta.md",
+        "whoopses/beta.md",
+    ]
+    assert "## `src/chatddx/beta.py:g`" in found["comments/beta.md"]
+    assert "comments in `src/chatddx/beta.py`," in found["comments/beta.md"]
+    assert "## `src/chatddx/beta.py:g`" in found["whoopses/beta.md"]
+    assert "from `src/chatddx/alpha/`," in found["surfaces/alpha.md"]
+    monkeypatch.setattr(settings, "STAGES", {**stages, "beta": Stage.SOLIDIFIED})
+    assert "from `src/chatddx/beta.py`," in proofs(["beta"])[0].written
+
+
 def faked(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *found: tuple[str, str | None, str]
 ) -> None:
@@ -839,7 +910,6 @@ def faked(
         if s.current is not None:
             _ = s.path.write_text(s.current)
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
-    monkeypatch.setattr(settings, "STAMPED", tuple(name for name, _, _ in found))
     monkeypatch.setattr(stamp, "SURFACES", docs)
     monkeypatch.setattr(stamp, "COMMENTS", tmp_path / "docs" / "comments")
     monkeypatch.setattr(stamp, "WHOOPSES", tmp_path / "docs" / "whoopses")
@@ -895,7 +965,7 @@ def test_check_at_the_baseline_fails_on_stamps_pending_and_on_new_ones(
     ]
 
 
-def test_check_flags_a_proof_no_package_writes_and_a_broken_stamp(
+def test_check_flags_a_module_with_no_stage_a_proof_no_module_writes_and_a_broken_stamp(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
@@ -904,13 +974,16 @@ def test_check_flags_a_proof_no_package_writes_and_a_broken_stamp(
     _ = (tmp_path / "docs" / "comments" / "gone.md").write_text("## e\n")
     (tmp_path / "docs" / "whoopses").mkdir()
     _ = (tmp_path / "docs" / "whoopses" / "gone.md").write_text("## e\n")
+    _ = sourced(tmp_path, {"chatddx/loose.py": "", "chatddx/lost/__init__.py": ""})
     with pytest.raises(SystemExit) as e:
         stamp.check([], baseline=False)
     assert e.value.code == 1
     assert capsys.readouterr().err.splitlines() == [
-        "flag: docs/comments/gone.md: no package of settings.STAMPED writes it",
-        "flag: docs/surfaces/gone.md: no package of settings.STAMPED writes it",
-        "flag: docs/whoopses/gone.md: no package of settings.STAMPED writes it",
+        "flag: src/chatddx/loose.py: no stage in settings.STAGES",
+        "flag: src/chatddx/lost: no stage in settings.STAGES",
+        "flag: docs/comments/gone.md: no module writes it at its stage in settings.STAGES",
+        "flag: docs/surfaces/gone.md: no module writes it at its stage in settings.STAGES",
+        "flag: docs/whoopses/gone.md: no module writes it at its stage in settings.STAGES",
     ]
 
     def broken(_: object) -> list[Proof]:
@@ -950,5 +1023,5 @@ def test_write_says_how_many_stamps_it_wrote_to_each_proof(
 
 @pytest.mark.slow
 def test_each_surface_is_as_chatddx_stamp_writes_it() -> None:
-    for s in proofs(settings.STAMPED):
+    for s in proofs(settings.STAGES):
         assert not s.behind, "chatddx stamp write"

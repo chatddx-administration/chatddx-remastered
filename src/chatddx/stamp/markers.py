@@ -2,8 +2,13 @@ from difflib import SequenceMatcher
 
 _OPENING = "<<<<<<< signed"
 _DIVIDER = "======="
-_CLOSING = ">>>>>>> @stamp"
+# Policy: never spelled whole, so that a search for it finds the stamps pending alone.
+_CLOSING = ">>>>>>> @" + "stamp"
 _CONFLICT = ("<<<<<<<", ">>>>>>>")
+PENDING = (
+    f"- A stamp pending is a git conflict, from `{_OPENING}` to `{_DIVIDER}` as last "
+    + "stamped and on to the `>>>>>>>` closing it as written now: a human stamps it."
+)
 
 
 def signed(text: str) -> list[str]:
@@ -41,9 +46,15 @@ def stamps(text: str) -> list[tuple[str, ...]]:
 
 
 def _entries(lines: list[str]) -> int:
-    return next(
-        (i for i, line in enumerate(lines) if line.startswith("## ")), len(lines)
-    )
+    fence = ""
+    for i, line in enumerate(lines):
+        if fence:
+            fence = "" if line.startswith(fence) and not line.strip("`") else fence
+        elif line.startswith("```"):
+            fence = line[: len(line) - len(line.lstrip("`"))]
+        elif line.startswith("## "):
+            return i
+    return len(lines)
 
 
 def stamped(current: str | None, written: str) -> str:

@@ -127,14 +127,14 @@ A thing under development is in one of the following stages:
 4. Named - Greppable and referred to as `<name>`
 5. Itemized - Has one or more items in `docs/backlog.md`
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
-7. Drafted - Exists as a moving target in code and `agents/wip-<name>.md`
-8. Solidified:
-   - Docs under rule 1 in `docs/modules/<name>.md`
-   - Comments stamped in `docs/comments/<name>.md`
-   - Surface stamped in `docs/surfaces/<name>.md`
-   - Whoopses and asserts stamped in `docs/whoopses/<name>.md`
+7. Drafted - Exists as a moving target in `src/chatddx/<name>*` and `agents/wip-<name>.md`
+8. Solidified - Docs under rule 1 in `docs/modules/<name>.md`
 9. Cemented: TBD
 10. Protected: TBD
+
+Drafts and above are declared in `src/chatddx/settings.py:STAGES`, and `chatddx stamp check` fails on a module in
+`src/chatddx/` without one. What `chatddx stamp` writes of a module from which stage on is
+`src/chatddx/settings.py:STAMPED_FROM`.
 
 Things can bounce around freely across these stages but are only in one stage at a time. Docs are moved and reworked in
 separate commits:

@@ -2,6 +2,7 @@ import sys
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 from chatddx import settings
@@ -42,22 +43,22 @@ class Proof:
 
 
 def proofs(packages: Iterable[str]) -> list[Proof]:
-    code = Code(settings.PROJECT_ROOT / "src", "chatddx")
+    root = settings.PROJECT_ROOT
+    code = Code(root / "src", "chatddx")
     trace = Trace(code, _FINDING, _WHOOPS)
     found: list[Proof] = []
     for package in packages:
         name = f"chatddx.{package}"
-        for path, written in (
-            (
-                SURFACES / f"{package}.md",
-                page(code, trace, name, settings.PROJECT_ROOT),
-            ),
-            (COMMENTS / f"{package}.md", index(code, name, settings.PROJECT_ROOT)),
-            (
-                WHOOPSES / f"{package}.md",
-                whoopses(code, name, settings.PROJECT_ROOT, _WHOOPS),
-            ),
+        if code.get(name) is None:
+            continue
+        for docs, write in (
+            (SURFACES, partial(page, code, trace, name, root)),
+            (COMMENTS, partial(index, code, name, root)),
+            (WHOOPSES, partial(whoopses, code, name, root, _WHOOPS)),
         ):
+            if settings.STAGES[package] < settings.STAMPED_FROM[docs.name]:
+                continue
+            path, written = docs / f"{package}.md", write()
             current = path.read_text() if path.exists() else None
             try:
                 found.append(Proof(path, current, stamped(current, written)))
@@ -69,17 +70,12 @@ def proofs(packages: Iterable[str]) -> list[Proof]:
 def check(packages: Sequence[str], baseline: bool) -> None:
     flags: list[str] = []
     try:
-        found = proofs(packages or settings.STAMPED)
+        found = proofs(packages or settings.STAGES)
     except ValueError as e:
         found, flags = [], [str(e)]
-    if not packages:
-        flags += [
-            f"{_shown(p)}: no package of settings.STAMPED writes it"
-            for p in sorted(
-                [*SURFACES.glob("*.md"), *COMMENTS.glob("*.md"), *WHOOPSES.glob("*.md")]
-            )
-            if p.stem not in settings.STAMPED
-        ]
+    else:
+        if not packages:
+            flags += _strays({s.path for s in found})
     refused = bool(flags)
     behind = [s for s in found if s.behind]
     for s in found:
@@ -108,7 +104,7 @@ def check(packages: Sequence[str], baseline: bool) -> None:
 
 def write(packages: Sequence[str]) -> None:
     try:
-        found = proofs(packages or settings.STAMPED)
+        found = proofs(packages or settings.STAGES)
     except ValueError as e:
         raise SystemExit(f"stamp write: {e}") from None
     written: list[str] = []
@@ -121,6 +117,22 @@ def write(packages: Sequence[str]) -> None:
             f"{_shown(s.path)}: {'new' if s.current is None else _stamps(s.new)}"
         )
     print("\n".join(written) or "nothing to write")
+
+
+def _strays(written: set[Path]) -> list[str]:
+    src = settings.PROJECT_ROOT / "src" / "chatddx"
+    modules = [p.parent for p in src.glob("*/__init__.py")]
+    modules += [p for p in src.glob("*.py") if p.stem != "__init__"]
+    docs = [*SURFACES.glob("*.md"), *COMMENTS.glob("*.md"), *WHOOPSES.glob("*.md")]
+    return [
+        f"{_shown(p)}: no stage in settings.STAGES"
+        for p in sorted(modules)
+        if p.stem not in settings.STAGES
+    ] + [
+        f"{_shown(p)}: no module writes it at its stage in settings.STAGES"
+        for p in sorted(docs)
+        if p not in written
+    ]
 
 
 def _shown(path: Path) -> str:

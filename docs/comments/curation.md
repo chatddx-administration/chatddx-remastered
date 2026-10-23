@@ -1,6 +1,17 @@
 # Comments in `chatddx.curation`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, each under its file and the name it is in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).
+Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, sorted by file and then by name whatever its case:
+
+````
+## `<file>:<the name it is in or right above>`
+
+```
+<the comment, as written>
+```
+````
+
+- A comment in or above no name is under its file alone, and comments on lines one after another are one.
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
 
 ## `src/chatddx/curation/plan.py:_LATE_TABLES`
 
