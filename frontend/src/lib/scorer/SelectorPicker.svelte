@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tp } from "$lib/locale";
   import { FIELD } from "$lib/utils";
   import { type Choice, chosen } from "./selectors";
 
@@ -23,12 +24,12 @@
       }}
     >
       {#each choices as c (c.selector)}<option value={c.selector}>{c.label}</option>{/each}
-      <option value="typed">typed…</option>
+      <option value="typed">{tp("a selector", "typed…")}</option>
     </select>
   {#if typed}
     <input
       class="{FIELD} font-mono text-xs"
-      aria-label="{label}, typed"
+      aria-label={tp("a selector", "%(label)s, typed", { label })}
       {value}
       oninput={(e) => set(e.currentTarget.value)}
     />

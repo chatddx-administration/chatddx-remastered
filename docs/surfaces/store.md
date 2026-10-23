@@ -111,11 +111,6 @@ Written by `chatddx stamp write` from `src/chatddx/store/`; how to read it is in
 
 `Connection = psycopg.Connection[TupleRow]`
 
-## `ENDED`
-`src/chatddx/store/queue.py:ENDED`
-
-`ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")`
-
 ## `Events` `@dataclass(frozen=True)`
 `src/chatddx/store/notify.py:Events`
 
@@ -325,7 +320,7 @@ Raises:
 * ∟`bool`
 
 Raises:
-1. `ValueError`: `"a job ends {', '.join(ENDED)}, not {status}"`
+1. `ValueError`: `"a job ends {', '.join(_ENDED)}, not {status}"`
 
 ## `Queue.enlist`
 `src/chatddx/store/queue.py:Queue.enlist`

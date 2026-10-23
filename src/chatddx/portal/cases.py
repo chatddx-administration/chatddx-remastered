@@ -14,6 +14,7 @@ from chatddx.bench import Bench, NotFound
 from chatddx.catalog import Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix, Case
+from chatddx.locale import tr
 
 from .changes import changes
 from .pages import BenchDep, page, within
@@ -41,14 +42,20 @@ def _case_page(
     at = len(bindings) if version is None else version
     if not 1 <= at <= len(bindings):
         raise HTTPException(
-            404, f"no version {at} of case {family}: it has {len(bindings)}"
+            404,
+            tr(
+                "no version %(at)s of case %(family)s: it has %(versions)s",
+                at=at,
+                family=family,
+                versions=len(bindings),
+            ),
         )
     bound = bindings[at - 1]
     before = None if at == 1 else bindings[at - 2]
     latest = at == len(bindings)
     mine = shown.owner == bench.person.login
     login = bench.person.login
-    cases: Sequence[schemas.FamilyCase | Earlier] = (
+    cases: Sequence[schemas.FamilyCase | _Earlier] = (
         shown.cases
         if latest
         else [
@@ -113,7 +120,7 @@ def _thread_of(bench: Bench, digest: str) -> int | None:
 
 
 @dataclass(frozen=True)
-class Earlier:
+class _Earlier:
     case: str
     title: str
     appendices: list[str]
@@ -121,10 +128,10 @@ class Earlier:
     stored: bool
 
 
-def _earlier(bench: Bench, case: str) -> Earlier:
+def _earlier(bench: Bench, case: str) -> _Earlier:
     held = resolve(bench.store.get, case, Case)
     made, _ = catalog.families.replacement(bench.rows, case)
-    return Earlier(
+    return _Earlier(
         case,
         bench.title(case),
         list(held.appendices),
@@ -203,7 +210,8 @@ def building(
 ) -> Response:
     picked = [a for a in appendices or [] if a]
     if not picked and back is None:
-        typed = Typed(["a case is built of one appendix or more: pick one"], kept=False)
+        refusal = tr("a case is built of one appendix or more: pick one")
+        typed = Typed([refusal], kept=False)
         return _case_page(request, bench, family, typed=typed)
     made = built(bench, family, picked)
     if back is None:
@@ -236,11 +244,18 @@ def taking(
     tag: Annotated[list[str] | None, Form()] = None,
 ) -> Response:
     if not families:
-        typed = Typed(["pick one case or more to take for"], kept=False)
+        typed = Typed([tr("pick one case or more to take for")], kept=False)
         return library_page(request, bench, "case", tag, typed)
     listed = {f.id: f for f in api.families(bench)}
     if missing := [f for f in families if f not in listed]:
-        raise HTTPException(404, f"no case {missing[0]} for {bench.person.login}")
+        raise HTTPException(
+            404,
+            tr(
+                "no case %(case)s for %(login)s",
+                case=missing[0],
+                login=bench.person.login,
+            ),
+        )
     named = {listed[f].case: listed[f].name for f in families}
     with refused(NotFound):
         taken = bench.take(named, expectation_schema, owner.strip() or None)
@@ -272,9 +287,9 @@ def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
 
 def appended(bench: Bench, family: int, name: str, text: str) -> None:
     if not name.strip():
-        raise HTTPException(422, "an appendix is named")
+        raise HTTPException(422, tr("an appendix is named"))
     if not text:
-        raise HTTPException(422, "an appendix holds a text")
+        raise HTTPException(422, tr("an appendix holds a text"))
     with refused():
         held = Appendix(vignette=bench.family(family).vignette, text=text)
         _ = bench.new(held, name.strip())
@@ -282,7 +297,7 @@ def appended(bench: Bench, family: int, name: str, text: str) -> None:
 
 def built(bench: Bench, family: int, appendices: list[str] | None) -> str:
     if not appendices:
-        raise HTTPException(422, "a case is built of one appendix or more")
+        raise HTTPException(422, tr("a case is built of one appendix or more"))
     with refused():
         made = bench.case(family, appendices)
     return made

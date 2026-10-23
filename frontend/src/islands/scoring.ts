@@ -1,4 +1,5 @@
 import { mount, unmount } from "svelte";
+import { t } from "$lib/locale";
 import JudgeTexts, { type Rewriting } from "$lib/scorer/JudgeTexts.svelte";
 
 type Props = {
@@ -16,7 +17,7 @@ if (target && held) {
   const opening = document.createElement("button");
   opening.type = "button";
   opening.className = "rounded-md border border-border px-2.5 py-0.5 text-sm hover:bg-muted";
-  opening.textContent = "Change what it is asked";
+  opening.textContent = t("Change what it is asked");
   const closed = (): void => target.replaceChildren(opening);
   opening.addEventListener("click", () => {
     if (!texts) return;
@@ -40,7 +41,7 @@ if (target && held) {
   else {
     const said = document.createElement("p");
     said.className = "text-xs text-muted-foreground";
-    said.textContent = "Its request was written by hand, not from a recipe: it is changed in the Library.";
+    said.textContent = t("Its request was written by hand, not from a recipe: it is changed in the Library.");
     target.replaceChildren(said);
   }
 }

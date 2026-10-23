@@ -67,10 +67,13 @@ These are for developers and ops, so:
 ### 3. Inform UX runtime
 
 Users should not be able to cause errors, and so the possibility for error should be addressed rather than the error
-itself. If it's not a good time for that kind of investigation, raise `Whoops` and move on. Either way, tell the user:
+itself. If it's not a good time for that kind of investigation, raise `Whoops(message, pass_on)` and move on. Either
+way, tell the user, in `message`:
 
 - what's going on
 - what they can do now
+
+and put in `pass_on` what they are to pass on to developers and ops, as it is.
 
 ## Tests and checks
 

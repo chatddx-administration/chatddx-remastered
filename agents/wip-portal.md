@@ -43,6 +43,43 @@ Take, the moves it asks for:
    bench's (`src/chatddx/bench/model.py:KINDS`), so it has no Library tab, no `kind` of the API's threads and no page,
    and nothing plans one.
 
+## The look
+
+The pages are HTML documents, and their look follows from what each element does: `frontend/src/portal.css` styles a
+button by being a button and a link by what clicking it does, so a template carries a word of what it is rather than
+the utilities of how it looks, and no macro draws a button or a link.
+
+Drafted:
+
+- **Contrast**: text at 4.5:1 at least on a pane, inputs' outlines at 3:1, in both colour schemes; panes solid and
+  bordered, and lighter than the page in dark mode, darker than it in light.
+- **Buttons**: a `<button>` does something. A template's carries only its kind: none for most, `primary` for a form's
+  main action, `danger` for what deletes, both for what stops at once, `small` for one in a row. Pressed, it sits a
+  pixel lower and darker.
+- **Links**: an `<a>` goes somewhere, by what clicking it does:
+
+| Kind       | Clicking it                                                      | Marked by          | Looks                                                   |
+| ---------- | ---------------------------------------------------------------- | ------------------ | ------------------------------------------------------- |
+| thing      | opens a thing's own page                                         | nothing            | underlined, in the primary colour                       |
+| navigation | moves around the portal: the header, sidebars, tabs, breadcrumbs | being in a `<nav>` | not underlined; the current one barred under, or beside |
+| jump       | moves down the page                                              | `href="#…"`        | a thing's, with ↓                                       |
+| bench      | takes a thing to another bench                                   | `bench`            | a thing's, with →                                       |
+| begin      | opens a form that writes something new                           | `begin`            | a thing's, with +                                       |
+| view       | changes what the page shows: filters, sorting, paging, versions  | `view`             | grey and dotted; the one in effect bold, with ✓         |
+
+- **Headings**: a section's title in a header ruled off across its pane
+  (`src/chatddx/portal/templates/macros.html`), a bare `h2` a pane's title and a bare `h3` a part of one; small
+  capitals only over a table's columns.
+- **A press**: the script in `src/chatddx/portal/templates/base.html` marks what was pressed and runs a bar along the
+  top until the next page comes, and keeps a form from being sent twice meanwhile; Back, and Stop where the browser has
+  the Navigation API, clear it.
+
+Open:
+
+- The benches keep their own compact headings, as their `h1` is as large as a section's title.
+- Inputs, selects and text boxes are still styled by utilities in each template.
+- The islands' buttons and links are shadcn's or utilities, of none of these kinds yet.
+
 ## The Library
 
 The Library is for schema driven views, threads fit right in, but cases, runs, configurations and translations do not

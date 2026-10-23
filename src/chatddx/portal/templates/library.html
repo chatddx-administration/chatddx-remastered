@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, section, chip, named, refusal with context %}
-{% block title %}{{ (word | replace("_", " ") ~ " · ") if word else "" }}Library · ChatDDX{% endblock %}
+{% block title %}{{ (word | kind ~ " · ") if word else "" }}{{ _("Library") }} · ChatDDX{% endblock %}
 
 {% macro locked() %}<svg aria-hidden="true" viewBox="0 0 16 16" class="h-3 w-3 shrink-0 fill-current"><path d="M5 7V5a3 3 0 0 1 6 0v2h.5A1.5 1.5 0 0 1 13 8.5v5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-5A1.5 1.5 0 0 1 4.5 7H5Zm1.5 0h3V5a1.5 1.5 0 0 0-3 0v2Z"/></svg>{% endmacro %}
 
 {% macro shelf_list(shelves, word) %}
 <div class="grid gap-4 text-sm">
-  <a href="/library"{% if not word %} aria-current="page"{% endif %} class="rounded-md px-2 py-1 font-medium {{ 'bg-primary/10 text-primary' if not word else 'text-muted-foreground hover:bg-muted hover:text-foreground' }}">Overview</a>
+  <ul><li><a href="/library"{% if not word %} aria-current="page"{% endif %} class="block px-2 py-1">{{ _("Overview") }}</a></li></ul>
   {% for shelf, kinds in shelves %}
   <div>
-    <p aria-hidden="true" class="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ shelf.heading }}</p>
-    <ul aria-label="{{ shelf.heading }}" class="grid gap-0.5">
-      {% for k in kinds %}
+    <p aria-hidden="true" class="mb-1 border-t border-border px-2 pt-3 font-semibold text-foreground">{{ _(shelf.heading) }}</p>
+    <ul aria-label="{{ _(shelf.heading) }}" class="grid gap-0.5">
+      {% for k in kinds | sort(attribute="worded") %}
       {% set here = k.word == word %}
-      <li><a href="/library?kind={{ k.word }}"{% if here %} aria-current="page"{% endif %} class="flex items-center gap-2 rounded-md px-2 py-1 transition-colors {{ 'bg-primary/10 font-medium text-primary' if here else 'text-foreground hover:bg-muted' }}">
-        <span class="min-w-0 flex-1 truncate">{{ k.word | replace("_", " ") }}</span>
-        {% if not k.written and k.word != "case" %}<span class="text-muted-foreground" title="Loaded with data sets: read here, not written">{{ locked() }}<span class="sr-only">, loaded with data sets</span></span>{% endif %}
+      <li><a href="/library?kind={{ k.word }}"{% if here %} aria-current="page"{% endif %} class="flex items-center gap-2 px-2 py-1">
+        <span class="min-w-0 flex-1 truncate">{{ k.worded }}</span>
+        {% if not k.written and k.word != "case" %}<span class="text-muted-foreground" title="{{ _('Loaded with data sets: read here, not written') }}">{{ locked() }}<span class="sr-only">{{ pgettext("after a kind's word", ", loaded with data sets") }}</span></span>{% endif %}
         <span class="text-xs tabular-nums text-muted-foreground">{{ k.seen }}</span>
       </a></li>
       {% endfor %}
@@ -27,13 +27,13 @@
 
 {% block main %}
 <div class="mx-auto max-w-6xl px-4 py-8">
-  {{ heading("Library", "Everything you work with, by kind, your own first. Each is kept with every version of it: a change saves a new version, and nothing is lost.") }}
+  {{ heading(_("Library"), _("Everything you work with, by kind, your own first. Each is kept with every version of it: a change saves a new version, and nothing is lost.")) }}
   <div class="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
-    <details class="glass-card rounded-2xl lg:hidden">
-      <summary class="cursor-pointer px-4 py-3 text-sm font-medium">Kinds{% if word %}: {{ word | replace("_", " ") }}{% endif %}</summary>
-      <div class="px-3 pb-4">{{ shelf_list(shelves, word) }}</div>
+    <details class="pane rounded-2xl lg:hidden">
+      <summary class="cursor-pointer px-4 py-3 text-sm font-medium">{{ _("Kinds: %(kind)s", kind=word | kind) if word else _("Kinds") }}</summary>
+      <nav aria-label="{{ _('Kinds') }}" class="px-3 pb-4">{{ shelf_list(shelves, word) }}</nav>
     </details>
-    <nav aria-label="Kinds" class="hidden lg:block">
+    <nav aria-label="{{ _('Kinds') }}" class="hidden lg:block">
       <div class="sticky top-4">{{ shelf_list(shelves, word) }}</div>
     </nav>
 
@@ -41,15 +41,14 @@
       {{ refusal(typed, request) }}
       {% if not word %}
       {% for shelf, kinds in shelves %}
-      {% call section(shelf.heading) %}
-      <p class="-mt-2 mb-4 text-sm text-muted-foreground">{{ shelf.about }}</p>
+      {% call section(_(shelf.heading), about=_(shelf.about)) %}
       <ul class="grid gap-3 text-sm">
-        {% for k in kinds %}
+        {% for k in kinds | sort(attribute="worded") %}
         <li class="grid gap-x-4 gap-y-0.5 sm:grid-cols-[11rem_1fr]">
-          <a class="font-medium text-primary hover:underline" href="/library?kind={{ k.word }}">{{ k.word | replace("_", " ") }}</a>
+          <a class="font-medium" href="/library?kind={{ k.word }}">{{ k.worded }}</a>
           <div>
-            <p>{{ k.about }}</p>
-            <p class="text-xs text-muted-foreground">{{ k.mine }} yours · {{ k.seen - k.mine }} shared with you{% if k.word == "case" %} · loaded with data sets, or typed on Home{% elif not k.written %} · loaded with data sets{% endif %}</p>
+            <p>{{ _(k.about) }}</p>
+            <p class="text-xs text-muted-foreground">{{ ngettext("%(num)s yours", "%(num)s yours", k.mine) }} · {{ ngettext("%(num)s shared with you", "%(num)s shared with you", k.seen - k.mine) }}{% if k.word == "case" %} · {{ _("loaded with data sets, or typed on Home") }}{% elif not k.written %} · {{ _("loaded with data sets") }}{% endif %}</p>
           </div>
         </li>
         {% endfor %}
@@ -58,38 +57,37 @@
       {% endfor %}
       {% else %}
 
-      {% call section(word | replace("_", " ")) %}
-      <p class="-mt-2 mb-4 text-sm text-muted-foreground">{{ about }}</p>
+      {% call section(word | kind, about=_(about)) %}
       {% if word == "case" %}
-      <p class="mb-3 text-sm text-muted-foreground">None is begun here: a case comes from a data set, or is typed on Home.</p>
+      <p class="mb-3 text-sm text-muted-foreground">{{ _("None is begun here: a case comes from a data set, or is typed on Home.") }}</p>
       {% elif begun %}
-      <p class="mb-3 text-sm"><a class="text-primary hover:underline" href="/library/new?kind={{ word }}">Write a new one</a></p>
+      <p class="mb-3 text-sm"><a class="begin" href="/library/new?kind={{ word }}">{{ _("Write a new one") }}</a></p>
       {% endif %}
       {% set shown = cases if word == "case" else threads %}
       {% if of %}
       <form method="get" action="/library" role="search" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <input type="hidden" name="kind" value="{{ word }}">
         {% for t in listing.tags %}<input type="hidden" name="tag" value="{{ t }}">{% endfor %}
-        <input type="search" name="q" value="{{ listing.q }}" aria-label="Find" placeholder="Find by name, owner, tag or description" class="h-9 min-w-0 flex-1 basis-60 rounded-md border border-input bg-transparent px-2.5">
+        <input type="search" name="q" value="{{ listing.q }}" aria-label="{{ _('Find') }}" placeholder="{{ _('Find by name, owner, tag or description') }}" class="h-9 min-w-0 flex-1 basis-60 rounded-md border border-input bg-transparent px-2.5">
         {% if word == "expectation" and schemas | length > 1 %}
-        <select name="schema" aria-label="Under the schema" class="h-9 rounded-md border border-input bg-transparent px-2.5">
-          <option value="">under any schema</option>
-          {% for digest, title in schemas %}<option value="{{ digest }}"{% if digest == listing.schema %} selected{% endif %}>under {{ title }}</option>{% endfor %}
+        <select name="schema" aria-label="{{ _('Under the schema') }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+          <option value="">{{ _("under any schema") }}</option>
+          {% for digest, title in schemas %}<option value="{{ digest }}"{% if digest == listing.schema %} selected{% endif %}>{{ _("under %(schema)s", schema=title) }}</option>{% endfor %}
         </select>
         {% endif %}
-        <button class="h-9 rounded-md border border-border px-3 font-medium hover:bg-muted">Find</button>
-        <span class="text-muted-foreground">{{ shown | length }} of {{ of }}{% if listing.q or listing.tags or listing.schema %} · <a class="text-primary hover:underline" href="/library?kind={{ word }}">show every one</a>{% endif %}</span>
+        <button>{{ _("Find") }}</button>
+        <span class="text-muted-foreground">{{ _("%(shown)s of %(of)s", shown=shown | length, of=of) }}{% if listing.q or listing.tags or listing.schema %} · <a class="view" href="/library?kind={{ word }}">{{ _("show every one") }}</a>{% endif %}</span>
       </form>
       {% endif %}
       {% set narrow = "hidden sm:table-cell" %}
       {% if word == "case" %}
       {% if tags %}
-      <nav aria-label="Tags" class="mb-4 flex flex-wrap items-center gap-1 text-sm">
-        <span class="mr-1 text-xs text-muted-foreground">Tagged</span>
+      <nav aria-label="{{ _('Tags') }}" class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span class="text-xs text-muted-foreground">{{ _("Tagged") }}</span>
         {% for t in tags %}
-        <a href="{{ listing.toggled(t) }}"{% if t in picked %} aria-current="true"{% endif %} class="rounded-full border px-3 py-1 font-medium transition-colors {{ 'border-primary/30 bg-primary/10 text-primary' if t in picked else 'border-border bg-background/60 text-muted-foreground hover:text-foreground' }}">{{ t }}{% if t in picked %}<span class="sr-only">, picked</span>{% endif %}</a>
+        <a href="{{ listing.toggled(t) }}"{% if t in picked %} aria-current="true"{% endif %} class="view">{{ t }}{% if t in picked %}<span class="sr-only">{{ pgettext("after a tag", ", picked") }}</span>{% endif %}</a>
         {% endfor %}
-        {% if picked | length > 1 %}<span class="ml-1 text-xs text-muted-foreground">each of them</span>{% endif %}
+        {% if picked | length > 1 %}<span class="text-xs text-muted-foreground">{{ pgettext("after the tags picked", "each of them") }}</span>{% endif %}
       </nav>
       {% endif %}
       {% if cases %}
@@ -98,13 +96,13 @@
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th class="pb-2 pr-2 font-medium"><span class="sr-only">Picked</span></th><th class="pb-2 pr-4 font-medium">Name</th><th class="pb-2 pr-4 font-medium">Owner</th><th class="{{ narrow }} pb-2 pr-4 font-medium">Language</th><th class="pb-2 font-medium">Tags</th></tr>
+              <tr><th class="pb-2 pr-2 font-medium"><span class="sr-only">{{ _("Picked") }}</span></th><th class="pb-2 pr-4 font-medium">{{ _("Name") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Owner") }}</th><th class="{{ narrow }} pb-2 pr-4 font-medium">{{ _("Language") }}</th><th class="pb-2 font-medium">{{ _("Tags") }}</th></tr>
             </thead>
             <tbody>
               {% for f in cases %}
               <tr class="border-t border-border/60">
-                <td class="py-2 pr-2 align-top"><input type="checkbox" name="family" value="{{ f.id }}" aria-label="pick {{ f.name }}"{% if every %} checked{% endif %}></td>
-                <td class="py-2 pr-4 align-top"><a class="text-primary hover:underline" href="/cases/{{ f.id }}">{{ f.name }}</a>
+                <td class="py-2 pr-2 align-top"><input type="checkbox" name="family" value="{{ f.id }}" aria-label="{{ _('pick %(name)s', name=f.name) }}"{% if every %} checked{% endif %}></td>
+                <td class="py-2 pr-4 align-top"><a href="/cases/{{ f.id }}">{{ f.name }}</a>
                   {%- if described.get(f.id) %}<span class="line-clamp-2 block max-w-prose text-xs text-muted-foreground">{{ described[f.id] }}</span>{% endif %}</td>
                 <td class="py-2 pr-4 align-top">{{ f.owner or "—" }}</td>
                 <td class="{{ narrow }} py-2 pr-4 align-top">{{ f.language or "—" }}</td>
@@ -115,27 +113,27 @@
           </table>
         </div>
         <div class="sticky bottom-0 -mx-5 mt-2 grid gap-3 border-t border-border/60 bg-card/95 px-5 py-3 text-sm backdrop-blur sm:-mx-6 sm:px-6">
-          <p><a class="text-primary hover:underline" href="{{ listing.link() if every else listing.link(pick='all') }}">{{ "Pick none" if every else "Pick every one shown" }}</a></p>
+          <p><a class="view" href="{{ listing.link() if every else listing.link(pick='all') }}">{{ _("Pick none") if every else _("Pick every one shown") }}</a></p>
           {% if schemas %}
           <div class="flex flex-wrap items-end gap-3">
-            <label class="grid gap-1"><span class="text-muted-foreground">expectation schema</span>
+            <label class="grid gap-1"><span class="text-muted-foreground">{{ "expectation_schema" | kind }}</span>
               <select name="expectation_schema" class="h-9 rounded-md border border-input bg-transparent px-2.5">
                 {% for digest, title in schemas %}<option value="{{ digest }}">{{ title }}</option>{% endfor %}
               </select></label>
-            <label class="grid gap-1"><span class="text-muted-foreground">owner</span>
-              <input name="owner" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="any"></label>
-            <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Take for the picked</button>
-            <span class="basis-full text-xs text-muted-foreground">Takes the expectation shared with you, under the schema, for each picked case: yours stay as they are.</span>
+            <label class="grid gap-1"><span class="text-muted-foreground">{{ _("owner") }}</span>
+              <input name="owner" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ pgettext('any owner', 'any') }}"></label>
+            <button class="primary">{{ _("Take for the picked") }}</button>
+            <span class="basis-full text-xs text-muted-foreground">{{ pgettext("after the button Take for the picked", "Takes the expectation shared with you, under the schema, for each picked case: yours stay as they are.") }}</span>
           </div>
           {% endif %}
           <div class="flex flex-wrap items-center gap-3">
-            <button formaction="/library/new" formmethod="get" name="kind" value="trial" class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Begin a trial of the picked</button>
-            <span class="text-muted-foreground">Its cases are the picked, and its language theirs.</span>
+            <button formaction="/library/new" formmethod="get" name="kind" value="trial">{{ _("Begin a trial of the picked") }}</button>
+            <span class="text-muted-foreground">{{ pgettext("after the button Begin a trial of the picked", "Its cases are the picked, and its language theirs.") }}</span>
           </div>
         </div>
       </form>
       {% else %}
-      <p class="text-sm text-muted-foreground">None you see{% if listing.q or listing.tags %} of these{% endif %}.</p>
+      <p class="text-sm text-muted-foreground">{{ _("None you see of these.") if listing.q or listing.tags else _("None you see.") }}</p>
       {% endif %}
       {% else %}
       {% if threads %}
@@ -144,15 +142,15 @@
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>{% if runnable %}<th class="pb-2 pr-2 font-medium"><span class="sr-only">Picked</span></th>{% endif %}<th class="pb-2 pr-4 font-medium">Name</th>{% if purposes %}<th class="pb-2 pr-4 font-medium">Purpose</th>{% endif %}<th class="pb-2 pr-4 font-medium">Owner</th><th class="{{ narrow }} pb-2 pr-4 font-medium">Language</th><th class="pb-2 pr-4 font-medium">Tags</th><th class="{{ narrow }} pb-2 font-medium">Latest version</th></tr>
+            <tr>{% if runnable %}<th class="pb-2 pr-2 font-medium"><span class="sr-only">{{ _("Picked") }}</span></th>{% endif %}<th class="pb-2 pr-4 font-medium">{{ _("Name") }}</th>{% if purposes %}<th class="pb-2 pr-4 font-medium">{{ _("Purpose") }}</th>{% endif %}<th class="pb-2 pr-4 font-medium">{{ _("Owner") }}</th><th class="{{ narrow }} pb-2 pr-4 font-medium">{{ _("Language") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Tags") }}</th><th class="{{ narrow }} pb-2 font-medium">{{ _("Latest version") }}</th></tr>
           </thead>
           <tbody>
             {% for t in threads %}
             <tr class="border-t border-border/60">
-              {% if runnable %}<td class="py-2 pr-2 align-top"><input type="checkbox" name="trial" value="{{ t.id }}" aria-label="pick {{ t.name or t.title }}"{% if every %} checked{% endif %}></td>{% endif %}
-              <td class="py-2 pr-4 align-top"><a class="text-primary hover:underline" href="/threads/{{ t.id }}">{{ t.name or t.title }}</a>
+              {% if runnable %}<td class="py-2 pr-2 align-top"><input type="checkbox" name="trial" value="{{ t.id }}" aria-label="{{ _('pick %(name)s', name=t.name or t.title) }}"{% if every %} checked{% endif %}></td>{% endif %}
+              <td class="py-2 pr-4 align-top"><a href="/threads/{{ t.id }}">{{ t.name or t.title }}</a>
                 {%- if described.get(t.id) %}<span class="line-clamp-2 block max-w-prose text-xs text-muted-foreground">{{ described[t.id] }}</span>{% endif %}
-                {%- if t.id in origins %}<span class="block text-xs text-muted-foreground">forked from {{ named(origins[t.id]) if origins[t.id] else "one you don't see" }}</span>{% endif %}</td>
+                {%- if t.id in origins %}<span class="block text-xs text-muted-foreground">{{ _("forked from %(origin)s", origin=named(origins[t.id])) if origins[t.id] else _("forked from one you don't see") }}</span>{% endif %}</td>
               {% if purposes %}<td class="py-2 pr-4 align-top">{{ purposes[t.id] }}</td>{% endif %}
               <td class="py-2 pr-4 align-top">{{ t.owner or "—" }}</td>
               <td class="{{ narrow }} py-2 pr-4 align-top">{{ t.language or "—" }}</td>
@@ -165,30 +163,30 @@
       </div>
       {% if runnable %}
       <div class="sticky bottom-0 -mx-5 mt-2 flex flex-wrap items-center gap-3 border-t border-border/60 bg-card/95 px-5 py-3 text-sm backdrop-blur sm:-mx-6 sm:px-6">
-        <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Run the picked</button>
-        <span class="text-muted-foreground">together, as one start, in the Lab.</span>
-        <a class="text-primary hover:underline" href="{{ listing.link() if every else listing.link(pick='all') }}">{{ "Pick none" if every else "Pick every one shown" }}</a>
+        <button class="primary">{{ _("Run the picked") }}</button>
+        <span class="text-muted-foreground">{{ pgettext("after the button Run the picked", "together, as one start, in the Lab.") }}</span>
+        <a class="view" href="{{ listing.link() if every else listing.link(pick='all') }}">{{ _("Pick none") if every else _("Pick every one shown") }}</a>
       </div>
       </form>
       {% endif %}
       {% elif listing.q or listing.schema %}
-      <p class="text-sm text-muted-foreground">None you see of these.</p>
+      <p class="text-sm text-muted-foreground">{{ _("None you see of these.") }}</p>
       {% elif word == "trial" %}
-      <p class="text-sm text-muted-foreground">None you see yet. A trial is begun of the cases picked on the <a class="text-primary hover:underline" href="/library?kind=case">case shelf</a>, with <span class="font-medium">Begin a trial of the picked</span>; or try a configuration on cases straight away in the <a class="text-primary hover:underline" href="/lab">Lab</a>.</p>
+      <p class="text-sm text-muted-foreground">{% trans %}None you see yet. A trial is begun of the cases picked on the <a href="/library?kind=case">case shelf</a>, with <span class="font-medium">Begin a trial of the picked</span>; or try a configuration on cases straight away in the <a class="bench" href="/lab">Lab</a>.{% endtrans %}</p>
       {% else %}
-      <p class="text-sm text-muted-foreground">None you see.</p>
+      <p class="text-sm text-muted-foreground">{{ _("None you see.") }}</p>
       {% endif %}
-      {% if not written %}<p class="mt-4 text-sm text-muted-foreground">These are written through data sets, by developers and ops.</p>{% endif %}
+      {% if not written %}<p class="mt-4 text-sm text-muted-foreground">{{ _("These are written through data sets, by developers and ops.") }}</p>{% endif %}
       {% endif %}
       {% endcall %}
 
       {% if deleted %}
-      {% call section("Your deleted", "deleted") %}
+      {% call section(_("Your deleted"), "deleted") %}
       <ul class="space-y-1.5 text-sm">
         {% for href, named in deleted %}
         <li class="flex flex-wrap items-center gap-3">
-          <a class="text-primary hover:underline" href="{{ href }}">{{ named }}</a>
-          <form method="post" action="{{ href }}/restore"><button class="rounded-md border border-border px-2.5 py-0.5 text-xs font-medium hover:bg-muted">Restore</button></form>
+          <a href="{{ href }}">{{ named }}</a>
+          <form method="post" action="{{ href }}/restore"><button class="small">{{ _("Restore") }}</button></form>
         </li>
         {% endfor %}
       </ul>

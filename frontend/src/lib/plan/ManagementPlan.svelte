@@ -4,6 +4,7 @@
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
   import * as Alert from "$lib/components/ui/alert";
+  import { t } from "$lib/locale";
   import DiagnosisCard from "./DiagnosisCard.svelte";
   import ManagementSection from "./ManagementSection.svelte";
   import { siteOf } from "./sources";
@@ -16,7 +17,7 @@
   {#if plan.acute_warning}
     <Alert.Root variant="destructive" class="animate-scale-in rounded-2xl border-destructive/30 bg-destructive/5">
       <ShieldAlertIcon />
-      <Alert.Title class="font-display text-lg font-bold">Acute warning</Alert.Title>
+      <Alert.Title class="font-display text-lg font-bold">{t("Acute warning")}</Alert.Title>
       <Alert.Description>{plan.acute_warning}</Alert.Description>
     </Alert.Root>
   {/if}
@@ -25,7 +26,7 @@
     <section class="space-y-4">
       <div class="flex animate-slide-up items-center gap-3" style:animation-delay="50ms">
         <div class="rounded-xl bg-primary/10 p-2"><ListChecksIcon class="size-5 text-primary" /></div>
-        <h3 class="text-xl font-bold text-foreground">Differential diagnoses</h3>
+        <h3 class="text-xl font-bold text-foreground">{t("Differential diagnoses")}</h3>
         <span class="rounded-full bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary">
           {plan.diagnoses.length}
         </span>
@@ -43,11 +44,11 @@
   {/if}
 
   {#if plan.sources?.length}
-    <section class="glass-card animate-slide-up rounded-2xl p-5" style:animation-delay="300ms">
+    <section class="pane animate-slide-up rounded-2xl p-5" style:animation-delay="300ms">
       <div class="flex items-start gap-4">
         <div class="shrink-0 rounded-xl bg-accent/10 p-2.5"><BookOpenIcon class="size-5 text-accent" /></div>
         <div class="flex-1">
-          <h3 class="mb-3 font-semibold text-foreground">Medical sources</h3>
+          <h3 class="mb-3 font-semibold text-foreground">{t("Medical sources")}</h3>
           <div class="flex flex-wrap gap-2">
             {#each plan.sources as source, i (i)}
               {@const site = siteOf(source)}
@@ -72,6 +73,6 @@
   {/if}
 
   <p class="animate-fade-in border-t border-border/30 pt-6 text-center text-xs text-muted-foreground">
-    This information is for educational and reference purposes only and does not replace clinical judgment.
+    {t("This information is for educational and reference purposes only and does not replace clinical judgment.")}
   </p>
 </div>

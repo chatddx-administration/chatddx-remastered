@@ -20,6 +20,12 @@ assert isinstance(e, RequestValidationError)
 assert isinstance(held, AppState)
 ```
 
+## `src/chatddx/api/app.py:_whoops`
+
+```
+assert isinstance(e, Whoops)
+```
+
 ## `src/chatddx/api/state.py:state`
 
 ```

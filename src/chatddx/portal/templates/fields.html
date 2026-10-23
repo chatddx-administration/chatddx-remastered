@@ -2,7 +2,7 @@
 {% set box = "w-full rounded-md border border-input bg-transparent px-2.5 py-1.5" %}
 
 {% macro titled(d, titles, links) -%}
-{%- if d in links %}<a class="text-primary hover:underline" href="{{ links[d] }}">{{ titles[d] }}</a>{% else %}{{ titles[d] }}{% endif %} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ d | short }}</span>
+{%- if d in links %}<a href="{{ links[d] }}">{{ titles[d] }}</a>{% else %}{{ titles[d] }}{% endif %} <span class="ml-1 font-mono text-xs text-muted-foreground">{{ d | short }}</span>
 {%- endmacro %}
 
 {% macro value(v, titles, links={}) -%}
@@ -18,7 +18,7 @@
 
 {% macro pick(name, held, options, nullable) -%}
 <select name="f.{{ name }}" aria-label="{{ name | replace('_', ' ') }}" class="{{ box }} h-9">
-  {% if nullable or held is none %}<option value="">{{ "none" if nullable else "pick one" }}</option>{% endif %}
+  {% if nullable or held is none %}<option value="">{{ pgettext("no pick", "none") if nullable else _("pick one") }}</option>{% endif %}
   {% for digest, label in options %}<option value="{{ digest }}"{% if digest == held %} selected{% endif %}>{{ label }}</option>{% endfor %}
 </select>
 {%- endmacro %}
@@ -26,47 +26,47 @@
 {% macro control(f, picked, links) -%}
 {% set label = f.name | replace("_", " ") %}
 {%- if f.shape == "pick" %}{{ pick(f.name, f.value, picked[f.name], f.nullable) }}
-{%- if f.value in links %}<a class="mt-0.5 inline-block text-xs text-primary hover:underline" href="{{ links[f.value] }}">Open the one picked</a>{% endif %}
+{%- if f.value in links %}<a class="mt-0.5 inline-block text-xs" href="{{ links[f.value] }}">{{ _("Open the one picked") }}</a>{% endif %}
 {%- elif f.shape == "picks" %}
 <div class="grid gap-1.5">
   {% for held in (f.value or []) + [""] %}{{ pick(f.name, held, picked[f.name], true) }}{% endfor %}
-  <span class="text-xs text-muted-foreground">One a line, in order; none takes one out, and the last adds one.</span>
+  <span class="text-xs text-muted-foreground">{{ _("One a line, in order; none takes one out, and the last adds one.") }}</span>
 </div>
 {%- elif f.shape == "chooses" %}
 <div class="grid gap-1.5">
   {% for held in (f.value or []) + [""] %}
   <select name="f.{{ f.name }}" aria-label="{{ label }} {{ loop.index }}" class="{{ box }} h-9">
-    <option value="">none</option>
+    <option value="">{{ pgettext("no pick", "none") }}</option>
     {% for o in f.options %}<option value="{{ o }}"{% if o == held %} selected{% endif %}>{{ o }}</option>{% endfor %}
   </select>
   {% endfor %}
-  <span class="text-xs text-muted-foreground">One a line, in order; none takes one out, and the last adds one.</span>
+  <span class="text-xs text-muted-foreground">{{ _("One a line, in order; none takes one out, and the last adds one.") }}</span>
 </div>
 {%- elif f.shape == "choose" %}
 <select name="f.{{ f.name }}" aria-label="{{ label }}" class="{{ box }} h-9">
-  {% if f.nullable or f.value is none %}<option value="">{{ "none" if f.nullable else "pick one" }}</option>{% endif %}
+  {% if f.nullable or f.value is none %}<option value="">{{ pgettext("no pick", "none") if f.nullable else _("pick one") }}</option>{% endif %}
   {% for o in f.options %}<option value="{{ o }}"{% if o == f.value %} selected{% endif %}>{{ o }}</option>{% endfor %}
 </select>
 {%- elif f.shape == "number" %}
 <input type="number" name="f.{{ f.name }}" aria-label="{{ label }}" value="{{ f.typed if f.typed is not none else '' if f.value is none else f.value }}" step="{{ 1 if f.whole else 'any' }}"{% if f.minimum is not none %} min="{{ f.minimum }}"{% endif %} class="{{ box }} h-9 max-w-xs">
-{%- if f.nullable %}<span class="block text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
+{%- if f.nullable %}<span class="block text-xs text-muted-foreground">{{ _("Left empty, it is none.") }}</span>{% endif %}
 {%- elif f.shape == "check" %}
 <input type="checkbox" name="f.{{ f.name }}" value="true" aria-label="{{ label }}"{% if f.value %} checked{% endif %} class="h-4 w-4">
 {%- elif f.shape == "lines" %}
 {% set shown = f.typed if f.typed is not none else (f.value or []) | join("\n") %}
 <textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [2, shown.count('\n') + 2] | max }}" class="{{ box }} font-mono text-xs">
 {{ shown }}</textarea>
-<span class="text-xs text-muted-foreground">{{ "Whole numbers, one a line or apart by commas." if f.whole else "One a line; an empty line is none." }}</span>
+<span class="text-xs text-muted-foreground">{{ _("Whole numbers, one a line or apart by commas.") if f.whole else _("One a line; an empty line is none.") }}</span>
 {%- elif f.shape == "text" %}
 <textarea name="f.{{ f.name }}" aria-label="{{ label }}" rows="{{ [3, (f.value or '').count('\n') + 2] | max }}" class="{{ box }}">
 {{ f.value or "" }}</textarea>
-{%- if f.nullable %}<span class="text-xs text-muted-foreground">Left empty, it is none.</span>{% endif %}
+{%- if f.nullable %}<span class="text-xs text-muted-foreground">{{ _("Left empty, it is none.") }}</span>{% endif %}
 {%- else %}
 {% set text = f.shape == "either" and f.typed is none and (f.value is string or f.value is none) %}
 {% if f.shape == "either" %}
-<select name="as.{{ f.name }}" aria-label="{{ label }}, read as" class="mb-1 h-8 rounded-md border border-input bg-transparent px-2 text-xs">
-  <option value="text"{% if text %} selected{% endif %}>as text</option>
-  <option value="json"{% if not text %} selected{% endif %}>as JSON</option>
+<select name="as.{{ f.name }}" aria-label="{{ _('%(field)s, read as', field=label) }}" class="mb-1 h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+  <option value="text"{% if text %} selected{% endif %}>{{ _("as text") }}</option>
+  <option value="json"{% if not text %} selected{% endif %}>{{ _("as JSON") }}</option>
 </select>
 {% endif %}
 {% set shown = f.typed if f.typed is not none else (f.value or "") if text else (f.value | pretty) if f.given else "" %}

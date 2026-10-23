@@ -39,6 +39,10 @@ class Error(_Schema):
         description="why, or where a request doesn't validate"
     )
     code: Code
+    pass_on: str | None = Field(
+        default=None,
+        description="a whoops's: what the person is to pass on to ops, as it is",
+    )
 
 
 class SignIn(_Schema):

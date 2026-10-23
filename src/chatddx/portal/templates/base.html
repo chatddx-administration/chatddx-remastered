@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ locale.tag }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{{ href }}">
   {% endfor %}
   {% if island %}
+  <script type="application/json" id="locale">{{ {"tag": locale.tag, "messages": locale.islands} | tojson }}</script>
   {% set built = assets.island(island) %}
   {% for href in built.styles %}
   <link rel="stylesheet" href="{{ href }}">
@@ -19,16 +20,55 @@
   <script type="module" src="{{ src }}"></script>
   {% endfor %}
   {% endif %}
+  <script>
+    // Policy: a press shows until the next page comes, and a form isn't sent twice meanwhile; not by
+    // disabling its button, which would leave the button's own name and value out of what is sent.
+    // Back and Stop clear it, which the Navigation API tells of where the browser has it; it aborts a
+    // navigation's signal as the next one starts, before the next one is told of.
+    {
+      const leaving = (pressed) => {
+        pressed.setAttribute("data-pressed", "");
+        document.documentElement.dataset.leaving = "";
+      };
+      const cleared = () => {
+        delete document.documentElement.dataset.leaving;
+        for (const at of document.querySelectorAll("[data-pressed], [data-sent]")) {
+          at.removeAttribute("data-pressed");
+          at.removeAttribute("data-sent");
+        }
+      };
+      addEventListener("submit", (sent) => {
+        const form = sent.target;
+        if (sent.defaultPrevented || form.hasAttribute("target")) return;
+        if (form.hasAttribute("data-sent")) return sent.preventDefault();
+        form.setAttribute("data-sent", "");
+        leaving(sent.submitter ?? form);
+      });
+      addEventListener("click", (clicked) => {
+        const link = clicked.target.closest?.("a[href]");
+        if (!link || clicked.defaultPrevented || clicked.button || clicked.metaKey || clicked.ctrlKey || clicked.shiftKey || clicked.altKey) return;
+        if (link.target || link.hasAttribute("download") || link.origin !== location.origin) return;
+        if (link.hash && link.pathname === location.pathname && link.search === location.search) return;
+        leaving(link);
+      });
+      addEventListener("pageshow", (shown) => shown.persisted && cleared());
+      let going = null;
+      window.navigation?.addEventListener("navigate", (started) => {
+        going = started;
+        started.signal.addEventListener("abort", () => setTimeout(() => going === started && cleared()));
+      });
+    }
+  </script>
 </head>
 <body class="gradient-bg relative min-h-screen overflow-x-hidden">
   <header class="relative z-20 flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
     <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <a href="/" class="font-display text-lg font-bold tracking-tight text-foreground">ChatDDX</a>
+      <a href="/" class="font-display text-lg font-bold tracking-tight text-foreground no-underline">ChatDDX</a>
       {% if person %}
-      <nav class="flex flex-wrap gap-1 text-sm">
-        {% for href, label in [("/review", "Review"), ("/lab", "Lab"), ("/scoring", "Scoring"), ("/runs", "Runs"), ("/library", "Library"), ("/world", "World")] %}
-        {% set here = request.url.path == href or request.url.path.startswith(href ~ "/") %}
-        <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="rounded-md px-3 py-1.5 font-medium transition-colors {{ 'bg-primary/10 text-primary' if here else 'text-muted-foreground hover:bg-muted hover:text-foreground' }}">{{ label }}</a>
+      <nav aria-label="{{ _('Pages') }}" class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+        {% for href, label in [("/review", _("Review")), ("/lab", _("Lab")), ("/scoring", _("Scoring")), ("/runs", _("Runs")), ("/library", _("Library")), ("/world", _("World"))] %}
+        {% set here = request.url.path == href or request.url.path.startswith(href ~ "/") or (href == "/library" and request.url.path.startswith(("/threads/", "/cases/"))) %}
+        <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="px-2 py-1.5">{{ label }}</a>
         {% endfor %}
       </nav>
       {% endif %}
@@ -37,7 +77,7 @@
     <div class="flex items-center gap-3 text-sm">
       <span class="text-muted-foreground">{{ person.name }}</span>
       <form method="post" action="/sign-out">
-        <button class="inline-flex h-8 items-center rounded-md border border-border bg-background/80 px-3 font-medium shadow-xs backdrop-blur-md transition-colors hover:bg-muted">Sign out</button>
+        <button>{{ _("Sign out") }}</button>
       </form>
     </div>
     {% endif %}

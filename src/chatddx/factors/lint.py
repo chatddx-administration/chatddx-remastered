@@ -29,7 +29,7 @@ _NIX_STORE = re.compile(r"^/nix/store/[0-9a-z]{32}-.+$")
 
 Languages = Callable[[str], str | None]
 Reasons = Callable[[str], bool | None]
-Validators = dict[str, Validator | str]
+_Validators = dict[str, Validator | str]
 
 
 def _model(c: LocalModel, _: Registry) -> Iterable[Finding]:
@@ -93,7 +93,7 @@ def _validator(schema: dict[str, JsonValue]) -> Validator | str:
 
 
 def _validator_of(
-    digest: str, registry: Registry, known: Validators
+    digest: str, registry: Registry, known: _Validators
 ) -> Validator | str:
     if digest not in known:
         schema = resolve(registry.get, digest, ExpectationSchema).json_schema
@@ -102,7 +102,7 @@ def _validator_of(
 
 
 def _expectation_schema(
-    c: ExpectationSchema, registry: Registry, known: Validators
+    c: ExpectationSchema, registry: Registry, known: _Validators
 ) -> Iterable[Finding]:
     match _validator_of(c.digest, registry, known):
         case str() as message:
@@ -126,7 +126,7 @@ def _output(c: Output, _: Registry) -> Iterable[Finding]:
 
 
 def _expectation(
-    c: Expectation, registry: Registry, known: Validators
+    c: Expectation, registry: Registry, known: _Validators
 ) -> Iterable[Finding]:
     validator = _validator_of(c.expectation_schema, registry, known)
     if isinstance(validator, str):
@@ -358,7 +358,7 @@ def lint(
     engines: Mapping[str, str] | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
-    known: Validators = {}
+    known: _Validators = {}
     for d in registry if digests is None else digests:
         match registry.get(d):
             case LocalModel() as c:

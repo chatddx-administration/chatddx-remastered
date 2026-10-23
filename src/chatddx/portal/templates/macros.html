@@ -5,9 +5,12 @@
 </header>
 {% endmacro %}
 
-{% macro section(title, id=None) %}
-<section{% if id %} id="{{ id }}"{% endif %} class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
-  <h2 class="mb-4 text-lg font-semibold">{{ title }}</h2>
+{% macro section(title, id=None, about=None) %}
+<section{% if id %} id="{{ id }}"{% endif %} class="pane mb-6 rounded-2xl p-5 sm:p-6">
+  <header class="-mx-5 mb-4 border-b border-border px-5 pb-3 sm:-mx-6 sm:px-6">
+    <h2>{{ title }}</h2>
+    {% if about %}<p class="mt-1 text-sm text-muted-foreground">{{ about }}</p>{% endif %}
+  </header>
   {{ caller() }}
 </section>
 {% endmacro %}
@@ -32,11 +35,20 @@
   {% endfor %}
 </ul>
 {% else %}
-<p class="text-sm text-muted-foreground">None.</p>
+<p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
 {% endif %}
 {% endmacro %}
 
-{% macro outcome(said, label=none) %}
+{% macro outcome(said, n=none) %}
+{% set words = {
+  "valid": pgettext("outcome", "valid") if n is none else npgettext("outcome", "%(num)s valid", "%(num)s valid", n),
+  "completed": pgettext("outcome", "completed") if n is none else npgettext("outcome", "%(num)s completed", "%(num)s completed", n),
+  "salvaged": pgettext("outcome", "salvaged") if n is none else npgettext("outcome", "%(num)s salvaged", "%(num)s salvaged", n),
+  "invalid": pgettext("outcome", "invalid") if n is none else npgettext("outcome", "%(num)s invalid", "%(num)s invalid", n),
+  "errored": pgettext("outcome", "errored") if n is none else npgettext("outcome", "%(num)s errored", "%(num)s errored", n),
+  "unread": pgettext("outcome", "unread") if n is none else npgettext("outcome", "%(num)s unread", "%(num)s unread", n),
+  "stopped": pgettext("outcome", "stopped") if n is none else npgettext("outcome", "%(num)s stopped", "%(num)s stopped", n),
+} %}
 {% set tones = {
   "valid": "border-success/30 bg-success/10 text-success",
   "completed": "border-success/30 bg-success/10 text-success",
@@ -46,14 +58,17 @@
   "unread": "border-destructive/30 bg-destructive/10 text-destructive",
   "stopped": "border-border bg-muted text-muted-foreground",
 } %}
-<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ label or said }}</span>
+<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ words.get(said, said) }}</span>
 {% endmacro %}
 
 {% macro job(j) -%}
 {%- if j is none -%}—
-{%- elif j.status == "queued" -%}{{ "queued, paused" if j.ahead is none else "queued, " ~ j.ahead ~ " ahead" }}{{ ", halting" if j.halt else "" }}
-{%- elif j.status == "under way" -%}{{ "halting" if j.halt else "under way" }}
-{%- else -%}{{ j.status }}{{ ": " ~ j.why if j.why else "" }}
+{%- elif j.status == "queued" and j.ahead is none -%}{{ _("queued, paused, halting") if j.halt else _("queued, paused") }}
+{%- elif j.status == "queued" -%}{{ ngettext("queued, %(num)s ahead, halting", "queued, %(num)s ahead, halting", j.ahead) if j.halt else ngettext("queued, %(num)s ahead", "queued, %(num)s ahead", j.ahead) }}
+{%- elif j.status == "under way" -%}{{ _("halting") if j.halt else _("under way") }}
+{%- else -%}
+{%- set status = {"finished": pgettext("job", "finished"), "stopped": pgettext("job", "stopped"), "failed": pgettext("job", "failed")}.get(j.status, j.status) -%}
+{{ _("%(status)s: %(why)s", status=status, why=j.why) if j.why else status }}
 {%- endif -%}
 {%- endmacro %}
 
@@ -62,9 +77,9 @@
 {% macro json(value) %}<pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{{ value | pretty }}</pre>{% endmacro %}
 
 {% macro tabs(items) %}
-<nav class="mb-6 flex flex-wrap gap-1 text-sm">
+<nav aria-label="{{ _('Tabs') }}" class="mb-6 flex flex-wrap gap-x-3 gap-y-1 text-sm">
   {% for href, label, here in items %}
-  <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="rounded-full border px-3 py-1 font-medium transition-colors {{ 'border-primary/30 bg-primary/10 text-primary' if here else 'border-border bg-background/60 text-muted-foreground hover:text-foreground' }}">{{ label }}</a>
+  <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="px-2 py-1">{{ label }}</a>
   {% endfor %}
 </nav>
 {% endmacro %}
@@ -72,51 +87,51 @@
 {% macro runs_table(runs, tallies, left=False) %}
 {% if runs %}
 <form id="compare" method="get" action="/runs/compare" class="mb-3 flex items-center gap-3 text-sm">
-  <button class="h-8 rounded-md border border-border px-3 font-medium hover:bg-muted">Compare</button>
-  <span class="text-muted-foreground">the runs ticked, side by side over the cases they share</span>
+  <button>{{ _("Compare") }}</button>
+  <span class="text-muted-foreground">{{ pgettext("after the button Compare", "the runs ticked, side by side over the cases they share") }}</span>
 </form>
 <div class="overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
       <tr>
-        <th class="pb-2 pr-2 font-medium"><span class="sr-only">Compare</span></th>
-        <th class="pb-2 pr-4 font-medium">Started</th>
-        <th class="pb-2 pr-4 font-medium">Run</th>
-        <th class="pb-2 pr-4 font-medium">Outcomes</th>
-        <th class="pb-2 pr-4 font-medium">Finished</th>
-        <th class="pb-2 pr-4 font-medium">Job</th>
-        {% if left %}<th class="pb-2 font-medium">Left to score by</th>{% endif %}
+        <th class="pb-2 pr-2 font-medium"><span class="sr-only">{{ _("Compare") }}</span></th>
+        <th class="pb-2 pr-4 font-medium">{{ _("Started") }}</th>
+        <th class="pb-2 pr-4 font-medium">{{ _("Run") }}</th>
+        <th class="pb-2 pr-4 font-medium">{{ _("Outcomes") }}</th>
+        <th class="pb-2 pr-4 font-medium">{{ _("Finished") }}</th>
+        <th class="pb-2 pr-4 font-medium">{{ _("Job") }}</th>
+        {% if left %}<th class="pb-2 font-medium">{{ _("Left to score by") }}</th>{% endif %}
       </tr>
     </thead>
     <tbody>
       {% for r in runs %}
       <tr class="border-t border-border/60">
-        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="Compare {{ r.described }}"></td>
+        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="{{ _('Compare %(run)s', run=r.described) }}"></td>
         <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ r.at | when }}</td>
-        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}" class="text-primary hover:underline">{{ r.described }}</a></td>
+        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}">{{ r.described }}</a></td>
         {% set counted, rest = tallies[r.id] %}
-        <td class="py-2 pr-4 align-top"><div class="flex flex-wrap items-center gap-1">{% for said, n in counted %}{{ outcome(said, n ~ " " ~ said) }}{% endfor %}{% if rest %}<span class="whitespace-nowrap text-xs text-muted-foreground">{{ rest }} {{ "missing" if r.finished else "to go" }}</span>{% endif %}</div></td>
-        <td class="py-2 pr-4 align-top">{{ "yes" if r.finished else "no" }}</td>
+        <td class="py-2 pr-4 align-top"><div class="flex flex-wrap items-center gap-1">{% for said, n in counted %}{{ outcome(said, n) }}{% endfor %}{% if rest %}<span class="whitespace-nowrap text-xs text-muted-foreground">{{ ngettext("%(num)s missing", "%(num)s missing", rest) if r.finished else ngettext("%(num)s to go", "%(num)s to go", rest) }}</span>{% endif %}</div></td>
+        <td class="py-2 pr-4 align-top">{{ _("yes") if r.finished else _("no") }}</td>
         <td class="py-2 pr-4 align-top text-muted-foreground">{{ job(r.job) }}</td>
-        {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}{% if r.job is none or r.job.status not in ("queued", "under way") %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="rounded-md bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form>{% endif %}</div></td>{% endif %}
+        {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}{% if r.job is none or r.job.status not in ("queued", "under way") %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="primary small">{{ _("Score again") }}</button></form>{% endif %}</div></td>{% endif %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
-<p class="text-sm text-muted-foreground">No runs.</p>
+<p class="text-sm text-muted-foreground">{{ _("No runs.") }}</p>
 {% endif %}
 {% endmacro %}
 
 {% macro pane(label) %}
-<section aria-label="{{ label }}" class="glass-card relative min-h-0 rounded-2xl p-4 xl:overflow-y-auto">
+<section aria-label="{{ label }}" class="pane relative min-h-0 rounded-2xl p-4 xl:overflow-y-auto">
   {{ caller() }}
 </section>
 {% endmacro %}
 
 {% macro drawer(name, label) %}
-<details data-drawer="{{ name }}" aria-label="{{ label }}" class="group glass-card min-h-0 rounded-2xl">
+<details data-drawer="{{ name }}" aria-label="{{ label }}" class="group pane min-h-0 rounded-2xl">
   {{ caller() }}
 </details>
 {% endmacro %}
@@ -136,9 +151,9 @@
 {% macro refusal(typed, request) %}
 {% if typed %}
 <div role="alert" class="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
-  <p class="font-medium text-destructive">{{ "Nothing is saved yet" if request.method == "POST" else "That can't be shown" }}</p>
-  {% for said in typed.said %}<p class="mt-1 [overflow-wrap:anywhere]">{{ said }}</p>{% endfor %}
-  {% if request.method == "POST" and typed.kept %}<p class="mt-1 text-muted-foreground">What you typed is kept below, and what was refused is marked there: set it right and send it again.</p>{% endif %}
+  <p class="font-medium text-destructive">{{ _("Nothing is saved yet") if request.method == "POST" else _("That can't be shown") }}</p>
+  {% for refused in typed.refused %}<p class="mt-1 [overflow-wrap:anywhere]">{{ refused }}</p>{% endfor %}
+  {% if request.method == "POST" and typed.kept %}<p class="mt-1 text-muted-foreground">{{ _("What you typed is kept below, and what was refused is marked there: set it right and send it again.") }}</p>{% endif %}
 </div>
 {% endif %}
 {% endmacro %}

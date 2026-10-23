@@ -20,10 +20,10 @@ public. The surface is stamped in `docs/surfaces/api.md`.
 - **Strict schemas.** A request with a field the API doesn't know is a 422. A component is written as its JSON, `kind`
   included, as `GET /api/components/{digest}` gives its `body`; `GET /api/kinds` gives each kind's JSON Schema. Checking
   a component or a recipe, picking, trying a scorer and what a judge is asked are POSTs that write nothing.
-- **One error shape.** Every error is an `Error`, `{"detail", "code"}`: a bench exception by
-  `src/chatddx/api/app.py:STATUSES`, an HTTP status by `src/chatddx/api/app.py:CODES`, a request that doesn't validate
-  as `unprocessable` with where. What a request's body or query names that is missing is a 422, what its path names a
-  404 (`src/chatddx/api/state.py:refused`).
+
+- **One error shape.** Every error is an `Error`, `{"detail", "code"}`, and a whoops's `pass_on` besides: a bench
+  exception by `src/chatddx/api/app.py:STATUSES`, a whoops by what it tells the person and what they are to pass on, an
+  HTTP status by `src/chatddx/api/app.py:CODES`, a request that doesn't validate as `unprocessable` with where. …
 
   | Status | Code                                | When                                                              |
   | ------ | ----------------------------------- | ----------------------------------------------------------------- |
@@ -35,6 +35,7 @@ public. The surface is stamped in `docs/surfaces/api.md`.
   | 422    | `refused`, `unprocessable`          | the bench or the gate refuses it; it doesn't validate             |
   | 429    | `over_quota`                        | a day's runs or typed cases, a run's items                        |
   | 500    | `error`                             | anything else, raw                                                |
+  | 500    | `whoops`                            | what shouldn't have happened: what to do now, and what to pass on |
 
 - **Writes name what they saw.** What makes a thread or a family answers 201 with its `Location`. An edit names the head
   it was made on: one that changes nothing is a 200, one on a head the thread has moved on from a 409.

@@ -42,7 +42,7 @@ LABEL = "dim"
 REFUSED = "red"
 VALID = "green"
 LATER = "yellow"
-THINKING = "#5f87af"
+_THINKING = "#5f87af"
 
 STYLES: dict[Outcome, str] = {
     "stopped": REFUSED,
@@ -57,11 +57,11 @@ STYLES: dict[Outcome, str] = {
 TOKENS = len("tokens")
 
 # Policy: what the scoring pass notes of an answer, which show_answer says already.
-ANSWERED = frozenset({"answer.unread", "answer.invalid", "answer.salvaged"})
+_ANSWERED = frozenset({"answer.unread", "answer.invalid", "answer.salvaged"})
 
-NAMED = 10
+_NAMED = 10
 
-UNTARGETED: tuple[JsonValue, ...] = (NO_TARGET, NO_EXPECTATION)
+_UNTARGETED: tuple[JsonValue, ...] = (NO_TARGET, NO_EXPECTATION)
 
 
 def finding(f: Finding, times: int = 1) -> Text:
@@ -88,7 +88,7 @@ def scored_findings(graded: Iterable[Graded], read: bool = False) -> list[Findin
             continue
         noted = () if g.score.finished is None else g.score.finished.findings
         for f in (*noted, *g.findings):
-            if not (read and f.code in ANSWERED):
+            if not (read and f.code in _ANSWERED):
                 found[f] = None
     return list(found)
 
@@ -105,8 +105,8 @@ def writes(values: dict[str, JsonValue], prefix: str = "") -> str:
 
 def some(names: Iterable[str]) -> str:
     listed = list(names)
-    more = len(listed) - NAMED
-    return " ".join(listed[:NAMED]) + (f" and {more} more" if more > 0 else "")
+    more = len(listed) - _NAMED
+    return " ".join(listed[:_NAMED]) + (f" and {more} more" if more > 0 else "")
 
 
 def clipped(text: str, lines: int = 30) -> str:
@@ -145,9 +145,9 @@ class Transcript:
                 self.begin({"reasoning": "thinking", "content": None}.get(kind, text))
                 self.kind = kind
                 if kind != "tool_call":
-                    self.write(text, THINKING if kind == "reasoning" else "")
+                    self.write(text, _THINKING if kind == "reasoning" else "")
             case Streamed(delta=Delta(kind=kind, text=text)):
-                self.write(text, THINKING if kind == "reasoning" else "")
+                self.write(text, _THINKING if kind == "reasoning" else "")
             case ToolRan(run=ran):
                 self.begin("result")
                 self.write(ran.result if ran.error is None else f"error: {ran.error}")
@@ -183,7 +183,7 @@ class Transcript:
                     self.write(arguments)
                 case Part(kind, text) if text.strip():
                     self.begin("thinking" if kind == "reasoning" else None)
-                    self.write(text.rstrip(), THINKING if kind == "reasoning" else "")
+                    self.write(text.rstrip(), _THINKING if kind == "reasoning" else "")
                 case _:
                     pass
 
@@ -288,7 +288,7 @@ class JudgeLines:
                 assert self.asked is not None
                 scorer = resolve(bench.store.get, self.asked.scorer, Scorer)
                 view = scorer.views[self.asked.view]
-                said, _ = verdict_of(view, verdict)
+                said, _ = _verdict_of(view, verdict)
                 word, style = (said, "") if said is not None else ("unread", REFUSED)
                 self.tally.end(used(judged.call)[1], word, style, judged.call.error)
                 self.close()
@@ -302,7 +302,7 @@ class JudgeLines:
 
 
 # Dependency: `at` as the verdict metrics read it: src/chatddx/scorers/verdicts.py.
-def verdict_of(view: View, verdict: JsonValue | None) -> tuple[str | None, str | None]:
+def _verdict_of(view: View, verdict: JsonValue | None) -> tuple[str | None, str | None]:
     if verdict is None:
         return None, None
     at = view.params.get("at")
@@ -326,7 +326,9 @@ def show_judged(console: Console, bench: Bench, graded: list[Graded]) -> None:
             for n, judged in enumerate(item.judge_calls):
                 judge = resolve(bench.store.get, judged.judge, Judge)
                 skeleton = resolve(bench.store.get, judge.skeleton, Skeleton)
-                said, why = verdict_of(view, read(skeleton, judged.call.response).value)
+                said, why = _verdict_of(
+                    view, read(skeleton, judged.call.response).value
+                )
                 table.add_row(
                     g.label(item.view) if n == 0 else "",
                     f"{bench.title(judged.judge)}, seed {judged.seed_index + 1}",
@@ -429,7 +431,7 @@ def show_scores(console: Console, graded: list[Graded]) -> None:
             continue
         shown = False
         for item in g.score.items:
-            if item.detail in UNTARGETED:
+            if item.detail in _UNTARGETED:
                 untargeted.setdefault(g.name, []).append(g.label(item.view))
                 continue
             table.add_row(
@@ -463,7 +465,7 @@ def show_table(
     for g in scored:
         for i in range(len(g.scorer.views)):
             found = [held.get((g.name, i, item.key)) for item in items]
-            if found and all(s is not None and s.detail in UNTARGETED for s in found):
+            if found and all(s is not None and s.detail in _UNTARGETED for s in found):
                 untargeted.setdefault(g.name, []).append(g.label(i))
             else:
                 columns.append((g, i))
@@ -535,7 +537,7 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
         values = [s.value for s in found if s.value is not None]
         unvalued = [s.detail for s in found if s.value is None]
         unanswered = sum(d == NO_ANSWER for d in unvalued)
-        untargeted = sum(d in UNTARGETED for d in unvalued)
+        untargeted = sum(d in _UNTARGETED for d in unvalued)
         table.add_row(
             name if name not in shown else "",
             labels[(name, i)],

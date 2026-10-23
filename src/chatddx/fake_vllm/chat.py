@@ -17,9 +17,9 @@ log = logging.getLogger(__name__)
 DIAGNOSES = ("Fake diagnosis A", "Fake diagnosis B", "Fake diagnosis C")
 ANSWER = "\n".join(DIAGNOSES)
 
-MAX_TEMP = 1e-2
+_MAX_TEMP = 1e-2
 GREEDY_TEMP = 1e-5
-HARMONY_EFFORTS = ("high", "medium", "low")
+_HARMONY_EFFORTS = ("high", "medium", "low")
 VOCABULARY = 151936
 
 _TRANSPORT = frozenset({"messages", "model", "stream", "stream_options"})
@@ -141,10 +141,10 @@ def check(served: Served, body: dict[str, Any]) -> None:
     if served.family == "harmony" and effort is not None:
         if effort == "none":
             raise Failure("Harmony does not support reasoning_effort='none'")
-        if effort not in HARMONY_EFFORTS:
+        if effort not in _HARMONY_EFFORTS:
             raise Failure(
                 f"reasoning_effort={effort!r} is not supported by Harmony. "
-                + f"Supported values are: {', '.join(HARMONY_EFFORTS)}."
+                + f"Supported values are: {', '.join(_HARMONY_EFFORTS)}."
             )
     if body.get("thinking_token_budget") is not None and not (
         served.reasoning_parser or served.reasoning_config
@@ -167,15 +167,15 @@ def temperature(body: dict[str, Any]) -> float | None:
     t = body.get("temperature")
     if not isinstance(t, int | float):
         return None
-    if 0 < t < MAX_TEMP:
+    if 0 < t < _MAX_TEMP:
         log.warning(
             "temperature %s is less than %s, which may cause numerical errors nan or "
             + "inf in tensors. We have maxed it out to %s.",
             t,
-            MAX_TEMP,
-            MAX_TEMP,
+            _MAX_TEMP,
+            _MAX_TEMP,
         )
-        return MAX_TEMP
+        return _MAX_TEMP
     return float(t)
 
 

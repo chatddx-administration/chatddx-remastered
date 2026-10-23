@@ -10,11 +10,6 @@ Written by `chatddx stamp write` from `src/chatddx/tools/`; how to read it is in
 * `max_results: int = 5`
 * ∟`str`
 
-## `SEARCH_URL`
-`src/chatddx/tools/web_search.py:SEARCH_URL`
-
-`SEARCH_URL = "https://html.duckduckgo.com/html/"`
-
 ## `ShippedTool` `@dataclass(frozen=True)`
 `src/chatddx/tools/shipped.py:ShippedTool`
 

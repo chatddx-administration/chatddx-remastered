@@ -1,29 +1,30 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, tabs, runs_table, section %}
-{% block title %}Runs · ChatDDX{% endblock %}
+{% block title %}{{ _("Runs") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  {{ heading("Runs", "Your runs, newest first.") }}
-  {% call section("Your queue") %}
+  {{ heading(_("Runs"), _("Your runs, newest first.")) }}
+  {% call section(_("Your queue")) %}
   <div class="flex flex-wrap items-center gap-3 text-sm">
-    <span>{{ queue.queued }} queued, {{ queue.under_way }} under way{{ "; paused" if queue.paused else "" }}.</span>
-    <form method="post" action="/queue/{{ 'resume' if queue.paused else 'pause' }}"><button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">{{ "Resume" if queue.paused else "Pause" }}</button></form>
+    {% set queued, under_way = ngettext("%(num)s queued", "%(num)s queued", queue.queued), ngettext("%(num)s under way", "%(num)s under way", queue.under_way) %}
+    <span>{{ _("%(queued)s, %(under_way)s; paused.", queued=queued, under_way=under_way) if queue.paused else _("%(queued)s, %(under_way)s.", queued=queued, under_way=under_way) }}</span>
+    <form method="post" action="/queue/{{ 'resume' if queue.paused else 'pause' }}"><button>{{ _("Resume") if queue.paused else _("Pause") }}</button></form>
     {% if queue.queued %}
-    <form method="post" action="/queue/stop"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Stop</button></form>
+    <form method="post" action="/queue/stop"><button class="primary danger">{{ _("Stop") }}</button></form>
     {% elif queue.under_way %}
-    <form method="post" action="/queue/stop"><input type="hidden" name="now" value="true"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Stop now</button></form>
+    <form method="post" action="/queue/stop"><input type="hidden" name="now" value="true"><button class="primary danger">{{ _("Stop now") }}</button></form>
     {% endif %}
-    {% if queue.queued and not queue.workers %}<span class="text-warning">No worker is running, so nothing queued is taken.</span>{% endif %}
+    {% if queue.queued and not queue.workers %}<span class="text-warning">{{ _("No worker is running, so nothing queued is taken.") }}</span>{% endif %}
   </div>
-  <p class="mt-3 text-xs text-muted-foreground">Pausing holds what is queued and queues the runs under way again after the items being sent. Stop takes what is queued out, its runs left unfinished to be resumed; once nothing is queued, Stop now halts the runs under way.</p>
+  <p class="mt-3 text-xs text-muted-foreground">{{ _("Pausing holds what is queued and queues the runs under way again after the items being sent. Stop takes what is queued out, its runs left unfinished to be resumed; once nothing is queued, Stop now halts the runs under way.") }}</p>
   {% endcall %}
-  {{ tabs([("/runs", "All", not left), ("/runs?left=true", "Left to score", left)]) }}
-  {% call section("Left to score" if left else "All runs") %}
+  {{ tabs([("/runs", _("All"), not left), ("/runs?left=true", _("Left to score"), left)]) }}
+  {% call section(_("Left to score") if left else _("All runs")) %}
   {{ runs_table(runs, tallies, left) }}
   {% if number > 1 or more %}
   <div class="mt-4 flex justify-between text-sm">
-    {% if number > 1 %}<a class="text-primary hover:underline" href="/runs?page={{ number - 1 }}{{ '&left=true' if left else '' }}">Newer</a>{% else %}<span></span>{% endif %}
-    {% if more %}<a class="text-primary hover:underline" href="/runs?page={{ number + 1 }}{{ '&left=true' if left else '' }}">Older</a>{% endif %}
+    {% if number > 1 %}<a class="view" href="/runs?page={{ number - 1 }}{{ '&left=true' if left else '' }}">{{ _("Newer") }}</a>{% else %}<span></span>{% endif %}
+    {% if more %}<a class="view" href="/runs?page={{ number + 1 }}{{ '&left=true' if left else '' }}">{{ _("Older") }}</a>{% endif %}
   </div>
   {% endif %}
   {% endcall %}

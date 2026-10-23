@@ -1,6 +1,7 @@
 <script lang="ts">
   import { type Snippet, untrack } from "svelte";
   import type { Schemas } from "$lib/api/client";
+  import { t, tn, tp } from "$lib/locale";
   import type { Schema } from "$lib/schema/form";
   import { FIELD } from "$lib/utils";
   import JudgeEditor from "./JudgeEditor.svelte";
@@ -38,13 +39,25 @@
   } = $props();
   const known = new Map(untrack(() => metrics).map((m) => [m.name, m]));
   const unjudged = untrack(() => metrics).filter((m) => !m.judged);
-  const named: Record<string, string> = { at: "Its verdict at", max: "Out of" };
+  const named: Record<string, string> = { at: t("Its verdict at"), max: t("Out of") };
 
   let writing = $state<number | null>(null);
 
   function added(): void {
     views.push({ metric: unjudged[0]?.name ?? "", expectation: "", output: "" });
-    labels.push(`view ${labels.length}`);
+    labels.push(t("view %(n)s", { n: labels.length }));
+  }
+
+  function described(j: JudgeChoice): string {
+    const given = {
+      judge: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
+      configuration: j.configuration,
+      model: j.model ?? "",
+      seeds: tn("%(n)s seed", "%(n)s seeds", j.seeds.length, { n: j.seeds.length }),
+    };
+    return j.model
+      ? t("%(judge)s: %(configuration)s under %(model)s, %(seeds)s", given)
+      : t("%(judge)s: %(configuration)s, %(seeds)s", given);
   }
 
   function moved(at: number, by: number): void {
@@ -102,52 +115,56 @@
       <div class="flex items-center gap-2">
         <input
           class="{FIELD} min-w-0 flex-1 font-medium"
-          aria-label="Its label"
+          aria-label={t("Its label")}
           bind:value={labels[at]}
         />
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label="Move it up" disabled={at === 0} onclick={() => moved(at, -1)}>↑</button>
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label="Move it down" disabled={at === views.length - 1} onclick={() => moved(at, 1)}>↓</button>
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label="Leave it out" disabled={views.length === 1} onclick={() => dropped(at)}>×</button>
+        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Move it up")} disabled={at === 0} onclick={() => moved(at, -1)}>↑</button>
+        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Move it down")} disabled={at === views.length - 1} onclick={() => moved(at, 1)}>↓</button>
+        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Leave it out")} disabled={views.length === 1} onclick={() => dropped(at)}>×</button>
       </div>
       <div class="grid gap-2 sm:grid-cols-2">
         <SelectorPicker
           choices={asked}
           value={view.expectation ?? ""}
           set={(v) => (view.expectation = v)}
-          label="Reads of what is expected"
+          label={t("Reads of what is expected")}
         />
         <div class="grid content-start gap-1">
-          <SelectorPicker choices={answered} value={view.output ?? ""} set={(v) => (view.output = v)} label="Reads of the answer" />
+          <SelectorPicker choices={answered} value={view.output ?? ""} set={(v) => (view.output = v)} label={t("Reads of the answer")} />
           <label class="flex items-center gap-2">
             <input
               type="checkbox"
               checked={view.split === "lines@1"}
               onchange={(e) => (view.split = e.currentTarget.checked ? "lines@1" : null)}
             />
-            line by line, as a list
+            {t("line by line, as a list")}
           </label>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <span class="flex items-center gap-2">
-          <span class="text-muted-foreground" aria-hidden="true">Compared by</span>
+          <span class="text-muted-foreground" aria-hidden="true">{t("Compared by")}</span>
           <select
-            aria-label="Compared by"
+            aria-label={t("Compared by")}
             class={FIELD}
             title={metric?.measures ?? ""}
             value={view.metric}
             onchange={(e) => metricked(view, e.currentTarget.value)}
           >
             {#each metrics as m (m.name)}
-              <option value={m.name} title={m.measures}>{m.name.replaceAll("_", " ")}{m.judged ? ", by a judge" : ""}</option>
+              <option value={m.name} title={m.measures}
+                >{m.judged
+                  ? t("%(metric)s, by a judge", { metric: m.name.replaceAll("_", " ") })
+                  : m.name.replaceAll("_", " ")}</option
+              >
             {/each}
           </select>
         </span>
         {#if metric?.judged}
           <span class="flex items-center gap-2">
-            <span class="text-muted-foreground" aria-hidden="true">Judge</span>
+            <span class="text-muted-foreground" aria-hidden="true">{t("Judge")}</span>
             <select
-              aria-label="Judge"
+              aria-label={t("Judge")}
               class="{FIELD} max-w-56"
               value={writing === at ? "new" : (view.judge ?? "")}
               onchange={(e) => {
@@ -159,11 +176,11 @@
                 }
               }}
             >
-              {#if !judge && view.judge}<option value={view.judge}>{titles[view.judge] ?? "its judge"}</option>{/if}
+              {#if !judge && view.judge}<option value={view.judge}>{titles[view.judge] ?? t("its judge")}</option>{/if}
               {#each judges as j (j.thread)}
-                <option value={j.digest}>{(j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name}: {j.configuration}{j.model ? ` under ${j.model}` : ""}, {j.seeds.length === 1 ? "1 seed" : `${j.seeds.length} seeds`}</option>
+                <option value={j.digest}>{described(j)}</option>
               {/each}
-              <option value="new">a new judge…</option>
+              <option value="new">{t("a new judge…")}</option>
             </select>
           </span>
         {/if}
@@ -174,7 +191,7 @@
                 choices={verdictAt(judge.output_schema).map((p) => ({ label: p.slice(1).replaceAll("/", " › ").replaceAll("_", " "), selector: p }))}
                 value={typeof view.params?.at === "string" ? view.params.at : ""}
                 set={(v) => (view.params = { ...view.params, at: v })}
-                label={named.at ?? "at"}
+                label={named.at ?? tp("a verdict", "at")}
               />
             </span>
           {/if}
@@ -194,11 +211,11 @@
         {@render inline?.(at)}
       </div>
       {#if writing === at}
-        <section class="space-y-2 rounded-lg border border-dashed border-border p-2.5" aria-label="A new judge">
+        <section class="space-y-2 rounded-lg border border-dashed border-border p-2.5" aria-label={t("A new judge")}>
           <div class="flex items-center gap-2">
-            <p class="text-sm font-medium">A new judge</p>
+            <p class="text-sm font-medium">{t("A new judge")}</p>
             <button type="button" class="ml-auto rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={() => (writing = null)}
-              >Not now</button
+              >{t("Not now")}</button
             >
           </div>
           <JudgeEditor
@@ -220,5 +237,5 @@
 <button
   type="button"
   class="mt-2 rounded-full border border-dashed border-border px-2.5 py-0.5 text-muted-foreground hover:bg-muted"
-  onclick={added}>+ a view</button
+  onclick={added}>+ {t("a view")}</button
 >

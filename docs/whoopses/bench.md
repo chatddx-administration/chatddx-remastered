@@ -18,7 +18,9 @@ assert each.skeleton is not None
 
 ```
 raise Whoops(
-    f"{short(weights)} is held by no model thread: tell ops to check "
-    + "their RuntimeErrors, and meanwhile use another model"
+    "No model in the Library holds these weights, though one should: "
+    + "use another model meanwhile.",
+    pass_on=f"{short(weights)} is held by no model thread: check the "
+    + "RuntimeErrors",
 )
 ```

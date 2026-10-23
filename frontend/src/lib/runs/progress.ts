@@ -1,4 +1,5 @@
 import type { Schemas } from "$lib/api/client";
+import { t } from "$lib/locale";
 import type { Event } from "./events";
 
 export type Kind = Schemas["ItemDeltaData"]["kind"];
@@ -167,8 +168,12 @@ export function fold(progress: Progress, name: Event, data: unknown): void {
   }
 }
 
-export function tally(progress: Progress): { ended: number; of: number; outcomes: [string, number][] } {
-  const counted = new Map<string, number>();
+export function tally(progress: Progress): {
+  ended: number;
+  of: number;
+  outcomes: [Schemas["Outcome"], number][];
+} {
+  const counted = new Map<Schemas["Outcome"], number>();
   for (const i of progress.items) {
     if (i.outcome !== null) counted.set(i.outcome, (counted.get(i.outcome) ?? 0) + 1);
   }
@@ -181,5 +186,5 @@ export function tally(progress: Progress): { ended: number; of: number; outcomes
 
 export function failed(progress: Progress): string | null {
   if (progress.errors.length) return progress.errors.join("; ");
-  return progress.finished === null ? "the run didn't finish" : null;
+  return progress.finished === null ? t("the run didn't finish") : null;
 }

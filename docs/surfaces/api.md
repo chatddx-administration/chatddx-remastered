@@ -2,11 +2,6 @@
 
 Written by `chatddx stamp write` from `src/chatddx/api/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
-## `AGAIN`
-`src/chatddx/api/listening.py:AGAIN`
-
-`AGAIN = 1.0`
-
 ## `again` `@router.post("/runs/{run}/again", …)`
 `src/chatddx/api/runs.py:again`
 
@@ -299,6 +294,7 @@ Raises:
 
 * `detail: str | list[JsonValue] = Field(…)`
 * `code: Code`
+* `pass_on: str | None = Field(…)`
 
 ## `ErrorData` `(_Schema)`
 `src/chatddx/api/schemas.py:ErrorData`
@@ -620,11 +616,6 @@ Raises:
 * `view: int`
 * `judge: str`
 * `seed_index: int`
-
-## `JUDGED`
-`src/chatddx/api/scores.py:JUDGED`
-
-`JUDGED: JsonValue = {"reason": "its judge scores it, once the scorer is saved"}`
 
 ## `judged_of`
 `src/chatddx/api/events.py:judged_of`
@@ -1254,11 +1245,6 @@ Raises:
 * `cases: list[str]`
 * `seeds: list[int]`
 * `greedy: bool`
-
-## `SAFE`
-`src/chatddx/api/people.py:SAFE`
-
-`SAFE = frozenset({"GET", "HEAD", "OPTIONS"})`
 
 ## `Said` `(_Schema)`
 `src/chatddx/api/schemas.py:Said`

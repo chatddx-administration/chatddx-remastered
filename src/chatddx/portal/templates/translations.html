@@ -1,46 +1,45 @@
 {% set box = "w-full rounded-md border bg-transparent px-2 py-1 text-sm" %}
-{% set link = "text-primary hover:underline" %}
 
 {% macro entry(e, i, editable, noted=true) %}
 <div class="grid gap-3 border-t border-border/60 py-2 text-sm sm:grid-cols-2">
   <div class="min-w-0">
     {% if noted and not e.held and (e.started or not e.translation) %}
-    <p class="mb-0.5 text-xs text-warning">Not translated yet{% if e.started %}: started from the translation of a similar text, “{{ e.started | visible }}”{% endif %}</p>
+    <p class="mb-0.5 text-xs text-warning">{{ _("Not translated yet: started from the translation of a similar text, “%(similar)s”", similar=e.started | visible) if e.started else _("Not translated yet") }}</p>
     {% elif e.held and not e.sent %}
-    <p class="mb-0.5 text-xs text-muted-foreground">Not sent by the configurations holding it</p>
+    <p class="mb-0.5 text-xs text-muted-foreground">{{ _("Not sent by the configurations holding it") }}</p>
     {% endif %}
     <div class="whitespace-pre-wrap break-words">{{ e.text | visible }}</div>
   </div>
   <div class="min-w-0">
     {% if editable %}
     <input type="hidden" name="s.{{ i }}" value='{{ e.text | tojson }}'>
-    <textarea name="t.{{ i }}" aria-label="Its translation" rows="{{ [1, (e.translation or e.text).count('\n') + 1] | max }}" class="{{ box }} field-sizing-content {{ 'border-input' if e.translation else 'border-dashed border-warning/60' }}">
+    <textarea name="t.{{ i }}" aria-label="{{ _('Its translation') }}" rows="{{ [1, (e.translation or e.text).count('\n') + 1] | max }}" class="{{ box }} field-sizing-content {{ 'border-input' if e.translation else 'border-dashed border-warning/60' }}">
 {{ e.translation }}</textarea>
-    {% if e.held %}<label class="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><input type="checkbox" name="out.{{ i }}" value="1"> Leave it out</label>{% endif %}
+    {% if e.held %}<label class="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><input type="checkbox" name="out.{{ i }}" value="1"> {{ _("Leave it out") }}</label>{% endif %}
     {% elif e.held %}
     <div class="whitespace-pre-wrap break-words">{{ e.translation | visible }}</div>
     {% else %}
     <div class="text-muted-foreground">—</div>
     {% endif %}
-    {% if e.uneven %}<p class="mt-0.5 text-xs text-warning">Its leading or trailing whitespace isn't its source's.</p>{% endif %}
+    {% if e.uneven %}<p class="mt-0.5 text-xs text-warning">{{ _("Its leading or trailing whitespace isn't its source's.") }}</p>{% endif %}
   </div>
 </div>
 {% endmacro %}
 
 {% macro languages(t, base, kept, editable) %}
 {% set new = t.into and t.into not in t.languages and t.into not in t.cased %}
-<nav aria-label="Languages" class="mb-3 flex flex-wrap items-center gap-1 text-xs">
-  <span class="mr-1 text-muted-foreground">Into</span>
+<nav aria-label="{{ _('Languages') }}" class="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+  <span class="text-muted-foreground">{{ pgettext("languages", "Into") }}</span>
   {% for language in t.languages + t.cased + ([t.into] if new else []) %}
-  {% set what = "it translates into it" if language in t.languages else ("cases you see are in it" if language in t.cased else "it doesn't translate into it yet") %}
+  {% set what = _("it translates into it") if language in t.languages else (_("cases you see are in it") if language in t.cased else _("it doesn't translate into it yet")) %}
   <a href="{{ base }}?into={{ language | urlencode }}{{ kept }}"{% if language == t.into %} aria-current="page"{% endif %} title="{{ what }}"
-     class="rounded-full border px-2.5 py-0.5 {{ '' if language in t.languages else 'border-dashed' }} {{ 'border-primary/30 bg-primary/10 text-primary' if language == t.into else 'border-border text-muted-foreground hover:text-foreground' }}">{{ language }}<span class="sr-only">, {{ what }}</span></a>
+     class="view{{ '' if language in t.languages else ' italic' }}">{{ language }}<span class="sr-only">, {{ what }}</span></a>
   {% endfor %}
   {% if editable %}
   <form method="get" action="{{ base }}" class="ml-2 inline-flex items-center gap-1">
-    <label class="sr-only" for="another">Another language</label>
-    <input id="another" name="into" required placeholder="another, such as de" class="h-7 w-36 rounded-md border border-input bg-transparent px-2">
-    <button class="h-7 rounded-md border border-border px-2 hover:bg-muted">Translate into it</button>
+    <label class="sr-only" for="another">{{ _("Another language") }}</label>
+    <input id="another" name="into" required placeholder="{{ _('another, such as de') }}" class="h-7 w-36 rounded-md border border-input bg-transparent px-2">
+    <button class="small">{{ _("Translate into it") }}</button>
   </form>
   {% endif %}
 </nav>
@@ -50,19 +49,21 @@
 {% set base = "/threads/" ~ thread.id %}
 {{ languages(t, base, "" if latest else "&version=" ~ at, editable) }}
 <p class="mb-3 text-xs text-muted-foreground">
-  {%- if t.configurations %}Held by {% for c, latest in t.configurations %}<a class="{{ link }}" href="/threads/{{ c.id }}">{{ (c.owner ~ "/" if c.owner != thread.owner else "") ~ (c.name or c.title) }}</a>{% if latest %} (an earlier version: <a class="{{ link }}" href="/lab/{{ c.id }}?translations={{ latest | urlencode }}">try it with the latest in the Lab</a>){% endif %}{{ ", " if not loop.last }}{% endfor %}: what they send that it doesn't translate yet comes first.
-  {%- else %}No configuration you see holds it, so it is offered no text to translate.{% endif -%}
+  {%- if t.configurations %}
+  {%- set holding %}{% for c, latest in t.configurations %}<a href="/threads/{{ c.id }}">{{ (c.owner ~ "/" if c.owner != thread.owner else "") ~ (c.name or c.title) }}</a>{% if latest %} {% trans tried="/lab/" ~ c.id ~ "?translations=" ~ (latest | urlencode) %}(an earlier version: <a href="{{ tried }}">try it with the latest in the Lab</a>){% endtrans %}{% endif %}{{ ", " if not loop.last }}{% endfor %}{% endset %}
+  {{- _("Held by %(configurations)s: what they send that it doesn't translate yet comes first.", configurations=holding) }}
+  {%- else %}{{ _("No configuration you see holds it, so it is offered no text to translate.") }}{% endif -%}
 </p>
 {% if editable %}
 <form method="post" action="{{ base }}/edit">
   <input type="hidden" name="head" value="{{ thread.head.id }}">
   <input type="hidden" name="into" value="{{ t.into }}">
 {% endif %}
-  {% for e in t.entries %}{{ entry(e, loop.index0, editable) }}{% else %}<p class="text-sm text-muted-foreground">Nothing to translate into {{ t.into }}.</p>{% endfor %}
+  {% for e in t.entries %}{{ entry(e, loop.index0, editable) }}{% else %}<p class="text-sm text-muted-foreground">{{ _("Nothing to translate into %(language)s.", language=t.into) }}</p>{% endfor %}
 {% if editable %}
   <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
-    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Save it</button>
-    <span class="text-muted-foreground">Saves a new version of it; a translation left empty or out isn't kept.</span>
+    <button class="primary">{{ _("Save it") }}</button>
+    <span class="text-muted-foreground">{{ pgettext("after the button Save it", "Saves a new version of it; a translation left empty or out isn't kept.") }}</span>
   </div>
 </form>
 {% endif %}

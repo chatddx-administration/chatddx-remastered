@@ -3,7 +3,7 @@ import urllib.parse
 import urllib.request
 from html import unescape
 
-SEARCH_URL = "https://html.duckduckgo.com/html/"
+_SEARCH_URL = "https://html.duckduckgo.com/html/"
 USER_AGENT = "Mozilla/5.0 (compatible; chatddx-web-search/1.0)"
 
 _RESULT = re.compile(
@@ -17,7 +17,7 @@ _TAG = re.compile(r"<[^>]+>")
 
 def web_search(query: str, max_results: int = 5) -> str:
     request = urllib.request.Request(
-        f"{SEARCH_URL}?{urllib.parse.urlencode({'q': query})}",
+        f"{_SEARCH_URL}?{urllib.parse.urlencode({'q': query})}",
         headers={"User-Agent": USER_AGENT},
     )
     with urllib.request.urlopen(request, timeout=10.0) as response:

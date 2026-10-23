@@ -22,6 +22,7 @@ from chatddx.catalog import threads
 from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 from chatddx.factors.trial import Order, Trial
+from chatddx.locale import tr
 
 from .pages import BenchDep, own_first, page
 from .scoring import unit_in
@@ -30,21 +31,21 @@ router = APIRouter()
 
 # Accommodating for the variation's query, whose schema refuses what it doesn't know: the
 # Lab's own parameters are taken out of the address before it is read.
-FARING = ("handle", "family", "by")
+_FARING = ("handle", "family", "by")
 
 
 @dataclass
 class Column:
     skeletons: tuple[str, ...]
     handle: str | None
-    said: str | None = None
+    why: str | None = None
     names: list[schemas.Kin] = field(default_factory=list[schemas.Kin])
     run: schemas.Run | None = None
     earlier: list[schemas.Run] = field(default_factory=list[schemas.Run])
 
 
 @dataclass(frozen=True)
-class Starting:
+class _Starting:
     thread: schemas.Thread
     versions: list[schemas.Edit]
     trial: Trial
@@ -86,11 +87,15 @@ def starting(
     with refused():
         if order and order not in get_args(Order):
             raise ValueError(
-                f"no order {order!r}: the orders are {', '.join(get_args(Order))}"
+                tr(
+                    "no order %(order)r: the orders are %(orders)s",
+                    order=order,
+                    orders=", ".join(get_args(Order)),
+                )
             )
         picked = [int(v) for v in version or () if v]
         if not picked:
-            raise ValueError("pick a trial to run")
+            raise ValueError(tr("pick a trial to run"))
         runs = bench.start_trials(
             picked,
             int(concurrency) if concurrency.strip() else None,
@@ -113,7 +118,14 @@ def lab(
     query = _varying(request)
     shown = api.thread(bench, thread)
     if shown.kind != "skeleton":
-        raise HTTPException(404, f"no configuration {thread} for {bench.person.login}")
+        raise HTTPException(
+            404,
+            tr(
+                "no configuration %(thread)s for %(login)s",
+                thread=thread,
+                login=bench.person.login,
+            ),
+        )
     varied = bench.variation(thread, None, query.head)
     recipe = varied.recipe
     judged = recipe is not None and recipe.purpose == "judge"
@@ -237,7 +249,7 @@ def _varying(request: Request) -> schemas.Varying:
     for key, value in request.query_params.multi_items():
         if key == "tag":
             given.setdefault("tag", []).append(value)
-        elif key not in FARING:
+        elif key not in _FARING:
             given[key] = value
     try:
         return schemas.Varying.model_validate(given)
@@ -292,7 +304,7 @@ def _translations(bench: Bench, recipe: Recipe | None) -> tuple[int, str] | None
 
 # Policy: a trial is the configuration's when its skeleton is one of its versions, or
 # compiled from the recipe of one into a language.
-def _trials(bench: Bench, versions: list[schemas.Edit]) -> list[Starting]:
+def _trials(bench: Bench, versions: list[schemas.Edit]) -> list[_Starting]:
     held = {v.digest for v in versions}
     recipes = [
         r
@@ -300,7 +312,7 @@ def _trials(bench: Bench, versions: list[schemas.Edit]) -> list[Starting]:
         if (e := bench.rows.edit(v.id)) is not None
         and (r := threads.recipe(bench.rows, e)) is not None
     ]
-    found: list[Starting] = []
+    found: list[_Starting] = []
     for t in own_first(bench, api.threads(bench, "trial")):
         skeleton = resolve(bench.store.get, t.head.digest, Trial).skeleton
         compiled = bench.rows.compilations(skeleton)
@@ -309,19 +321,29 @@ def _trials(bench: Bench, versions: list[schemas.Edit]) -> list[Starting]:
     return found
 
 
-def _starting(bench: Bench, thread: int) -> Starting:
+def _starting(bench: Bench, thread: int) -> _Starting:
     shown = api.thread(bench, thread)
     if shown.kind != "trial":
-        raise HTTPException(404, f"no trial {thread} for {bench.person.login}")
+        raise HTTPException(
+            404,
+            tr(
+                "no trial %(thread)s for %(login)s",
+                thread=thread,
+                login=bench.person.login,
+            ),
+        )
     held = resolve(bench.store.get, shown.head.digest, Trial)
     versions = api.edits(bench, thread)
     try:
         at = bench.endpoint(bench.inventory.serving(held.engine))
     except LookupError:
         named = shown.name or shown.title
-        why = f"no endpoint here serves the engine of {named}: follow its handle"
-        return Starting(shown, versions, held, None, why)
-    return Starting(shown, versions, held, at, None)
+        why = tr(
+            "no endpoint here serves the engine of %(trial)s: follow its handle",
+            trial=named,
+        )
+        return _Starting(shown, versions, held, None, why)
+    return _Starting(shown, versions, held, at, None)
 
 
 @dataclass(frozen=True)
@@ -409,7 +431,9 @@ def _column(
     return Column(
         tuple(skeletons),
         name,
-        f"its model is behind {name}: follow it" if behind else None,
+        tr("its model is behind %(handle)s: follow it", handle=name)
+        if behind
+        else None,
     )
 
 

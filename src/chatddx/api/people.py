@@ -15,7 +15,7 @@ from .schemas import Me, SignedIn, SignIn
 from .state import connection, state
 
 COOKIE = "__Host-chatddx-session"
-SAFE = frozenset({"GET", "HEAD", "OPTIONS"})
+_SAFE = frozenset({"GET", "HEAD", "OPTIONS"})
 
 _bearer = HTTPBearer(auto_error=False, description="the token POST /api/session gives")
 _cookie = APIKeyCookie(
@@ -38,7 +38,7 @@ def _unsigned(detail: str = "sign in first") -> HTTPException:
 
 
 def same_origin(request: Request) -> None:
-    if request.method in SAFE:
+    if request.method in _SAFE:
         return
     site = request.headers.get("sec-fetch-site")
     origin = request.headers.get("origin")

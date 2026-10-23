@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 # Policy: how long, in seconds, the listener waits after losing its connection, and at
 # most for anything to happen.
-AGAIN = 1.0
+_AGAIN = 1.0
 
 # Policy: a stream this many messages behind drops what it holds and reads the ledger
 # again.
@@ -117,7 +117,7 @@ class Listener:
                 except psycopg.Error:
                     log.exception("the listener lost its connection")
                 lost = True
-                _ = self._stopping.wait(AGAIN)
+                _ = self._stopping.wait(_AGAIN)
         finally:
             woken.close()
 
@@ -130,7 +130,7 @@ class Listener:
             self._follow(conn, listening)
             for notify in conn.notifies(timeout=0):
                 self._dispatch(assembler, notify)
-            ready, _, _ = select.select([conn.fileno(), woken], [], [], AGAIN)
+            ready, _, _ = select.select([conn.fileno(), woken], [], [], _AGAIN)
             if woken in ready:
                 _ = woken.recv(4096)
 

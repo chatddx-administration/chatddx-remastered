@@ -13,9 +13,10 @@ from chatddx.catalog import threads
 from chatddx.catalog.language import recipe_language
 from chatddx.factors.base import language_tag, resolve
 from chatddx.factors.request import Recipe, Translations, texts
+from chatddx.locale import tr
 
 # Policy: an entry under half of whose words are the text's is too far off to start from.
-NEAR = 0.5
+_NEAR = 0.5
 
 _WORDS = re.compile(r"\w+|\s+|[^\w\s]")
 
@@ -56,7 +57,7 @@ def visible(text: str) -> str:
     return (shown[0] + core + shown[1]).replace("\n", "⏎\n")
 
 
-def closest(text: str, unused: Mapping[str, str]) -> tuple[str, str] | None:
+def _closest(text: str, unused: Mapping[str, str]) -> tuple[str, str] | None:
     best: tuple[float, str, str] | None = None
     words = _WORDS.findall(text)
     for was, translation in unused.items():
@@ -67,7 +68,7 @@ def closest(text: str, unused: Mapping[str, str]) -> tuple[str, str] | None:
             for m in matched.get_matching_blocks()
         )
         score = kept / max(len(was), len(text), 1)
-        if score >= NEAR and (best is None or score > best[0]):
+        if score >= _NEAR and (best is None or score > best[0]):
             best = (score, was, translation)
     return None if best is None else (best[1], best[2])
 
@@ -104,7 +105,7 @@ def translating(
     if into is not None:
         given = held.into.get(into, {})
         for text in sorted(sent - given.keys()):
-            near = closest(text, given)
+            near = _closest(text, given)
             entries.append(
                 Entry(text, "", sent=True, held=False)
                 if near is None
@@ -128,7 +129,10 @@ def begun(bench: Bench, configuration: int, into: str) -> list[Entry]:
     recipe = _recipe(bench, shown.head.id) if shown.kind == "skeleton" else None
     if recipe is None:
         raise ValueError(
-            f"{shown.name or shown.title} has no recipe whose texts to translate"
+            tr(
+                "%(configuration)s has no recipe whose texts to translate",
+                configuration=shown.name or shown.title,
+            )
         )
     get = bench.store.get
     held = (
@@ -164,7 +168,7 @@ def written(
         _ = languages.pop(into, None)
     if not languages:
         raise ValueError(
-            "translations hold a language or more: translate a text, or delete them"
+            tr("translations hold a language or more: translate a text, or delete them")
         )
     try:
         return Translations(into=languages)

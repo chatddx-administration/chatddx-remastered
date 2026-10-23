@@ -1,15 +1,18 @@
 import { api, type Schemas, why } from "$lib/api/client";
+import { t } from "$lib/locale";
 
 type Mode = "new" | "edit" | "fork";
 export type Editing = { mode: Mode; thread?: number; head?: number; name: string };
 export type Component = Schemas["ComponentBody"];
 
 export function said(editing: Editing, name: string, unchanged: boolean): string {
-  if (editing.mode === "edit") return unchanged ? "Nothing to save: it holds this already." : "Saves a new version of it.";
-  if (!name.trim()) return "Give it a name to save it.";
+  if (editing.mode === "edit") {
+    return unchanged ? t("Nothing to save: it holds this already.") : t("Saves a new version of it.");
+  }
+  if (!name.trim()) return t("Give it a name to save it.");
   return editing.mode === "new"
-    ? `Writes “${name.trim()}”, a new thread of your own.`
-    : `Saves it as “${name.trim()}”, a fork of your own.`;
+    ? t("Writes “%(name)s”, a new thread of your own.", { name: name.trim() })
+    : t("Saves it as “%(name)s”, a fork of your own.", { name: name.trim() });
 }
 
 export type Checked = { digest: string; findings: Schemas["Finding"][] } | { problem: string };

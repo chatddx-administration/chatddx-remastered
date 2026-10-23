@@ -255,8 +255,10 @@ class Seen:
             held = sorted({e.thread for e in self.rows.edits_holding([weights])})
             if not held:
                 raise Whoops(
-                    f"{short(weights)} is held by no model thread: tell ops to check "
-                    + "their RuntimeErrors, and meanwhile use another model"
+                    "No model in the Library holds these weights, though one should: "
+                    + "use another model meanwhile.",
+                    pass_on=f"{short(weights)} is held by no model thread: check the "
+                    + "RuntimeErrors",
                 )
             if len(held) > 1:
                 raise RuntimeError(

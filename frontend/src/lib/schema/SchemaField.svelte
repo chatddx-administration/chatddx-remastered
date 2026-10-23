@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { t, th } from "$lib/locale";
   import SchemaField from "./SchemaField.svelte";
   import { blank, chosen, deref, type Schema, widget, without as leaving } from "./form";
 
@@ -75,7 +76,7 @@
             <button
               type="button"
               class="mt-6 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
-              aria-label="Leave out {p.name.replaceAll('_', ' ')}"
+              aria-label={t("Leave out %(name)s", { name: p.name.replaceAll("_", " ") })}
               onclick={() => set(without(p.name))}>×</button
             >
           {/if}
@@ -128,7 +129,12 @@
         checked={value === false}
         onchange={(e) => set(e.currentTarget.checked ? false : blank(shape.schema, root))}
       />
-      <span><span class="font-medium" title={quiet ? described : undefined}>{named}</span>: none expected</span>
+      <span
+        >{@html th('<span class="font-medium" title="%(about)s">%(field)s</span>: none expected', {
+          about: quiet ? described : "",
+          field: named,
+        })}</span
+      >
     </label>
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#if value !== false}
@@ -154,7 +160,7 @@
         <button
           type="button"
           class="mt-2 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
-          aria-label="Leave out {named} {i + 1}"
+          aria-label={t("Leave out %(name)s", { name: `${named} ${i + 1}` })}
           onclick={() => set(items().filter((_, j) => j !== i))}>×</button
         >
       </div>
@@ -209,7 +215,7 @@
         value={typed ?? JSON.stringify(value, null, 2)}
         oninput={(e) => parsed(e.currentTarget.value)}
       ></textarea>
-      {#if broken}<span class="text-xs text-destructive">Not JSON yet: {broken}</span>{/if}
+      {#if broken}<span class="text-xs text-destructive">{t("Not JSON yet: %(error)s", { error: broken })}</span>{/if}
     {/if}
     {#if said}<span class="text-xs text-muted-foreground">{said}</span>{/if}
   </label>

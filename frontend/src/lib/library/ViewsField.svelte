@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { t } from "$lib/locale";
   import type { Schema } from "$lib/schema/form";
   import type { JudgeChoice } from "$lib/scorer/judging";
   import ScorerViews from "$lib/scorer/ScorerViews.svelte";
@@ -24,7 +25,7 @@
   let labels = $state([...untrack(() => named)]);
   let judges = $state<JudgeChoice[]>([...held.judges]);
   const titles = $derived({ ...held.titles, ...Object.fromEntries(judges.map((j) => [j.digest, j.name])) });
-  const asked = choices(untrack(() => schema), null, "the whole expectation");
+  const asked = choices(untrack(() => schema), null, t("the whole expectation"));
   const answered = answeredChoices(held.outputs);
 
   $effect(() => {

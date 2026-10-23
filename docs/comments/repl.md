@@ -2,13 +2,13 @@
 
 Written by `chatddx stamp write` from the comments in `src/chatddx/repl/`, each under its file and the name it is in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).
 
-## `src/chatddx/repl/render.py:ANSWERED`
+## `src/chatddx/repl/render.py:_ANSWERED`
 
 ```
 # Policy: what the scoring pass notes of an answer, which show_answer says already.
 ```
 
-## `src/chatddx/repl/render.py:verdict_of`
+## `src/chatddx/repl/render.py:_verdict_of`
 
 ```
 # Dependency: `at` as the verdict metrics read it: src/chatddx/scorers/verdicts.py.

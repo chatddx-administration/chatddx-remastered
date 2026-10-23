@@ -16,8 +16,9 @@ from chatddx.catalog import threads
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
-from chatddx.factors.response import parts
+from chatddx.factors.response import Part, parts
 from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.locale import pgettext, pgettext_noop, tr
 from chatddx.runner import Outcome, outcome
 from chatddx.store import Queue, UnderWay
 
@@ -27,7 +28,7 @@ from .scoring import unit_in
 
 PLAN = "management_plan_v1"
 SHOWN = 50
-TALLIED: tuple[Outcome, ...] = (
+_TALLIED: tuple[Outcome, ...] = (
     "valid",
     "completed",
     "salvaged",
@@ -36,6 +37,12 @@ TALLIED: tuple[Outcome, ...] = (
     "errored",
     "stopped",
 )
+
+_PARTS = {
+    "reasoning": pgettext_noop("a part of a response", "reasoning"),
+    "content": pgettext_noop("a part of a response", "content"),
+    "tool_call": pgettext_noop("a part of a response", "tool call"),
+}
 
 router = APIRouter()
 
@@ -69,7 +76,7 @@ def comparing(
     by: str | None = None,
 ) -> Response:
     if not run:
-        raise HTTPException(422, "pick the runs to compare on the runs page")
+        raise HTTPException(422, tr("pick the runs to compare on the runs page"))
     compared = api.compared(bench, run)
     cases = [i.case for i in compared.items] + [c.case for c in compared.apart]
     picked = viewed(compared.views, by)
@@ -149,7 +156,7 @@ def _tally(bench: Bench, run: schemas.Run) -> tuple[list[tuple[Outcome, int]], i
     skeleton = resolve(bench.store.get, run.skeleton, Skeleton)
     counted = Counter(outcome(skeleton, i)[0] for i in bench.store.run(run.id).items)
     rest = len(run.cases) * len(run.seeds) - counted.total()
-    return [(o, counted[o]) for o in TALLIED if counted[o]], rest
+    return [(o, counted[o]) for o in _TALLIED if counted[o]], rest
 
 
 def _trial_of(bench: Bench, digest: str) -> tuple[int, str] | None:
@@ -238,7 +245,7 @@ def _configuration(
     link = f"/lab/{ran.configuration}{given}"
     if ran.head == latest:
         return link, tried.label
-    return link, f"{tried.label}, an earlier version"
+    return link, tr("%(configuration)s, an earlier version", configuration=tried.label)
 
 
 def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
@@ -259,7 +266,7 @@ def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
         return f"/lab/{found.thread}", title
     return (
         f"/lab/{found.thread}?head={found.id}",
-        f"{title}, an earlier version",
+        tr("%(configuration)s, an earlier version", configuration=title),
     )
 
 
@@ -273,13 +280,16 @@ def _rows(graded: schemas.Graded) -> list[tuple[str, int, list[float | None]]]:
     ]
 
 
-def _said(call: JsonValue) -> list[tuple[str, str]]:
+def _said(call: JsonValue) -> list[tuple[str, str, str]]:
     match call:
         case {"response": dict() as response}:
             pass
         case _:
             return []
-    return [
-        (part.kind if part.name is None else f"tool call: {part.name}", part.text)
-        for part in parts(response)
-    ]
+    return [(part.kind, _part(part), part.text) for part in parts(response)]
+
+
+def _part(part: Part) -> str:
+    if part.name is None:
+        return pgettext("a part of a response", _PARTS[part.kind])
+    return tr("tool call: %(name)s", name=part.name)

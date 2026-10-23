@@ -1,18 +1,20 @@
+import { t } from "$lib/locale";
+
 type Slot = { slot: string };
 type Insert = { insert: string; before?: string; after?: string };
 export type Seg = string | Slot | Insert;
 
 export const SLOTS: Record<string, string> = {
-  completion: "the answer",
-  expectation: "what the view reads of the expectation",
-  vignette: "the vignette",
-  appendices: "the appendices",
+  completion: t("the answer"),
+  expectation: t("what the view reads of the expectation"),
+  vignette: t("the vignette"),
+  appendices: t("the appendices"),
 };
 
 export const INSERTS: Record<string, string> = {
-  output_guidance: "what it is told to answer",
-  tool_guidance: "its tools' guidance",
-  schema: "the answer's schema",
+  output_guidance: t("what it is told to answer"),
+  tool_guidance: t("its tools' guidance"),
+  schema: t("the answer's schema"),
 };
 
 export function isSlot(s: Seg): s is Slot {
@@ -84,7 +86,7 @@ export function asked(
   guidance: Seg[] | null,
   picked: unknown[] | null,
 ): Said[] {
-  const guided = guidance ? filled(guidance, { schema: "‹the answer's schema›" }) : "";
+  const guided = guidance ? filled(guidance, { schema: t("‹the answer's schema›") }) : "";
   const placing = (segs: Seg[]) => segs.some((s) => isInsert(s) && s.insert === "output_guidance");
   const fills = {
     output_guidance: guided,

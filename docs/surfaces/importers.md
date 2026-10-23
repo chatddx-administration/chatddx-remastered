@@ -34,11 +34,6 @@ Raises:
 1. `TypeError`: `"no TOML for {value!r}"` (through `_value`)
 2. `ValueError`: `"{i.name} serves other weights under handle {i.server!r} than a server of that name on another host"`
 
-## `HOST_ENV`
-`src/chatddx/importers/o11n.py:HOST_ENV`
-
-`HOST_ENV = frozenset(…)`
-
 ## `Imported` `@dataclass(frozen=True)`
 `src/chatddx/importers/o11n.py:Imported`
 

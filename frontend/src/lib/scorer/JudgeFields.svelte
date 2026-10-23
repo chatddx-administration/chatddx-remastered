@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { t } from "$lib/locale";
   import { FIELD } from "$lib/utils";
   import type { Option } from "./judging";
 
@@ -32,18 +33,18 @@
 </script>
 
 <label class="grid gap-1"
-  ><span class="text-muted-foreground">Its request, a judge configuration</span>
+  ><span class="text-muted-foreground">{t("Its request, a judge configuration")}</span>
   <select class={FIELD} bind:value={configuration}>
     {#each configurations as c (c.key)}<option value={c.value}>{c.label}</option>{/each}
   </select></label
 >
 <label class="grid gap-1"
-  ><span class="text-muted-foreground">Asked under the model</span>
+  ><span class="text-muted-foreground">{t("Asked under the model")}</span>
   <select class={FIELD} bind:value={weights}>
     {#each models as m (m.key)}<option value={m.value}>{m.label}</option>{/each}
   </select>
   {#if hint}<span class="text-xs text-warning">{hint}</span>{/if}</label
 >
 <label class="grid gap-1"
-  ><span class="text-muted-foreground">Seeds, a call each</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
+  ><span class="text-muted-foreground">{t("Seeds, a call each")}</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
 >

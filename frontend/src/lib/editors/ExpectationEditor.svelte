@@ -12,6 +12,7 @@
 
 <script lang="ts">
   import { type Snippet, untrack } from "svelte";
+  import { t } from "$lib/locale";
   import { blank, kept } from "$lib/schema/form";
   import SchemaField from "$lib/schema/SchemaField.svelte";
   import Saving from "./Saving.svelte";
@@ -53,7 +54,7 @@
   <button
     type="button"
     class="rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-    onclick={() => (open = true)}>Write yours</button
+    onclick={() => (open = true)}>{t("Write yours")}</button
   >
 {:else}
   <div class="space-y-3">

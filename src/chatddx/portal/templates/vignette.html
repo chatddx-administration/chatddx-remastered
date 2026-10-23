@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, section %}
-{% block title %}{{ case.name }}: vignette · ChatDDX{% endblock %}
+{% block title %}{{ _("%(case)s: vignette", case=case.name) }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-3xl px-4 py-8">
-  <a href="/cases/{{ case.id }}" class="text-sm text-primary hover:underline">← {{ case.name }}</a>
-  {{ heading(case.name, "Its vignette, " ~ vignette.id ~ " in " ~ vignette.source ~ ".") }}
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/cases/{{ case.id }}">← {{ case.name }}</a></nav>
+  {{ heading(case.name, _("Its vignette, %(id)s in %(source)s.", id=vignette.id, source=vignette.source)) }}
   {% if vignette.drifted %}
-  <p role="alert" class="mb-6 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">This isn't the text the case was made from any more.</p>
+  <p role="alert" class="mb-6 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">{{ _("This isn't the text the case was made from any more.") }}</p>
   {% endif %}
-  {% call section("The vignette") %}
+  {% call section(_("The vignette")) %}
   <div class="whitespace-pre-wrap leading-relaxed">{{ vignette.text }}</div>
   {% endcall %}
 </div>

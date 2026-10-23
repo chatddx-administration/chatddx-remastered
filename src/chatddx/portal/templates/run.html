@@ -1,99 +1,99 @@
 {% extends "base.html" %}
 {% from "macros.html" import heading, section, facts, findings, outcome, json, job, mean %}
-{% block title %}Run · ChatDDX{% endblock %}
+{% block title %}{{ _("Run") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  <a href="/runs" class="text-sm text-primary hover:underline">← Runs</a>
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/runs">← {{ _("Runs") }}</a></nav>
   {{ heading(run.described) }}
 
   {% if under_way or left or run.endpoint or resumable %}
   <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 text-sm">
     {% if under_way %}
-    <form method="post" action="/runs/{{ run.id }}/halt"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Halt</button></form>
+    <form method="post" action="/runs/{{ run.id }}/halt"><button class="primary danger">{{ _("Halt") }}</button></form>
     {% endif %}
     {% if left %}
-    <form method="post" action="/runs/{{ run.id }}/scores"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form>
-    <span class="text-muted-foreground">Left to score by {{ left | join(", ") }}.</span>
+    <form method="post" action="/runs/{{ run.id }}/scores"><button class="primary">{{ _("Score again") }}</button></form>
+    <span class="text-muted-foreground">{{ _("Left to score by %(scorers)s.", scorers=left | join(", ")) }}</span>
     {% endif %}
     {% if resumable %}
-    <form method="post" action="/runs/{{ run.id }}/resume"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Resume</button></form>
-    <span class="text-muted-foreground">Unfinished: resuming sends what it lacks.</span>
+    <form method="post" action="/runs/{{ run.id }}/resume"><button class="primary">{{ _("Resume") }}</button></form>
+    <span class="text-muted-foreground">{{ pgettext("after the button Resume", "Unfinished: resuming sends what it lacks.") }}</span>
     {% endif %}
     {% if run.endpoint and not under_way %}
-    <form method="post" action="/runs/{{ run.id }}/again"><button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Run again</button></form>
+    <form method="post" action="/runs/{{ run.id }}/again"><button>{{ _("Run again") }}</button></form>
     {% endif %}
   </div>
   {% endif %}
 
-  {% call section("The run") %}
-  {% set trial_held %}{% if trial %}<a class="text-primary hover:underline" href="/threads/{{ trial[0] }}">{{ trial[1] }}</a> {% endif %}<span class="font-mono text-xs text-muted-foreground">{{ run.trial | short }}</span>{% endset %}
-  {% set held %}{% if configuration %}<a class="text-primary hover:underline" href="{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
-  {% set started_with %}{% for other, language in together %}<a class="text-primary hover:underline" href="/runs/{{ other }}">{{ (other | string)[:8] }}, in {{ language or "a language unknown" }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% endset %}
+  {% call section(_("The run")) %}
+  {% set trial_held %}{% if trial %}<a href="/threads/{{ trial[0] }}">{{ trial[1] }}</a> {% endif %}<span class="font-mono text-xs text-muted-foreground">{{ run.trial | short }}</span>{% endset %}
+  {% set held %}{% if configuration %}<a href="{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
+  {% set started_with %}{% for other, language in together %}<a href="/runs/{{ other }}">{{ _("%(run)s, in %(language)s", run=(other | string)[:8], language=language or _("a language unknown")) }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% endset %}
   {{ facts([
-    ("Started", run.at | when),
-    ("Language", run.language or "—"),
-    ("Started with", started_with),
-    ("Finished", run.finished_at | when),
-    ("Job", job(run.job)),
-    ("Configuration", held),
-    ("Model", (run.model or "—") ~ ("" if run.latest else ", an earlier engine")),
-    ("Engine", engine),
-    ("Cases", run.cases | length),
-    ("Seeds", run.seeds | join(", ")),
-    ("Trial", trial_held),
-    ("Rig", run.rig.distribution ~ " " ~ run.rig.version ~ (" (" ~ run.rig.revision ~ ")" if run.rig.revision else "")),
+    (_("Started"), run.at | when),
+    (_("Language"), run.language or "—"),
+    (_("Started with"), started_with),
+    (_("Finished"), run.finished_at | when),
+    (_("Job"), job(run.job)),
+    (_("Configuration"), held),
+    (_("Model"), (run.model or "—") if run.latest else _("%(model)s, an earlier engine", model=run.model or "—")),
+    (_("Engine"), engine),
+    (_("Cases"), run.cases | length),
+    (_("Seeds"), run.seeds | join(", ")),
+    (_("Trial"), trial_held),
+    (_("Rig"), run.rig.distribution ~ " " ~ run.rig.version ~ (" (" ~ run.rig.revision ~ ")" if run.rig.revision else "")),
   ]) }}
   {% endcall %}
 
-  {% call section("What was noted") %}
-  <h3 class="mb-2 text-sm font-medium">As it ran</h3>
+  {% call section(_("What was noted")) %}
+  <h3>{{ _("As it ran") }}</h3>
   {{ findings(run.noted) }}
-  <h3 class="mb-2 mt-4 text-sm font-medium">Checked now</h3>
+  <h3>{{ _("Checked now") }}</h3>
   {{ findings(run.findings) }}
   {% endcall %}
 
   {% if under_way %}
   <div id="run-live">
-    {% call section("Under way") %}
-    <p class="text-sm text-muted-foreground">Something is under way for this run. Reload the page to see how far it has come.</p>
+    {% call section(_("Under way")) %}
+    <p class="text-sm text-muted-foreground">{{ _("Something is under way for this run. Reload the page to see how far it has come.") }}</p>
     {% endcall %}
   </div>
   <script type="application/json" id="run-live-props">{{ live | tojson }}</script>
   {% else %}
-  {% call section("Items") %}
+  {% call section(_("Items")) %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-        <tr><th class="pb-2 pr-4 font-medium">Case</th><th class="pb-2 pr-4 font-medium">Replicate</th><th class="pb-2 pr-4 font-medium">Outcome</th><th class="pb-2 pr-4 font-medium">Tokens</th></tr>
+        <tr><th class="pb-2 pr-4 font-medium">{{ _("Case") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Replicate") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Outcome") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Tokens") }}</th></tr>
       </thead>
       <tbody>
         {% for item in run.items %}
         <tr class="border-t border-border/60">
-          <td class="py-2 pr-4 align-top"><a class="text-primary hover:underline" href="#item-{{ loop.index }}">{{ titles[item.case] }}</a></td>
+          <td class="py-2 pr-4 align-top"><a href="#item-{{ loop.index }}">{{ titles[item.case] }}</a></td>
           <td class="py-2 pr-4 align-top">{{ item.replicate }}</td>
           <td class="py-2 pr-4 align-top">{{ outcome(item.outcome) }}</td>
-          <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ item.prompt_tokens }} in, {{ item.completion_tokens }} out</td>
+          <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ _("%(sent)s in, %(got)s out", sent=item.prompt_tokens, got=item.completion_tokens) }}</td>
         </tr>
         {% else %}
-        <tr><td class="py-2 text-muted-foreground" colspan="4">No items yet.</td></tr>
+        <tr><td class="py-2 text-muted-foreground" colspan="4">{{ _("No items yet.") }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% endcall %}
 
-  {% call section("Scores") %}
+  {% call section(_("Scores")) %}
   {% for graded, rows, units in scores %}
   <div class="mb-6 last:mb-0">
-    <h3 class="mb-2 font-medium">{{ graded.name }}
+    <h3>{{ graded.name }}
       {% if graded.refused %}<span class="text-sm font-normal text-muted-foreground">: {{ graded.refused }}</span>
-      {% elif not graded.finished %}<span class="text-sm font-normal text-warning">: not finished</span>{% endif %}
+      {% elif not graded.finished %}<span class="text-sm font-normal text-warning">: {{ _("not finished") }}</span>{% endif %}
     </h3>
     {% if graded.labels and rows %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr><th class="pb-2 pr-4 font-medium">Case</th>{% for label in graded.labels %}<th class="pb-2 pr-4 font-medium">{{ label }}</th>{% endfor %}</tr>
+          <tr><th class="pb-2 pr-4 font-medium">{{ _("Case") }}</th>{% for label in graded.labels %}<th class="pb-2 pr-4 font-medium">{{ label }}</th>{% endfor %}</tr>
         </thead>
         <tbody>
           {% for case, at, values in rows %}
@@ -103,7 +103,7 @@
           </tr>
           {% endfor %}
           <tr class="border-t border-border font-medium">
-            <td class="py-2 pr-4">Mean</td>
+            <td class="py-2 pr-4">{{ _("Mean") }}</td>
             {% for m in graded.means %}<td class="py-2 pr-4 tabular-nums">{{ mean(m, units[loop.index0]) }}</td>{% endfor %}
           </tr>
         </tbody>
@@ -112,7 +112,7 @@
     {% endif %}
   </div>
   {% else %}
-  <p class="text-sm text-muted-foreground">Not scored.</p>
+  <p class="text-sm text-muted-foreground">{{ _("Not scored.") }}</p>
   {% endfor %}
   {% endcall %}
 
@@ -123,10 +123,10 @@
     {% if item.why %}<span class="text-muted-foreground">{{ item.why }}</span>{% endif %}
   </div>
   {% set answer = item.answer %}
-  <h3 class="mb-2 text-sm font-medium">The answer</h3>
-  {% if answer.problem %}<p class="mb-2 text-sm text-warning">{{ answer.problem }}{% if answer.salvaged %} (cut short){% endif %}</p>{% endif %}
+  <h3>{{ _("The answer") }}</h3>
+  {% if answer.problem %}<p class="mb-2 text-sm text-warning">{{ answer.problem }}{% if answer.salvaged %} {{ _("(cut short)") }}{% endif %}</p>{% endif %}
   {% if answer.value is none %}
-  <p class="text-sm text-muted-foreground">Nothing could be read.</p>
+  <p class="text-sm text-muted-foreground">{{ _("Nothing could be read.") }}</p>
   {% elif answer.value is string %}
   <div class="whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-sm">{{ answer.value }}</div>
   {% elif plan and answer.value is mapping %}
@@ -138,17 +138,17 @@
   {% endif %}
   {% set parts = said(item.call) %}
   {% if parts %}
-  <h3 class="mb-2 mt-6 text-sm font-medium">The response, part by part</h3>
+  <h3>{{ _("The response, part by part") }}</h3>
   <div class="space-y-2">
-    {% for kind, text in parts %}
+    {% for kind, shown, text in parts %}
     <details class="rounded-lg border border-border/60 bg-background/40 p-3"{% if kind == "content" %} open{% endif %}>
-      <summary class="cursor-pointer text-sm font-medium">{{ kind }}</summary>
+      <summary class="cursor-pointer text-sm font-medium">{{ shown }}</summary>
       <div class="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed">{{ text }}</div>
     </details>
     {% endfor %}
   </div>
   {% endif %}
-  {% if item.turns %}<p class="mt-4 text-sm text-muted-foreground">{{ item.turns | length }} tool round{{ "s" if item.turns | length != 1 }} before the last call.</p>{% endif %}
+  {% if item.turns %}<p class="mt-4 text-sm text-muted-foreground">{{ ngettext("%(num)s tool round before the last call.", "%(num)s tool rounds before the last call.", item.turns | length) }}</p>{% endif %}
   {% endcall %}
   {% endfor %}
   {% endif %}

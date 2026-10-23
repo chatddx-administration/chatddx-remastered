@@ -8,7 +8,9 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { Badge } from "$lib/components/ui/badge";
+  import { t, tn, tp } from "$lib/locale";
   import { watch } from "$lib/runs/events";
+  import { outcome, outcomes } from "$lib/runs/outcomes";
   import { begun, fold, type Item, tally } from "$lib/runs/progress";
 
   let { live }: { live: Live } = $props();
@@ -33,28 +35,31 @@
   }
 
   function doing(item: Item): string {
-    if (item.phase === "waiting") return "waiting";
-    if (item.phase === "ended") return `${item.sent} in, ${item.received} out`;
-    const what = item.kind === "reasoning" ? "thinking" : item.kind === "tool_call" ? "calling a tool" : "writing";
-    return item.kind === null ? "sent" : `${what}, ${item.tokens} tokens`;
+    const n = item.tokens;
+    if (item.phase === "waiting") return t("waiting");
+    if (item.phase === "ended") return t("%(sent)s in, %(got)s out", { sent: item.sent, got: item.received });
+    if (item.kind === null) return t("sent");
+    if (item.kind === "reasoning") return tn("thinking, %(n)s token", "thinking, %(n)s tokens", n, { n });
+    if (item.kind === "tool_call") return tn("calling a tool, %(n)s token", "calling a tool, %(n)s tokens", n, { n });
+    return tn("writing, %(n)s token", "writing, %(n)s tokens", n, { n });
   }
 </script>
 
-<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6" aria-live="polite">
+<section class="pane mb-6 rounded-2xl p-5 sm:p-6" aria-live="polite">
   <div class="mb-4 flex flex-wrap items-center gap-3">
-    <h2 class="text-lg font-semibold">Under way</h2>
+    <h2 class="text-lg font-semibold">{t("Under way")}</h2>
     {#if progress.done}
       <span class="text-sm text-muted-foreground">
-        {progress.done.halted ? "Halted" : "Done"}; showing what it came to…
+        {progress.done.halted ? t("Halted; showing what it came to…") : t("Done; showing what it came to…")}
       </span>
     {:else}
       <LoaderCircleIcon class="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
-      <span class="text-sm text-muted-foreground">{scoring ? "Scoring" : "Sending"}</span>
+      <span class="text-sm text-muted-foreground">{scoring ? tp("a run under way", "Scoring") : tp("a run under way", "Sending")}</span>
     {/if}
   </div>
 
   {#if lost}
-    <p class="mb-4 text-sm text-destructive">{lost}. Reload the page to see how far it has come.</p>
+    <p class="mb-4 text-sm text-destructive">{t("%(lost)s. Reload the page to see how far it has come.", { lost })}</p>
   {/if}
 
   {#if counted.of}
@@ -66,12 +71,12 @@
         aria-valuemin="0"
         aria-valuemax={counted.of}
         aria-valuenow={counted.ended}
-        aria-label="Items ended"
+        aria-label={t("Items ended")}
       ></div>
     </div>
     <p class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-      <span>{counted.ended} of {counted.of} items ended</span>
-      {#each counted.outcomes as [outcome, n] (outcome)}<Badge variant="outline">{outcome} {n}</Badge>{/each}
+      <span>{tn("%(ended)s of %(of)s item ended", "%(ended)s of %(of)s items ended", counted.of, { ended: counted.ended, of: counted.of })}</span>
+      {#each counted.outcomes as [said, n] (said)}<Badge variant="outline">{outcomes(said, n)}</Badge>{/each}
     </p>
 
     <div class="space-y-1.5">
@@ -79,23 +84,23 @@
         <details class="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
           <summary class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span class="font-medium">{titled(item)}</span>
-            {#if item.outcome}<Badge variant={item.outcome === "valid" || item.outcome === "completed" ? "secondary" : "destructive"}>{item.outcome}</Badge>{/if}
+            {#if item.outcome}<Badge variant={item.outcome === "valid" || item.outcome === "completed" ? "secondary" : "destructive"}>{outcome(item.outcome)}</Badge>{/if}
             {#if item.phase === "sending"}<LoaderCircleIcon class="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />{/if}
             <span class="text-muted-foreground">{doing(item)}</span>
-            {#if item.tools}<span class="text-muted-foreground">{item.tools} tool {item.tools === 1 ? "call" : "calls"}</span>{/if}
+            {#if item.tools}<span class="text-muted-foreground">{tn("%(n)s tool call", "%(n)s tool calls", item.tools, { n: item.tools })}</span>{/if}
             {#if item.why}<span class="text-muted-foreground">{item.why}</span>{/if}
           </summary>
           {#if item.text.reasoning}
-            <p class="mt-2 text-xs font-medium text-muted-foreground">Thinking</p>
+            <p class="mt-2 text-xs font-medium text-muted-foreground">{t("Thinking")}</p>
             <div class="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">{item.text.reasoning}</div>
           {/if}
           {#if item.text.content || item.text.tool_call}
-            <p class="mt-2 text-xs font-medium text-muted-foreground">Answer</p>
+            <p class="mt-2 text-xs font-medium text-muted-foreground">{t("Answer")}</p>
             <div class="mt-1 max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-xs">{item.text.content}{item.text.tool_call}</div>
           {/if}
-          {#if item.phase === "waiting"}<p class="mt-2 text-xs text-muted-foreground">Not sent yet.</p>{/if}
+          {#if item.phase === "waiting"}<p class="mt-2 text-xs text-muted-foreground">{t("Not sent yet.")}</p>{/if}
           {#if item.phase === "ended" && !item.text.content && !item.text.reasoning}
-            <p class="mt-2 text-xs text-muted-foreground">It ended before this page followed it; its answer is on the run's page once it is done.</p>
+            <p class="mt-2 text-xs text-muted-foreground">{t("It ended before this page followed it; its answer is on the run's page once it is done.")}</p>
           {/if}
         </details>
       {/each}
@@ -103,18 +108,21 @@
   {/if}
 
   {#if scoring}
-    <h3 class="mt-6 mb-2 text-sm font-medium">Scoring</h3>
+    <h3 class="mt-6 mb-2 text-sm font-medium">{t("Scoring")}</h3>
     <ul class="space-y-1.5 text-sm">
       {#each progress.scorings as s, i (s.scorer)}
         {@const after = progress.scorings.slice(i + 1).some((t) => t.score !== null)}
         <li class="flex flex-wrap items-center gap-x-3">
           <span class="font-medium">{s.name}</span>
           {#if s.score === null}
-            <span class="text-muted-foreground">waiting</span>
+            <span class="text-muted-foreground">{t("waiting")}</span>
           {:else}
             {#if !after && progress.scores === null}<LoaderCircleIcon class="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />{/if}
-            <span class="text-muted-foreground">{s.scored} scored{s.views ? ` over ${s.views} ${s.views === 1 ? "view" : "views"}` : ""}</span>
-            {#if s.asked}<span class="text-muted-foreground">judges answered {s.answered} of {s.asked}</span>{/if}
+            {@const scored = tn("%(n)s scored", "%(n)s scored", s.scored, { n: s.scored })}
+            <span class="text-muted-foreground">
+              {s.views ? t("%(scored)s over %(views)s", { scored, views: tn("%(n)s view", "%(n)s views", s.views, { n: s.views }) }) : scored}
+            </span>
+            {#if s.asked}<span class="text-muted-foreground">{tn("judges answered %(answered)s of %(asked)s", "judges answered %(answered)s of %(asked)s", s.asked, { answered: s.answered, asked: s.asked })}</span>{/if}
           {/if}
         </li>
       {/each}

@@ -22,7 +22,7 @@ from .people import BenchDep
 from .state import no_store, refused
 from .threads import component_of
 
-JUDGED: JsonValue = {"reason": "its judge scores it, once the scorer is saved"}
+_JUDGED: JsonValue = {"reason": "its judge scores it, once the scorer is saved"}
 
 router = APIRouter(tags=["scores"])
 
@@ -118,7 +118,7 @@ def tried(bench: BenchDep, given: schemas.Trying) -> list[schemas.Tried]:
             for i, view in enumerate(scorer.views):
                 if view.judge is not None:
                     views.append(
-                        schemas.TriedView(value=None, detail=JUDGED, judged=True)
+                        schemas.TriedView(value=None, detail=_JUDGED, judged=True)
                     )
                     continue
                 said = score_view(scorer, score, i, answer, given.expectation)

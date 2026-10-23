@@ -1,3 +1,4 @@
+import { t } from "$lib/locale";
 import type { Schema } from "$lib/schema/form";
 import type { Scoring } from "$lib/scorer/scorers";
 import { merged, type Seg, segmentsOf, textOf } from "$lib/scorer/texts";
@@ -47,7 +48,7 @@ export function labelled(held: unknown, views: number): { views: string[]; rest:
     typeof held === "object" && held !== null && !Array.isArray(held) ? (held as Record<string, unknown>) : {};
   const named = Array.isArray(given.views) ? given.views.map((v) => (typeof v === "string" ? v : "")) : [];
   return {
-    views: Array.from({ length: views }, (_, i) => named[i] || `view ${i}`),
+    views: Array.from({ length: views }, (_, i) => named[i] || t("view %(n)s", { n: i })),
     rest: Object.fromEntries(Object.entries(given).filter(([k]) => k !== "views")),
   };
 }
@@ -58,11 +59,11 @@ export function misread(text: string, expects: "object" | "array" | null): strin
   try {
     value = JSON.parse(text);
   } catch (e) {
-    return `It isn't JSON yet: ${e instanceof Error ? e.message : String(e)}`;
+    return t("It isn't JSON yet: %(error)s", { error: e instanceof Error ? e.message : String(e) });
   }
   if (expects === "object" && (typeof value !== "object" || value === null || Array.isArray(value))) {
-    return "It is to be an object, between { and }.";
+    return t("It is to be an object, between { and }.");
   }
-  if (expects === "array" && !Array.isArray(value)) return "It is to be a list, between [ and ].";
+  if (expects === "array" && !Array.isArray(value)) return t("It is to be a list, between [ and ].");
   return null;
 }

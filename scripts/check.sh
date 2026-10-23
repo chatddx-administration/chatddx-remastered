@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: scripts/check.sh [docs|package|frontend|browser|baseline]..., from the repository's root
+# Usage: scripts/check.sh [docs|package|frontend|locale|browser|baseline]..., from the repository's root
 # in the dev shell with its database up (dev-db start). Each stage checks what a kind of
 # change can break and writes nothing git tracks; with no stage named, the stages of what
 # changed since the branch left origin/main, or $CHECK_BASE.
@@ -24,6 +24,10 @@ frontend() {
   pnpm --dir frontend test
 }
 
+locale() {
+  chatddx locale check
+}
+
 # Compromise: on their own, for the browser they start.
 browser() {
   pnpm --dir frontend build
@@ -41,6 +45,7 @@ baseline() {
     flagged=1
   }
   chatddx stamp check --baseline || flagged=1
+  chatddx locale check --baseline || flagged=1
   return "$flagged"
 }
 
@@ -73,6 +78,7 @@ changed() {
   grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|scripts/refcheck\.py|src/)' <<<"$paths" && echo docs
   grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
   grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
+  grep -qE '^(src/chatddx/|frontend/src/)' <<<"$paths" && echo locale
   grep -qE '^(frontend/|src/chatddx/portal/)' <<<"$paths" && echo browser
   return 0
 }
@@ -84,10 +90,10 @@ if [[ ${#stages[@]} -eq 0 ]]; then
 fi
 for stage in "${stages[@]}"; do
   case "$stage" in
-  docs | package | frontend | browser | baseline)
+  docs | package | frontend | locale | browser | baseline)
     echo "• $stage" >&2
     "$stage"
     ;;
-  *) fail "no stage $stage: docs, package, frontend, browser or baseline" ;;
+  *) fail "no stage $stage: docs, package, frontend, locale, browser or baseline" ;;
   esac
 done

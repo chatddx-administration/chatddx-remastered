@@ -13,7 +13,7 @@ from .chat import Failure, Reply, accept, completion, respond, scripted, stream
 from .script import Script
 from .served import VERSION, Refused, Served
 
-LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 def models(served: Sequence[Served]) -> dict[str, Any]:
@@ -159,7 +159,7 @@ class _Handler(BaseHTTPRequestHandler):
     # so what it logs goes to whoever listens then; `run` prints it.
     @override
     def log_message(self, format: str, *args: Any) -> None:
-        LOG.info(
+        _LOG.info(
             "%s - - [%s] %s",
             self.address_string(),
             self.log_date_time_string(),
@@ -246,8 +246,8 @@ def run_all(
 ) -> None:
     fakes = [server([s], delay=delay, runaway=runaway, script=script) for s in served]
     printed = logging.StreamHandler()
-    LOG.addHandler(printed)
-    LOG.setLevel(logging.INFO)
+    _LOG.addHandler(printed)
+    _LOG.setLevel(logging.INFO)
     for s, fake in zip(served, fakes, strict=True):
         host, port = fake.server_address[:2]
         names = ", ".join(s.names)
@@ -269,5 +269,5 @@ def run_all(
             fake.shutdown()
         for fake in fakes:
             fake.server_close()
-        LOG.removeHandler(printed)
-        LOG.setLevel(logging.NOTSET)
+        _LOG.removeHandler(printed)
+        _LOG.setLevel(logging.NOTSET)

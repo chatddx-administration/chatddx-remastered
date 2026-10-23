@@ -2,6 +2,7 @@
   import { untrack } from "svelte";
   import { api, type Schemas, why } from "$lib/api/client";
   import ExpectationEditor from "$lib/editors/ExpectationEditor.svelte";
+  import { t, th } from "$lib/locale";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
   import Composer, { type ScorerView } from "$lib/scorer/Composer.svelte";
   import Changed from "$lib/thread/Changed.svelte";
@@ -18,7 +19,7 @@
 
   function composed(changed: ScorerView[], labels: string[], titles: Record<string, string>): void {
     reading = changed.map((v, at) => ({
-      label: labels[at] || `view ${at}`,
+      label: labels[at] || t("view %(n)s", { n: at }),
       metric: v.metric,
       measures: measured.get(v.metric) ?? null,
       judge: v.judge ? (titles[v.judge] ?? null) : null,
@@ -68,16 +69,18 @@
   <div class="flex flex-wrap items-baseline gap-x-1.5">
     <span class="font-medium text-primary">{view.label}</span>
     <span class="text-muted-foreground" title={view.measures ?? ""}
-      >{view.metric.replaceAll("_", " ")}{view.judge ? ` · judge ${view.judge}` : ""}</span
+      >{view.metric.replaceAll("_", " ")}{#if view.judge}{" · "}{t("judge %(judge)s", { judge: view.judge })}{/if}</span
     >
     {#if !picked}
       <span class="text-muted-foreground">…</span>
     {:else if picked.problem}
       <span class="text-destructive">{picked.problem}</span>
     {:else if !picked.items?.length}
-      <span class="text-warning">reads nothing</span>
+      <span class="text-warning">{t("reads nothing")}</span>
     {:else}
-      <span class="min-w-0 text-muted-foreground">reads <span class="text-foreground">{shortly(picked.items)}</span></span>
+      <span class="min-w-0 text-muted-foreground"
+        >{@html th('reads <span class="text-foreground">%(read)s</span>', { read: shortly(picked.items) })}</span
+      >
     {/if}
   </div>
 {/snippet}
@@ -85,7 +88,7 @@
 {#snippet beside(field: string)}
   {@const here = views.filter((v) => v.field === field)}
   {#if here.length}
-    <ul class="ml-2 space-y-0.5 border-l-2 border-primary/30 pl-2 text-xs" aria-label="What reads {field.replaceAll('_', ' ')}">
+    <ul class="ml-2 space-y-0.5 border-l-2 border-primary/30 pl-2 text-xs" aria-label={t("What reads %(field)s", { field: field.replaceAll("_", " ") })}>
       {#each here as v (v.at)}<li>{@render reads(v.view, v.at)}</li>{/each}
     </ul>
   {/if}
@@ -97,7 +100,11 @@
   {:else}
     <div class="mb-3 flex flex-wrap gap-2 text-xs">
       <button type="button" class="rounded-md border border-border px-2.5 py-1 font-medium hover:bg-muted" onclick={() => (open = true)}>
-        {composing.scorer ? (composing.scorer.mode === "edit" ? `Compose ${composing.scorer.name}` : `Compose ${composing.scorer.name} as yours`) : "Compose a scorer"}
+        {composing.scorer
+          ? composing.scorer.mode === "edit"
+            ? t("Compose %(scorer)s", { scorer: composing.scorer.name })
+            : t("Compose %(scorer)s as yours", { scorer: composing.scorer.name })
+          : t("Compose a scorer")}
       </button>
     </div>
   {/if}
@@ -108,7 +115,7 @@
 {#if problem}<p class="mt-2 text-xs text-destructive">{problem}</p>{/if}
 {#if elsewhere.length}
   <div class="mt-4 rounded-lg bg-muted/40 p-2.5">
-    <p class="mb-1 text-xs font-medium text-muted-foreground">Read elsewhere, or of what isn't written</p>
+    <p class="mb-1 text-xs font-medium text-muted-foreground">{t("Read elsewhere, or of what isn't written")}</p>
     <ul class="space-y-0.5 text-xs">
       {#each elsewhere as v (v.at)}<li>{@render reads(v.view, v.at)}</li>{/each}
     </ul>
@@ -118,19 +125,23 @@
 {#if version}
   <details class="mt-4 text-sm">
     <summary class="cursor-pointer text-xs text-muted-foreground">
-      Version {given.history.length} of {given.history.length}, {when(given.history.at(-1)?.at ?? "")}: what each changed
+      {t("Version %(n)s of %(of)s, %(at)s: what each changed", {
+        n: given.history.length,
+        of: given.history.length,
+        at: when(given.history.at(-1)?.at ?? ""),
+      })}
     </summary>
     <div class="mt-2 rounded-lg border border-border/60 p-3">
-      <nav class="mb-2 flex items-center gap-2 text-xs" aria-label="Versions">
-        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === 0} aria-label="The version before" onclick={() => (shown -= 1)}>◀</button>
-        <span class="font-medium">Version {shown + 1} of {given.history.length}</span>
-        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === given.history.length - 1} aria-label="The version after" onclick={() => (shown += 1)}>▶</button>
+      <nav class="mb-2 flex items-center gap-2 text-xs" aria-label={t("Versions")}>
+        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === 0} aria-label={t("The version before")} onclick={() => (shown -= 1)}>◀</button>
+        <span class="font-medium">{t("Version %(at)s of %(last)s", { at: shown + 1, last: given.history.length })}</span>
+        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === given.history.length - 1} aria-label={t("The version after")} onclick={() => (shown += 1)}>▶</button>
         <span class="text-muted-foreground">{when(version.at)}, {version.by}</span>
       </nav>
       {#if before}
         <Changed before={before.data} after={version.data} />
       {:else}
-        <p class="text-xs text-muted-foreground">It is the first.</p>
+        <p class="text-xs text-muted-foreground">{t("It is the first.")}</p>
       {/if}
     </div>
   </details>

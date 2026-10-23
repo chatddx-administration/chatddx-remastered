@@ -8,7 +8,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/api/`, each u
 # Compromise: Raw, though it may quote sensitive content, until edges hold that back.
 ```
 
-## `src/chatddx/api/listening.py:AGAIN`
+## `src/chatddx/api/listening.py:_AGAIN`
 
 ```
 # Policy: how long, in seconds, the listener waits after losing its connection, and at

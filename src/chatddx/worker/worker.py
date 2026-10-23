@@ -25,7 +25,7 @@ from .publish import Publisher
 
 log = logging.getLogger(__name__)
 
-PAUSED = "paused"
+_PAUSED = "paused"
 LEFT = "its worker stopped"
 
 
@@ -175,7 +175,7 @@ class Worker:
             elif signal.halt:
                 held.halt()
             elif signal.paused:
-                held.leave(PAUSED)
+                held.leave(_PAUSED)
 
     def _take(self, job: Job) -> None:
         held = _Held(job)

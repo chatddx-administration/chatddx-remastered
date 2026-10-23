@@ -14,6 +14,7 @@ from chatddx.bench import Bench, word_of
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Purpose
+from chatddx.locale import tr
 
 from .pages import own_first
 
@@ -71,7 +72,11 @@ def fresh(
     properties = _properties(model)
     if unknown := [n for n in given if n not in properties]:
         raise ValueError(
-            f"no field {unknown[0]!r} to give: the fields are {', '.join(properties)}"
+            tr(
+                "no field %(field)r to give: the fields are %(fields)s",
+                field=unknown[0],
+                fields=", ".join(properties),
+            )
         )
     return [
         replace(f, value=_read(f, given[f.name]), editable=False, given=True)
@@ -135,7 +140,7 @@ def _field(name: str, held: dict[str, Any], value: JsonValue, editable: bool) ->
         )
     if types == {"boolean"} and not nullable:
         return Field(name, "check", value, editable)
-    if types == {"array"} and set(items) == {"type"} and items["type"] in LISTED:
+    if types == {"array"} and set(items) == {"type"} and items["type"] in _LISTED:
         whole = items["type"] == "integer"
         if whole or _one_a_line(value):
             return Field(name, "lines", value, editable, nullable, whole=whole)
@@ -159,7 +164,7 @@ def choices(
             for case in family.cases:
                 named = family.name if case == bare else bench.title(case)
                 _ = found.setdefault(case, named)
-    elif set(kinds) <= ENGINES:
+    elif set(kinds) <= _ENGINES:
         found = _engines(bench)
     else:
         login = bench.person.login
@@ -182,8 +187,8 @@ def choices(
     return list(found.items())
 
 
-ENGINES = frozenset({"engine.local", "engine.remote"})
-LISTED = frozenset({"string", "integer"})
+_ENGINES = frozenset({"engine.local", "engine.remote"})
+_LISTED = frozenset({"string", "integer"})
 
 
 def _one_a_line(value: JsonValue) -> bool:
@@ -204,9 +209,9 @@ def _engines(bench: Bench) -> dict[str, str]:
 
 
 def _held(bench: Bench, digest: str, found: Mapping[str, str]) -> str:
-    if bench.rows.kind(digest) in ENGINES:
+    if bench.rows.kind(digest) in _ENGINES:
         weights = model_of(digest, bench.store.get).digest
-        return f"{bench.handle(weights).name}, an earlier engine"
+        return tr("%(model)s, an earlier engine", model=bench.handle(weights).name)
     for made in bench.rows.compilations(digest):
         if made.into is None:
             continue
@@ -215,8 +220,8 @@ def _held(bench: Bench, digest: str, found: Mapping[str, str]) -> str:
                 c.recipe == made.recipe and c.into is None
                 for c in bench.rows.compilations(head)
             ):
-                return f"{named}, in {made.into}"
-    return f"{bench.title(digest)}, as it is held"
+                return tr("%(name)s, in %(language)s", name=named, language=made.into)
+    return tr("%(name)s, as it is held", name=bench.title(digest))
 
 
 _PURPOSES: dict[str, Purpose] = {"trial": "generation", "judge": "judge"}
@@ -283,9 +288,15 @@ def _number(f: Field, given: str) -> int | float:
         found = int(given) if f.whole else float(given)
     except ValueError:
         found = math.nan
+    if not math.isfinite(found) and f.whole:
+        raise _Unparsed(
+            f.name,
+            tr("%(field)s isn't a whole number: %(given)r", field=f.name, given=given),
+        )
     if not math.isfinite(found):
-        what = "a whole number" if f.whole else "a number"
-        raise _Unparsed(f.name, f"{f.name} isn't {what}: {given!r}")
+        raise _Unparsed(
+            f.name, tr("%(field)s isn't a number: %(given)r", field=f.name, given=given)
+        )
     return found
 
 
@@ -299,7 +310,10 @@ def _json(name: str, given: str) -> JsonValue:
     try:
         return cast(JsonValue, json.loads(given))
     except json.JSONDecodeError as e:
-        raise _Unparsed(name, f"{name} isn't JSON: {e}") from None
+        raise _Unparsed(
+            name,
+            tr("%(field)s isn't JSON: %(error)s", field=name, error=e),
+        ) from None
 
 
 def kept(
@@ -322,18 +336,18 @@ def _refusals(
         at = [str(p) for p in error["loc"]]
         if at and at[0] in names:
             within = ".".join(at[1:])
-            said = _said(error)
+            refusal = _refusal(error)
             by_field.setdefault(at[0], []).append(
-                f"{within}: {said}" if within else said
+                f"{within}: {refusal}" if within else refusal
             )
         else:
-            rest.append(f"{'.'.join(at)}: {_said(error)}" if at else _said(error))
-    return {n: "; ".join(said) for n, said in by_field.items()}, rest
+            rest.append(f"{'.'.join(at)}: {_refusal(error)}" if at else _refusal(error))
+    return {n: "; ".join(refused) for n, refused in by_field.items()}, rest
 
 
-def _said(error: ErrorDetails) -> str:
+def _refusal(error: ErrorDetails) -> str:
     if error["type"] == "missing":
-        return "This is needed."
+        return tr("This is needed.")
     return error["msg"].removeprefix("Value error, ")
 
 

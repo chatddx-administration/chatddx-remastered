@@ -4,6 +4,7 @@
   import SirenIcon from "@lucide/svelte/icons/siren";
   import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
   import { Badge } from "$lib/components/ui/badge";
+  import { t, tp } from "$lib/locale";
   import { cn } from "$lib/utils";
   import type { Diagnosis, Probability } from "./types";
 
@@ -15,17 +16,17 @@
     high: {
       badge: "border-destructive/30 bg-destructive/10 text-destructive",
       bar: "bg-gradient-to-r from-destructive to-destructive/80",
-      label: "High",
+      label: tp("probability", "High"),
     },
     medium: {
       badge: "border-warning/30 bg-warning/10 text-warning",
       bar: "bg-gradient-to-r from-warning to-warning/80",
-      label: "Medium",
+      label: tp("probability", "Medium"),
     },
     low: {
       badge: "border-border bg-muted text-muted-foreground",
       bar: "bg-gradient-to-r from-muted-foreground/50 to-muted-foreground/30",
-      label: "Low",
+      label: tp("probability", "Low"),
     },
   };
 
@@ -34,7 +35,7 @@
 
 <div class="group animate-slide-up" style:animation-delay="{index * 80}ms">
   <div
-    class="glass-card overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10"
+    class="pane overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10"
   >
     <div class={cn("h-1", shown.bar)}></div>
     <button
@@ -66,7 +67,7 @@
             {#if diagnosis.critical}
               <Badge variant="outline" class="border-destructive/30 bg-destructive/10 text-destructive">
                 <SirenIcon />
-                Critical
+                {t("Critical")}
               </Badge>
             {/if}
           </div>

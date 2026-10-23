@@ -23,6 +23,7 @@
   import { api, type Schemas, why } from "$lib/api/client";
   import Saving from "$lib/editors/Saving.svelte";
   import type { Component } from "$lib/editors/writing";
+  import { t, tn, tp } from "$lib/locale";
   import type { Schema } from "$lib/schema/form";
   import { said, valued, withScorer } from "$lib/review/review";
   import JudgeAsked from "./JudgeAsked.svelte";
@@ -53,12 +54,12 @@
 
   let mode = $state<"edit" | "fork" | "new">(start ? start.mode : "new");
   let body = $state<ScorerBody>(structuredClone(start?.body ?? given.blank));
-  let labels = $state<string[]>(start ? [...start.labels] : given.blank.views.map((_, i) => `view ${i}`));
+  let labels = $state<string[]>(start ? [...start.labels] : given.blank.views.map((_, i) => t("view %(n)s", { n: i })));
   let tried = $state<Schemas["Tried"][] | null>(null);
   let problem = $state<string | null>(null);
   let tries = 0;
 
-  const asked = $derived(choices(schema, data, "the whole expectation"));
+  const asked = $derived(choices(schema, data, t("the whole expectation")));
   const answered = answeredChoices(given.outputs);
 
   function component(): Component {
@@ -68,16 +69,16 @@
   function anew(): void {
     mode = "new";
     body = structuredClone(given.blank);
-    labels = body.views.map((_, i) => `view ${i}`);
+    labels = body.views.map((_, i) => t("view %(n)s", { n: i }));
   }
 
   function values(at: number): { shown: string; title: string }[] {
     const unit = metrics.get(body.views[at]?.metric ?? "")?.unit ?? "";
-    return (tried ?? []).map((t) => {
-      const v = t.views[at];
+    return (tried ?? []).map((one) => {
+      const v = one.views[at];
       const detail = said(v?.detail).map(([k, text]) => (k ? `${k}: ${text}` : text));
-      const shown = v?.judged ? "judged" : valued(v?.value ?? null, unit);
-      return { shown, title: [`replicate ${t.replicate}`, ...detail].join("; ") };
+      const shown = v?.judged ? tp("a view's value", "judged") : valued(v?.value ?? null, unit);
+      return { shown, title: [t("replicate %(n)s", { n: one.replicate }), ...detail].join("; ") };
     });
   }
 
@@ -107,25 +108,32 @@
   });
 </script>
 
-<section class="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs" aria-label="Composing a scorer">
+<section class="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs" aria-label={t("Composing a scorer")}>
   <header class="mb-2 flex flex-wrap items-center gap-2">
     <h3 class="text-sm font-semibold">
-      {mode === "new" ? "A new scorer" : mode === "edit" ? `Changing ${start?.name}` : `Making ${start?.name} yours`}
+      {mode === "new"
+        ? t("A new scorer")
+        : mode === "edit"
+          ? t("Changing %(scorer)s", { scorer: start?.name ?? "" })
+          : t("Making %(scorer)s yours", { scorer: start?.name ?? "" })}
     </h3>
     {#if mode !== "new"}
       <button type="button" class="ml-auto rounded-md border border-border px-2 py-0.5 hover:bg-muted" onclick={anew}
-        >Start a new one</button
+        >{t("Start a new one")}</button
       >
     {/if}
   </header>
   {#if given.runs.length}
     <p class="mb-2 text-muted-foreground">
-      Each view is tried on your {given.runs.length === 1 ? "run" : `${given.runs.length} runs`} of this case as you
-      change it or what you expect; nothing is kept until you save. A judged view is scored by its judge once the
-      scorer is saved and the runs are scored again, in the record.
+      {tn(
+        "Each view is tried on your run of this case as you change it or what you expect; nothing is kept until you save. A judged view is scored by its judge once the scorer is saved and the runs are scored again, in the record.",
+        "Each view is tried on your %(n)s runs of this case as you change it or what you expect; nothing is kept until you save. A judged view is scored by its judge once the scorer is saved and the runs are scored again, in the record.",
+        given.runs.length,
+        { n: given.runs.length },
+      )}
     </p>
   {:else}
-    <p class="mb-2 text-muted-foreground">Run the case to try the views on its answers.</p>
+    <p class="mb-2 text-muted-foreground">{t("Run the case to try the views on its answers.")}</p>
   {/if}
 
   <ScorerViews
@@ -142,8 +150,8 @@
   >
     {#snippet inline(at: number)}
       {#if tried}
-        <span class="flex flex-wrap items-baseline gap-1" aria-label="Tried on your answers">
-          <span class="text-muted-foreground">on your answers</span>
+        <span class="flex flex-wrap items-baseline gap-1" aria-label={t("Tried on your answers")}>
+          <span class="text-muted-foreground">{t("on your answers")}</span>
           {#each values(at) as v, i (i)}
             <span class="rounded bg-muted px-1.5 py-0.5 tabular-nums" title={v.title}>{v.shown}</span>
           {/each}
@@ -154,7 +162,7 @@
       {#if view.judge}
         <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
         {#if judge}
-          <a class="text-primary hover:underline" href="/scoring/{judge.thread}">What it is asked is changed on Scoring</a>
+          <a class="text-primary hover:underline" href="/scoring/{judge.thread}">{t("What it is asked is changed on Scoring")}</a>
         {/if}
       {/if}
     {/snippet}

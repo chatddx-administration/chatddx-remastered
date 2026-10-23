@@ -1,6 +1,7 @@
 import { mount, unmount } from "svelte";
 import { type Editing, type Editor, labelled, misread, read, segsOf, textOfSegs, written } from "$lib/library/editors";
 import SchemaInput from "$lib/library/SchemaInput.svelte";
+import { t } from "$lib/locale";
 import TextsField from "$lib/library/TextsField.svelte";
 import ViewsField from "$lib/library/ViewsField.svelte";
 import type { ScorerView } from "$lib/scorer/scorers";
@@ -23,20 +24,20 @@ if (held) {
 function checked(name: string, expects: "object" | "array" | null): void {
   const area = document.querySelector<HTMLTextAreaElement>(`textarea[name="f.${name}"]`);
   if (!area) return;
-  const why = document.createElement("p");
-  why.className = "mt-1 text-xs text-warning";
-  why.hidden = true;
-  area.after(why);
-  const said = (): string | null => {
+  const note = document.createElement("p");
+  note.className = "mt-1 text-xs text-warning";
+  note.hidden = true;
+  area.after(note);
+  const refusal = (): string | null => {
     const found = misread(area.value, expects);
-    why.textContent = found ?? "";
-    why.hidden = found === null;
+    note.textContent = found ?? "";
+    note.hidden = found === null;
     area.setAttribute("aria-invalid", String(found !== null));
     return found;
   };
-  area.addEventListener("input", said);
+  area.addEventListener("input", refusal);
   area.form?.addEventListener("submit", (sent) => {
-    if (said() === null) return;
+    if (refusal() === null) return;
     sent.preventDefault();
     area.focus();
   });
@@ -64,10 +65,10 @@ function enhanced(editor: Drawable, editing: Editing): void {
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "mt-1 text-xs text-primary hover:underline";
-  const why = document.createElement("p");
-  why.className = "mt-1 text-xs text-warning";
+  const note = document.createElement("p");
+  note.className = "mt-1 text-xs text-warning";
   (as ?? area).before(box);
-  area.after(toggle, why);
+  area.after(toggle, note);
   let shown: Shown | null = null;
   let raw: HTMLElement[] = [area, ...(as ? [as] : [])];
 
@@ -80,30 +81,30 @@ function enhanced(editor: Drawable, editing: Editing): void {
     raw = made.raw;
     for (const r of raw) r.hidden = true;
     box.hidden = false;
-    toggle.textContent = "Write it as JSON";
-    why.hidden = true;
+    toggle.textContent = t("Write it as JSON");
+    note.hidden = true;
     return null;
   };
-  const closed = (said: string | null): void => {
+  const closed = (why: string | null): void => {
     if (shown) void unmount(shown);
     shown = null;
     box.hidden = true;
     for (const r of raw) r.hidden = false;
-    toggle.textContent = "Back to the form";
-    why.textContent = said ?? "";
-    why.hidden = said === null;
+    toggle.textContent = t("Back to the form");
+    note.textContent = why ?? "";
+    note.hidden = why === null;
   };
 
   const tried = (): void => {
-    const said = opened();
-    if (said !== null) closed(said);
+    const why = opened();
+    if (why !== null) closed(why);
   };
 
   toggle.addEventListener("click", () => (shown ? closed(null) : tried()));
   tried();
   for (const name of following(editor)) {
     document.querySelector(`select[name="f.${name}"]`)?.addEventListener("change", () => {
-      if (shown || !why.hidden) tried();
+      if (shown || !note.hidden) tried();
     });
   }
 }
@@ -113,7 +114,7 @@ function drawn(editor: Drawable, editing: Editing, area: HTMLTextAreaElement, as
   switch (editor.as) {
     case "texts": {
       const segs = segsOf(area.value, as ? as.value === "text" : null);
-      if (!segs) return "What it holds isn't JSON the form can show: set it right here first.";
+      if (!segs) return t("What it holds isn't JSON the form can show: set it right here first.");
       const slots = editor.slots[picked("purpose", editing)] ?? [];
       const changed = (s: Parameters<typeof textOfSegs>[0]): void => {
         const made = textOfSegs(s, as !== null);
@@ -129,9 +130,9 @@ function drawn(editor: Drawable, editing: Editing, area: HTMLTextAreaElement, as
     }
     case "schema": {
       const schema = editor.schema ?? editing.schemas[picked(editor.of ?? "", editing)];
-      if (!schema) return "Pick its expectation schema first, and the form shows what it holds.";
+      if (!schema) return t("Pick its expectation schema first, and the form shows what it holds.");
       const found = area.value.trim() ? read(area.value) : { ok: true as const, value: null };
-      if (!found.ok) return "What it holds isn't JSON the form can show: set it right here first.";
+      if (!found.ok) return t("What it holds isn't JSON the form can show: set it right here first.");
       const changed = (v: unknown): void => {
         area.value = written(v);
       };
@@ -145,7 +146,7 @@ function drawn(editor: Drawable, editing: Editing, area: HTMLTextAreaElement, as
       const scoring = editing.scoring;
       const found = area.value.trim() ? read(area.value) : { ok: true as const, value: [] };
       if (!scoring || !found.ok || !Array.isArray(found.value)) {
-        return "What it holds isn't JSON the form can show: set it right here first.";
+        return t("What it holds isn't JSON the form can show: set it right here first.");
       }
       const views = found.value as ScorerView[];
       const naming = document.querySelector<HTMLTextAreaElement>('textarea[name="labels"]');

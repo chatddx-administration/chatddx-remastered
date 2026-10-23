@@ -22,11 +22,6 @@ Written by `chatddx stamp write` from `src/chatddx/worker/`; how to read it is i
 
 `log = logging.getLogger(__name__)`
 
-## `PAUSED`
-`src/chatddx/worker/worker.py:PAUSED`
-
-`PAUSED = "paused"`
-
 ## `Publisher`
 `src/chatddx/worker/publish.py:Publisher`
 

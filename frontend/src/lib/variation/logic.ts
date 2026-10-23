@@ -86,7 +86,7 @@ export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["
   return tags.length ? families.filter((f) => f.tags.some((t) => tags.includes(t))) : families;
 }
 
-type Carriage = {
+export type Carriage = {
   language: string | null;
   families: Schemas["Family"][];
   translated: boolean;

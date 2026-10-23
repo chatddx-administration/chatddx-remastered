@@ -32,7 +32,6 @@ STATUSES: dict[type[Exception], tuple[int, Code]] = {
     OverQuota: (429, "over_quota"),
     Refused: (422, "refused"),
     UnderWay: (409, "conflict"),
-    Whoops: (500, "whoops"),
 }
 
 CODES: dict[int, Code] = {
@@ -49,7 +48,9 @@ CODES: dict[int, Code] = {
 def _answer(
     status: int, error: Error, headers: Mapping[str, str] | None = None
 ) -> JSONResponse:
-    return JSONResponse(error.model_dump(mode="json"), status, headers)
+    return JSONResponse(
+        error.model_dump(mode="json", exclude_none=True), status, headers
+    )
 
 
 def _status(status: int, code: Code) -> Callable[[Request, Exception], JSONResponse]:
@@ -57,6 +58,11 @@ def _status(status: int, code: Code) -> Callable[[Request, Exception], JSONRespo
         return _answer(status, Error(detail=str(e), code=code))
 
     return handle
+
+
+def _whoops(_: Request, e: Exception) -> JSONResponse:
+    assert isinstance(e, Whoops)
+    return _answer(500, Error(detail=e.message, code="whoops", pass_on=e.pass_on))
 
 
 # Compromise: Raw, though it may quote sensitive content, until edges hold that back.
@@ -133,6 +139,7 @@ def app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
         made.include_router(module.router, prefix="/api")
     for error, (status, code) in STATUSES.items():
         made.add_exception_handler(error, _status(status, code))
+    made.add_exception_handler(Whoops, _whoops)
     made.add_exception_handler(HTTPException, _http)
     made.add_exception_handler(RequestValidationError, _invalid)
     made.add_exception_handler(Exception, _raw)

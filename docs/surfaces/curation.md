@@ -7,11 +7,6 @@ Written by `chatddx stamp write` from `src/chatddx/curation/`; how to read it is
 
 `ARCHIVE = "archive"`
 
-## `DATA_TABLES`
-`src/chatddx/curation/plan.py:DATA_TABLES`
-
-`DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)`
-
 ## `DataCase` `@dataclass(frozen=True)`
 `src/chatddx/curation/plan.py:DataCase`
 
@@ -20,11 +15,6 @@ Written by `chatddx stamp write` from `src/chatddx/curation/`; how to read it is
 * `targets: JsonValue`
 * `appendices: Mapping[str, str] = field(default_factory=dict[str, str])`
 * `ordered: tuple[Ordered, ...] = ()`
-
-## `ENGINE_TABLES`
-`src/chatddx/curation/plan.py:ENGINE_TABLES`
-
-`ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")`
 
 ## `init`
 `src/chatddx/curation/write.py:init`
@@ -39,11 +29,6 @@ Written by `chatddx stamp write` from `src/chatddx/curation/`; how to read it is
 
 Raises:
 1. `ValueError`: `"a data set needs exactly one expectation schema"`
-
-## `LATE_TABLES`
-`src/chatddx/curation/plan.py:LATE_TABLES`
-
-`LATE_TABLES = ("scorer",)`
 
 ## `load_cases`
 `src/chatddx/curation/plan.py:load_cases`
@@ -109,7 +94,7 @@ Raises:
 4. `ValueError`: `"{where}: {e}"` (from `ValueError`, through `_stanzas`)
 5. `ValueError`: `"{where} must be a table, not {raw!r}"` (through `_stanzas`)
 6. `ValueError`: `"{path}: {table} must be a table, not {stanzas!r}"` (through `_stanzas`)
-7. `ValueError`: `"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} tables, not {', '.join(stray)}"`
+7. `ValueError`: `"{path}: an engines file holds only {', '.join(_ENGINE_TABLES)} tables, not {', '.join(stray)}"`
 8. `ValueError`: `"{path}: {table} {twice} are named before it too"`
 9. `ValueError`: `"{factors}: translations are written in the texts-<language>.toml of the language they translate into"`
 10. `ValueError`: `"{path}: texts are kept in texts-<language>.toml files"` (through `_texts`)
@@ -142,11 +127,6 @@ Raises:
 
 `PLANNED_TABLES = (*TABLES, "recipe", "judge")`
 
-## `REFERENCES`
-`src/chatddx/curation/plan.py:REFERENCES`
-
-`REFERENCES: dict[str, dict[str, str]] = {…}`
-
 ## `repair`
 `src/chatddx/curation/repair.py:repair`
 
@@ -176,11 +156,6 @@ Raises:
 `src/chatddx/curation/plan.py:TEXT_TABLES`
 
 `TEXT_TABLES = frozenset(…)`
-
-## `VERBS`
-`src/chatddx/curation/write.py:VERBS`
-
-`VERBS: dict[Kept, str] = {…}`
 
 ## `wipe`
 `src/chatddx/curation/write.py:wipe`

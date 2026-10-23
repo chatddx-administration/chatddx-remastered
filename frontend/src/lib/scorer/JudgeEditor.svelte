@@ -17,6 +17,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import Saving from "$lib/editors/Saving.svelte";
+  import { t } from "$lib/locale";
   import type { Component, Saved } from "$lib/editors/writing";
   import JudgeFields from "./JudgeFields.svelte";
   import { configurationChoices, type Holding, type JudgeChoice, madeFor, modelChoices, seedsOf } from "./judging";
@@ -79,8 +80,9 @@
   {#if typeof read === "string"}<p class="text-destructive">{read}</p>{/if}
   {#if given.mode !== "new"}
     <p class="text-muted-foreground">
-      A scorer asks the version of a judge it names, so the scorers asking this one keep asking the version they ask until
-      they are changed.
+      {t(
+        "A scorer asks the version of a judge it names, so the scorers asking this one keep asking the version they ask until they are changed.",
+      )}
     </p>
   {/if}
   <Saving editing={given} {component} {digest} made={made && wrote} />

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Sign in · ChatDDX{% endblock %}
+{% block title %}{{ _("Sign in") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-sm px-4 py-16">
-  <div class="glass-card animate-slide-up rounded-2xl p-6">
-    <h1 class="mb-6 text-2xl font-bold">Sign in</h1>
+  <div class="pane animate-slide-up rounded-2xl p-6">
+    <h1 class="mb-6 text-2xl font-bold">{{ _("Sign in") }}</h1>
     {% if wrong %}
-    <p role="alert" class="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">Wrong login or password.</p>
+    <p role="alert" class="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{{ _("Wrong login or password.") }}</p>
     {% endif %}
     <form method="post" action="/sign-in" class="grid gap-4">
       <input type="hidden" name="next" value="{{ next }}">
-      <label class="grid gap-2 text-sm font-medium">Login
+      <label class="grid gap-2 text-sm font-medium">{{ _("Login") }}
         <input name="login" value="{{ login }}" autocomplete="username" autocapitalize="none" required autofocus class="h-9 w-full rounded-md border border-input bg-background/50 px-2.5 text-base font-normal shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
       </label>
-      <label class="grid gap-2 text-sm font-medium">Password
+      <label class="grid gap-2 text-sm font-medium">{{ _("Password") }}
         <input name="password" type="password" autocomplete="current-password" required class="h-9 w-full rounded-md border border-input bg-background/50 px-2.5 text-base font-normal shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
       </label>
-      <button class="mt-2 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/80">Sign in</button>
+      <div class="mt-2 grid"><button class="primary">{{ _("Sign in") }}</button></div>
     </form>
   </div>
 </div>

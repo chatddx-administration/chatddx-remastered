@@ -25,6 +25,7 @@ from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.factors.scoring import Judge, Scorer, fill_text
 from chatddx.factors.select import select
+from chatddx.locale import tr
 from chatddx.scorers.shipped import problems, unit_of
 
 from .pages import BenchDep, own_first, page, within
@@ -34,7 +35,7 @@ SHOWN = 50
 router = APIRouter()
 
 
-def judge_choices(bench: Bench) -> dict[str, list[dict[str, Any]]]:
+def _judge_choices(bench: Bench) -> dict[str, list[dict[str, Any]]]:
     configurations = own_first(
         bench, api.threads(bench, "configuration", purpose="judge")
     )
@@ -71,8 +72,9 @@ def code_of(bench: Bench, entry_point: str | None = None) -> schemas.ScorerCode:
 
 def unshipped(scorer: Scorer) -> str | None:
     if found := problems(scorer):
-        return (
-            "; ".join(found) + ": write a new scorer from the Library to score with it"
+        return tr(
+            "%(problems)s: write a new scorer from the Library to score with it",
+            problems="; ".join(found),
         )
     return None
 
@@ -101,7 +103,7 @@ def scorer_choices(
         "judges": _judges(bench),
         "titles": {j: bench.title(j) for j in judged},
         "me": bench.person.login,
-        **judge_choices(bench),
+        **_judge_choices(bench),
     }
 
 
@@ -197,14 +199,14 @@ def checked(bench: Bench, held: Component) -> tuple[list[Finding], list[str]]:
 
 
 @dataclass(frozen=True)
-class Asks:
+class _Asks:
     thread: int | None
     name: str
     latest: bool
 
 
 @dataclass(frozen=True)
-class Viewed:
+class _Viewed:
     label: str
     metric: str
     measures: str | None
@@ -213,11 +215,11 @@ class Viewed:
     split: str | None
     expectation: str
     params: dict[str, JsonValue]
-    judge: Asks | None
+    judge: _Asks | None
 
 
 @dataclass(frozen=True)
-class Covered:
+class _Covered:
     expected: int
     choosing: list[schemas.Family]
     lacking: list[schemas.Family]
@@ -230,17 +232,17 @@ class Fared:
 
 
 @dataclass(frozen=True)
-class ScorerShown:
+class _ScorerShown:
     schema: str
     entry_point: str
     version: int
     unshipped: str | None
-    views: list[Viewed]
+    views: list[_Viewed]
     resources: list[str]
     params: dict[str, JsonValue]
     reads: list[schemas.Thread]
     skips: list[schemas.Thread]
-    covered: Covered
+    covered: _Covered
     fared: list[Fared]
 
 
@@ -269,7 +271,7 @@ class Read:
 
 
 @dataclass
-class Judged:
+class _Judged:
     scorer: str
     label: str
     items: int = 0
@@ -283,7 +285,7 @@ class Judged:
 
 
 @dataclass(frozen=True)
-class Disagreed:
+class _Disagreed:
     run: UUID
     described: str
     case: str
@@ -293,8 +295,8 @@ class Disagreed:
 
 
 @dataclass(frozen=True)
-class JudgeShown:
-    configuration: Asks
+class _JudgeShown:
+    configuration: _Asks
     model: str
     seeds: list[int]
     fill: str
@@ -304,8 +306,8 @@ class JudgeShown:
     behind: list[tuple[schemas.Thread, list[str]]]
     read: Read
     asked: dict[str, JsonValue]
-    judged: list[Judged]
-    disagreed: list[Disagreed]
+    judged: list[_Judged]
+    disagreed: list[_Disagreed]
     editing: dict[str, Any]
 
 
@@ -331,7 +333,12 @@ def scoring(
     shown = api.thread(bench, thread)
     if shown.kind not in ("scorer", "judge"):
         raise HTTPException(
-            404, f"no scorer or judge {thread} for {bench.person.login}"
+            404,
+            tr(
+                "no scorer or judge %(thread)s for %(login)s",
+                thread=thread,
+                login=bench.person.login,
+            ),
         )
     held = bench.store.get(shown.head.digest)
     gone = unshipped(held) if isinstance(held, Scorer) else None
@@ -374,22 +381,22 @@ def _model(bench: Bench, judge: Judge) -> str:
     return bench.handle(judge.model).name
 
 
-def _asks(bench: Bench, digest: str) -> Asks:
+def _asks(bench: Bench, digest: str) -> _Asks:
     held = bench.holder(digest)
     if held is None:
-        return Asks(None, bench.title(digest), True)
+        return _Asks(None, bench.title(digest), True)
     edit, about = held
     latest = catalog_threads.head(bench.rows, edit.thread).id == edit.id
-    return Asks(edit.thread, about.name or bench.title(digest), latest)
+    return _Asks(edit.thread, about.name or bench.title(digest), latest)
 
 
-def _scorer(bench: Bench, scorer: Scorer, gone: str | None) -> ScorerShown:
+def _scorer(bench: Bench, scorer: Scorer, gone: str | None) -> _ScorerShown:
     labels = bench.labels(scorer.digest)
     code = None if gone else code_of(bench, scorer.entry_point)
     metrics = {} if code is None else {m.name: m for m in code.metrics}
     views = [
-        Viewed(
-            label=labels.get(i, f"view {i}"),
+        _Viewed(
+            label=labels.get(i, tr("view %(n)s", n=i)),
             metric=v.metric,
             measures=None if (m := metrics.get(v.metric)) is None else m.measures,
             unit=None if m is None else m.unit,
@@ -409,7 +416,7 @@ def _scorer(bench: Bench, scorer: Scorer, gone: str | None) -> ScorerShown:
         schema = resolve(bench.store.get, t.head.digest, Skeleton).output_schema
         offered = all(v.offered_by(schema) for v in scorer.views)
         (reads if offered else skips).append(t)
-    return ScorerShown(
+    return _ScorerShown(
         schema=bench.title(scorer.expectation_schema),
         entry_point=scorer.entry_point,
         version=scorer.version,
@@ -424,7 +431,7 @@ def _scorer(bench: Bench, scorer: Scorer, gone: str | None) -> ScorerShown:
     )
 
 
-def _covered(bench: Bench, schema: str) -> Covered:
+def _covered(bench: Bench, schema: str) -> _Covered:
     expected = 0
     choosing: list[schemas.Family] = []
     lacking: list[schemas.Family] = []
@@ -438,7 +445,7 @@ def _covered(bench: Bench, schema: str) -> Covered:
             lacking.append(f)
         else:
             expected += 1
-    return Covered(expected, choosing, lacking)
+    return _Covered(expected, choosing, lacking)
 
 
 def _fared(bench: Bench, scorer: str) -> list[Fared]:
@@ -459,7 +466,7 @@ def _judge(
     judge: Judge,
     view: str | None,
     family: int | None,
-) -> JudgeShown:
+) -> _JudgeShown:
     versions = {e.digest for e in api.edits(bench, shown.id)}
     lineage = _lineage(bench, shown)
     asked_by: list[AskedBy] = []
@@ -469,7 +476,7 @@ def _judge(
         asked_by.extend(
             AskedBy(
                 t,
-                labels.get(i, f"view {i}"),
+                labels.get(i, tr("view %(n)s", n=i)),
                 lineage[v.judge],
                 v.judge == shown.head.digest,
                 i,
@@ -494,7 +501,7 @@ def _judge(
         unsent = str(e)
     skeleton = resolve(bench.store.get, judge.skeleton, Skeleton)
     judged, disagreed = _verdicts(bench, versions)
-    return JudgeShown(
+    return _JudgeShown(
         configuration=_asks(bench, judge.skeleton),
         model=_model(bench, judge),
         seeds=list(judge.seeds),
@@ -525,8 +532,11 @@ def _judge(
 
 def _lineage(bench: Bench, shown: schemas.ThreadDetail) -> dict[str, str]:
     edits = api.edits(bench, shown.id)
-    found = {e.digest: f"version {i} of {len(edits)}" for i, e in enumerate(edits, 1)}
-    found[shown.head.digest] = "its latest version"
+    found = {
+        e.digest: tr("version %(n)s of %(of)s", n=i, of=len(edits))
+        for i, e in enumerate(edits, 1)
+    }
+    found[shown.head.digest] = tr("its latest version")
     origin = shown.forked_from
     while origin is not None and (edit := bench.rows.edit(origin)) is not None:
         try:
@@ -535,7 +545,8 @@ def _lineage(bench: Bench, shown: schemas.ThreadDetail) -> dict[str, str]:
             break
         named = (above.owner + "/" if above.owner else "") + (above.name or above.title)
         for e in api.edits(bench, above.id):
-            _ = found.setdefault(e.digest, f"{named}, which it is forked from")
+            forked = tr("%(thread)s, which it is forked from", thread=named)
+            _ = found.setdefault(e.digest, forked)
         origin = above.forked_from
     return found
 
@@ -549,7 +560,14 @@ def following(
 ) -> Response:
     shown = api.thread(bench, thread)
     if shown.kind != "judge":
-        raise HTTPException(404, f"no judge {thread} for {bench.person.login}")
+        raise HTTPException(
+            404,
+            tr(
+                "no judge %(thread)s for %(login)s",
+                thread=thread,
+                login=bench.person.login,
+            ),
+        )
     lineage = _lineage(bench, shown)
     edit, about = bench.thread(scorer, "scorer")
     held = resolve(bench.store.get, edit.digest, Scorer)
@@ -565,7 +583,12 @@ def following(
     labels = catalog_read.labels(bench.rows, edit.id)
     with refused():
         if edit.id != head:
-            raise MovedOn(f"scorer {scorer} has a newer version: look at it again")
+            raise MovedOn(
+                tr(
+                    "scorer %(scorer)s has a newer version: look at it again",
+                    scorer=scorer,
+                )
+            )
         if about.owner == bench.person.id:
             _ = bench.edit(scorer, head, followed, labels=labels)
         else:
@@ -580,7 +603,7 @@ def _read(
     by = next((a for a in asked_by if view in (None, a.key)), None)
     if by is None:
         if view is not None:
-            raise HTTPException(404, f"no view {view} asks this judge")
+            raise HTTPException(404, tr("no view %(view)s asks this judge", view=view))
         return Read(None, None, [], None, [])
     expected: list[tuple[schemas.Family, JsonValue]] = []
     for f in api_families.families(bench):
@@ -601,10 +624,12 @@ def _read(
     return Read(by, found[0], families, found[1], select(found[1], by.expectation))
 
 
-def _verdicts(bench: Bench, versions: set[str]) -> tuple[list[Judged], list[Disagreed]]:
+def _verdicts(
+    bench: Bench, versions: set[str]
+) -> tuple[list[_Judged], list[_Disagreed]]:
     runs = {r.run: r for d in versions for r in bench.runs(scored_by=d)}
-    tallied: dict[tuple[str, str], Judged] = {}
-    disagreed: list[Disagreed] = []
+    tallied: dict[tuple[str, str], _Judged] = {}
+    disagreed: list[_Disagreed] = []
     for started in runs.values():
         for graded in bench.scores_of(started):
             if graded.score is None:
@@ -616,7 +641,7 @@ def _verdicts(bench: Bench, versions: set[str]) -> tuple[list[Judged], list[Disa
                     continue
                 label = graded.label(item.view)
                 held = tallied.setdefault(
-                    (graded.name, label), Judged(graded.name, label)
+                    (graded.name, label), _Judged(graded.name, label)
                 )
                 seeds = _seeds(item.detail)
                 given = {s for s in seeds if s is not None}
@@ -627,7 +652,7 @@ def _verdicts(bench: Bench, versions: set[str]) -> tuple[list[Judged], list[Disa
                     held.values.append(item.value)
                 if len(given) > 1 and len(disagreed) < SHOWN:
                     disagreed.append(
-                        Disagreed(
+                        _Disagreed(
                             run=started.run,
                             described=bench.described(started),
                             case=bench.title(item.key.case),

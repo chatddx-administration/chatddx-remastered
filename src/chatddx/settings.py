@@ -35,6 +35,7 @@ STAMPED = (
     "importers",
     "inventory",
     "ledger",
+    "locale",
     "portal",
     "repl",
     "runner",

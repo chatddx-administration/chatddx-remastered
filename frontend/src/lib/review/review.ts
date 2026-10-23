@@ -1,6 +1,7 @@
 import type { Schemas } from "$lib/api/client";
 import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
 import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
+import { t, tn, tp } from "$lib/locale";
 import type { Progress } from "$lib/runs/progress";
 import type { Composing } from "$lib/scorer/Composer.svelte";
 
@@ -113,20 +114,34 @@ export function replaced(back: string, current: string, cases: Record<string, st
 }
 
 export function doing(progress: Progress): string {
-  if (progress.done) return progress.done.halted ? "halted" : "done";
+  if (progress.done) return progress.done.halted ? tp("a run under way", "halted") : tp("a run under way", "done");
   const scoring = progress.scorings.filter((s) => s.score !== null);
   if (scoring.length) {
-    const scored = scoring.reduce((n, s) => n + s.scored, 0);
-    const asked = scoring.reduce((n, s) => n + s.asked, 0);
-    const answered = scoring.reduce((n, s) => n + s.answered, 0);
-    return `scoring: ${scored} scored${asked ? `, judges answered ${answered} of ${asked}` : ""}`;
+    const n = scoring.reduce((sum, s) => sum + s.scored, 0);
+    const asked = scoring.reduce((sum, s) => sum + s.asked, 0);
+    const answered = scoring.reduce((sum, s) => sum + s.answered, 0);
+    const scored = tn("%(n)s scored", "%(n)s scored", n, { n });
+    if (!asked) return t("scoring: %(scored)s", { scored });
+    const judges = tn("judges answered %(answered)s of %(asked)s", "judges answered %(answered)s of %(asked)s", asked, {
+      answered,
+      asked,
+    });
+    return t("scoring: %(scored)s, %(judges)s", { scored, judges });
   }
-  if (!progress.items.length) return "queued";
-  const ended = progress.items.filter((i) => i.phase === "ended").length;
+  if (!progress.items.length) return tp("a run under way", "queued");
+  const of = progress.items.length;
+  const ended = tn("%(ended)s of %(of)s ended", "%(ended)s of %(of)s ended", of, {
+    ended: progress.items.filter((i) => i.phase === "ended").length,
+    of,
+  });
   const now = progress.items.find((i) => i.phase === "sending");
-  const what = now?.kind === "reasoning" ? "thinking" : now?.kind ? "writing" : null;
-  const sending = now && what ? `, ${what}: ${now.tokens} tokens` : "";
-  return `${ended} of ${progress.items.length} ended${sending}`;
+  if (!now?.kind) return ended;
+  const n = now.tokens;
+  const sending =
+    now.kind === "reasoning"
+      ? tn("thinking: %(n)s token", "thinking: %(n)s tokens", n, { n })
+      : tn("writing: %(n)s token", "writing: %(n)s tokens", n, { n });
+  return t("%(ended)s, %(sending)s", { ended, sending });
 }
 
 export function withScorer(back: string, thread: number): string {

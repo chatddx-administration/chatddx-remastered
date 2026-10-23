@@ -2,71 +2,89 @@
 {% from "macros.html" import heading, section, refusal %}
 {% from "fields.html" import rows %}
 {% from "translations.html" import entry %}
-{% block title %}A new {{ word | replace("_", " ") }} · ChatDDX{% endblock %}
+{% set titled = {
+  "appendix": _("A new appendix"),
+  "configuration": _("A new configuration"),
+  "expectation": _("A new expectation"),
+  "few_shot": _("A new few shot"),
+  "instructions": _("A new instructions"),
+  "judge": _("A new judge"),
+  "output": _("A new output"),
+  "passthrough": _("A new passthrough"),
+  "prompt": _("A new prompt"),
+  "reasoning": _("A new reasoning"),
+  "sampling": _("A new sampling"),
+  "scorer": _("A new scorer"),
+  "toolset": _("A new toolset"),
+  "translations": _("A new translations"),
+  "trial": _("A new trial"),
+}.get(word, _("A new %(kind)s", kind=word | kind)) %}
+{% block title %}{{ titled }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
-  {{ heading("A new " ~ (word | replace("_", " ")), "A thread of your own, from what is given here.") }}
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library?kind={{ word }}">← {{ word | kind }}</a></nav>
+  {{ heading(titled, _("A thread of your own, from what is given here.")) }}
   {{ refusal(typed, request) }}
   {% if cases is defined %}
-  {% call section("Its case", "case") %}
+  {% call section(_("Its case"), "case") %}
   <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
     <input type="hidden" name="kind" value="{{ word }}">
-    <label class="grid gap-1"><span class="text-muted-foreground">case</span>
+    <label class="grid gap-1"><span class="text-muted-foreground">{{ "case" | kind }}</span>
       <select name="family" class="h-9 rounded-md border border-input bg-transparent px-2.5">
         {% for id, named in cases %}<option value="{{ id }}">{{ named }}</option>{% endfor %}
       </select></label>
-    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Write one for it</button>
-    <span class="basis-full text-xs text-muted-foreground">An appendix is written for one case's vignette, and sent with it by the cases that include it: pick the case first. A case's page begins one too.</span>
+    <button>{{ _("Write one for it") }}</button>
+    <span class="basis-full text-xs text-muted-foreground">{{ _("An appendix is written for one case's vignette, and sent with it by the cases that include it: pick the case first. A case's page begins one too.") }}</span>
   </form>
   {% endcall %}
   {% elif word == "translations" %}
-  {% call section("What it holds", "holds") %}
+  {% call section(_("What it holds"), "holds") %}
   {% if entries is none %}
   <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
     <input type="hidden" name="kind" value="translations">
-    <label class="grid gap-1"><span class="text-muted-foreground">configuration</span>
+    <label class="grid gap-1"><span class="text-muted-foreground">{{ "configuration" | kind }}</span>
       <select name="configuration" class="h-9 rounded-md border border-input bg-transparent px-2.5">
         {% for id, named in configurations %}<option value="{{ id }}"{% if id == configuration %} selected{% endif %}>{{ named }}</option>{% endfor %}
       </select></label>
-    <label class="grid gap-1"><span class="text-muted-foreground">into</span>
-      <input name="into" required value="{{ into or '' }}" placeholder="such as sv" class="h-9 w-36 rounded-md border border-input bg-transparent px-2.5"></label>
-    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Show its texts</button>
-    <span class="basis-full text-xs text-muted-foreground">Translations are begun of a configuration's texts, into a language; its recipe holds them once it picks them, in the Library or the Lab.</span>
+    <label class="grid gap-1"><span class="text-muted-foreground">{{ pgettext("a language", "into") }}</span>
+      <input name="into" required value="{{ into or '' }}" placeholder="{{ _('such as sv') }}" class="h-9 w-36 rounded-md border border-input bg-transparent px-2.5"></label>
+    <button>{{ _("Show its texts") }}</button>
+    <span class="basis-full text-xs text-muted-foreground">{{ _("Translations are begun of a configuration's texts, into a language; its recipe holds them once it picks them, in the Library or the Lab.") }}</span>
   </form>
   {% else %}
-  <p class="mb-3 text-sm text-muted-foreground">The texts of {% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}, into {{ into }}. <a class="text-primary hover:underline" href="/library/new?kind=translations">Pick another</a></p>
+  {% set of %}{% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}{% endset %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("The texts of %(configuration)s, into %(language)s.", configuration=of, language=into) }} <a class="view" href="/library/new?kind=translations">{{ _("Pick another") }}</a></p>
   <form method="post" action="{{ action }}" class="grid gap-4">
-    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
+    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">{{ _("name") }}</span>
       <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
     <div>{% for e in entries %}{{ entry(e, loop.index0, true, false) }}{% endfor %}</div>
     <div class="flex flex-wrap items-center gap-3 text-sm">
-      <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Write it</button>
-      <span class="text-muted-foreground">Writes a new thread of your own; a translation left empty isn't kept.</span>
+      <button class="primary">{{ _("Write it") }}</button>
+      <span class="text-muted-foreground">{{ pgettext("after the button Write it", "Writes a new thread of your own; a translation left empty isn't kept.") }}</span>
     </div>
   </form>
   {% endif %}
   {% endcall %}
   {% else %}
-  {% call section("What it holds", "holds") %}
+  {% call section(_("What it holds"), "holds") %}
   <form method="post" action="{{ action }}" class="grid gap-4">
-    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">name</span>
+    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">{{ _("name") }}</span>
       <input name="name" required value="{{ typed.name or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
     {{ rows(fields, picked, titles, links) }}
     {% if languaged %}
-    <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">language</span>
-      <input name="language" value="{{ typed.language or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="none">
-      <span class="text-xs text-muted-foreground">The text's, kept with it.</span></label>
+    <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">{{ _("language") }}</span>
+      <input name="language" value="{{ typed.language or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ pgettext('no language', 'none') }}">
+      <span class="text-xs text-muted-foreground">{{ pgettext("under the field language", "The text's, kept with it.") }}</span></label>
     {% endif %}
     {% if labels is not none %}
-    <label class="grid gap-1 text-sm"><span class="text-muted-foreground">labels</span>
+    <label class="grid gap-1 text-sm"><span class="text-muted-foreground">{{ _("labels") }}</span>
       <textarea name="labels" rows="4" class="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 font-mono text-xs">
 {{ typed.labels if typed and typed.labels is not none else labels | pretty }}</textarea>
-      <span class="text-xs text-muted-foreground">What its views and resources are called, by position, kept with its first version.</span></label>
+      <span class="text-xs text-muted-foreground">{{ _("What its views and resources are called, by position, kept with its first version.") }}</span></label>
     {% endif %}
     <div class="flex flex-wrap items-center gap-3 text-sm">
-      <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Write it</button>
-      <span class="text-muted-foreground">Writes a new thread of your own.</span>
+      <button class="primary">{{ _("Write it") }}</button>
+      <span class="text-muted-foreground">{{ pgettext("after the button Write it", "Writes a new thread of your own.") }}</span>
     </div>
   </form>
   {% endcall %}

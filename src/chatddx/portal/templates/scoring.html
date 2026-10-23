@@ -1,17 +1,16 @@
 {% extends "base.html" %}
 {% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, pane with context %}
 
-{% set link = "text-primary hover:underline" %}
 {% set th = "pb-2 pr-4 font-medium" %}
 {% set td = "py-1.5 pr-4 align-top" %}
 {% set h2 = "mb-2 text-base font-semibold" %}
 {% set part = "mb-6 border-t border-border/60 pt-4" %}
-{% set field = "h-8 rounded-md border border-input bg-transparent px-2" %}
+{% set field = "h-9 rounded-md border border-input bg-transparent px-2" %}
 
 {% macro entry(t, sub=None) %}
 <li>
   <a href="/scoring/{{ t.id }}"{% if t.id == shown.id %} aria-current="page"{% endif %}
-     class="block rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if t.id == shown.id else 'hover:bg-muted' }}">
+     class="block px-2 py-1">
     <span class="block truncate">{{ named(t) }}</span>
     {% if sub %}<span class="block text-xs text-muted-foreground">{{ sub }}</span>{% endif %}
   </a>
@@ -19,40 +18,42 @@
 {% endmacro %}
 
 {% macro asks(a) -%}
-{%- if a.thread is none %}{{ a.name }}{% else %}<a class="{{ link }}" href="{{ caller() }}">{{ a.name }}</a>{% endif %}{% if not a.latest %} <span class="text-xs text-warning">an earlier version</span>{% endif -%}
+{%- if a.thread is none %}{{ a.name }}{% else %}<a href="{{ caller() }}">{{ a.name }}</a>{% endif %}{% if not a.latest %} <span class="text-xs text-warning">{{ _("an earlier version") }}</span>{% endif -%}
 {%- endmacro %}
 
-{% block title %}{{ "Scoring · " ~ named(shown) if shown else "Scoring" }} · ChatDDX{% endblock %}
+{% block title %}{{ _("Scoring") ~ " · " ~ named(shown) if shown else _("Scoring") }} · ChatDDX{% endblock %}
 {% block main %}
 {% if not shown %}
 <div class="mx-auto max-w-3xl px-4 py-8">
-  <p class="text-muted-foreground">No scorer or judge you see: a scorer is composed on a case in <a class="{{ link }}" href="/review">Review</a>, or <a class="{{ link }}" href="/library/new?kind=scorer">written in the Library</a>.</p>
+  <p class="text-muted-foreground">{% trans %}No scorer or judge you see: a scorer is composed on a case in <a class="bench" href="/review">Review</a>, or <a class="begin" href="/library/new?kind=scorer">written in the Library</a>.{% endtrans %}</p>
 </div>
 {% else %}
 <div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[18rem_minmax(0,1fr)]">
 
-  {% call pane("Scorers and judges") %}
-  <h2 class="mb-1 text-sm font-semibold">Scorers</h2>
+  {% call pane(_("Scorers and judges")) %}
+  <nav aria-label="{{ _('Scorers and judges') }}">
+  <h2 class="mb-1 text-sm font-semibold">{{ _("Scorers") }}</h2>
   {% for schema, held in scorers %}
-  <h3 class="mt-3 text-xs text-muted-foreground">reading {{ schema }}</h3>
+  <h3 class="mt-3 text-xs text-muted-foreground">{{ _("reading %(schema)s", schema=schema) }}</h3>
   <ol class="mt-1 space-y-0.5 text-sm">{% for t in held %}{{ entry(t) }}{% endfor %}</ol>
   {% else %}
-  <p class="text-sm text-muted-foreground">None you see.</p>
+  <p class="text-sm text-muted-foreground">{{ _("None you see.") }}</p>
   {% endfor %}
-  <h2 class="mb-1 mt-6 text-sm font-semibold">Judges</h2>
+  <h2 class="mb-1 mt-6 text-sm font-semibold">{{ _("Judges") }}</h2>
   <ol class="space-y-0.5 text-sm">
-    {% for t, model in judges %}{{ entry(t, "under " ~ model) }}{% else %}<li class="text-muted-foreground">None you see.</li>{% endfor %}
+    {% for t, model in judges %}{{ entry(t, pgettext("a model", "under %(model)s", model=model)) }}{% else %}<li class="text-muted-foreground">{{ _("None you see.") }}</li>{% endfor %}
   </ol>
-  <p class="mt-4 text-xs leading-relaxed text-muted-foreground">Each one you see, yours first: the scorers by the expectation schema they grade against, the judges by the model they are asked under.</p>
+  </nav>
+  <p class="mt-4 text-xs leading-relaxed text-muted-foreground">{{ _("Each one you see, yours first: the scorers by the expectation schema they grade against, the judges by the model they are asked under.") }}</p>
   {% endcall %}
 
-  {% call pane("The " ~ shown.word) %}
+  {% call pane({"scorer": _("The scorer"), "judge": _("The judge")}.get(shown.word, shown.word)) %}
   <header class="mb-4">
     <h1 class="text-xl font-bold tracking-tight">{{ named(shown) }}</h1>
     <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      <span>a {{ shown.word }}{% if scorer %} grading against {{ scorer.schema }}{% endif %}</span>
-      <span>·</span><span>saved {{ shown.head.at | when }} by {{ shown.head.by }}</span>
-      <span>·</span><a class="{{ link }}" href="/threads/{{ shown.id }}">its page in the Library</a>
+      <span>{{ _("a scorer grading against %(schema)s", schema=scorer.schema) if scorer else {"scorer": _("a scorer"), "judge": _("a judge")}.get(shown.word, shown.word) }}</span>
+      <span>·</span><span>{{ _("saved %(at)s by %(by)s", at=shown.head.at | when, by=shown.head.by) }}</span>
+      <span>·</span><a href="/threads/{{ shown.id }}">{{ _("its page in the Library") }}</a>
     </p>
     {% if shown.description %}<p class="mt-2 text-sm">{{ shown.description }}</p>{% endif %}
   </header>
@@ -60,21 +61,28 @@
   {% if scorer %}
   {% if scorer.unshipped %}<p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">{{ scorer.unshipped }}</p>{% endif %}
 
-  <section class="{{ part }}" aria-label="Its views">
-    <h2 class="{{ h2 }}">Its views</h2>
-    <p class="mb-3 text-xs text-muted-foreground">Each compares what it picks from an answer with what it picks from the expectation, by a metric of {{ scorer.entry_point }} at version {{ scorer.version }}{% if scorer.params %}, given <code class="font-mono">{{ scorer.params | tojson }}</code>{% endif %}{% if scorer.resources %}, holding {{ scorer.resources | join(", ") }}{% endif %}.</p>
+  <section class="{{ part }}" aria-label="{{ _('Its views') }}">
+    <h2 class="{{ h2 }}">{{ _("Its views") }}</h2>
+    {% set given %}<code class="font-mono">{{ scorer.params | tojson }}</code>{% endset %}
+    {% set held = scorer.resources | join(", ") %}
+    <p class="mb-3 text-xs text-muted-foreground">
+      {%- if scorer.params and scorer.resources %}{{ _("Each compares what it picks from an answer with what it picks from the expectation, by a metric of %(code)s at version %(version)s, given %(params)s, holding %(resources)s.", code=scorer.entry_point, version=scorer.version, params=given, resources=held) }}
+      {%- elif scorer.params %}{{ _("Each compares what it picks from an answer with what it picks from the expectation, by a metric of %(code)s at version %(version)s, given %(params)s.", code=scorer.entry_point, version=scorer.version, params=given) }}
+      {%- elif scorer.resources %}{{ _("Each compares what it picks from an answer with what it picks from the expectation, by a metric of %(code)s at version %(version)s, holding %(resources)s.", code=scorer.entry_point, version=scorer.version, resources=held) }}
+      {%- else %}{{ _("Each compares what it picks from an answer with what it picks from the expectation, by a metric of %(code)s at version %(version)s.", code=scorer.entry_point, version=scorer.version) }}{% endif -%}
+    </p>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
-          <tr><th class="{{ th }}">View</th><th class="{{ th }}">Metric</th><th class="{{ th }}">Of the answer</th><th class="{{ th }}">Of the expectation</th><th class="{{ th }}">Judge</th><th class="{{ th }}">Parameters</th></tr>
+          <tr><th class="{{ th }}">{{ _("View") }}</th><th class="{{ th }}">{{ _("Metric") }}</th><th class="{{ th }}">{{ _("Of the answer") }}</th><th class="{{ th }}">{{ _("Of the expectation") }}</th><th class="{{ th }}">{{ _("Judge") }}</th><th class="{{ th }}">{{ _("Parameters") }}</th></tr>
         </thead>
         <tbody>
           {% for v in scorer.views %}
           <tr class="border-t border-border/60">
             <th scope="row" class="{{ td }} text-left font-medium">{{ v.label }}</th>
-            <td class="{{ td }}"><span title="{{ v.measures or '' }}">{{ v.metric | replace("_", " ") }}</span>{% if v.unit %} <span class="text-xs text-muted-foreground">in {{ v.unit }}</span>{% endif %}</td>
-            <td class="{{ td }}"><code class="font-mono text-xs">{{ v.output or "the whole answer" }}</code>{% if v.split %} {{ chip("split " ~ v.split) }}{% endif %}</td>
-            <td class="{{ td }}"><code class="font-mono text-xs">{{ v.expectation or "the whole expectation" }}</code></td>
+            <td class="{{ td }}"><span title="{{ v.measures or '' }}">{{ v.metric | replace("_", " ") }}</span>{% if v.unit %} <span class="text-xs text-muted-foreground">{{ _("in %(unit)s", unit=v.unit) }}</span>{% endif %}</td>
+            <td class="{{ td }}"><code class="font-mono text-xs">{{ v.output or _("the whole answer") }}</code>{% if v.split %} {{ chip(_("split %(split)s", split=v.split)) }}{% endif %}</td>
+            <td class="{{ td }}"><code class="font-mono text-xs">{{ v.expectation or _("the whole expectation") }}</code></td>
             <td class="{{ td }}">{% if v.judge %}{% call asks(v.judge) %}/scoring/{{ v.judge.thread }}{% endcall %}{% else %}—{% endif %}</td>
             <td class="{{ td }}">{% if v.params %}<code class="font-mono text-xs">{{ v.params | tojson }}</code>{% else %}—{% endif %}</td>
           </tr>
@@ -84,103 +92,105 @@
     </div>
   </section>
 
-  <section class="{{ part }}" aria-label="What it reads">
-    <h2 class="{{ h2 }}">What it reads</h2>
+  <section class="{{ part }}" aria-label="{{ _('What it reads') }}">
+    <h2 class="{{ h2 }}">{{ _("What it reads") }}</h2>
     {% set c = scorer.covered %}
     {% set every = c.expected + c.choosing | length + c.lacking | length %}
-    {% set reads %}{% for t in scorer.reads %}{{ named(t) }}{{ ", " if not loop.last }}{% else %}no configuration you see{% endfor %}{% endset %}
+    {% set reads %}{% for t in scorer.reads %}{{ named(t) }}{{ ", " if not loop.last }}{% else %}{{ _("no configuration you see") }}{% endfor %}{% endset %}
     {% set skips %}{% for t in scorer.skips %}{{ named(t) }}{{ ", " if not loop.last }}{% else %}—{% endfor %}{% endset %}
     {{ facts([
-      ("Answers of", reads),
-      ("Not of", skips),
-      ("Expected", c.expected ~ " of the " ~ every ~ " cases you see"),
+      (_("Answers of"), reads),
+      (_("Not of"), skips),
+      (_("Expected"), ngettext("%(expected)s of the %(num)s case you see", "%(expected)s of the %(num)s cases you see", every, expected=c.expected)),
     ]) }}
     {% if c.choosing %}
-    <p class="mt-3 text-sm">To choose from, several of yours: {% for f in c.choosing %}<a class="{{ link }}" href="/review/{{ f.id }}?scorer={{ shown.id }}">{{ f.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+    {% set choosing %}{% for f in c.choosing %}<a class="bench" href="/review/{{ f.id }}?scorer={{ shown.id }}">{{ f.name }}</a>{{ ", " if not loop.last }}{% endfor %}{% endset %}
+    <p class="mt-3 text-sm">{{ _("To choose from, several of yours: %(cases)s", cases=choosing) }}</p>
     {% endif %}
     {% if c.lacking %}
     <details class="mt-3 text-sm">
-      <summary class="cursor-pointer">No expectation of yours: {{ c.lacking | length }}</summary>
-      <p class="mt-1">{% for f in c.lacking %}<a class="{{ link }}" href="/review/{{ f.id }}?scorer={{ shown.id }}">{{ f.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+      <summary class="cursor-pointer">{{ ngettext("No expectation of yours: %(num)s", "No expectation of yours: %(num)s", c.lacking | length) }}</summary>
+      <p class="mt-1">{% for f in c.lacking %}<a class="bench" href="/review/{{ f.id }}?scorer={{ shown.id }}">{{ f.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
     </details>
     {% endif %}
-    <p class="mt-3 text-xs text-muted-foreground">A view reads a configuration's answers where its output's schema offers what the view picks; a case is graded only where you expect something of it, which is written in Review.</p>
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("A view reads a configuration's answers where its output's schema offers what the view picks; a case is graded only where you expect something of it, which is written in Review.") }}</p>
   </section>
 
-  <section class="{{ part }}" aria-label="How it scored">
-    <h2 class="{{ h2 }}">How it scored</h2>
+  <section class="{{ part }}" aria-label="{{ _('How it scored') }}">
+    <h2 class="{{ h2 }}">{{ _("How it scored") }}</h2>
     {% if scorer.fared %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
-          <tr><th class="{{ th }}">Run</th>{% for v in scorer.views %}<th class="{{ th }}">{{ v.label }}</th>{% endfor %}</tr>
+          <tr><th class="{{ th }}">{{ _("Run") }}</th>{% for v in scorer.views %}<th class="{{ th }}">{{ v.label }}</th>{% endfor %}</tr>
         </thead>
         <tbody>
           {% for f in scorer.fared %}
           <tr class="border-t border-border/60">
-            <td class="{{ td }}"><a class="{{ link }}" href="/runs/{{ f.run.id }}">{{ f.run.described }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
+            <td class="{{ td }}"><a href="/runs/{{ f.run.id }}">{{ f.run.described }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
             {% for m in f.means %}<td class="{{ td }} font-mono">{{ mean(m, scorer.views[loop.index0].unit) }}</td>{% endfor %}
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <p class="mt-3 text-xs text-muted-foreground">Your runs scored by this version, newest first, each by the mean of its latest score under each view.{% if scorer.fared | length > 1 %} <a class="{{ link }}" href="/runs/compare?{% for f in scorer.fared %}run={{ f.run.id }}{{ '&' if not loop.last }}{% endfor %}">Compare them</a> over the cases they share.{% endif %}</p>
+    {% set compared %}/runs/compare?{% for f in scorer.fared %}run={{ f.run.id }}{{ '&' if not loop.last }}{% endfor %}{% endset %}
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("Your runs scored by this version, newest first, each by the mean of its latest score under each view.") }}{% if scorer.fared | length > 1 %} {% trans href=compared %}<a class="bench" href="{{ href }}">Compare them</a> over the cases they share.{% endtrans %}{% endif %}</p>
     {% else %}
-    <p class="text-sm text-muted-foreground">No run of yours is scored by this version: runs left to score are on <a class="{{ link }}" href="/runs?left=true">Runs</a>.</p>
+    <p class="text-sm text-muted-foreground">{% trans %}No run of yours is scored by this version: runs left to score are on <a class="bench" href="/runs?left=true">Runs</a>.{% endtrans %}</p>
     {% endif %}
   </section>
   {% endif %}
 
   {% if judge %}
-  <section class="{{ part }}" aria-label="What it is">
-    <h2 class="{{ h2 }}">What it is</h2>
+  <section class="{{ part }}" aria-label="{{ _('What it is') }}">
+    <h2 class="{{ h2 }}">{{ _("What it is") }}</h2>
     {% set configuration %}{% call asks(judge.configuration) %}/lab/{{ judge.configuration.thread }}{% endcall %}{% endset %}
     {{ facts([
-      ("Its request", configuration),
-      ("Asked under", judge.model),
-      ("Seeds, a call each", judge.seeds | join(", ")),
-      ("Its slots filled by", judge.fill),
-      ("Served now at", judge.sent or judge.unsent),
+      (_("Its request"), configuration),
+      (_("Asked under"), judge.model),
+      (_("Seeds, a call each"), judge.seeds | join(", ")),
+      (_("Its slots filled by"), judge.fill),
+      (_("Served now at"), judge.sent or judge.unsent),
     ]) }}
-    <p class="mt-3 text-xs text-muted-foreground">Its request is a judge's configuration, varied and saved in the Lab; a scorer asks the version of a judge it names until it follows another, below.</p>
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("Its request is a judge's configuration, varied and saved in the Lab; a scorer asks the version of a judge it names until it follows another, below.") }}</p>
   </section>
 
-  <section class="{{ part }}" aria-label="Asked by">
-    <h2 class="{{ h2 }}">Asked by</h2>
+  <section class="{{ part }}" aria-label="{{ _('Asked by') }}">
+    <h2 class="{{ h2 }}">{{ _("Asked by") }}</h2>
     {% if judge.asked_by %}
     <ul class="space-y-1 text-sm">
       {% for a in judge.asked_by %}
-      <li><a class="{{ link }}" href="/scoring/{{ a.scorer.id }}">{{ named(a.scorer) }}</a> · {{ a.label }} <span class="text-xs {{ 'text-muted-foreground' if a.latest else 'text-warning' }}">{{ a.asks }}</span></li>
+      <li><a href="/scoring/{{ a.scorer.id }}">{{ named(a.scorer) }}</a> · {{ a.label }} <span class="text-xs {{ 'text-muted-foreground' if a.latest else 'text-warning' }}">{{ a.asks }}</span></li>
       {% endfor %}
     </ul>
     {% for t, labels in judge.behind %}
     <form method="post" action="/scoring/{{ shown.id }}/follow" class="mt-3 flex flex-wrap items-center gap-2 text-sm">
       <input type="hidden" name="scorer" value="{{ t.id }}">
       <input type="hidden" name="head" value="{{ t.head.id }}">
-      <button class="rounded-md border border-border px-2.5 py-0.5 font-medium hover:bg-muted">{{ "Ask its latest version" if t.owner == person.login else "Ask its latest version, in a scorer of your own" }}</button>
-      <span class="text-muted-foreground">in {{ named(t) }}'s {{ labels | join(", ") }}{% if t.owner != person.login %}, forking it{% endif %}</span>
+      <button class="small">{{ _("Ask its latest version") if t.owner == person.login else _("Ask its latest version, in a scorer of your own") }}</button>
+      <span class="text-muted-foreground">{{ pgettext("after the button Ask its latest version", "in %(scorer)s's %(views)s", scorer=named(t), views=labels | join(", ")) if t.owner == person.login else pgettext("after the button Ask its latest version", "in %(scorer)s's %(views)s, forking it", scorer=named(t), views=labels | join(", ")) }}</span>
     </form>
     {% endfor %}
     {% else %}
-    <p class="text-sm text-muted-foreground">No view of a scorer you see.</p>
+    <p class="text-sm text-muted-foreground">{{ _("No view of a scorer you see.") }}</p>
     {% endif %}
   </section>
 
-  <section class="{{ part }}" aria-label="What it is asked">
-    <h2 class="{{ h2 }}">What it is asked</h2>
+  <section class="{{ part }}" aria-label="{{ _('What it is asked') }}">
+    <h2 class="{{ h2 }}">{{ _("What it is asked") }}</h2>
     {% set r = judge.read %}
     {% if r.by %}
-    <form method="get" action="/scoring/{{ shown.id }}" class="mb-3 flex flex-wrap items-end gap-3 text-sm" aria-label="Read with">
-      <label class="grid gap-1"><span class="text-xs text-muted-foreground">Read by</span>
+    <form method="get" action="/scoring/{{ shown.id }}" class="mb-3 flex flex-wrap items-end gap-3 text-sm" aria-label="{{ _('Read with') }}">
+      <label class="grid gap-1"><span class="text-xs text-muted-foreground">{{ _("Read by") }}</span>
         <select name="view" class="{{ field }}">
           {% for a in judge.asked_by %}<option value="{{ a.key }}"{% if a.key == r.by.key %} selected{% endif %}>{{ named(a.scorer) }} · {{ a.label }}</option>{% endfor %}
         </select></label>
-      <label class="grid gap-1"><span class="text-xs text-muted-foreground">Of what is expected of</span>
+      <label class="grid gap-1"><span class="text-xs text-muted-foreground">{{ _("Of what is expected of") }}</span>
         <select name="family" class="{{ field }}">
-          {% for f in r.families %}<option value="{{ f.id }}"{% if r.family and f.id == r.family.id %} selected{% endif %}>{{ f.name }}</option>{% else %}<option value="">no case you expect something of</option>{% endfor %}
+          {% for f in r.families %}<option value="{{ f.id }}"{% if r.family and f.id == r.family.id %} selected{% endif %}>{{ f.name }}</option>{% else %}<option value="">{{ _("no case you expect something of") }}</option>{% endfor %}
         </select></label>
-      <button class="h-8 rounded-md border border-border px-3 font-medium hover:bg-muted">Show</button>
+      <button>{{ _("Show") }}</button>
     </form>
     {% endif %}
     <ol class="space-y-2 text-sm">
@@ -192,23 +202,23 @@
       {% endfor %}
     </ol>
     <details class="mt-3 text-sm">
-      <summary class="cursor-pointer text-xs text-muted-foreground">The whole request</summary>
+      <summary class="cursor-pointer text-xs text-muted-foreground">{{ _("The whole request") }}</summary>
       {{ json(judge.asked) }}
     </details>
-    <p class="mt-3 text-xs text-muted-foreground">With its first seed and the answer as a placeholder{% if r.picked %}, and what {{ r.by.label }} picks of what is expected of {{ r.family.name }}{% else %}, and the expectation as one{% endif %}: a view fills them with what it picks of each.</p>
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("With its first seed and the answer as a placeholder, and what %(view)s picks of what is expected of %(case)s: a view fills them with what it picks of each.", view=r.by.label, case=r.family.name) if r.picked else _("With its first seed and the answer as a placeholder, and the expectation as one: a view fills them with what it picks of each.") }}</p>
     <div id="judge-texts" class="mt-3">
-      <p class="text-xs text-muted-foreground">Changing what it is asked takes scripts.</p>
+      <p class="text-xs text-muted-foreground">{{ _("Changing what it is asked takes scripts.") }}</p>
     </div>
     <script type="application/json" id="scoring-props">{{ props | tojson }}</script>
   </section>
 
-  <section class="{{ part }}" aria-label="Its verdicts">
-    <h2 class="{{ h2 }}">Its verdicts</h2>
+  <section class="{{ part }}" aria-label="{{ _('Its verdicts') }}">
+    <h2 class="{{ h2 }}">{{ _("Its verdicts") }}</h2>
     {% if judge.judged %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
-          <tr><th class="{{ th }}">Scorer · view</th><th class="{{ th }}">Items judged</th><th class="{{ th }}">Its seeds agree</th><th class="{{ th }}">A seed gave none</th><th class="{{ th }}">Mean</th></tr>
+          <tr><th class="{{ th }}">{{ _("Scorer · view") }}</th><th class="{{ th }}">{{ _("Items judged") }}</th><th class="{{ th }}">{{ _("Its seeds agree") }}</th><th class="{{ th }}">{{ _("A seed gave none") }}</th><th class="{{ th }}">{{ _("Mean") }}</th></tr>
         </thead>
         <tbody>
           {% for j in judge.judged %}
@@ -224,22 +234,22 @@
       </table>
     </div>
     {% if judge.disagreed %}
-    <h3 class="mb-2 mt-5 text-sm font-semibold">Where its seeds disagree</h3>
+    <h3 class="mb-2 mt-5 text-sm font-semibold">{{ _("Where its seeds disagree") }}</h3>
     <ul class="space-y-1 text-sm">
       {% for d in judge.disagreed %}
-      <li><a class="{{ link }}" href="/runs/{{ d.run }}">{{ d.described }}</a> · {{ d.case }}, replicate {{ d.replicate }} · {{ d.label }}: <span class="font-mono">{% for s in d.seeds %}{{ mean(s) }}{{ " " if not loop.last }}{% endfor %}</span></li>
+      <li><a href="/runs/{{ d.run }}">{{ d.described }}</a> · {{ _("%(case)s, replicate %(replicate)s", case=d.case, replicate=d.replicate) }} · {{ d.label }}: <span class="font-mono">{% for s in d.seeds %}{{ mean(s) }}{{ " " if not loop.last }}{% endfor %}</span></li>
       {% endfor %}
     </ul>
     {% endif %}
-    <p class="mt-3 text-xs text-muted-foreground">Over the latest score of your runs under each scorer asking any version of it: an item's seeds agree when each gave the same value, which its view's metric reads of their verdicts.</p>
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("Over the latest score of your runs under each scorer asking any version of it: an item's seeds agree when each gave the same value, which its view's metric reads of their verdicts.") }}</p>
     {% else %}
-    <p class="text-sm text-muted-foreground">No item of yours is judged by it yet.</p>
+    <p class="text-sm text-muted-foreground">{{ _("No item of yours is judged by it yet.") }}</p>
     {% endif %}
   </section>
   {% endif %}
 
-  <section class="{{ part }}" aria-label="Its findings">
-    <h2 class="{{ h2 }}">Its findings</h2>
+  <section class="{{ part }}" aria-label="{{ _('Its findings') }}">
+    <h2 class="{{ h2 }}">{{ _("Its findings") }}</h2>
     {% for r in refused %}<p class="mb-2 text-sm text-warning">{{ r }}</p>{% endfor %}
     {{ listed_findings(findings) }}
   </section>

@@ -15,7 +15,7 @@ CONTEXT: dict[str, int] = {
 }
 DEFAULT_CONTEXT = 32768
 
-FINGERPRINT_MODES = ("full", "hash", "custom", "none")
+_FINGERPRINT_MODES = ("full", "hash", "custom", "none")
 
 
 class Refused(ValueError):
@@ -88,8 +88,8 @@ def _fingerprint(
     options: dict[str, list[str]], model: str, argv: Sequence[str]
 ) -> str | None:
     mode = _one(options, "--fingerprint-mode") or "full"
-    if mode not in FINGERPRINT_MODES:
-        raise Refused(f"--fingerprint-mode {mode!r} is none of {FINGERPRINT_MODES}")
+    if mode not in _FINGERPRINT_MODES:
+        raise Refused(f"--fingerprint-mode {mode!r} is none of {_FINGERPRINT_MODES}")
     if mode == "none":
         return None
     if mode == "custom":

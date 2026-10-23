@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import JsonValue
 
+from chatddx import locale
 from chatddx.api import schemas
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
 from chatddx.api.state import NO_STORE, state
@@ -17,12 +18,22 @@ from chatddx.bench import Bench, Conflict, MovedOn, OverQuota
 from chatddx.identity import Person
 from chatddx.store import People, UnderWay
 
+from .shelves import worded
 from .translations import visible
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 # Accommodating for Jinja, whose tojson sorts keys: an island sends back what it's given,
 # and a component's digest holds the order of its keys.
 templates.env.policies["json.dumps_kwargs"] = {"sort_keys": False}
+templates.env.add_extension("jinja2.ext.i18n")
+templates.env.policies["ext.i18n.trimmed"] = True
+templates.env.install_gettext_callables(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+    gettext=locale.gettext,
+    ngettext=locale.ngettext,
+    newstyle=True,
+    pgettext=locale.pgettext,
+    npgettext=locale.npgettext,
+)
 
 
 def _when(at: datetime | None) -> str:
@@ -37,7 +48,9 @@ def _pretty(value: JsonValue) -> str:
     return json.dumps(value, indent=2, ensure_ascii=False)
 
 
-templates.env.filters.update(when=_when, short=_short, pretty=_pretty, visible=visible)
+templates.env.filters.update(
+    when=_when, short=_short, pretty=_pretty, visible=visible, kind=worded
+)
 
 router = APIRouter()
 
@@ -56,13 +69,15 @@ def to_sign_in(_: Request, e: Exception) -> Response:
 
 def page(request: Request, name: str, status: int = 200, **context: Any) -> Response:
     assets = request.app.state.assets
-    return templates.TemplateResponse(
-        request,
-        name,
-        {"assets": assets, **context},
-        status_code=status,
-        headers=NO_STORE,
-    )
+    said = request.app.state.locales.negotiate(request.headers.get("accept-language"))
+    with locale.saying(said):
+        return templates.TemplateResponse(
+            request,
+            name,
+            {"assets": assets, "locale": said, **context},
+            status_code=status,
+            headers=NO_STORE,
+        )
 
 
 def within(next: str | None) -> str:
@@ -126,6 +141,8 @@ def paged(
         with state(request).connect() as conn:
             person = _person(request, conn)
         error = json.loads(bytes(said.body))
+        if error["code"] == "whoops":
+            error["detail"] = locale.whoops(error["detail"])
         return page(
             request,
             "error.html",

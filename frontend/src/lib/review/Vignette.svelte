@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { api, type Schemas, why } from "$lib/api/client";
+  import { t } from "$lib/locale";
 
   let { family }: { family: number } = $props();
 
@@ -18,14 +19,14 @@
 {#if shown}
   {#if shown.drifted}
     <p role="alert" class="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-      This isn't the text the case was made from any more.
+      {t("This isn't the text the case was made from any more.")}
     </p>
   {/if}
   <div class="whitespace-pre-wrap leading-relaxed">{shown.text}</div>
 {:else if problem}
-  <p class="text-sm text-destructive">The vignette can't be shown: {problem}.</p>
+  <p class="text-sm text-destructive">{t("The vignette can't be shown: %(problem)s.", { problem })}</p>
 {:else}
   <p class="flex items-center gap-2 text-sm text-muted-foreground">
-    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" /> The vignette…
+    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" /> {t("The vignette…")}
   </p>
 {/if}

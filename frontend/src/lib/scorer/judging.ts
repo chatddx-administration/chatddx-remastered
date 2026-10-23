@@ -1,3 +1,4 @@
+import { t } from "$lib/locale";
 import type { Schema } from "$lib/schema/form";
 import { choices } from "./selectors";
 
@@ -30,13 +31,15 @@ export function configurationChoices(judging: Judging[], me: string, held: Holdi
     label: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
   }));
   if (!held || listed.some((c) => c.value === held.skeleton)) return listed;
-  return [{ key: "held", value: held.skeleton, label: `${held.configuration}, as it is asked now` }, ...listed];
+  return [{ key: "held", value: held.skeleton, label: t("%(configuration)s, as it is asked now", { configuration: held.configuration }) }, ...listed];
 }
 
 export function modelChoices(models: Serving[], held: Holding | null = null): Option[] {
   const listed = models.map((m) => ({ key: m.name, value: m.weights, label: m.name }));
   if (!held || listed.some((c) => c.value === held.weights)) return listed;
-  const label = held.handle ? `${held.handle}, the weights it holds` : "the weights it holds";
+  const label = held.handle
+    ? t("%(handle)s, the weights it holds", { handle: held.handle })
+    : t("the weights it holds");
   return [{ key: "held", value: held.weights, label }, ...listed];
 }
 
@@ -49,10 +52,10 @@ export function madeFor(judging: Judging[], models: Serving[]): Record<string, s
 
 export function seedsOf(text: string): number[] | string {
   const given = text.split(/[\s,]+/).filter(Boolean);
-  if (!given.length) return "a judge has a seed or more";
+  if (!given.length) return t("a judge has a seed or more");
   const seeds = given.map(Number);
-  if (seeds.some((s) => !Number.isInteger(s) || s < 0)) return "seeds are whole numbers, 0 or more";
-  if (new Set(seeds).size !== seeds.length) return "each seed once";
+  if (seeds.some((s) => !Number.isInteger(s) || s < 0)) return t("seeds are whole numbers, 0 or more");
+  if (new Set(seeds).size !== seeds.length) return t("each seed once");
   return seeds;
 }
 

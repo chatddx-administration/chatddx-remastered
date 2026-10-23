@@ -21,6 +21,7 @@ from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Purpose, Skeleton
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.locale import tr
 from chatddx.scorers.shipped import unit_of
 
 from .cases import appended, written_for
@@ -28,8 +29,8 @@ from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped
 
-ANSWERS = 50
-OPEN = ("queued", "under way")
+_ANSWERS = 50
+_OPEN = ("queued", "under way")
 
 router = APIRouter()
 
@@ -57,7 +58,10 @@ def review(
     shown = api_families.family(bench, family)
     picked = next((c for c in shown.cases if case in (None, c.case)), None)
     if picked is None:
-        raise HTTPException(404, f"no case {case} of {shown.name}")
+        raise HTTPException(
+            404,
+            tr("no case %(case)s of %(family)s", case=case, family=shown.name),
+        )
     visible = sorted(
         api.threads(bench, "expectation_schema"), key=lambda t: t.name or t.title
     )
@@ -65,7 +69,10 @@ def review(
         (t.head.digest for t in visible if schema in (None, t.head.digest)), None
     )
     if schema is not None and under is None:
-        raise HTTPException(404, f"no expectation schema {schema} for you")
+        raise HTTPException(
+            404,
+            tr("no expectation schema %(schema)s for you", schema=schema),
+        )
     expected = next(
         (e for e in picked.expectations if e.expectation_schema == under), None
     )
@@ -79,7 +86,10 @@ def review(
     }
     held = _scorer(scorers, scorer, scored)
     if scorer is not None and held is None:
-        raise HTTPException(404, f"no scorer {scorer} reading that schema for you")
+        raise HTTPException(
+            404,
+            tr("no scorer %(scorer)s reading that schema for you", scorer=scorer),
+        )
     every = api_families.families(bench)
     listed = _listed(every, tag)
     keep = {"tag": tag, "schema": schema, "scorer": scorer}
@@ -89,7 +99,7 @@ def review(
     pending = [
         {"run": str(r.id), "described": r.described}
         for r, _ in ran
-        if r.job is not None and r.job.status in OPEN
+        if r.job is not None and r.job.status in _OPEN
     ]
     own = _own(bench, expected)
     offered = (
@@ -207,7 +217,10 @@ def running_in_review(
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
     if case not in bench.family(family).cases:
-        raise HTTPException(422, f"no case {case} of family {family}")
+        raise HTTPException(
+            422,
+            tr("no case %(case)s of family %(family)s", case=case, family=family),
+        )
     with refused(NotFound):
         variation = bench.variation(configuration, {}, None)
         if model and variation.recipe is not None:
@@ -240,10 +253,10 @@ def scoring_in_review(
     return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
 
 
-type Given = str | int | list[str] | None
+type _Given = str | int | list[str] | None
 
 
-def _query(**given: Given) -> str:
+def _query(**given: _Given) -> str:
     pairs: list[tuple[str, str | int]] = [
         (k, v)
         for k, held in given.items()
@@ -345,7 +358,7 @@ def _editing(
     return {
         **given,
         "mode": "new",
-        "name": f"expectation for {picked.title}",
+        "name": tr("expectation for %(case)s", case=picked.title),
         "data": _started(shown, picked, schema),
     }
 
@@ -412,7 +425,7 @@ def _scorers(bench: Bench, schema: str | None) -> list[Held]:
         if held.expectation_schema != schema:
             continue
         named = bench.labels(t.head.digest)
-        labels = [named.get(i, f"view {i}") for i in range(len(held.views))]
+        labels = [named.get(i, tr("view %(n)s", n=i)) for i in range(len(held.views))]
         found.append((t, held, labels))
     return sorted(found, key=lambda s: (s[0].owner != login, s[0].name or s[0].title))
 
@@ -517,7 +530,7 @@ def _scorer(scorers: list[Held], picked: int | None, scored: set[str]) -> Held |
 def _ran(bench: Bench, case: str) -> list[tuple[schemas.Run, schemas.RunDetail]]:
     return [
         (r, api_runs.run(bench, r.id))
-        for r in api_runs.runs(bench, reaching=case, limit=ANSWERS)
+        for r in api_runs.runs(bench, reaching=case, limit=_ANSWERS)
     ]
 
 
@@ -538,7 +551,7 @@ def _left(
         str(r.id)
         for r, _ in ran
         if r.finished
-        and (r.job is None or r.job.status not in OPEN)
+        and (r.job is None or r.job.status not in _OPEN)
         and held[0].head.digest in bench.unscored(bench.run(r.id))
     }
 

@@ -12,10 +12,12 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { Textarea } from "$lib/components/ui/textarea";
   import { api, type Schemas, why } from "$lib/api/client";
+  import { t, tn } from "$lib/locale";
   import { watch } from "$lib/runs/events";
   import { begun, failed, fold } from "$lib/runs/progress";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
   import { isPlan, PLAN } from "$lib/plan/types";
+  import { outcome } from "$lib/runs/outcomes";
 
   type Phase = "idle" | "typing" | "running" | "reading" | "done";
 
@@ -98,7 +100,7 @@
       });
       if (!started.data) throw new Error(why(started.error));
       const run = started.data.runs[0]?.run;
-      if (run === undefined) throw new Error("no run was started");
+      if (run === undefined) throw new Error(t("no run was started"));
       await watch(run, (name, data) => fold(progress, name, data));
       failure = failed(progress);
       phase = "reading";
@@ -114,9 +116,9 @@
 
   const SAYING: Record<Phase, string> = {
     idle: "",
-    typing: "Keeping the case…",
-    running: "Waiting for the model…",
-    reading: "Reading the answer…",
+    typing: t("Keeping the case…"),
+    running: t("Waiting for the model…"),
+    reading: t("Reading the answer…"),
     done: "",
   };
 </script>
@@ -137,32 +139,32 @@
       <StethoscopeIcon class="size-10 text-primary-foreground" />
     </div>
     <h1 class="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-      <span class="gradient-text">Emergency</span>
-      <span class="text-foreground">Differential Diagnostics</span>
+      {@html t('<span class="gradient-text">Emergency</span> <span class="text-foreground">Differential Diagnostics</span>')}
     </h1>
     <p class="mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground">
-      Describe the patient's symptoms and history for a differential and a management plan.
+      {t("Describe the patient's symptoms and history for a differential and a management plan.")}
     </p>
   </header>
 
-  <Alert.Root class="glass-card mb-8 animate-slide-up border-warning/20" style="animation-delay: 100ms">
+  <Alert.Root class="pane mb-8 animate-slide-up border-warning/20" style="animation-delay: 100ms">
     <TriangleAlertIcon class="text-warning" />
     <Alert.Description class="text-muted-foreground">
       <p>
-        <strong class="font-semibold text-foreground">Important:</strong> for testing only. It does not
-        replace clinical judgment or medical consultation.
+        {@html t(
+          '<strong class="font-semibold text-foreground">Important:</strong> for testing only. It does not replace clinical judgment or medical consultation.',
+        )}
       </p>
     </Alert.Description>
   </Alert.Root>
 
-  <Card.Root class="glass-card mb-8 animate-slide-up" style="animation-delay: 200ms">
+  <Card.Root class="pane mb-8 animate-slide-up" style="animation-delay: 200ms">
     <Card.Header>
       <div class="flex items-center gap-3">
         <div class="rounded-xl bg-primary/10 p-2"><ActivityIcon class="size-5 text-primary" /></div>
         <div>
-          <Card.Title class="font-display text-xl">Symptoms & history</Card.Title>
+          <Card.Title class="font-display text-xl">{t("Symptoms & history")}</Card.Title>
           <Card.Description>
-            Current symptoms, duration, severity, and relevant medical history.
+            {t("Current symptoms, duration, severity, and relevant medical history.")}
           </Card.Description>
         </div>
       </div>
@@ -171,15 +173,17 @@
       <form class="space-y-5" onsubmit={analyze}>
         <Textarea
           bind:value={text}
-          aria-label="The case"
-          placeholder="65-year-old man with sudden chest pain for 2 hours, radiating to the left arm, nausea, cold sweats. History of hypertension and type 2 diabetes."
+          aria-label={t("The case")}
+          placeholder={t(
+            "65-year-old man with sudden chest pain for 2 hours, radiating to the left arm, nausea, cold sweats. History of hypertension and type 2 diabetes.",
+          )}
           class="min-h-40 resize-y rounded-xl bg-background/50 text-base leading-relaxed"
           disabled={busy}
         />
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div class="flex flex-col gap-4 sm:flex-row">
             <div class="grid gap-2">
-              <Label for="model">Model</Label>
+              <Label for="model">{t("Model")}</Label>
               <NativeSelect.Root
                 id="model"
                 class="min-w-52"
@@ -192,7 +196,7 @@
               </NativeSelect.Root>
             </div>
             <div class="grid gap-2">
-              <Label for="configuration">Configuration</Label>
+              <Label for="configuration">{t("Configuration")}</Label>
               <NativeSelect.Root id="configuration" bind:value={configuration} disabled={busy}>
                 {#each configurations as c (c.id)}
                   <NativeSelect.Option value={c.id}>{named(c)}</NativeSelect.Option>
@@ -200,7 +204,7 @@
               </NativeSelect.Root>
             </div>
             <div class="grid gap-2">
-              <Label for="language">Written in</Label>
+              <Label for="language">{t("Written in")}</Label>
               <NativeSelect.Root id="language" bind:value={language} disabled={busy}>
                 {#each languages as l (l)}
                   <NativeSelect.Option value={l}>{l}</NativeSelect.Option>
@@ -219,13 +223,15 @@
               {SAYING[phase]}
             {:else}
               <SparklesIcon />
-              Analyze
+              {t("Analyze")}
             {/if}
           </Button>
         </div>
         {#if phase === "running" && streamed}
           <p class="text-sm text-muted-foreground" aria-live="polite">
-            {streamed.kind === "reasoning" ? "Thinking" : "Writing"}: {streamed.tokens} tokens
+            {streamed.kind === "reasoning"
+              ? tn("Thinking: %(n)s token", "Thinking: %(n)s tokens", streamed.tokens, { n: streamed.tokens })
+              : tn("Writing: %(n)s token", "Writing: %(n)s tokens", streamed.tokens, { n: streamed.tokens })}
           </p>
         {/if}
       </form>
@@ -235,7 +241,7 @@
   {#if failure}
     <Alert.Root variant="destructive" class="mb-8 rounded-2xl">
       <TriangleAlertIcon />
-      <Alert.Title>It didn't go through</Alert.Title>
+      <Alert.Title>{t("It didn't go through")}</Alert.Title>
       <Alert.Description>{failure}</Alert.Description>
     </Alert.Root>
   {/if}
@@ -246,19 +252,19 @@
       {#if answer.value === null}
         <Alert.Root variant="destructive" class="rounded-2xl">
           <TriangleAlertIcon />
-          <Alert.Title>No answer to show</Alert.Title>
-          <Alert.Description>{answer.problem ?? item.why ?? item.outcome}</Alert.Description>
+          <Alert.Title>{t("No answer to show")}</Alert.Title>
+          <Alert.Description>{answer.problem ?? item.why ?? outcome(item.outcome)}</Alert.Description>
         </Alert.Root>
       {:else}
         {#if answer.problem || answer.salvaged}
           <Alert.Root class="rounded-2xl border-warning/30">
             <TriangleAlertIcon class="text-warning" />
-            <Alert.Title>{answer.salvaged ? "The answer was cut short" : "The answer breaks its schema"}</Alert.Title>
+            <Alert.Title>{answer.salvaged ? t("The answer was cut short") : t("The answer breaks its schema")}</Alert.Title>
             {#if answer.problem}<Alert.Description>{answer.problem}</Alert.Description>{/if}
           </Alert.Root>
         {/if}
         {#if typeof answer.value === "string"}
-          <div class="glass-card rounded-2xl p-6 whitespace-pre-wrap text-muted-foreground">{answer.value}</div>
+          <div class="pane rounded-2xl p-6 whitespace-pre-wrap text-muted-foreground">{answer.value}</div>
         {:else if isPlan(answer.value)}
           <ManagementPlan plan={answer.value} />
         {/if}

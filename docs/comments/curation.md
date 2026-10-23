@@ -2,10 +2,16 @@
 
 Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, each under its file and the name it is in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).
 
-## `src/chatddx/curation/plan.py:LATE_TABLES`
+## `src/chatddx/curation/plan.py:_LATE_TABLES`
 
 ```
 # Dependency: planned after recipes and judges, as a view may name a judge.
+```
+
+## `src/chatddx/curation/plan.py:_REFERENCES`
+
+```
+# Scope: references outside recipes, by table and field; each names stanzas of another table.
 ```
 
 ## `src/chatddx/curation/plan.py:plan_factors.plan_table`
@@ -13,12 +19,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, e
 ```
 # Policy: a tool's description is a field, what the model reads; it's the
 # entry too.
-```
-
-## `src/chatddx/curation/plan.py:REFERENCES`
-
-```
-# Scope: references outside recipes, by table and field; each names stanzas of another table.
 ```
 
 ## `src/chatddx/curation/plan.py:TABLES`

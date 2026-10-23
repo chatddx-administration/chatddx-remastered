@@ -113,7 +113,7 @@ def test_a_language_is_added_with_the_texts_its_configurations_send(
     guided = mine(signed, "translations")
     path = f"/threads/{guided['id']}"
     page = shown(signed, f"{path}?into=de")
-    assert "it doesn&#39;t translate into it yet" in page
+    assert "it doesn't translate into it yet" in page
     given = submitted(page, f"{path}/edit")
     assert given["into"] == ["de"]
     assert set(entries(given)) == set(into(signed, guided)["sv"])

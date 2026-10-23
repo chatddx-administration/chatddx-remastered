@@ -47,9 +47,9 @@ def test_the_library_shelves_every_kind_under_its_heading_with_what_it_is(
 ) -> None:
     page = shown(signed, "/library")
     for shelf in SHELVES:
-        assert f"{shelf.heading}</h2>" in page and escape(shelf.about) in page
+        assert f"{shelf.heading}</h2>" in page and shelf.about in page
         for word, about in shelf.kinds.items():
-            assert f'href="/library?kind={word}"' in page and escape(about) in page
+            assert f'href="/library?kind={word}"' in page and about in page
     listed = signed.get("/api/threads", params={"kind": "reasoning"}).json()
     mine = sum(t["owner"] == "alice" for t in listed)
     assert (
@@ -141,6 +141,7 @@ def test_a_thread_s_page_holds_its_versions_and_what_is_said(
     assert "What is said of it" in page and "Fork it" in page
     assert "Version 1 of 1" in page and "It is the first." in page
     assert f'action="/threads/{off["id"]}/edit"' in page
+    assert 'href="/library" aria-current="page"' in page
 
     archives = thread(signed, "reasoning", OFF, "archive")
     page = shown(signed, f"/threads/{archives['id']}")

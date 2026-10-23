@@ -2,11 +2,6 @@
 
 Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in [docs/surfaces.md](../surfaces.md).
 
-## `ANSWERED`
-`src/chatddx/repl/render.py:ANSWERED`
-
-`ANSWERED = frozenset({"answer.unread", "answer.invalid", "answer.salvaged"})`
-
 ## `case_and_seed`
 `src/chatddx/repl/running.py:case_and_seed`
 
@@ -198,11 +193,6 @@ Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in 
 
 `MAX_SEED = 2**31 - 1`
 
-## `NAMED`
-`src/chatddx/repl/render.py:NAMED`
-
-`NAMED = 10`
-
 ## `NONE`
 `src/chatddx/repl/shell.py:NONE`
 
@@ -354,11 +344,6 @@ Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in 
 * `repl: Repl`
 * `prefix: str | None = None`
 * ∟`None`
-
-## `SCORED`
-`src/chatddx/repl/inspecting.py:SCORED`
-
-`SCORED = frozenset({"scorer", "judge", "expectation", "expectation_schema"})`
 
 ## `scored_findings`
 `src/chatddx/repl/render.py:scored_findings`
@@ -520,11 +505,6 @@ Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in 
 
 * ∟`None`
 
-## `THINKING`
-`src/chatddx/repl/render.py:THINKING`
-
-`THINKING = "#5f87af"`
-
 ## `TOKENS`
 `src/chatddx/repl/render.py:TOKENS`
 
@@ -576,11 +556,6 @@ Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in 
 * `name: str`
 * ∟`None`
 
-## `UNTARGETED`
-`src/chatddx/repl/render.py:UNTARGETED`
-
-`UNTARGETED: tuple[JsonValue, ...] = (NO_TARGET, NO_EXPECTATION)`
-
 ## `use`
 `src/chatddx/repl/choosing.py:use`
 
@@ -599,13 +574,6 @@ Written by `chatddx stamp write` from `src/chatddx/repl/`; how to read it is in 
 * `value: float | None`
 * `unit: str = ""`
 * ∟`str`
-
-## `verdict_of`
-`src/chatddx/repl/render.py:verdict_of`
-
-* `view: View`
-* `verdict: JsonValue | None`
-* ∟`tuple[str | None, str | None]`
 
 ## `when`
 `src/chatddx/repl/reviewing.py:when`

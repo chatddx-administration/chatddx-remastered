@@ -3,6 +3,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
+  import { t } from "$lib/locale";
   import Findings from "./Findings.svelte";
   import { type Checked, checked, type Component, type Editing, type Labelled, type Saved, said, saved } from "./writing";
 
@@ -79,7 +80,9 @@
     problem = got.problem;
     if (got.moved !== null) {
       head = got.moved;
-      problem += ". What you typed is kept: save again to make it the version after the latest.";
+      problem = t("%(problem)s. What you typed is kept: save again to make it the version after the latest.", {
+        problem: got.problem,
+      });
     }
   }
 </script>
@@ -89,7 +92,7 @@
   <form class="space-y-3" onsubmit={save}>
     {#if editing.mode !== "edit"}
       <label class="grid max-w-md gap-1 text-sm">
-        <span class="font-medium">Name</span>
+        <span class="font-medium">{t("Name")}</span>
         <Input bind:value={name} autocomplete="off" />
       </label>
     {/if}
@@ -98,7 +101,7 @@
     {#if note}<p class="text-sm text-success">{note}</p>{/if}
     <Button type="submit" disabled={busy || unready || nameless || (editing.mode === "edit" && unchanged)}>
       {#if busy}<LoaderCircleIcon class="animate-spin" />{/if}
-      Save
+      {t("Save")}
     </Button>
   </form>
 </div>

@@ -15,7 +15,7 @@ import psycopg
 import uvicorn
 from fastapi import FastAPI
 
-from chatddx import settings
+from chatddx import locale, settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.bench.handles import broken
@@ -392,6 +392,13 @@ def _stamp(args: argparse.Namespace) -> None:
         stamp.write(args.package)
 
 
+def _locale(args: argparse.Namespace) -> None:
+    if args.localing == "check":
+        locale.check(args.baseline)
+    else:
+        locale.write(args.tag)
+
+
 def _fake_vllm(args: argparse.Namespace) -> None:
     try:
         script = None if args.script is None else Script.load(args.script)
@@ -674,6 +681,35 @@ def main(argv: Sequence[str] | None = None) -> None:
             help="the packages, such as bench (settings.STAMPED)",
         )
         stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
+
+    localing = commands.add_parser(
+        "locale",
+        help="the catalogs in src/chatddx/locale/catalogs/, kept in step with the "
+        + "messages the portal and its islands say, with English as the source",
+    )
+    locale_commands = localing.add_subparsers(required=True)
+    locale_check = locale_commands.add_parser(
+        "check",
+        help="write nothing; flag the messages untranslated or fuzzy, and fail while a "
+        + "catalog is behind the code",
+    )
+    _ = locale_check.add_argument(
+        "--baseline",
+        action="store_true",
+        help="on a fresh commit before work starts: flag a catalog behind the code "
+        + "rather than fail, and leave translating to the work",
+    )
+    locale_check.set_defaults(run=_locale, localing="check")
+    locale_write = locale_commands.add_parser(
+        "write",
+        help="write the catalogs behind the code, and say what is left to translate",
+    )
+    _ = locale_write.add_argument(
+        "tag",
+        nargs="*",
+        help="a locale to begin a catalog of as well, such as sv",
+    )
+    locale_write.set_defaults(run=_locale, localing="write")
 
     fake = commands.add_parser(
         "fake-vllm",

@@ -210,6 +210,7 @@ def test_expectations_shared_with_one_are_taken_for_the_picked_cases(
     ][0]["shared"]
     page = shown(signed, f"/cases/{crlf['id']}")
     assert f'href="/threads/{shared["id"]}">{shared["owner"]}\'s</a>' in page
+    assert 'href="/library" aria-current="page"' in page
 
     page = shown(signed, "/library?kind=case&tag=swedish")
     assert 'name="tag" value="swedish"' in page

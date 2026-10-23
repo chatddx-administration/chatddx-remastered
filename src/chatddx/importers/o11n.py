@@ -27,7 +27,7 @@ REPORT = "o11n.vllm.report/1"
 
 # Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,
 # which the runtime closure covers: where an engine runs, not what it is.
-HOST_ENV = frozenset(
+_HOST_ENV = frozenset(
     {"CUDA_HOME", "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_HUB_CACHE", "HF_HUB_OFFLINE"}
 )
 
@@ -220,7 +220,7 @@ def imported(
             model=model.digest,
             chat_template=template["sha256"],
             argv=argv,
-            env={k: v for k, v in environment.items() if k not in HOST_ENV},
+            env={k: v for k, v in environment.items() if k not in _HOST_ENV},
         )
     except (KeyError, TypeError, ValueError) as e:
         raise ValueError(f"{name} can't be imported: {e}") from e

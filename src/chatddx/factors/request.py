@@ -50,7 +50,7 @@ SLOTS_BY_PURPOSE: dict[Purpose, frozenset[SlotName]] = {
     "generation": frozenset({"vignette", "appendices"}),
     "judge": frozenset({"vignette", "appendices", "completion", "expectation"}),
 }
-REQUIRED_SLOTS: dict[Purpose, frozenset[SlotName]] = {
+_REQUIRED_SLOTS: dict[Purpose, frozenset[SlotName]] = {
     "generation": frozenset({"vignette"}),
     "judge": frozenset({"completion"}),
 }
@@ -86,7 +86,7 @@ MANAGED_KEYS = frozenset(
 BYPASS_KEYS = frozenset(
     {"chat_template", "structured_outputs", "return_prompt_text", "prompt_logprobs"}
 )
-GREEDY_DROPS = ("top_p", "top_k", "min_p")
+_GREEDY_DROPS = ("top_p", "top_k", "min_p")
 
 
 class Slot(Frozen):
@@ -171,7 +171,7 @@ def _canonical_sampling(data: object) -> object:
     fields = cast(dict[str, object], data)
     if fields.get("temperature") != 0:
         return fields
-    return {k: v for k, v in fields.items() if k not in GREEDY_DROPS}
+    return {k: v for k, v in fields.items() if k not in _GREEDY_DROPS}
 
 
 class Instructions(Component):
@@ -687,7 +687,7 @@ def _check_slots(
     used = [s.slot for c in contents for s in c if isinstance(s, Slot)]
     if stray := set(used) - SLOTS_BY_PURPOSE[purpose]:
         raise ValueError(f"{purpose} requests cannot use slots {sorted(stray)}")
-    if missing := REQUIRED_SLOTS[purpose] - set(used):
+    if missing := _REQUIRED_SLOTS[purpose] - set(used):
         raise ValueError(f"{purpose} requests need slots {sorted(missing)}")
     if dupes := {s for s in used if used.count(s) > 1}:
         raise ValueError(f"slots used more than once: {sorted(dupes)}")

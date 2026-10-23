@@ -1,4 +1,6 @@
 import { written } from "$lib/editors/writing";
+import { worded } from "$lib/kinds";
+import { t } from "$lib/locale";
 import type { JudgeChoice } from "./judging";
 
 export type Chunk = {
@@ -28,20 +30,21 @@ export async function rewritten(
     if (!chunk) continue;
     const language = chunk.language ? { language: chunk.language } : {};
     const got = await written(chunk, { component: body, ...language });
-    if ("problem" in got) return { problem: `${part}: ${got.problem}` };
+    if ("problem" in got) return { problem: t("%(part)s: %(problem)s", { part: worded(part), problem: got.problem }) };
     parts[part] = got.digest;
     now.parts[part] = { ...chunk, digest: got.digest, body, thread: got.thread, head: got.head, mine: true };
   }
   const configuration = judge.texts.configuration;
+  const requested = t("%(judge)s's request", { judge: judge.name });
   const made = configuration
     ? await written(configuration, { parts })
-    : await written({ thread: null, name: `${judge.name}'s request` }, { recipe: { ...judge.texts.recipe, ...parts } });
-  if ("problem" in made) return { problem: `its configuration: ${made.problem}` };
-  now.configuration = { thread: made.thread, head: made.head, mine: true, name: configuration?.name ?? `${judge.name}'s request` };
+    : await written({ thread: null, name: requested }, { recipe: { ...judge.texts.recipe, ...parts } });
+  if ("problem" in made) return { problem: t("its configuration: %(problem)s", { problem: made.problem }) };
+  now.configuration = { thread: made.thread, head: made.head, mine: true, name: configuration?.name ?? requested };
   now.recipe = { ...judge.texts.recipe, ...parts };
   const body = { ...judge.body, skeleton: made.digest };
   const asked = await written({ thread: judge.thread, head: judge.head, mine: judge.owner === me, name: judge.name }, { component: body });
-  if ("problem" in asked) return { problem: `the judge: ${asked.problem}` };
+  if ("problem" in asked) return { problem: t("the judge: %(problem)s", { problem: asked.problem }) };
   return {
     judge: {
       ...judge,

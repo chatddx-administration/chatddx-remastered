@@ -10,11 +10,13 @@ from typing import Any
 import pytest
 import uvicorn
 from fastapi import FastAPI
-from playwright.sync_api import Error, Page, expect, sync_playwright
+from playwright.sync_api import Error, Page, Route, expect, sync_playwright
 
 from chatddx import settings
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.locale import Locales
+from chatddx.locale.test.helpers import catalog
 from chatddx.portal.assets import Assets
 from chatddx.portal.test.helpers import world_served
 from chatddx.store import Store
@@ -855,4 +857,109 @@ def test_a_trial_is_begun_of_the_picked_cases_in_their_language_and_run(
         page.get_by_role("button", name="Run it").click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
         expect(page.get_by_role("link", name="swedish")).to_be_visible()
+    assert errors == []
+
+
+# Accommodating for Chromium, which runs no script on a page while a navigation from it is held:
+# the navigations a press starts are cancelled instead, which leaves the page as pressed.
+def test_a_press_shows_until_the_next_page_comes_and_sends_its_form_once(
+    page: Page,
+) -> None:
+    asked: list[str] = []
+    held: list[Route] = []
+
+    def cancelled(route: Route) -> None:
+        asked.append(route.request.url)
+        route.abort("aborted")
+
+    back = "dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}))"
+    stop = "setTimeout(() => document.querySelector('[value=trial]').click()); setTimeout(stop, 200)"
+    new = re.compile(r"/library/new\?")
+    marked = page.locator("html[data-leaving], [data-pressed], [data-sent]")
+    _ = page.goto("/library?kind=case")
+    page.get_by_label("pick nfd").check()
+    _ = page.route(new, cancelled)
+    begin = page.get_by_role("button", name="Begin a trial of the picked")
+    begin.click()
+    expect(begin).to_have_attribute("data-pressed", "")
+    expect(page.locator("html")).to_have_attribute("data-leaving", "")
+    begin.click()
+    page.wait_for_timeout(100)
+    assert len(asked) == 1 and "kind=trial" in asked[0]
+
+    _ = page.evaluate(back)
+    expect(marked).to_have_count(0)
+    begin.click()
+    expect(begin).to_have_attribute("data-pressed", "")
+    page.wait_for_timeout(100)
+    assert len(asked) == 2
+
+    page.unroute(new)
+    _ = page.route(new, lambda r: held.append(r))
+    _ = page.evaluate(back)
+    _ = page.evaluate(stop)
+    page.wait_for_timeout(400)
+    assert len(held) == 1
+    expect(marked).to_have_count(0)
+    held.pop().abort()
+
+    _ = page.goto("/library?kind=configuration")
+    _ = page.route(re.compile(r"/threads/\d+$"), cancelled)
+    lines = page.get_by_role("link", name=LINES, exact=True).first
+    lines.click()
+    expect(lines).to_have_attribute("data-pressed", "")
+    expect(page.locator("html")).to_have_attribute("data-leaving", "")
+
+
+def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
+    page: Page, served: FastAPI, tmp_path: Path
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    served.state.locales = Locales(
+        catalog(
+            tmp_path,
+            """
+            #: frontend/src/islands/Home.svelte
+            msgid "Analyze"
+            msgstr "Analysera"
+
+            #: frontend/src/islands/Home.svelte
+            msgid ""
+            "<span class=\\"gradient-text\\">Emergency</span> <span "
+            "class=\\"text-foreground\\">Differential Diagnostics</span>"
+            msgstr "<span class=\\"gradient-text\\">Akut</span> differentialdiagnostik"
+
+            #: frontend/src/islands/Variation.svelte
+            msgid "Sends %(items)s under %(model)s, one at a time."
+            msgstr "Skickar %(items)s under %(model)s, en i taget."
+
+            #: frontend/src/islands/Variation.svelte
+            msgid "%(n)s item"
+            msgid_plural "%(n)s items"
+            msgstr[0] "%(n)s post"
+            msgstr[1] "%(n)s poster"
+            """,
+        )
+    )
+    page.set_extra_http_headers({"accept-language": "sv"})
+    _ = page.goto("/")
+    expect(
+        page.get_by_role("heading", name="Akut differentialdiagnostik")
+    ).to_be_visible()
+    expect(page.get_by_role("button", name="Analysera")).to_be_visible()
+    expect(page.get_by_text("Written in")).to_be_visible()
+
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    _ = page.goto(f"/lab/{lines['id']}")
+    expect(
+        page.get_by_text(
+            re.compile(rf"Skickar \d+ poster under {QWEN_ARTIFACT}, en i taget\.")
+        )
+    ).to_be_visible()
     assert errors == []

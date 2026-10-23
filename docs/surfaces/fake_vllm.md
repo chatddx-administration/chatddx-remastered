@@ -32,7 +32,7 @@ Raises:
 1. `Failure`: `""auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set"`
 2. `Failure`: `"tool_choice="{choice}" requires --tool-call-parser to be set"`
 3. `Failure`: `"Harmony does not support reasoning_effort='none'"`
-4. `Failure`: `"reasoning_effort={effort!r} is not supported by Harmony. Supported values are: {', '.join(HARMONY_EFFORTS)}."`
+4. `Failure`: `"reasoning_effort={effort!r} is not supported by Harmony. Supported values are: {', '.join(_HARMONY_EFFORTS)}."`
 5. `Failure`: `"thinking_token_budget is set but reasoning_config is not configured. Please set --reasoning-parser and/or --reasoning-config to use thinking_token_budget."`
 
 ## `CLOSURE`
@@ -84,16 +84,6 @@ Raises:
 
 * ∟`dict[str, Any]`
 
-## `FIELDS`
-`src/chatddx/fake_vllm/script.py:FIELDS`
-
-`FIELDS = frozenset(…)`
-
-## `FINGERPRINT_MODES`
-`src/chatddx/fake_vllm/served.py:FINGERPRINT_MODES`
-
-`FINGERPRINT_MODES = ("full", "hash", "custom", "none")`
-
 ## `got`
 `src/chatddx/fake_vllm/server.py:got`
 
@@ -106,11 +96,6 @@ Raises:
 
 `GREEDY_TEMP = 1e-5`
 
-## `HARMONY_EFFORTS`
-`src/chatddx/fake_vllm/chat.py:HARMONY_EFFORTS`
-
-`HARMONY_EFFORTS = ("high", "medium", "low")`
-
 ## `instance`
 `src/chatddx/fake_vllm/chat.py:instance`
 
@@ -122,20 +107,10 @@ Raises:
 * `turn: int = 0`
 * ∟`Any`
 
-## `LOG`
-`src/chatddx/fake_vllm/server.py:LOG`
-
-`LOG = logging.getLogger(__name__)`
-
 ## `log`
 `src/chatddx/fake_vllm/chat.py:log`
 
 `log = logging.getLogger(__name__)`
-
-## `MAX_TEMP`
-`src/chatddx/fake_vllm/chat.py:MAX_TEMP`
-
-`MAX_TEMP = 1e-2`
 
 ## `models`
 `src/chatddx/fake_vllm/server.py:models`
@@ -275,7 +250,7 @@ Raises:
 4. `Refused`: `"--api-key takes a key or more"`
 5. `Refused`: `"the fake vLLM reads {name} as an integer, not {value!r}"` (through `_int`)
 6. `Refused`: `"--default-chat-template-kwargs {value} is no JSON object"` (through `_kwargs`)
-7. `Refused`: `"--fingerprint-mode {mode!r} is none of {FINGERPRINT_MODES}"` (through `_fingerprint`)
+7. `Refused`: `"--fingerprint-mode {mode!r} is none of {_FINGERPRINT_MODES}"` (through `_fingerprint`)
 
 ## `Served.parses_tools` `@property`
 `src/chatddx/fake_vllm/served.py:Served.parses_tools`

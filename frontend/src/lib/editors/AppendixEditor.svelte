@@ -11,6 +11,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { Textarea } from "$lib/components/ui/textarea";
+  import { t, tn } from "$lib/locale";
   import Saving from "./Saving.svelte";
   import type { Component, Saved } from "./writing";
 
@@ -33,12 +34,18 @@
 </script>
 
 <div class="space-y-3">
-  <Textarea bind:value={text} rows={6} aria-label="Its text" />
+  <Textarea bind:value={text} rows={6} aria-label={t("Its text")} />
   <Saving
     editing={given}
     {component}
     {digest}
     {to}
-    after={(n) => `The ${n === 1 ? "case" : `${n} cases`} that held it ${n === 1 ? "has a new one" : "have new ones"} with this version; carry your expectations over where they still hold.`}
+    after={(n) =>
+      tn(
+        "The case that held it has a new one with this version; carry your expectations over where they still hold.",
+        "The %(n)s cases that held it have new ones with this version; carry your expectations over where they still hold.",
+        n,
+        { n },
+      )}
   />
 </div>

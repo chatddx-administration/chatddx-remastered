@@ -30,7 +30,7 @@ from chatddx.store.store import Connection, Store
 from .plan import DataCase, Plan, Planned
 
 ARCHIVE = "archive"
-VERBS: dict[Kept, str] = {
+_VERBS: dict[Kept, str] = {
     "created": "created",
     "edited": "updated",
     "unchanged": "validated",
@@ -114,7 +114,7 @@ class _Init:
             forked_from=forked_from,
             labels=labels,
         )
-        return edit.thread, VERBS[kept]
+        return edit.thread, _VERBS[kept]
 
     def stanza(self, r: Planned) -> None:
         found = threads.find(self.rows, r.kind, r.name, owner=self.archive.id)

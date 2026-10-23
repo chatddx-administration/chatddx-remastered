@@ -8,6 +8,8 @@ from starlette.exceptions import HTTPException
 from chatddx import settings
 from chatddx.api import app as api
 from chatddx.inventory import World
+from chatddx.locale import Locales, Saying
+from chatddx.whoops import Whoops
 
 from . import (
     cases,
@@ -31,13 +33,21 @@ def app(
     made = api.app(world.inventory, conninfo, worker)
     made.state.world = world
     made.state.assets = Assets(assets or settings.portal_assets())
+    made.state.locales = Locales()
+    made.add_middleware(Saying)
     made.include_router(pages.router, include_in_schema=False)
     made.mount(
         ROUTE,
         StaticFiles(directory=made.state.assets.root, check_dir=False),
         name="static",
     )
-    for error in (*api.STATUSES, HTTPException, RequestValidationError, Exception):
+    for error in (
+        *api.STATUSES,
+        Whoops,
+        HTTPException,
+        RequestValidationError,
+        Exception,
+    ):
         made.add_exception_handler(error, pages.paged(made.exception_handlers[error]))
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
     for router in (

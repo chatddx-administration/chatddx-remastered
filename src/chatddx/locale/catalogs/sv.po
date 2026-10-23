@@ -1,0 +1,4693 @@
+# The portal's messages in Swedish.
+msgid ""
+msgstr ""
+"Project-Id-Version: chatddx portal\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-23 12:07+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: sv\n"
+"Language-Team: sv <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: src/chatddx/portal/cases.py
+#, python-format
+msgid "no version %(at)s of case %(family)s: it has %(versions)s"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+msgid "a case is built of one appendix or more: pick one"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+msgid "pick one case or more to take for"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+#, python-format
+msgid "no case %(case)s for %(login)s"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+msgid "an appendix is named"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+msgid "an appendix holds a text"
+msgstr ""
+
+#: src/chatddx/portal/cases.py
+msgid "a case is built of one appendix or more"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "no field %(field)r to give: the fields are %(fields)s"
+msgstr ""
+
+#: src/chatddx/portal/fields.py src/chatddx/portal/templates/compare.html
+#: src/chatddx/portal/templates/run.html
+#, python-format
+msgid "%(model)s, an earlier engine"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "%(name)s, in %(language)s"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "%(name)s, as it is held"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "%(field)s isn't a whole number: %(given)r"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "%(field)s isn't a number: %(given)r"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+#, python-format
+msgid "%(field)s isn't JSON: %(error)s"
+msgstr ""
+
+#: src/chatddx/portal/fields.py
+msgid "This is needed."
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+#, python-format
+msgid "no order %(order)r: the orders are %(orders)s"
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+msgid "pick a trial to run"
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+#, python-format
+msgid "no configuration %(thread)s for %(login)s"
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+#, python-format
+msgid "no trial %(thread)s for %(login)s"
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+#, python-format
+msgid "no endpoint here serves the engine of %(trial)s: follow its handle"
+msgstr ""
+
+#: src/chatddx/portal/lab.py
+#, python-format
+msgid "its model is behind %(handle)s: follow it"
+msgstr ""
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgid "no case %(case)s of %(family)s"
+msgstr ""
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgid "no expectation schema %(schema)s for you"
+msgstr ""
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgid "no scorer %(scorer)s reading that schema for you"
+msgstr ""
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgid "no case %(case)s of family %(family)s"
+msgstr ""
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgid "expectation for %(case)s"
+msgstr ""
+
+#: frontend/src/lib/library/editors.ts frontend/src/lib/review/Expected.svelte
+#: frontend/src/lib/scorer/Composer.svelte
+#: frontend/src/lib/scorer/ScorerViews.svelte src/chatddx/portal/review.py
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "view %(n)s"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+msgctxt "a part of a response"
+msgid "reasoning"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+msgctxt "a part of a response"
+msgid "content"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+msgctxt "a part of a response"
+msgid "tool call"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+msgid "pick the runs to compare on the runs page"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+#, python-format
+msgid "%(configuration)s, an earlier version"
+msgstr ""
+
+#: src/chatddx/portal/runs.py
+#, python-format
+msgid "tool call: %(name)s"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "%(problems)s: write a new scorer from the Library to score with it"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "no scorer or judge %(thread)s for %(login)s"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "version %(n)s of %(of)s"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+msgid "its latest version"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "%(thread)s, which it is forked from"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "no judge %(thread)s for %(login)s"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "scorer %(scorer)s has a newer version: look at it again"
+msgstr ""
+
+#: src/chatddx/portal/scoring.py
+#, python-format
+msgid "no view %(view)s asks this judge"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte src/chatddx/portal/shelves.py
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+msgid "Cases"
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "What a model is asked about, and what a good answer holds."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid ""
+"Extra text written for a case's vignette, such as lab results, sent along"
+" with it."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A vignette, with the appendices sent along with it."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid ""
+"What a good answer to one case holds, written in an expectation schema's "
+"form."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The form expectations are written in, which a scorer grades against."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Configurations"
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid ""
+"What is sent to a model: a configuration is put together from its parts "
+"and a model."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Everything a request sends but the case: its parts and its model."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Example exchanges, sent before the case."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The first message: what the model is and what it is to do."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The shape the answer takes, and how it is held to it."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Request options no other part covers, sent as written."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The last message: where the case goes, and what is asked of it."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "How much the model thinks before it answers."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "How freely the model picks its words, and how long the answer may be."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A function the model may call, such as a web search."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The tools a configuration offers, and how to use them."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A configuration's texts in another language, for cases written in it."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py src/chatddx/portal/templates/world.html
+msgid "Models"
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "The models, the engines serving them and what is known about them."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Fixed probes sent with a run, which show whether an engine changed."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "What answers requests: a model served by given software on given hardware."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid ""
+"What is known about a model: its reasoning levels, recommended sampling "
+"and limits."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A model's weights, pinned so that a run can be repeated."
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte src/chatddx/portal/shelves.py
+#: src/chatddx/portal/templates/base.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Scoring"
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "How answers are graded."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A model asked to grade answers, with its configuration and seeds."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Grades answers against expectations, a view at a time."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "Trials"
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "What is run."
+msgstr ""
+
+#: src/chatddx/portal/shelves.py
+msgid "A configuration on an engine, over cases, with seeds."
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "appendix"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "canary set"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "case"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "configuration"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "engine"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "expectation"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "expectation schema"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "facts"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "few shot"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "instructions"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "judge"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "model"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "output"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "passthrough"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "prompt"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "reasoning"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "sampling"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "scorer"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "tool"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "toolset"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "translations"
+msgstr ""
+
+#: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
+msgctxt "kind"
+msgid "trial"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new appendix is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new configuration is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new expectation is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new few shot is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new instructions is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new judge is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new output is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new passthrough is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new prompt is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new reasoning is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new sampling is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new scorer is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new toolset is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a new trial is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgctxt "purpose"
+msgid "generation"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgctxt "purpose"
+msgid "judge"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "no kind %(kind)r: the kinds are %(kinds)s"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "new translations are named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "a new %(kind)s is named"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "labels: %(refused)s"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "no %(kind)s is begun here: what is begun here is %(kinds)s"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "no version %(at)s of %(kind)s %(thread)s: it has %(versions)s"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid ""
+"configuration %(thread)s is written by hand: it has no recipe to pick "
+"parts of"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgid "edit %(edit)s isn't a version of thread %(thread)s"
+msgstr ""
+
+#: src/chatddx/portal/threads.py
+msgid "a fork is named"
+msgstr ""
+
+#: src/chatddx/portal/translations.py
+#, python-format
+msgid "%(configuration)s has no recipe whose texts to translate"
+msgstr ""
+
+#: src/chatddx/portal/translations.py
+msgid "translations hold a language or more: translate a text, or delete them"
+msgstr ""
+
+#: src/chatddx/bench/seen.py
+msgctxt "whoops"
+msgid ""
+"No model in the Library holds these weights, though one should: use "
+"another model meanwhile."
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html
+msgid "Pages"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html
+#: src/chatddx/portal/templates/review.html
+msgid "Review"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html src/chatddx/portal/templates/lab.html
+msgid "Lab"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/runs.html
+msgid "Runs"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html
+#: src/chatddx/portal/templates/library.html
+msgid "Library"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html
+#: src/chatddx/portal/templates/world.html
+msgid "World"
+msgstr ""
+
+#: src/chatddx/portal/templates/base.html
+msgid "Sign out"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new appendix"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new configuration"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new expectation"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new few shot"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new instructions"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#: src/chatddx/portal/templates/begun.html
+msgid "A new judge"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new output"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new passthrough"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new prompt"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new reasoning"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new sampling"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+#: src/chatddx/portal/templates/begun.html
+msgid "A new scorer"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new toolset"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new translations"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A new trial"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#, python-format
+msgid "A new %(kind)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/compare.html
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/starting.html
+#: src/chatddx/portal/templates/taken.html
+#: src/chatddx/portal/templates/thread.html
+#: src/chatddx/portal/templates/vignette.html
+msgid "Breadcrumb"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "A thread of your own, from what is given here."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "Its case"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "Write one for it"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid ""
+"An appendix is written for one case's vignette, and sent with it by the "
+"cases that include it: pick the case first. A case's page begins one too."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "What it holds"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgctxt "a language"
+msgid "into"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "such as sv"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "Show its texts"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid ""
+"Translations are begun of a configuration's texts, into a language; its "
+"recipe holds them once it picks them, in the Library or the Lab."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#, python-format
+msgid "The texts of %(configuration)s, into %(language)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "Pick another"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "name"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid "Write it"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgctxt "after the button Write it"
+msgid "Writes a new thread of your own; a translation left empty isn't kept."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/thread.html
+msgid "language"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/thread.html
+msgctxt "no language"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/thread.html
+msgctxt "under the field language"
+msgid "The text's, kept with it."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+#: src/chatddx/portal/templates/thread.html
+msgid "labels"
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgid ""
+"What its views and resources are called, by position, kept with its first"
+" version."
+msgstr ""
+
+#: src/chatddx/portal/templates/begun.html
+msgctxt "after the button Write it"
+msgid "Writes a new thread of your own."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "You deleted it: nobody else sees it, and it isn't offered anywhere."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Restore"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "About it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Kind"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Owner"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Shared with"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Language"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Tags"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Description"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Review it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "its vignette's text, on a page of its own"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Versions"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "The version before"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid "Version %(at)s of %(last)s"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "The version after"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#, python-format
+msgid "A repair has moved its vignette since: version %(n)s, %(at)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Open the latest"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "source"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "id"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "fingerprint"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "What this version changed"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "It is the first."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Its cases at this vignette"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/review.html
+msgid "Its cases"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "no appendices"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#, python-format
+msgid "appendices: %(appendices)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "an expectation"
+msgid "yours"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "the one picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "write yours"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/taken.html
+#, python-format
+msgid "%(owner)s's"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#, python-format
+msgid ""
+"its replacement, at the current vignette: <span class=\"font-mono text-"
+"xs\">%(replacement)s</span>"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "a replacement"
+msgid "stored"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Store its replacement"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "None stored."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Begun of it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "A case of its appendices"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "A case of its appendices, picked one a line, in order:"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#, python-format
+msgid "appendix %(n)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "no appendix"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Build it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "A new appendix of its vignette"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Its versions"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid "Version %(n)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "What is said of it"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/Saving.svelte
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Name"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgid "Left empty, it goes by its vignette's place."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "comma separated"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "logins, comma separated"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "under the field Language"
+msgid "Its vignette's: its cases are sent in it."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Save what is said"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Delete it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+msgctxt "after the button Delete it"
+msgid "It stays in the runs that ran it, and you can restore it from the Library."
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Shared with you"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Leave it"
+msgstr ""
+
+#: src/chatddx/portal/templates/case.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"%(owner)s shares it with you. Leaving takes it out of what you see, here "
+"and wherever it is offered, until %(owner)s shares it again."
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+msgid "Comparing runs"
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+msgid "runs"
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+msgid "Side by side over the items every one of them holds."
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+#: src/chatddx/portal/templates/lab.html
+msgid "How they fare"
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+#, python-format
+msgid ""
+"Some ran under %(models)s at different engines: grouped under it, they "
+"aren't like for like."
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+msgctxt "between the last two names"
+msgid " and "
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+msgid "None of them is scored."
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+#, python-format
+msgid "By item, under %(view)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+#, python-format
+msgid ""
+"A mean is over the %(num)s item every run holds, with how many of them it"
+" has a value for."
+msgid_plural ""
+"A mean is over the %(num)s items every run holds, with how many of them "
+"it has a value for."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/compare.html
+msgid "Held by only some"
+msgstr ""
+
+#: src/chatddx/portal/templates/compare.html
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "%(case)s: %(held)s of %(of)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Not found"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Not allowed"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Refused"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+#: src/chatddx/portal/templates/sign-in.html
+msgid "Sign in"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "That can't be done"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "A conflict"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "It has moved on"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "That names several"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Over the day's quota"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "That shouldn't have happened"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Something went wrong"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "It's for ops to mend: tell them what it says."
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Pass this on to ops, as it is:"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "The request didn't hold together:"
+msgstr ""
+
+#: src/chatddx/portal/templates/error.html
+msgid "Back to where you were"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgctxt "no pick"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "pick one"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "Open the one picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "One a line, in order; none takes one out, and the last adds one."
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "Left empty, it is none."
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "Whole numbers, one a line or apart by commas."
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "One a line; an empty line is none."
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+#, python-format
+msgid "%(field)s, read as"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "as text"
+msgstr ""
+
+#: src/chatddx/portal/templates/fields.html
+msgid "as JSON"
+msgstr ""
+
+#: src/chatddx/portal/templates/home.html
+msgid "The home page's script isn't built."
+msgstr ""
+
+#: src/chatddx/portal/templates/home.html
+msgid "The home page needs JavaScript."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid ""
+"No configuration to try: <a class=\"begin\" "
+"href=\"/library/new?kind=configuration\">write one from a recipe</a>, in "
+"the Library."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "Lineage"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "varies %(parts)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "its origin moved on"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "Deleted, yours (%(num)s)"
+msgid_plural "Deleted, yours (%(num)s)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid ""
+"Its first origin and every fork below it, each with its mean on the set "
+"under the view sorted by, the higher first among its siblings."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid ""
+"Its first origin and every fork below it, each with its mean on the set, "
+"the higher first among its siblings."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "Its first origin and every fork below it."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "The configuration"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "a judge's"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "in %(language)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "in no language known"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "<a href=\"/lab/%(origin)s\">a fork</a>, varying %(parts)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "a fork"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "its page in the Library"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "translations: <a href=\"/threads/%(id)s\">%(name)s</a>"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid "A newer version is saved: version %(n)s, %(at)s by %(by)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Its origin has moved on"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid ""
+"Following it keeps the origin's latest version with what yours changes of"
+" it, which is what yours holds already."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid ""
+"Following it keeps the origin's latest version with what yours changes of"
+" it."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid ""
+"<span class=\"font-medium\">%(part)s</span>: yours keeps %(fork)s over "
+"%(base)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Follow its origin"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "What it was compiled for has moved on"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"Its model, %(model)s, has a new version, and the facts about it were "
+"corrected since it was compiled, where they change what it sends."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid "Its model, %(model)s, has a new version."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"It was compiled against facts about %(model)s that have been corrected "
+"since, where they change what it sends."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"The facts now refuse what it asks: %(refused)s. Set another chunk in its "
+"place to follow them."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid ""
+"Following keeps its recipe, with the model's new version, compiled "
+"against the current facts."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Following keeps its recipe compiled against the current facts."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Follow"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "Trying it, running it and saving it take scripts."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "Its trials"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid ""
+"None you see: a trial of it is begun of the cases picked on the Library's"
+" <a href=\"/library?kind=case\">case tab</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid ""
+"A judge's configuration isn't run on cases: its scorers' judges ask it of"
+" a run's answers."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "The set"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgctxt "a model"
+msgid "Under"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "each its own model"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte src/chatddx/portal/templates/lab.html
+msgid "Over the cases tagged"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Show"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "Every case you see"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/runner.html
+#, python-format
+msgid "%(num)s case"
+msgid_plural "%(num)s cases"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid ""
+"%(cases)s, under %(model)s: each column is its latest run of yours at its"
+" model's latest engine."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid ""
+"%(cases)s: each column is its latest run of yours at its model's latest "
+"engine."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "version %(n)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgctxt "a model"
+msgid "under %(model)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "not run"
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "%(num)s at an earlier engine"
+msgid_plural "%(num)s at an earlier engine"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/lab.html
+msgid "None of them has a run at its model's latest engine yet."
+msgstr ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid ""
+"A mean is over the items every run holds (%(num)s), with how many of them"
+" it has a value for."
+msgid_plural ""
+"A mean is over the items every run holds (%(num)s), with how many of them"
+" it has a value for."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/lab.html
+#, python-format
+msgid "Only some hold %(num)s case"
+msgid_plural "Only some hold %(num)s cases"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Overview"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Loaded with data sets: read here, not written"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after a kind's word"
+msgid ", loaded with data sets"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid ""
+"Everything you work with, by kind, your own first. Each is kept with "
+"every version of it: a change saves a new version, and nothing is lost."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "Kinds: %(kind)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Kinds"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "%(num)s yours"
+msgid_plural "%(num)s yours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "%(num)s shared with you"
+msgid_plural "%(num)s shared with you"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "loaded with data sets, or typed on Home"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "loaded with data sets"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "None is begun here: a case comes from a data set, or is typed on Home."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Write a new one"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Find"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Find by name, owner, tag or description"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Under the schema"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "under any schema"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "under %(schema)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "%(shown)s of %(of)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "show every one"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Tagged"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after a tag"
+msgid ", picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after the tags picked"
+msgid "each of them"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "pick %(name)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Pick none"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Pick every one shown"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "owner"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "any owner"
+msgid "any"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Take for the picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after the button Take for the picked"
+msgid ""
+"Takes the expectation shared with you, under the schema, for each picked "
+"case: yours stay as they are."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Begin a trial of the picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after the button Begin a trial of the picked"
+msgid "Its cases are the picked, and its language theirs."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "None you see of these."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "None you see."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Purpose"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Latest version"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "forked from %(origin)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "forked from one you don't see"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/runner.html
+msgid "Run the picked"
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after the button Run the picked"
+msgid "together, as one start, in the Lab."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid ""
+"None you see yet. A trial is begun of the cases picked on the <a "
+"href=\"/library?kind=case\">case shelf</a>, with <span class=\"font-"
+"medium\">Begin a trial of the picked</span>; or try a configuration on "
+"cases straight away in the <a class=\"bench\" href=\"/lab\">Lab</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "These are written through data sets, by developers and ops."
+msgstr ""
+
+#: src/chatddx/portal/templates/library.html
+msgid "Your deleted"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/world.html
+msgid "None."
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "valid"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s valid"
+msgid_plural "%(num)s valid"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "completed"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s completed"
+msgid_plural "%(num)s completed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "salvaged"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s salvaged"
+msgid_plural "%(num)s salvaged"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "invalid"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s invalid"
+msgid_plural "%(num)s invalid"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "errored"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s errored"
+msgid_plural "%(num)s errored"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "unread"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s unread"
+msgid_plural "%(num)s unread"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+msgctxt "outcome"
+msgid "stopped"
+msgstr ""
+
+#: frontend/src/lib/runs/outcomes.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "outcome"
+msgid "%(num)s stopped"
+msgid_plural "%(num)s stopped"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "queued, paused, halting"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "queued, paused"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "queued, %(num)s ahead, halting"
+msgid_plural "queued, %(num)s ahead, halting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "queued, %(num)s ahead"
+msgid_plural "queued, %(num)s ahead"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "halting"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "under way"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgctxt "job"
+msgid "finished"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgctxt "job"
+msgid "stopped"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgctxt "job"
+msgid "failed"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "%(status)s: %(why)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Tabs"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Compare"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgctxt "after the button Compare"
+msgid "the runs ticked, side by side over the cases they share"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/run.html
+msgid "Started"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Run"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Outcomes"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/run.html
+msgid "Finished"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/run.html
+msgid "Job"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Left to score by"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "Compare %(run)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "%(num)s missing"
+msgid_plural "%(num)s missing"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "%(num)s to go"
+msgid_plural "%(num)s to go"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/world.html
+msgid "yes"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/world.html
+msgid "no"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+msgid "Score again"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "No runs."
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Nothing is saved yet"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid "That can't be shown"
+msgstr ""
+
+#: src/chatddx/portal/templates/macros.html
+msgid ""
+"What you typed is kept below, and what was refused is marked there: set "
+"it right and send it again."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgctxt "no items"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "none expected"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "No case to review tagged %(tags)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "No case to review."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "The case before"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "%(at)s of %(of)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "The case after"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgctxt "tags"
+msgid "all"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "answered"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "expectations to choose from"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "expected"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "nothing expected of yours"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgctxt "after what is expected"
+msgid ", answered"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid ""
+"<span class=\"inline-block size-2 rounded-full bg-success\"></span> yours"
+" expected, <span class=\"inline-block size-2 rounded-full border border-"
+"muted-foreground\"></span> not yet, <span class=\"inline-block size-2 "
+"rounded-full bg-warning\"></span> to choose from; answered in your runs."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "<kbd>j</kbd> and <kbd>k</kbd> step through them."
+msgstr ""
+
+#: frontend/src/islands/Home.svelte src/chatddx/portal/templates/review.html
+msgid "The case"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "owned by %(owner)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "in the Library"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "the vignette alone"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "with %(appendices)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "with %(num)s appendix"
+msgid_plural "with %(num)s appendices"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid ""
+"The vignette is shown with scripts, or on <a "
+"href=\"/cases/%(family)s/vignette\">a page of its own</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Appendices, in order"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "its page"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Change it"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Make it yours"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "On its page"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "None in this case."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Add to it: an appendix, or a case of several"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Text, as it is added to the vignette"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Write the appendix"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "A case of the vignette and these, in the order listed"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Build the case"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Expected"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Expectation schemas"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Scorers"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Read by"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "No scorer you see reads this schema."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Shared with you to take:"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "Take %(thread)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Move yours here"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgctxt "after the button Move yours here"
+msgid ""
+"from %(case)s, which it leaves: only if it still holds with this case's "
+"appendices"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "You see no expectation schema."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "Yours, version of %(at)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid ""
+"None of your own. <a class=\"begin\" "
+"href=\"/cases/%(family)s#holds\">Write yours</a> in the Library."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid ""
+"What %(name)s reads of it <a class=\"bench font-normal\" "
+"href=\"/scoring/%(id)s\">on Scoring</a>"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "judge %(judge)s"
+msgstr ""
+
+#: frontend/src/lib/library/ViewsField.svelte
+#: frontend/src/lib/scorer/Composer.svelte
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "the whole expectation"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Nothing to read: no expectation of yours."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Reads nothing of it."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Record"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "%(num)s answer"
+msgid_plural "%(num)s answers"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/runs.html
+#, python-format
+msgid "%(num)s under way"
+msgid_plural "%(num)s under way"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "%(num)s to score"
+msgid_plural "%(num)s to score"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid ""
+"What your runs answered to this case, and how %(scorer)s scored it: a "
+"record, to read."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "What your runs answered to this case: a record, to read."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Run this case"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+msgid "Configuration"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+msgid "Model"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgctxt "a configuration's model"
+msgid "its own"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Another runs it with that model in place of its own."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/review.html
+msgid "Replicates"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "Score it once it has finished"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/review.html
+msgid "Run it"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgctxt "after a run"
+msgid "is under way; reload to see it once it is done."
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "%(num)s run left to score by %(scorer)s against what you expect now."
+msgid_plural "%(num)s runs left to score by %(scorer)s against what you expect now."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "mean of %(num)s"
+msgid_plural "mean of %(num)s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/run.html
+msgid "Outcome"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "left to score"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "not scored by it"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "scored against what was expected before"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "The answer on its run's page"
+msgstr ""
+
+#: src/chatddx/portal/templates/review.html
+msgid "None of your runs has answered this case."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Halt"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#, python-format
+msgid "Left to score by %(scorers)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html src/chatddx/portal/templates/runs.html
+msgid "Resume"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgctxt "after the button Resume"
+msgid "Unfinished: resuming sends what it lacks."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Run again"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "The run"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#, python-format
+msgid "%(run)s, in %(language)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/runner.html
+msgid "a language unknown"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Started with"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/world.html
+msgid "Engine"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Seeds"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Trial"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Rig"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "What was noted"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "As it ran"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Checked now"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte src/chatddx/portal/templates/run.html
+msgid "Under way"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid ""
+"Something is under way for this run. Reload the page to see how far it "
+"has come."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Items"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Case"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Replicate"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Tokens"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte src/chatddx/portal/templates/run.html
+#, python-format
+msgid "%(sent)s in, %(got)s out"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "No items yet."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Scores"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "not finished"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/scoring.html
+msgid "Mean"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "Not scored."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "The answer"
+msgstr ""
+
+#: frontend/src/lib/review/Answer.svelte src/chatddx/portal/templates/run.html
+msgid "(cut short)"
+msgstr ""
+
+#: frontend/src/lib/review/Answer.svelte src/chatddx/portal/templates/run.html
+msgid "Nothing could be read."
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+msgid "The response, part by part"
+msgstr ""
+
+#: src/chatddx/portal/templates/run.html
+#, python-format
+msgid "%(num)s tool round before the last call."
+msgid_plural "%(num)s tool rounds before the last call."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/runner.html
+#, python-format
+msgid "%(num)s seed"
+msgid_plural "%(num)s seeds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid "version"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+#, python-format
+msgid "version of %(name)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid "not this time"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+#, python-format
+msgid "Version %(n)s, %(at)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+#, python-format
+msgid "at %(endpoint)s: %(concurrency)s at once, %(order)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid "concurrency"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgctxt "concurrency"
+msgid "each endpoint's"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid "order"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgctxt "order"
+msgid "each endpoint's"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid "Score it once it is done"
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+msgid ""
+"Left empty, each endpoint's execution; a shuffled order's seed is drawn. "
+"The trials run as one start, queued as your job."
+msgstr ""
+
+#: src/chatddx/portal/templates/runner.html
+#: src/chatddx/portal/templates/starting.html
+msgctxt "trials"
+msgid "Run it"
+msgid_plural "Run them"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Your runs, newest first."
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Your queue"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+#, python-format
+msgid "%(num)s queued"
+msgid_plural "%(num)s queued"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/runs.html
+#, python-format
+msgid "%(queued)s, %(under_way)s; paused."
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+#, python-format
+msgid "%(queued)s, %(under_way)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Pause"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Stop"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Stop now"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "No worker is running, so nothing queued is taken."
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid ""
+"Pausing holds what is queued and queues the runs under way again after "
+"the items being sent. Stop takes what is queued out, its runs left "
+"unfinished to be resumed; once nothing is queued, Stop now halts the runs"
+" under way."
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "All"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Left to score"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "All runs"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Newer"
+msgstr ""
+
+#: src/chatddx/portal/templates/runs.html
+msgid "Older"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "an earlier version"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"No scorer or judge you see: a scorer is composed on a case in <a "
+"class=\"bench\" href=\"/review\">Review</a>, or <a class=\"begin\" "
+"href=\"/library/new?kind=scorer\">written in the Library</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Scorers and judges"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "reading %(schema)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Judges"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"Each one you see, yours first: the scorers by the expectation schema they"
+" grade against, the judges by the model they are asked under."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "The scorer"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "The judge"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "a scorer grading against %(schema)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "a scorer"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "a judge"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "saved %(at)s by %(by)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Its views"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"Each compares what it picks from an answer with what it picks from the "
+"expectation, by a metric of %(code)s at version %(version)s, given "
+"%(params)s, holding %(resources)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"Each compares what it picks from an answer with what it picks from the "
+"expectation, by a metric of %(code)s at version %(version)s, given "
+"%(params)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"Each compares what it picks from an answer with what it picks from the "
+"expectation, by a metric of %(code)s at version %(version)s, holding "
+"%(resources)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"Each compares what it picks from an answer with what it picks from the "
+"expectation, by a metric of %(code)s at version %(version)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/scoring.html
+msgid "View"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Metric"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Of the answer"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Of the expectation"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#: src/chatddx/portal/templates/scoring.html
+msgid "Judge"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Parameters"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "in %(unit)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/scorers.ts src/chatddx/portal/templates/scoring.html
+msgid "the whole answer"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "split %(split)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "What it reads"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "no configuration you see"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Answers of"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Not of"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "%(expected)s of the %(num)s case you see"
+msgid_plural "%(expected)s of the %(num)s cases you see"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "To choose from, several of yours: %(cases)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "No expectation of yours: %(num)s"
+msgid_plural "No expectation of yours: %(num)s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"A view reads a configuration's answers where its output's schema offers "
+"what the view picks; a case is graded only where you expect something of "
+"it, which is written in Review."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "How it scored"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"Your runs scored by this version, newest first, each by the mean of its "
+"latest score under each view."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"<a class=\"bench\" href=\"%(href)s\">Compare them</a> over the cases they"
+" share."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"No run of yours is scored by this version: runs left to score are on <a "
+"class=\"bench\" href=\"/runs?left=true\">Runs</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "What it is"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Its request"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Asked under"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeFields.svelte
+#: src/chatddx/portal/templates/scoring.html
+msgid "Seeds, a call each"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Its slots filled by"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Served now at"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"Its request is a judge's configuration, varied and saved in the Lab; a "
+"scorer asks the version of a judge it names until it follows another, "
+"below."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Asked by"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Ask its latest version"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Ask its latest version, in a scorer of your own"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgctxt "after the button Ask its latest version"
+msgid "in %(scorer)s's %(views)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgctxt "after the button Ask its latest version"
+msgid "in %(scorer)s's %(views)s, forking it"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "No view of a scorer you see."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "What it is asked"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Read with"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Of what is expected of"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "no case you expect something of"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "The whole request"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid ""
+"With its first seed and the answer as a placeholder, and what %(view)s "
+"picks of what is expected of %(case)s: a view fills them with what it "
+"picks of each."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"With its first seed and the answer as a placeholder, and the expectation "
+"as one: a view fills them with what it picks of each."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Changing what it is asked takes scripts."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Its verdicts"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Scorer · view"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Items judged"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Its seeds agree"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "A seed gave none"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Where its seeds disagree"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#, python-format
+msgid "%(case)s, replicate %(replicate)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid ""
+"Over the latest score of your runs under each scorer asking any version "
+"of it: an item's seeds agree when each gave the same value, which its "
+"view's metric reads of their verdicts."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "No item of yours is judged by it yet."
+msgstr ""
+
+#: src/chatddx/portal/templates/scoring.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Its findings"
+msgstr ""
+
+#: src/chatddx/portal/templates/sign-in.html
+msgid "Wrong login or password."
+msgstr ""
+
+#: src/chatddx/portal/templates/sign-in.html
+msgid "Login"
+msgstr ""
+
+#: src/chatddx/portal/templates/sign-in.html
+msgid "Password"
+msgstr ""
+
+#: src/chatddx/portal/templates/starting.html
+msgid "Run trials"
+msgstr ""
+
+#: src/chatddx/portal/templates/starting.html
+msgid "Each trial's version at the endpoint serving its engine."
+msgstr ""
+
+#: src/chatddx/portal/templates/starting.html
+msgid ""
+"No trial is given: pick them on the <a href=\"/library?kind=trial\">trial"
+" tab</a> of the Library, or under a configuration in the <a "
+"class=\"bench\" href=\"/lab\">Lab</a>."
+msgstr ""
+
+#: src/chatddx/portal/templates/starting.html
+msgid "The trials"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+msgid "Taken"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+#, python-format
+msgid "Under %(schema)s, for each picked case."
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+msgid "What became of each"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+#, python-format
+msgid "taken, into <a href=\"/threads/%(thread)s\">your thread %(thread)s</a>"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+#, python-format
+msgid "<a href=\"/threads/%(thread)s\">yours</a>, left as it is"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+#, python-format
+msgid "shared by several, to take from one: %(owners)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/taken.html
+msgid "none shared with you"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "one you don't see"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Forked from"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"<a class=\"bench\" href=\"/lab/%(thread)s\">Try it in the Lab</a>, where "
+"it is varied, run and saved"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"<a class=\"bench\" href=\"/scoring/%(thread)s\">Weigh it on Scoring</a>, "
+"beside the scorers and judges it works with and how they scored"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"<span class=\"font-mono text-xs\">%(path)s</span>: yours keeps <span "
+"class=\"font-mono text-xs\">%(fork)s</span> over <span class=\"font-mono "
+"text-xs\">%(base)s</span>"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Make it the latest"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Its recipe"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "What it sends: the request compiled from its recipe"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "What its views and resources are called, by position, kept with this edit."
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#: src/chatddx/portal/templates/translations.html
+msgid "Save it"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgctxt "after the button Save it"
+msgid "Saves a new version of it."
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "What this version changed in its recipe"
+msgstr ""
+
+#: frontend/src/lib/thread/Changed.svelte
+#: src/chatddx/portal/templates/thread.html
+msgid "Nothing of what it holds; only what is said of it, or its labels."
+msgstr ""
+
+#: frontend/src/lib/thread/Changed.svelte
+#: src/chatddx/portal/templates/thread.html
+msgctxt "change"
+msgid "added"
+msgstr ""
+
+#: frontend/src/lib/thread/Changed.svelte
+#: src/chatddx/portal/templates/thread.html
+msgctxt "change"
+msgid "removed"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgctxt "no value"
+msgid "none"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/thread.html
+msgid "Its runs"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid ""
+"<a class=\"bench\" href=\"/lab/run?trial=%(thread)s\">Run it</a>, in the "
+"Lab"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+#, python-format
+msgid "version %(n)s, %(at)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "None of yours."
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Left empty, it goes by its title."
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgctxt "after the button Delete it"
+msgid ""
+"It stays in the runs that used it, and you can restore it from the "
+"Library."
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Fork it"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgid "Fork it as it is"
+msgstr ""
+
+#: src/chatddx/portal/templates/thread.html
+msgctxt "after the button Fork it as it is"
+msgid ""
+"A thread of your own, starting from its latest version, which follows "
+"this one's changes when you ask."
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+#, python-format
+msgid ""
+"Not translated yet: started from the translation of a similar text, "
+"“%(similar)s”"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Not translated yet"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Not sent by the configurations holding it"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Its translation"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#: src/chatddx/portal/templates/translations.html
+msgid "Leave it out"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Its leading or trailing whitespace isn't its source's."
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Languages"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgctxt "languages"
+msgid "Into"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "it translates into it"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "cases you see are in it"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "it doesn't translate into it yet"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Another language"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "another, such as de"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "Translate into it"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+#, python-format
+msgid ""
+"(an earlier version: <a href=\"%(tried)s\">try it with the latest in the "
+"Lab</a>)"
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+#, python-format
+msgid ""
+"Held by %(configurations)s: what they send that it doesn't translate yet "
+"comes first."
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgid "No configuration you see holds it, so it is offered no text to translate."
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+#, python-format
+msgid "Nothing to translate into %(language)s."
+msgstr ""
+
+#: src/chatddx/portal/templates/translations.html
+msgctxt "after the button Save it"
+msgid "Saves a new version of it; a translation left empty or out isn't kept."
+msgstr ""
+
+#: src/chatddx/portal/templates/vignette.html
+#, python-format
+msgid "%(case)s: vignette"
+msgstr ""
+
+#: src/chatddx/portal/templates/vignette.html
+#, python-format
+msgid "Its vignette, %(id)s in %(source)s."
+msgstr ""
+
+#: frontend/src/lib/review/Vignette.svelte
+#: src/chatddx/portal/templates/vignette.html
+msgid "This isn't the text the case was made from any more."
+msgstr ""
+
+#: src/chatddx/portal/templates/vignette.html
+msgid "The vignette"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid ""
+"What the portal was started in: where its vignettes are, the endpoints "
+"and hosts it sends to, what it binds, and the models a configuration can "
+"run under."
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "The World"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Directory"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Read from"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Served by"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(rig)s at %(revision)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Sources"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid ""
+"Where the vignettes are fetched from. A sensitive source's cases are sent"
+" only to the endpoints cleared for it, and no vignette is shown here."
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "sensitive"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "not sensitive"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid ""
+"<span class=\"font-mono text-xs\">%(path)s</span>, a vignette a <span "
+"class=\"font-mono text-xs\">%(suffix)s</span> file"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "texts typed into the database"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "its directory can't be read: %(why)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(num)s vignette"
+msgid_plural "%(num)s vignettes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "as many as are typed"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Where"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Holds"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Cleaned up by"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Cleared for it"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "no endpoint"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Endpoints"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid ""
+"Where each engine is served; a run goes to the endpoint serving its "
+"engine."
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "serves %(model)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Address"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Host"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "none: a remote engine"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Capacity"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(num)s at once"
+msgid_plural "%(num)s at once"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Runs by default"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(concurrency)s, %(order)s, %(retries)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(num)s retry"
+msgid_plural "%(num)s retries"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Canaries"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgctxt "no canaries"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Its secret's variable"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "none: it takes no secret"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Cleared for"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "no source"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Takes typed cases"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Hosts"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid ""
+"The machines that run local engines, and where each keeps the model files"
+" and chat templates its engines pin."
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "listening on %(bind)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Chat templates"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Bindings"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "<span class=\"font-medium\">%(judge)s</span> to %(handle)s"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgctxt "no judges"
+msgid "none"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Configurations are made for"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "no model"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "Judges are bound"
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "The models a configuration can run under, each by its handle."
+msgstr ""
+
+#: src/chatddx/portal/templates/world.html
+msgid "no facts"
+msgstr ""
+
+#: frontend/src/islands/library.ts
+msgid "Write it as JSON"
+msgstr ""
+
+#: frontend/src/islands/library.ts
+msgid "Back to the form"
+msgstr ""
+
+#: frontend/src/islands/library.ts
+msgid "What it holds isn't JSON the form can show: set it right here first."
+msgstr ""
+
+#: frontend/src/islands/library.ts
+msgid "Pick its expectation schema first, and the form shows what it holds."
+msgstr ""
+
+#: frontend/src/islands/scoring.ts
+msgid "Change what it is asked"
+msgstr ""
+
+#: frontend/src/islands/scoring.ts
+msgid ""
+"Its request was written by hand, not from a recipe: it is changed in the "
+"Library."
+msgstr ""
+
+#: frontend/src/lib/api/client.ts
+#, python-format
+msgid "%(message)s Pass this on to ops, as it is: %(pass_on)s"
+msgstr ""
+
+#: frontend/src/lib/api/client.ts
+msgid "the server didn't say why"
+msgstr ""
+
+#: frontend/src/lib/editors/writing.ts
+msgid "Nothing to save: it holds this already."
+msgstr ""
+
+#: frontend/src/lib/editors/writing.ts
+msgid "Saves a new version of it."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/writing.ts
+msgid "Give it a name to save it."
+msgstr ""
+
+#: frontend/src/lib/editors/writing.ts
+#, python-format
+msgid "Writes “%(name)s”, a new thread of your own."
+msgstr ""
+
+#: frontend/src/lib/editors/writing.ts
+#, python-format
+msgid "Saves it as “%(name)s”, a fork of your own."
+msgstr ""
+
+#: frontend/src/lib/library/editors.ts
+#, python-format
+msgid "It isn't JSON yet: %(error)s"
+msgstr ""
+
+#: frontend/src/lib/library/editors.ts
+#, python-brace-format
+msgid "It is to be an object, between { and }."
+msgstr ""
+
+#: frontend/src/lib/library/editors.ts
+msgid "It is to be a list, between [ and ]."
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Complete blood count"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Electrolytes"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Renal function"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Liver function"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Inflammatory markers"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Coagulation"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Cardiac markers"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Glucose/Metabolism"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Blood gas"
+msgstr ""
+
+#: frontend/src/lib/plan/labs.ts
+msgid "Thyroid"
+msgstr ""
+
+#: frontend/src/lib/review/review.ts
+msgctxt "a run under way"
+msgid "halted"
+msgstr ""
+
+#: frontend/src/lib/review/review.ts
+msgctxt "a run under way"
+msgid "done"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte frontend/src/lib/review/review.ts
+#, python-format
+msgid "%(n)s scored"
+msgid_plural "%(n)s scored"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "scoring: %(scored)s"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte frontend/src/lib/review/review.ts
+#, python-format
+msgid "judges answered %(answered)s of %(asked)s"
+msgid_plural "judges answered %(answered)s of %(asked)s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "scoring: %(scored)s, %(judges)s"
+msgstr ""
+
+#: frontend/src/lib/review/review.ts
+msgctxt "a run under way"
+msgid "queued"
+msgstr ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "%(ended)s of %(of)s ended"
+msgid_plural "%(ended)s of %(of)s ended"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "thinking: %(n)s token"
+msgid_plural "thinking: %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "writing: %(n)s token"
+msgid_plural "writing: %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/review.ts
+#, python-format
+msgid "%(ended)s, %(sending)s"
+msgstr ""
+
+#: frontend/src/lib/runs/events.ts
+msgid "the run's events stopped coming"
+msgstr ""
+
+#: frontend/src/lib/runs/progress.ts
+msgid "the run didn't finish"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+#, python-format
+msgid "%(configuration)s, as it is asked now"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+#, python-format
+msgid "%(handle)s, the weights it holds"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+msgid "the weights it holds"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+msgid "a judge has a seed or more"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+msgid "seeds are whole numbers, 0 or more"
+msgstr ""
+
+#: frontend/src/lib/scorer/judging.ts
+msgid "each seed once"
+msgstr ""
+
+#: frontend/src/lib/scorer/rewriting.ts
+#, python-format
+msgid "%(part)s: %(problem)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/rewriting.ts
+#, python-format
+msgid "%(judge)s's request"
+msgstr ""
+
+#: frontend/src/lib/scorer/rewriting.ts
+#, python-format
+msgid "its configuration: %(problem)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/rewriting.ts
+#, python-format
+msgid "the judge: %(problem)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/scorers.ts
+#, python-format
+msgid "%(output)s: %(selected)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/scorers.ts
+msgctxt "an output"
+msgid "text"
+msgstr ""
+
+#: frontend/src/lib/scorer/selectors.ts
+#, python-format
+msgid "each of %(field)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/selectors.ts
+#, python-format
+msgid "each of %(field)s › %(member)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/selectors.ts
+#, python-format
+msgid "%(field)s where %(by)s is %(value)s › %(member)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "the answer"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "what the view reads of the expectation"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "the vignette"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "the appendices"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte frontend/src/lib/scorer/texts.ts
+msgid "what it is told to answer"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "its tools' guidance"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "the answer's schema"
+msgstr ""
+
+#: frontend/src/lib/scorer/texts.ts
+msgid "‹the answer's schema›"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "no run was started"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Keeping the case…"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Waiting for the model…"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Reading the answer…"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid ""
+"<span class=\"gradient-text\">Emergency</span> <span class=\"text-"
+"foreground\">Differential Diagnostics</span>"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid ""
+"Describe the patient's symptoms and history for a differential and a "
+"management plan."
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid ""
+"<strong class=\"font-semibold text-foreground\">Important:</strong> for "
+"testing only. It does not replace clinical judgment or medical "
+"consultation."
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Symptoms & history"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Current symptoms, duration, severity, and relevant medical history."
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid ""
+"65-year-old man with sudden chest pain for 2 hours, radiating to the left"
+" arm, nausea, cold sweats. History of hypertension and type 2 diabetes."
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Written in"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "Analyze"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+#, python-format
+msgid "Thinking: %(n)s token"
+msgid_plural "Thinking: %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Home.svelte
+#, python-format
+msgid "Writing: %(n)s token"
+msgid_plural "Writing: %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Home.svelte
+msgid "It didn't go through"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "No answer to show"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "The answer was cut short"
+msgstr ""
+
+#: frontend/src/islands/Home.svelte
+msgid "The answer breaks its schema"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "waiting"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "sent"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "thinking, %(n)s token"
+msgid_plural "thinking, %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "calling a tool, %(n)s token"
+msgid_plural "calling a tool, %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "writing, %(n)s token"
+msgid_plural "writing, %(n)s tokens"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Halted; showing what it came to…"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Done; showing what it came to…"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgctxt "a run under way"
+msgid "Scoring"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgctxt "a run under way"
+msgid "Sending"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "%(lost)s. Reload the page to see how far it has come."
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Items ended"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "%(ended)s of %(of)s item ended"
+msgid_plural "%(ended)s of %(of)s items ended"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "%(n)s tool call"
+msgid_plural "%(n)s tool calls"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Thinking"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Answer"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid "Not sent yet."
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+msgid ""
+"It ended before this page followed it; its answer is on the run's page "
+"once it is done."
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "%(scored)s over %(views)s"
+msgstr ""
+
+#: frontend/src/islands/RunLive.svelte
+#, python-format
+msgid "%(n)s view"
+msgid_plural "%(n)s views"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(n)s case"
+msgid_plural "%(n)s cases"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "It can't run until its model can."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Pick a model to run it under."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Pick a case to run it on."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "None of its cases can be sent."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(n)s item"
+msgid_plural "%(n)s items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(n)s seed drawn"
+msgid_plural "%(n)s seeds drawn"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"Sends %(items)s under %(model)s, one at a time, a replicate each under "
+"%(seeds)s; its sampling is greedy, so no seed is sent and its replicates "
+"send the same request, which measures the engine's nondeterminism."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"Sends %(items)s under %(model)s, one at a time, a replicate each under "
+"%(seeds)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"Sends %(items)s under %(model)s, one at a time; its sampling is greedy, "
+"so the seed isn't sent."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "Sends %(items)s under %(model)s, one at a time."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "in its own language"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(where)s, %(cases)s, translated, if it can be"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(where)s, %(cases)s, translated"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(where)s, %(cases)s, if it can be"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(where)s, %(cases)s"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Nothing to save: this is the configuration as it is."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "Saves version %(n)s of this configuration."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"Saves a new configuration of yours, “%(name)s”, forked from version %(n)s"
+" of this one."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Trying it"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Looking"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"<span class=\"font-medium\">%(label)s</span><span class=\"text-muted-"
+"foreground\">, on version %(n)s</span>"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "greedy: no seed is sent"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"This is <a class=\"text-primary hover:underline\" "
+"href=\"/lab/%(id)s\">%(name)s</a> already."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Part"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Chunk"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgctxt "no chunk"
+msgid "None"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(chunk)s (its own)"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgctxt "a part"
+msgid "replaced"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "its nearest: %(reason)s"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "What it makes"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Under the model"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "None: no lints"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "Runs under %(model)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Any of these."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "None picked: every case you see."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "What the lints say"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "No lints while it can't run."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Pick a model to lint it under."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgctxt "no lints"
+msgid "Nothing."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "What scorers can read"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "No scorer reads it."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Scorer"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Offered"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "offered"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "not offered"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Not read from this output."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(have)s of %(n)s case has an expectation for it"
+msgid_plural "%(have)s of %(n)s cases have an expectation for it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(n)s without one"
+msgid_plural "%(n)s without one"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Several to choose from:"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "The request it would send"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Running it"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "On the cases"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "tagged %(tags)s (%(n)s)"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "every one you see (%(n)s)"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "of the families picked (%(n)s)"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#: frontend/src/lib/schema/SchemaField.svelte
+#: frontend/src/lib/scorer/TextSegments.svelte
+#, python-format
+msgid "Leave out %(name)s"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Find a family by name"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Find a family"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "No family by that name."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Seed"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Score it when it's done"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "A run holds at most %(n)s."
+msgid_plural "A run holds at most %(n)s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "A run per language: %(runs)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "%(run)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "Left out: %(cases)s in %(language)s, as %(refused)s."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "Saving it"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid "You have one named so already; names needn't be unique."
+msgid_plural "You have %(n)s named so already; names needn't be unique."
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/Saving.svelte
+msgid "Save"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgid "No runs of it."
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgctxt "a run finished"
+msgid "yes"
+msgstr ""
+
+#: frontend/src/islands/Variation.svelte
+msgctxt "a run finished"
+msgid "no"
+msgstr ""
+
+#: frontend/src/lib/editors/AppendixEditor.svelte
+msgid "Its text"
+msgstr ""
+
+#: frontend/src/lib/editors/AppendixEditor.svelte
+#, python-format
+msgid ""
+"The case that held it has a new one with this version; carry your "
+"expectations over where they still hold."
+msgid_plural ""
+"The %(n)s cases that held it have new ones with this version; carry your "
+"expectations over where they still hold."
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/editors/ExpectationEditor.svelte
+msgid "Write yours"
+msgstr ""
+
+#: frontend/src/lib/editors/Findings.svelte
+msgid "Nothing to say of it."
+msgstr ""
+
+#: frontend/src/lib/editors/Saving.svelte
+#, python-format
+msgid ""
+"%(problem)s. What you typed is kept: save again to make it the version "
+"after the latest."
+msgstr ""
+
+#: frontend/src/lib/plan/DiagnosisCard.svelte
+msgctxt "probability"
+msgid "High"
+msgstr ""
+
+#: frontend/src/lib/plan/DiagnosisCard.svelte
+msgctxt "probability"
+msgid "Medium"
+msgstr ""
+
+#: frontend/src/lib/plan/DiagnosisCard.svelte
+msgctxt "probability"
+msgid "Low"
+msgstr ""
+
+#: frontend/src/lib/plan/DiagnosisCard.svelte
+msgid "Critical"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementPlan.svelte
+msgid "Acute warning"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementPlan.svelte
+msgid "Differential diagnoses"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementPlan.svelte
+msgid "Medical sources"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementPlan.svelte
+msgid ""
+"This information is for educational and reference purposes only and does "
+"not replace clinical judgment."
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementSection.svelte
+msgid "Management"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementSection.svelte
+msgid "Workup"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementSection.svelte
+msgid "Empirical treatment"
+msgstr ""
+
+#: frontend/src/lib/plan/ManagementSection.svelte
+msgid "Disposition"
+msgstr ""
+
+#: frontend/src/lib/review/Answer.svelte
+msgid "The answer…"
+msgstr ""
+
+#: frontend/src/lib/review/Answer.svelte
+#, python-format
+msgid "%(n)s judge call"
+msgid_plural "%(n)s judge calls"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/review/Answer.svelte
+msgid "On its run's page"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+msgid "reads nothing"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "reads <span class=\"text-foreground\">%(read)s</span>"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "What reads %(field)s"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "Compose %(scorer)s"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "Compose %(scorer)s as yours"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+msgid "Compose a scorer"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+msgid "Read elsewhere, or of what isn't written"
+msgstr ""
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "Version %(n)s of %(of)s, %(at)s: what each changed"
+msgstr ""
+
+#: frontend/src/lib/review/Pending.svelte
+msgid "Show it"
+msgstr ""
+
+#: frontend/src/lib/review/Vignette.svelte
+#, python-format
+msgid "The vignette can't be shown: %(problem)s."
+msgstr ""
+
+#: frontend/src/lib/review/Vignette.svelte
+msgid "The vignette…"
+msgstr ""
+
+#: frontend/src/lib/schema/SchemaField.svelte
+#, python-format
+msgid ""
+"<span class=\"font-medium\" title=\"%(about)s\">%(field)s</span>: none "
+"expected"
+msgstr ""
+
+#: frontend/src/lib/schema/SchemaField.svelte
+#, python-format
+msgid "Not JSON yet: %(error)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgctxt "a view's value"
+msgid "judged"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+#, python-format
+msgid "replicate %(n)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "Composing a scorer"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+#, python-format
+msgid "Changing %(scorer)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+#, python-format
+msgid "Making %(scorer)s yours"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "Start a new one"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+#, python-format
+msgid ""
+"Each view is tried on your run of this case as you change it or what you "
+"expect; nothing is kept until you save. A judged view is scored by its "
+"judge once the scorer is saved and the runs are scored again, in the "
+"record."
+msgid_plural ""
+"Each view is tried on your %(n)s runs of this case as you change it or "
+"what you expect; nothing is kept until you save. A judged view is scored "
+"by its judge once the scorer is saved and the runs are scored again, in "
+"the record."
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "Run the case to try the views on its answers."
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "Tried on your answers"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "on your answers"
+msgstr ""
+
+#: frontend/src/lib/scorer/Composer.svelte
+msgid "What it is asked is changed on Scoring"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeAsked.svelte
+msgid "What its judge is asked"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeEditor.svelte
+msgid ""
+"A scorer asks the version of a judge it names, so the scorers asking this"
+" one keep asking the version they ask until they are changed."
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeFields.svelte
+msgid "Its request, a judge configuration"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeFields.svelte
+msgid "Asked under the model"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "Nothing changed yet."
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "its prompt"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "its instructions"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+#, python-format
+msgid "Saves %(parts)s as your own."
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "What its judge is asked, as you write it"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+#, python-format
+msgid ""
+"What %(judge)s is asked, written as you would have it. Saving keeps each "
+"text you change as a version of your own, the judge's request with them, "
+"and a judge of your own asked through it. The scorers asking %(judge)s "
+"keep asking the version they ask until they follow yours, from its page."
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "Its instructions"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "What it is told to answer"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "Its prompt"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "As it would read"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+msgid "Save what it is asked"
+msgstr ""
+
+#: frontend/src/lib/scorer/JudgeTexts.svelte
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Not now"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Its verdict at"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Out of"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#, python-format
+msgid "%(n)s seed"
+msgid_plural "%(n)s seeds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#, python-format
+msgid "%(judge)s: %(configuration)s under %(model)s, %(seeds)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#, python-format
+msgid "%(judge)s: %(configuration)s, %(seeds)s"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Its label"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Move it up"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Move it down"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Reads of what is expected"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Reads of the answer"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "line by line, as a list"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "Compared by"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+#, python-format
+msgid "%(metric)s, by a judge"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "its judge"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "a new judge…"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgctxt "a verdict"
+msgid "at"
+msgstr ""
+
+#: frontend/src/lib/scorer/ScorerViews.svelte
+msgid "a view"
+msgstr ""
+
+#: frontend/src/lib/scorer/SelectorPicker.svelte
+msgctxt "a selector"
+msgid "typed…"
+msgstr ""
+
+#: frontend/src/lib/scorer/SelectorPicker.svelte
+#, python-format
+msgctxt "a selector"
+msgid "%(label)s, typed"
+msgstr ""
+
+#: frontend/src/lib/scorer/TextSegments.svelte
+#, python-format
+msgid "%(label)s, text %(n)s"
+msgstr ""
+

@@ -58,7 +58,7 @@ def test_a_page_takes_the_built_styles_and_its_island(
 ) -> None:
     _ = signing_in(client)
     unbuilt = client.get("/").text
-    assert "isn't built" in unbuilt and "<script" not in unbuilt
+    assert "isn't built" in unbuilt and '<script type="module"' not in unbuilt
     build(built)
     home = client.get("/").text
     assert '<link rel="stylesheet" href="/static/assets/portal-1.css">' in home
@@ -68,7 +68,7 @@ def test_a_page_takes_the_built_styles_and_its_island(
     signed_out = client.post("/sign-out")
     assert signed_out.status_code == 303
     form = client.get("/sign-in").text
-    assert "/static/assets/portal-1.css" in form and "<script" not in form
+    assert "/static/assets/portal-1.css" in form and '<script type="module"' not in form
     assert client.get("/static/assets/portal-1.css").text == "body {}"
 
 

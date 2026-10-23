@@ -10,7 +10,7 @@ from .notify import JOB, WORKERS, channel
 from .store import Connection
 
 Status = Literal["queued", "under way", "finished", "stopped", "failed"]
-ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")
+_ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")
 STATUSES: tuple[Status, ...] = get_args(Status)
 
 TAKEN_OUT = "taken out of the queue"
@@ -348,8 +348,8 @@ class Queue:
     def end(
         self, job: int, worker: UUID, status: Status, why: str | None = None
     ) -> bool:
-        if status not in ENDED:
-            raise ValueError(f"a job ends {', '.join(ENDED)}, not {status}")
+        if status not in _ENDED:
+            raise ValueError(f"a job ends {', '.join(_ENDED)}, not {status}")
         with self._conn.transaction():
             row = self._conn.execute(
                 """

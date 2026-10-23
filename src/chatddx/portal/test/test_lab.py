@@ -1,7 +1,9 @@
 import re
+from pathlib import Path
 from urllib.parse import urlencode
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from markupsafe import escape
 from pydantic import JsonValue
@@ -14,6 +16,8 @@ from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.locale import Locales
+from chatddx.locale.test.helpers import catalog
 from chatddx.portal.test.helpers import ran_template, said, shown, variation_props
 from chatddx.scripted.test.helpers import held
 from chatddx.store import Catalog, Store
@@ -109,7 +113,7 @@ def test_a_column_whose_weights_its_handle_no_longer_holds_says_so(
 
 @pytest.mark.slow
 def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
-    signed: TestClient, paged: TestClient, bench: Bench
+    signed: TestClient, paged: TestClient, bench: Bench, served: FastAPI, tmp_path: Path
 ) -> None:
     store = Store(bench.conn)
     registry = store.load([])
@@ -124,17 +128,37 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
     bench.conn.commit()
     lines = thread(signed, "configuration", LINES)
     whoops = (
-        f"{short(weights)} is held by no model thread: tell ops to check their "
-        + "RuntimeErrors, and meanwhile use another model"
+        "No model in the Library holds these weights, though one should: use "
+        + "another model meanwhile."
     )
+    pass_on = f"{short(weights)} is held by no model thread: check the RuntimeErrors"
     got = paged.get(f"/lab/{lines['id']}?model={weights}")
     assert got.status_code == 500, said(got.text)[:300]
-    titled = escape("That shouldn't have happened")
-    assert said(got.text).startswith(f"> {titled} {whoops} ")
+    assert said(got.text).startswith(
+        f"> That shouldn't have happened {whoops} Pass this on to ops, as it is: {pass_on} "
+    )
     asked = paged.get(f"/api/threads/{lines['id']}/variation?model={weights}")
     assert (asked.status_code, asked.json()) == (
         500,
-        {"code": "whoops", "detail": whoops},
+        {"code": "whoops", "detail": whoops, "pass_on": pass_on},
+    )
+
+    served.state.locales = Locales(
+        catalog(
+            tmp_path,
+            f"""
+            msgctxt "whoops"
+            msgid "{whoops}"
+            msgstr "Ingen modell i biblioteket håller vikterna: ta en annan så länge."
+            """,
+        )
+    )
+    sv = paged.get(
+        f"/lab/{lines['id']}?model={weights}", headers={"accept-language": "sv"}
+    )
+    assert (
+        f"Ingen modell i biblioteket håller vikterna: ta en annan så länge. Pass this on to ops, as it is: {pass_on} "
+        in said(sv.text)
     )
 
 

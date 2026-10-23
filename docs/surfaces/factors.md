@@ -436,11 +436,6 @@ Raises:
 
 * `model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")`
 
-## `GREEDY_DROPS`
-`src/chatddx/factors/request.py:GREEDY_DROPS`
-
-`GREEDY_DROPS = ("top_p", "top_k", "min_p")`
-
 ## `Hardware` `(Frozen)`
 `src/chatddx/factors/engine.py:Hardware`
 
@@ -1141,11 +1136,6 @@ Raises:
 * `seeds: Sequence[int]`
 * ∟`tuple[int, ...]`
 
-## `REQUIRED_SLOTS`
-`src/chatddx/factors/request.py:REQUIRED_SLOTS`
-
-`REQUIRED_SLOTS: dict[Purpose, frozenset[SlotName]] = {…}`
-
 ## `resolve` `[C: Component]`
 `src/chatddx/factors/base.py:resolve`
 
@@ -1570,11 +1560,6 @@ Raises:
 * `get: Resolver`
 * `into: str`
 * ∟`tuple[str, ...]`
-
-## `Validators`
-`src/chatddx/factors/lint.py:Validators`
-
-`Validators = dict[str, Validator | str]`
 
 ## `View` `(Frozen)`
 `src/chatddx/factors/scoring.py:View`

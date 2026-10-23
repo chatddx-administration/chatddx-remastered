@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @dataclass(frozen=True)
-class Sourced:
+class _Sourced:
     source: Source
     vignettes: int | None
     unread: str | None
@@ -51,14 +51,14 @@ def world(request: Request, bench: BenchDep) -> Response:
     )
 
 
-def _sourced(inventory: Inventory, source: Source) -> Sourced:
+def _sourced(inventory: Inventory, source: Source) -> _Sourced:
     cleared = sorted(e for e, held in inventory.cleared.items() if source.name in held)
     if not isinstance(source, DirectorySource):
-        return Sourced(source, None, None, cleared)
+        return _Sourced(source, None, None, cleared)
     try:
-        return Sourced(source, len(source.ids()), None, cleared)
+        return _Sourced(source, len(source.ids()), None, cleared)
     except OSError as e:
-        return Sourced(source, None, str(e), cleared)
+        return _Sourced(source, None, str(e), cleared)
 
 
 def _served(bench: Bench, inventory: Inventory, endpoint: schemas.Endpoint) -> Served:

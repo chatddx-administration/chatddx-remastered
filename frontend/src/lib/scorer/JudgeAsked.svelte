@@ -1,5 +1,6 @@
 <script lang="ts">
   import { api, type Schemas, why } from "$lib/api/client";
+  import { t } from "$lib/locale";
 
   let { judge, expectation, data }: { judge: string; expectation: string; data: unknown } = $props();
 
@@ -30,11 +31,11 @@
 </script>
 
 <details bind:open class="rounded-md bg-muted/40 px-2 py-1">
-  <summary class="cursor-pointer text-muted-foreground">What its judge is asked</summary>
+  <summary class="cursor-pointer text-muted-foreground">{t("What its judge is asked")}</summary>
   {#if problem}
     <p class="mt-1 text-destructive">{problem}</p>
   {:else if asked}
-    <ol class="mt-1 space-y-1.5" aria-label="What its judge is asked">
+    <ol class="mt-1 space-y-1.5" aria-label={t("What its judge is asked")}>
       {#each messages as m, i (i)}
         <li>
           <span class="font-medium text-muted-foreground">{m.role}</span>

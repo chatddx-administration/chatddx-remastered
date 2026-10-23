@@ -41,7 +41,7 @@ from .shell import Repl
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 
-SCORED = frozenset({"scorer", "judge", "expectation", "expectation_schema"})
+_SCORED = frozenset({"scorer", "judge", "expectation", "expectation_schema"})
 
 
 def show(repl: Repl, kind: str | None = None, *names: str) -> None:
@@ -330,7 +330,7 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
         return
 
     bench = repl.bench
-    scored = word in SCORED
+    scored = word in _SCORED
     runs = bench.runs(scored_by=digest) if scored else bench.runs(reaching=digest)
 
     if not runs:

@@ -1,3 +1,5 @@
+import { t } from "$lib/locale";
+
 export const EVENTS = [
   "run.started",
   "item.started",
@@ -37,7 +39,7 @@ export function watch(run: string, on: (name: Event, data: unknown) => void): Pr
     }
     events.addEventListener("error", (e) => {
       if (e instanceof MessageEvent || events.readyState !== EventSource.CLOSED) return;
-      reject(new Error("the run's events stopped coming"));
+      reject(new Error(t("the run's events stopped coming")));
     });
   });
 }

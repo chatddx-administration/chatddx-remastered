@@ -1,3 +1,4 @@
+import { t } from "$lib/locale";
 import { deref, type Schema } from "$lib/schema/form";
 
 export type Choice = { label: string; selector: string };
@@ -70,15 +71,24 @@ function walk(schema: Schema, root: Schema, data: Record<string, unknown>, path:
 
 function listed(name: string, items: Schema, root: Schema, values: unknown[], found: Choice[]): void {
   const each = `$${member(name)}[*]`;
-  found.push({ label: `each of ${named(name)}`, selector: each });
+  found.push({ label: t("each of %(field)s", { field: named(name) }), selector: each });
   const fields = properties(items).map(([field]) => field);
-  for (const field of fields) found.push({ label: `each of ${named(name)} › ${named(field)}`, selector: `${each}${member(field)}` });
+  for (const field of fields) {
+    const label = t("each of %(field)s › %(member)s", { field: named(name), member: named(field) });
+    found.push({ label, selector: `${each}${member(field)}` });
+  }
   for (const by of strings(items, root)) {
     const seen = new Set(values.filter(held).map((v) => v[by]).filter((v): v is string => typeof v === "string"));
     for (const value of seen) {
       const which = `$${member(name)}[?@${member(by)} == '${quoted(value)}']`;
       for (const field of fields.filter((f) => f !== by)) {
-        found.push({ label: `${named(name)} where ${named(by)} is ${value} › ${named(field)}`, selector: `${which}${member(field)}` });
+        const label = t("%(field)s where %(by)s is %(value)s › %(member)s", {
+          field: named(name),
+          by: named(by),
+          value,
+          member: named(field),
+        });
+        found.push({ label, selector: `${which}${member(field)}` });
       }
     }
   }

@@ -8,7 +8,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/importers/`, 
 # Accommodating for o11n's report: a part it couldn't gather holds only the error.
 ```
 
-## `src/chatddx/importers/o11n.py:HOST_ENV`
+## `src/chatddx/importers/o11n.py:_HOST_ENV`
 
 ```
 # Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,

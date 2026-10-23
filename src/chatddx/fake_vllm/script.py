@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from .served import Refused
 
-FIELDS = frozenset(
+_FIELDS = frozenset(
     {"reasoning", "content", "tool_calls", "finish", "runaway", "hang_up", "status"}
 )
 
@@ -51,7 +51,7 @@ def turn(where: str, value: object) -> Turn:
     if not isinstance(value, dict):
         raise Refused(f"{where} is a table")
     held = cast(dict[str, Any], value)
-    if stray := set(held) - FIELDS:
+    if stray := set(held) - _FIELDS:
         raise Refused(f"{where} has no {sorted(stray)}")
     reasoning = held.get("reasoning")
     finish = held.get("finish")

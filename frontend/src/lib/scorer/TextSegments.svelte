@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "$lib/locale";
   import { editable, INSERTS, isInsert, isSlot, merged, type Seg, SLOTS } from "./texts";
 
   let {
@@ -41,7 +42,7 @@
       <textarea
         class="w-full rounded-md border border-input bg-transparent px-2 py-1 [field-sizing:content]"
         rows="1"
-        aria-label="{label}, text {Math.floor(at / 2) + 1}"
+        aria-label={t("%(label)s, text %(n)s", { label, n: Math.floor(at / 2) + 1 })}
         value={s}
         oninput={(e) => typed(at, e.currentTarget.value)}
       ></textarea>
@@ -51,7 +52,7 @@
         <button
           type="button"
           class="rounded-full px-1 hover:bg-primary/20"
-          aria-label="Leave out {named(s)}"
+          aria-label={t("Leave out %(name)s", { name: named(s) })}
           onclick={() => set(merged(shown.filter((_, i) => i !== at)))}>×</button
         >
       </span>

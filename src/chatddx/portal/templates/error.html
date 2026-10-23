@@ -1,34 +1,37 @@
 {% extends "base.html" %}
 {% set titles = {
-  "not_found": "Not found",
-  "not_allowed": "Not allowed",
-  "cross_site": "Refused",
-  "unauthenticated": "Sign in",
-  "refused": "That can't be done",
-  "unprocessable": "That can't be done",
-  "conflict": "A conflict",
-  "moved_on": "It has moved on",
-  "ambiguous": "That names several",
-  "over_quota": "Over the day's quota",
-  "whoops": "That shouldn't have happened",
+  "not_found": _("Not found"),
+  "not_allowed": _("Not allowed"),
+  "cross_site": _("Refused"),
+  "unauthenticated": _("Sign in"),
+  "refused": _("That can't be done"),
+  "unprocessable": _("That can't be done"),
+  "conflict": _("A conflict"),
+  "moved_on": _("It has moved on"),
+  "ambiguous": _("That names several"),
+  "over_quota": _("Over the day's quota"),
+  "whoops": _("That shouldn't have happened"),
 } %}
-{% block title %}{{ titles.get(error.code, "Something went wrong") }} · ChatDDX{% endblock %}
+{% block title %}{{ titles.get(error.code, _("Something went wrong")) }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-xl px-4 py-16 text-center">
-  <h1 class="mb-4 text-3xl font-bold">{{ titles.get(error.code, "Something went wrong") }}</h1>
+  <h1 class="mb-4 text-3xl font-bold">{{ titles.get(error.code, _("Something went wrong")) }}</h1>
   {% if error.detail is string %}
   {% if error.code == "error" %}
   <p class="mb-2 text-muted-foreground">{{ error.detail }}</p>
-  <p class="mb-8 text-sm text-muted-foreground">It's for ops to mend: tell them what it says.</p>
+  <p class="mb-8 text-sm text-muted-foreground">{{ _("It's for ops to mend: tell them what it says.") }}</p>
+  {% elif error.code == "whoops" %}
+  <p class="mb-2 text-muted-foreground">{{ error.detail }}</p>
+  <p class="mb-8 text-sm text-muted-foreground">{{ _("Pass this on to ops, as it is:") }} <span class="font-mono">{{ error.pass_on }}</span></p>
   {% else %}
   <p class="mb-8 text-muted-foreground">{{ error.detail }}</p>
   {% endif %}
   {% else %}
-  <p class="mb-2 text-muted-foreground">The request didn't hold together:</p>
+  <p class="mb-2 text-muted-foreground">{{ _("The request didn't hold together:") }}</p>
   <ul class="mb-8 text-sm text-muted-foreground">
     {% for e in error.detail %}<li>{{ e.loc | join(".") }}: {{ e.msg }}</li>{% endfor %}
   </ul>
   {% endif %}
-  {% if back %}<a href="{{ back }}" class="text-primary hover:underline">Back to where you were</a>{% endif %}
+  {% if back %}<a href="{{ back }}">{{ _("Back to where you were") }}</a>{% endif %}
 </div>
 {% endblock %}

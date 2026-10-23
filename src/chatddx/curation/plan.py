@@ -66,14 +66,14 @@ TABLES: dict[str, type[Component]] = {
     "scorer": Scorer,
     "canary_set": CanarySet,
 }
-ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")
+_ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")
 # Dependency: planned after recipes and judges, as a view may name a judge.
-LATE_TABLES = ("scorer",)
+_LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
-DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)
+_DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in _ENGINE_TABLES)
 SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 # Scope: references outside recipes, by table and field; each names stanzas of another table.
-REFERENCES: dict[str, dict[str, str]] = {
+_REFERENCES: dict[str, dict[str, str]] = {
     "toolset": {"tools": "tool"},
     "scorer": {"expectation_schema": "expectation_schema"},
     "local_engine": {"model": "local_model"},
@@ -246,19 +246,19 @@ def plan_factors(
 ) -> Plan:
     factors = data / "factors.toml"
     written = _read(factors)
-    if held := sorted(set(written) & set(ENGINE_TABLES)):
+    if held := sorted(set(written) & set(_ENGINE_TABLES)):
         raise ValueError(
             f"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
         )
-    found = _stanzas(factors, written, DATA_TABLES)
+    found = _stanzas(factors, written, _DATA_TABLES)
     for path in () if world is None else world.engines:
         written = _read(path)
-        if stray := sorted(set(written) - set(ENGINE_TABLES)):
+        if stray := sorted(set(written) - set(_ENGINE_TABLES)):
             raise ValueError(
-                f"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} "
+                f"{path}: an engines file holds only {', '.join(_ENGINE_TABLES)} "
                 + f"tables, not {', '.join(stray)}"
             )
-        for table, stanzas in _stanzas(path, written, ENGINE_TABLES).items():
+        for table, stanzas in _stanzas(path, written, _ENGINE_TABLES).items():
             known = found.setdefault(table, {})
             if twice := sorted(set(known) & set(stanzas)):
                 raise ValueError(f"{path}: {table} {twice} are named before it too")
@@ -374,7 +374,7 @@ def plan_factors(
             else:
                 description = body.pop("description", None)
             fork_of = body.pop("fork_of", None)
-            for field_name, target in REFERENCES.get(table, {}).items():
+            for field_name, target in _REFERENCES.get(table, {}).items():
                 match body.get(field_name):
                     case str() as one:
                         body[field_name] = plan.named(target, one).digest
@@ -474,7 +474,7 @@ def plan_factors(
                 ),
             )
 
-    for table in ENGINE_TABLES:
+    for table in _ENGINE_TABLES:
         plan_table(table)
     inventory = None if world is None else world.inventory
     engines = {
@@ -547,7 +547,7 @@ def plan_factors(
     for table in TABLES:
         if table == "translations":
             plan_translations()
-        elif table not in (*ENGINE_TABLES, *LATE_TABLES):
+        elif table not in (*_ENGINE_TABLES, *_LATE_TABLES):
             plan_table(table)
 
     configured = None if inventory is None else inventory.configurations
@@ -652,7 +652,7 @@ def plan_factors(
             f"judge {name}: the World binds it to {bound[name]}, but the data has none"
         )
 
-    for table in LATE_TABLES:
+    for table in _LATE_TABLES:
         plan_table(table)
     return plan
 

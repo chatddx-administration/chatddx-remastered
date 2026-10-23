@@ -7557,6 +7557,19 @@
           },
           "code": {
             "$ref": "#/components/schemas/Code"
+          },
+          "pass_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "a whoops's: what the person is to pass on to ops, as it is",
+            "title": "Pass On"
           }
         },
         "required": [

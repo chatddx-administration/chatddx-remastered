@@ -3,6 +3,7 @@
   import BeakerIcon from "@lucide/svelte/icons/beaker";
   import PillIcon from "@lucide/svelte/icons/pill";
   import { Badge } from "$lib/components/ui/badge";
+  import { t } from "$lib/locale";
   import { groupLabs } from "./labs";
   import type { Management, Priority } from "./types";
 
@@ -18,14 +19,14 @@
 <section class="animate-slide-up space-y-4" style:animation-delay="200ms">
   <div class="flex items-center gap-3">
     <div class="rounded-xl bg-accent/10 p-2"><ArrowRightIcon class="size-5 text-accent" /></div>
-    <h3 class="text-xl font-bold text-foreground">Management</h3>
+    <h3 class="text-xl font-bold text-foreground">{t("Management")}</h3>
   </div>
 
   {#if management.workup?.length}
-    <div class="glass-card space-y-4 rounded-2xl p-5">
+    <div class="pane space-y-4 rounded-2xl p-5">
       <div class="flex items-center gap-3">
         <div class="rounded-xl bg-primary/10 p-2"><BeakerIcon class="size-5 text-primary" /></div>
-        <h4 class="text-lg font-semibold text-foreground">Workup</h4>
+        <h4 class="text-lg font-semibold text-foreground">{t("Workup")}</h4>
       </div>
       <div class="space-y-4 text-sm">
         {#each management.workup as item, i (i)}
@@ -62,10 +63,10 @@
   {/if}
 
   {#if management.empirical_treatment?.length}
-    <div class="glass-card space-y-4 rounded-2xl p-5">
+    <div class="pane space-y-4 rounded-2xl p-5">
       <div class="flex items-center gap-3">
         <div class="rounded-xl bg-accent/10 p-2"><PillIcon class="size-5 text-accent" /></div>
-        <h4 class="text-lg font-semibold text-foreground">Empirical treatment</h4>
+        <h4 class="text-lg font-semibold text-foreground">{t("Empirical treatment")}</h4>
       </div>
       <div class="space-y-1 text-sm">
         {#each management.empirical_treatment as treatment, i (i)}
@@ -82,11 +83,11 @@
   {/if}
 
   {#if management.disposition}
-    <div class="glass-card rounded-2xl p-5">
+    <div class="pane rounded-2xl p-5">
       <div class="flex items-start gap-4">
         <div class="shrink-0 rounded-xl bg-primary/10 p-2.5"><ArrowRightIcon class="size-5 text-primary" /></div>
         <div>
-          <h4 class="mb-2 font-semibold text-foreground">Disposition</h4>
+          <h4 class="mb-2 font-semibold text-foreground">{t("Disposition")}</h4>
           <p class="text-muted-foreground">{management.disposition}</p>
         </div>
       </div>

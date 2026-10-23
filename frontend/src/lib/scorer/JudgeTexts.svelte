@@ -10,6 +10,7 @@
   import { api } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
+  import { listed, t } from "$lib/locale";
   import { type Part, rewritten } from "./rewriting";
   import TextSegments from "./TextSegments.svelte";
   import { asked, type Seg, segmentsOf, textOf } from "./texts";
@@ -101,6 +102,14 @@
     return () => clearTimeout(timer);
   });
 
+  function saves(): string {
+    if (!changed.length) return t("Nothing changed yet.");
+    const said = changed.map((p) =>
+      p === "output" ? t("what it is told to answer") : p === "prompt" ? t("its prompt") : t("its instructions"),
+    );
+    return t("Saves %(parts)s as your own.", { parts: listed(said) });
+  }
+
   async function save(): Promise<void> {
     busy = true;
     problem = null;
@@ -111,32 +120,33 @@
   }
 </script>
 
-<section class="space-y-3 rounded-lg border border-dashed border-primary/40 p-2.5" aria-label="What its judge is asked, as you write it">
+<section class="space-y-3 rounded-lg border border-dashed border-primary/40 p-2.5" aria-label={t("What its judge is asked, as you write it")}>
   <p class="text-muted-foreground">
-    What {given.name} is asked, written as you would have it. Saving keeps each text you change as a version of your own,
-    the judge's request with them, and a judge of your own asked through it. The scorers asking {given.name} keep asking
-    the version they ask until they follow yours, from its page.
+    {t(
+      "What %(judge)s is asked, written as you would have it. Saving keeps each text you change as a version of your own, the judge's request with them, and a judge of your own asked through it. The scorers asking %(judge)s keep asking the version they ask until they follow yours, from its page.",
+      { judge: given.name },
+    )}
   </p>
   <div class="grid gap-3 lg:grid-cols-2">
     <div class="space-y-3">
       {#if parts.instructions}
-        <TextSegments label="Its instructions" segs={instructions} set={(s) => (instructions = s)} inserts={guiding} />
+        <TextSegments label={t("Its instructions")} segs={instructions} set={(s) => (instructions = s)} inserts={guiding} />
       {/if}
       {#if parts.output}
         <TextSegments
-          label="What it is told to answer"
+          label={t("What it is told to answer")}
           segs={guidance}
           set={(s) => (guidance = s)}
           inserts={parts.output.body.json_schema ? ["schema"] : []}
         />
       {/if}
       {#if parts.prompt}
-        <TextSegments label="Its prompt" segs={prompt} set={(s) => (prompt = s)} slots={judgeSlots} inserts={guiding} />
+        <TextSegments label={t("Its prompt")} segs={prompt} set={(s) => (prompt = s)} slots={judgeSlots} inserts={guiding} />
       {/if}
     </div>
     <div>
-      <p class="mb-1 font-medium">As it would read</p>
-      <ol class="space-y-1.5" aria-label="As it would read">
+      <p class="mb-1 font-medium">{t("As it would read")}</p>
+      <ol class="space-y-1.5" aria-label={t("As it would read")}>
         {#each preview as m, i (i)}
           <li>
             <span class="font-medium text-muted-foreground">{m.role}</span>
@@ -151,15 +161,15 @@
   {/each}
   {#if problem}<p class="text-destructive">{problem}</p>{/if}
   <p class="text-muted-foreground">
-    {changed.length ? `Saves ${changed.map((p) => (p === "output" ? "what it is told to answer" : `its ${p}`)).join(", ")} as your own.` : "Nothing changed yet."}
+    {saves()}
   </p>
   <div class="flex gap-2">
     <button
       type="button"
       class="rounded-md bg-primary px-3 py-1 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       disabled={busy || changed.length === 0 || blocked}
-      onclick={save}>Save what it is asked</button
+      onclick={save}>{t("Save what it is asked")}</button
     >
-    <button type="button" class="rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={left}>Not now</button>
+    <button type="button" class="rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={left}>{t("Not now")}</button>
   </div>
 </section>

@@ -42,6 +42,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # handle share a column, as a fork that varies nothing does its origin's.
 ```
 
+## `src/chatddx/portal/lab.py:_FARING`
+
+```
+# Accommodating for the variation's query, whose schema refuses what it doesn't know: the
+# Lab's own parameters are taken out of the address before it is read.
+```
+
 ## `src/chatddx/portal/lab.py:_trials`
 
 ```
@@ -49,18 +56,15 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # compiled from the recipe of one into a language.
 ```
 
-## `src/chatddx/portal/lab.py:FARING`
-
-```
-# Accommodating for the variation's query, whose schema refuses what it doesn't know: the
-# Lab's own parameters are taken out of the address before it is read.
-```
-
 ## `src/chatddx/portal/pages.py`
 
 ```
 # Accommodating for Jinja, whose tojson sorts keys: an island sends back what it's given,
 # and a component's digest holds the order of its keys.
+```
+
+```
+# pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 ```
 
 ## `src/chatddx/portal/pages.py:refusable`
@@ -124,6 +128,19 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # only on localhost.
 ```
 
+## `src/chatddx/portal/test/test_browser.py:test_a_press_shows_until_the_next_page_comes_and_sends_its_form_once`
+
+```
+# Accommodating for Chromium, which runs no script on a page while a navigation from it is held:
+# the navigations a press starts are cancelled instead, which leaves the page as pressed.
+```
+
+## `src/chatddx/portal/threads.py:_AUTHORED`
+
+```
+# Accommodating for configurations, which a person writes as recipes, not as components.
+```
+
 ## `src/chatddx/portal/threads.py:_drawn`
 
 ```
@@ -144,13 +161,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # Policy: a new scorer pins the code chatddx ships, as it is shown and not asked.
 ```
 
-## `src/chatddx/portal/threads.py:AUTHORED`
-
-```
-# Accommodating for configurations, which a person writes as recipes, not as components.
-```
-
-## `src/chatddx/portal/translations.py:NEAR`
+## `src/chatddx/portal/translations.py:_NEAR`
 
 ```
 # Policy: an entry under half of whose words are the text's is too far off to start from.

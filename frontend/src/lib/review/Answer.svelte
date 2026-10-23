@@ -2,6 +2,7 @@
   import { onMount, untrack } from "svelte";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { api, type Schemas, why } from "$lib/api/client";
+  import { t, tn } from "$lib/locale";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
   import { isPlan } from "$lib/plan/types";
   import { type Shown, type Viewed, viewed } from "./review";
@@ -41,7 +42,7 @@
 
 {#if !read}
   <p class="flex items-center gap-2 text-muted-foreground">
-    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" /> The answer…
+    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" /> {t("The answer…")}
   </p>
 {:else}
   {#if problem}<p class="mb-2 text-destructive">{problem}</p>{/if}
@@ -49,10 +50,10 @@
     {@const value = item.answer.value}
     {#if item.why}<p class="mb-2 text-muted-foreground">{item.why}</p>{/if}
     {#if item.answer.problem}
-      <p class="mb-2 text-warning">{item.answer.problem}{item.answer.salvaged ? " (cut short)" : ""}</p>
+      <p class="mb-2 text-warning">{item.answer.problem}{#if item.answer.salvaged}{" "}{t("(cut short)")}{/if}</p>
     {/if}
     {#if value === null || value === undefined}
-      <p class="text-muted-foreground">Nothing could be read.</p>
+      <p class="text-muted-foreground">{t("Nothing could be read.")}</p>
     {:else if typeof value === "string"}
       <div class="whitespace-pre-wrap rounded-lg bg-muted/60 p-3">{value}</div>
     {:else if given.plan && isPlan(value)}
@@ -68,10 +69,10 @@
         <dd class="text-right tabular-nums">{v.value}</dd>
         <dd class="min-w-0 text-muted-foreground">
           {#each v.said as [key, text], i (i)}<span class="mr-2">{key ? `${key}: ` : ""}{text}</span>{/each}
-          {#if v.calls}<span>{v.calls} judge call{v.calls === 1 ? "" : "s"}</span>{/if}
+          {#if v.calls}<span>{tn("%(n)s judge call", "%(n)s judge calls", v.calls, { n: v.calls })}</span>{/if}
         </dd>
       {/each}
     </dl>
   {/if}
-  <a class="mt-2 inline-block text-xs text-primary hover:underline" href="/runs/{given.run}#item-{given.anchor}">On its run's page</a>
+  <a class="mt-2 inline-block text-xs text-primary hover:underline" href="/runs/{given.run}#item-{given.anchor}">{t("On its run's page")}</a>
 {/if}
