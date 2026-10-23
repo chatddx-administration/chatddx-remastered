@@ -82,10 +82,10 @@ Raises:
 * ∟`list[Finding]`
 
 Finds:
-1. `execution.retries`: `"{over} calls took more than the {allowed} attempts allowed"`
-2. `execution.timeout`: `"{late} attempt{'' if late == 1 else 's'} took longer than the {limit} s timeout"`
-3. `execution.order`: `"{early} {"item was" if early == 1 else "items were"} sent before items scheduled ahead of them"`
-4. `execution.concurrency`: `"{peak} calls were in flight at once, declared {execution.concurrency}"`
+1. `execution.retries`: `"%(num)s calls took more than the %(allowed)s attempts allowed"`
+2. `execution.timeout`: `"%(num)s attempt took longer than the %(limit)s s timeout" / "%(num)s attempts took longer than the %(limit)s s timeout"`
+3. `execution.order`: `"%(num)s item was sent before items scheduled ahead of them" / "%(num)s items were sent before items scheduled ahead of them"`
+4. `execution.concurrency`: `"%(num)s calls were in flight at once, declared %(declared)s"`
 
 ## `check_log`
 `src/chatddx/ledger/record.py:check_log`
@@ -118,14 +118,17 @@ Raises:
 10. `StructuralError`: `"tool code recorded for tools the skeleton lacks: {stray}"` (through `_tool_code`)
 
 Finds:
-1. `run.incomplete`: `"{n} {what}{'' if n == 1 else 's'} missing"`
-2. `case.drift`: `"the vignette read differs from the case's"`
-3. `call.failed`: `error`
-4. `tools.stopped`: `"round {len(item.turns)} stopped after {len(item.turns[-1].tools)} of {len(asked)} tool calls, before its call"` (through `_rounds`)
-5. `tools.unanswered`: `"the last response still calls {', '.join(left)} after {len(item.turns)} of {skeleton.max_rounds} rounds"` (through `_rounds`)
-6. `tools.code`: `message` (through `_tool_code`)
-7. `attestation.prompt_tokens`: `"{unfingerprinted} {"item has" if unfingerprinted == 1 else "items have"} no prompt token fingerprint"`
-8. `canary.phase`: `message` (through `_bracketed`)
+1. `run.incomplete`: `"%(num)s item missing" / "%(num)s items missing"`
+2. `run.incomplete`: `"%(num)s canary call missing" / "%(num)s canary calls missing"`
+3. `case.drift`: `"the vignette read differs from the case's"`
+4. `call.failed`: `error`
+5. `tools.stopped`: `"round %(round)s stopped after %(ran)s of %(num)s tool calls, before its call"` (through `_rounds`)
+6. `tools.unanswered`: `"the last response still calls %(tools)s after %(rounds)s of %(num)s rounds"` (through `_rounds`)
+7. `tools.code`: `"the code tool %(tool)s ran with isn't recorded"` (through `_tool_code`)
+8. `tools.code`: `"tool %(tool)s ran at version %(ran)s of %(entry_point)s, not the version it pins (%(pinned)s)"` (through `_tool_code`)
+9. `attestation.prompt_tokens`: `"%(num)s item has no prompt token fingerprint" / "%(num)s items have no prompt token fingerprint"`
+10. `canary.phase`: `"%(num)s start canary calls hadn't finished when the first item was sent"` (through `_bracketed`)
+11. `canary.phase`: `"%(num)s end canary calls started before the last item call finished"` (through `_bracketed`)
 
 ## `check_score`
 `src/chatddx/ledger/score.py:check_score`
@@ -145,12 +148,13 @@ Raises:
 7. `StructuralError`: `"{item.key}: duplicate judge calls for view {item.view}"` (through `_judged`)
 
 Finds:
-1. `view.unreachable`: `"view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"`
-2. `judge.incomplete`: `"view {item.view}'s value rests on {called} of {declared} judge seeds"` (through `_judged`)
-3. `score.scorer_code`: `"the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"`
-4. `score.run_unfinished`: `"the run hasn't finished" if ended is None else 'the score started before the run finished'`
-5. `score.no_expectation`: `"{len(uncovered)} of the run's cases have no expectation in the scoring"`
-6. `score.incomplete`: `"{len(missing)} item{'' if len(missing) == 1 else 's'} missing"`
+1. `view.unreachable`: `"view %(view)s's output selector %(selector)s reaches nothing in the run's output schema"`
+2. `judge.incomplete`: `"view %(view)s's value rests on %(called)s of %(num)s judge seeds"` (through `_judged`)
+3. `score.scorer_code`: `"the scorer code ran at version %(ran)s of %(entry_point)s, not the version the scorer pins (%(pinned)s)"`
+4. `score.run_unfinished`: `"the run hasn't finished"`
+5. `score.run_unfinished`: `"the score started before the run finished"`
+6. `score.no_expectation`: `"%(num)s of the run's cases have no expectation in the scoring"`
+7. `score.incomplete`: `"%(num)s item missing" / "%(num)s items missing"`
 
 ## `check_seal`
 `src/chatddx/ledger/record.py:check_seal`

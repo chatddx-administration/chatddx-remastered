@@ -12,7 +12,7 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { api, type Schemas, why } from "$lib/api/client";
   import { worded } from "$lib/kinds";
-  import { listed as joined, t, th, tn, tp } from "$lib/locale";
+  import { listed as joined, localized, t, th, tn, tp } from "$lib/locale";
   import {
     type Carriage,
     carried,
@@ -404,7 +404,7 @@
           {:else}
             <InfoIcon class="mt-0.5 size-4 shrink-0 text-primary" />
           {/if}
-          <span>{finding.message} <span class="text-xs text-muted-foreground">{finding.code}</span></span>
+          <span>{localized(finding)} <span class="text-xs text-muted-foreground">{finding.code}</span></span>
         </li>
       {/each}
     </ul>

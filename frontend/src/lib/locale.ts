@@ -1,21 +1,22 @@
-export type Said = { tag: string; messages: Record<string, string | string[]> };
+export type Catalog = { tag: string; messages: Record<string, string | string[]> };
 type Given = Record<string, string | number>;
+type Coded = { code: string; message: string; wording: string | string[] | null; params: Given };
 
 const PLACEHOLDER = /%(?:\((\w+)\)s|%)/g;
-let spoken: Said | undefined;
+let spoken: Catalog | undefined;
 
-export function speaking(given: Said): void {
+export function speaking(given: Catalog): void {
   spoken = given;
 }
 
 export function t(message: string, given: Given = {}): string {
-  return filled(said(message), given);
+  return filled(translation(message), given);
 }
 
 // Policy: a message holding markup is markup, as a translation is trusted as the server's are;
 // what is put into it is escaped, as a {% trans %} block's variables are.
 export function th(message: string, given: Given = {}): string {
-  return filled(said(message), given, escaped);
+  return filled(translation(message), given, escaped);
 }
 
 export function tn(singular: string, plural: string, n: number, given: Given = {}): string {
@@ -23,7 +24,7 @@ export function tn(singular: string, plural: string, n: number, given: Given = {
 }
 
 export function tp(context: string, message: string, given: Given = {}): string {
-  return filled(said(message, context), given);
+  return filled(translation(message, context), given);
 }
 
 export function tnp(context: string, singular: string, plural: string, n: number, given: Given = {}): string {
@@ -31,14 +32,32 @@ export function tnp(context: string, singular: string, plural: string, n: number
 }
 
 export function whoops(message: string): string {
-  return said(message, "whoops");
+  return translation(message, "whoops");
+}
+
+export function localized(coded: Coded): string {
+  return coded.wording === null ? coded.message : worded(coded.code, coded.message, coded.wording, coded.params);
+}
+
+export function refusal(detail: string, wording: string | string[], params: Given): string {
+  return worded("refusal", detail, wording, params);
+}
+
+// Accommodating for JavaScript, which writes some numbers other than Python does: what the
+// page's catalog doesn't hold is said as the server wrote it.
+function worded(context: string, written: string, wording: string | string[], params: Given): string {
+  const [singular, plural] = typeof wording === "string" ? [wording] : wording;
+  if (singular === undefined || !(keyed(singular, context) in catalog().messages)) return written;
+  return plural === undefined
+    ? tp(context, singular, params)
+    : tnp(context, singular, plural, Number(params.num), params);
 }
 
 export function listed(items: string[], type: "conjunction" | "disjunction" = "conjunction"): string {
   return new Intl.ListFormat(catalog().tag, { type }).format(items);
 }
 
-function said(message: string, context?: string): string {
+function translation(message: string, context?: string): string {
   const found = catalog().messages[keyed(message, context)];
   return typeof found === "string" ? found : message;
 }
@@ -54,14 +73,14 @@ function keyed(message: string, context: string | undefined): string {
   return context === undefined ? message : `${context}\u0004${message}`;
 }
 
-function catalog(): Said {
+function catalog(): Catalog {
   spoken ??= inPage() ?? { tag: "en", messages: {} };
   return spoken;
 }
 
-function inPage(): Said | undefined {
+function inPage(): Catalog | undefined {
   const text = typeof document === "undefined" ? null : document.getElementById("locale")?.textContent;
-  return text ? (JSON.parse(text) as Said) : undefined;
+  return text ? (JSON.parse(text) as Catalog) : undefined;
 }
 
 function filled(message: string, given: Given, shown: (value: string) => string = String): string {

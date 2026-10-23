@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException
 from chatddx import settings
 from chatddx.api import app as api
 from chatddx.inventory import World
-from chatddx.locale import Locales, Saying
+from chatddx.locale import Locales, Localizing
 from chatddx.whoops import Whoops
 
 from . import (
@@ -34,7 +34,7 @@ def app(
     made.state.world = world
     made.state.assets = Assets(assets or settings.portal_assets())
     made.state.locales = Locales()
-    made.add_middleware(Saying)
+    made.add_middleware(Localizing)
     made.include_router(pages.router, include_in_schema=False)
     made.mount(
         ROUTE,

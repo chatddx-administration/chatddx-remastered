@@ -78,11 +78,22 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 ```
 
+```
+# Accommodating for Jinja, whose globals are typed as its own defaults are.
+```
+
 ## `src/chatddx/portal/pages.py:refusable`
 
 ```
 # Policy: what a person can set right on the page they sent, which shows it again with
 # what they typed and why it was refused; the rest is answered as the API answers it.
+```
+
+## `src/chatddx/portal/pages.py:refusal_of`
+
+```
+# Policy: what a person can cause is worded, and what isn't worded they couldn't have
+# caused, so it is passed on as it is.
 ```
 
 ## `src/chatddx/portal/runs.py:halting`

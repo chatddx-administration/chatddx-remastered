@@ -213,11 +213,11 @@ Finds:
 * ∟`Skeleton`
 
 Raises:
-1. `StructuralError`: `"no translations into {into}"`
-2. `StructuralError`: `"no translation into {into} for {listed}"`
-3. `StructuralError`: `"{prompt.purpose} prompt in a {recipe.purpose} recipe"`
-4. `StructuralError`: `"{name.replace('_', ' ')} is inserted in both the instructions and the prompt"`
-5. `StructuralError`: `"the answer tool {name!r} has the name of a tool in the toolset"`
+1. `StructuralError`: `"no translations into %(into)s", into=into`
+2. `StructuralError`: `"no translation into %(into)s for %(texts)s", into=into, texts=listed`
+3. `StructuralError`: `"%(prompt)s prompt in a %(recipe)s recipe", prompt=prompt.purpose, recipe=recipe.purpose`
+4. `StructuralError`: `"%(insert)s is inserted in both the instructions and the prompt", insert=name.replace("_", " ")`
+5. `StructuralError`: `"the answer tool %(tool)s has the name of a tool in the toolset", tool=repr(name)`
 
 ## `compiled`
 `src/chatddx/factors/request.py:compiled`
@@ -235,7 +235,7 @@ Raises:
 * `schema_version: ClassVar[int] = 1`
 
 Raises:
-1. `ValueError`: `"a {self.kind_name} may not hold U+0000, which can't be stored"` (through `Component._storable`, in a `ValidationError`)
+1. `Invalid`: `"a %(kind)s may not hold U+0000, which can't be stored", kind=self.kind_name` (through `Component._storable`, in a `ValidationError`)
 
 ## `Component.__pydantic_init_subclass__` `@classmethod` `@override`
 `src/chatddx/factors/base.py:Component.__pydantic_init_subclass__`
@@ -302,7 +302,7 @@ Raises:
 * ∟`tuple[T, ...]`
 
 Raises:
-1. `ValueError`: `"duplicates are not allowed"`
+1. `Invalid`: `"duplicates are not allowed"`
 
 ## `Effort`
 `src/chatddx/factors/facts.py:Effort`
@@ -336,7 +336,7 @@ Raises:
 * `whitespace_limit: int | None = Field(default=100, ge=1)`
 
 Raises:
-1. `ValueError`: `"shuffle_seed goes with shuffled order, and only with it"` (through `Execution._shuffle_seed`, in a `ValidationError`)
+1. `Invalid`: `"shuffle_seed goes with shuffled order, and only with it"` (through `Execution._shuffle_seed`, in a `ValidationError`)
 
 ## `Execution.overlaid`
 `src/chatddx/factors/trial.py:Execution.overlaid`
@@ -419,6 +419,25 @@ Raises:
 * `code: str`
 * `message: str`
 * `subject: str | None = None`
+* `wording: Wording | None = None`
+* `params: dict[str, Param] = Field(default_factory=dict[str, Param])`
+
+## `Finding.__hash__` `@override`
+`src/chatddx/factors/base.py:Finding.__hash__`
+
+* ∟`int`
+
+## `Finding.of` `@classmethod`
+`src/chatddx/factors/base.py:Finding.of`
+
+* `code: str`
+* `wording: Wording`
+* `/`
+* `*`
+* `level: Literal["info", "warning"] = "warning"`
+* `subject: str | None = None`
+* `**params: Param`
+* ∟`Self`
 
 ## `Fingerprint` `(Frozen)`
 `src/chatddx/factors/base.py:Fingerprint`
@@ -493,8 +512,11 @@ Raises:
 * `text: Text`
 
 Raises:
-1. `ValueError`: `"{kind} cannot use inserts {sorted(stray)}"` (through `Instructions._inserts`, in a `ValidationError`)
-2. `ValueError`: `"inserts used more than once: {sorted(dupes)}"` (through `Instructions._inserts`, in a `ValidationError`)
+1. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Instructions._inserts`, in a `ValidationError`)
+2. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Instructions._inserts`, in a `ValidationError`)
+
+## `Invalid` `(Worded, ValueError)`
+`src/chatddx/factors/base.py:Invalid`
 
 ## `iter_refs`
 `src/chatddx/factors/base.py:iter_refs`
@@ -562,9 +584,10 @@ Raises:
 * ∟`tuple[Landing | None, Landing | None]`
 
 Raises:
-1. `StructuralError`: `"facts about {facts.model} can't compile for {model}"`
-2. `StructuralError`: `"{what} is worked out from the facts about the recipe's model, which has none"`
-3. `StructuralError`: `"{facts.model}: {e}"` (from `Refused`)
+1. `StructuralError`: `"facts about %(facts)s can't compile for %(model)s", facts=facts.model, model=model`
+2. `StructuralError`: `"a recommended sampling is worked out from the facts about the recipe's model, which has none"`
+3. `StructuralError`: `"reasoning %(level)s is worked out from the facts about the recipe's model, which has none", level=repr(asked)`
+4. `StructuralError`: `"%(model)s: %(refused)s", model=facts.model, refused=str(e)` (from `Refused`)
 
 ## `LANGUAGE`
 `src/chatddx/factors/base.py:LANGUAGE`
@@ -583,7 +606,7 @@ Raises:
 * ∟`str`
 
 Raises:
-1. `ValueError`: `"{value!r} is not a language tag such as 'sv' or 'pt-BR'"`
+1. `Invalid`: `"%(value)s is not a language tag such as 'sv' or 'pt-BR'", value=repr(value)`
 
 ## `Languages`
 `src/chatddx/factors/lint.py:Languages`
@@ -611,26 +634,26 @@ Raises:
 * ∟`list[Finding]`
 
 Finds:
-1. `model.revision`: `"revision {c.revision!r} is not a commit and can move"` (through `_model`)
-2. `engine.closure`: `"closure {c.runtime.closure!r} is not a Nix store path"` (through `_engine`)
-3. `view.unreachable`: `"view {i}'s expectation selector {view.expectation!r} reaches nothing in the expectation schema"` (through `_scorer`)
+1. `model.revision`: `"revision %(revision)s is not a commit and can move"` (through `_model`)
+2. `engine.closure`: `"closure %(closure)s is not a Nix store path"` (through `_engine`)
+3. `view.unreachable`: `"view %(view)s's expectation selector %(selector)s reaches nothing in the expectation schema"` (through `_scorer`)
 4. `output.schema_invalid`: `message` (through `_output`)
 5. `expectation_schema.invalid`: `message` (through `_expectation_schema`)
-6. `expectation.unchecked`: `"a $ref in the schema can't be resolved: {e.ref}"` (from `Unresolvable`, through `_expectation`)
+6. `expectation.unchecked`: `"a $ref in the schema can't be resolved: %(ref)s"` (from `Unresolvable`, through `_expectation`)
 7. `expectation.invalid`: `"{_where(error)}: {error.message}{more}"` (through `_expectation`)
 8. `schema.ref_unverified`: `"the schema has $ref, which this engine isn't known to resolve; inline_refs@1 removes them"` (through `_pair`)
-9. `schema.ref_unverified`: `"the parameters of tool {name!r} have $ref, which this engine isn't known to resolve"` (through `_pair`)
-10. `vllm.temperature_clamped`: `"vLLM 0.24 raises temperature {t} to 0.01"` (through `_pair`)
+9. `schema.ref_unverified`: `"the parameters of tool %(tool)s have $ref, which this engine isn't known to resolve"` (through `_pair`)
+10. `vllm.temperature_clamped`: `"vLLM 0.24 raises temperature %(temperature)s to 0.01"` (through `_pair`)
 11. `vllm.thinking_budget_refused`: `"vLLM 0.24 refuses thinking_token_budget without --reasoning-parser or --reasoning-config"` (through `_pair`)
-12. `vllm.tools_refused`: `"vLLM 0.24 refuses tool_choice {_choice(skeleton.body.get('tool_choice'))} without --enable-auto-tool-choice and --tool-call-parser; for harmony and Mistral models it goes out unconstrained instead"` (through `_pair`)
+12. `vllm.tools_refused`: `"vLLM 0.24 refuses tool_choice %(choice)s without --enable-auto-tool-choice and --tool-call-parser; for harmony and Mistral models it goes out unconstrained instead"` (through `_pair`)
 13. `vllm.native_tools_uncallable`: `"with tool_choice auto, vLLM 0.24 constrains the whole answer to response_format, so no tool can be called"` (through `_pair`)
 14. `vllm.grammar_before_reasoning`: `"without --reasoning-parser, vLLM 0.24 constrains the answer from its first token, so a model can't reason first"` (`{"warning" if reasons else "info"}`, through `_pair`)
-15. `trial.engine_unmatched`: `"the skeleton is worked out for {worked}, and the engine serves {serves}"` (through `_made_for`)
-16. `judge.model_unmatched`: `"the skeleton is worked out for {worked}, and the judge's model is {serves}"` (through `_made_for`)
+15. `trial.engine_unmatched`: `"the skeleton is worked out for %(worked)s, and the engine serves %(serves)s"` (through `_made_for`)
+16. `judge.model_unmatched`: `"the skeleton is worked out for %(worked)s, and the judge's model is %(serves)s"` (through `_made_for`)
 17. `language.unknown`: `"the request's language is unknown"` (`info`, through `_languages`)
-18. `language.unknown`: `"the language of {unknown} of {len(cases)} cases is unknown"` (`info`, through `_languages`)
-19. `language.mixed`: `"the request is {request}, but {len(other)} of {len(cases)} cases {verb} {', '.join(sorted(set(other)))}"` (through `_languages`)
-20. `judge.greedy_seeds`: `"the judge is greedy, so its {len(c.seeds)} seeds send the same request"` (through `_judge`)
+18. `language.unknown`: `"the language of %(unknown)s of %(num)s cases is unknown"` (`info`, through `_languages`)
+19. `language.mixed`: `"the request is %(request)s, but %(num)s of %(cases)s cases is %(languages)s" / "the request is %(request)s, but %(num)s of %(cases)s cases are %(languages)s"` (through `_languages`)
+20. `judge.greedy_seeds`: `"the judge is greedy, so its %(num)s seeds send the same request"` (through `_judge`)
 
 ## `LocalEngine` `(Component)`
 `src/chatddx/factors/engine.py:LocalEngine`
@@ -688,6 +711,9 @@ Raises:
 * `response: Mapping[str, JsonValue]`
 * ∟`dict[str, JsonValue]`
 
+## `Missing` `(Worded, LookupError)`
+`src/chatddx/factors/base.py:Missing`
+
 ## `Model`
 `src/chatddx/factors/engine.py:Model`
 
@@ -739,7 +765,7 @@ Raises:
 * ∟`SamplingValues`
 
 Raises:
-1. `Refused`: `"no sampling is recommended for reasoning {level!r}"`
+1. `Refused`: `"no sampling is recommended for reasoning %(level)s", level=repr(level)`
 
 ## `ModelRef`
 `src/chatddx/factors/engine.py:ModelRef`
@@ -787,12 +813,12 @@ Raises:
 * `schema_ops: Annotated[tuple[SchemaOp, ...], AfterValidator(distinct)] = ()`
 
 Raises:
-1. `ValueError`: `"an output's schema goes in json_schema, not its contract"` (through `Output._schema_placement`, in a `ValidationError`)
-2. `ValueError`: `"{self.contract.kind} contracts need json_schema"` (through `Output._schema_placement`, in a `ValidationError`)
-3. `ValueError`: `"{kind} cannot use inserts {sorted(stray)}"` (through `Output._inserts`, in a `ValidationError`)
-4. `ValueError`: `"inserts used more than once: {sorted(dupes)}"` (through `Output._inserts`, in a `ValidationError`)
-5. `ValueError`: `"only an output with a schema can show it"` (through `Output._inserts`, in a `ValidationError`)
-6. `ValueError`: `"schema ops need a schema"` (through `Output._schema_ops`, in a `ValidationError`)
+1. `Invalid`: `"an output's schema goes in json_schema, not its contract"` (through `Output._schema_placement`, in a `ValidationError`)
+2. `Invalid`: `"%(contract)s contracts need json_schema", contract=self.contract.kind` (through `Output._schema_placement`, in a `ValidationError`)
+3. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Output._inserts`, in a `ValidationError`)
+4. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Output._inserts`, in a `ValidationError`)
+5. `Invalid`: `"only an output with a schema can show it"` (through `Output._inserts`, in a `ValidationError`)
+6. `Invalid`: `"schema ops need a schema"` (through `Output._schema_ops`, in a `ValidationError`)
 
 ## `Output.guidance_text`
 `src/chatddx/factors/request.py:Output.guidance_text`
@@ -840,6 +866,11 @@ Raises:
 
 `OWNED_FLAGS = frozenset(…)`
 
+## `Param`
+`src/chatddx/factors/base.py:Param`
+
+`type Param = str | int | float`
+
 ## `parse_component`
 `src/chatddx/factors/kinds.py:parse_component`
 
@@ -858,9 +889,9 @@ Raises:
 * ∟`tuple[Step, ...]`
 
 Raises:
-1. `ValueError`: `"{text!r}: a JSON Pointer starts with /"` (through `_pointer`)
-2. `ValueError`: `"{text!r}: ~ must be followed by 0 or 1"` (through `_pointer`)
-3. `ValueError`: `"{text!r}: a selector is a JSON Pointer or a JSONPath query starting with $"`
+1. `Invalid`: `"%(text)s: a JSON Pointer starts with /", text=repr(text)` (through `_pointer`)
+2. `Invalid`: `"%(text)s: ~ must be followed by 0 or 1", text=repr(text)` (through `_pointer`)
+3. `Invalid`: `"%(text)s: a selector is a JSON Pointer or a JSONPath query starting with $", text=repr(text)`
 
 ## `Part` `(NamedTuple)`
 `src/chatddx/factors/response.py:Part`
@@ -882,7 +913,7 @@ Raises:
 * `body: Settings`
 
 Raises:
-1. `ValueError`: `"passthrough may not set {sorted(owned)}"` (through `Passthrough._no_owned_keys`, in a `ValidationError`)
+1. `Invalid`: `"passthrough may not set %(keys)s", keys=str(sorted(owned))` (through `Passthrough._no_owned_keys`, in a `ValidationError`)
 
 ## `prepare_case`
 `src/chatddx/factors/cases.py:prepare_case`
@@ -917,11 +948,11 @@ Finds:
 * `segments: tuple[Segment | Insert, ...] = Field(min_length=1)`
 
 Raises:
-1. `ValueError`: `"{purpose} requests cannot use slots {sorted(stray)}"` (through `Prompt._slots`, in a `ValidationError`)
-2. `ValueError`: `"{purpose} requests need slots {sorted(missing)}"` (through `Prompt._slots`, in a `ValidationError`)
-3. `ValueError`: `"slots used more than once: {sorted(dupes)}"` (through `Prompt._slots`, in a `ValidationError`)
-4. `ValueError`: `"{kind} cannot use inserts {sorted(stray)}"` (through `Prompt._slots`, in a `ValidationError`)
-5. `ValueError`: `"inserts used more than once: {sorted(dupes)}"` (through `Prompt._slots`, in a `ValidationError`)
+1. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=str(sorted(stray))` (through `Prompt._slots`, in a `ValidationError`)
+2. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=str(sorted(missing))` (through `Prompt._slots`, in a `ValidationError`)
+3. `Invalid`: `"slots used more than once: %(slots)s", slots=str(sorted(dupes))` (through `Prompt._slots`, in a `ValidationError`)
+4. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Prompt._slots`, in a `ValidationError`)
+5. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Prompt._slots`, in a `ValidationError`)
 
 ## `Purpose`
 `src/chatddx/factors/request.py:Purpose`
@@ -950,7 +981,7 @@ Raises:
 * `level: Effort | None = None`
 
 Raises:
-1. `ValueError`: `"a reasoning level is worked out from the model's facts, so it comes without an effort or chat template arguments"` (through `Reasoning._level_or_settings`, in a `ValidationError`)
+1. `Invalid`: `"a reasoning level is worked out from the model's facts, so it comes without an effort or chat template arguments"` (through `Reasoning._level_or_settings`, in a `ValidationError`)
 
 ## `reasoning`
 `src/chatddx/factors/response.py:reasoning`
@@ -1000,7 +1031,7 @@ Raises:
 Raises:
 1. `Refused`: `"no default reasoning level is known"`
 2. `ValueError`: `"{' -> '.join([*path, level])}: the collapses go round"` (through `ReasoningFacts._land`)
-3. `Refused`: `"nothing is known about reasoning {landed!r}"`
+3. `Refused`: `"nothing is known about reasoning %(level)s", level=repr(landed)`
 4. `Refused`: `reason`
 
 ## `ReasoningFacts.realized`
@@ -1064,7 +1095,7 @@ Raises:
 * `refused: Annotated[str, StringConstraints(min_length=1)]`
 * `nearest: Level | None = None`
 
-## `Refused` `(ValueError)`
+## `Refused` `(Worded, ValueError)`
 `src/chatddx/factors/facts.py:Refused`
 
 ## `Registry`
@@ -1341,12 +1372,12 @@ Raises:
 
 Raises:
 1. `ValueError`: `"body may not set {sorted(owned)}"` (through `Skeleton._structure`, in a `ValidationError`)
-2. `ValueError`: `"{purpose} requests cannot use slots {sorted(stray)}"` (through `Skeleton._structure`, in a `ValidationError`)
-3. `ValueError`: `"{purpose} requests need slots {sorted(missing)}"` (through `Skeleton._structure`, in a `ValidationError`)
-4. `ValueError`: `"slots used more than once: {sorted(dupes)}"` (through `Skeleton._structure`, in a `ValidationError`)
+2. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=str(sorted(stray))` (through `Skeleton._structure`, in a `ValidationError`)
+3. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=str(sorted(missing))` (through `Skeleton._structure`, in a `ValidationError`)
+4. `Invalid`: `"slots used more than once: %(slots)s", slots=str(sorted(dupes))` (through `Skeleton._structure`, in a `ValidationError`)
 5. `ValueError`: `"a skeleton has max_rounds exactly when it has tools"` (through `Skeleton._structure`, in a `ValidationError`)
-6. `ValueError`: `"a tool needs a function with a name, not {tool!r}"` (through `Skeleton._structure`, in a `ValidationError`)
-7. `ValueError`: `"tools must be a list"` (through `Skeleton._structure`, in a `ValidationError`)
+6. `Invalid`: `"a tool needs a function with a name, not %(tool)s", tool=repr(tool)` (through `Skeleton._structure`, in a `ValidationError`)
+7. `Invalid`: `"tools must be a list"` (through `Skeleton._structure`, in a `ValidationError`)
 8. `ValueError`: `"tools named more than once"` (through `Skeleton._structure`, in a `ValidationError`)
 9. `ValueError`: `"native contract with tools needs response_format, tools and tool_choice auto"` (through `Skeleton._structure`, in a `ValidationError`)
 10. `ValueError`: `"native contract needs response_format and no tools"` (through `Skeleton._structure`, in a `ValidationError`)
@@ -1365,8 +1396,8 @@ Raises:
 * ∟`list[str]`
 
 Raises:
-1. `ValueError`: `"a tool needs a function with a name, not {tool!r}"` (through `_tool_names`)
-2. `ValueError`: `"tools must be a list"` (through `_tool_names`)
+1. `Invalid`: `"a tool needs a function with a name, not %(tool)s", tool=repr(tool)` (through `_tool_names`)
+2. `Invalid`: `"tools must be a list"` (through `_tool_names`)
 
 ## `Skeleton.greedy` `@property`
 `src/chatddx/factors/request.py:Skeleton.greedy`
@@ -1434,7 +1465,7 @@ Raises:
 
 `Step = Name | Index | Wild | Filter | Token`
 
-## `StructuralError` `(ValueError)`
+## `StructuralError` `(Worded, ValueError)`
 `src/chatddx/factors/base.py:StructuralError`
 
 ## `suggest_seeds`
@@ -1536,9 +1567,9 @@ Raises:
 * `into: Annotated[dict[Language, dict[str, str]], AfterValidator(sorted_keys)] = Field(…)`
 
 Raises:
-1. `ValueError`: `"no translations into {language}"` (through `Translations._into`, in a `ValidationError`)
-2. `ValueError`: `"whitespace isn't translated"` (through `Translations._into`, in a `ValidationError`)
-3. `ValueError`: `"no translation into {language} given for {empty}"` (through `Translations._into`, in a `ValidationError`)
+1. `Invalid`: `"no translations into %(language)s", language=language` (through `Translations._into`, in a `ValidationError`)
+2. `Invalid`: `"whitespace isn't translated"` (through `Translations._into`, in a `ValidationError`)
+3. `Invalid`: `"no translation into %(language)s given for %(texts)s", language=language, texts=str(empty)` (through `Translations._into`, in a `ValidationError`)
 
 ## `Trial` `(Component)`
 `src/chatddx/factors/trial.py:Trial`
@@ -1623,6 +1654,25 @@ Raises:
 
 ## `Wild` `@dataclass(frozen=True)`
 `src/chatddx/factors/select.py:Wild`
+
+## `Worded` `(Exception)`
+`src/chatddx/factors/base.py:Worded`
+
+* `wording: Wording | None = None`
+* `params: Mapping[str, Param] = types.MappingProxyType({})`
+
+## `Worded.of` `@classmethod`
+`src/chatddx/factors/base.py:Worded.of`
+
+* `wording: Wording`
+* `/`
+* `**params: Param`
+* ∟`Self`
+
+## `Wording`
+`src/chatddx/factors/base.py:Wording`
+
+`type Wording = str | tuple[str, str]`
 
 ## `Writes` `(Frozen)`
 `src/chatddx/factors/facts.py:Writes`

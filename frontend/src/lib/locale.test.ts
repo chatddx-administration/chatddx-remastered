@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listed, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
+import { listed, localized, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
 
 describe("a message", () => {
   it("is said as it is written where the page's catalog doesn't hold it", () => {
@@ -39,6 +39,38 @@ describe("a message", () => {
     );
     expect(listed(["a", "b", "c"], "disjunction")).toBe("a, b, or c");
     expect(listed(["a", "b"])).toBe("a and b");
+  });
+
+  it("from below the portal, is said by its code where the page's catalog holds it, else as it comes", () => {
+    speaking({
+      tag: "sv",
+      messages: {
+        "run.incomplete\u0004%(num)s item missing": ["%(num)s post saknas", "%(num)s poster saknas"],
+        "case.drift\u0004the vignette differs": "vinjetten skiljer sig",
+      },
+    });
+    const found: Parameters<typeof localized>[0][] = [
+      {
+        code: "run.incomplete",
+        message: "1 item missing",
+        wording: ["%(num)s item missing", "%(num)s items missing"],
+        params: { num: 1 },
+      },
+      { code: "case.drift", message: "the vignette differs", wording: "the vignette differs", params: {} },
+      {
+        code: "vllm.temperature_clamped",
+        message: "vLLM 0.24 raises temperature 1e-05 to 0.01",
+        wording: "vLLM 0.24 raises temperature %(temperature)s to 0.01",
+        params: { temperature: 0.00001 },
+      },
+      { code: "call.failed", message: "the server didn't answer", wording: null, params: {} },
+    ];
+    expect(found.map(localized)).toEqual([
+      "1 post saknas",
+      "vinjetten skiljer sig",
+      "vLLM 0.24 raises temperature 1e-05 to 0.01",
+      "the server didn't answer",
+    ]);
   });
 
   it("fails on a placeholder given nothing, as the server's do", () => {

@@ -1,19 +1,20 @@
 from chatddx.catalog import MovedOn
+from chatddx.factors import Worded
 
 __all__ = ["Ambiguous", "Conflict", "MovedOn", "NotFound", "OverQuota"]
 
 
-class NotFound(LookupError):
+class NotFound(Worded, LookupError):
     pass
 
 
-class Ambiguous(LookupError):
+class Ambiguous(Worded, LookupError):
     pass
 
 
-class Conflict(ValueError):
+class Conflict(Worded, ValueError):
     pass
 
 
-class OverQuota(ValueError):
+class OverQuota(Worded, ValueError):
     pass

@@ -16,5 +16,5 @@ Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements
 ## `src/chatddx/locale/locale.py:_literal`
 
 ```
-assert isinstance(said, str)
+assert isinstance(value, str)
 ```

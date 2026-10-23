@@ -34,8 +34,9 @@ Finds:
 
 Raises:
 1. `Refused`: `"endpoint {endpoint!r} needs the secret in ${credential}, which isn't set"` (through `_secret`)
-2. `Refused`: `"endpoint {endpoint!r} can't be confirmed: {e}"` (from `(StructuralError, OSError)`)
-3. `Refused`: `"endpoint {endpoint!r} can't be confirmed: it serves {', '.join(listed) or 'nothing'} at {url}, not {expected}"`
+2. `Refused`: `"endpoint %(endpoint)s can't be confirmed: %(error)s", endpoint=repr(endpoint), error=str(e)` (from `(StructuralError, OSError)`)
+3. `Refused`: `"endpoint %(endpoint)s can't be confirmed: it serves nothing at %(url)s, not %(expected)s", endpoint=repr(endpoint), url=url, expected=expected`
+4. `Refused`: `"endpoint %(endpoint)s can't be confirmed: it serves %(served)s at %(url)s, not %(expected)s", endpoint=repr(endpoint), served=", ".join(listed), url=url, expected=expected`
 
 ## `assemble`
 `src/chatddx/runner/wire.py:assemble`
@@ -57,8 +58,8 @@ Raises:
 1. `Refused`: `"judge {judge.digest} reads the {' and '.join(read)}, which no judge is given"`
 2. `Refused`: `str(e)` (from `LookupError`)
 3. `Refused`: `"endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is {engine}"`
-4. `Refused`: `"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, which is sensitive"`
-5. `Refused`: `"the configuration's tools would get content from source {', '.join(sensitive)}, which is sensitive, and tools can't be cleared yet"`
+4. `Refused`: `"endpoint %(endpoint)s isn't cleared for source %(sources)s, which is sensitive", endpoint=repr(endpoint), sources=", ".join(uncleared)`
+5. `Refused`: `"the configuration's tools would get content from source %(sources)s, which is sensitive, and tools can't be cleared yet", sources=", ".join(sensitive)`
 
 ## `CanaryEnded` `@dataclass(frozen=True)`
 `src/chatddx/runner/events.py:CanaryEnded`
@@ -172,8 +173,9 @@ Raises:
 1. `KeyboardInterrupt`
 
 Finds:
-1. `answer.salvaged`: `message` (`info`, through `Grading._grade`)
-2. `{code}`: `message` (through `Grading._grade`)
+1. `answer.salvaged`: `"cut short, and read with its structure closed"` (`info`, through `Grading._grade`)
+2. `answer.salvaged`: `"cut short, and read with its structure closed; the call ended with: %(error)s"` (`info`, through `Grading._grade`)
+3. `{code}`: `message` (through `Grading._grade`)
 
 ## `Grading.started` `@property`
 `src/chatddx/runner/score.py:Grading.started`
@@ -332,7 +334,7 @@ Raises:
 * `body: dict[str, JsonValue]`
 * `findings: tuple[Finding, ...]`
 
-## `Refused` `(Exception)`
+## `Refused` `(Worded)`
 `src/chatddx/runner/gate.py:Refused`
 
 ## `Rejected` `(Exception)`
@@ -390,12 +392,12 @@ Raises:
 Raises:
 1. `ValueError`: `"run {run} is finished"`
 2. `ValueError`: `"run {run} was sent to no endpoint, so it can't resume"`
-3. `ValueError`: `"endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}"` (through `Runner._admitted`)
+3. `Invalid`: `"endpoint %(endpoint)s takes %(num)s request at once, the execution sends %(sends)s" / "endpoint %(endpoint)s takes %(num)s requests at once, the execution sends %(sends)s", endpoint=repr(endpoint), num=spec.capacity, sends=execution.concurrency` (through `Runner._admitted`)
 4. `ValueError`: `"endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"`
 
 Finds:
-1. `run.resumed`: `"{said} by {_built(now)}, where {_built(log.started.rig)} started it"` (through `_resumed`)
-2. `run.resumed`: `said` (`info`, through `_resumed`)
+1. `run.resumed`: `"resumed after %(done)s of %(num)s items by %(now)s, where %(then)s started it"` (through `_resumed`)
+2. `run.resumed`: `"resumed after %(done)s of %(num)s items"` (`info`, through `_resumed`)
 
 ## `Runner.score`
 `src/chatddx/runner/run.py:Runner.score`
@@ -418,7 +420,7 @@ Finds:
 * ∟`"Running"`
 
 Raises:
-1. `ValueError`: `"endpoint {endpoint!r} takes {spec.capacity} requests at once, the execution sends {execution.concurrency}"` (through `Runner._admitted`)
+1. `Invalid`: `"endpoint %(endpoint)s takes %(num)s request at once, the execution sends %(sends)s" / "endpoint %(endpoint)s takes %(num)s requests at once, the execution sends %(sends)s", endpoint=repr(endpoint), num=spec.capacity, sends=execution.concurrency` (through `Runner._admitted`)
 
 ## `Running`
 `src/chatddx/runner/run.py:Running`

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from chatddx.catalog import Subject, read
 from chatddx.curation import Plan
-from chatddx.factors.base import Code, Finding, Fingerprint, resolve
+from chatddx.factors.base import Code, Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import (
@@ -997,13 +997,9 @@ def test_resuming_sends_what_an_unfinished_log_lacks_and_finishes_it(
     )
     assert [e.call.phase for e in heard.of(CanaryEnded)] == ["end", "end"]
     assert stored.finished is not None
-    assert stored.finished.findings == (
-        Finding(
-            level="info",
-            code="run.resumed",
-            message=f"resumed after {len(before.items)} of 4 items",
-        ),
-    )
+    assert [(f.level, f.code, f.message) for f in stored.finished.findings] == [
+        ("info", "run.resumed", f"resumed after {len(before.items)} of 4 items")
+    ]
 
 
 @pytest.mark.usefixtures("fake")

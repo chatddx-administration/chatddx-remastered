@@ -108,11 +108,13 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
     trial = resolve(registry.get, run.started.trial, Trial)
     schema = resolve(registry.get, trial.skeleton, Skeleton).output_schema
     findings = [
-        Finding(
-            code="view.unreachable",
-            message=f"view {i}'s output selector {view.output!r} reaches nothing in "
-            + "the run's output schema",
+        Finding.of(
+            "view.unreachable",
+            "view %(view)s's output selector %(selector)s reaches nothing in the "
+            + "run's output schema",
             subject=scoring.scorer,
+            view=i,
+            selector=repr(view.output),
         )
         for i, view in enumerate(scorer.views)
         if not reaches(schema, view.output)
@@ -133,21 +135,29 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
             findings.extend(attest_model(calls, want, "judge engine", str(item.key)))
     if (ran := started.scorer_version) != scorer.version:
         findings.append(
-            Finding(
-                code="score.scorer_code",
-                message=f"the scorer code ran at version {ran} of "
-                + f"{scorer.entry_point}, not the version the scorer pins "
-                + f"({scorer.version})",
+            Finding.of(
+                "score.scorer_code",
+                "the scorer code ran at version %(ran)s of %(entry_point)s, not the "
+                + "version the scorer pins (%(pinned)s)",
+                subject=str(started.score),
+                ran=ran,
+                entry_point=scorer.entry_point,
+                pinned=scorer.version,
+            )
+        )
+    if (ended := run.finished) is None:
+        findings.append(
+            Finding.of(
+                "score.run_unfinished",
+                "the run hasn't finished",
                 subject=str(started.score),
             )
         )
-    if (ended := run.finished) is None or ended.at > started.at:
+    elif ended.at > started.at:
         findings.append(
-            Finding(
-                code="score.run_unfinished",
-                message="the run hasn't finished"
-                if ended is None
-                else "the score started before the run finished",
+            Finding.of(
+                "score.run_unfinished",
+                "the score started before the run finished",
                 subject=str(started.score),
             )
         )
@@ -155,19 +165,23 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
     covered = {resolve(registry.get, e, Expectation).case for e in scoring.expectations}
     if uncovered := {k.case for k in run_keys} - covered:
         findings.append(
-            Finding(
-                code="score.no_expectation",
-                message=f"{len(uncovered)} of the run's cases have no expectation in "
-                + "the scoring",
+            Finding.of(
+                "score.no_expectation",
+                (
+                    "%(num)s of the run's cases have no expectation in the scoring",
+                    "%(num)s of the run's cases have no expectation in the scoring",
+                ),
                 subject=str(started.score),
+                num=len(uncovered),
             )
         )
     expected = {(k, v) for k in run_keys for v in range(len(scorer.views))}
     if score.finished is not None and (missing := expected - set(scored)):
         findings.append(
-            Finding(
-                code="score.incomplete",
-                message=f"{len(missing)} item{'' if len(missing) == 1 else 's'} missing",
+            Finding.of(
+                "score.incomplete",
+                ("%(num)s item missing", "%(num)s items missing"),
+                num=len(missing),
             )
         )
     calls = [jc.call for i in score.items for jc in i.judge_calls]
@@ -195,11 +209,16 @@ def _judged(
         return []
     if (called := len(seeds)) < (declared := len(judges[judge_ref].seeds)):
         return [
-            Finding(
-                code="judge.incomplete",
-                message=f"view {item.view}'s value rests on {called} of {declared} "
-                + "judge seeds",
+            Finding.of(
+                "judge.incomplete",
+                (
+                    "view %(view)s's value rests on %(called)s of %(num)s judge seeds",
+                    "view %(view)s's value rests on %(called)s of %(num)s judge seeds",
+                ),
                 subject=str(item.key),
+                view=item.view,
+                called=called,
+                num=declared,
             )
         ]
     return []

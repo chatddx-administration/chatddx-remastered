@@ -62,9 +62,7 @@ def say(
         if subject.thread is not None:
             head = seen.store.get(threads.head(seen.rows, subject.thread).digest)
             if isinstance(head, Expectation):
-                check_expecting(
-                    seen, head, subject.thread, "delete that one to restore this"
-                )
+                check_expecting(seen, head, subject.thread, restoring=True)
         said.append(Entry(field=EntryField.DELETED, present=False))
     if not isinstance(name, EllipsisType) and name != about.name:
         said.append(
@@ -123,5 +121,5 @@ def _what(seen: Seen, subject: Subject) -> str:
 def _sharing(seen: Seen, login: str) -> int:
     found = seen.people.find(login)
     if found is None:
-        raise NotFound(f"no person {login!r}")
+        raise NotFound.of("no person %(login)s", login=repr(login))
     return found.id

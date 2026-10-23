@@ -1,6 +1,6 @@
 import os
 
-from chatddx.factors.base import Resolver, StructuralError, resolve
+from chatddx.factors.base import Resolver, StructuralError, Worded, resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton, Slot
@@ -11,7 +11,7 @@ from chatddx.inventory import Inventory
 from .wire import served
 
 
-class Refused(Exception):
+class Refused(Worded):
     pass
 
 
@@ -31,11 +31,27 @@ def admit(
         expected = served_model_name(engine, get)
         listed = served(url, secret=key, timeout=timeout)
     except (StructuralError, OSError) as e:
-        raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
+        raise Refused.of(
+            "endpoint %(endpoint)s can't be confirmed: %(error)s",
+            endpoint=repr(endpoint),
+            error=str(e),
+        ) from None
+    if not listed:
+        raise Refused.of(
+            "endpoint %(endpoint)s can't be confirmed: it serves nothing at %(url)s, "
+            + "not %(expected)s",
+            endpoint=repr(endpoint),
+            url=url,
+            expected=expected,
+        )
     if expected not in listed:
-        raise Refused(
-            f"endpoint {endpoint!r} can't be confirmed: it serves "
-            + f"{', '.join(listed) or 'nothing'} at {url}, not {expected}"
+        raise Refused.of(
+            "endpoint %(endpoint)s can't be confirmed: it serves %(served)s at "
+            + "%(url)s, not %(expected)s",
+            endpoint=repr(endpoint),
+            served=", ".join(listed),
+            url=url,
+            expected=expected,
         )
     return key
 
@@ -70,14 +86,17 @@ def bar(
             + engine
         )
     if uncleared := sorted(set(sensitive) - set(inventory.cleared.get(endpoint, ()))):
-        raise Refused(
-            f"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, "
-            + "which is sensitive"
+        raise Refused.of(
+            "endpoint %(endpoint)s isn't cleared for source %(sources)s, which is "
+            + "sensitive",
+            endpoint=repr(endpoint),
+            sources=", ".join(uncleared),
         )
     if tools and sensitive:
-        raise Refused(
-            f"the configuration's tools would get content from source {', '.join(sensitive)}, "
-            + "which is sensitive, and tools can't be cleared yet"
+        raise Refused.of(
+            "the configuration's tools would get content from source %(sources)s, "
+            + "which is sensitive, and tools can't be cleared yet",
+            sources=", ".join(sensitive),
         )
 
 

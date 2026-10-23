@@ -2,7 +2,7 @@ from typing import Annotated, Any
 from urllib.parse import urlencode
 from uuid import UUID
 
-from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
@@ -16,7 +16,7 @@ from chatddx.api import (
 )
 from chatddx.api.state import refused
 from chatddx.bench import Ambiguous, Bench, NotFound
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Purpose, Skeleton
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
@@ -58,9 +58,8 @@ def review(
     shown = api_families.family(bench, family)
     picked = next((c for c in shown.cases if case in (None, c.case)), None)
     if picked is None:
-        raise HTTPException(
-            404,
-            tr("no case %(case)s of %(family)s", case=case, family=shown.name),
+        raise NotFound.of(
+            "no case %(case)s of %(family)s", case=str(case), family=shown.name
         )
     visible = sorted(
         api.threads(bench, "expectation_schema"), key=lambda t: t.name or t.title
@@ -69,10 +68,7 @@ def review(
         (t.head.digest for t in visible if schema in (None, t.head.digest)), None
     )
     if schema is not None and under is None:
-        raise HTTPException(
-            404,
-            tr("no expectation schema %(schema)s for you", schema=schema),
-        )
+        raise NotFound.of("no expectation schema %(schema)s for you", schema=schema)
     expected = next(
         (e for e in picked.expectations if e.expectation_schema == under), None
     )
@@ -86,9 +82,8 @@ def review(
     }
     held = _scorer(scorers, scorer, scored)
     if scorer is not None and held is None:
-        raise HTTPException(
-            404,
-            tr("no scorer %(scorer)s reading that schema for you", scorer=scorer),
+        raise NotFound.of(
+            "no scorer %(scorer)s reading that schema for you", scorer=scorer
         )
     every = api_families.families(bench)
     listed = _listed(every, tag)
@@ -217,9 +212,8 @@ def running_in_review(
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
     if case not in bench.family(family).cases:
-        raise HTTPException(
-            422,
-            tr("no case %(case)s of family %(family)s", case=case, family=family),
+        raise Invalid.of(
+            "no case %(case)s of family %(family)s", case=case, family=family
         )
     with refused(NotFound):
         variation = bench.variation(configuration, {}, None)

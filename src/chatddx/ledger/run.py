@@ -170,24 +170,29 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
 
     findings = check_seal(run, str(started.run))
     if run.finished is not None:
-        for missing, what in (
-            (expected - set(keys), "item"),
-            (planned - set(probes), "canary call"),
-        ):
-            if n := len(missing):
-                findings.append(
-                    Finding(
-                        code="run.incomplete",
-                        message=f"{n} {what}{'' if n == 1 else 's'} missing",
-                    )
+        if n := len(expected - set(keys)):
+            findings.append(
+                Finding.of(
+                    "run.incomplete",
+                    ("%(num)s item missing", "%(num)s items missing"),
+                    num=n,
                 )
+            )
+        if n := len(planned - set(probes)):
+            findings.append(
+                Finding.of(
+                    "run.incomplete",
+                    ("%(num)s canary call missing", "%(num)s canary calls missing"),
+                    num=n,
+                )
+            )
     for item in run.items:
         case = resolve(registry.get, item.key.case, Case)
         if item.vignette != case.vignette.fingerprint:
             findings.append(
-                Finding(
-                    code="case.drift",
-                    message="the vignette read differs from the case's",
+                Finding.of(
+                    "case.drift",
+                    "the vignette read differs from the case's",
                     subject=str(item.key),
                 )
             )
@@ -216,11 +221,13 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
         1 for i in run.items if any(c.prompt_tokens is None for c in i.calls)
     ):
         findings.append(
-            Finding(
-                code="attestation.prompt_tokens",
-                message=f"{unfingerprinted} "
-                + ("item has" if unfingerprinted == 1 else "items have")
-                + " no prompt token fingerprint",
+            Finding.of(
+                "attestation.prompt_tokens",
+                (
+                    "%(num)s item has no prompt token fingerprint",
+                    "%(num)s items have no prompt token fingerprint",
+                ),
+                num=unfingerprinted,
             )
         )
     calls = [*(c for i in run.items for c in i.calls), *(c.call for c in run.canaries)]
@@ -239,20 +246,34 @@ def _bracketed(run: Run) -> list[Finding]:
         1 for c in run.canaries if c.phase == "start" and c.call.finished_at > first
     )
     late = sum(1 for c in run.canaries if c.phase == "end" and c.call.started_at < last)
-    return [
-        Finding(code="canary.phase", message=message)
-        for count, message in (
-            (
-                early,
-                f"{early} start canary calls hadn't finished when the first item was sent",
-            ),
-            (
-                late,
-                f"{late} end canary calls started before the last item call finished",
-            ),
+    findings: list[Finding] = []
+    if early:
+        findings.append(
+            Finding.of(
+                "canary.phase",
+                (
+                    "%(num)s start canary calls hadn't finished when the first item "
+                    + "was sent",
+                    "%(num)s start canary calls hadn't finished when the first item "
+                    + "was sent",
+                ),
+                num=early,
+            )
         )
-        if count
-    ]
+    if late:
+        findings.append(
+            Finding.of(
+                "canary.phase",
+                (
+                    "%(num)s end canary calls started before the last item call "
+                    + "finished",
+                    "%(num)s end canary calls started before the last item call "
+                    + "finished",
+                ),
+                num=late,
+            )
+        )
+    return findings
 
 
 def _rounds(item: RunItem, skeleton: Skeleton, registry: Registry) -> list[Finding]:
@@ -288,21 +309,34 @@ def _rounds(item: RunItem, skeleton: Skeleton, registry: Registry) -> list[Findi
         previous = turn.call
     if previous is None:
         return [
-            Finding(
-                code="tools.stopped",
-                message=f"round {len(item.turns)} stopped after "
-                + f"{len(item.turns[-1].tools)} of {len(asked)} tool calls, before "
-                + "its call",
+            Finding.of(
+                "tools.stopped",
+                (
+                    "round %(round)s stopped after %(ran)s of %(num)s tool calls, "
+                    + "before its call",
+                    "round %(round)s stopped after %(ran)s of %(num)s tool calls, "
+                    + "before its call",
+                ),
                 subject=str(item.key),
+                round=len(item.turns),
+                ran=len(item.turns[-1].tools),
+                num=len(asked),
             )
         ]
     if left := sorted({name for _, name in pending(previous)}):
         return [
-            Finding(
-                code="tools.unanswered",
-                message=f"the last response still calls {', '.join(left)} after "
-                + f"{len(item.turns)} of {skeleton.max_rounds} rounds",
+            Finding.of(
+                "tools.unanswered",
+                (
+                    "the last response still calls %(tools)s after %(rounds)s of "
+                    + "%(num)s rounds",
+                    "the last response still calls %(tools)s after %(rounds)s of "
+                    + "%(num)s rounds",
+                ),
                 subject=str(item.key),
+                tools=", ".join(left),
+                rounds=len(item.turns),
+                num=skeleton.max_rounds,
             )
         ]
     return []
@@ -321,13 +355,25 @@ def _tool_code(
         tool = resolve(registry.get, ref, Tool)
         ran = recorded.get(ref)
         if ran is None:
-            message = f"the code tool {tool.name!r} ran with isn't recorded"
-        elif ran != tool.version:
-            message = (
-                f"tool {tool.name!r} ran at version {ran} of {tool.entry_point}, not "
-                + f"the version it pins ({tool.version})"
+            findings.append(
+                Finding.of(
+                    "tools.code",
+                    "the code tool %(tool)s ran with isn't recorded",
+                    subject=ref,
+                    tool=repr(tool.name),
+                )
             )
-        else:
-            continue
-        findings.append(Finding(code="tools.code", message=message, subject=ref))
+        elif ran != tool.version:
+            findings.append(
+                Finding.of(
+                    "tools.code",
+                    "tool %(tool)s ran at version %(ran)s of %(entry_point)s, not the "
+                    + "version it pins (%(pinned)s)",
+                    subject=ref,
+                    tool=repr(tool.name),
+                    ran=ran,
+                    entry_point=tool.entry_point,
+                    pinned=tool.version,
+                )
+            )
     return findings

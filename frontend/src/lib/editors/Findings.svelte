@@ -1,7 +1,7 @@
 <script lang="ts">
   import InfoIcon from "@lucide/svelte/icons/info";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { t } from "$lib/locale";
+  import { localized, t } from "$lib/locale";
   import type { Checked } from "./writing";
 
   let { found }: { found: Checked | null } = $props();
@@ -14,7 +14,7 @@
     {#each found.findings as finding, i (i)}
       <li class="flex gap-2">
         {#if finding.level === "warning"}<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-warning" />{:else}<InfoIcon class="mt-0.5 size-4 shrink-0 text-primary" />{/if}
-        <span>{finding.message} <span class="text-xs text-muted-foreground">{finding.code}</span></span>
+        <span>{localized(finding)} <span class="text-xs text-muted-foreground">{finding.code}</span></span>
       </li>
     {/each}
   </ul>

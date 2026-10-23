@@ -95,9 +95,9 @@ def prepare_case(
     findings: tuple[Finding, ...] = ()
     if observed != expected:
         findings = (
-            Finding(
-                code="case.drift",
-                message="the vignette at the source differs from the case's",
+            Finding.of(
+                "case.drift",
+                "the vignette at the source differs from the case's",
                 subject=case.digest,
             ),
         )

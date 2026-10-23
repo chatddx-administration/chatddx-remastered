@@ -41,6 +41,12 @@ def no_store(response: Response) -> None:
     response.headers.update(NO_STORE)
 
 
+class Refusing(HTTPException):
+    def __init__(self, status: int, refused: Exception) -> None:
+        super().__init__(status, str(refused))
+        self.refused: Exception = refused
+
+
 # Policy: what may be missing of what a request's body or query names is a 422, where
 # what its path names is a 404.
 @contextmanager
@@ -50,4 +56,4 @@ def refused(*named: type[Exception]) -> Generator[None]:
     except (Conflict, MovedOn, OverQuota, UnderWay):
         raise
     except (ValueError, *named) as e:
-        raise HTTPException(422, str(e)) from None
+        raise Refusing(422, e) from None

@@ -911,6 +911,20 @@ def test_a_press_shows_until_the_next_page_comes_and_sends_its_form_once(
     expect(page.locator("html")).to_have_attribute("data-leaving", "")
 
 
+def test_a_case_over_the_limit_isn_t_sent_and_says_why(
+    page: Page, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "TYPED_TEXT_LIMIT", 10)
+    _ = page.goto("/")
+    case = page.get_by_label("The case")
+    over = page.get_by_text(re.compile(r"^A case holds at most 10 characters"))
+    case.fill("chest pai\N{ANATOMICAL HEART}")
+    expect(over).to_have_count(0)
+    case.fill("chest pain\N{ANATOMICAL HEART}")
+    expect(over).to_have_text("A case holds at most 10 characters; this one has 11.")
+    expect(page.get_by_role("button", name="Analyze")).to_be_disabled()
+
+
 def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
     page: Page, served: FastAPI, tmp_path: Path
 ) -> None:

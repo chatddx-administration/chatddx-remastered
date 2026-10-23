@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Annotated, Any, cast, get_args
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue, ValidationError
@@ -19,12 +19,12 @@ from chatddx.api import (
 from chatddx.api.state import refused
 from chatddx.bench import Bench, Endpoint, Handle, NotFound
 from chatddx.catalog import threads
-from chatddx.factors.base import StructuralError, resolve
+from chatddx.factors.base import Invalid, StructuralError, resolve
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 from chatddx.factors.trial import Order, Trial
 from chatddx.locale import tr
 
-from .pages import BenchDep, own_first, page
+from .pages import BenchDep, own_first, page, refusal_of
 from .scoring import unit_in
 
 router = APIRouter()
@@ -86,16 +86,14 @@ def starting(
 ) -> Response:
     with refused():
         if order and order not in get_args(Order):
-            raise ValueError(
-                tr(
-                    "no order %(order)r: the orders are %(orders)s",
-                    order=order,
-                    orders=", ".join(get_args(Order)),
-                )
+            raise Invalid.of(
+                "no order %(order)s: the orders are %(orders)s",
+                order=repr(order),
+                orders=", ".join(get_args(Order)),
             )
         picked = [int(v) for v in version or () if v]
         if not picked:
-            raise ValueError(tr("pick a trial to run"))
+            raise Invalid.of("pick a trial to run")
         runs = bench.start_trials(
             picked,
             int(concurrency) if concurrency.strip() else None,
@@ -118,13 +116,10 @@ def lab(
     query = _varying(request)
     shown = api.thread(bench, thread)
     if shown.kind != "skeleton":
-        raise HTTPException(
-            404,
-            tr(
-                "no configuration %(thread)s for %(login)s",
-                thread=thread,
-                login=bench.person.login,
-            ),
+        raise NotFound.of(
+            "no configuration %(thread)s for %(login)s",
+            thread=thread,
+            login=bench.person.login,
         )
     varied = bench.variation(thread, None, query.head)
     recipe = varied.recipe
@@ -324,13 +319,8 @@ def _trials(bench: Bench, versions: list[schemas.Edit]) -> list[_Starting]:
 def _starting(bench: Bench, thread: int) -> _Starting:
     shown = api.thread(bench, thread)
     if shown.kind != "trial":
-        raise HTTPException(
-            404,
-            tr(
-                "no trial %(thread)s for %(login)s",
-                thread=thread,
-                login=bench.person.login,
-            ),
+        raise NotFound.of(
+            "no trial %(thread)s for %(login)s", thread=thread, login=bench.person.login
         )
     held = resolve(bench.store.get, shown.head.digest, Trial)
     versions = api.edits(bench, thread)
@@ -424,7 +414,7 @@ def _column(
         handle = forced or (None if weights is None else bench.handle(weights))
         carried = bench.languages(held, cases)
     except (StructuralError, ValueError) as e:
-        return Column((held.configuration.digest,), None, str(e))
+        return Column((held.configuration.digest,), None, refusal_of(e))
     skeletons = sorted({c.skeleton.digest for c in carried if c.skeleton is not None})
     name = None if handle is None else handle.name
     behind = forced is None and handle is not None and handle.weights != weights

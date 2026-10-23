@@ -6,7 +6,7 @@ from uuid import UUID
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, read, titles
 from chatddx.catalog.families import family_of
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Invalid, Missing, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import CleanupOp
 from chatddx.factors.engine import model_of
@@ -56,8 +56,9 @@ def start(
     sent = [c for c in carried if c.skeleton is not None]
     left_out = [c for c in carried if c.skeleton is None]
     if not sent:
-        raise ValueError(
-            "no case can be sent: " + "; ".join(c.refused or "" for c in left_out)
+        raise Invalid.of(
+            "no case can be sent: %(refused)s",
+            refused="; ".join(c.refused or "" for c in left_out),
         )
     at = seen.at(variation, endpoint)
     canaries = canaries or at.spec.canaries
@@ -117,9 +118,11 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
     weights = model_of(ran.engine, seen.store.get).digest
     handle = seen.handle(weights)
     if handle.weights != weights:
-        raise ValueError(
-            f"run {run.run} ran weights {handle.name} no longer holds: run its "
-            + "configuration, followed, instead"
+        raise Invalid.of(
+            "run %(run)s ran weights %(handle)s no longer holds: run its "
+            + "configuration, followed, instead",
+            run=str(run.run),
+            handle=handle.name,
         )
     at = seen.served(handle)
     return _begun(
@@ -256,8 +259,9 @@ def start_trials(
             try:
                 serving = seen.inventory.serving(made.engine)
             except LookupError:
-                raise ValueError(
-                    f"no endpoint here serves the engine of {name}: follow its handle"
+                raise Invalid.of(
+                    "no endpoint here serves the engine of %(trial)s: follow its handle",
+                    trial=name,
                 ) from None
             at = seen.endpoint(serving)
             canaries = at.spec.canaries
@@ -282,17 +286,40 @@ def start_trials(
 def _check_quota(seen: Seen, runs: Sequence[int]) -> None:
     for items in runs:
         if items > settings.ITEMS_PER_RUN:
-            raise OverQuota(
-                f"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"
+            raise OverQuota.of(
+                (
+                    "a run holds at most %(num)s item, not %(given)s",
+                    "a run holds at most %(num)s items, not %(given)s",
+                ),
+                num=settings.ITEMS_PER_RUN,
+                given=items,
             )
     since = datetime.now(UTC) - timedelta(days=1)
     started = seen.rows.runs_started(seen.person.id, since)
     if started + len(runs) > settings.RUNS_PER_DAY:
-        said = f"{seen.person.login} has started {started} runs in the last day"
+        login = seen.person.login
         if len(runs) == 1:
-            raise OverQuota(f"{said}, as many as a day takes")
-        raise OverQuota(
-            f"{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more"
+            raise OverQuota.of(
+                (
+                    "%(login)s has started %(num)s runs in the last day, as many as a "
+                    + "day takes",
+                    "%(login)s has started %(num)s runs in the last day, as many as a "
+                    + "day takes",
+                ),
+                login=login,
+                num=started,
+            )
+        raise OverQuota.of(
+            (
+                "%(login)s has started %(num)s runs in the last day, and a day takes "
+                + "%(limit)s, not %(more)s more",
+                "%(login)s has started %(num)s runs in the last day, and a day takes "
+                + "%(limit)s, not %(more)s more",
+            ),
+            login=login,
+            num=started,
+            limit=settings.RUNS_PER_DAY,
+            more=len(runs),
         )
 
 
@@ -362,7 +389,7 @@ def score(
 def _started(seen: Seen, run: RunStarted, scorer: str) -> Grading:
     built = scoring(seen, run, scorer)
     if built is None:
-        raise LookupError("none of the run's cases has an expectation")
+        raise Missing.of("none of the run's cases has an expectation")
     pinned = [e.engine for e in built.engines]
     registry = seen.store.load([built.scorer, *built.expectations, *pinned])
     runner = Runner(seen.conn, seen.inventory, seen.person)

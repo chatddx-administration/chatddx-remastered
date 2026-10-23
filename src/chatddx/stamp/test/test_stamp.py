@@ -239,7 +239,10 @@ def test_a_raise_is_said_with_its_message_as_the_code_writes_it(
                 NONE = "nothing to find"
 
 
-                class Missing(LookupError): ...
+                class Missing(LookupError):
+                    @classmethod
+                    def of(cls, wording: str, /, **params: str) -> "Missing":
+                        return cls(wording % params)
 
 
                 def find(name: str) -> None:
@@ -249,6 +252,8 @@ def test_a_raise_is_said_with_its_message_as_the_code_writes_it(
                         raise ValueError(name)
                     if name == "none":
                         raise Missing
+                    if name == "some":
+                        raise Missing.of("no %(name)s in the store", name=name)
                     raise Missing(f"no {name!r} in " + "the store")
             """,
         },
@@ -257,7 +262,8 @@ def test_a_raise_is_said_with_its_message_as_the_code_writes_it(
         '1. `ValueError`: `"nothing to find"`',
         "2. `ValueError`: `name`",
         "3. `Missing`",
-        '4. `Missing`: `"no {name!r} in the store"`',
+        '4. `Missing`: `"no %(name)s in the store", name=name`',
+        '5. `Missing`: `"no {name!r} in the store"`',
     ]
 
 
@@ -447,6 +453,12 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
                     code: str
                     message: str
                     level: str = "warning"
+
+                    @classmethod
+                    def of(
+                        cls, code: str, said: str | tuple[str, str], /, **params: int
+                    ) -> "Finding":
+                        return cls(code, said if isinstance(said, str) else said[1])
             """,
             "proj/alpha/linting.py": """
                 from proj.base import Finding
@@ -465,6 +477,11 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
                         _ = int(code)
                     except ValueError as e:
                         found.append(Finding(code=code, message=str(e)))
+                    found.append(
+                        Finding.of(
+                            "lint.counted", ("%(num)s digit", "%(num)s digits"), num=n
+                        )
+                    )
                     return found
             """,
         },
@@ -475,6 +492,7 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
         '1. `lint.started`: `"linting"`',
         '2. `pair.odd`: `"{n} is odd"` (`info`, through `_pair`)',
         "3. `{code}`: `str(e)` (from `ValueError`)",
+        '4. `lint.counted`: `"%(num)s digit" / "%(num)s digits"`',
     ]
 
 

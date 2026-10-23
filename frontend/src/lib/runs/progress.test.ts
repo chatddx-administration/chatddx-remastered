@@ -92,7 +92,7 @@ describe("a run's progress", () => {
         "judge.answered",
         { case: "a", replicate: 0, view: 0, judge: "j", seed_index: 0, verdict: null, call: null },
       ],
-      ["score.noted", { level: "warning", code: "c", message: "m", subject: null }],
+      ["score.noted", { level: "warning", code: "c", message: "m", subject: null, wording: null, params: {} }],
       ["run.scored", { scores: [] }],
       ["done", { halted: false }],
     ]);

@@ -23,6 +23,7 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
+    Field,
     GetJsonSchemaHandler,
     JsonValue,
     SerializationInfo,
@@ -39,7 +40,35 @@ Sha256Hex = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 Api = Literal["chat.completions"]
 
 
-class StructuralError(ValueError):
+type Wording = str | tuple[str, str]
+type Param = str | int | float
+
+
+def _filled(wording: Wording, params: Mapping[str, Param]) -> str:
+    english = wording if isinstance(wording, str) else wording[params["num"] != 1]
+    return english % params
+
+
+class Worded(Exception):
+    wording: Wording | None = None
+    params: Mapping[str, Param] = types.MappingProxyType({})
+
+    @classmethod
+    def of(cls, wording: Wording, /, **params: Param) -> Self:
+        made = cls(_filled(wording, params))
+        made.wording, made.params = wording, params
+        return made
+
+
+class StructuralError(Worded, ValueError):
+    pass
+
+
+class Invalid(Worded, ValueError):
+    pass
+
+
+class Missing(Worded, LookupError):
     pass
 
 
@@ -58,7 +87,9 @@ LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
 
 def language_tag(value: str) -> str:
     if not LANGUAGE.match(value):
-        raise ValueError(f"{value!r} is not a language tag such as 'sv' or 'pt-BR'")
+        raise Invalid.of(
+            "%(value)s is not a language tag such as 'sv' or 'pt-BR'", value=repr(value)
+        )
     return value
 
 
@@ -67,7 +98,7 @@ type Language = Annotated[str, AfterValidator(language_tag)]
 
 def distinct[T](values: tuple[T, ...]) -> tuple[T, ...]:
     if len(set(values)) != len(values):
-        raise ValueError("duplicates are not allowed")
+        raise Invalid.of("duplicates are not allowed")
     return values
 
 
@@ -194,8 +225,9 @@ class Component(Frozen):
     @model_validator(mode="after")
     def _storable(self) -> Self:
         if _holds_nul(self.canonical_doc()):
-            raise ValueError(
-                f"a {self.kind_name} may not hold U+0000, which can't be stored"
+            raise Invalid.of(
+                "a %(kind)s may not hold U+0000, which can't be stored",
+                kind=self.kind_name,
             )
         return self
 
@@ -277,3 +309,29 @@ class Finding(Frozen):
     code: str
     message: str
     subject: str | None = None
+    wording: Wording | None = None
+    params: dict[str, Param] = Field(default_factory=dict[str, Param])
+
+    @classmethod
+    def of(
+        cls,
+        code: str,
+        wording: Wording,
+        /,
+        *,
+        level: Literal["info", "warning"] = "warning",
+        subject: str | None = None,
+        **params: Param,
+    ) -> Self:
+        return cls(
+            level=level,
+            code=code,
+            message=_filled(wording, params),
+            subject=subject,
+            wording=wording,
+            params=params,
+        )
+
+    @override
+    def __hash__(self) -> int:
+        return hash((self.level, self.code, self.message, self.subject))

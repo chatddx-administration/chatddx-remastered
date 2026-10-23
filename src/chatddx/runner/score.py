@@ -215,15 +215,21 @@ class Grading:
         last = item.calls[-1]
         answer = read(self._skeleton, last.response)
         if answer.salvaged:
-            message = "cut short, and read with its structure closed"
-            if last.error is not None:
-                message += f"; the call ended with: {last.error}"
             self._note(
-                Finding(
+                Finding.of(
+                    "answer.salvaged",
+                    "cut short, and read with its structure closed",
                     level="info",
-                    code="answer.salvaged",
-                    message=message,
                     subject=str(item.key),
+                )
+                if last.error is None
+                else Finding.of(
+                    "answer.salvaged",
+                    "cut short, and read with its structure closed; the call ended "
+                    + "with: %(error)s",
+                    level="info",
+                    subject=str(item.key),
+                    error=last.error,
                 ),
                 emit,
             )

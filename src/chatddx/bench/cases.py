@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, families
 from chatddx.catalog.read import abouts
-from chatddx.factors.base import Fingerprint
+from chatddx.factors.base import Fingerprint, Invalid
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, Vignette
 from chatddx.identity import sees
@@ -50,16 +50,20 @@ def type_case(
     source: str | None = None,
 ) -> Family:
     if not text.strip():
-        raise ValueError("a typed case holds text")
+        raise Invalid.of("a typed case holds text")
     if "\0" in text:
-        raise ValueError("a typed case may not hold U+0000, which can't be stored")
+        raise Invalid.of("a typed case may not hold U+0000, which can't be stored")
     if len(text) > settings.TYPED_TEXT_LIMIT:
-        raise ValueError(
-            f"a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, "
-            + f"not {len(text)}"
+        raise Invalid.of(
+            (
+                "a typed case holds at most %(num)s character, not %(given)s",
+                "a typed case holds at most %(num)s characters, not %(given)s",
+            ),
+            num=settings.TYPED_TEXT_LIMIT,
+            given=len(text),
         )
     if name == "":
-        raise ValueError("a name can't be empty: none leaves the case unnamed")
+        raise Invalid.of("a name can't be empty: none leaves the case unnamed")
     entries = [Entry(field=EntryField.LANGUAGE, value=language)]
     if name is not None:
         entries.append(Entry(field=EntryField.NAME, value=name))
@@ -70,9 +74,15 @@ def type_case(
     texts = Texts(seen.conn)
     since = datetime.now(UTC) - timedelta(days=1)
     if (typed := texts.typed_since(seen.person.id, since)) >= settings.TYPED_PER_DAY:
-        raise OverQuota(
-            f"{seen.person.login} has typed {typed} cases in the last day, as many "
-            + "as a day takes"
+        raise OverQuota.of(
+            (
+                "%(login)s has typed %(num)s cases in the last day, as many as a day "
+                + "takes",
+                "%(login)s has typed %(num)s cases in the last day, as many as a day "
+                + "takes",
+            ),
+            login=seen.person.login,
+            num=typed,
         )
     with seen.conn.transaction():
         id = texts.add(into, text, seen.person.id)

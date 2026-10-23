@@ -3944,13 +3944,51 @@
               }
             ],
             "title": "Subject"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the message as written, its placeholders unfilled, or singular and plural counted by params' num; null where the message is all there is",
+            "title": "Wording"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "what fills its wording's placeholders",
+            "title": "Params",
+            "type": "object"
           }
         },
         "required": [
           "level",
           "code",
           "message",
-          "subject"
+          "subject",
+          "wording",
+          "params"
         ],
         "title": "Finding",
         "type": "object"
@@ -7570,6 +7608,51 @@
             "default": null,
             "description": "a whoops's: what the person is to pass on to ops, as it is",
             "title": "Pass On"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "a refusal's detail as written, its placeholders unfilled, or singular and plural counted by params' num; null where the detail is all there is",
+            "title": "Wording"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "what fills its wording's placeholders",
+            "title": "Params"
           }
         },
         "required": [

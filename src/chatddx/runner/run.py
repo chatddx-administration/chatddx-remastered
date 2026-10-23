@@ -6,7 +6,14 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.factors.base import Code, Finding, Fingerprint, StructuralError, resolve
+from chatddx.factors.base import (
+    Code,
+    Finding,
+    Fingerprint,
+    Invalid,
+    StructuralError,
+    resolve,
+)
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
@@ -160,9 +167,16 @@ class Runner:
         toolbox = load(resolve(registry.get, trial.skeleton, Skeleton), registry.get)
         spec = self._inventory.endpoint(endpoint)
         if execution.concurrency > spec.capacity:
-            raise ValueError(
-                f"endpoint {endpoint!r} takes {spec.capacity} requests at once, the "
-                + f"execution sends {execution.concurrency}"
+            raise Invalid.of(
+                (
+                    "endpoint %(endpoint)s takes %(num)s request at once, the "
+                    + "execution sends %(sends)s",
+                    "endpoint %(endpoint)s takes %(num)s requests at once, the "
+                    + "execution sends %(sends)s",
+                ),
+                endpoint=repr(endpoint),
+                num=spec.capacity,
+                sends=execution.concurrency,
             )
         return secret, toolbox, str(spec.url)
 
@@ -170,19 +184,36 @@ class Runner:
 # Policy: a run the request started and the worker sends is resumed with nothing written
 # yet.
 def _resumed(log: Run, trial: Trial) -> list[Finding]:
-    said = (
-        f"resumed after {len(log.items)} of {len(trial.cases) * len(trial.seeds)} items"
-    )
+    done, num = len(log.items), len(trial.cases) * len(trial.seeds)
     if (now := rig()) != log.started.rig:
         return [
-            Finding(
-                code="run.resumed",
-                message=f"{said} by {_built(now)}, where {_built(log.started.rig)} "
-                + "started it",
+            Finding.of(
+                "run.resumed",
+                (
+                    "resumed after %(done)s of %(num)s items by %(now)s, where "
+                    + "%(then)s started it",
+                    "resumed after %(done)s of %(num)s items by %(now)s, where "
+                    + "%(then)s started it",
+                ),
+                done=done,
+                num=num,
+                now=_built(now),
+                then=_built(log.started.rig),
             )
         ]
     if log.items or log.canaries:
-        return [Finding(level="info", code="run.resumed", message=said)]
+        return [
+            Finding.of(
+                "run.resumed",
+                (
+                    "resumed after %(done)s of %(num)s items",
+                    "resumed after %(done)s of %(num)s items",
+                ),
+                level="info",
+                done=done,
+                num=num,
+            )
+        ]
     return []
 
 

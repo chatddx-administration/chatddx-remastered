@@ -357,6 +357,8 @@ def test_every_kind_a_person_writes_is_begun_from_the_library(
         )
         begun = signed.get(f"/library/new?kind={word}", follow_redirects=True).text
         assert ("Show its texts" if word == "translations" else "Write it") in begun
+        if word in ("instructions", "translations"):
+            assert 'pattern="[a-z]{2,3}(-[A-Za-z0-9]{1,8})*"' in begun
     for word in ("tool", "expectation_schema", "canary_set", "model", "engine"):
         assert "/library/new" not in shown(signed, f"/library?kind={word}")
         assert signed.get(f"/library/new?kind={word}").status_code == 404

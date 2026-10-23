@@ -20,18 +20,25 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 # leaves out the name of the function called, which it reads.
 ```
 
-## `src/chatddx/locale/locale.py:_SAYING`
+## `src/chatddx/locale/locale.py:_LOCALIZING`
 
 ```
 # Accommodating for Jinja, whose macros imported without context see nothing of the page
 # rendering them: a page is said in the locale set around its rendering.
 ```
 
+## `src/chatddx/locale/locale.py:_refusals`
+
+```
+# Policy: a refusal whose wording isn't written where it is raised is marked where it is
+# written, with pgettext_noop and the context refusal.
+```
+
 ## `src/chatddx/locale/locale.py:_shared`
 
 ```
-# Policy: the catalog put in an island's page holds only what the islands say, and the
-# whoopses the API may answer them with.
+# Policy: the catalog put in an island's page holds only what the islands say, and what the
+# API may answer them with: the whoopses, and what is said below the portal.
 ```
 
 ## `src/chatddx/locale/locale.py:_SOURCES`

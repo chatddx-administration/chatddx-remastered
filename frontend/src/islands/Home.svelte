@@ -21,8 +21,12 @@
 
   type Phase = "idle" | "typing" | "running" | "reading" | "done";
 
+  let { limit }: { limit: number } = $props();
   let login = $state<string>();
   let text = $state("");
+  // Accommodating for Python, which counts a text's code points where JavaScript counts its
+  // UTF-16 units.
+  const characters = $derived([...text].length);
   let configurations = $state<Schemas["Thread"][]>([]);
   let models = $state<Schemas["Model"][]>([]);
   let configuration = $state<number>();
@@ -180,6 +184,16 @@
           class="min-h-40 resize-y rounded-xl bg-background/50 text-base leading-relaxed"
           disabled={busy}
         />
+        {#if characters > limit}
+          <p class="text-sm text-destructive">
+            {tn(
+              "A case holds at most %(num)s character; this one has %(given)s.",
+              "A case holds at most %(num)s characters; this one has %(given)s.",
+              limit,
+              { num: limit, given: characters },
+            )}
+          </p>
+        {/if}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div class="flex flex-col gap-4 sm:flex-row">
             <div class="grid gap-2">
@@ -216,7 +230,11 @@
             type="submit"
             size="lg"
             class="gap-2 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
-            disabled={busy || !text.trim() || configuration === undefined || model === undefined}
+            disabled={busy ||
+              !text.trim() ||
+              characters > limit ||
+              configuration === undefined ||
+              model === undefined}
           >
             {#if busy}
               <LoaderCircleIcon class="animate-spin" />

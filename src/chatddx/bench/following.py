@@ -8,7 +8,7 @@ from chatddx.catalog import (
     read,
     threads,
 )
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Compilation, Recipe
@@ -118,9 +118,12 @@ def follow_moved(seen: Seen, thread: int, head: int) -> Written:
         )
     made, registry = found
     if made.digest is None or made.compilation is None or registry is None:
-        raise ValueError(
-            f"configuration {thread} can't follow {_what(made)} {made.about}: "
-            + f"{made.refused}"
+        raise Invalid.of(
+            "configuration %(thread)s can't follow %(what)s %(about)s: %(refused)s",
+            thread=thread,
+            what=_what(made),
+            about=str(made.about),
+            refused=str(made.refused),
         )
     with seen.conn.transaction():
         _ = seen.store.add(registry, [made.compilation])
@@ -197,7 +200,10 @@ def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] |
             digest = registry.add(proposal)
             proposed = Proposed(diverged, proposal, digest, None)
     except ValueError as e:
-        raise ValueError(
-            f"{word} {thread}'s changes don't fit its origin's head: {e}"
+        raise Invalid.of(
+            "%(kind)s %(thread)s's changes don't fit its origin's head: %(refused)s",
+            kind=word,
+            thread=thread,
+            refused=str(e),
         ) from None
     return proposed, registry

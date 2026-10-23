@@ -1,14 +1,14 @@
 import ast
 import re
 import sys
-from collections.abc import Collection, Generator, Iterable, Iterator, Mapping
+from collections.abc import Collection, Generator, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from gettext import GNUTranslations, NullTranslations
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import IO, Any, cast
+from typing import IO, Any, Protocol, cast
 
 from babel.core import Locale as Language, negotiate_locale
 from babel.messages.catalog import Catalog, Message
@@ -22,18 +22,21 @@ from chatddx import settings
 
 __all__ = [
     "N_",
+    "Coded",
     "Locale",
     "Locales",
+    "Localizing",
     "Proof",
-    "Saying",
     "check",
     "gettext",
+    "localized",
+    "localizing",
     "ngettext",
     "npgettext",
     "pgettext",
     "pgettext_noop",
     "proofs",
-    "saying",
+    "refusal",
     "tr",
     "whoops",
     "write",
@@ -41,14 +44,17 @@ __all__ = [
 
 _CATALOGS = Path(__file__).parent / "catalogs"
 _WHOOPS = "whoops"
+_REFUSAL = "refusal"
 
 _KEYWORDS = {**DEFAULT_KEYWORDS, "tr": None, "pgettext_noop": ((1, "c"), 2)}
 _ISLANDS = "frontend/src/"
+_PORTAL = "src/chatddx/portal/"
 _LEFT_OUT = re.compile(r"/test/|\.test\.ts$|\.d\.ts$|/components/ui/")
 _STRING = r"""("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')"""
 _CALLED = re.compile(
     rf"(?<![\w$.])(tnp|tn|tp|th|t)\(\s*{_STRING}(?:\s*,\s*{_STRING})?(?:\s*,\s*{_STRING})?"
 )
+_FILLED = re.compile(r"%\(\w+\)s|%%")
 
 
 @dataclass(frozen=True)
@@ -62,7 +68,7 @@ _ENGLISH = Locale("en", NullTranslations())
 
 # Accommodating for Jinja, whose macros imported without context see nothing of the page
 # rendering them: a page is said in the locale set around its rendering.
-_SAYING: ContextVar[Locale] = ContextVar("saying", default=_ENGLISH)
+_LOCALIZING: ContextVar[Locale] = ContextVar("localizing", default=_ENGLISH)
 
 
 class Locales:
@@ -77,7 +83,7 @@ class Locales:
         return self.by_tag.get(tag or _ENGLISH.tag, _ENGLISH)
 
 
-class Saying:
+class Localizing:
     def __init__(self, app: ASGIApp) -> None:
         self.app: ASGIApp = app
 
@@ -86,21 +92,21 @@ class Saying:
             return await self.app(scope, receive, send)
         locales: Locales = scope["app"].state.locales
         asked = Headers(scope=scope).get("accept-language")
-        with saying(locales.negotiate(asked)):
+        with localizing(locales.negotiate(asked)):
             await self.app(scope, receive, send)
 
 
 @contextmanager
-def saying(locale: Locale) -> Generator[None]:
-    token = _SAYING.set(locale)
+def localizing(locale: Locale) -> Generator[None]:
+    token = _LOCALIZING.set(locale)
     try:
         yield
     finally:
-        _SAYING.reset(token)
+        _LOCALIZING.reset(token)
 
 
 def gettext(message: str) -> str:
-    return _SAYING.get().translations.gettext(message)
+    return _LOCALIZING.get().translations.gettext(message)
 
 
 def tr(message: str, /, **values: object) -> str:
@@ -108,15 +114,15 @@ def tr(message: str, /, **values: object) -> str:
 
 
 def ngettext(singular: str, plural: str, n: int) -> str:
-    return _SAYING.get().translations.ngettext(singular, plural, n)
+    return _LOCALIZING.get().translations.ngettext(singular, plural, n)
 
 
 def pgettext(context: str, message: str) -> str:
-    return _SAYING.get().translations.pgettext(context, message)
+    return _LOCALIZING.get().translations.pgettext(context, message)
 
 
 def npgettext(context: str, singular: str, plural: str, n: int) -> str:
-    return _SAYING.get().translations.npgettext(context, singular, plural, n)
+    return _LOCALIZING.get().translations.npgettext(context, singular, plural, n)
 
 
 def N_(message: str) -> str:
@@ -131,6 +137,36 @@ def whoops(message: str) -> str:
     return pgettext(_WHOOPS, message)
 
 
+class Coded(Protocol):
+    @property
+    def code(self) -> str: ...
+    @property
+    def message(self) -> str: ...
+    @property
+    def wording(self) -> str | Sequence[str] | None: ...
+    @property
+    def params(self) -> Mapping[str, object]: ...
+
+
+def localized(coded: Coded) -> str:
+    if coded.wording is None:
+        return coded.message
+    return _localized(coded.code, coded.wording, coded.params)
+
+
+def refusal(wording: str | Sequence[str], params: Mapping[str, object]) -> str:
+    return _localized(_REFUSAL, wording, params)
+
+
+def _localized(
+    context: str, wording: str | Sequence[str], params: Mapping[str, object]
+) -> str:
+    if isinstance(wording, str):
+        return pgettext(context, wording) % params
+    singular, plural = wording
+    return npgettext(context, singular, plural, cast(int, params["num"])) % params
+
+
 def _islands(
     fileobj: IO[bytes],
     _keywords: Collection[str],
@@ -140,19 +176,100 @@ def _islands(
     text = fileobj.read().decode()
     for found in _CALLED.finditer(text):
         name, *given = found.groups()
-        said = [_literal(s) for s in given if s is not None]
+        literals = [_literal(s) for s in given if s is not None]
         lineno = text.count("\n", 0, found.start()) + 1
         if name in ("t", "th"):
-            yield lineno, "gettext", said[0], []
-        elif name in ("tn", "tp") and len(said) >= 2:
+            yield lineno, "gettext", literals[0], []
+        elif name in ("tn", "tp") and len(literals) >= 2:
             yield (
                 lineno,
                 "ngettext" if name == "tn" else "pgettext",
-                tuple(said[:2]),
+                tuple(literals[:2]),
                 [],
             )
-        elif name == "tnp" and len(said) == 3:
-            yield lineno, "npgettext", tuple(said), []
+        elif name == "tnp" and len(literals) == 3:
+            yield lineno, "npgettext", tuple(literals), []
+
+
+def _findings(
+    fileobj: IO[bytes],
+    _keywords: Collection[str],
+    _comment_tags: Collection[str],
+    **_options: Mapping[str, Any],
+) -> Iterator[tuple[int, str, tuple[str, ...], list[str]]]:
+    source = fileobj.read()
+    if b"Finding.of(" not in source:
+        return
+    calls = [
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and (node.func.value.id, node.func.attr) == ("Finding", "of")
+    ]
+    for node in sorted(calls, key=lambda n: (n.lineno, n.col_offset)):
+        where = f"{getattr(fileobj, 'name', '?')}:{node.lineno}"
+        code, wording = (_written(a) for a in node.args[:2])
+        if not isinstance(code, str) or wording is None:
+            raise ValueError(
+                f"{where}: Finding.of's code and message aren't as written"
+            )
+        yield _worded(where, node.lineno, code, wording)
+
+
+# Policy: a refusal whose wording isn't written where it is raised is marked where it is
+# written, with pgettext_noop and the context refusal.
+def _refusals(
+    fileobj: IO[bytes],
+    _keywords: Collection[str],
+    _comment_tags: Collection[str],
+    **_options: Mapping[str, Any],
+) -> Iterator[tuple[int, str, tuple[str, ...], list[str]]]:
+    source = fileobj.read()
+    if b".of(" not in source:
+        return
+    raised = [
+        node.exc
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Raise)
+        and isinstance(node.exc, ast.Call)
+        and isinstance(node.exc.func, ast.Attribute)
+        and node.exc.func.attr == "of"
+        and node.exc.args
+    ]
+    for node in sorted(raised, key=lambda n: (n.lineno, n.col_offset)):
+        if (wording := _written(node.args[0])) is not None:
+            where = f"{getattr(fileobj, 'name', '?')}:{node.lineno}"
+            yield _worded(where, node.lineno, _REFUSAL, wording)
+
+
+def _worded(
+    where: str, lineno: int, context: str, wording: str | tuple[str, str]
+) -> tuple[int, str, tuple[str, ...], list[str]]:
+    forms = (wording,) if isinstance(wording, str) else wording
+    if any("%" in _FILLED.sub("", f) for f in forms):
+        raise ValueError(f"{where}: {wording!r} has a % other than %(name)s or %%")
+    return (
+        lineno,
+        "pgettext" if isinstance(wording, str) else "npgettext",
+        (context, *forms),
+        [],
+    )
+
+
+def _written(node: ast.expr) -> str | tuple[str, str] | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = _written(node.left), _written(node.right)
+        if isinstance(left, str) and isinstance(right, str):
+            return left + right
+    if isinstance(node, ast.Tuple) and len(node.elts) == 2:
+        singular, plural = (_written(e) for e in node.elts)
+        if isinstance(singular, str) and isinstance(plural, str):
+            return singular, plural
+    return None
 
 
 _SOURCES = (
@@ -160,6 +277,8 @@ _SOURCES = (
     # Policy: what a whoops tells the person is said in their locale wherever it is raised;
     # what it has them pass on to developers and ops isn't.
     ("src/chatddx/**/*.py", "python", {"Whoops": (1,)}, _WHOOPS),
+    ("src/chatddx/**/*.py", _findings, _KEYWORDS, None),
+    ("src/chatddx/**/*.py", _refusals, _KEYWORDS, None),
     (
         "src/chatddx/portal/templates/**/*.html",
         "jinja2.ext:babel_extract",
@@ -184,11 +303,11 @@ def _extracted(root: Path = settings.PROJECT_ROOT) -> Catalog:
                 for lineno, message, _, context in extract(
                     cast(Any, method), held, keywords, options={"trimmed": "true"}
                 ):
-                    said = message if isinstance(message, str) else message[0]
-                    found = template.get(said, kind or context)
+                    msgid = message if isinstance(message, str) else message[0]
+                    found = template.get(msgid, kind or context)
                     if found and found.pluralizable != isinstance(message, tuple):
                         raise ValueError(
-                            f"{where}:{lineno}: {said!r} is said both counted and not, "
+                            f"{where}:{lineno}: {msgid!r} is said both counted and not, "
                             + "which gettext holds as one message: give one a context"
                         )
                     _ = template.add(
@@ -229,9 +348,9 @@ def proofs(
         catalog.update(template, update_creation_date=False)
         written = BytesIO()
         write_po(written, catalog, include_lineno=False, ignore_obsolete=True)
-        said = [m for m in catalog if m.id]
-        untranslated = sum(not _translated(m) for m in said)
-        fuzzy = sum(m.fuzzy for m in said)
+        messages = [m for m in catalog if m.id]
+        untranslated = sum(not _translated(m) for m in messages)
+        fuzzy = sum(m.fuzzy for m in messages)
         found.append(
             Proof(path, current, written.getvalue().decode(), untranslated, fuzzy)
         )
@@ -296,11 +415,11 @@ def _locale(path: Path) -> Locale:
     return Locale(path.stem, GNUTranslations(compiled), islands)
 
 
-# Policy: the catalog put in an island's page holds only what the islands say, and the
-# whoopses the API may answer them with.
+# Policy: the catalog put in an island's page holds only what the islands say, and what the
+# API may answer them with: the whoopses, and what is said below the portal.
 def _shared(message: Message) -> bool:
     return message.context == _WHOOPS or any(
-        where.startswith(_ISLANDS) for where, _ in message.locations
+        not where.startswith(_PORTAL) for where, _ in message.locations
     )
 
 
@@ -310,8 +429,8 @@ def _forms(message: Message) -> str | list[str]:
 
 
 def _keyed(message: Message) -> str:
-    said = message.id if isinstance(message.id, str) else message.id[0]
-    return said if message.context is None else f"{message.context}\x04{said}"
+    msgid = message.id if isinstance(message.id, str) else message.id[0]
+    return msgid if message.context is None else f"{message.context}\x04{msgid}"
 
 
 def _preferred(accept_language: str) -> list[str]:
@@ -344,9 +463,9 @@ def _begun(tag: str) -> Catalog:
 
 
 def _literal(source: str) -> str:
-    said = ast.literal_eval(source)
-    assert isinstance(said, str)
-    return said
+    value = ast.literal_eval(source)
+    assert isinstance(value, str)
+    return value
 
 
 def _translated(message: Message) -> bool:

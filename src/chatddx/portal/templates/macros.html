@@ -30,7 +30,7 @@
   {% for f in found %}
   <li class="flex flex-wrap gap-2">
     <span class="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs {{ 'bg-warning/15 text-warning' if f.level == 'warning' else 'bg-muted text-muted-foreground' }}">{{ f.code }}</span>
-    <span class="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">{{ f.message }}</span>
+    <span class="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">{{ f | localized }}</span>
   </li>
   {% endfor %}
 </ul>

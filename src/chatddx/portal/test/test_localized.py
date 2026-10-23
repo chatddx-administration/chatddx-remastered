@@ -4,11 +4,13 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from jinja2 import DictLoader
+from jinja2 import ChoiceLoader, DictLoader
 
-from chatddx.locale import Locales, saying
+from chatddx.api import schemas
+from chatddx.factors import Finding, Invalid
+from chatddx.locale import Locales, localizing
 from chatddx.locale.test.helpers import catalog
-from chatddx.portal.pages import templates
+from chatddx.portal.pages import refusal_of, templates
 
 
 def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
@@ -35,8 +37,8 @@ def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
     shown = templates.env.overlay(
         loader=DictLoader(
             {
-                "said.html": "{% macro said() %}{{ _('Library') }}{% endmacro %}",
-                "page.html": "{% from 'said.html' import said %}{{ said() }}, "
+                "shelf.html": "{% macro shelf() %}{{ _('Library') }}{% endmacro %}",
+                "page.html": "{% from 'shelf.html' import shelf %}{{ shelf() }}, "
                 + "{{ ngettext('%(n)s run', '%(n)s runs', 1, n=1) }}, "
                 + "{% trans n=2 %}{{ n }} run{% pluralize %}{{ n }} runs{% endtrans %}, "
                 + "{{ _('Fork it') }}, {{ _('Delete it') }}",
@@ -44,9 +46,85 @@ def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
         )
     )
     page = shown.get_template("page.html")
-    with saying(sv):
+    with localizing(sv):
         assert page.render() == "Bibliotek, 1 körning, 2 körningar, Fork it, Delete it"
     assert page.render() == "Library, 1 run, 2 runs, Fork it, Delete it"
+
+
+def test_a_finding_is_said_by_its_code_where_its_message_is_translated(
+    tmp_path: Path,
+) -> None:
+    sv = Locales(
+        catalog(
+            tmp_path,
+            """
+            msgctxt "run.incomplete"
+            msgid "%(num)s item missing"
+            msgid_plural "%(num)s items missing"
+            msgstr[0] "%(num)s post saknas"
+            msgstr[1] "%(num)s poster saknas"
+            """,
+        )
+    ).negotiate("sv")
+    found = [
+        schemas.Finding.of(f)
+        for f in (
+            Finding.of(
+                "run.incomplete",
+                ("%(num)s item missing", "%(num)s items missing"),
+                num=2,
+            ),
+            Finding(code="call.failed", message="the server didn't answer"),
+        )
+    ]
+    macros = templates.env.loader
+    assert macros is not None
+    page = templates.env.overlay(
+        loader=ChoiceLoader(
+            [
+                DictLoader(
+                    {
+                        "page.html": "{% from 'macros.html' import findings %}"
+                        + "{{ findings(found) }}"
+                    }
+                ),
+                macros,
+            ]
+        )
+    ).get_template("page.html")
+    with localizing(sv):
+        shown = page.render(found=found)
+    assert "2 poster saknas" in shown and "the server didn&#39;t answer" in shown
+    assert "2 items missing" in page.render(found=found)
+
+
+def test_a_refusal_is_said_by_its_wording_and_what_isn_t_worded_is_passed_on(
+    tmp_path: Path,
+) -> None:
+    sv = Locales(
+        catalog(
+            tmp_path,
+            """
+            msgctxt "refusal"
+            msgid "a fork is named"
+            msgstr "en förgrening har ett namn"
+
+            msgid "That can't be done"
+            msgstr "Det går inte"
+
+            msgid "%(title)s. Pass this on to ops, as it is: %(pass_on)s"
+            msgstr "%(title)s. Skicka det här vidare som det är: %(pass_on)s"
+            """,
+        )
+    ).negotiate("sv")
+    with localizing(sv):
+        assert refusal_of(Invalid.of("a fork is named")) == "en förgrening har ett namn"
+        assert refusal_of(ValueError("slots used twice")) == (
+            "Det går inte. Skicka det här vidare som det är: slots used twice"
+        )
+    assert refusal_of(ValueError("slots used twice")) == (
+        "That can't be done. Pass this on to ops, as it is: slots used twice"
+    )
 
 
 @pytest.mark.usefixtures("alice")
@@ -114,11 +192,13 @@ def test_what_the_portal_s_python_says_is_said_in_the_locale_asked_for(
             msgid "What is run."
             msgstr "Det som körs."
 
-            msgid "no kind %(kind)r: the kinds are %(kinds)s"
-            msgstr "ingen sort %(kind)r: sorterna är %(kinds)s"
+            msgctxt "refusal"
+            msgid "no kind %(kind)s: the kinds are %(kinds)s"
+            msgstr "ingen sort %(kind)s: sorterna är %(kinds)s"
 
-            msgid "%(field)s isn't a number: %(given)r"
-            msgstr "%(field)s är inget tal: %(given)r"
+            msgctxt "refusal"
+            msgid "%(field)s isn't a number: %(given)s"
+            msgstr "%(field)s är inget tal: %(given)s"
             """,
         )
     )

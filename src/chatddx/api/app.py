@@ -13,6 +13,7 @@ from pydantic.json_schema import models_json_schema
 from starlette.exceptions import HTTPException
 
 from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
+from chatddx.factors import Invalid, Worded
 from chatddx.inventory import Inventory
 from chatddx.runner import Refused
 from chatddx.store import UnderWay
@@ -22,7 +23,7 @@ from chatddx.worker import Worker
 from . import families, people, queue, runs, scores, threads, world
 from .listening import Listener
 from .schemas import EVENTS, Code, Error
-from .state import AppState
+from .state import AppState, Refusing
 
 STATUSES: dict[type[Exception], tuple[int, Code]] = {
     NotFound: (404, "not_found"),
@@ -32,6 +33,7 @@ STATUSES: dict[type[Exception], tuple[int, Code]] = {
     OverQuota: (429, "over_quota"),
     Refused: (422, "refused"),
     UnderWay: (409, "conflict"),
+    Invalid: (422, "refused"),
 }
 
 CODES: dict[int, Code] = {
@@ -53,9 +55,15 @@ def _answer(
     )
 
 
+def _worded(e: Exception) -> dict[str, Any]:
+    if not isinstance(e, Worded) or e.wording is None:
+        return {}
+    return {"wording": e.wording, "params": dict(e.params)}
+
+
 def _status(status: int, code: Code) -> Callable[[Request, Exception], JSONResponse]:
     def handle(_: Request, e: Exception) -> JSONResponse:
-        return _answer(status, Error(detail=str(e), code=code))
+        return _answer(status, Error(detail=str(e), code=code, **_worded(e)))
 
     return handle
 
@@ -72,7 +80,8 @@ def _raw(_: Request, e: Exception) -> JSONResponse:
 
 def _http(_: Request, e: Exception) -> JSONResponse:
     assert isinstance(e, HTTPException)
-    error = Error(detail=e.detail, code=CODES.get(e.status_code, "error"))
+    worded = _worded(e.refused) if isinstance(e, Refusing) else {}
+    error = Error(detail=e.detail, code=CODES.get(e.status_code, "error"), **worded)
     return _answer(e.status_code, error, e.headers)
 
 

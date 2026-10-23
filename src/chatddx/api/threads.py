@@ -22,7 +22,7 @@ from chatddx.bench import (
 from chatddx.catalog import Subject, read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
-from chatddx.factors.base import Component, Finding, resolve
+from chatddx.factors.base import Component, Finding, Invalid, resolve
 from chatddx.factors.facts import Landing
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
@@ -419,7 +419,7 @@ def said(bench: Bench, subject: Subject, given: schemas.Said) -> None:
     """
     people = bench.people
     if missing := [c for c in given.collaborators or () if people.find(c) is None]:
-        raise HTTPException(422, f"no person {missing[0]!r}")
+        raise Invalid.of("no person %(person)s", person=repr(missing[0]))
     with refused():
         _ = bench.say(subject, **given.model_dump(exclude_unset=True))
 

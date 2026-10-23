@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from chatddx.factors.base import Fingerprint, language_tag
+from chatddx.factors.base import Fingerprint, Worded, language_tag
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import RECIPE_PARTS
 
@@ -62,7 +62,7 @@ _WITH = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 _REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")
 
 
-class MovedOn(ValueError):
+class MovedOn(Worded, ValueError):
     pass
 
 

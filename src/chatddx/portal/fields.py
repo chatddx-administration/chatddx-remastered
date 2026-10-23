@@ -11,12 +11,13 @@ from starlette.datastructures import FormData
 
 from chatddx.api import schemas, threads as api
 from chatddx.bench import Bench, word_of
+from chatddx.factors import Invalid, Worded
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Purpose
 from chatddx.locale import tr
 
-from .pages import own_first
+from .pages import own_first, refusal_of
 
 type Shape = Literal[
     "pick",
@@ -48,10 +49,8 @@ class Field:
     refused: str | None = None
 
 
-class _Unparsed(ValueError):
-    def __init__(self, field: str, message: str) -> None:
-        super().__init__(message)
-        self.field: str = field
+class _Unparsed(Invalid):
+    pass
 
 
 def fields(
@@ -71,12 +70,10 @@ def fresh(
     given = given or {}
     properties = _properties(model)
     if unknown := [n for n in given if n not in properties]:
-        raise ValueError(
-            tr(
-                "no field %(field)r to give: the fields are %(fields)s",
-                field=unknown[0],
-                fields=", ".join(properties),
-            )
+        raise Invalid.of(
+            "no field %(field)s to give: the fields are %(fields)s",
+            field=repr(unknown[0]),
+            fields=", ".join(properties),
         )
     return [
         replace(f, value=_read(f, given[f.name]), editable=False, given=True)
@@ -289,13 +286,12 @@ def _number(f: Field, given: str) -> int | float:
     except ValueError:
         found = math.nan
     if not math.isfinite(found) and f.whole:
-        raise _Unparsed(
-            f.name,
-            tr("%(field)s isn't a whole number: %(given)r", field=f.name, given=given),
+        raise _Unparsed.of(
+            "%(field)s isn't a whole number: %(given)s", field=f.name, given=repr(given)
         )
     if not math.isfinite(found):
-        raise _Unparsed(
-            f.name, tr("%(field)s isn't a number: %(given)r", field=f.name, given=given)
+        raise _Unparsed.of(
+            "%(field)s isn't a number: %(given)s", field=f.name, given=repr(given)
         )
     return found
 
@@ -310,9 +306,8 @@ def _json(name: str, given: str) -> JsonValue:
     try:
         return cast(JsonValue, json.loads(given))
     except json.JSONDecodeError as e:
-        raise _Unparsed(
-            name,
-            tr("%(field)s isn't JSON: %(error)s", field=name, error=e),
+        raise _Unparsed.of(
+            "%(field)s isn't JSON: %(error)s", field=name, error=str(e)
         ) from None
 
 
@@ -326,10 +321,10 @@ def kept(
 def _refusals(
     e: ValueError, names: Collection[str]
 ) -> tuple[dict[str, str], list[str]]:
-    if isinstance(e, _Unparsed) and e.field in names:
-        return {e.field: str(e)}, []
+    if isinstance(e, _Unparsed) and (field := str(e.params["field"])) in names:
+        return {field: refusal_of(e)}, []
     if not isinstance(e, ValidationError):
-        return {}, [str(e)]
+        return {}, [refusal_of(e)]
     by_field: dict[str, list[str]] = {}
     rest: list[str] = []
     for error in e.errors():
@@ -348,6 +343,8 @@ def _refusals(
 def _refusal(error: ErrorDetails) -> str:
     if error["type"] == "missing":
         return tr("This is needed.")
+    if isinstance(cause := error.get("ctx", {}).get("error"), Worded):
+        return refusal_of(cause)
     return error["msg"].removeprefix("Value error, ")
 
 

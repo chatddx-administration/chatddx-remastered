@@ -8,7 +8,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { Badge } from "$lib/components/ui/badge";
-  import { t, tn, tp } from "$lib/locale";
+  import { localized, t, tn, tp } from "$lib/locale";
   import { watch } from "$lib/runs/events";
   import { outcome, outcomes } from "$lib/runs/outcomes";
   import { begun, fold, type Item, tally } from "$lib/runs/progress";
@@ -134,7 +134,7 @@
       {#each progress.noted as finding, i (i)}
         <li class="flex gap-2">
           {#if finding.level === "warning"}<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-warning" />{:else}<InfoIcon class="mt-0.5 size-4 shrink-0 text-primary" />{/if}
-          <span>{finding.message}</span>
+          <span>{localized(finding)}</span>
         </li>
       {/each}
       {#each progress.errors as error, i (i)}

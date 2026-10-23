@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Annotated
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Form, Request, Response
 from fastapi.responses import RedirectResponse
 
 from chatddx import catalog
@@ -12,7 +12,7 @@ from chatddx.api import families as api, schemas, threads
 from chatddx.api.state import refused
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import Subject
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.locale import tr
 
@@ -41,14 +41,11 @@ def _case_page(
     bindings = bench.rows.bindings([family])
     at = len(bindings) if version is None else version
     if not 1 <= at <= len(bindings):
-        raise HTTPException(
-            404,
-            tr(
-                "no version %(at)s of case %(family)s: it has %(versions)s",
-                at=at,
-                family=family,
-                versions=len(bindings),
-            ),
+        raise NotFound.of(
+            "no version %(at)s of case %(family)s: it has %(versions)s",
+            at=at,
+            family=family,
+            versions=len(bindings),
         )
     bound = bindings[at - 1]
     before = None if at == 1 else bindings[at - 2]
@@ -248,13 +245,8 @@ def taking(
         return library_page(request, bench, "case", tag, typed)
     listed = {f.id: f for f in api.families(bench)}
     if missing := [f for f in families if f not in listed]:
-        raise HTTPException(
-            404,
-            tr(
-                "no case %(case)s for %(login)s",
-                case=missing[0],
-                login=bench.person.login,
-            ),
+        raise NotFound.of(
+            "no case %(case)s for %(login)s", case=missing[0], login=bench.person.login
         )
     named = {listed[f].case: listed[f].name for f in families}
     with refused(NotFound):
@@ -287,9 +279,9 @@ def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
 
 def appended(bench: Bench, family: int, name: str, text: str) -> None:
     if not name.strip():
-        raise HTTPException(422, tr("an appendix is named"))
+        raise Invalid.of("an appendix is named")
     if not text:
-        raise HTTPException(422, tr("an appendix holds a text"))
+        raise Invalid.of("an appendix holds a text")
     with refused():
         held = Appendix(vignette=bench.family(family).vignette, text=text)
         _ = bench.new(held, name.strip())
@@ -297,7 +289,7 @@ def appended(bench: Bench, family: int, name: str, text: str) -> None:
 
 def built(bench: Bench, family: int, appendices: list[str] | None) -> str:
     if not appendices:
-        raise HTTPException(422, tr("a case is built of one appendix or more"))
+        raise Invalid.of("a case is built of one appendix or more")
     with refused():
         made = bench.case(family, appendices)
     return made

@@ -438,7 +438,12 @@ def test_a_halt_stops_a_run_which_is_finished_and_left_to_score(
     got = signed.post(f"/api/runs/{run}/halt")
     assert (got.status_code, got.json()) == (
         409,
-        {"detail": f"run {run} has nothing under way", "code": "conflict"},
+        {
+            "detail": f"run {run} has nothing under way",
+            "code": "conflict",
+            "wording": "run %(run)s has nothing under way",
+            "params": {"run": str(run)},
+        },
     )
 
 
@@ -508,9 +513,10 @@ def test_runs_are_held_to_a_day_s_quota_and_a_run_to_its_items(
 ) -> None:
     monkeypatch.setattr(settings, "ITEMS_PER_RUN", 0)
     got = signed.post("/api/runs", json=asked(signed))
-    assert (got.status_code, got.json()) == (
+    assert (got.status_code, got.json()["detail"], got.json()["code"]) == (
         429,
-        {"detail": "a run holds at most 0 items, not 1", "code": "over_quota"},
+        "a run holds at most 0 items, not 1",
+        "over_quota",
     )
     monkeypatch.setattr(settings, "ITEMS_PER_RUN", 1)
     monkeypatch.setattr(settings, "RUNS_PER_DAY", 1)
@@ -518,12 +524,10 @@ def test_runs_are_held_to_a_day_s_quota_and_a_run_to_its_items(
     assert first.status_code == 202
     _ = finished(signed, first.json()["runs"][0]["run"])
     got = signed.post("/api/runs", json=asked(signed))
-    assert (got.status_code, got.json()) == (
+    assert (got.status_code, got.json()["detail"], got.json()["code"]) == (
         429,
-        {
-            "detail": "alice has started 1 runs in the last day, as many as a day takes",
-            "code": "over_quota",
-        },
+        "alice has started 1 runs in the last day, as many as a day takes",
+        "over_quota",
     )
     assert len(signed.get("/api/runs").json()) == 1
 

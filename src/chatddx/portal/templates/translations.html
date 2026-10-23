@@ -38,7 +38,7 @@
   {% if editable %}
   <form method="get" action="{{ base }}" class="ml-2 inline-flex items-center gap-1">
     <label class="sr-only" for="another">{{ _("Another language") }}</label>
-    <input id="another" name="into" required placeholder="{{ _('another, such as de') }}" class="h-7 w-36 rounded-md border border-input bg-transparent px-2">
+    <input id="another" name="into" required pattern="{{ language_pattern }}" title="{{ _('a language tag, such as sv or pt-BR') }}" placeholder="{{ _('another, such as de') }}" class="h-7 w-36 rounded-md border border-input bg-transparent px-2">
     <button class="small">{{ _("Translate into it") }}</button>
   </form>
   {% endif %}

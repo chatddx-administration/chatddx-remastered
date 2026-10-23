@@ -2,7 +2,14 @@ from collections.abc import Mapping, Sequence
 
 from pydantic import JsonValue
 
-from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
+from chatddx.factors.base import (
+    Component,
+    Invalid,
+    Missing,
+    canonical_bytes,
+    iter_refs,
+    resolve,
+)
 from chatddx.factors.facts import ModelFacts
 from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe, compile_request
@@ -47,9 +54,12 @@ def check_edit(
 ) -> None:
     found = thread(rows, thread_id)
     if head is not None and (current := history(rows, thread_id)[-1]).id != head:
-        raise MovedOn(
-            f"thread {thread_id} has moved on since edit {head}: its head is edit "
-            + f"{current.id}"
+        raise MovedOn.of(
+            "thread %(thread)s has moved on since edit %(edit)s: its head is edit "
+            + "%(head)s",
+            thread=thread_id,
+            edit=head,
+            head=current.id,
         )
     if based_on is not None:
         _check_based_on(rows, found, based_on)
@@ -91,8 +101,14 @@ def _check_labels(rows: Reader, thread: Thread, digest: str, labels: Labels) -> 
         parts = scorer.views if part == "view" else scorer.resources
         if not 0 <= position < len(parts):
             raise ValueError(f"{digest} has no {part} at position {position}")
+        if not value and part == "view":
+            raise Invalid.of(
+                "the label of view %(position)s is empty", position=position
+            )
         if not value:
-            raise ValueError(f"the label of {part} {position} is empty")
+            raise Invalid.of(
+                "the label of resource %(position)s is empty", position=position
+            )
 
 
 # Duplication: src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats
@@ -136,9 +152,12 @@ def _check_expectation(
         e.thread for e, a in expecting(rows, [case], schema)[case] if owns(owner, a)
     ]
     if others := sorted(t for t in held if t != thread.id):
-        raise ValueError(
-            f"person {owner} owns an expectation of case {case} under that "
-            + f"schema already, in thread {others[0]}"
+        raise Invalid.of(
+            "person %(owner)s owns an expectation of case %(case)s under that schema "
+            + "already, in thread %(thread)s",
+            owner=owner,
+            case=case,
+            thread=others[0],
         )
 
 
@@ -192,9 +211,10 @@ def picked(case: str, choices: Mapping[int, str]) -> str | None:
         case [digest]:
             return digest
         case _:
-            raise LookupError(
-                f"case {case} has expectations to choose from, in threads "
-                + ", ".join(str(t) for t in sorted(choices))
+            raise Missing.of(
+                "case %(case)s has expectations to choose from, in threads %(threads)s",
+                case=case,
+                threads=", ".join(str(t) for t in sorted(choices)),
             )
 
 

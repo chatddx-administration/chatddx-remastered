@@ -2,7 +2,7 @@ from functools import partial
 
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, families, read, threads
 from chatddx.catalog.language import language_of, languages_of, recipe_language
-from chatddx.factors.base import Component, resolve
+from chatddx.factors.base import Component, Invalid, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.facts import ModelFacts
@@ -227,8 +227,9 @@ def _carried(seen: Seen, trial: Trial) -> tuple[Trial, Registry, list[str]]:
     held = languages_of(seen.rows, [*trial.cases, trial.skeleton])
     known = sorted(set(filter(None, (held[c] for c in trial.cases))))
     if len(known) > 1:
-        raise ValueError(
-            f"a trial's cases are in one language, not in {' and '.join(known)}"
+        raise Invalid.of(
+            "a trial's cases are in one language, not in %(languages)s",
+            languages=" and ".join(known),
         )
     made = seen.rows.compilations(trial.skeleton)
     recipe = made[0].recipe if made else None
@@ -238,9 +239,11 @@ def _carried(seen: Seen, trial: Trial) -> tuple[Trial, Registry, list[str]]:
         recipe is None or into not in translated(recipe, seen.store.get)
     ):
         if own is not None:
-            raise ValueError(
-                f"{seen.title(trial.skeleton)} has no translations into {into}, its "
-                + "cases' language"
+            raise Invalid.of(
+                "%(configuration)s has no translations into %(into)s, its cases' "
+                + "language",
+                configuration=seen.title(trial.skeleton),
+                into=into,
             )
         # Policy: as a start does, a skeleton of no language of its own is sent as
         # written into a language its translations don't go into.
@@ -303,9 +306,11 @@ def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
 def keep_language(seen: Seen, digest: str, language: str) -> None:
     held = language_of(seen.rows, digest)
     if held is not None and held != language:
-        raise ValueError(
-            f"{seen.title(digest)} is in {held} already: a text's language is the "
-            + "same wherever it is held"
+        raise Invalid.of(
+            "%(text)s is in %(held)s already: a text's language is the same wherever "
+            + "it is held",
+            text=seen.title(digest),
+            held=held,
         )
     if held is None:
         seen.catalog.language(digest, language, seen.person.id)

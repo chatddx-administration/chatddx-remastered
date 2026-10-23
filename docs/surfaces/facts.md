@@ -35,12 +35,12 @@ Finds:
 * ∟`list[Finding]`
 
 Finds:
-1. `facts.missing`: `"no facts about {name!r}, so model-level checks were skipped"` (`info`, through `_pair`)
+1. `facts.missing`: `"no facts about %(name)s, so model-level checks were skipped"` (`info`, through `_pair`)
 2. `facts.reasoning_unmatched`: `"the configuration's reasoning settings match none of the model's reasoning levels"` (through `_pair`)
 3. `facts.budget_refused`: `model.reasoning.budget.refused` (through `_pair`)
 4. `facts.output_refused`: `reason` (through `_pair`)
 5. `facts.output_note`: `note` (`info`, through `_pair`)
-6. `facts.sampling_unmatched`: `"the configuration's sampling is what the facts recommend for {', '.join(others)}, not for {name}"` (through `_pair`)
+6. `facts.sampling_unmatched`: `"the configuration's sampling is what the facts recommend for %(others)s, not for %(name)s"` (through `_pair`)
 
 ## `Facts` `(Frozen)`
 `src/chatddx/facts/models.py:Facts`

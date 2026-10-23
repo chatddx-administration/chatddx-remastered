@@ -354,7 +354,7 @@ Raises:
 * ∟`Job`
 
 Raises:
-1. `LookupError`: `"run {run} has nothing under way"`
+1. `Missing`: `"run %(run)s has nothing under way", run=str(run)`
 
 ## `Queue.open`
 `src/chatddx/store/queue.py:Queue.open`
@@ -387,7 +387,7 @@ Raises:
 * ∟`Job`
 
 Raises:
-1. `UnderWay`: `"run {run} has something under way"`
+1. `UnderWay`: `"run %(run)s has something under way", run=str(run)`
 
 ## `Queue.requeue`
 `src/chatddx/store/queue.py:Queue.requeue`
@@ -742,7 +742,7 @@ Raises:
 
 `TOP_TIER = 2`
 
-## `UnderWay` `(ValueError)`
+## `UnderWay` `(Worded, ValueError)`
 `src/chatddx/store/queue.py:UnderWay`
 
 ## `unlisten`

@@ -294,7 +294,7 @@ Raises:
 `src/chatddx/stamp/trace.py:Trace`
 
 * `code: Code`
-* `finding: str`
+* `findings: tuple[str, str]`
 * `whoops: str`
 
 ## `Trace.__init__`

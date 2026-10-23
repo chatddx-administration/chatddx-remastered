@@ -104,9 +104,9 @@ def check_seal(log: Log, subject: str) -> list[Finding]:
     finished = log.finished
     if finished is not None and finished.seal != log.seal():
         return [
-            Finding(
-                code="ledger.seal",
-                message="rows changed after the log was sealed",
+            Finding.of(
+                "ledger.seal",
+                "rows changed after the log was sealed",
                 subject=subject,
             )
         ]

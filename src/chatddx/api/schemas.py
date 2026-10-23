@@ -43,6 +43,15 @@ class Error(_Schema):
         default=None,
         description="a whoops's: what the person is to pass on to ops, as it is",
     )
+    wording: str | list[str] | None = Field(
+        default=None,
+        description="a refusal's detail as written, its placeholders unfilled, or "
+        + "singular and plural counted by params' num; null where the detail is all "
+        + "there is",
+    )
+    params: dict[str, str | int | float] | None = Field(
+        default=None, description="what fills its wording's placeholders"
+    )
 
 
 class SignIn(_Schema):
@@ -288,6 +297,13 @@ class Finding(_Schema):
     code: str
     message: str
     subject: str | None
+    wording: str | list[str] | None = Field(
+        description="the message as written, its placeholders unfilled, or singular "
+        + "and plural counted by params' num; null where the message is all there is"
+    )
+    params: dict[str, str | int | float] = Field(
+        description="what fills its wording's placeholders"
+    )
 
     @classmethod
     def of(cls, finding: factors.Finding) -> Self:

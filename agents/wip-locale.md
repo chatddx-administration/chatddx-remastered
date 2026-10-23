@@ -70,7 +70,7 @@ time, so that Babel matches a changed message only to one translated.
 
 - **The locale**, built: picked a request at a time, from `Accept-Language` against the catalogs there are, with
   Babel's `negotiate_locale` (`src/chatddx/locale/locale.py:Locales.negotiate`). `src/chatddx/portal/pages.py:page`
-  sets it around the page's rendering (`src/chatddx/locale/locale.py:saying`) and gives it as `locale`, whose `tag` is
+  sets it around the page's rendering (`src/chatddx/locale/locale.py:localizing`) and gives it as `locale`, whose `tag` is
   `base.html`'s `lang`.
 - **The templates**, built: Jinja's `i18n` extension, newstyle and trimmed, on `src/chatddx/portal/pages.py:templates`,
   with `_()`, `ngettext()`, `pgettext()`, `npgettext()` and `{% trans %}…{% pluralize %}`. The callables read the
@@ -79,7 +79,7 @@ time, so that Babel matches a changed message only to one translated.
   a `%` of its own writes it `%%`, and `ngettext()`'s count is `%(num)s` unless it is given a name.
 - **The portal's Python**, built, marks what it says with a no-op `N_()` where it is defined, as `SHELVES` is at
   import, and the template that shows it translates it with `_()`. What a function says in answer to a request is
-  translated where it is said, from the request's locale, which `src/chatddx/locale/locale.py:Saying`, a middleware on
+  translated where it is said, from the request's locale, which `src/chatddx/locale/locale.py:Localizing`, a middleware on
   the portal's app, sets around each request; `page` still sets it around rendering, as a page answering an
   unexpected error is rendered outside the middleware. A message is written as a template's are, and besides:
   - translated and filled in one call, `tr("…%(name)s…", name=…)` (`src/chatddx/locale/locale.py:tr`), never an
@@ -134,15 +134,67 @@ time, so that Babel matches a changed message only to one translated.
 - **Dates and numbers** an island writes are written as the server writes them, whatever the locale (see "Start with
   this"): a date `%Y-%m-%d %H:%M`, and a number, as yet, without the space between thousands (see "Steps").
 
+### Findings
+
+- **A finding the portal may show**, built, is made with its message as written and its parameters,
+  `Finding.of(code, "…%(name)s…", name=…)` (`src/chatddx/factors/base.py:Finding.of`), or a singular and a plural
+  counted by `num`, as Swedish needs even where English says it the same either way. It fills its English, `message`,
+  as before, and keeps its `wording`, the message as written, and `params` beside it, in the ledger as in the API; a record's
+  canonical form leaves out what is default, so a record written before reads and seals as it was.
+- **Take: its code is its context**: a message a code, as `vllm.temperature_clamped` names what it says to a translator
+  as it does to the glossary. A code may say more than one message (`score.run_unfinished`), each its own.
+- **Localized where it is shown**, built, by `src/chatddx/locale/locale.py:localized`, the portal's `localized`
+  filter (`macros.html`'s `findings`) and the islands' `localized()` (`frontend/src/lib/locale.ts`): in the locale where its translation is reviewed,
+  else the English as it comes, as is a finding made otherwise or read from a record written before. An island says as
+  it comes what its page's catalog doesn't hold, as JavaScript writes some numbers otherwise than Python does.
+- **A message only `%(name)s` fills**, built, as an island fills only those: what a finding puts in quotes is filled
+  `repr`'d, and a list joined, as data.
+- **Take: left as they come**, made with `Finding(code, message)`:
+  - what a finding passes on of something else's: an exception's, a parser's, jsonschema's, a call's error and the
+    facts' reasons (`call.failed`, `case.unreadable`, `answer.*`, `verdict.*`, `expectation.invalid`,
+    `expectation_schema.invalid`, `output.schema_invalid`, `facts.budget_refused`, `facts.output_refused`,
+    `facts.output_note`);
+  - `attestation.model`, which drops `engine` or `judge engine` into its sentence: a message for each, when it's
+    worth the change to `src/chatddx/ledger/call.py:attest_model`;
+  - what developers and ops read (see "Start with this"): the inventory's findings, an o11n import's, the chat
+    template's and `bundle.recanonicalized`, which the CLI and the importer say.
+
+### Refusals
+
+- **A refusal a person can cause**, built, is raised with its wording and parameters, `NotFound.of("no person
+  %(login)s", login=…)`, as a finding is made: `src/chatddx/factors/base.py:Worded` is on the bench's, the catalog's,
+  the store's, the facts' and the gate's refusals, `Invalid` is a plain `ValueError`'s and `Missing` a
+  `LookupError`'s. Its English is `str(e)`, as before, for the repl, the CLI and the logs.
+- **Take: its context is `refusal`**, the English as written its key, as a whoops's is; a code of its own only where
+  one is needed, which nothing needs yet.
+- **Extracted**, built, from each `raise X.of(…)` in `src/chatddx/` (`src/chatddx/locale/locale.py:_refusals`); a
+  wording not written where it is raised is marked where it is written, with `pgettext_noop("refusal", …)`, as
+  `src/chatddx/portal/threads.py:_NAMED` is.
+- **Answered**, built: the API's `Error` carries `wording` and `params` beside `detail`
+  (`src/chatddx/api/app.py:_worded`), through `src/chatddx/api/state.py:refused` too
+  (`src/chatddx/api/state.py:Refusing`).
+- **Said where it is shown**, built, by `src/chatddx/locale/locale.py:refusal`: the error page (`error.html`), a
+  refusal shown on the page that was sent (`src/chatddx/portal/pages.py:refusal_of`), a field's, from pydantic's
+  context (`src/chatddx/portal/fields.py:_refusal`), and an island's (`frontend/src/lib/api/client.ts:why`). What
+  isn't worded is its code's title and `Pass this on to ops, as it is:` with the English.
+- **Take: left unworded**: what a person can't cause through the portal (the API's shape, an id they don't see, the
+  kinds a person doesn't write, the store's integrity); the facts' reasons, which are data; a scorer's problems,
+  which the Composer is to prevent; and the gate's secret and engine, which boot is to check. pydantic's own
+  messages on a field are said as they come.
+
 ### Extraction
 
 Built: `chatddx locale write` extracts, with Babel, what the portal's Python says, its tests left out; what a whoops
-says, wherever in `src/chatddx/` it is raised, in the context `whoops`; the templates, with Jinja's `babel_extract`;
+says, wherever in `src/chatddx/` it is raised, in the context `whoops`; what a finding says, wherever in `src/chatddx/`
+`Finding.of` makes it, in its code's context, with `src/chatddx/locale/locale.py:_findings`, which fails on a code or
+message not written out, or a `%` other than `%(name)s` and `%%`; what a refusal says, wherever in `src/chatddx/`
+`raise X.of` raises it, in the context `refusal`, with `src/chatddx/locale/locale.py:_refusals`; the templates, with Jinja's `babel_extract`;
 and the islands' `t()`, `tn()`, `tp()`, `tnp()` and `th()` in `.svelte` and `.ts`, with
 `src/chatddx/locale/locale.py:_islands`, their tests, declarations and shadcn's components left out. It brings each
 catalog up to that, a changed message fuzzy with its closest translation, and begins a catalog of each tag it is given,
 such as `chatddx locale write sv`. A catalog keeps which file says each message but not the line, so that moving code
-leaves it as it is, and the file is how the islands' share is told. It fails on a message said both counted and not in
+leaves it as it is, and the file is how the islands' share is told: what they say, whoopses and what is said below
+the portal, which the API may answer them with. It fails on a message said both counted and not in
 the same context, which gettext holds as one plural message, leaving the other untranslatable.
 
 ### Checks
@@ -152,11 +204,13 @@ the same context, which gettext holds as one plural message, leaving the other u
   stamps pending are. At the baseline, a catalog behind is flagged, and what is left to translate isn't.
 - **Tests**: the ones there were stay English, as no request of theirs asks for another language. Built: in
   `src/chatddx/locale/test/test_locale.py`, a request's language negotiated, boot failing on wrong placeholders, the
-  islands' messages found, a catalog kept in step with the code, and the islands' share of a catalog; in
-  `src/chatddx/portal/test/test_localized.py`, a reviewed message said in a macro imported without context and a fuzzy
-  one not, a page's `lang`, the catalog only in an island's page, and the shelves, a 404's detail and a form's refusal
-  said in the request's locale, the shelves sorted by their headings as said. `frontend/src/lib/locale.test.ts`: `t()`
-  and its kin, in English and in a catalog's locale. In a browser (`src/chatddx/portal/test/test_browser.py`), an island
+  islands' messages found, a finding's found where it is made, a finding said by its code, a catalog kept in step with
+  the code, and the islands' share of a catalog; in `src/chatddx/portal/test/test_localized.py`, a reviewed message
+  said in a macro imported without context and a fuzzy one not, a finding said by its code in `findings`, a page's
+  `lang`, the catalog only in an island's page, and the shelves, a 404's detail and a form's refusal said in the
+  request's locale, the shelves sorted by their headings as said; a finish record reading back as written, its
+  findings said or not (`src/chatddx/ledger/test/test_ledger.py`). `frontend/src/lib/locale.test.ts`: `t()` and its
+  kin, in English and in a catalog's locale, and `localized()`. In a browser (`src/chatddx/portal/test/test_browser.py`), an island
   said in Swedish, a plural put into a sentence among it; and a whoops said in Swedish with what it passes on as it is
   (`src/chatddx/portal/test/test_lab.py`).
 
@@ -185,8 +239,39 @@ Each step leaves the portal working in English, and Swedish appearing only where
    takes.
 6. **Findings and API errors**: a message a code, with its parameters, where one is written, else the English as it
    comes (`src/chatddx/portal/pages.py:refusable`).
+   - **Findings**, built: 48 messages of 38 codes, made in the lints, a look at translations, the ledger's checks of a
+     run and a score, and the runner; 1011 messages in all (see "Findings").
+   - **Decided: the split.** What a person can cause through the portal, typing something wrong, the world moving
+     under them or a quota, is worded; what the portal can keep them from, it keeps them from; what is known at boot
+     crashes at boot; and the rest, which a person couldn't have caused, is shown as its code's title and
+     `Pass this on to ops, as it is:` with the English, as a whoops is.
+   - **Refusals**, built: 130 wordings, 45 of them the portal's own; 1097 messages in all (see "Refusals").
+   - **Decided: no boot checks.** Of what looked known at boot, the shipped scorers' code and an endpoint's engine
+     being a trial's turn on what a person writes and picks, and the two that are, an endpoint's engine missing
+     from the store and its secret unset, stay borne as warnings: `endpoint.engine_unknown`, the World page and the
+     repl show such an endpoint, and the test World keeps `unknown@remote` without its secret.
+   - **Prevention**, built: a language field takes only a tag, by the pattern of
+     `src/chatddx/factors/base.py:LANGUAGE`; the home page's case holds no more than its limit, counted in code
+     points as Python counts them, and Analyze waits while it is over. The names a form asks for were required and
+     the Composer paired a scorer's metrics and judges already. Take: not prevented, as it would take a script or
+     refuse what the server takes: picking a trial or a run, the concurrency an endpoint takes, a collaborator's
+     login and a label in the labels' JSON, which stay worded.
 7. **Swedish**: Take: an agent drafts each translation marked fuzzy, which gettext leaves unsaid, and a human reviews
    it by clearing the mark.
+   - **Drafted**: all 1099 messages, fuzzy, each placeholder, plural form and piece of markup as its English has
+     them, which Babel's catalog checks and the boot check pass with every mark cleared; the portal says nothing in
+     Swedish until a mark is cleared.
+   - **Take: the words**, as the glossary's terms are drafted, for a reviewer to hold the rest to: case *fall*,
+     family *familj*, vignette *vinjett*, appendix *bilaga*, expectation *förväntan*, expectation schema
+     *förväntningsschema*, configuration *konfiguration*, recipe *recept*, skeleton *skelett*, part *del*, chunk
+     *block*, output *svarsform*, passthrough *genomsläpp*, toolset *verktygsuppsättning*, few shot *exempel*,
+     trial *försök*, run *körning*, item *post*, replicate *replikat*, seed *frö*, scorer *bedömare*, score and
+     Scoring *bedömning*, judge *domare*, view *vy*, metric *mått*, verdict *utslag*, finding *anmärkning*, lint
+     *kontroll*, model *modell*, engine *motor*, endpoint *ändpunkt*, handle *handtag*, thread *tråd*, fork
+     *förgrening*, follow *följa*, origin *ursprung*, kind *sort*, cleared *godkänd*, sensitive *känslig*, ops
+     *drift*, the Library *Biblioteket*, the Lab *Labbet*, Review *Granskning*, the World *Världen*.
+   - **Open: the kinds' words** (see "Open") are drafted translated, as `kind` messages a reviewer can leave
+     unreviewed to keep them English.
 8. **Numbers**: the global default, `1 000.34`, wherever the server and the islands write a number, counts put into
    messages among them.
 
@@ -199,7 +284,8 @@ Each step leaves the portal working in English, and Swedish appearing only where
    `?kind=configuration`), or both, as the Library is to teach the data model. Step 2 draws them in one place, so this
    is settled in the catalog whenever it is.
 3. **Refusals**: they are English. A code for each, translated where shown; translated where shown with the English as
-   the key, as a whoops's `said` is; or English for now. A whoops is settled (see "Start with this").
+   the key, as a whoops's `said` is; or English for now. A whoops is settled (see "Start with this"), and so is a
+   finding, by its code (see "Findings"), and a refusal, by its wording (see "Refusals").
 4. **What data sets hold**: a schema's titles and descriptions in more than one language is a question of the data
    format, and left out of these steps.
 5. **A locale with more plural forms** than one and other: the islands' `t()` would need gettext's forms in the order

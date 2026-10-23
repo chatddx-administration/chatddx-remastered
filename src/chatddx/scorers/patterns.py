@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
+from chatddx.factors.base import Invalid
+
 from .scorer import NO_ANSWER, NO_TARGET, Metric, MetricFunction, Scored, Verdicts
 
 _TOKEN = re.compile(r"\(|\)|&|\||[^\s&|()]+")
@@ -57,10 +59,14 @@ class Pattern:
         self._tokens: list[str] = _TOKEN.findall(text)
         self._at: int = 0
         if not self._tokens:
-            raise ValueError("a pattern names at least one word")
+            raise Invalid.of("a pattern names at least one word")
         self._root: _Phrase | _All | _Any = self._any()
         if self._peek() is not None:
-            raise ValueError(f"unexpected {self._peek()!r} in {text!r}")
+            raise Invalid.of(
+                "unexpected %(token)s in %(text)s",
+                token=repr(self._peek()),
+                text=repr(text),
+            )
 
     def find(self, text: str) -> int | None:
         spans = list(_WORD.finditer(text))
@@ -94,14 +100,16 @@ class Pattern:
             _ = self._take()
             inner = self._any()
             if self._take() != ")":
-                raise ValueError(f"a '(' in {self.text!r} is never closed")
+                raise Invalid.of(
+                    "a '(' in %(text)s is never closed", text=repr(self.text)
+                )
             return inner
         terms: list[_Term] = []
         while (token := self._peek()) not in (None, "&", "|", "(", ")"):
             _ = self._take()
             terms += _terms(token)
         if not terms:
-            raise ValueError(f"a word is missing in {self.text!r}")
+            raise Invalid.of("a word is missing in %(text)s", text=repr(self.text))
         return _Phrase(tuple(terms))
 
 
@@ -109,7 +117,7 @@ def _terms(token: str) -> list[_Term]:
     stem = token.endswith("*")
     words = [word.casefold() for word in _WORD.findall(token)]
     if not words:
-        raise ValueError(f"{token!r} names no word")
+        raise Invalid.of("%(token)s names no word", token=repr(token))
     return [_Term(word, stem and i == len(words) - 1) for i, word in enumerate(words)]
 
 

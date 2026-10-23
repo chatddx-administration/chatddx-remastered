@@ -2,7 +2,7 @@ from statistics import mean
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
@@ -22,7 +22,7 @@ from chatddx.store.queue import Placed
 from . import schemas
 from .events import graded_of, item_of, started_of
 from .people import BenchDep
-from .state import NO_STORE, no_store, refused, state
+from .state import NO_STORE, Refusing, no_store, refused, state
 from .telling import told
 
 STREAM = "text/event-stream"
@@ -220,7 +220,7 @@ def halt(bench: BenchDep, run: UUID) -> Response:
     try:
         _ = Queue(bench.conn).halt(run)
     except LookupError as e:
-        raise HTTPException(409, str(e)) from None
+        raise Refusing(409, e) from None
     return Response(status_code=204)
 
 

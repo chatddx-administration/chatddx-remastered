@@ -18,6 +18,7 @@ from .base import (
     Component,
     Digest,
     Frozen,
+    Invalid,
     Language,
     RefTo,
     Resolver,
@@ -135,9 +136,15 @@ def _inserts(segments: Iterable[object]) -> list[InsertName]:
 def _check_inserts(kind: str, segments: Iterable[object]) -> list[InsertName]:
     used = _inserts(segments)
     if stray := set(used) - INSERTS_BY_KIND[kind]:
-        raise ValueError(f"{kind} cannot use inserts {sorted(stray)}")
+        raise Invalid.of(
+            "%(kind)s cannot use inserts %(inserts)s",
+            kind=kind,
+            inserts=str(sorted(stray)),
+        )
     if dupes := {i for i in used if used.count(i) > 1}:
-        raise ValueError(f"inserts used more than once: {sorted(dupes)}")
+        raise Invalid.of(
+            "inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))
+        )
     return used
 
 
@@ -229,7 +236,7 @@ OutputContract = Annotated[
 
 def _pointer(schema: dict[str, JsonValue], ref: str) -> JsonValue:
     if ref != "#" and not ref.startswith("#/"):
-        raise ValueError(f"{ref} is outside the schema")
+        raise Invalid.of("%(ref)s is outside the schema", ref=ref)
     node: JsonValue = schema
     for token in unquote(ref[2:]).split("/") if ref != "#" else ():
         key = token.replace("~1", "/").replace("~0", "~")
@@ -239,7 +246,7 @@ def _pointer(schema: dict[str, JsonValue], ref: str) -> JsonValue:
             case list() if key.isdigit() and int(key) < len(node):
                 node = node[int(key)]
             case _:
-                raise ValueError(f"{ref} refers to nothing")
+                raise Invalid.of("%(ref)s refers to nothing", ref=ref)
     return node
 
 
@@ -248,7 +255,7 @@ def _inline_refs(schema: dict[str, JsonValue]) -> dict[str, JsonValue]:
         match node:
             case {"$ref": str(ref), **siblings}:
                 if ref in seen:
-                    raise ValueError(f"{ref} refers to itself")
+                    raise Invalid.of("%(ref)s refers to itself", ref=ref)
                 target = resolve(_pointer(schema, ref), (*seen, ref))
                 rest = {k: resolve(v, seen) for k, v in siblings.items()}
                 return {**target, **rest} if isinstance(target, dict) else target
@@ -279,11 +286,13 @@ class Output(Component):
     def _schema_placement(self) -> "Output":
         if isinstance(self.contract, TextOutput):
             if self.contract.json_schema is not None:
-                raise ValueError(
+                raise Invalid.of(
                     "an output's schema goes in json_schema, not its contract"
                 )
         elif self.json_schema is None:
-            raise ValueError(f"{self.contract.kind} contracts need json_schema")
+            raise Invalid.of(
+                "%(contract)s contracts need json_schema", contract=self.contract.kind
+            )
         return self
 
     @model_validator(mode="after")
@@ -292,13 +301,13 @@ class Output(Component):
             return self
         used = _check_inserts(self.kind, _segments(self.guidance))
         if "schema" in used and self.output_schema is None:
-            raise ValueError("only an output with a schema can show it")
+            raise Invalid.of("only an output with a schema can show it")
         return self
 
     @model_validator(mode="after")
     def _schema_ops(self) -> "Output":
         if self.schema_ops and self.json_schema is None:
-            raise ValueError("schema ops need a schema")
+            raise Invalid.of("schema ops need a schema")
         _ = self.output_schema
         return self
 
@@ -373,7 +382,7 @@ class Reasoning(Component):
         if self.level is not None and (
             self.effort is not None or self.chat_template_kwargs
         ):
-            raise ValueError(
+            raise Invalid.of(
                 "a reasoning level is worked out from the model's facts, so it comes "
                 + "without an effort or chat template arguments"
             )
@@ -388,7 +397,9 @@ class Passthrough(Component):
     def _no_owned_keys(self) -> "Passthrough":
         reserved = RUNTIME_KEYS | OUTPUT_KEYS | MANAGED_KEYS | BYPASS_KEYS
         if owned := self.body.keys() & reserved:
-            raise ValueError(f"passthrough may not set {sorted(owned)}")
+            raise Invalid.of(
+                "passthrough may not set %(keys)s", keys=str(sorted(owned))
+            )
         return self
 
 
@@ -435,13 +446,17 @@ class Translations(Component):
     def _into(cls, into: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
         for language, entries in into.items():
             if not entries:
-                raise ValueError(f"no translations into {language}")
+                raise Invalid.of("no translations into %(language)s", language=language)
             if any(not text.strip() for text in entries):
-                raise ValueError("whitespace isn't translated")
+                raise Invalid.of("whitespace isn't translated")
             if empty := sorted(
                 text for text, translation in entries.items() if not translation
             ):
-                raise ValueError(f"no translation into {language} given for {empty}")
+                raise Invalid.of(
+                    "no translation into %(language)s given for %(texts)s",
+                    language=language,
+                    texts=str(empty),
+                )
         return {language: sorted_keys(entries) for language, entries in into.items()}
 
 
@@ -650,7 +665,9 @@ def _tool_name(tool: JsonValue) -> str:
         case {"function": {"name": str() as name}}:
             return name
         case _:
-            raise ValueError(f"a tool needs a function with a name, not {tool!r}")
+            raise Invalid.of(
+                "a tool needs a function with a name, not %(tool)s", tool=repr(tool)
+            )
 
 
 def _tool_names(body: Mapping[str, JsonValue]) -> list[str]:
@@ -660,7 +677,7 @@ def _tool_names(body: Mapping[str, JsonValue]) -> list[str]:
         case list() as tools:
             return [_tool_name(t) for t in tools]
         case _:
-            raise ValueError("tools must be a list")
+            raise Invalid.of("tools must be a list")
 
 
 def _tool_function(
@@ -686,11 +703,21 @@ def _check_slots(
 ) -> None:
     used = [s.slot for c in contents for s in c if isinstance(s, Slot)]
     if stray := set(used) - SLOTS_BY_PURPOSE[purpose]:
-        raise ValueError(f"{purpose} requests cannot use slots {sorted(stray)}")
+        raise Invalid.of(
+            "%(purpose)s requests cannot use slots %(slots)s",
+            purpose=purpose,
+            slots=str(sorted(stray)),
+        )
     if missing := _REQUIRED_SLOTS[purpose] - set(used):
-        raise ValueError(f"{purpose} requests need slots {sorted(missing)}")
+        raise Invalid.of(
+            "%(purpose)s requests need slots %(slots)s",
+            purpose=purpose,
+            slots=str(sorted(missing)),
+        )
     if dupes := {s for s in used if used.count(s) > 1}:
-        raise ValueError(f"slots used more than once: {sorted(dupes)}")
+        raise Invalid.of(
+            "slots used more than once: %(slots)s", slots=str(sorted(dupes))
+        )
 
 
 _Translate = Callable[[str], str]
@@ -892,7 +919,11 @@ def landings(
     recipe: Recipe, get: Resolver, facts: ModelFacts | None
 ) -> tuple[Landing | None, Landing | None]:
     if facts is not None and (model := model_of(recipe.model, get).name) != facts.model:
-        raise StructuralError(f"facts about {facts.model} can't compile for {model}")
+        raise StructuralError.of(
+            "facts about %(facts)s can't compile for %(model)s",
+            facts=facts.model,
+            model=model,
+        )
     reasoning = (
         None if recipe.reasoning is None else resolve(get, recipe.reasoning, Reasoning)
     )
@@ -901,10 +932,15 @@ def landings(
     if asked is None and not sampling.recommended:
         return None, None
     if facts is None:
-        what = "a recommended sampling" if asked is None else f"reasoning {asked!r}"
-        raise StructuralError(
-            f"{what} is worked out from the facts about the recipe's model, which has "
-            + "none"
+        if asked is None:
+            raise StructuralError.of(
+                "a recommended sampling is worked out from the facts about the "
+                + "recipe's model, which has none"
+            )
+        raise StructuralError.of(
+            "reasoning %(level)s is worked out from the facts about the recipe's "
+            + "model, which has none",
+            level=repr(asked),
         )
     try:
         landed = None if asked is None else facts.reasoning.landing(asked)
@@ -915,7 +951,9 @@ def landings(
             followed = landed or facts.reasoning.landing("default")
             _ = facts.recommended(followed.level)
     except Refused as e:
-        raise StructuralError(f"{facts.model}: {e}") from None
+        raise StructuralError.of(
+            "%(model)s: %(refused)s", model=facts.model, refused=str(e)
+        ) from None
     return landed, followed
 
 
@@ -929,16 +967,22 @@ def compile_request(
     entries: dict[str, str] = {}
     if into is not None:
         if into not in (held := translated(recipe, get)):
-            raise StructuralError(f"no translations into {into}")
+            raise StructuralError.of("no translations into %(into)s", into=into)
         if missing := untranslated(recipe, get, into):
             listed = ", ".join(repr(t) for t in missing)
-            raise StructuralError(f"no translation into {into} for {listed}")
+            raise StructuralError.of(
+                "no translation into %(into)s for %(texts)s", into=into, texts=listed
+            )
         entries = held[into]
     parts = _parts(recipe, get, lambda text: entries.get(text, text))
     prompt, output = parts.prompt, parts.output
     sampling = resolve(get, recipe.sampling, Sampling)
     if prompt.purpose != recipe.purpose:
-        raise StructuralError(f"{prompt.purpose} prompt in a {recipe.purpose} recipe")
+        raise StructuralError.of(
+            "%(prompt)s prompt in a %(recipe)s recipe",
+            prompt=prompt.purpose,
+            recipe=recipe.purpose,
+        )
 
     toolset = parts.toolset
     fills: dict[InsertName, str] = {
@@ -959,9 +1003,9 @@ def compile_request(
     guidances: tuple[InsertName, ...] = ("output_guidance", "tool_guidance")
     for name in guidances:
         if name in in_prompt and name in in_instructions:
-            raise StructuralError(
-                f"{name.replace('_', ' ')} is inserted in both the instructions "
-                + "and the prompt"
+            raise StructuralError.of(
+                "%(insert)s is inserted in both the instructions and the prompt",
+                insert=name.replace("_", " "),
             )
         if (text := fills[name]) and name not in in_prompt | in_instructions:
             system = f"{system}\n\n{text}" if system else text
@@ -1021,8 +1065,9 @@ def compile_request(
             }
         case ToolOutput(name=name, description=description):
             if name in {t.name for t in parts.tools}:
-                raise StructuralError(
-                    f"the answer tool {name!r} has the name of a tool in the toolset"
+                raise StructuralError.of(
+                    "the answer tool %(tool)s has the name of a tool in the toolset",
+                    tool=repr(name),
                 )
             function: dict[str, JsonValue] = {"name": name}
             if description is not None:

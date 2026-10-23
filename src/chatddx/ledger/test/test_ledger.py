@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from pydantic import JsonValue, ValidationError
 
-from chatddx.factors.base import Fingerprint, StructuralError, resolve
+from chatddx.factors.base import Finding, Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine
@@ -717,3 +717,29 @@ def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> Non
             + "output schema",
         )
     ]
+
+
+def test_a_finish_record_reads_back_as_written_its_findings_said_or_not() -> None:
+    drift = {"code": "case.drift", "message": "the vignette read differs"}
+    missing = {
+        "code": "run.incomplete",
+        "message": "2 items missing",
+        "params": {"num": 2},
+        "wording": ["%(num)s item missing", "%(num)s items missing"],
+    }
+    written = json.dumps(
+        {
+            "at": "2026-10-23T12:00:00Z",
+            "findings": [drift, missing],
+            "run": str(uuid4()),
+            "seal": "sha256:" + "0" * 64,
+            "stage": "finished",
+            "v": 1,
+        },
+        separators=(",", ":"),
+    ).encode()
+    finished = RunFinished.parse(written)
+    assert finished.canonical == written
+    assert finished.findings[1] == Finding.of(
+        "run.incomplete", ("%(num)s item missing", "%(num)s items missing"), num=2
+    )

@@ -12,7 +12,9 @@ from chatddx.catalog.titles import short
 from chatddx.factors.base import (
     Component,
     Finding,
+    Invalid,
     StructuralError,
+    Worded,
     iter_refs,
     resolve,
 )
@@ -277,14 +279,17 @@ class Seen:
 
     def served(self, handle: Handle) -> Endpoint:
         if handle.deleted:
-            raise ValueError(f"model {handle.name} is deleted: pick another")
+            raise Invalid.of(
+                "model %(model)s is deleted: pick another", model=handle.name
+            )
         # Policy: Several endpoints serving it are ruled out as a process starts
         # (src/chatddx/inventory/check.py:broken), so none does.
         try:
             name = self.inventory.serving(handle.weights, self._served_model)
         except LookupError:
-            raise ValueError(
-                f"no endpoint here serves model {handle.name}: pick another"
+            raise Invalid.of(
+                "no endpoint here serves model %(model)s: pick another",
+                model=handle.name,
             ) from None
         return self.endpoint(name)
 
@@ -297,9 +302,11 @@ class Seen:
     def judged(self, judge: Judge) -> Endpoint:
         handle = self.handle(judge.model)
         if handle.weights != judge.model:
-            raise ValueError(
-                f"{self.title(judge.digest)}: its model is behind {handle.name}, which "
-                + "holds other weights now: follow it first"
+            raise Invalid.of(
+                "%(judge)s: its model is behind %(handle)s, which holds other weights "
+                + "now: follow it first",
+                judge=self.title(judge.digest),
+                handle=handle.name,
             )
         return self.served(handle)
 
@@ -329,8 +336,9 @@ class Seen:
             return found
         if weights is None:
             if model is None:
-                raise ValueError(
-                    f"{variation.label} names no model: name the one to run it under"
+                raise Invalid.of(
+                    "%(configuration)s names no model: name the one to run it under",
+                    configuration=variation.label,
                 )
             return self.served(self.handle_named(model))
         if model is not None:
@@ -339,9 +347,11 @@ class Seen:
             )
         handle = self.handle(weights)
         if handle.weights != weights:
-            raise ValueError(
-                f"{variation.label}'s model is behind {handle.name}, which holds other "
-                + "weights now: follow it first"
+            raise Invalid.of(
+                "%(configuration)s's model is behind %(handle)s, which holds other "
+                + "weights now: follow it first",
+                configuration=variation.label,
+                handle=handle.name,
             )
         return self.served(handle)
 
@@ -380,7 +390,11 @@ class Seen:
         if into is None and (not variation.parts or recipe is None):
             return resolve(self.store.get, variation.configuration.digest, Skeleton)
         if recipe is None:
-            raise StructuralError(f"{variation.label} has no translations into {into}")
+            raise StructuralError.of(
+                "%(configuration)s has no translations into %(into)s",
+                configuration=variation.label,
+                into=str(into),
+            )
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         return compile_request(
             recipe, registry.get, compiled_with(self, variation), into
@@ -872,6 +886,8 @@ def picked(seen: Seen, cases: Sequence[str], schema: str) -> dict[str, str | Non
             for case, held in choices(seen, cases, schema).items()
         }
     except LookupError as e:
+        if isinstance(e, Worded) and e.wording is not None:
+            raise Ambiguous.of(e.wording, **e.params) from None
         raise Ambiguous(str(e)) from None
 
 
@@ -1006,14 +1022,27 @@ def check_expecting(
     seen: Seen,
     expectation: Expectation,
     thread: int | None,
-    then: str = "edit that one",
+    restoring: bool = False,
 ) -> None:
     case, schema = expectation.case, expectation.expectation_schema
     held = choices(seen, [case], schema)[case]
-    if others := sorted(t for t in held if t != thread):
-        raise ValueError(
-            f"{seen.person.login} has their own expectation of {seen.title(case)} "
-            + f"under {seen.title(schema)}, in thread {others[0]}: {then}"
+    if (others := sorted(t for t in held if t != thread)) and restoring:
+        raise Invalid.of(
+            "%(login)s has their own expectation of %(case)s under %(schema)s, in "
+            + "thread %(thread)s: delete that one to restore this",
+            login=seen.person.login,
+            case=seen.title(case),
+            schema=seen.title(schema),
+            thread=others[0],
+        )
+    if others:
+        raise Invalid.of(
+            "%(login)s has their own expectation of %(case)s under %(schema)s, in "
+            + "thread %(thread)s: edit that one",
+            login=seen.person.login,
+            case=seen.title(case),
+            schema=seen.title(schema),
+            thread=others[0],
         )
 
 
@@ -1045,12 +1074,16 @@ def _missing(
     subject = variation.configuration.digest
     if carried is None:
         return Finding(code="translations.missing", message=refused, subject=subject)
-    n = len(carried.cases)
-    cases = "1 case is" if n == 1 else f"{n} cases are"
-    return Finding(
-        code="translations.missing",
-        message=f"{cases} in {carried.language}, and left out: {refused}",
+    return Finding.of(
+        "translations.missing",
+        (
+            "%(num)s case is in %(language)s, and left out: %(refused)s",
+            "%(num)s cases are in %(language)s, and left out: %(refused)s",
+        ),
         subject=subject,
+        num=len(carried.cases),
+        language=str(carried.language),
+        refused=refused,
     )
 
 

@@ -109,7 +109,7 @@
   {% if editable %}
     {% if languaged %}
     <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">{{ _("language") }}</span>
-      <input name="language" value="{{ typed.language or '' if typed else thread.language or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ pgettext('no language', 'none') }}">
+      <input name="language" pattern="{{ language_pattern }}" title="{{ _('a language tag, such as sv or pt-BR') }}" value="{{ typed.language or '' if typed else thread.language or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ pgettext('no language', 'none') }}">
       <span class="text-xs text-muted-foreground">{{ pgettext("under the field language", "The text's, kept with it.") }}</span></label>
     {% endif %}
     {% if labels is not none %}

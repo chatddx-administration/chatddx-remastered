@@ -69,7 +69,7 @@ def _reraises(handler: ast.ExceptHandler) -> bool:
 class Trace:
     def __init__(self, code: Code, finding: str, whoops: str) -> None:
         self.code: Code = code
-        self.finding: str = finding
+        self.findings: tuple[str, str] = (finding, f"{finding}.of")
         self.whoops: str = whoops
         self._of: dict[tuple[str, str | None], Traced] = {}
 
@@ -175,6 +175,8 @@ class _Walker:
         if node.exc is None:
             return
         target = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+        if isinstance(target, ast.Attribute) and target.attr == "of":
+            target = target.value
         kind = self.code.lookup(self.module, target)
         exception, through = self.code.segment(self.function, target), None
         factory = self.code.get(kind or "")
@@ -194,7 +196,7 @@ class _Walker:
         self.raised.append(Raised(exception, said, kind, through, origin=origin))
 
     def called(self, node: ast.Call, caught: tuple[str, ...]) -> None:
-        if self.code.lookup(self.module, node.func) == self.trace.finding:
+        if self.code.lookup(self.module, node.func) in self.trace.findings:
             self.finding(node)
             return
         helper = self.helper(node.func)
@@ -209,6 +211,7 @@ class _Walker:
 
     def finding(self, node: ast.Call) -> None:
         said = {k.arg: k.value for k in node.keywords if k.arg is not None}
+        said |= dict(zip(("code", "message"), node.args, strict=False))
         if "code" not in said:
             return
         code = self.text(said["code"])
@@ -261,6 +264,8 @@ class _Walker:
         return ", ".join(written) or None
 
     def argument(self, node: ast.expr) -> str:
+        if isinstance(node, ast.Tuple):
+            return " / ".join(dict.fromkeys(self.argument(e) for e in node.elts))
         text = self.text(node)
         return self.code.segment(self.function, node) if text is None else f'"{text}"'
 

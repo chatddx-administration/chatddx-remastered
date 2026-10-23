@@ -160,11 +160,11 @@ Raises:
 * `text: str`
 
 Raises:
-1. `ValueError`: `"a pattern names at least one word"`
-2. `ValueError`: `"a '(' in {self.text!r} is never closed"` (through `Pattern._any`)
-3. `ValueError`: `"{token!r} names no word"` (through `Pattern._any`)
-4. `ValueError`: `"a word is missing in {self.text!r}"` (through `Pattern._any`)
-5. `ValueError`: `"unexpected {self._peek()!r} in {text!r}"`
+1. `Invalid`: `"a pattern names at least one word"`
+2. `Invalid`: `"a '(' in %(text)s is never closed", text=repr(self.text)` (through `Pattern._any`)
+3. `Invalid`: `"%(token)s names no word", token=repr(token)` (through `Pattern._any`)
+4. `Invalid`: `"a word is missing in %(text)s", text=repr(self.text)` (through `Pattern._any`)
+5. `Invalid`: `"unexpected %(token)s in %(text)s", token=repr(self._peek()), text=repr(text)`
 
 ## `Pattern.find`
 `src/chatddx/scorers/patterns.py:Pattern.find`

@@ -314,6 +314,8 @@ Raises:
 * `detail: str | list[JsonValue] = Field(…)`
 * `code: Code`
 * `pass_on: str | None = Field(…)`
+* `wording: str | list[str] | None = Field(…)`
+* `params: dict[str, str | int | float] | None = Field(…)`
 
 ## `ErrorData` `(_Schema)`
 `src/chatddx/api/schemas.py:ErrorData`
@@ -404,6 +406,8 @@ Raises:
 * `code: str`
 * `message: str`
 * `subject: str | None`
+* `wording: str | list[str] | None = Field(…)`
+* `params: dict[str, str | int | float] = Field(…)`
 
 ## `Finding.of` `@classmethod`
 `src/chatddx/api/schemas.py:Finding.of`
@@ -479,7 +483,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `409, str(e)` (from `LookupError`)
+1. `Refusing`: `409, e` (from `LookupError`)
 
 ## `Heard`
 `src/chatddx/api/listening.py:Heard`
@@ -1106,14 +1110,23 @@ Raises:
 
 `RecipeBody`
 
-## `refused` `@contextmanager`
+## `Refusing` `(HTTPException)`
+`src/chatddx/api/state.py:Refusing`
+
+## `Refusing.__init__`
+`src/chatddx/api/state.py:Refusing.__init__`
+
+* `status: int`
+* `refused: Exception`
+
+## `Refusing.refused` `@contextmanager`
 `src/chatddx/api/state.py:refused`
 
 * `*named: type[Exception]`
 * ∟`Generator[None]`
 
 Raises:
-1. `HTTPException`: `422, str(e)` (from `(ValueError, *named)`)
+1. `Refusing`: `422, e` (from `(ValueError, *named)`)
 
 ## `rendered_again` `@router.get("/runs/{run}/rendered-again")`
 `src/chatddx/api/runs.py:rendered_again`
@@ -1287,7 +1300,7 @@ login is unprocessable rather than not found.
 * ∟`None`
 
 Raises:
-1. `HTTPException`: `422, "no person {missing[0]!r}"`
+1. `Invalid`: `"no person %(person)s", person=repr(missing[0])`
 
 ## `said_of`
 `src/chatddx/api/events.py:said_of`

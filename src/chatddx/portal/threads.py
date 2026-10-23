@@ -4,17 +4,17 @@ from dataclasses import dataclass, replace
 from typing import Annotated, Any, Literal, cast
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, JsonValue, ValidationError
 from starlette.datastructures import FormData
 
 from chatddx import catalog
 from chatddx.api import families, schemas, threads as api
-from chatddx.api.state import refused
+from chatddx.api.state import Refusing, refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read
-from chatddx.factors.base import Component, language_tag, resolve
+from chatddx.factors.base import Component, Invalid, language_tag, resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import RECIPE_PARTS, Purpose, Recipe, Translations
@@ -22,12 +22,12 @@ from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.identity import sees
 from chatddx.ledger import RunStarted
-from chatddx.locale import N_, pgettext, pgettext_noop, tr
+from chatddx.locale import pgettext, pgettext_noop
 
 from .changes import changes
 from .editors import editors
 from .fields import Field, choices, fields, fresh, kept, listed, parsed, purpose
-from .pages import BenchDep, own_first, page, refusable, within
+from .pages import BenchDep, own_first, page, refusable, refusal_of, within
 from .scoring import checked, code_of, unshipped
 from .shelves import SHELVES, shelved, worded
 from .translations import begun, posted, translating, written as translated
@@ -37,20 +37,20 @@ _AUTHORED = WRITTEN | {"skeleton"}
 _BEGUN = [w for w in KINDS if set(KINDS[w]) & _AUTHORED]
 
 _NAMED = {
-    "appendix": N_("a new appendix is named"),
-    "configuration": N_("a new configuration is named"),
-    "expectation": N_("a new expectation is named"),
-    "few_shot": N_("a new few shot is named"),
-    "instructions": N_("a new instructions is named"),
-    "judge": N_("a new judge is named"),
-    "output": N_("a new output is named"),
-    "passthrough": N_("a new passthrough is named"),
-    "prompt": N_("a new prompt is named"),
-    "reasoning": N_("a new reasoning is named"),
-    "sampling": N_("a new sampling is named"),
-    "scorer": N_("a new scorer is named"),
-    "toolset": N_("a new toolset is named"),
-    "trial": N_("a new trial is named"),
+    "appendix": pgettext_noop("refusal", "a new appendix is named"),
+    "configuration": pgettext_noop("refusal", "a new configuration is named"),
+    "expectation": pgettext_noop("refusal", "a new expectation is named"),
+    "few_shot": pgettext_noop("refusal", "a new few shot is named"),
+    "instructions": pgettext_noop("refusal", "a new instructions is named"),
+    "judge": pgettext_noop("refusal", "a new judge is named"),
+    "output": pgettext_noop("refusal", "a new output is named"),
+    "passthrough": pgettext_noop("refusal", "a new passthrough is named"),
+    "prompt": pgettext_noop("refusal", "a new prompt is named"),
+    "reasoning": pgettext_noop("refusal", "a new reasoning is named"),
+    "sampling": pgettext_noop("refusal", "a new sampling is named"),
+    "scorer": pgettext_noop("refusal", "a new scorer is named"),
+    "toolset": pgettext_noop("refusal", "a new toolset is named"),
+    "trial": pgettext_noop("refusal", "a new trial is named"),
 }
 _PURPOSES: dict[Purpose, str] = {
     "generation": pgettext_noop("purpose", "generation"),
@@ -105,13 +105,10 @@ def library_page(
     if kind is None:
         return page(request, "library.html", person=bench.person, shelves=shelves)
     if kind not in words:
-        raise HTTPException(
-            404,
-            tr(
-                "no kind %(kind)r: the kinds are %(kinds)s",
-                kind=kind,
-                kinds=", ".join(words),
-            ),
+        raise NotFound.of(
+            "no kind %(kind)s: the kinds are %(kinds)s",
+            kind=repr(kind),
+            kinds=", ".join(words),
         )
     found = [] if kind == "case" else listed(bench, kind)
     every = families.families(bench) if kind == "case" else []
@@ -265,13 +262,13 @@ def writing(
     if model is Translations:
         try:
             if not name:
-                raise ValueError(tr("new translations are named"))
+                raise Invalid.of("new translations are named")
             written = bench.new(translated(None, into or "", posted(form)), name)
         except ValueError as e:
             if not refusable(e):
                 raise
             return _beginning_translations(
-                request, bench, configuration, into, [str(e)], 422
+                request, bench, configuration, into, [refusal_of(e)], 422
             )
         return RedirectResponse(f"/threads/{written.edit.thread}", 303)
     with refused(NotFound):
@@ -279,12 +276,10 @@ def writing(
     language = str(form.get("language", "")).strip() or None
     labels = str(form.get("labels", "{}"))
     try:
+        if not name and kind in _NAMED:
+            raise Invalid.of(_NAMED[kind])
         if not name:
-            raise ValueError(
-                tr(_NAMED[kind])
-                if kind in _NAMED
-                else tr("a new %(kind)s is named", kind=worded(kind))
-            )
+            raise Invalid.of("a new %(kind)s is named", kind=worded(kind))
         made = model.model_validate(parsed(found, form))
         written = bench.new(
             made,
@@ -305,9 +300,7 @@ def _labels(typed: str) -> Labels:
     try:
         return schemas.Labels.model_validate_json(typed).given()
     except ValidationError as e:
-        raise ValueError(
-            tr("labels: %(refused)s", refused=e.errors()[0]["msg"])
-        ) from None
+        raise Invalid.of("labels: %(refused)s", refused=e.errors()[0]["msg"]) from None
 
 
 def _begin_page(
@@ -378,11 +371,11 @@ def _beginning_translations(
         try:
             entries = begun(bench, configuration, language_tag(into))
         except NotFound as e:
-            raise HTTPException(422, str(e)) from None
+            raise Refusing(422, e) from None
         except ValueError as e:
             if not refusable(e):
                 raise
-            refusals, status = [*(refusals or []), str(e)], 422
+            refusals, status = [*(refusals or []), refusal_of(e)], 422
     return page(
         request,
         "begun.html",
@@ -441,13 +434,10 @@ def _drawn(
 
 def _begun(kind: str) -> type[Component] | type[Recipe]:
     if kind not in _BEGUN:
-        raise HTTPException(
-            404,
-            tr(
-                "no %(kind)s is begun here: what is begun here is %(kinds)s",
-                kind=kind,
-                kinds=", ".join(_BEGUN),
-            ),
+        raise NotFound.of(
+            "no %(kind)s is begun here: what is begun here is %(kinds)s",
+            kind=kind,
+            kinds=", ".join(_BEGUN),
         )
     if kind == "configuration":
         return Recipe
@@ -479,15 +469,12 @@ def _thread_page(
     versions = api.edits(bench, thread)
     at = len(versions) if version is None else version
     if not 1 <= at <= len(versions):
-        raise HTTPException(
-            404,
-            tr(
-                "no version %(at)s of %(kind)s %(thread)s: it has %(versions)s",
-                at=at,
-                kind=worded(word),
-                thread=thread,
-                versions=len(versions),
-            ),
+        raise NotFound.of(
+            "no version %(at)s of %(kind)s %(thread)s: it has %(versions)s",
+            at=at,
+            kind=worded(word),
+            thread=thread,
+            versions=len(versions),
         )
     edit = versions[at - 1]
     held = bench.store.get(edit.digest)
@@ -513,7 +500,7 @@ def _thread_page(
         except ValueError as e:
             if not refusable(e):
                 raise
-            typed = Typed([*(typed.refused if typed else []), str(e)])
+            typed = Typed([*(typed.refused if typed else []), refusal_of(e)])
             words = translating(bench, held, digests, None)
     written = editable and held.kind_name in WRITTEN and words is None
     found = fields(type(held), body, _editable(held, body) if written else ())
@@ -660,7 +647,7 @@ def saying(
         if isinstance(e, ValueError) and not refusable(e):
             raise
         about = {"name": name, "description": description, "tags": tags}
-        typed = Typed([str(e)], about={**about, "shared": shared})
+        typed = Typed([refusal_of(e)], about={**about, "shared": shared})
         return _thread_page(request, bench, thread, typed=typed)
     return _back(thread, None)
 
@@ -706,20 +693,17 @@ def editing(request: Request, bench: BenchDep, thread: int, form: FormDep) -> Re
             if not refusable(e):
                 raise
             return _thread_page(
-                request, bench, thread, None, into or None, Typed([str(e)])
+                request, bench, thread, None, into or None, Typed([refusal_of(e)])
             )
         moved = f"?{urlencode({'into': into})}" if into in made.into else ""
         return _back(thread, f"/threads/{thread}{moved}")
     if shown.kind == "skeleton":
         recipe = _recipe(bench, shown.head.id)
         if recipe is None:
-            raise HTTPException(
-                422,
-                tr(
-                    "configuration %(thread)s is written by hand: it has no recipe to "
-                    + "pick parts of",
-                    thread=thread,
-                ),
+            raise Invalid.of(
+                "configuration %(thread)s is written by hand: it has no recipe to "
+                + "pick parts of",
+                thread=thread,
             )
         found = fields(Recipe, recipe, RECIPE_PARTS)
         try:
@@ -769,13 +753,10 @@ def reverting(
 ) -> Response:
     earlier = next((v for v in api.edits(bench, thread) if v.id == edit), None)
     if earlier is None:
-        raise HTTPException(
-            422,
-            tr(
-                "edit %(edit)s isn't a version of thread %(thread)s",
-                edit=edit,
-                thread=thread,
-            ),
+        raise Invalid.of(
+            "edit %(edit)s isn't a version of thread %(thread)s",
+            edit=edit,
+            thread=thread,
         )
     held = (
         bench.variation(thread, None, edit)
@@ -791,7 +772,7 @@ def reverting(
 @router.post("/threads/{thread}/fork")
 def forking(bench: BenchDep, thread: int, name: Annotated[str, Form()]) -> Response:
     if not name.strip():
-        raise HTTPException(422, tr("a fork is named"))
+        raise Invalid.of("a fork is named")
     with refused():
         made = bench.fork(thread, name.strip())
     return RedirectResponse(f"/threads/{made.edit.thread}", 303)

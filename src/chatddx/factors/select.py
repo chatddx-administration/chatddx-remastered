@@ -6,6 +6,8 @@ from urllib.parse import unquote
 
 from pydantic import JsonValue
 
+from .base import Invalid
+
 # Scope: a selector picks the values a view compares: a JSON Pointer (RFC 6901), which
 # picks at most one value, or a JSONPath query (RFC 9535) from a small subset: member
 # names (`.name`, `['name']`), indexes (`[0]`, `[-1]`), wildcards (`.*`, `[*]`), and
@@ -193,11 +195,11 @@ def _pointer(text: str) -> tuple[Step, ...]:
     if text == "":
         return ()
     if not text.startswith("/"):
-        raise ValueError(f"{text!r}: a JSON Pointer starts with /")
+        raise Invalid.of("%(text)s: a JSON Pointer starts with /", text=repr(text))
     tokens: list[Step] = []
     for raw in text[1:].split("/"):
         if re.search(r"~[^01]|~$", raw):
-            raise ValueError(f"{text!r}: ~ must be followed by 0 or 1")
+            raise Invalid.of("%(text)s: ~ must be followed by 0 or 1", text=repr(text))
         tokens.append(Token(raw.replace("~1", "/").replace("~0", "~")))
     return tuple(tokens)
 
@@ -206,8 +208,9 @@ def parse_selector(text: str) -> tuple[Step, ...]:
     if text == "" or text.startswith("/"):
         return _pointer(text)
     if not text.startswith("$"):
-        raise ValueError(
-            f"{text!r}: a selector is a JSON Pointer or a JSONPath query starting with $"
+        raise Invalid.of(
+            "%(text)s: a selector is a JSON Pointer or a JSONPath query starting with $",
+            text=repr(text),
         )
     p = _Parser(text)
     p.expect("$")

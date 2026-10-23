@@ -126,9 +126,14 @@ def check_execution(
     allowed = execution.retries + 1
     if over := sum(1 for c in calls if len(c.attempts) > allowed):
         findings.append(
-            Finding(
-                code="execution.retries",
-                message=f"{over} calls took more than the {allowed} attempts allowed",
+            Finding.of(
+                "execution.retries",
+                (
+                    "%(num)s calls took more than the %(allowed)s attempts allowed",
+                    "%(num)s calls took more than the %(allowed)s attempts allowed",
+                ),
+                num=over,
+                allowed=allowed,
             )
         )
     limit = execution.timeout_s
@@ -141,10 +146,14 @@ def check_execution(
         )
     ):
         findings.append(
-            Finding(
-                code="execution.timeout",
-                message=f"{late} attempt{'' if late == 1 else 's'} took longer than "
-                + f"the {limit} s timeout",
+            Finding.of(
+                "execution.timeout",
+                (
+                    "%(num)s attempt took longer than the %(limit)s s timeout",
+                    "%(num)s attempts took longer than the %(limit)s s timeout",
+                ),
+                num=late,
+                limit=limit,
             )
         )
 
@@ -161,11 +170,13 @@ def check_execution(
         latest = at if latest is None else max(latest, at)
     if early:
         findings.append(
-            Finding(
-                code="execution.order",
-                message=f"{early} "
-                + ("item was" if early == 1 else "items were")
-                + " sent before items scheduled ahead of them",
+            Finding.of(
+                "execution.order",
+                (
+                    "%(num)s item was sent before items scheduled ahead of them",
+                    "%(num)s items were sent before items scheduled ahead of them",
+                ),
+                num=early,
             )
         )
 
@@ -178,10 +189,14 @@ def check_execution(
         peak = max(peak, in_flight)
     if peak > execution.concurrency:
         findings.append(
-            Finding(
-                code="execution.concurrency",
-                message=f"{peak} calls were in flight at once, declared "
-                + f"{execution.concurrency}",
+            Finding.of(
+                "execution.concurrency",
+                (
+                    "%(num)s calls were in flight at once, declared %(declared)s",
+                    "%(num)s calls were in flight at once, declared %(declared)s",
+                ),
+                num=peak,
+                declared=execution.concurrency,
             )
         )
     return findings

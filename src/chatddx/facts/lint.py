@@ -34,9 +34,9 @@ def _model(subject: str, skeleton: Skeleton, model: ModelFacts) -> Iterable[Find
         (w.effort, w.chat_template_kwargs) for w in model.reasoning.realized().values()
     ]
     if asked != (None, {}) and asked not in known:
-        yield Finding(
-            code="facts.reasoning_unmatched",
-            message="the configuration's reasoning settings match none of the model's "
+        yield Finding.of(
+            "facts.reasoning_unmatched",
+            "the configuration's reasoning settings match none of the model's "
             + "reasoning levels",
             subject=subject,
         )
@@ -80,11 +80,13 @@ def _sampled_for(
         for other, model in facts.models.items()
         if other != name and asked in _recommended(model)
     ):
-        yield Finding(
-            code="facts.sampling_unmatched",
-            message="the configuration's sampling is what the facts recommend for "
-            + f"{', '.join(others)}, not for {name}",
+        yield Finding.of(
+            "facts.sampling_unmatched",
+            "the configuration's sampling is what the facts recommend for "
+            + "%(others)s, not for %(name)s",
             subject=subject,
+            others=", ".join(others),
+            name=str(name),
         )
 
 
@@ -94,11 +96,12 @@ def _pair(c: Trial | Judge, registry: Registry, facts: Facts) -> Iterable[Findin
     model = facts.about(served, registry.get)
     skeleton = resolve(registry.get, c.skeleton, Skeleton)
     if model is None:
-        yield Finding(
+        yield Finding.of(
+            "facts.missing",
+            "no facts about %(name)s, so model-level checks were skipped",
             level="info",
-            code="facts.missing",
-            message=f"no facts about {name!r}, so model-level checks were skipped",
             subject=c.digest,
+            name=repr(name),
         )
     else:
         yield from _model(c.digest, skeleton, model)

@@ -152,9 +152,10 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     ):
         assert signed.post(f"/api/runs/{run}/scores", json={}).status_code == 202
         busy = signed.post(f"/api/runs/{run}/scores", json={})
-        assert (busy.status_code, busy.json()) == (
+        assert (busy.status_code, busy.json()["detail"], busy.json()["code"]) == (
             409,
-            {"detail": f"run {run} has something under way", "code": "conflict"},
+            f"run {run} has something under way",
+            "conflict",
         )
         events = f"{listening}/api/runs/{run}/events"
         with http.stream("GET", events, timeout=30) as got:

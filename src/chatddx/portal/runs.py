@@ -5,7 +5,7 @@ from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
 
-from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
@@ -14,7 +14,7 @@ from chatddx.api.state import refused
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import threads
 from chatddx.catalog.language import language_of
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import Part, parts
 from chatddx.factors.trial import Trial, suggest_seeds
@@ -76,7 +76,7 @@ def comparing(
     by: str | None = None,
 ) -> Response:
     if not run:
-        raise HTTPException(422, tr("pick the runs to compare on the runs page"))
+        raise Invalid.of("pick the runs to compare on the runs page")
     compared = api.compared(bench, run)
     cases = [i.case for i in compared.items] + [c.case for c in compared.apart]
     picked = viewed(compared.views, by)

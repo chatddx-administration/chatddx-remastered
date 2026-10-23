@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block main %}
+<script type="application/json" id="home-props">{{ home | tojson }}</script>
 <div id="home">
   {% if not assets.island(island).scripts %}
   <p class="mx-auto max-w-xl px-4 py-16 text-center text-muted-foreground">{{ _("The home page's script isn't built.") }}</p>

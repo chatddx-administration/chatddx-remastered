@@ -5,7 +5,7 @@ from statistics import mean
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Form, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
@@ -18,7 +18,7 @@ from chatddx.api import (
 )
 from chatddx.api.events import graded_of
 from chatddx.api.state import refused
-from chatddx.bench import Ambiguous, Bench, MovedOn
+from chatddx.bench import Ambiguous, Bench, MovedOn, NotFound
 from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog import read as catalog_read, threads as catalog_threads
 from chatddx.factors.base import Component, Finding, resolve
@@ -28,7 +28,7 @@ from chatddx.factors.select import select
 from chatddx.locale import tr
 from chatddx.scorers.shipped import problems, unit_of
 
-from .pages import BenchDep, own_first, page, within
+from .pages import BenchDep, own_first, page, refusal_of, within
 
 SHOWN = 50
 
@@ -191,11 +191,11 @@ def checked(bench: Bench, held: Component) -> tuple[list[Finding], list[str]]:
         try:
             _ = bench.judged(held)
         except ValueError as e:
-            refused.append(str(e))
+            refused.append(refusal_of(e))
     try:
         return bench.check(held).findings, refused
     except (LookupError, ValueError) as e:
-        return [], [*refused, str(e)]
+        return [], [*refused, refusal_of(e)]
 
 
 @dataclass(frozen=True)
@@ -332,13 +332,10 @@ def scoring(
 ) -> Response:
     shown = api.thread(bench, thread)
     if shown.kind not in ("scorer", "judge"):
-        raise HTTPException(
-            404,
-            tr(
-                "no scorer or judge %(thread)s for %(login)s",
-                thread=thread,
-                login=bench.person.login,
-            ),
+        raise NotFound.of(
+            "no scorer or judge %(thread)s for %(login)s",
+            thread=thread,
+            login=bench.person.login,
         )
     held = bench.store.get(shown.head.digest)
     gone = unshipped(held) if isinstance(held, Scorer) else None
@@ -498,7 +495,7 @@ def _judge(
     try:
         sent = bench.judged(judge).name
     except (LookupError, ValueError) as e:
-        unsent = str(e)
+        unsent = refusal_of(e)
     skeleton = resolve(bench.store.get, judge.skeleton, Skeleton)
     judged, disagreed = _verdicts(bench, versions)
     return _JudgeShown(
@@ -560,13 +557,8 @@ def following(
 ) -> Response:
     shown = api.thread(bench, thread)
     if shown.kind != "judge":
-        raise HTTPException(
-            404,
-            tr(
-                "no judge %(thread)s for %(login)s",
-                thread=thread,
-                login=bench.person.login,
-            ),
+        raise NotFound.of(
+            "no judge %(thread)s for %(login)s", thread=thread, login=bench.person.login
         )
     lineage = _lineage(bench, shown)
     edit, about = bench.thread(scorer, "scorer")
@@ -583,11 +575,8 @@ def following(
     labels = catalog_read.labels(bench.rows, edit.id)
     with refused():
         if edit.id != head:
-            raise MovedOn(
-                tr(
-                    "scorer %(scorer)s has a newer version: look at it again",
-                    scorer=scorer,
-                )
+            raise MovedOn.of(
+                "scorer %(scorer)s has a newer version: look at it again", scorer=scorer
             )
         if about.owner == bench.person.id:
             _ = bench.edit(scorer, head, followed, labels=labels)
@@ -603,7 +592,7 @@ def _read(
     by = next((a for a in asked_by if view in (None, a.key)), None)
     if by is None:
         if view is not None:
-            raise HTTPException(404, tr("no view %(view)s asks this judge", view=view))
+            raise NotFound.of("no view %(view)s asks this judge", view=view)
         return Read(None, None, [], None, [])
     expected: list[tuple[schemas.Family, JsonValue]] = []
     for f in api_families.families(bench):

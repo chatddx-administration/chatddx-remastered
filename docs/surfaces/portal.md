@@ -40,8 +40,8 @@ Finds:
 * ∟`None`
 
 Raises:
-1. `HTTPException`: `422, tr("an appendix is named")`
-2. `HTTPException`: `422, tr("an appendix holds a text")`
+1. `Invalid`: `"an appendix is named"`
+2. `Invalid`: `"an appendix holds a text"`
 
 ## `appending_in_review` `@router.post("/review/{family}/appendices")`
 `src/chatddx/portal/review.py:appending_in_review`
@@ -99,7 +99,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no trial %(thread)s for %(login)s', thread=thread, login=bench.person.login)` (through `_starting`)
+1. `NotFound`: `"no trial %(thread)s for %(login)s", thread=thread, login=bench.person.login` (through `_starting`)
 
 ## `threads.beginning` `@router.get("/library/new")`
 `src/chatddx/portal/threads.py:beginning`
@@ -112,8 +112,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no %(kind)s is begun here: what is begun here is %(kinds)s', kind=kind, kinds=', '.join(_BEGUN))` (through `_begun`)
-2. `HTTPException`: `422, str(e)` (from `NotFound`, through `_beginning_translations`)
+1. `NotFound`: `"no %(kind)s is begun here: what is begun here is %(kinds)s", kind=kind, kinds=", ".join(_BEGUN)` (through `_begun`)
+2. `Refusing`: `422, e` (from `NotFound`, through `_beginning_translations`)
 
 ## `begun`
 `src/chatddx/portal/translations.py:begun`
@@ -149,7 +149,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no version %(at)s of case %(family)s: it has %(versions)s', at=at, family=family, versions=len(bindings))` (through `_case_page`)
+1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)` (through `_case_page`)
 
 ## `built`
 `src/chatddx/portal/cases.py:built`
@@ -160,7 +160,7 @@ Raises:
 * ∟`str`
 
 Raises:
-1. `HTTPException`: `422, tr("a case is built of one appendix or more")`
+1. `Invalid`: `"a case is built of one appendix or more"`
 
 ## `carrying` `@router.post("/threads/{thread}/carry")`
 `src/chatddx/portal/threads.py:carrying`
@@ -182,7 +182,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no version %(at)s of case %(family)s: it has %(versions)s', at=at, family=family, versions=len(bindings))` (through `_case_page`)
+1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)` (through `_case_page`)
 
 ## `Change` `@dataclass(frozen=True)`
 `src/chatddx/portal/changes.py:Change`
@@ -244,7 +244,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `422, tr("pick the runs to compare on the runs page")`
+1. `Invalid`: `"pick the runs to compare on the runs page"`
 
 ## `defaults`
 `src/chatddx/portal/fields.py:defaults`
@@ -282,9 +282,9 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no version %(at)s of %(kind)s %(thread)s: it has %(versions)s', at=at, kind=worded(word), thread=thread, versions=len(versions))` (through `_thread_page`)
-2. `HTTPException`: `422, tr('configuration %(thread)s is written by hand: it has no recipe to ' + 'pick parts of', thread=thread)`
-3. `ValueError`: `tr("labels: %(refused)s", refused=e.errors()[0]["msg"])` (from `ValidationError`, through `_labels`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+2. `Invalid`: `"configuration %(thread)s is written by hand: it has no recipe to pick parts of", thread=thread`
+3. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
 
 ## `editors`
 `src/chatddx/portal/editors.py:editors`
@@ -358,8 +358,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no judge %(thread)s for %(login)s', thread=thread, login=bench.person.login)`
-2. `MovedOn`: `tr('scorer %(scorer)s has a newer version: look at it again', scorer=scorer)`
+1. `NotFound`: `"no judge %(thread)s for %(login)s", thread=thread, login=bench.person.login`
+2. `MovedOn`: `"scorer %(scorer)s has a newer version: look at it again", scorer=scorer`
 
 ## `threads.following` `@router.post("/threads/{thread}/follow")`
 `src/chatddx/portal/threads.py:following`
@@ -388,7 +388,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `422, tr("a fork is named")`
+1. `Invalid`: `"a fork is named"`
 
 ## `FormDep`
 `src/chatddx/portal/threads.py:FormDep`
@@ -403,10 +403,10 @@ Raises:
 * ∟`list[Field]`
 
 Raises:
-1. `ValueError`: `tr('no field %(field)r to give: the fields are %(fields)s', field=unknown[0], fields=', '.join(properties))`
-2. `_Unparsed`: `name, tr("%(field)s isn't JSON: %(error)s", field=name, error=e)` (from `json.JSONDecodeError`, through `_read`)
-3. `_Unparsed`: `f.name, tr("%(field)s isn't a whole number: %(given)r", field=f.name, given=given)` (through `_read`)
-4. `_Unparsed`: `f.name, tr("%(field)s isn't a number: %(given)r", field=f.name, given=given)` (through `_read`)
+1. `Invalid`: `"no field %(field)s to give: the fields are %(fields)s", field=repr(unknown[0]), fields=", ".join(properties)`
+2. `_Unparsed`: `"%(field)s isn't JSON: %(error)s", field=name, error=str(e)` (from `json.JSONDecodeError`, through `_read`)
+3. `_Unparsed`: `"%(field)s isn't a whole number: %(given)s", field=f.name, given=repr(given)` (through `_read`)
+4. `_Unparsed`: `"%(field)s isn't a number: %(given)s", field=f.name, given=repr(given)` (through `_read`)
 
 ## `halting` `@router.post("/runs/{run}/halt")`
 `src/chatddx/portal/runs.py:halting`
@@ -468,8 +468,8 @@ Raises:
 
 Raises:
 1. `RequestValidationError`: `errors` (through `_varying`)
-2. `HTTPException`: `404, tr('no configuration %(thread)s for %(login)s', thread=thread, login=bench.person.login)`
-3. `HTTPException`: `404, tr('no trial %(thread)s for %(login)s', thread=thread, login=bench.person.login)` (through `_trials`)
+2. `NotFound`: `"no configuration %(thread)s for %(login)s", thread=thread, login=bench.person.login`
+3. `NotFound`: `"no trial %(thread)s for %(login)s", thread=thread, login=bench.person.login` (through `_trials`)
 
 ## `labs` `@router.get("/lab")`
 `src/chatddx/portal/lab.py:labs`
@@ -518,7 +518,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no kind %(kind)r: the kinds are %(kinds)s', kind=kind, kinds=', '.join(words))`
+1. `NotFound`: `"no kind %(kind)s: the kinds are %(kinds)s", kind=repr(kind), kinds=", ".join(words)`
 
 ## `linked`
 `src/chatddx/portal/lab.py:linked`
@@ -579,9 +579,9 @@ Raises:
 * ∟`dict[str, JsonValue]`
 
 Raises:
-1. `_Unparsed`: `f.name, tr("%(field)s isn't a whole number: %(given)r", field=f.name, given=given)` (through `_number`)
-2. `_Unparsed`: `f.name, tr("%(field)s isn't a number: %(given)r", field=f.name, given=given)` (through `_number`)
-3. `_Unparsed`: `name, tr("%(field)s isn't JSON: %(error)s", field=name, error=e)` (from `json.JSONDecodeError`, through `_json`)
+1. `_Unparsed`: `"%(field)s isn't a whole number: %(given)s", field=f.name, given=repr(given)` (through `_number`)
+2. `_Unparsed`: `"%(field)s isn't a number: %(given)s", field=f.name, given=repr(given)` (through `_number`)
+3. `_Unparsed`: `"%(field)s isn't JSON: %(error)s", field=name, error=str(e)` (from `json.JSONDecodeError`, through `_json`)
 
 ## `pausing` `@router.post("/queue/pause")`
 `src/chatddx/portal/runs.py:pausing`
@@ -631,6 +631,12 @@ Raises:
 * `e: ValueError`
 * ∟`bool`
 
+## `refusal_of`
+`src/chatddx/portal/pages.py:refusal_of`
+
+* `e: Exception`
+* ∟`str`
+
 ## `replacing` `@router.post("/cases/{family}/replacement")`
 `src/chatddx/portal/cases.py:replacing`
 
@@ -671,7 +677,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `422, tr("edit %(edit)s isn't a version of thread %(thread)s", edit=edit, thread=thread)`
+1. `Invalid`: `"edit %(edit)s isn't a version of thread %(thread)s", edit=edit, thread=thread`
 
 ## `review` `@router.get("/review/{family}")`
 `src/chatddx/portal/review.py:review`
@@ -686,9 +692,9 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr("no case %(case)s of %(family)s", case=case, family=shown.name)`
-2. `HTTPException`: `404, tr("no expectation schema %(schema)s for you", schema=schema)`
-3. `HTTPException`: `404, tr("no scorer %(scorer)s reading that schema for you", scorer=scorer)`
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name`
+2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema`
+3. `NotFound`: `"no scorer %(scorer)s reading that schema for you", scorer=scorer`
 
 ## `reviewing` `@router.get("/review")`
 `src/chatddx/portal/review.py:reviewing`
@@ -772,7 +778,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `422, tr("no case %(case)s of family %(family)s", case=case, family=family)`
+1. `Invalid`: `"no case %(case)s of family %(family)s", case=case, family=family`
 
 ## `runs` `@router.get("/runs")`
 `src/chatddx/portal/runs.py:runs`
@@ -808,7 +814,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no version %(at)s of %(kind)s %(thread)s: it has %(versions)s', at=at, kind=worded(word), thread=thread, versions=len(versions))` (through `_thread_page`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `scorer_choices`
 `src/chatddx/portal/scoring.py:scorer_choices`
@@ -836,8 +842,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no scorer or judge %(thread)s for %(login)s', thread=thread, login=bench.person.login)`
-2. `HTTPException`: `404, tr("no view %(view)s asks this judge", view=view)` (through `_judge`)
+1. `NotFound`: `"no scorer or judge %(thread)s for %(login)s", thread=thread, login=bench.person.login`
+2. `NotFound`: `"no view %(view)s asks this judge", view=view` (through `_judge`)
 
 ## `scoring_in_review` `@router.post("/review/{family}/scores")`
 `src/chatddx/portal/review.py:scoring_in_review`
@@ -968,8 +974,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `ValueError`: `tr('no order %(order)r: the orders are %(orders)s', order=order, orders=', '.join(get_args(Order)))`
-2. `ValueError`: `tr("pick a trial to run")`
+1. `Invalid`: `"no order %(order)s: the orders are %(orders)s", order=repr(order), orders=", ".join(get_args(Order))`
+2. `Invalid`: `"pick a trial to run"`
 
 ## `stopping` `@router.post("/queue/stop")`
 `src/chatddx/portal/runs.py:stopping`
@@ -1000,7 +1006,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no case %(case)s for %(login)s', case=missing[0], login=bench.person.login)`
+1. `NotFound`: `"no case %(case)s for %(login)s", case=missing[0], login=bench.person.login`
 
 ## `threads.taking` `@router.post("/threads/{thread}/take")`
 `src/chatddx/portal/threads.py:taking`
@@ -1026,7 +1032,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no version %(at)s of %(kind)s %(thread)s: it has %(versions)s', at=at, kind=worded(word), thread=thread, versions=len(versions))` (through `_thread_page`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `to_sign_in`
 `src/chatddx/portal/pages.py:to_sign_in`
@@ -1135,11 +1141,12 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `HTTPException`: `404, tr('no %(kind)s is begun here: what is begun here is %(kinds)s', kind=kind, kinds=', '.join(_BEGUN))` (through `_begun`)
-2. `ValueError`: `tr("new translations are named")`
-3. `HTTPException`: `422, str(e)` (from `NotFound`, through `_beginning_translations`)
-4. `ValueError`: `tr(_NAMED[kind]) if kind in _NAMED else tr('a new %(kind)s is named', kind=worded(kind))`
-5. `ValueError`: `tr("labels: %(refused)s", refused=e.errors()[0]["msg"])` (from `ValidationError`, through `_labels`)
+1. `NotFound`: `"no %(kind)s is begun here: what is begun here is %(kinds)s", kind=kind, kinds=", ".join(_BEGUN)` (through `_begun`)
+2. `Invalid`: `"new translations are named"`
+3. `Refusing`: `422, e` (from `NotFound`, through `_beginning_translations`)
+4. `Invalid`: `_NAMED[kind]`
+5. `Invalid`: `"a new %(kind)s is named", kind=worded(kind)`
+6. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
 
 ## `written`
 `src/chatddx/portal/translations.py:written`

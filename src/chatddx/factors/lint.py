@@ -34,19 +34,21 @@ _Validators = dict[str, Validator | str]
 
 def _model(c: LocalModel, _: Registry) -> Iterable[Finding]:
     if not _COMMIT.match(c.revision):
-        yield Finding(
-            code="model.revision",
-            message=f"revision {c.revision!r} is not a commit and can move",
+        yield Finding.of(
+            "model.revision",
+            "revision %(revision)s is not a commit and can move",
             subject=c.digest,
+            revision=repr(c.revision),
         )
 
 
 def _engine(c: LocalEngine, _: Registry) -> Iterable[Finding]:
     if not _NIX_STORE.match(c.runtime.closure):
-        yield Finding(
-            code="engine.closure",
-            message=f"closure {c.runtime.closure!r} is not a Nix store path",
+        yield Finding.of(
+            "engine.closure",
+            "closure %(closure)s is not a Nix store path",
             subject=c.digest,
+            closure=repr(c.runtime.closure),
         )
 
 
@@ -54,11 +56,13 @@ def _scorer(c: Scorer, registry: Registry) -> Iterable[Finding]:
     schema = resolve(registry.get, c.expectation_schema, ExpectationSchema).json_schema
     for i, view in enumerate(c.views):
         if not reaches(schema, view.expectation):
-            yield Finding(
-                code="view.unreachable",
-                message=f"view {i}'s expectation selector {view.expectation!r} "
-                + "reaches nothing in the expectation schema",
+            yield Finding.of(
+                "view.unreachable",
+                "view %(view)s's expectation selector %(selector)s reaches nothing "
+                + "in the expectation schema",
                 subject=c.digest,
+                view=i,
+                selector=repr(view.expectation),
             )
 
 
@@ -134,10 +138,11 @@ def _expectation(
     try:
         errors = list(validator.iter_errors(c.data))
     except Unresolvable as e:
-        yield Finding(
-            code="expectation.unchecked",
-            message=f"a $ref in the schema can't be resolved: {e.ref}",
+        yield Finding.of(
+            "expectation.unchecked",
+            "a $ref in the schema can't be resolved: %(ref)s",
             subject=c.digest,
+            ref=e.ref,
         )
         return
     error = max(errors, key=relevance, default=None)
@@ -207,52 +212,54 @@ def _runtime(
     local = vllm_024(engine)
     if local is None:
         if constrained and _has_ref(skeleton.output_schema):
-            yield Finding(
-                code="schema.ref_unverified",
-                message="the schema has $ref, which this engine isn't known to "
-                + "resolve; inline_refs@1 removes them",
+            yield Finding.of(
+                "schema.ref_unverified",
+                "the schema has $ref, which this engine isn't known to resolve; "
+                + "inline_refs@1 removes them",
                 subject=subject,
             )
         for name in _tools_with_refs(skeleton):
-            yield Finding(
-                code="schema.ref_unverified",
-                message=f"the parameters of tool {name!r} have $ref, which this "
-                + "engine isn't known to resolve",
+            yield Finding.of(
+                "schema.ref_unverified",
+                "the parameters of tool %(tool)s have $ref, which this engine isn't "
+                + "known to resolve",
                 subject=subject,
+                tool=repr(name),
             )
         return
 
     flags = flag_names(local.argv)
     t = skeleton.body.get("temperature")
     if isinstance(t, int | float) and 0 < t < 0.01:
-        yield Finding(
-            code="vllm.temperature_clamped",
-            message=f"vLLM 0.24 raises temperature {t} to 0.01",
+        yield Finding.of(
+            "vllm.temperature_clamped",
+            "vLLM 0.24 raises temperature %(temperature)s to 0.01",
             subject=subject,
+            temperature=t,
         )
     if "thinking_token_budget" in skeleton.body and not flags & REASONING_FLAGS:
-        yield Finding(
-            code="vllm.thinking_budget_refused",
-            message="vLLM 0.24 refuses thinking_token_budget without "
-            + "--reasoning-parser or --reasoning-config",
+        yield Finding.of(
+            "vllm.thinking_budget_refused",
+            "vLLM 0.24 refuses thinking_token_budget without --reasoning-parser or "
+            + "--reasoning-config",
             subject=subject,
         )
     if "tools" in skeleton.body and not (
         {"--enable-auto-tool-choice", "--tool-call-parser"} <= flags
     ):
         constrained = False
-        yield Finding(
-            code="vllm.tools_refused",
-            message="vLLM 0.24 refuses tool_choice "
-            + f"{_choice(skeleton.body.get('tool_choice'))} without "
+        yield Finding.of(
+            "vllm.tools_refused",
+            "vLLM 0.24 refuses tool_choice %(choice)s without "
             + "--enable-auto-tool-choice and --tool-call-parser; for harmony and "
             + "Mistral models it goes out unconstrained instead",
             subject=subject,
+            choice=_choice(skeleton.body.get("tool_choice")),
         )
     if isinstance(skeleton.contract, NativeOutput) and skeleton.tools:
-        yield Finding(
-            code="vllm.native_tools_uncallable",
-            message="with tool_choice auto, vLLM 0.24 constrains the whole answer to "
+        yield Finding.of(
+            "vllm.native_tools_uncallable",
+            "with tool_choice auto, vLLM 0.24 constrains the whole answer to "
             + "response_format, so no tool can be called",
             subject=subject,
         )
@@ -261,11 +268,11 @@ def _runtime(
         if reasons is None and "--default-chat-template-kwargs" not in flags:
             reasons = by_default
         if reasons is not False:
-            yield Finding(
+            yield Finding.of(
+                "vllm.grammar_before_reasoning",
+                "without --reasoning-parser, vLLM 0.24 constrains the answer from its "
+                + "first token, so a model can't reason first",
                 level="warning" if reasons else "info",
-                code="vllm.grammar_before_reasoning",
-                message="without --reasoning-parser, vLLM 0.24 constrains the "
-                + "answer from its first token, so a model can't reason first",
                 subject=subject,
             )
 
@@ -273,29 +280,41 @@ def _runtime(
 def _languages(c: Trial, languages: Languages) -> Iterable[Finding]:
     request = languages(c.skeleton)
     if request is None:
-        yield Finding(
+        yield Finding.of(
+            "language.unknown",
+            "the request's language is unknown",
             level="info",
-            code="language.unknown",
-            message="the request's language is unknown",
             subject=c.digest,
         )
         return
     cases = [languages(case) for case in c.cases]
     if unknown := cases.count(None):
-        yield Finding(
+        yield Finding.of(
+            "language.unknown",
+            (
+                "the language of %(unknown)s of %(num)s cases is unknown",
+                "the language of %(unknown)s of %(num)s cases is unknown",
+            ),
             level="info",
-            code="language.unknown",
-            message=f"the language of {unknown} of {len(cases)} cases is unknown",
             subject=c.digest,
+            unknown=unknown,
+            num=len(cases),
         )
     other = [lang for lang in cases if lang is not None and lang != request]
     if other:
-        verb = "is" if len(other) == 1 else "are"
-        yield Finding(
-            code="language.mixed",
-            message=f"the request is {request}, but {len(other)} of {len(cases)} "
-            + f"cases {verb} {', '.join(sorted(set(other)))}",
+        yield Finding.of(
+            "language.mixed",
+            (
+                "the request is %(request)s, but %(num)s of %(cases)s cases is "
+                + "%(languages)s",
+                "the request is %(request)s, but %(num)s of %(cases)s cases are "
+                + "%(languages)s",
+            ),
             subject=c.digest,
+            request=request,
+            num=len(other),
+            cases=len(cases),
+            languages=", ".join(sorted(set(other))),
         )
 
 
@@ -326,27 +345,35 @@ def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
         return
     worked = ", ".join(sorted(models))
     if isinstance(c, Trial):
-        yield Finding(
-            code="trial.engine_unmatched",
-            message=f"the skeleton is worked out for {worked}, and the engine serves "
-            + serves,
+        yield Finding.of(
+            "trial.engine_unmatched",
+            "the skeleton is worked out for %(worked)s, and the engine serves "
+            + "%(serves)s",
             subject=c.digest,
+            worked=worked,
+            serves=serves,
         )
     else:
-        yield Finding(
-            code="judge.model_unmatched",
-            message=f"the skeleton is worked out for {worked}, and the judge's model "
-            + f"is {serves}",
+        yield Finding.of(
+            "judge.model_unmatched",
+            "the skeleton is worked out for %(worked)s, and the judge's model is "
+            + "%(serves)s",
             subject=c.digest,
+            worked=worked,
+            serves=serves,
         )
 
 
 def _judge(c: Judge, registry: Registry) -> Iterable[Finding]:
     if resolve(registry.get, c.skeleton, Skeleton).greedy and len(c.seeds) > 1:
-        yield Finding(
-            code="judge.greedy_seeds",
-            message=f"the judge is greedy, so its {len(c.seeds)} seeds send the same request",
+        yield Finding.of(
+            "judge.greedy_seeds",
+            (
+                "the judge is greedy, so its %(num)s seeds send the same request",
+                "the judge is greedy, so its %(num)s seeds send the same request",
+            ),
             subject=c.digest,
+            num=len(c.seeds),
         )
 
 

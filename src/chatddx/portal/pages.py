@@ -2,7 +2,7 @@ import json
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, Form, Request, Response
@@ -10,11 +10,13 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import JsonValue
 
-from chatddx import locale
+from chatddx import locale, settings
 from chatddx.api import schemas
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
 from chatddx.api.state import NO_STORE, state
 from chatddx.bench import Bench, Conflict, MovedOn, OverQuota
+from chatddx.factors import Worded
+from chatddx.factors.base import LANGUAGE
 from chatddx.identity import Person
 from chatddx.store import People, UnderWay
 
@@ -48,8 +50,24 @@ def _pretty(value: JsonValue) -> str:
     return json.dumps(value, indent=2, ensure_ascii=False)
 
 
+def _refusal(error: schemas.Error) -> str:
+    assert error.wording is not None
+    return locale.refusal(error.wording, error.params or {})
+
+
 templates.env.filters.update(
-    when=_when, short=_short, pretty=_pretty, visible=visible, kind=worded
+    when=_when,
+    short=_short,
+    pretty=_pretty,
+    visible=visible,
+    kind=worded,
+    localized=locale.localized,
+    refusal=_refusal,
+)
+
+# Accommodating for Jinja, whose globals are typed as its own defaults are.
+cast(dict[str, object], templates.env.globals)["language_pattern"] = (
+    LANGUAGE.pattern.strip("^$")
 )
 
 router = APIRouter()
@@ -69,12 +87,14 @@ def to_sign_in(_: Request, e: Exception) -> Response:
 
 def page(request: Request, name: str, status: int = 200, **context: Any) -> Response:
     assets = request.app.state.assets
-    said = request.app.state.locales.negotiate(request.headers.get("accept-language"))
-    with locale.saying(said):
+    negotiated = request.app.state.locales.negotiate(
+        request.headers.get("accept-language")
+    )
+    with locale.localizing(negotiated):
         return templates.TemplateResponse(
             request,
             name,
-            {"assets": assets, "locale": said, **context},
+            {"assets": assets, "locale": negotiated, **context},
             status_code=status,
             headers=NO_STORE,
         )
@@ -116,6 +136,18 @@ def refusable(e: ValueError) -> bool:
     return not isinstance(e, (Conflict, MovedOn, OverQuota, UnderWay))
 
 
+# Policy: what a person can cause is worded, and what isn't worded they couldn't have
+# caused, so it is passed on as it is.
+def refusal_of(e: Exception) -> str:
+    if isinstance(e, Worded) and e.wording is not None:
+        return locale.refusal(e.wording, e.params)
+    return locale.tr(
+        "%(title)s. Pass this on to ops, as it is: %(pass_on)s",
+        title=locale.tr("That can't be done"),
+        pass_on=str(e),
+    )
+
+
 def own_first(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:
     login = bench.person.login
     return sorted(found, key=lambda t: (t.owner != login, (t.name or t.title).lower()))
@@ -140,9 +172,10 @@ def paged(
             return said
         with state(request).connect() as conn:
             person = _person(request, conn)
-        error = json.loads(bytes(said.body))
-        if error["code"] == "whoops":
-            error["detail"] = locale.whoops(error["detail"])
+        error = schemas.Error.model_validate_json(bytes(said.body))
+        if error.code == "whoops":
+            assert isinstance(error.detail, str)
+            error = error.model_copy(update={"detail": locale.whoops(error.detail)})
         return page(
             request,
             "error.html",
@@ -157,7 +190,13 @@ def paged(
 
 @router.get("/")
 def home(request: Request, person: PersonDep) -> Response:
-    return page(request, "home.html", person=person, island="home")
+    return page(
+        request,
+        "home.html",
+        person=person,
+        island="home",
+        home={"limit": settings.TYPED_TEXT_LIMIT},
+    )
 
 
 @router.get("/sign-in")

@@ -31,6 +31,29 @@ Raises:
 1. `SystemExit`: `"locale: {shown} behind the code: run chatddx locale write"`
 2. `SystemExit`: `1`
 
+## `Coded` `(Protocol)`
+`src/chatddx/locale/locale.py:Coded`
+
+## `Coded.code` `@property`
+`src/chatddx/locale/locale.py:Coded.code`
+
+* ∟`str`
+
+## `Coded.message` `@property`
+`src/chatddx/locale/locale.py:Coded.message`
+
+* ∟`str`
+
+## `Coded.params` `@property`
+`src/chatddx/locale/locale.py:Coded.params`
+
+* ∟`Mapping[str, object]`
+
+## `Coded.wording` `@property`
+`src/chatddx/locale/locale.py:Coded.wording`
+
+* ∟`str | Sequence[str] | None`
+
 ## `gettext`
 `src/chatddx/locale/locale.py:gettext`
 
@@ -63,6 +86,36 @@ Raises:
 
 * `accept_language: str | None`
 * ∟`Locale`
+
+## `localized`
+`src/chatddx/locale/locale.py:localized`
+
+* `coded: Coded`
+* ∟`str`
+
+## `Localizing`
+`src/chatddx/locale/locale.py:Localizing`
+
+* `app: ASGIApp`
+
+## `localizing` `@contextmanager`
+`src/chatddx/locale/locale.py:localizing`
+
+* `locale: Locale`
+* ∟`Generator[None]`
+
+## `Localizing.__call__`
+`src/chatddx/locale/locale.py:Localizing.__call__`
+
+* `scope: Scope`
+* `receive: Receive`
+* `send: Send`
+* ∟`None`
+
+## `Localizing.__init__`
+`src/chatddx/locale/locale.py:Localizing.__init__`
+
+* `app: ASGIApp`
 
 ## `N_`
 `src/chatddx/locale/locale.py:N_`
@@ -124,31 +177,14 @@ Raises:
 * ∟`list[Proof]`
 
 Raises:
-1. `ValueError`: `"{where}:{lineno}: {said!r} is said both counted and not, which gettext holds as one message: give one a context"` (through `_extracted`)
+1. `ValueError`: `"{where}:{lineno}: {msgid!r} is said both counted and not, which gettext holds as one message: give one a context"` (through `_extracted`)
 
-## `Saying`
-`src/chatddx/locale/locale.py:Saying`
+## `refusal`
+`src/chatddx/locale/locale.py:refusal`
 
-* `app: ASGIApp`
-
-## `saying` `@contextmanager`
-`src/chatddx/locale/locale.py:saying`
-
-* `locale: Locale`
-* ∟`Generator[None]`
-
-## `Saying.__call__`
-`src/chatddx/locale/locale.py:Saying.__call__`
-
-* `scope: Scope`
-* `receive: Receive`
-* `send: Send`
-* ∟`None`
-
-## `Saying.__init__`
-`src/chatddx/locale/locale.py:Saying.__init__`
-
-* `app: ASGIApp`
+* `wording: str | Sequence[str]`
+* `params: Mapping[str, object]`
+* ∟`str`
 
 ## `tr`
 `src/chatddx/locale/locale.py:tr`

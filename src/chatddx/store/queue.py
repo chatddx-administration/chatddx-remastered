@@ -6,6 +6,8 @@ from uuid import UUID
 
 from psycopg import errors
 
+from chatddx.factors.base import Missing, Worded
+
 from .notify import JOB, WORKERS, channel
 from .store import Connection
 
@@ -29,7 +31,7 @@ _PAUSED = """
 _LIVE = "j.beat > now() - %(lost)s"
 
 
-class UnderWay(ValueError):
+class UnderWay(Worded, ValueError):
     pass
 
 
@@ -152,7 +154,9 @@ class Queue:
                 ).fetchone()
                 self._tell(run, "queued")
         except errors.UniqueViolation:
-            raise UnderWay(f"run {run} has something under way") from None
+            raise UnderWay.of(
+                "run %(run)s has something under way", run=str(run)
+            ) from None
         assert row is not None
         return _job(row)
 
@@ -258,7 +262,7 @@ class Queue:
             ).fetchone()
             self._tell()
         if row is None:
-            raise LookupError(f"run {run} has nothing under way")
+            raise Missing.of("run %(run)s has nothing under way", run=str(run))
         return _job(row)
 
     def pause(self, owner: int, paused: bool = True) -> None:

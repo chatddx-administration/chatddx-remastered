@@ -2,14 +2,14 @@ from typing import Annotated, Literal, Self, get_args
 
 from pydantic import Field, StringConstraints, model_validator
 
-from .base import Component, Digest, Frozen, RefTo, Settings
+from .base import Component, Digest, Frozen, RefTo, Settings, Worded
 
 Level = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]
 Effort = Level | Literal["default"]
 LEVELS: tuple[Level, ...] = get_args(Level)
 
 
-class Refused(ValueError):
+class Refused(Worded, ValueError):
     pass
 
 
@@ -70,11 +70,13 @@ class ReasoningFacts(Frozen):
     def landing(self, effort: Effort) -> Landing:
         level = self.default if effort == "default" else effort
         if level is None:
-            raise Refused("no default reasoning level is known")
+            raise Refused.of("no default reasoning level is known")
         landed, fact, nearest = self._land(level)
         match fact:
             case None:
-                raise Refused(f"nothing is known about reasoning {landed!r}")
+                raise Refused.of(
+                    "nothing is known about reasoning %(level)s", level=repr(landed)
+                )
             case Refusal(refused=reason):
                 raise Refused(reason)
             case Writes():
@@ -152,7 +154,7 @@ class ModelFacts(Component):
     def check_budget(self) -> None:
         match self.reasoning.budget:
             case None:
-                raise Refused("nothing is known about a thinking budget")
+                raise Refused.of("nothing is known about a thinking budget")
             case Refusal(refused=reason):
                 raise Refused(reason)
             case _:
@@ -161,7 +163,9 @@ class ModelFacts(Component):
     def recommended(self, level: Level) -> SamplingValues:
         values = self.sampling.recommended.get(level)
         if values is None:
-            raise Refused(f"no sampling is recommended for reasoning {level!r}")
+            raise Refused.of(
+                "no sampling is recommended for reasoning %(level)s", level=repr(level)
+            )
         return values
 
     def reasons_by_default(self) -> bool | None:

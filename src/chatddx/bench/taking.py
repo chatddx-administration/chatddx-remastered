@@ -48,10 +48,13 @@ def take_from(seen: Seen, thread: int, replace: bool = False) -> int:
     case, schema = held.case, held.expectation_schema
     mine = sorted(choices(seen, [case], schema)[case])
     if mine and not replace:
-        raise Conflict(
-            f"{seen.person.login} has their own expectation of {seen.title(case)} "
-            + f"under {seen.title(schema)}, in thread {mine[0]}: replace it to "
-            + "take this one"
+        raise Conflict.of(
+            "%(login)s has their own expectation of %(case)s under %(schema)s, in "
+            + "thread %(thread)s: replace it to take this one",
+            login=seen.person.login,
+            case=seen.title(case),
+            schema=seen.title(schema),
+            thread=mine[0],
         )
     gone = Entry(field=EntryField.DELETED)
     with seen.conn.transaction():
