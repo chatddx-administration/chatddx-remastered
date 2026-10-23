@@ -67,9 +67,10 @@ def _reraises(handler: ast.ExceptHandler) -> bool:
 
 
 class Trace:
-    def __init__(self, code: Code, finding: str) -> None:
+    def __init__(self, code: Code, finding: str, whoops: str) -> None:
         self.code: Code = code
         self.finding: str = finding
+        self.whoops: str = whoops
         self._of: dict[tuple[str, str | None], Traced] = {}
 
     def of(self, function: griffe.Object, cls: griffe.Class | None) -> Traced:
@@ -182,7 +183,11 @@ class _Walker:
                 return
             exception, through = factory.returns.name, factory.name
             kind = self.code.named(factory.returns)
-        if kind is None or self.trace.caught(kind, caught):
+        if (
+            kind is None
+            or self.trace.caught(kind, caught)
+            or self.code.subclass(kind, self.trace.whoops)
+        ):
             return
         said = self.said(node.exc) if isinstance(node.exc, ast.Call) else None
         origin = self.origin(node.exc)

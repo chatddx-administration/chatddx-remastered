@@ -31,6 +31,12 @@ Raises:
 * `cls: griffe.Class`
 * ∟`list[str]`
 
+## `Code.file`
+`src/chatddx/stamp/code.py:Code.file`
+
+* `path: Path`
+* ∟`File`
+
 ## `Code.get`
 `src/chatddx/stamp/code.py:Code.get`
 
@@ -80,14 +86,14 @@ Raises:
 `src/chatddx/stamp/code.py:Code.segment`
 
 * `obj: griffe.Object`
-* `node: ast.AST`
+* `node: Spanned`
 * ∟`str`
 
 ## `Code.source`
 `src/chatddx/stamp/code.py:Code.source`
 
 * `obj: griffe.Object`
-* `node: ast.AST`
+* `node: Spanned`
 * ∟`str | None`
 
 ## `Code.subclass`
@@ -121,6 +127,34 @@ Raises:
 
 `type Def = ast.FunctionDef | ast.AsyncFunctionDef`
 
+## `File` `@dataclass(frozen=True)`
+`src/chatddx/stamp/code.py:File`
+
+* `source: str`
+* `tree: ast.Module`
+
+## `File.lines` `@cached_property`
+`src/chatddx/stamp/code.py:File.lines`
+
+* ∟`list[str]`
+
+## `File.names` `@cached_property`
+`src/chatddx/stamp/code.py:File.names`
+
+* ∟`list[tuple[str, int, int, int]]`
+
+## `File.nodes` `@cached_property`
+`src/chatddx/stamp/code.py:File.nodes`
+
+* ∟`dict[int, Node]`
+
+## `File.segment`
+`src/chatddx/stamp/code.py:File.segment`
+
+* `node: Spanned`
+* `padded: bool = False`
+* ∟`str | None`
+
 ## `Found` `@dataclass(frozen=True)`
 `src/chatddx/stamp/trace.py:Found`
 
@@ -133,7 +167,7 @@ Raises:
 ## `index`
 `src/chatddx/stamp/index.py:index`
 
-* `src: Path`
+* `code: Code`
 * `package: str`
 * `repo: Path`
 * ∟`str`
@@ -209,6 +243,11 @@ Raises:
 1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"`
 2. `ValueError`: `"line {opened}: a stamp isn't closed"`
 
+## `Spanned`
+`src/chatddx/stamp/code.py:Spanned`
+
+`type Spanned = ast.expr | ast.stmt | ast.type_param`
+
 ## `stamped`
 `src/chatddx/stamp/markers.py:stamped`
 
@@ -232,12 +271,14 @@ Raises:
 
 * `code: Code`
 * `finding: str`
+* `whoops: str`
 
 ## `Trace.__init__`
 `src/chatddx/stamp/trace.py:Trace.__init__`
 
 * `code: Code`
 * `finding: str`
+* `whoops: str`
 
 ## `Trace.caught`
 `src/chatddx/stamp/trace.py:Trace.caught`
@@ -269,6 +310,20 @@ Raises:
 `src/chatddx/stamp/trace.py:VALIDATORS`
 
 `VALIDATORS = frozenset(…)`
+
+## `WHOOPSES`
+`src/chatddx/stamp/__init__.py:WHOOPSES`
+
+`WHOOPSES = settings.PROJECT_ROOT / "docs" / "whoopses"`
+
+## `whoopses`
+`src/chatddx/stamp/index.py:whoopses`
+
+* `code: Code`
+* `package: str`
+* `repo: Path`
+* `whoops: str`
+* ∟`str`
 
 ## `write`
 `src/chatddx/stamp/__init__.py:write`

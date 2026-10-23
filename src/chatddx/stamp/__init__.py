@@ -7,16 +7,18 @@ from pathlib import Path
 from chatddx import settings
 
 from .code import Code
-from .index import index
+from .index import index, whoopses
 from .markers import stamped, stamps
 from .page import page
 from .trace import Trace
 
-__all__ = ["COMMENTS", "SURFACES", "Proof", "check", "proofs", "write"]
+__all__ = ["COMMENTS", "SURFACES", "WHOOPSES", "Proof", "check", "proofs", "write"]
 
 SURFACES = settings.PROJECT_ROOT / "docs" / "surfaces"
 COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"
+WHOOPSES = settings.PROJECT_ROOT / "docs" / "whoopses"
 _FINDING = "chatddx.factors.base.Finding"
+_WHOOPS = "chatddx.whoops.Whoops"
 
 
 @dataclass(frozen=True)
@@ -41,7 +43,7 @@ class Proof:
 
 def proofs(packages: Iterable[str]) -> list[Proof]:
     code = Code(settings.PROJECT_ROOT / "src", "chatddx")
-    trace = Trace(code, _FINDING)
+    trace = Trace(code, _FINDING, _WHOOPS)
     found: list[Proof] = []
     for package in packages:
         name = f"chatddx.{package}"
@@ -50,7 +52,11 @@ def proofs(packages: Iterable[str]) -> list[Proof]:
                 SURFACES / f"{package}.md",
                 page(code, trace, name, settings.PROJECT_ROOT),
             ),
-            (COMMENTS / f"{package}.md", index(code.src, name, settings.PROJECT_ROOT)),
+            (COMMENTS / f"{package}.md", index(code, name, settings.PROJECT_ROOT)),
+            (
+                WHOOPSES / f"{package}.md",
+                whoopses(code, name, settings.PROJECT_ROOT, _WHOOPS),
+            ),
         ):
             current = path.read_text() if path.exists() else None
             try:
@@ -69,7 +75,9 @@ def check(packages: Sequence[str], baseline: bool) -> None:
     if not packages:
         flags += [
             f"{_shown(p)}: no package of settings.STAMPED writes it"
-            for p in sorted([*SURFACES.glob("*.md"), *COMMENTS.glob("*.md")])
+            for p in sorted(
+                [*SURFACES.glob("*.md"), *COMMENTS.glob("*.md"), *WHOOPSES.glob("*.md")]
+            )
             if p.stem not in settings.STAMPED
         ]
     refused = bool(flags)

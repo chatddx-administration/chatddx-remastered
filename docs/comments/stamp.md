@@ -9,6 +9,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, each
 # a library is imported, for the bases of the exceptions it raises.
 ```
 
+## `src/chatddx/stamp/code.py:File.segment`
+
+```
+# Optimization: ast.get_source_segment, but over lines split once, where it splits
+# the whole source on each call.
+```
+
 ## `src/chatddx/stamp/index.py:_SCANNED`
 
 ```

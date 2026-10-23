@@ -2,9 +2,13 @@ import ast
 import io
 import re
 import tokenize
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from textwrap import dedent
+
+import griffe
+
+from .code import Code
 
 # Compromise: what isn't Python is read by its strings and comments alone: a body in
 # dollar quotes is read as SQL, as a function's body is, and an E'' string's \' throws
@@ -76,35 +80,6 @@ def _blocks(found: list[_Comment]) -> list[list[_Comment]]:
     return blocks
 
 
-def _assigned(node: ast.AST) -> str | None:
-    if isinstance(node, ast.Assign) and len(node.targets) == 1:
-        target = node.targets[0]
-        return target.id if isinstance(target, ast.Name) else None
-    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-        return node.target.id
-    return node.name.id if isinstance(node, ast.TypeAlias) else None
-
-
-def _named(
-    node: ast.AST, prefix: str, fields: bool
-) -> Iterator[tuple[str, int, int, int]]:
-    for child in ast.iter_child_nodes(node):
-        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            name = prefix + child.name
-            first = min([child.lineno, *(d.lineno for d in child.decorator_list)])
-            yield name, first, child.end_lineno or first, child.col_offset
-            yield from _named(child, f"{name}.", isinstance(child, ast.ClassDef))
-        elif fields and isinstance(child, ast.stmt) and (name := _assigned(child)):
-            yield (
-                prefix + name,
-                child.lineno,
-                child.end_lineno or child.lineno,
-                child.col_offset,
-            )
-        else:
-            yield from _named(child, prefix, fields)
-
-
 def _anchor(named: list[tuple[str, int, int, int]], block: list[_Comment]) -> str:
     first, last = block[0], block[-1]
     if first.alone:
@@ -119,39 +94,106 @@ def _anchor(named: list[tuple[str, int, int, int]], block: list[_Comment]) -> st
     return max(held)[1] if held else ""
 
 
-def _read(path: Path) -> list[tuple[str, list[_Comment]]]:
-    source = path.read_text()
+def _read(code: Code, path: Path) -> list[tuple[str, list[_Comment]]]:
     if path.suffix != ".py":
-        return [
-            ("", block) for block in _blocks(_scanned(source, _SCANNED[path.suffix]))
-        ]
-    named = list(_named(ast.parse(source, str(path)), "", fields=True))
-    return [(_anchor(named, block), block) for block in _blocks(_tokenized(source))]
+        scanned = _scanned(path.read_text(), _SCANNED[path.suffix])
+        return [("", block) for block in _blocks(scanned)]
+    file = code.file(path)
+    return [
+        (_anchor(file.names, block), block)
+        for block in _blocks(_tokenized(file.source))
+    ]
 
 
-def _fenced(block: list[_Comment]) -> list[str]:
-    held = "\n".join(c.text for c in block)
+def _fenced(held: str) -> list[str]:
     fence = "`" * max([3, *(len(run) + 1 for run in re.findall("`+", held))])
     return [fence, *held.splitlines(), fence]
 
 
-def index(src: Path, package: str, repo: Path) -> str:
-    directory = src.joinpath(*package.split("."))
-    held: dict[tuple[str, str], list[list[str]]] = {}
-    for path in sorted(directory.rglob("*")):
-        if path.is_file() and (path.suffix == ".py" or path.suffix in _SCANNED):
-            shown = str(path.relative_to(repo))
-            for anchor, block in _read(path):
-                held.setdefault((shown, anchor), []).append(_fenced(block))
-    lines = [
-        f"# Comments in `{package}`",
-        "",
-        "Written by `chatddx stamp write` from the comments in "
-        + f"`{directory.relative_to(repo)}/`, each under its file and the name it is in "
-        + "or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).",
-    ]
+def _written(heading: list[str], held: dict[tuple[str, str], list[list[str]]]) -> str:
+    lines = list(heading)
     for shown, anchor in sorted(held, key=lambda k: (k[0], k[1].casefold(), k[1])):
         lines += ["", f"## `{shown}:{anchor}`" if anchor else f"## `{shown}`"]
         for fenced in held[shown, anchor]:
             lines += ["", *fenced]
     return "\n".join(lines) + "\n"
+
+
+def index(code: Code, package: str, repo: Path) -> str:
+    directory = code.src.joinpath(*package.split("."))
+    held: dict[tuple[str, str], list[list[str]]] = {}
+    for path in sorted(directory.rglob("*")):
+        if path.is_file() and (path.suffix == ".py" or path.suffix in _SCANNED):
+            shown = str(path.relative_to(repo))
+            for anchor, block in _read(code, path):
+                fenced = _fenced("\n".join(c.text for c in block))
+                held.setdefault((shown, anchor), []).append(fenced)
+    return _written(
+        [
+            f"# Comments in `{package}`",
+            "",
+            "Written by `chatddx stamp write` from the comments in "
+            + f"`{directory.relative_to(repo)}/`, each under its file and the name it is "
+            + "in or right above; a stamp reads as in [docs/surfaces.md](../surfaces.md).",
+        ],
+        held,
+    )
+
+
+def _tested(path: Path, directory: Path) -> bool:
+    return (
+        "test" in path.relative_to(directory).parts[:-1]
+        or path.name == "conftest.py"
+        or path.name.startswith("test_")
+    )
+
+
+def _claimed(code: Code, module: griffe.Module, node: ast.AST, whoops: str) -> bool:
+    if isinstance(node, ast.Assert):
+        return True
+    if not isinstance(node, ast.Raise) or node.exc is None:
+        return False
+    target = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+    kind = code.lookup(module, target)
+    return kind is not None and code.subclass(kind, whoops)
+
+
+def _claims(code: Code, path: Path, whoops: str) -> list[tuple[str, str]]:
+    file = code.file(path)
+    parts = path.relative_to(code.src).with_suffix("").parts
+    module = code.get(".".join(parts[:-1] if parts[-1] == "__init__" else parts))
+    assert isinstance(module, griffe.Module)
+    found: list[tuple[int, int, str, str]] = []
+    for node in ast.walk(file.tree):
+        if isinstance(node, ast.stmt) and _claimed(code, module, node, whoops):
+            last = node.end_lineno or node.lineno
+            held = [
+                (begun, name)
+                for name, begun, ended, _ in file.names
+                if begun <= node.lineno and last <= ended
+            ]
+            written = dedent(file.segment(node, padded=True) or "")
+            anchor = max(held)[1] if held else ""
+            found.append((node.lineno, node.col_offset, anchor, written))
+    return [(anchor, written) for _, _, anchor, written in sorted(found)]
+
+
+def whoopses(code: Code, package: str, repo: Path, whoops: str) -> str:
+    directory = code.src.joinpath(*package.split("."))
+    held: dict[tuple[str, str], list[list[str]]] = {}
+    for path in sorted(directory.rglob("*.py")):
+        if not _tested(path, directory):
+            shown = str(path.relative_to(repo))
+            for anchor, written in _claims(code, path, whoops):
+                held.setdefault((shown, anchor), []).append(_fenced(written))
+    return _written(
+        [
+            f"# Whoopses and asserts in `{package}`",
+            "",
+            "Written by `chatddx stamp write` from the `raise Whoops` and `assert` "
+            + f"statements in `{directory.relative_to(repo)}/`, its tests left out, each "
+            + "under its file and the name it is in; a stamp reads as in "
+            + "[docs/surfaces.md](../surfaces.md).",
+        ],
+        held,
+    )

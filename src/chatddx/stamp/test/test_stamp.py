@@ -6,7 +6,7 @@ import pytest
 from chatddx import settings, stamp
 from chatddx.stamp import Proof, proofs
 from chatddx.stamp.code import Code
-from chatddx.stamp.index import index
+from chatddx.stamp.index import index, whoopses
 from chatddx.stamp.markers import signed, stamped
 from chatddx.stamp.page import page
 from chatddx.stamp.trace import Trace
@@ -22,11 +22,18 @@ def sourced(tmp_path: Path, files: dict[str, str]) -> Path:
 
 def written(tmp_path: Path, files: dict[str, str]) -> str:
     code = Code(sourced(tmp_path, files), "proj")
-    return page(code, Trace(code, "proj.base.Finding"), "proj.alpha", tmp_path)
+    trace = Trace(code, "proj.base.Finding", "proj.whoops.Whoops")
+    return page(code, trace, "proj.alpha", tmp_path)
 
 
 def indexed(tmp_path: Path, files: dict[str, str]) -> str:
-    return index(sourced(tmp_path, files), "proj.alpha", tmp_path)
+    code = Code(sourced(tmp_path, {"proj/__init__.py": "", **files}), "proj")
+    return index(code, "proj.alpha", tmp_path)
+
+
+def whooped(tmp_path: Path, files: dict[str, str]) -> str:
+    code = Code(sourced(tmp_path, files), "proj")
+    return whoopses(code, "proj.alpha", tmp_path, "proj.whoops.Whoops")
 
 
 def entry(page: str, heading: str) -> list[str]:
@@ -634,6 +641,114 @@ def test_a_comment_holding_backticks_is_fenced_with_more_of_them(
     ]
 
 
+WHOOPS = {
+    "proj/__init__.py": "",
+    "proj/whoops.py": "class Whoops(Exception): ...\n",
+}
+
+
+def test_a_whoops_or_an_assert_is_indexed_under_the_name_it_is_in_as_written(
+    tmp_path: Path,
+) -> None:
+    found = whooped(
+        tmp_path,
+        WHOOPS
+        | {
+            "proj/alpha/__init__.py": "assert __debug__\n",
+            "proj/alpha/held.py": """
+                from proj.whoops import Whoops as Oops
+
+
+                class Store:
+                    def opened(self, rows: list[int]) -> int:
+                        def inner() -> None:
+                            assert rows, "no rows"
+
+                        if not rows:
+                            raise ValueError("no rows")
+                        if len(rows) > 9:
+                            raise Oops(
+                                f"{len(rows)} rows, though a store holds nine"
+                            ) from None
+                        inner()
+                        return rows[0]
+            """,
+            "proj/alpha/sub/__init__.py": "",
+            "proj/alpha/sub/deep.py": """
+                from ...whoops import Whoops
+
+
+                def deep() -> None:
+                    raise Whoops
+            """,
+            "proj/alpha/conftest.py": "assert True\n",
+            "proj/alpha/test_held.py": "assert True\n",
+            "proj/alpha/test/helpers.py": "assert True\n",
+        },
+    )
+    assert (
+        found.splitlines()[3:]
+        == dedent(
+            """
+        ## `src/proj/alpha/__init__.py`
+
+        ```
+        assert __debug__
+        ```
+
+        ## `src/proj/alpha/held.py:Store.opened`
+
+        ```
+        raise Oops(
+            f"{len(rows)} rows, though a store holds nine"
+        ) from None
+        ```
+
+        ## `src/proj/alpha/held.py:Store.opened.inner`
+
+        ```
+        assert rows, "no rows"
+        ```
+
+        ## `src/proj/alpha/sub/deep.py:deep`
+
+        ```
+        raise Whoops
+        ```
+        """
+        ).splitlines()
+    )
+
+
+def test_a_whoops_isn_t_said_to_be_raised_on_a_surface(tmp_path: Path) -> None:
+    found = written(
+        tmp_path,
+        WHOOPS
+        | {
+            "proj/alpha/__init__.py": "",
+            "proj/alpha/held.py": """
+                from proj.whoops import Whoops
+
+
+                def _helper() -> None:
+                    raise Whoops("deferred")
+
+
+                def opened(rows: int) -> None:
+                    if rows < 0:
+                        raise ValueError("fewer than none")
+                    if rows > 9:
+                        raise Whoops("too many")
+                    _helper()
+            """,
+        },
+    )
+    assert entry(found, "## `opened`")[3:] == [
+        "Raises:",
+        '1. `ValueError`: `"fewer than none"`',
+    ]
+
+
 def test_a_first_surface_is_written_whole() -> None:
     assert stamped(None, "# a\n\n## b\n") == "# a\n\n## b\n"
 
@@ -727,6 +842,7 @@ def faked(
     monkeypatch.setattr(settings, "STAMPED", tuple(name for name, _, _ in found))
     monkeypatch.setattr(stamp, "SURFACES", docs)
     monkeypatch.setattr(stamp, "COMMENTS", tmp_path / "docs" / "comments")
+    monkeypatch.setattr(stamp, "WHOOPSES", tmp_path / "docs" / "whoopses")
 
     def listed(_: object) -> list[Proof]:
         return held
@@ -786,12 +902,15 @@ def test_check_flags_a_proof_no_package_writes_and_a_broken_stamp(
     _ = (tmp_path / "docs" / "surfaces" / "gone.md").write_text("## e\n")
     (tmp_path / "docs" / "comments").mkdir()
     _ = (tmp_path / "docs" / "comments" / "gone.md").write_text("## e\n")
+    (tmp_path / "docs" / "whoopses").mkdir()
+    _ = (tmp_path / "docs" / "whoopses" / "gone.md").write_text("## e\n")
     with pytest.raises(SystemExit) as e:
         stamp.check([], baseline=False)
     assert e.value.code == 1
     assert capsys.readouterr().err.splitlines() == [
         "flag: docs/comments/gone.md: no package of settings.STAMPED writes it",
         "flag: docs/surfaces/gone.md: no package of settings.STAMPED writes it",
+        "flag: docs/whoopses/gone.md: no package of settings.STAMPED writes it",
     ]
 
     def broken(_: object) -> list[Proof]:

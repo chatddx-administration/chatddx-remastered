@@ -9,7 +9,8 @@ name, with its decorators, type parameters and bases; below it is where the code
   parameters after it are keyword-only; `/`: those before it are positional-only. A function a class binds as an
   attribute is its method: its first parameter, the instance, is left out.
 - Raises: the function's own `raise` statements and its private helpers' (through `<helper>`), in the order the code
-  reaches them, each once. What the public functions it calls raise is in their own entries.
+  reaches them, each once, a `Whoops` left out: docs/whoopses/* lists it. What the public functions it calls raise is in
+  their own entries.
 - A message is in code: text quoted, with the values of the code that raises it as `{expr}`, and an argument that isn't
   text as written; from `<exception>` when it is the exception caught.
 - Finds: each `Finding` the function makes, as `code`: message, followed as Raises are; a warning unless it says another

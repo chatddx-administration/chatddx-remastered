@@ -105,20 +105,23 @@ Raises:
 Raises:
 1. `ValueError`: `"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"`
 2. `ValueError`: `"{path}: unknown tables {sorted(stray)}"` (through `_stanzas`)
-3. `ValueError`: `"{path}: {table}.{name}: {said}"` (through `_stanzas`)
-4. `ValueError`: `"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} tables, not {', '.join(stray)}"`
-5. `ValueError`: `"{path}: {table} {twice} are named before it too"`
-6. `ValueError`: `"{factors}: translations are written in the texts-<language>.toml of the language they translate into"`
-7. `ValueError`: `"{path}: texts are kept in texts-<language>.toml files"` (through `_texts`)
-8. `ValueError`: `"{path}: {e}"` (from `ValueError`, through `_texts`)
-9. `ValueError`: `"{table}.{name} is in {where} and texts-{language}.toml: a text is written in one language, and translated into others"`
-10. `ValueError`: `"tags must be a list of strings, not {value!r}"` (through `_tags`)
-11. `ValueError`: `"recipe.{name}: a recipe's model is the World's: its inventory names the handle configurations are made for"`
-12. `ValueError`: `"recipe.{name}: no {part} named {body[part]!r}"`
-13. `ValueError`: `"judge.{name}: a judge's model is the World's, which binds the judge to a handle in its inventory's [judge] table"`
-14. `ValueError`: `"judge.{name}: no recipe named {recipe!r}"`
-15. `ValueError`: `"judge.{name}: {e}"` (from `ValidationError`)
-16. `ValueError`: `"judge.{name}: {'; '.join(refused)}"`
+3. `ValueError`: `"{where}: {said}"` (through `_stanzas`)
+4. `ValueError`: `"{where}: {e}"` (from `ValueError`, through `_stanzas`)
+5. `ValueError`: `"{where} must be a table, not {raw!r}"` (through `_stanzas`)
+6. `ValueError`: `"{path}: {table} must be a table, not {stanzas!r}"` (through `_stanzas`)
+7. `ValueError`: `"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} tables, not {', '.join(stray)}"`
+8. `ValueError`: `"{path}: {table} {twice} are named before it too"`
+9. `ValueError`: `"{factors}: translations are written in the texts-<language>.toml of the language they translate into"`
+10. `ValueError`: `"{path}: texts are kept in texts-<language>.toml files"` (through `_texts`)
+11. `ValueError`: `"{path}: {e}"` (from `ValueError`, through `_texts`)
+12. `ValueError`: `"{table}.{name} is in {where} and texts-{language}.toml: a text is written in one language, and translated into others"`
+13. `ValueError`: `"tags must be a list of strings, not {value!r}"` (through `_tags`)
+14. `ValueError`: `"recipe.{name}: a recipe's model is the World's: its inventory names the handle configurations are made for"`
+15. `ValueError`: `"recipe.{name}: no {part} named {body[part]!r}"`
+16. `ValueError`: `"judge.{name}: a judge's model is the World's, which binds the judge to a handle in its inventory's [judge] table"`
+17. `ValueError`: `"judge.{name}: no recipe named {recipe!r}"`
+18. `ValueError`: `"judge.{name}: {e}"` (from `ValidationError`)
+19. `ValueError`: `"judge.{name}: {'; '.join(refused)}"`
 
 ## `Planned` `@dataclass(frozen=True)`
 `src/chatddx/curation/plan.py:Planned`

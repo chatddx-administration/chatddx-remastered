@@ -48,7 +48,8 @@ class _Page:
         self.package: griffe.Module = found
         self.repo: Path = repo
         self.bound: dict[str, tuple[griffe.Class, str]] = {}
-        for module in self.modules(found):
+        self.within: list[griffe.Module] = self.modules(found)
+        for module in self.within:
             for cls in module.classes.values():
                 for name, function in self.binds(cls).items():
                     self.bound[function.path] = (cls, name)
@@ -56,7 +57,7 @@ class _Page:
     def modules(self, module: griffe.Module) -> list[griffe.Module]:
         found = [module]
         for name, sub in module.modules.items():
-            if name != "test" and not private(name):
+            if name != "test" and not private(name) and not sub.is_alias:
                 found += self.modules(sub)
         return found
 
@@ -74,7 +75,7 @@ class _Page:
 
     def render(self) -> str:
         named: list[tuple[str, griffe.Object]] = []
-        for module in self.modules(self.package):
+        for module in self.within:
             for name, member in module.members.items():
                 if not (
                     isinstance(member, (griffe.Alias, griffe.Module))

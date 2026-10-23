@@ -1,3 +1,4 @@
 # Compromise: chatddx stamp writes what changed as a git conflict, which prettier reads as markdown and reformats.
 docs/comments/
 docs/surfaces/
+docs/whoops/

@@ -1,0 +1,2 @@
+class Whoops(Exception):
+    pass

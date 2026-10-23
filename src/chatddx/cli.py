@@ -647,15 +647,15 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     stamping = commands.add_parser(
         "stamp",
-        help="the surfaces in docs/surfaces/ and the comment indexes in docs/comments/, "
-        + "written from the code, with what changed as a git conflict for a human to "
-        + "stamp",
+        help="the surfaces in docs/surfaces/, the comment indexes in docs/comments/ and "
+        + "the whoopses and asserts in docs/whoopses/, written from the code, with what "
+        + "changed as a git conflict for a human to stamp",
     )
     stamp_commands = stamping.add_subparsers(required=True)
     stamp_check = stamp_commands.add_parser(
         "check",
-        help="write nothing; flag stamps pending, and fail while a surface or a comment "
-        + "index is behind the code",
+        help="write nothing; flag stamps pending, and fail while a surface or an index "
+        + "is behind the code",
     )
     _ = stamp_check.add_argument(
         "--baseline",
@@ -664,8 +664,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     stamp_write = stamp_commands.add_parser(
         "write",
-        help="write the surfaces and comment indexes behind the code, and say how many "
-        + "stamps",
+        help="write the surfaces and indexes behind the code, and say how many stamps",
     )
     for stamping_with, stamping_as in ((stamp_check, "check"), (stamp_write, "write")):
         _ = stamping_with.add_argument(

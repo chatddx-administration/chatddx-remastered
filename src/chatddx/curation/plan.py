@@ -115,6 +115,8 @@ class Plan:
 TEXT_TABLES = frozenset(
     {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
+type _Stanza = dict[str, JsonValue]
+
 _TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 
@@ -125,19 +127,24 @@ def _short(text: str) -> str:
 def _with_files(node: JsonValue, root: Path) -> JsonValue:
     match node:
         case dict():
-            out: dict[str, JsonValue] = {}
-            for k, v in node.items():
-                if k == "json_schema_path":
-                    assert isinstance(v, str)
-                    with (root / v).open() as f:
-                        out["json_schema"] = json.load(f)
-                else:
-                    out[k] = _with_files(v, root)
-            return out
+            return _filed(node, root)
         case list():
             return [_with_files(v, root) for v in node]
         case _:
             return node
+
+
+def _filed(table: dict[str, JsonValue], root: Path) -> dict[str, JsonValue]:
+    out: dict[str, JsonValue] = {}
+    for k, v in table.items():
+        if k != "json_schema_path":
+            out[k] = _with_files(v, root)
+        elif isinstance(v, str):
+            with (root / v).open() as f:
+                out["json_schema"] = json.load(f)
+        else:
+            raise ValueError(f"json_schema_path must be a string, not {v!r}")
+    return out
 
 
 def _component(table: str, body: dict[str, JsonValue]) -> Component:
@@ -186,26 +193,42 @@ def _read(path: Path) -> dict[str, Any]:
 
 def _stanzas(
     path: Path, data: dict[str, Any], tables: Collection[str]
-) -> dict[str, dict[str, JsonValue]]:
+) -> dict[str, dict[str, _Stanza]]:
     if stray := set(data) - set(tables):
         raise ValueError(f"{path}: unknown tables {sorted(stray)}")
-    found: dict[str, dict[str, JsonValue]] = {}
-    for table, stanzas in cast(dict[str, dict[str, JsonValue]], data).items():
-        found[table] = {}
-        for name, raw in stanzas.items():
-            if isinstance(raw, dict) and "language" in raw:
-                said = (
-                    "a judge's request is its recipe's, as written"
-                    if table == "judge"
-                    else "a text's language is the texts file it's written in"
-                )
-                raise ValueError(f"{path}: {table}.{name}: {said}")
-            found[table][name] = _with_files(raw, path.parent)
+    found: dict[str, dict[str, _Stanza]] = {}
+    for table, stanzas in data.items():
+        match stanzas:
+            case dict():
+                found[table] = {
+                    name: _stanza(f"{path}: {table}.{name}", table, raw, path.parent)
+                    for name, raw in cast(dict[str, Any], stanzas).items()
+                }
+            case _:
+                raise ValueError(f"{path}: {table} must be a table, not {stanzas!r}")
     return found
 
 
-def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
-    texts: dict[str, dict[str, dict[str, JsonValue]]] = {}
+def _stanza(where: str, table: str, raw: Any, root: Path) -> _Stanza:
+    match raw:
+        case {"language": _}:
+            said = (
+                "a judge's request is its recipe's, as written"
+                if table == "judge"
+                else "a text's language is the texts file it's written in"
+            )
+            raise ValueError(f"{where}: {said}")
+        case dict():
+            try:
+                return _filed(cast(_Stanza, raw), root)
+            except ValueError as e:
+                raise ValueError(f"{where}: {e}") from None
+        case _:
+            raise ValueError(f"{where} must be a table, not {raw!r}")
+
+
+def _texts(data: Path) -> dict[str, dict[str, dict[str, _Stanza]]]:
+    texts: dict[str, dict[str, dict[str, _Stanza]]] = {}
     for path in sorted(data.glob("texts*.toml")):
         named = _TEXTS.match(path.name)
         if named is None:
@@ -240,7 +263,7 @@ def plan_factors(
             if twice := sorted(set(known) & set(stanzas)):
                 raise ValueError(f"{path}: {table} {twice} are named before it too")
             known.update(stanzas)
-    bodies: dict[str, dict[str, tuple[str | None, JsonValue]]] = {
+    bodies: dict[str, dict[str, tuple[str | None, _Stanza]]] = {
         table: {name: (None, body) for name, body in stanzas.items()}
         for table, stanzas in found.items()
     }
@@ -249,7 +272,7 @@ def plan_factors(
             f"{factors}: translations are written in the texts-<language>.toml of the "
             + "language they translate into"
         )
-    translating: dict[str, dict[str, JsonValue]] = {}
+    translating: dict[str, dict[str, _Stanza]] = {}
     for language, tables in _texts(data).items():
         for table, stanzas in tables.items():
             for name, body in stanzas.items():
@@ -274,9 +297,12 @@ def plan_factors(
             plan.stanzas.append(stanza)
 
     def base(table: str, name: str, fork_of: object) -> str | None:
+        if fork_of is not None and not isinstance(fork_of, str):
+            raise ValueError(
+                f"{table}.{name}: fork_of must be a string, not {fork_of!r}"
+            )
         if fork_of is None:
             return None
-        assert isinstance(fork_of, str)
         if (table, fork_of) not in planned:
             raise ValueError(f"{table}.{fork_of} must come before its forks")
         if (origin := planned[(table, fork_of)]) is None:
@@ -290,7 +316,6 @@ def plan_factors(
         table, _, name = stanza.partition(".")
         if table == "recipe" and name in found.get("recipe", {}):
             raw = found["recipe"][name]
-            assert isinstance(raw, dict)
             try:
                 layout = AppendixLayout.model_validate(raw.get("appendix_layout", {}))
             except ValidationError as e:
@@ -339,7 +364,6 @@ def plan_factors(
     def plan_table(table: str) -> None:
         kind = TABLES[table]
         for name, (language, raw) in bodies.get(table, {}).items():
-            assert isinstance(raw, dict)
             where = "factors.toml" if language is None else f"texts-{language}.toml"
             body = dict(raw)
             tags = _tags(body.pop("tags", []))
@@ -412,7 +436,6 @@ def plan_factors(
             said: dict[str, object] = {}
             into: dict[str, JsonValue] = {}
             for language, raw in written.items():
-                assert isinstance(raw, dict)
                 where = f"texts-{language}.toml: translations.{name}"
                 body = dict(raw)
                 tags.update(_tags(body.pop("tags", [])))
@@ -531,7 +554,6 @@ def plan_factors(
     target = None if configured is None else under(configured)
     made: dict[str, dict[str, JsonValue]] = {}
     for name, raw in found.get("recipe", {}).items():
-        assert isinstance(raw, dict)
         body = dict(raw)
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
@@ -578,7 +600,6 @@ def plan_factors(
     bound = {} if inventory is None else inventory.judges
     judges = found.get("judge", {})
     for name, raw in judges.items():
-        assert isinstance(raw, dict)
         body = dict(raw)
         if "engine" in body or "model" in body:
             raise ValueError(

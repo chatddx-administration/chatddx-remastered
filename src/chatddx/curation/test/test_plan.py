@@ -321,6 +321,39 @@ def test_texts_are_refused_where_they_say_the_wrong_thing(
         _ = plan(tmp_path, **files)
 
 
+@pytest.mark.parametrize(
+    ("files", "refusal"),
+    [
+        ({"factors": "recipe = 3\n"}, "factors.toml: recipe must be a table, not 3"),
+        (
+            {"factors": "[recipe]\nplan = 3\n"},
+            "factors.toml: recipe.plan must be a table, not 3",
+        ),
+        (
+            {"factors": "", "texts_en": '[instructions]\nphysician = "text"\n'},
+            "texts-en.toml: instructions.physician must be a table, not 'text'",
+        ),
+        (
+            {"factors": "[output.raw]\ncontract = { json_schema_path = 3 }\n"},
+            "factors.toml: output.raw: json_schema_path must be a string, not 3",
+        ),
+        (
+            {
+                "factors": NEUTRAL.replace(
+                    "temperature = 0", "temperature = 0\nfork_of = 3"
+                )
+            },
+            "sampling.greedy: fork_of must be a string, not 3",
+        ),
+    ],
+)
+def test_a_stanza_is_refused_where_toml_gives_what_the_data_can_t_be(
+    tmp_path: Path, files: dict[str, str], refusal: str
+) -> None:
+    with pytest.raises(ValueError, match=refusal):
+        _ = plan(tmp_path, **files)
+
+
 LAID_OUT = """
 [recipe.plan]
 prompt = "case"
