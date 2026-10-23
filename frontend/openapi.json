@@ -7510,6 +7510,7 @@
           "refused",
           "unprocessable",
           "over_quota",
+          "whoops",
           "error"
         ],
         "type": "string"

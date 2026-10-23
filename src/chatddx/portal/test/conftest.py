@@ -55,3 +55,18 @@ def signed(client: TestClient, alice: Person) -> TestClient:
     assert alice.login == "alice"
     assert signing_in(client).status_code == 303
     return client
+
+
+# Accommodating for signed's client, which runs the app's lifespan and its worker: this one
+# shares them, so it is never entered.
+@pytest.fixture
+def paged(signed: TestClient, served: FastAPI) -> Iterator[TestClient]:
+    held = TestClient(
+        served,
+        base_url="https://testserver",
+        follow_redirects=False,
+        raise_server_exceptions=False,
+    )
+    held.cookies = signed.cookies
+    yield held
+    held.close()

@@ -43,6 +43,7 @@ from chatddx.runner import STOPPED, Refused, judge_at
 from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
+from chatddx.whoops import Whoops
 
 from .errors import Ambiguous, NotFound
 from .model import (
@@ -252,9 +253,15 @@ class Seen:
     def handle(self, weights: str) -> Handle:
         if weights not in self._handles:
             held = sorted({e.thread for e in self.rows.edits_holding([weights])})
-            if len(held) != 1:
-                raise LookupError(
-                    f"{short(weights)} is held by {len(held)} model threads, not one"
+            if not held:
+                raise Whoops(
+                    f"{short(weights)} is held by no model thread: tell ops to check "
+                    + "their RuntimeErrors, and meanwhile use another model"
+                )
+            if len(held) > 1:
+                raise RuntimeError(
+                    f"{short(weights)} is held by {len(held)} model threads, not one: "
+                    + "fix boot-check src/chatddx/bench/handles.py:broken"
                 )
             about = read.about(self.rows, Subject(thread=held[0]))
             head = read.heads_of(self.rows, held)[held[0]]

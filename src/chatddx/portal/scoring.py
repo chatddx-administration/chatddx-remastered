@@ -371,10 +371,7 @@ def _drawn(
 
 
 def _model(bench: Bench, judge: Judge) -> str:
-    try:
-        return bench.handle(judge.model).name
-    except LookupError:
-        return bench.title(judge.model)
+    return bench.handle(judge.model).name
 
 
 def _asks(bench: Bench, digest: str) -> Asks:

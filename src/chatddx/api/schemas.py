@@ -29,6 +29,7 @@ type Code = Literal[
     "refused",
     "unprocessable",
     "over_quota",
+    "whoops",
     "error",
 ]
 

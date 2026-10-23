@@ -9,6 +9,7 @@ from pydantic import JsonValue
 from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
+from chatddx.catalog.titles import short
 from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
@@ -104,6 +105,37 @@ def test_a_column_whose_weights_its_handle_no_longer_holds_says_so(
     text = said(shown(signed, f"/lab/{mine['id']}"))
     assert f"its model is behind {QWEN_ARTIFACT}: follow it" in text
     assert "None of them has a run at its model's latest engine yet." in text
+
+
+@pytest.mark.slow
+def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
+    signed: TestClient, paged: TestClient, bench: Bench
+) -> None:
+    store = Store(bench.conn)
+    registry = store.load([])
+    weights = registry.add(
+        LocalModel(
+            repo=QWEN_MODEL,
+            revision="unheld",
+            files=(FileDigest(path="none", sha256="0" * 64),),
+        )
+    )
+    _ = store.add(registry, [weights])
+    bench.conn.commit()
+    lines = thread(signed, "configuration", LINES)
+    whoops = (
+        f"{short(weights)} is held by no model thread: tell ops to check their "
+        + "RuntimeErrors, and meanwhile use another model"
+    )
+    got = paged.get(f"/lab/{lines['id']}?model={weights}")
+    assert got.status_code == 500, said(got.text)[:300]
+    titled = escape("That shouldn't have happened")
+    assert said(got.text).startswith(f"> {titled} {whoops} ")
+    asked = paged.get(f"/api/threads/{lines['id']}/variation?model={weights}")
+    assert (asked.status_code, asked.json()) == (
+        500,
+        {"code": "whoops", "detail": whoops},
+    )
 
 
 @pytest.mark.slow

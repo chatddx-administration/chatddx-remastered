@@ -2,11 +2,17 @@ import time
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.api.test.helpers import endpoint, family, thread
-from chatddx.portal.test.helpers import shown, submitted, world_served
+from chatddx.catalog.titles import short
+from chatddx.factors.engine import model_of
+from chatddx.identity import Person
+from chatddx.portal.test.helpers import said, shown, submitted, world_served
+from chatddx.store import Catalog, Store
+from chatddx.store.store import Connection
 from chatddx.test.world import JUDGE, LINES, LINES_GUIDED, QWEN, QWEN_ARTIFACT
 
 __all__ = ["world_served"]
@@ -109,3 +115,29 @@ def test_a_configuration_s_trials_are_run_from_the_lab(signed: TestClient) -> No
 def test_a_trial_s_forms_from_another_site_start_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     assert signed.post("/lab/run", headers=elsewhere).status_code == 403
+
+
+@pytest.mark.slow
+def test_a_world_broken_under_a_running_app_is_paged_with_its_boot_check(
+    signed: TestClient,
+    paged: TestClient,
+    served: FastAPI,
+    conn: Connection,
+    alice: Person,
+) -> None:
+    lines = thread(signed, "configuration", LINES)
+    action = begun(signed, "nfd")
+    inventory = served.state.chatddx.inventory
+    weights = model_of(inventory.endpoint(QWEN).engine, Store(conn).get).digest
+    _ = Catalog(conn).create(weights, alice.id, name="twin")
+    broken = (
+        f"RuntimeError: {short(weights)} is held by 2 model threads, not one: "
+        + "fix boot-check src/chatddx/bench/handles.py:broken"
+    )
+    for path in (action, f"/lab/{lines['id']}"):
+        got = paged.get(path)
+        assert got.status_code == 500, (path, said(got.text)[:300])
+        assert said(got.text).startswith(
+            f"> Something went wrong {broken} "
+            + "It's for ops to mend: tell them what it says."
+        )

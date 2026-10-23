@@ -67,9 +67,7 @@ These are for developers and ops, so:
 ### 3. Inform UX runtime
 
 Users should not be able to cause errors, and so the possibility for error should be addressed rather than the error
-itself. If that becomes a project in itself, raise `Whoops` instead.
-
-When an error is a fact, regardless of how, tell the user:
+itself. If it's not a good time for that kind of investigation, raise `Whoops` and move on. Either way, tell the user:
 
 - what's going on
 - what they can do now

@@ -197,10 +197,7 @@ def _one_a_line(value: JsonValue) -> bool:
 def _engines(bench: Bench) -> dict[str, str]:
     found: dict[str, str] = {}
     for t in own_first(bench, [t for t, _ in listed(bench, "model")]):
-        try:
-            handle = bench.handle(t.head.digest)
-        except LookupError:
-            continue
+        handle = bench.handle(t.head.digest)
         if (engine := bench.latest(handle)) is not None:
             _ = found.setdefault(engine, handle.name)
     return found
@@ -208,11 +205,8 @@ def _engines(bench: Bench) -> dict[str, str]:
 
 def _held(bench: Bench, digest: str, found: Mapping[str, str]) -> str:
     if bench.rows.kind(digest) in ENGINES:
-        try:
-            weights = model_of(digest, bench.store.get).digest
-            return f"{bench.handle(weights).name}, an earlier engine"
-        except LookupError:
-            return f"{bench.title(digest)}, as it is held"
+        weights = model_of(digest, bench.store.get).digest
+        return f"{bench.handle(weights).name}, an earlier engine"
     for made in bench.rows.compilations(digest):
         if made.into is None:
             continue

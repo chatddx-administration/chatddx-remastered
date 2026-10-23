@@ -13,3 +13,12 @@ assert started.endpoint is not None
 ```
 assert each.skeleton is not None
 ```
+
+## `src/chatddx/bench/seen.py:Seen.handle`
+
+```
+raise Whoops(
+    f"{short(weights)} is held by no model thread: tell ops to check "
+    + "their RuntimeErrors, and meanwhile use another model"
+)
+```

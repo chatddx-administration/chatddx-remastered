@@ -153,8 +153,8 @@ def test_a_world_broken_under_a_running_app_is_answered_raw(
         500,
         {
             "code": "error",
-            "detail": f"LookupError: {short(weights)} is held by 2 model threads, "
-            + "not one",
+            "detail": f"RuntimeError: {short(weights)} is held by 2 model threads, "
+            + "not one: fix boot-check src/chatddx/bench/handles.py:broken",
         },
     )
 

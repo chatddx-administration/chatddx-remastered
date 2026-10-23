@@ -90,6 +90,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, eac
 # is read.
 ```
 
+## `src/chatddx/portal/test/conftest.py:paged`
+
+```
+# Accommodating for signed's client, which runs the app's lifespan and its worker: this one
+# shares them, so it is never entered.
+```
+
 ## `src/chatddx/portal/test/conftest.py:pytest_collection_modifyitems`
 
 ```

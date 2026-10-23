@@ -16,6 +16,7 @@ from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.inventory import Inventory
 from chatddx.runner import Refused
 from chatddx.store import UnderWay
+from chatddx.whoops import Whoops
 from chatddx.worker import Worker
 
 from . import families, people, queue, runs, scores, threads, world
@@ -31,6 +32,7 @@ STATUSES: dict[type[Exception], tuple[int, Code]] = {
     OverQuota: (429, "over_quota"),
     Refused: (422, "refused"),
     UnderWay: (409, "conflict"),
+    Whoops: (500, "whoops"),
 }
 
 CODES: dict[int, Code] = {
