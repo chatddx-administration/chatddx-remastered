@@ -829,6 +829,7 @@ Raises:
 * `weights: str`
 * ∟`Handle`
 
+Raises:
 1. `RuntimeError`: `"{short(weights)} is held by {len(held)} model threads, not one: fix boot-check src/chatddx/bench/handles.py:broken"`
 
 ## `Seen.handle_named`
