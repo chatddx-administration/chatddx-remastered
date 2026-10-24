@@ -100,8 +100,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 ```
 # Dependency: a case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 ```
-<<<<<<< signed
-=======
 
 ## `src/chatddx/bench/updating.py:_behind`
 
@@ -132,4 +130,3 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # weights its model's handle no longer holds, a scorer asking such a judge, and a trial
 # whose engine no endpoint here serves.
 ```
->>>>>>> @stamp

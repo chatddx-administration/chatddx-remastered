@@ -1653,10 +1653,7 @@ Raises:
 * `language: str | None = Field(description="its head's")`
 * `translated: list[str] = Field(…)`
 * `head: Edit`
-<<<<<<< signed
-=======
 * `outdated: bool = Field(…)`
->>>>>>> @stamp
 
 ## `thread` `@router.get("/threads/{thread}")`
 `src/chatddx/api/threads.py:thread`

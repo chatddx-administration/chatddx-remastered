@@ -1089,8 +1089,6 @@ Raises:
 * `scorer: Scorer`
 * ∟`str | None`
 
-<<<<<<< signed
-=======
 ## `updating` `@router.post("/threads/{thread}/update")`
 `src/chatddx/portal/threads.py:updating`
 
@@ -1107,7 +1105,6 @@ Raises:
 * `bench: BenchDep`
 * ∟`Response`
 
->>>>>>> @stamp
 ## `viewed`
 `src/chatddx/portal/lab.py:viewed`
 
