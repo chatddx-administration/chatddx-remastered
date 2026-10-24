@@ -10,11 +10,6 @@ set -euo pipefail
 cd "$CLAUDE_PROJECT_DIR"
 exec 3>&1 1>&2
 
-# Dependency: Claude Code's input to the hook, whose source says whether the session starts
-# or resumes, and which a run after the fast-forward below is handed.
-session_source="${SESSION_START_SOURCE-}"
-[ -n "$session_source" ] || [ -t 0 ] || session_source="$(jq -r '.source // empty' 2>/dev/null || true)"
-
 # Policy: a branch is fast-forwarded only, and only with nothing of its own in the way;
 # otherwise it is left as it is and the session is told.
 latest() {
@@ -41,7 +36,7 @@ latest() {
     echo "session-start: $branch fast-forwarded to $upstream, $(git log -1 --format='%h %s')" >&3
     # Heads-up: bash reads a script as it runs it, and the fast-forward may have changed this
     # one, so the rest is run by the new one.
-    exec env SESSION_START_LATEST=1 SESSION_START_SOURCE="$session_source" "$0" >&3 3>&-
+    exec env SESSION_START_LATEST=1 "$0" >&3 3>&-
   else
     echo "session-start: $branch has diverged from $upstream or has changes of its own, so it was left as it is" >&3
   fi
@@ -52,25 +47,7 @@ latest() {
   fi
 }
 
-# Policy: docs are stamped against the commit the session starts at, or the latest a human
-# made since; resumed in a container of its own, the session finds it again as the latest
-# commit on its branch that isn't of its own git identity.
-pinned() {
-  local pin human
-  pin="$(git rev-parse --git-path chatddx-stamp-base)"
-  human="$(git log --first-parent --format='%H %ae' HEAD |
-    awk -v me="$(git config user.email || true)" '$2 != me && !found { print $1; found = 1 }')"
-  if [ "$session_source" = startup ]; then
-    git rev-parse HEAD >"$pin"
-  elif [ -n "$human" ] && { [ ! -s "$pin" ] || git merge-base --is-ancestor "$(cat "$pin")" "$human"; }; then
-    echo "$human" >"$pin"
-  fi
-  stamp_base=""
-  [ ! -s "$pin" ] || stamp_base="$(cat "$pin")"
-}
-
 [ -n "${SESSION_START_LATEST:-}" ] || latest
-pinned
 
 set -a
 . ./.env-container
@@ -130,13 +107,10 @@ set +a
 export VIRTUAL_ENV="$CLAUDE_PROJECT_DIR/.venv"
 export PATH="$CLAUDE_PROJECT_DIR/.venv/bin:\$PATH"
 ENV
-  [ -z "$stamp_base" ] || echo "export CHATDDX_STAMP_BASE=$stamp_base" >>"$CLAUDE_ENV_FILE"
 }
 
 venv
 database
 frontend
 handed
-pinned_at="no commit: chatddx stamp docs needs CHATDDX_STAMP_BASE"
-[ -z "$stamp_base" ] || pinned_at="$(git log -1 --format='%h %s' "$stamp_base")"
-echo "session-start: at $(git log -1 --format='%h %s'); docs are stamped against $pinned_at; venv, database $DB_NAME (migrated) and frontend build ready; .env-container and .venv are in every command's environment" >&3
+echo "session-start: at $(git log -1 --format='%h %s'); venv, database $DB_NAME (migrated) and frontend build ready; .env-container and .venv are in every command's environment" >&3

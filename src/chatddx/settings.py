@@ -93,10 +93,6 @@ def revision() -> str | None:
     return os.environ.get("CHATDDX_REVISION") or None
 
 
-def stamp_base() -> str | None:
-    return os.environ.get("CHATDDX_STAMP_BASE") or None
-
-
 def world() -> Path | None:
     value = os.environ.get("CHATDDX_WORLD")
     return Path(value) if value else None

@@ -159,12 +159,20 @@ Raises:
 ## `docs`
 `src/chatddx/stamp/__init__.py:docs`
 
+<<<<<<< signed
 * `base: str | None`
+=======
+>>>>>>> @stamp
 * ∟`None`
 
 Raises:
+<<<<<<< signed
 1. `SystemExit`: `"stamp docs: no base: set CHATDDX_STAMP_BASE to the commit the session started at"`
 2. `SystemExit`: `"stamp docs: git {args[0]}: {e.stderr.strip()}"` (from `subprocess.CalledProcessError`, through `_changed`)
+=======
+1. `SystemExit`: `"stamp docs: git {args[0]}: {e.stderr.strip()}"` (from `subprocess.CalledProcessError`, through `_signed`)
+2. `SystemExit`: `"stamp docs: no commit on HEAD's first parents is by anyone but {mine}, so nothing says what a human signed"` (through `_signed`)
+>>>>>>> @stamp
 3. `SystemExit`: `"stamp docs: {_shown(path)}: {e}"` (from `ValueError`)
 
 ## `documents`

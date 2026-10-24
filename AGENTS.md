@@ -142,8 +142,8 @@ in two. A doc is moved in a commit of its own, and a move entails deduplication 
 
 ## Documentation
 
-The handover's `chatddx stamp docs` inserts git conflict markers between latest main and now, a human needs to stamp
-these for next baseline to pass.
+The handover's `chatddx stamp docs` inserts git conflict markers between the latest commit a human made and now, a human
+needs to stamp these for next baseline to pass.
 
 - The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
   provide options.

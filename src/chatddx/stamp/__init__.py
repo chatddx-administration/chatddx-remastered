@@ -139,14 +139,11 @@ def write(packages: Sequence[str]) -> None:
     print("\n".join(written) or "nothing to write")
 
 
-def docs(base: str | None) -> None:
-    if base is None:
-        raise SystemExit(
-            "stamp docs: no base: set CHATDDX_STAMP_BASE to the commit the session "
-            + "started at"
-        )
+def docs() -> None:
     root = settings.PROJECT_ROOT
+    base, shown = _signed(root)
     ours = set(documents())
+    print(f"against {shown}")
     written: list[str] = []
     for path, was in _changed(root, base):
         if path not in ours:
@@ -161,6 +158,20 @@ def docs(base: str | None) -> None:
             _ = path.write_text(s.written)
             written.append(f"{_shown(path)}: {_stamps(s.new)}")
     print("\n".join(written) or "nothing to write")
+
+
+def _signed(root: Path) -> tuple[str, str]:
+    mine = _git(root, "var", "GIT_AUTHOR_IDENT").rpartition("<")[2].partition(">")[0]
+    for line in _git(
+        root, "log", "--first-parent", "--format=%H %h %ae %s"
+    ).splitlines():
+        sha, short, author, subject = (line.split(" ", 3) + [""])[:4]
+        if author != mine:
+            return sha, f"{short} {subject}"
+    raise SystemExit(
+        f"stamp docs: no commit on HEAD's first parents is by anyone but {mine}, so "
+        + "nothing says what a human signed"
+    )
 
 
 def _held(paths: Iterable[Path]) -> list[Proof]:

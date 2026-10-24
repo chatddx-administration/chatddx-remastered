@@ -389,7 +389,7 @@ def _stamp(args: argparse.Namespace) -> None:
     if args.stamping == "check":
         stamp.check(args.package, args.baseline)
     elif args.stamping == "docs":
-        stamp.docs(settings.stamp_base())
+        stamp.docs()
     else:
         stamp.write(args.package)
 
@@ -686,8 +686,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
     stamp_docs = stamp_commands.add_parser(
         "docs",
-        help="keep each change to a doc since the commit CHATDDX_STAMP_BASE names as "
-        + "stamps pending, the last step of a handover, and say how many stamps",
+        help="keep each change to a doc since the latest commit a human made as stamps "
+        + "pending, the last step of a handover, and say against what and how many",
     )
     stamp_docs.set_defaults(run=_stamp, stamping="docs")
 

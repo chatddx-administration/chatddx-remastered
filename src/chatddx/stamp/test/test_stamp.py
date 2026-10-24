@@ -1099,20 +1099,31 @@ def test_write_says_how_many_stamps_it_wrote_to_each_proof(
 
 
 # Accommodating for nix's sandbox, which checks the package without git.
-@pytest.mark.skipif(shutil.which("git") is None, reason="no git")
-def test_docs_stamps_each_change_to_a_doc_since_the_base(
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="no git")
+
+
+@pytest.fixture
+def as_bob(monkeypatch: pytest.MonkeyPatch) -> None:
+    for role in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{role}_NAME", "bob")
+        monkeypatch.setenv(f"GIT_{role}_EMAIL", "bob@example.org")
+
+
+ALICE = "--author=alice <alice@example.org>"
+
+
+def git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", *args], cwd=root, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+@pytest.mark.slow
+@needs_git
+@pytest.mark.usefixtures("as_bob")
+def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def git(*args: str) -> str:
-        identity = ["-c", "user.name=alice", "-c", "user.email=alice@example.org"]
-        return subprocess.run(
-            ["git", *identity, *args],
-            cwd=tmp_path,
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-
     def wrote(files: dict[str, str]) -> None:
         for name, text in files.items():
             (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -1128,21 +1139,23 @@ def test_docs_stamps_each_change_to_a_doc_since_the_base(
             "src/x.md": "x\n",
         }
     )
-    _ = git("init", "-q")
-    _ = git("add", "-A")
-    _ = git("commit", "-qm", "base")
-    base = git("rev-parse", "HEAD")
+    _ = git(tmp_path, "init", "-q")
+    _ = git(tmp_path, "add", "-A")
+    _ = git(tmp_path, "commit", "-qm", "base", ALICE)
+    base = git(tmp_path, "log", "-1", "--format=%h %s")
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
     for docs in ("surfaces", "comments", "whoopses"):
         monkeypatch.setattr(stamp, docs.upper(), tmp_path / "docs" / docs)
 
     (tmp_path / "agents").mkdir()
-    _ = git("mv", "docs/moved.md", "agents/wip-moved.md")
+    _ = git(tmp_path, "mv", "docs/moved.md", "agents/wip-moved.md")
     wrote({"AGENTS.md": "a\nB\n", "agents/wip-moved.md": moved + "more\n"})
-    _ = git("commit", "-qam", "session")
+    _ = git(tmp_path, "commit", "-qam", "session")
     wrote({"docs/new.md": "n\n", "docs/surfaces/s.md": "## t\n", "src/x.md": "y\n"})
-    stamp.docs(base)
-    assert sorted(capsys.readouterr().out.splitlines()) == [
+    stamp.docs()
+    said = capsys.readouterr().out.splitlines()
+    assert said[0] == f"against {base}"
+    assert sorted(said[1:]) == [
         "AGENTS.md: 1 stamp",
         "agents/wip-moved.md: 1 stamp",
         "docs/new.md: 1 stamp",
@@ -1155,11 +1168,36 @@ def test_docs_stamps_each_change_to_a_doc_since_the_base(
     assert (tmp_path / "docs" / "kept.md").read_text() == "k\n"
     assert (tmp_path / "docs" / "surfaces" / "s.md").read_text() == "## t\n"
     assert (tmp_path / "src" / "x.md").read_text() == "y\n"
+    stamp.docs()
+    assert capsys.readouterr().out == f"against {base}\nnothing to write\n"
 
-    stamp.docs(base)
-    assert capsys.readouterr().out == "nothing to write\n"
-    with pytest.raises(SystemExit, match="^stamp docs: no base: "):
-        stamp.docs(None)
+    stamped_docs = ("AGENTS.md", "agents/wip-moved.md", "docs/new.md")
+    wrote({name: applied((tmp_path / name).read_text()) for name in stamped_docs})
+    _ = git(tmp_path, "add", "-A")
+    _ = git(tmp_path, "commit", "-qm", "stamp", ALICE)
+    signed_at = git(tmp_path, "log", "-1", "--format=%h %s")
+    wrote({"AGENTS.md": "a\nB\nc\n"})
+    _ = git(tmp_path, "commit", "-qam", "more")
+    stamp.docs()
+    assert capsys.readouterr().out.splitlines() == [
+        f"against {signed_at}",
+        "AGENTS.md: 1 stamp",
+    ]
+    assert (tmp_path / "AGENTS.md").read_text() == restamped("a\nB\n", "a\nB\nc\n")
+
+
+@needs_git
+@pytest.mark.usefixtures("as_bob")
+def test_docs_refuses_where_no_commit_is_a_human_s(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _ = git(tmp_path, "init", "-q")
+    _ = git(tmp_path, "commit", "-q", "--allow-empty", "-m", "session")
+    monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
+    with pytest.raises(
+        SystemExit, match="^stamp docs: no commit on HEAD's first parents is by anyone "
+    ):
+        stamp.docs()
 
 
 @pytest.mark.slow
