@@ -102,8 +102,11 @@ def library_page(
 ) -> Response:
     words = [*KINDS, "case"]
     shelves = shelved(bench, _BEGUN)
+    stale = len(bench.outdated_own())
     if kind is None:
-        return page(request, "library.html", person=bench.person, shelves=shelves)
+        return page(
+            request, "library.html", person=bench.person, shelves=shelves, stale=stale
+        )
     if kind not in words:
         raise NotFound.of(
             "no kind %(kind)s: the kinds are %(kinds)s",
@@ -148,6 +151,7 @@ def library_page(
         person=bench.person,
         typed=typed,
         shelves=shelves,
+        stale=stale,
         about=next(s.kinds[kind] for s in SHELVES if kind in s.kinds),
         word=kind,
         listing=listing,
@@ -800,6 +804,35 @@ def following_moved(
     with refused():
         _ = bench.follow_moved(thread, head)
     return _back(thread, next)
+
+
+@router.post("/threads/{thread}/update")
+def updating(
+    bench: BenchDep,
+    thread: int,
+    head: Annotated[int, Form()],
+    next: Annotated[str | None, Form()] = None,
+) -> Response:
+    with refused():
+        _ = bench.update(thread, head)
+    return _back(thread, next)
+
+
+@router.post("/library/update")
+def updating_all(request: Request, bench: BenchDep) -> Response:
+    done = bench.update_all()
+    shown = {u.thread: api.thread(bench, u.thread) for u in done}
+    return page(
+        request,
+        "updated.html",
+        person=bench.person,
+        updated=[shown[u.thread] for u in done if u.written is not None],
+        refused=[
+            (shown[u.thread], refusal_of(u.refused))
+            for u in done
+            if u.refused is not None
+        ],
+    )
 
 
 @router.post("/threads/{thread}/take")

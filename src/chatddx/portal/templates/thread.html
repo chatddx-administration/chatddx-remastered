@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, findings, named, refusal with context %}
+{% from "macros.html" import heading, section, facts, chip, findings, named, refusal, updating with context %}
 {% from "fields.html" import rows %}
 {% from "translations.html" import translations %}
 {% block title %}{{ thread.name or thread.title }} · ChatDDX{% endblock %}
@@ -15,6 +15,7 @@
     <form method="post" action="/threads/{{ thread.id }}/restore"><button class="primary">{{ _("Restore") }}</button></form>
   </div>
   {% endif %}
+  {{ updating(thread) }}
 
   {% call section(_("About it")) %}
   {% set origin_link %}{% if origin %}<a href="/threads/{{ origin.id }}">{{ named(origin) }}</a>{% elif thread.forked_from is not none %}{{ _("one you don't see") }}{% else %}—{% endif %}{% endset %}
@@ -47,7 +48,7 @@
   {% endcall %}
   {% endif %}
 
-  {% if moved %}
+  {% if moved and not thread.outdated %}
   {% call section(_("What it was compiled for has moved on")) %}
   <p class="mb-3 text-sm">
     {%- if moved.model and moved.facts %}{{ _("Its model, %(model)s, has a new version, and the facts about it were corrected since it was compiled, where they change what it sends.", model=moved.about) }}
@@ -60,7 +61,7 @@
   {% if not moved.refused %}
   <form method="post" action="/threads/{{ thread.id }}/moved/follow">
     <input type="hidden" name="head" value="{{ thread.head.id }}">
-    <button class="primary">{{ _("Follow") }}</button>
+    <button class="primary">{{ _("Update") }}</button>
   </form>
   {% endif %}
   {% endcall %}

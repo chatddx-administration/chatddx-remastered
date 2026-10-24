@@ -44,15 +44,13 @@ msgstr "Det här behövs."
 
 #: src/chatddx/portal/lab.py
 #, python-format
-msgid "no endpoint here serves the engine of %(trial)s: follow its handle"
-msgstr ""
-"ingen ändpunkt här serverar motorn för %(trial)s: uppdatera till dess "
-"alias"
+msgid "%(trial)s is out of date: update it on its page"
+msgstr "%(trial)s är ouppdaterat: uppdatera det på dess sida"
 
-#: src/chatddx/portal/lab.py
-#, python-format
-msgid "its model is behind %(handle)s: follow it"
-msgstr "dess modell ligger efter %(handle)s: uppdatera"
+#: src/chatddx/portal/lab.py src/chatddx/portal/templates/review.html
+msgctxt "a thread"
+msgid "out of date"
+msgstr "ouppdaterad"
 
 #: frontend/src/lib/api/client.ts src/chatddx/portal/pages.py
 #, python-format
@@ -951,7 +949,9 @@ msgstr "%(text)s är redan på %(held)s: en texts språk är detsamma var den ä
 #: src/chatddx/bench/following.py
 #, python-format
 msgctxt "refusal"
-msgid "configuration %(thread)s can't follow %(what)s %(about)s: %(refused)s"
+msgid ""
+"configuration %(thread)s can't be updated to %(what)s %(about)s: "
+"%(refused)s"
 msgstr ""
 "konfigurationen %(thread)s kan inte uppdateras till %(what)s %(about)s: "
 "%(refused)s"
@@ -974,19 +974,17 @@ msgstr "inget fall kan skickas: %(refused)s"
 #, python-format
 msgctxt "refusal"
 msgid ""
-"run %(run)s ran weights %(handle)s no longer holds: run its "
-"configuration, followed, instead"
+"run %(run)s is out of date: run its configuration instead, once that is "
+"updated"
 msgstr ""
-"körningen %(run)s körde vikter som %(handle)s inte längre pekar på: kör "
-"dess konfiguration, uppdaterad, i stället"
+"körningen %(run)s är ouppdaterad: kör dess konfiguration i stället, när "
+"den har uppdaterats"
 
 #: src/chatddx/bench/runs.py
 #, python-format
 msgctxt "refusal"
-msgid "no endpoint here serves the engine of %(trial)s: follow its handle"
-msgstr ""
-"ingen ändpunkt här serverar motorn för %(trial)s: uppdatera till dess "
-"alias"
+msgid "%(trial)s is out of date: update it on its page"
+msgstr "%(trial)s är ouppdaterat: uppdatera det på dess sida"
 
 #: src/chatddx/bench/runs.py
 #, python-format
@@ -1050,12 +1048,8 @@ msgstr "ingen ändpunkt här serverar modellen %(model)s: välj en annan"
 #: src/chatddx/bench/seen.py
 #, python-format
 msgctxt "refusal"
-msgid ""
-"%(judge)s: its model is behind %(handle)s, which holds other weights now:"
-" follow it first"
-msgstr ""
-"%(judge)s: dess modell ligger efter %(handle)s, som pekar på andra vikter"
-" nu: uppdatera först"
+msgid "%(judge)s is out of date: update it on its page"
+msgstr "%(judge)s är ouppdaterad: uppdatera den på dess sida"
 
 #: src/chatddx/bench/seen.py
 #, python-format
@@ -1066,12 +1060,8 @@ msgstr "%(configuration)s namnger ingen modell: namnge den den ska köras under"
 #: src/chatddx/bench/seen.py
 #, python-format
 msgctxt "refusal"
-msgid ""
-"%(configuration)s's model is behind %(handle)s, which holds other weights"
-" now: follow it first"
-msgstr ""
-"modellen för %(configuration)s ligger efter %(handle)s, som pekar på "
-"andra vikter nu: uppdatera först"
+msgid "%(configuration)s is out of date: update it on its page"
+msgstr "%(configuration)s är ouppdaterad: uppdatera den på dess sida"
 
 #: src/chatddx/bench/seen.py
 #, python-format
@@ -1108,6 +1098,18 @@ msgid ""
 msgstr ""
 "%(login)s har ett eget facit för %(case)s under %(schema)s, i tråden "
 "%(thread)s: ersätt det för att ta det här"
+
+#: src/chatddx/bench/updating.py
+#, python-format
+msgctxt "refusal"
+msgid "%(name)s can't be updated: %(refused)s"
+msgstr "%(name)s kan inte uppdateras: %(refused)s"
+
+#: src/chatddx/bench/updating.py
+#, python-format
+msgctxt "refusal"
+msgid "%(name)s can't be updated until %(judge)s is"
+msgstr "%(name)s kan inte uppdateras förrän %(judge)s är uppdaterad"
 
 #: src/chatddx/catalog/threads.py
 #, python-format
@@ -1692,6 +1694,7 @@ msgstr "Körningar"
 
 #: src/chatddx/portal/templates/base.html
 #: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/updated.html
 msgid "Library"
 msgstr "Bibliotek"
 
@@ -1778,6 +1781,7 @@ msgstr "Ny: %(kind)s"
 #: src/chatddx/portal/templates/starting.html
 #: src/chatddx/portal/templates/taken.html
 #: src/chatddx/portal/templates/thread.html
+#: src/chatddx/portal/templates/updated.html
 #: src/chatddx/portal/templates/vignette.html
 msgid "Breadcrumb"
 msgstr "Brödsmulor"
@@ -2535,8 +2539,9 @@ msgid "Following keeps its recipe compiled against the current facts."
 msgstr "Att uppdatera behåller dess recept kompilerat mot de nuvarande fakta."
 
 #: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/thread.html
-msgid "Follow"
+msgid "Update"
 msgstr "Uppdatera"
 
 #: src/chatddx/portal/templates/lab.html
@@ -2694,6 +2699,17 @@ msgstr "Typer: %(kind)s"
 #: src/chatddx/portal/templates/library.html
 msgid "Kinds"
 msgstr "Typer"
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "%(num)s of yours can't be used until it is updated."
+msgid_plural "%(num)s of yours can't be used until they are updated."
+msgstr[0] "%(num)s av dina kan inte användas förrän den uppdateras."
+msgstr[1] "%(num)s av dina kan inte användas förrän de uppdateras."
+
+#: src/chatddx/portal/templates/library.html
+msgid "Update all"
+msgstr "Uppdatera alla"
 
 #: src/chatddx/portal/templates/library.html
 #, python-format
@@ -2879,6 +2895,7 @@ msgstr "Dina raderade"
 
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/updated.html
 #: src/chatddx/portal/templates/world.html
 msgid "None."
 msgstr "Inga."
@@ -3023,6 +3040,40 @@ msgstr "misslyckat"
 #, python-format
 msgid "%(status)s: %(why)s"
 msgstr "%(status)s: %(why)s"
+
+#: src/chatddx/portal/templates/macros.html
+msgctxt "a thread"
+msgid "Out of date"
+msgstr "Ouppdaterad"
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Its model has new weights, so it can't judge until it is updated."
+msgstr "Modellen har nya vikter, så den kan inte bedöma förrän den uppdateras."
+
+#: src/chatddx/portal/templates/macros.html
+msgid ""
+"It asks a judge that is out of date, so it can't score until it is "
+"updated."
+msgstr ""
+"Den frågar en ouppdaterad bedömare, så den kan inte rätta förrän den "
+"uppdateras."
+
+#: src/chatddx/portal/templates/macros.html
+msgid "No endpoint here serves its engine, so it can't run until it is updated."
+msgstr ""
+"Ingen ändpunkt här serverar dess motor, så det kan inte köras förrän det "
+"uppdateras."
+
+#: src/chatddx/portal/templates/macros.html
+msgid "Its model has new weights, so it can't run until it is updated."
+msgstr "Modellen har nya vikter, så den kan inte köras förrän den uppdateras."
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "Only %(owner)s can update it: fork it, and update yours."
+msgstr ""
+"Bara %(owner)s kan uppdatera detta: förgrena det och uppdatera din "
+"förgrening."
 
 #: src/chatddx/portal/templates/macros.html
 msgid "Tabs"
@@ -4470,6 +4521,22 @@ msgid "Saves a new version of it; a translation left empty or out isn't kept."
 msgstr ""
 "Sparar en ny version av den; en översättning som lämnas tom eller "
 "utelämnas sparas inte."
+
+#: src/chatddx/portal/templates/updated.html
+msgid "Updated"
+msgstr "Uppdaterat"
+
+#: src/chatddx/portal/templates/updated.html
+msgid "What of yours was out of date, in the order it was updated."
+msgstr "Det av ditt som var ouppdaterat, i den ordning det uppdaterades."
+
+#: src/chatddx/portal/templates/updated.html
+msgid "A new version of each"
+msgstr "En ny version av var och en"
+
+#: src/chatddx/portal/templates/updated.html
+msgid "Not updated"
+msgstr "Inte uppdaterat"
 
 #: src/chatddx/portal/templates/vignette.html
 #, python-format

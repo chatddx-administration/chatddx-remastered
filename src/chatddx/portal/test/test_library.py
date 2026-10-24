@@ -437,10 +437,7 @@ def test_a_judge_s_configuration_model_and_seeds_are_edited_on_its_page(
     _ = store.add(registry, [weights])
     handle = thread(signed, "model", QWEN_ARTIFACT, "archive")
     _ = Catalog(conn).edit(handle["id"], weights, alice.id)
-    assert (
-        f"verdict: its model is behind {QWEN_ARTIFACT}, which holds other weights "
-        + "now: follow it first"
-    ) in shown(signed, page)
+    assert "verdict is out of date: update it on its page" in shown(signed, page)
 
 
 @pytest.mark.slow
@@ -882,6 +879,7 @@ def test_a_scorer_s_earlier_version_is_made_the_latest_with_its_labels(
 def test_a_thread_s_forms_from_another_site_write_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     actions = ("said", "edit", "delete", "restore", "leave", "revert", "fork")
-    actions = (*actions, "follow", "moved/follow", "take")
+    actions = (*actions, "follow", "moved/follow", "update", "take")
     for action in (*actions, "carry"):
         assert signed.post(f"/threads/1/{action}", headers=elsewhere).status_code == 403
+    assert signed.post("/library/update", headers=elsewhere).status_code == 403

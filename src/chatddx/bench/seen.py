@@ -303,10 +303,8 @@ class Seen:
         handle = self.handle(judge.model)
         if handle.weights != judge.model:
             raise Invalid.of(
-                "%(judge)s: its model is behind %(handle)s, which holds other weights "
-                + "now: follow it first",
+                "%(judge)s is out of date: update it on its page",
                 judge=self.title(judge.digest),
-                handle=handle.name,
             )
         return self.served(handle)
 
@@ -348,10 +346,8 @@ class Seen:
         handle = self.handle(weights)
         if handle.weights != weights:
             raise Invalid.of(
-                "%(configuration)s's model is behind %(handle)s, which holds other "
-                + "weights now: follow it first",
+                "%(configuration)s is out of date: update it on its page",
                 configuration=variation.label,
-                handle=handle.name,
             )
         return self.served(handle)
 

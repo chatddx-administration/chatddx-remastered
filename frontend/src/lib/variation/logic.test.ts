@@ -27,6 +27,7 @@ function thread(id: number, name: string | null, owner: string | null, digest: s
     language: null,
     translated: [],
     head: { id: id * 10, digest, compilation: null, based_on: null, by: owner ?? "nobody", at: "2026-10-13T12:00:00Z", labels: null },
+    outdated: false,
   };
 }
 

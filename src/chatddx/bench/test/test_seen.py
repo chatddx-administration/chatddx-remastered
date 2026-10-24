@@ -608,8 +608,7 @@ def test_a_judged_scoring_pins_its_judges_latest_engines_or_says_why_it_can_t(
     assert judged in later.unscored(started)
     [refused] = later.score(started, {judged})
     assert refused.refused is not None and refused.refused.endswith(
-        f"its model is behind {QWEN_ARTIFACT}, which holds other weights now: follow "
-        + "it first"
+        "is out of date: update it on its page"
     )
 
 
@@ -744,7 +743,7 @@ def test_a_run_runs_again_under_its_handle_or_is_refused_saying_why(
     _ = Catalog(conn).edit(held.thread, weights, alice.id)
     later = Bench(conn, alice, inventory)
     with pytest.raises(
-        ValueError, match=f"ran weights {QWEN_ARTIFACT} no longer holds"
+        ValueError, match="is out of date: run its configuration instead"
     ):
         _ = later.again(later.run(run), (9,))
 

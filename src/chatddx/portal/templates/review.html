@@ -223,7 +223,7 @@
         <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
         <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Configuration") }}</span>
           <select name="configuration" class="h-9 {{ field }}">
-            {% for t in configurations %}<option value="{{ t.id }}">{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}</option>{% endfor %}
+            {% for t in configurations %}<option value="{{ t.id }}"{% if t.outdated %} disabled{% endif %}>{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}{% if t.outdated %} ({{ pgettext("a thread", "out of date") }}){% endif %}</option>{% endfor %}
           </select></label>
         <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Model") }}</span>
           <select name="model" class="h-9 {{ field }}">

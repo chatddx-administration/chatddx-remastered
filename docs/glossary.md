@@ -380,6 +380,18 @@ none. `src/chatddx/scorers/scorer.py:NO_TARGET`
 :Origin — The thread a fork was started from, of the same kind. The fork's base is one of its versions, and following
 brings the fork onto its head. `src/chatddx/catalog/threads.py:origin`
 
+```
+AGENT: add
+A term for what can't be used until it is updated, and for updating it.
+---
+:Out of date — What can't be used until it is updated: a configuration or a judge holding weights its model's handle
+no longer holds, a scorer asking such a judge, and a trial whose engine no endpoint here serves. Only what is blocked:
+facts corrected since a configuration was compiled leave it usable. `src/chatddx/bench/updating.py:outdated`
+
+:Updating — Keeping a new version of the person's own that can be used again: a configuration following its facts, a
+judge on its handle's weights, a scorer asking its judges' latest versions and a trial at the engine serving its model
+now, each compiled again where it was compiled from a recipe. `src/chatddx/bench/updating.py:update`
+```
 :Outcome — How an item ended, from its last call and the answer read from it: stopped, errored, unread, salvaged,
 completed, invalid or valid. `src/chatddx/runner/outcome.py:Outcome`
 

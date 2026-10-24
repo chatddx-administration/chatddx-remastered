@@ -272,8 +272,9 @@ Each step leaves the portal working in English, and Swedish appearing only where
    - **Decided: the words reviewed**: the World *Miljön*; scorer *rättare*, score and Scoring *rättning*, to score
      *rätta*; judge *bedömare*, its grading *bedöma*, verdict *omdöme*; expectation *facit*, expectation schema
      *facitschema*; trial *försök*, an attempt always *anropsförsök*; kind *typ*; follow *uppdatera*; handle
-     *alias*; the outcomes *giltig*, *slutförd*, *räddad*, *ogiltig*, *med fel*, *oläsbar* and *stoppad*, cut
-     short *avkortat*, and halt *avbryta*; what you see *det du har tillgång till*.
+     *alias*; out of date *ouppdaterad* and to update *uppdatera*, with *Uppdatera alla*; the outcomes *giltig*,
+     *slutförd*, *räddad*, *ogiltig*, *med fel*, *oläsbar* and *stoppad*, cut short *avkortat*, and halt *avbryta*;
+     what you see *det du har tillgång till*.
    - **Decided: no "it" in a button or a heading**, where Swedish would say *den* or *det* by a word the message
      doesn't know: `Delete it` is *Radera*, `Its versions` *Versioner*.
    - **Decided: one message for ops**, `Copy this and send it to drift@chatddx.com:`, wherever a page or an island

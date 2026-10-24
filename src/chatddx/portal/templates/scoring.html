@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, pane with context %}
+{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, outdated, pane, updating with context %}
 
 {% set th = "pb-2 pr-4 font-medium" %}
 {% set td = "py-1.5 pr-4 align-top" %}
@@ -11,7 +11,7 @@
 <li>
   <a href="/scoring/{{ t.id }}"{% if t.id == shown.id %} aria-current="page"{% endif %}
      class="block px-2 py-1">
-    <span class="block truncate">{{ named(t) }}</span>
+    <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(t) }}</span>{% if t.outdated %}{{ outdated() }}{% endif %}</span>
     {% if sub %}<span class="block text-xs text-muted-foreground">{{ sub }}</span>{% endif %}
   </a>
 </li>
@@ -57,6 +57,7 @@
     </p>
     {% if shown.description %}<p class="mt-2 text-sm">{{ shown.description }}</p>{% endif %}
   </header>
+  {{ updating(shown, "/scoring/" ~ shown.id) }}
 
   {% if scorer %}
   {% if scorer.unshipped %}<p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">{{ scorer.unshipped }}</p>{% endif %}

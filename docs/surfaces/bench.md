@@ -53,7 +53,11 @@ Heads-up: the gate's `Refused` passes through.
 Raises:
 1. `ValueError`: `"run {run.run} was sent to no endpoint, so it can't run again"`
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
+<<<<<<< signed
 3. `Invalid`: `"run %(run)s ran weights %(handle)s no longer holds: run its configuration, followed, instead", run=str(run.run), handle=handle.name`
+=======
+3. `Invalid`: `"run %(run)s is out of date: run its configuration instead, once that is updated", run=str(run.run)`
+>>>>>>> @stamp
 4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_begun`)
 5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_begun`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_begun`)
@@ -127,7 +131,11 @@ Raises:
 Raises:
 1. `NotFound`: `"no configuration {thread} of yours"`
 2. `ValueError`: `"configuration {thread} was compiled for nothing that has moved on"`
+<<<<<<< signed
 3. `Invalid`: `"configuration %(thread)s can't follow %(what)s %(about)s: %(refused)s", thread=thread, what=_what(made), about=str(made.about), refused=str(made.refused)`
+=======
+3. `Invalid`: `"configuration %(thread)s can't be updated to %(what)s %(about)s: %(refused)s", thread=thread, what=_what(made), about=str(made.about), refused=str(made.refused)`
+>>>>>>> @stamp
 
 ## `Bench.fork`
 `src/chatddx/bench/components.py:fork`
@@ -195,6 +203,21 @@ Raises:
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
+<<<<<<< signed
+=======
+
+## `Bench.outdated`
+`src/chatddx/bench/updating.py:outdated`
+
+* `edit: Edit`
+* `kind: str`
+* ∟`bool`
+
+## `Bench.outdated_own`
+`src/chatddx/bench/updating.py:outdated_own`
+
+* ∟`list[int]`
+>>>>>>> @stamp
 
 ## `Bench.proposal`
 `src/chatddx/bench/following.py:proposal`
@@ -351,7 +374,11 @@ Raises:
 4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
 5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
+<<<<<<< signed
 7. `Invalid`: `"no endpoint here serves the engine of %(trial)s: follow its handle", trial=name`
+=======
+7. `Invalid`: `"%(trial)s is out of date: update it on its page", trial=name`
+>>>>>>> @stamp
 
 ## `Bench.take`
 `src/chatddx/bench/taking.py:take`
@@ -393,6 +420,26 @@ Raises:
 4. `Invalid`: `"a name can't be empty: none leaves the case unnamed"`
 5. `ValueError`: `str(e)` (from `LookupError`)
 6. `OverQuota`: `"%(login)s has typed %(num)s cases in the last day, as many as a day takes", login=seen.person.login, num=typed`
+<<<<<<< signed
+=======
+
+## `Bench.update`
+`src/chatddx/bench/updating.py:update`
+
+* `thread: int`
+* `head: int`
+* ∟`Written | None`
+
+Raises:
+1. `NotFound`: `"no {word} {thread} of yours"`
+2. `Invalid`: `"%(name)s can't be updated until %(judge)s is", name=name, judge=seen.title(judge)` (through `_scorer`)
+3. `Invalid`: `"%(name)s can't be updated: %(refused)s", name=name, refused=str(e)` (from `ValueError`, through `_judge`)
+
+## `Bench.update_all`
+`src/chatddx/bench/updating.py:update_all`
+
+* ∟`list[Updated]`
+>>>>>>> @stamp
 
 ## `bound`
 `src/chatddx/bench/components.py:bound`
@@ -762,7 +809,11 @@ Raises:
 1. `ValueError`: `"endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(weights)}"`
 2. `Invalid`: `"%(configuration)s names no model: name the one to run it under", configuration=variation.label`
 3. `ValueError`: `"{variation.label} runs under its model's handle: set its model instead"`
+<<<<<<< signed
 4. `Invalid`: `"%(configuration)s's model is behind %(handle)s, which holds other weights now: follow it first", configuration=variation.label, handle=handle.name`
+=======
+4. `Invalid`: `"%(configuration)s is out of date: update it on its page", configuration=variation.label`
+>>>>>>> @stamp
 
 ## `Seen.case_titled`
 `src/chatddx/bench/seen.py:Seen.case_titled`
@@ -873,7 +924,11 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
+<<<<<<< signed
 1. `Invalid`: `"%(judge)s: its model is behind %(handle)s, which holds other weights now: follow it first", judge=self.title(judge.digest), handle=handle.name`
+=======
+1. `Invalid`: `"%(judge)s is out of date: update it on its page", judge=self.title(judge.digest)`
+>>>>>>> @stamp
 
 ## `Seen.labels`
 `src/chatddx/bench/seen.py:Seen.labels`
@@ -1123,6 +1178,21 @@ Raises:
 
 * ∟`Recipe | None`
 
+<<<<<<< signed
+=======
+## `UPDATED`
+`src/chatddx/bench/updating.py:UPDATED`
+
+`UPDATED = ("skeleton", "judge", "scorer", "trial")`
+
+## `Updated` `@dataclass(frozen=True)`
+`src/chatddx/bench/updating.py:Updated`
+
+* `thread: int`
+* `written: Written | None`
+* `refused: ValueError | None`
+
+>>>>>>> @stamp
 ## `WITH`
 `src/chatddx/bench/seen.py:WITH`
 

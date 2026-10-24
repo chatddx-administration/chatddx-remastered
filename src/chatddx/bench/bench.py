@@ -8,6 +8,7 @@ from .runs import again, queue, queue_scoring, resume, score, start, start_trial
 from .saying import leave, say
 from .seen import Seen
 from .taking import take, take_from
+from .updating import outdated, outdated_own, update, update_all
 
 
 @final
@@ -33,6 +34,10 @@ class Bench(Seen):
     follow = follow
     moved = moved
     follow_moved = follow_moved
+    outdated = outdated
+    outdated_own = outdated_own
+    update = update
+    update_all = update_all
 
     start = start
     start_trials = start_trials

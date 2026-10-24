@@ -107,7 +107,7 @@ def test_a_column_whose_weights_its_handle_no_longer_holds_says_so(
     bench.conn.commit()
     mine = thread(signed, "configuration", LINES_INSTRUCTED)
     text = said(shown(signed, f"/lab/{mine['id']}"))
-    assert f"its model is behind {QWEN_ARTIFACT}: follow it" in text
+    assert "out of date" in text
     assert "None of them has a run at its model's latest engine yet." in text
 
 
@@ -299,7 +299,7 @@ def test_a_configuration_follows_its_corrected_facts_from_its_pages(
     recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
     page = shown(signed, path)
-    assert corrected in page and ">Follow<" in page
+    assert corrected in page and ">Update<" in page
     page = shown(signed, f"/threads/{mine['id']}")
     assert corrected in page and f'action="/threads/{mine["id"]}/moved/follow"' in page
 

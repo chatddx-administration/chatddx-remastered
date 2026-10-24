@@ -19,6 +19,7 @@ from .model import (
     word_of,
 )
 from .runs import ScorerStarted, ScoringEvent
+from .updating import Updated
 from .variation import TriedVariation
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "Started",
     "Taken",
     "TriedVariation",
+    "Updated",
     "Written",
     "word_of",
 ]

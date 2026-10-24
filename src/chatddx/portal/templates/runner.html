@@ -1,3 +1,4 @@
+{% from "macros.html" import outdated %}
 {% set box = "h-9 rounded-md border border-input bg-transparent px-2.5" %}
 
 {% macro runner(trials, orders, optional=false) %}
@@ -6,7 +7,7 @@
     {% for s in trials %}
     {% set named = s.thread.name or s.thread.title %}
     <li class="grid gap-1.5 rounded-lg border border-border/60 p-3">
-      <div class="flex flex-wrap items-baseline gap-x-3"><a class="font-medium" href="/threads/{{ s.thread.id }}">{{ named }}</a><span class="text-muted-foreground">{{ s.thread.language or _("a language unknown") }}, {{ ngettext("%(num)s case", "%(num)s cases", s.trial.cases | length) }}, {{ ngettext("%(num)s seed", "%(num)s seeds", s.trial.seeds | length) }}</span></div>
+      <div class="flex flex-wrap items-baseline gap-x-3"><a class="font-medium" href="/threads/{{ s.thread.id }}">{{ named }}</a>{% if s.thread.outdated %}{{ outdated() }}{% endif %}<span class="text-muted-foreground">{{ s.thread.language or _("a language unknown") }}, {{ ngettext("%(num)s case", "%(num)s cases", s.trial.cases | length) }}, {{ ngettext("%(num)s seed", "%(num)s seeds", s.trial.seeds | length) }}</span></div>
       <label class="flex flex-wrap items-center gap-2"><span class="text-muted-foreground">{{ _("version") }}</span>
         <select name="version" aria-label="{{ _('version of %(name)s', name=named) }}" class="{{ box }}">
           {% if optional %}<option value="">{{ _("not this time") }}</option>{% endif %}

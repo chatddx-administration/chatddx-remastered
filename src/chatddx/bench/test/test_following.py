@@ -169,7 +169,7 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     assert refused is not None and (refused.digest, refused.compilation) == (None, None)
     assert refused.refused is not None and "no default reasoning" in refused.refused
     with pytest.raises(
-        ValueError, match=f"can't follow the facts about {QWEN_MODEL}: .*no default"
+        ValueError, match=f"can't be updated to the facts about {QWEN_MODEL}: .*no default"
     ):
         _ = bench.follow_moved(mine, followed.edit.id)
 

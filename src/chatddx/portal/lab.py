@@ -22,7 +22,7 @@ from chatddx.catalog import threads
 from chatddx.factors.base import Invalid, StructuralError, resolve
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 from chatddx.factors.trial import Order, Trial
-from chatddx.locale import tr
+from chatddx.locale import pgettext, tr
 
 from .pages import BenchDep, own_first, page, refusal_of
 from .scoring import unit_in
@@ -328,10 +328,7 @@ def _starting(bench: Bench, thread: int) -> _Starting:
         at = bench.endpoint(bench.inventory.serving(held.engine))
     except LookupError:
         named = shown.name or shown.title
-        why = tr(
-            "no endpoint here serves the engine of %(trial)s: follow its handle",
-            trial=named,
-        )
+        why = tr("%(trial)s is out of date: update it on its page", trial=named)
         return _Starting(shown, versions, held, None, why)
     return _Starting(shown, versions, held, at, None)
 
@@ -421,9 +418,7 @@ def _column(
     return Column(
         tuple(skeletons),
         name,
-        tr("its model is behind %(handle)s: follow it", handle=name)
-        if behind
-        else None,
+        pgettext("a thread", "out of date") if behind else None,
     )
 
 

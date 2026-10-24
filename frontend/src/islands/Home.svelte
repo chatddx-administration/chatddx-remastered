@@ -53,7 +53,8 @@
       return;
     }
     login = me.data.login;
-    configurations = preferred(found.data);
+    // Policy: what is out of date isn't offered, as only a researcher can update it.
+    configurations = preferred(found.data.filter((c) => !c.outdated));
     models = served.data.filter((m) => m.takes_typed);
     model = models[0]?.name;
     configuration = configurations[0]?.id;

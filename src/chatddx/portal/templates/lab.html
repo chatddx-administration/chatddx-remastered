@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import drawer, mean, named, opened, pane, rail, upright with context %}
+{% from "macros.html" import drawer, mean, named, opened, outdated, pane, rail, updating, upright with context %}
 {% from "runner.html" import runner %}
 
 {% set field = "h-9 rounded-md border border-input bg-transparent px-2" %}
@@ -28,7 +28,7 @@
       <li style="padding-left: {{ depth }}rem">
         <a href="/lab/{{ k.id }}{{ kept }}"{% if k.id == configuration.id %} aria-current="page"{% endif %}
            class="block px-2 py-1">
-          <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(k) }}</span>{% if fared %}<span class="font-mono text-xs text-muted-foreground">{{ mean(fared.mean_of.get(k.id)) }}</span>{% endif %}</span>
+          <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(k) }}</span>{% if k.outdated %}{{ outdated() }}{% endif %}{% if fared %}<span class="font-mono text-xs text-muted-foreground">{{ mean(fared.mean_of.get(k.id)) }}</span>{% endif %}</span>
           {% if k.varies or k.moved_on %}
           <span class="block text-xs text-muted-foreground">
             {%- if k.varies %}{{ _("varies %(parts)s", parts=varies(k)) }}{% endif %}
@@ -75,6 +75,7 @@
     <p class="mt-2 rounded-lg bg-warning/10 p-3 text-sm">{{ _("A newer version is saved: version %(n)s, %(at)s by %(by)s.", n=versions | length, at=versions[last].at | when, by=versions[last].by) }} <a class="view" href="{{ links[last] }}" data-head="{{ versions[last].id }}">{{ _("Open the latest") }}</a></p>
     {% endif %}
   </header>
+  {{ updating(configuration, here) }}
 
   {% if proposal %}
   <section class="mb-6 border-t border-border/60 pt-4">
@@ -93,7 +94,7 @@
   </section>
   {% endif %}
 
-  {% if moved %}
+  {% if moved and not configuration.outdated %}
   <section class="mb-6 border-t border-border/60 pt-4">
     <h2 class="mb-2 text-base font-semibold">{{ _("What it was compiled for has moved on") }}</h2>
     <p class="mb-3 text-sm">
@@ -108,7 +109,7 @@
     <form method="post" action="/threads/{{ configuration.id }}/moved/follow">
       <input type="hidden" name="head" value="{{ configuration.head.id }}">
       <input type="hidden" name="next" value="{{ here }}">
-      <button class="primary">{{ _("Follow") }}</button>
+      <button class="primary">{{ _("Update") }}</button>
     </form>
     {% endif %}
   </section>

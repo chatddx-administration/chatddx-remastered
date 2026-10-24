@@ -1089,6 +1089,25 @@ Raises:
 * `scorer: Scorer`
 * ∟`str | None`
 
+<<<<<<< signed
+=======
+## `updating` `@router.post("/threads/{thread}/update")`
+`src/chatddx/portal/threads.py:updating`
+
+* `bench: BenchDep`
+* `thread: int`
+* `head: Annotated[int, Form()]`
+* `next: Annotated[str | None, Form()] = None`
+* ∟`Response`
+
+## `updating_all` `@router.post("/library/update")`
+`src/chatddx/portal/threads.py:updating_all`
+
+* `request: Request`
+* `bench: BenchDep`
+* ∟`Response`
+
+>>>>>>> @stamp
 ## `viewed`
 `src/chatddx/portal/lab.py:viewed`
 

@@ -100,3 +100,36 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 ```
 # Dependency: a case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 ```
+<<<<<<< signed
+=======
+
+## `src/chatddx/bench/updating.py:_behind`
+
+```
+# Policy: weights no model thread holds, or several do, aren't out of date, as
+# src/chatddx/bench/seen.py:Seen.handle says what is wrong where they are tried.
+```
+
+## `src/chatddx/bench/updating.py:_latest`
+
+```
+# Policy: a judge's latest version is its thread's head, the person's own fork of it
+# first, as a fork's first version holds the judge it was forked from.
+```
+
+## `src/chatddx/bench/updating.py:_skeleton`
+
+```
+# Policy: a skeleton compiled from a recipe is compiled again for the weights, against
+# the current facts and into the language it was; one written by hand is kept as it is.
+```
+
+## `src/chatddx/bench/updating.py:UPDATED`
+
+```
+# Policy: what can't be used until it is updated, in the order it is updated, as a
+# scorer's update reads its judges' and a trial's its configuration's: what holds
+# weights its model's handle no longer holds, a scorer asking such a judge, and a trial
+# whose engine no endpoint here serves.
+```
+>>>>>>> @stamp

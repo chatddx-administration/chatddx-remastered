@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, chip, named, refusal with context %}
+{% from "macros.html" import heading, section, chip, named, outdated, refusal with context %}
 {% block title %}{{ (word | kind ~ " · ") if word else "" }}{{ _("Library") }} · ChatDDX{% endblock %}
 
 {% macro locked() %}<svg aria-hidden="true" viewBox="0 0 16 16" class="h-3 w-3 shrink-0 fill-current"><path d="M5 7V5a3 3 0 0 1 6 0v2h.5A1.5 1.5 0 0 1 13 8.5v5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-5A1.5 1.5 0 0 1 4.5 7H5Zm1.5 0h3V5a1.5 1.5 0 0 0-3 0v2Z"/></svg>{% endmacro %}
@@ -39,6 +39,13 @@
 
     <div class="min-w-0">
       {{ refusal(typed, request) }}
+      {% if stale %}
+      <div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+        {{ outdated() }}
+        <span>{{ ngettext("%(num)s of yours can't be used until it is updated.", "%(num)s of yours can't be used until they are updated.", stale) }}</span>
+        <form method="post" action="/library/update"><button class="primary">{{ _("Update all") }}</button></form>
+      </div>
+      {% endif %}
       {% if not word %}
       {% for shelf, kinds in shelves %}
       {% call section(_(shelf.heading), about=_(shelf.about)) %}
@@ -149,6 +156,7 @@
             <tr class="border-t border-border/60">
               {% if runnable %}<td class="py-2 pr-2 align-top"><input type="checkbox" name="trial" value="{{ t.id }}" aria-label="{{ _('pick %(name)s', name=t.name or t.title) }}"{% if every %} checked{% endif %}></td>{% endif %}
               <td class="py-2 pr-4 align-top"><a href="/threads/{{ t.id }}">{{ t.name or t.title }}</a>
+                {%- if t.outdated %} {{ outdated() }}{% endif %}
                 {%- if described.get(t.id) %}<span class="line-clamp-2 block max-w-prose text-xs text-muted-foreground">{{ described[t.id] }}</span>{% endif %}
                 {%- if t.id in origins %}<span class="block text-xs text-muted-foreground">{{ _("forked from %(origin)s", origin=named(origins[t.id])) if origins[t.id] else _("forked from one you don't see") }}</span>{% endif %}</td>
               {% if purposes %}<td class="py-2 pr-4 align-top">{{ purposes[t.id] }}</td>{% endif %}

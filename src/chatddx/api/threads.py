@@ -82,6 +82,7 @@ def thread_of(
         language=languages[edit.id],
         translated=_translated(bench, edit),
         head=_edit_of(bench, edit, kind),
+        outdated=bench.outdated(edit, kind),
     )
 
 

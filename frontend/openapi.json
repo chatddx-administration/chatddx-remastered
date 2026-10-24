@@ -4353,6 +4353,11 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
           "origin": {
             "anyOf": [
               {
@@ -4407,6 +4412,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "origin",
           "base",
           "varies",
@@ -4677,6 +4683,11 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
           "description": {
             "anyOf": [
               {
@@ -4734,6 +4745,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "description",
           "collaborators",
           "forked_from",
@@ -7026,6 +7038,11 @@
           },
           "head": {
             "$ref": "#/components/schemas/Edit"
+          },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
           }
         },
         "additionalProperties": false,
@@ -7040,7 +7057,8 @@
           "tags",
           "language",
           "translated",
-          "head"
+          "head",
+          "outdated"
         ],
         "title": "Thread"
       },
@@ -7115,6 +7133,11 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
           "description": {
             "anyOf": [
               {
@@ -7165,6 +7188,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "description",
           "collaborators",
           "forked_from",
@@ -7404,7 +7428,7 @@
               }
             ],
             "title": "Problem",
-            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, its model is behind its handle, or it names no model"
+            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, it is out of date, or it names no model"
           },
           "findings": {
             "anyOf": [

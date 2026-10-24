@@ -133,6 +133,11 @@ class Thread(_Schema):
         + "into"
     )
     head: Edit
+    outdated: bool = Field(
+        description="whether its head can't be used until it is updated: it holds "
+        + "weights its model's handle no longer holds, asks a judge that does, or "
+        + "names an engine no endpoint here serves"
+    )
 
 
 class ThreadDetail(Thread):
@@ -426,7 +431,7 @@ class Variation(_Schema):
     model: str | None = Field(description="the handle it runs under")
     problem: str | None = Field(
         description="why it can't run: its handle doesn't resolve, which is ops' to "
-        + "mend, its model is behind its handle, or it names no model"
+        + "mend, it is out of date, or it names no model"
     )
     findings: list[Finding] | None
     languages: list[Carried] = Field(

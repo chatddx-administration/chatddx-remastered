@@ -61,7 +61,7 @@ def test_a_trial_is_started_only_where_its_engine_is_served(bench: Bench) -> Non
     unserved = bench.inventory.model_copy(update={"endpoints": {}})
     elsewhere = Bench(bench.conn, bench.person, unserved)
     with pytest.raises(
-        ValueError, match="no endpoint here serves the engine of english"
+        ValueError, match="english is out of date: update it on its page"
     ):
         _ = elsewhere.start_trials([written.edit.id])
     with pytest.raises(ValueError, match="a start runs one trial or more"):

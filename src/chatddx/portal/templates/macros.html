@@ -74,6 +74,31 @@
 
 {% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
 
+{% macro outdated() %}<span class="inline-flex rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">{{ pgettext("a thread", "Out of date") }}</span>{% endmacro %}
+
+{% macro updating(thread, next=none) %}
+{% if thread.outdated and not thread.deleted %}
+<div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+  {{ outdated() }}
+  <span>
+    {%- if thread.kind == "judge" %}{{ _("Its model has new weights, so it can't judge until it is updated.") }}
+    {%- elif thread.kind == "scorer" %}{{ _("It asks a judge that is out of date, so it can't score until it is updated.") }}
+    {%- elif thread.kind == "trial" %}{{ _("No endpoint here serves its engine, so it can't run until it is updated.") }}
+    {%- else %}{{ _("Its model has new weights, so it can't run until it is updated.") }}{% endif -%}
+  </span>
+  {% if thread.owner == person.login %}
+  <form method="post" action="/threads/{{ thread.id }}/update">
+    <input type="hidden" name="head" value="{{ thread.head.id }}">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button class="primary">{{ _("Update") }}</button>
+  </form>
+  {% else %}
+  <span class="text-muted-foreground">{{ _("Only %(owner)s can update it: fork it, and update yours.", owner=thread.owner or "—") }}</span>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {% macro json(value) %}<pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{{ value | pretty }}</pre>{% endmacro %}
 
 {% macro tabs(items) %}

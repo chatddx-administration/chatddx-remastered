@@ -119,7 +119,8 @@ def follow_moved(seen: Seen, thread: int, head: int) -> Written:
     made, registry = found
     if made.digest is None or made.compilation is None or registry is None:
         raise Invalid.of(
-            "configuration %(thread)s can't follow %(what)s %(about)s: %(refused)s",
+            "configuration %(thread)s can't be updated to %(what)s %(about)s: "
+            + "%(refused)s",
             thread=thread,
             what=_what(made),
             about=str(made.about),
