@@ -86,14 +86,11 @@ Finds:
 
 `STAGES = {…}`
 
-<<<<<<< signed
-=======
 ## `stamp_base`
 `src/chatddx/settings.py:stamp_base`
 
 * ∟`str | None`
 
->>>>>>> @stamp
 ## `STAMPED_FROM`
 `src/chatddx/settings.py:STAMPED_FROM`
 

@@ -21,8 +21,6 @@ Finds:
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
 
-<<<<<<< signed
-=======
 ## `applied`
 `src/chatddx/stamp/markers.py:applied`
 
@@ -33,7 +31,6 @@ Raises:
 1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
 2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
 
->>>>>>> @stamp
 ## `check`
 `src/chatddx/stamp/__init__.py:check`
 
@@ -159,8 +156,6 @@ Raises:
 
 `type Def = ast.FunctionDef | ast.AsyncFunctionDef`
 
-<<<<<<< signed
-=======
 ## `docs`
 `src/chatddx/stamp/__init__.py:docs`
 
@@ -177,7 +172,6 @@ Raises:
 
 * ∟`list[Path]`
 
->>>>>>> @stamp
 ## `File` `@dataclass(frozen=True)`
 `src/chatddx/stamp/code.py:File`
 
@@ -289,8 +283,6 @@ Raises:
 * `validated: bool = False`
 * `origin: str | None = None`
 
-<<<<<<< signed
-=======
 ## `restamped`
 `src/chatddx/stamp/markers.py:restamped`
 
@@ -298,7 +290,6 @@ Raises:
 * `current: str`
 * ∟`str`
 
->>>>>>> @stamp
 ## `signed`
 `src/chatddx/stamp/markers.py:signed`
 
@@ -306,13 +297,8 @@ Raises:
 * ∟`list[str]`
 
 Raises:
-<<<<<<< signed
-1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"`
-2. `ValueError`: `"line {opened}: a stamp isn't closed"`
-=======
 1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
 2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
->>>>>>> @stamp
 
 ## `Spanned`
 `src/chatddx/stamp/code.py:Spanned`

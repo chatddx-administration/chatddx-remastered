@@ -13,15 +13,12 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, sort
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
 
-<<<<<<< signed
-=======
 ## `src/chatddx/stamp/__init__.py:documents`
 
 ```
 # Duplication: scripts/refcheck.py:sources, which runs without chatddx.
 ```
 
->>>>>>> @stamp
 ## `src/chatddx/stamp/code.py:Code._runtime`
 
 ```
@@ -49,12 +46,9 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, sort
 ```
 # Policy: never spelled whole, so that a search for it finds the stamps pending alone.
 ```
-<<<<<<< signed
-=======
 
 ## `src/chatddx/stamp/test/test_stamp.py:test_docs_stamps_each_change_to_a_doc_since_the_base`
 
 ```
 # Accommodating for nix's sandbox, which checks the package without git.
 ```
->>>>>>> @stamp
