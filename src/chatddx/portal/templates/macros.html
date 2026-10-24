@@ -92,8 +92,6 @@
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <button class="primary">{{ _("Update") }}</button>
   </form>
-  {% else %}
-  <span class="text-muted-foreground">{{ _("Only %(owner)s can update it: fork it, and update yours.", owner=thread.owner or "—") }}</span>
   {% endif %}
 </div>
 {% endif %}

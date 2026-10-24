@@ -1,17 +1,30 @@
+from pathlib import Path
+
 import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench, NotFound
 from chatddx.bench.test.helpers import correct_facts, move_model, trial
-from chatddx.catalog import Edit, threads
-from chatddx.curation import Plan
+from chatddx.bench.updating import UPDATED
+from chatddx.catalog import Edit, threads, titles
+from chatddx.curation import Plan, init
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.scoring import Judge, Scorer
 from chatddx.factors.trial import Trial
-from chatddx.inventory import Inventory
-from chatddx.store import Catalog, Store
-from chatddx.test.world import LINES, QWEN, QWEN_ARTIFACT, QWEN_MODEL
+from chatddx.inventory import DirectorySource, Inventory, World
+from chatddx.store import Catalog, People, Store
+from chatddx.test.world import (
+    CASES,
+    LINES,
+    QWEN,
+    QWEN_ARTIFACT,
+    QWEN_MODEL,
+    TEST,
+    copied,
+    edit,
+    world_plan,
+)
 
 
 def _moved(bench: Bench) -> tuple[Edit, Inventory]:
@@ -105,3 +118,42 @@ def test_only_its_owner_updates_it(bench: Bench) -> None:
     theirs = _named(bench, "judge", "verdict")
     with pytest.raises(NotFound, match=f"no judge {theirs} of yours"):
         _ = bench.update(theirs, _head(bench, theirs).id)
+
+
+# Scope: a release as import-engine writes one, new weights under the handles and the
+# engines serving them at the endpoints, loaded with init-data.
+@pytest.mark.slow
+def test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date(
+    bench: Bench, tmp_path: Path
+) -> None:
+    world = copied(tmp_path)
+    engines = {
+        r.digest: r.name for r in world_plan().stanzas if r.table == "local_engine"
+    }
+    edit(world / "engines.toml", 'revision = "fake"\n', 'revision = "released"\n')
+    planned = world_plan(world, world / "_data")
+    for spec in World.load(TEST).inventory.endpoints.values():
+        if (name := engines.get(spec.engine)) is not None:
+            new = planned.named("local_engine", name).digest
+            edit(world / "endpoints.toml", spec.engine, new)
+    released = World.load(world)
+    source = released.inventory.source(kind=DirectorySource)
+    plan = world_plan(world, world / "_data")
+    _ = init(bench.conn, plan, CASES, source, bench.person, giftbag=True)
+
+    later = Bench(bench.conn, bench.person, released.inventory)
+    archive = People(bench.conn).find("archive")
+    assert archive is not None
+    held = [
+        (k, e)
+        for k in UPDATED
+        for e, a in threads.heads(later.rows, k)
+        if a.owner == archive.id
+    ]
+    assert held
+    assert [
+        f"{k} {titles.title(later.rows, e.thread)}"
+        for k, e in held
+        if later.outdated(e, k)
+    ] == []
+    assert later.outdated_own()

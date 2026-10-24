@@ -3069,13 +3069,6 @@ msgid "Its model has new weights, so it can't run until it is updated."
 msgstr "Modellen har nya vikter, så den kan inte köras förrän den uppdateras."
 
 #: src/chatddx/portal/templates/macros.html
-#, python-format
-msgid "Only %(owner)s can update it: fork it, and update yours."
-msgstr ""
-"Bara %(owner)s kan uppdatera detta: förgrena det och uppdatera din "
-"förgrening."
-
-#: src/chatddx/portal/templates/macros.html
 msgid "Tabs"
 msgstr "Flikar"
 
