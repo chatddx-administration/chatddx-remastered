@@ -1144,6 +1144,15 @@ Raises:
 * `same: bool`
 * `why: str | None`
 
+<<<<<<< signed
+=======
+## `Replaced` `(_Schema)`
+`src/chatddx/api/schemas.py:Replaced`
+
+* `part: str`
+* `title: str | None = Field(description="what it holds instead; null for nothing")`
+
+>>>>>>> @stamp
 ## `resume` `@router.post("/runs/{run}/resume", …)`
 `src/chatddx/api/runs.py:resume`
 
@@ -1212,6 +1221,10 @@ Raises:
 * `cases: list[str]`
 * `seeds: list[int]`
 * `described: str`
+<<<<<<< signed
+=======
+* `titled: Titled`
+>>>>>>> @stamp
 * `ran: Ran | None = Field(…)`
 * `finished: bool`
 * `unscored: list[Unscored] | None = Field(…)`
@@ -1700,6 +1713,21 @@ Raises:
 2. `HTTPException`: `422, "only a configuration has a purpose"`
 3. `HTTPException`: `422, "only a configuration answers"`
 
+<<<<<<< signed
+=======
+## `Titled` `(_Schema)`
+`src/chatddx/api/schemas.py:Titled`
+
+* `name: str = Field(…)`
+* `replaced: list[Replaced] = Field(…)`
+* `at: str = Field(…)`
+* `case: str | None = Field(description="its case's title, when it ran one")`
+* `cases: int`
+* `translated: str | None = Field(…)`
+* `greedy: bool`
+* `seeds: list[int]`
+
+>>>>>>> @stamp
 ## `told`
 `src/chatddx/api/telling.py:told`
 

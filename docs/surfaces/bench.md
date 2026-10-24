@@ -731,6 +731,15 @@ Raises:
 
 `REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)`
 
+<<<<<<< signed
+=======
+## `Replaced` `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Replaced`
+
+* `part: str`
+* `title: str | None`
+
+>>>>>>> @stamp
 ## `SAVED`
 `src/chatddx/bench/model.py:SAVED`
 
@@ -1062,6 +1071,15 @@ Raises:
 * `digest: str`
 * ∟`str`
 
+<<<<<<< signed
+=======
+## `Seen.titled`
+`src/chatddx/bench/seen.py:Seen.titled`
+
+* `run: RunStarted`
+* ∟`Titled`
+
+>>>>>>> @stamp
 ## `Seen.under`
 `src/chatddx/bench/seen.py:Seen.under`
 
@@ -1105,6 +1123,21 @@ Raises:
 * `kept: dict[str, int]`
 * `choosing: dict[str, list[int]]`
 * `missing: list[str]`
+<<<<<<< signed
+=======
+
+## `Titled` `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Titled`
+
+* `name: str`
+* `replaced: list[Replaced]`
+* `at: str`
+* `case: str | None`
+* `cases: int`
+* `translated: str | None`
+* `greedy: bool`
+* `seeds: tuple[int, ...]`
+>>>>>>> @stamp
 
 ## `trial`
 `src/chatddx/bench/seen.py:trial`

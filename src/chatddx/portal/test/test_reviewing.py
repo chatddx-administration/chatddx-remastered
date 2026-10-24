@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.api.test.helpers import family
-from chatddx.portal.test.helpers import ran_template, shown
+from chatddx.portal.test.helpers import ran_template, run_title, shown
 
 __all__ = ["ran_template"]
 
@@ -74,7 +74,7 @@ def test_the_answers_to_a_case_are_listed_with_each_view_s_value_and_nothing_sen
     given = props(page)
     assert {a["run"] for a in given["answers"]} == {r["id"] for r in runs}
     for r in runs:
-        assert escape(r["described"]) in page
+        assert escape(run_title(r)) in page
         [graded] = [
             g
             for g in signed.get(f"/api/runs/{r['id']}/scores").json()

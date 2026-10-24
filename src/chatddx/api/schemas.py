@@ -794,6 +794,30 @@ class RunJob(_Schema):
     ended: datetime | None
 
 
+class Replaced(_Schema):
+    part: str
+    title: str | None = Field(description="what it holds instead; null for nothing")
+
+
+class Titled(_Schema):
+    name: str = Field(
+        description="what it ran: its configuration's name, else the run's own"
+    )
+    replaced: list[Replaced] = Field(
+        description="what its variation replaced, but the model it ran under"
+    )
+    at: str = Field(
+        description="what it ran under: its handle, else its endpoint or its engine"
+    )
+    case: str | None = Field(description="its case's title, when it ran one")
+    cases: int
+    translated: str | None = Field(
+        description="the language its request was translated into, when it was"
+    )
+    greedy: bool
+    seeds: list[int]
+
+
 class Ran(_Schema):
     configuration: int
     head: int = Field(description="the edit it varied")
@@ -822,6 +846,7 @@ class Run(_Schema):
     cases: list[str]
     seeds: list[int]
     described: str
+    titled: Titled
     ran: Ran | None = Field(
         description="the variation it ran, as it was started; null for a run started "
         + "from a trial alone"

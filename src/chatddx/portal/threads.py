@@ -12,7 +12,7 @@ from starlette.datastructures import FormData
 from chatddx import catalog
 from chatddx.api import families, schemas, threads as api
 from chatddx.api.state import Refusing, refused
-from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
+from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, Titled, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read
 from chatddx.factors.base import Component, Invalid, language_tag, resolve
 from chatddx.factors.cases import Appendix
@@ -614,9 +614,9 @@ def _editable(held: Component, body: dict[str, JsonValue]) -> list[str]:
 
 def _ran(
     bench: Bench, versions: list[schemas.Edit]
-) -> list[tuple[int, RunStarted, str]]:
+) -> list[tuple[int, RunStarted, Titled]]:
     at = {v.digest: i for i, v in enumerate(versions, 1)}
-    return [(at[r.trial], r, bench.described(r)) for r in bench.runs() if r.trial in at]
+    return [(at[r.trial], r, bench.titled(r)) for r in bench.runs() if r.trial in at]
 
 
 def _recipe(bench: Bench, edit: int) -> dict[str, JsonValue] | None:

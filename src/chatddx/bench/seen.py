@@ -58,6 +58,8 @@ from .model import (
     Graded,
     Handle,
     Reach,
+    Replaced,
+    Titled,
     word_of,
 )
 from .variation import TriedVariation
@@ -771,6 +773,42 @@ class Seen:
                 raise NotFound(f"no run of yours starts with {found!r}")
             case several:
                 raise Ambiguous(f"{len(several)} runs of yours start with {found!r}")
+
+    # Policy: a run is titled by what it ran, its configuration and what its variation
+    # replaced but the model, which is said apart as what it ran under, and its own name
+    # when no variation of a configuration ran.
+    def titled(self, run: RunStarted) -> Titled:
+        trial = resolve(self.store.get, run.trial, Trial)
+        handle, _ = self.under(trial.engine)
+        about = read.about(self.rows, Subject(run=run.run))
+        varied = None if about.varied is None else self.rows.edit(about.varied)
+        name = (
+            about.name or self.title(trial.skeleton)
+            if varied is None
+            else titles.title(self.rows, varied.thread)
+        )
+        replaced = [
+            Replaced(part, None if digest is None else self.title(digest))
+            for part, digest in about.replaced.items()
+            if part != "model" and varied is not None
+        ]
+        into = {c.into for c in self.store.compilations(trial.skeleton)}
+        return Titled(
+            name=name,
+            replaced=replaced,
+            at=handle.name
+            if handle is not None
+            else self.title(trial.engine)
+            if run.endpoint is None
+            else run.endpoint.name,
+            case=self.title(trial.cases[0]) if len(trial.cases) == 1 else None,
+            cases=len(trial.cases),
+            translated=next(iter(into))
+            if len(into) == 1 and None not in into
+            else None,
+            greedy=resolve(self.store.get, trial.skeleton, Skeleton).greedy,
+            seeds=trial.seeds,
+        )
 
     def described(self, run: RunStarted) -> str:
         trial = resolve(self.store.get, run.trial, Trial)

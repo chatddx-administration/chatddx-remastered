@@ -279,6 +279,10 @@ Each step leaves the portal working in English, and Swedish appearing only where
      `language` filter and the islands' `languageName()`), wherever a language is shown, and in a finding or a
      refusal whose parameter is named `language`, `into` or `languages`, the last tags separated by `, `; a field a
      tag is typed in takes a tag.
+   - **Decided: a run is titled from its parts** (`src/chatddx/bench/seen.py:Seen.titled`), said by the portal's
+     `run_title` macro and the islands' `runTitle()`: its configuration's name and what its variation replaced, each
+     by its part's word and what it holds, then its model, its case or how many, its language and its seeds, set
+     apart by `·`. `Seen.described` stays English, for the repl, the CLI and the logs.
    - **Decided: the cases left out are said once**, with the languages a variation is sent in, in a sentence of
      their own where the configuration has no translations into theirs, not as `translations.missing`.
    - **Decided: no "it" in a button or a heading**, where Swedish would say *den* or *det* by a word the message

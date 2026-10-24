@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, findings, named, refusal, updating with context %}
+{% from "macros.html" import heading, section, facts, chip, findings, named, refusal, run_title, updating with context %}
 {% from "fields.html" import rows %}
 {% from "translations.html" import translations %}
 {% block title %}{{ thread.name or thread.title }} · ChatDDX{% endblock %}
@@ -175,8 +175,8 @@
   {% call section(_("Its runs"), "runs") %}
   {% if not thread.deleted %}<p class="mb-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/run?trial={{ thread }}">Run it</a>, in the Lab{% endtrans %}</p>{% endif %}
   <ul class="space-y-1 text-sm">
-    {% for i, r, described in ran %}
-    <li class="flex flex-wrap gap-x-3"><a href="/runs/{{ r.run }}">{{ described }}</a><span class="text-muted-foreground">{{ _("version %(n)s, %(at)s", n=i, at=r.at | when) }}</span></li>
+    {% for i, r, titled in ran %}
+    <li class="flex flex-wrap gap-x-3"><a href="/runs/{{ r.run }}">{{ run_title(titled) }}</a><span class="text-muted-foreground">{{ _("version %(n)s, %(at)s", n=i, at=r.at | when) }}</span></li>
     {% else %}
     <li class="text-muted-foreground">{{ _("None of yours.") }}</li>
     {% endfor %}

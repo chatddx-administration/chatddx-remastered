@@ -6053,6 +6053,33 @@
         ],
         "title": "RenderedAgain"
       },
+      "Replaced": {
+        "properties": {
+          "part": {
+            "type": "string",
+            "title": "Part"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "what it holds instead; null for nothing"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part",
+          "title"
+        ],
+        "title": "Replaced"
+      },
       "Rig": {
         "properties": {
           "distribution": {
@@ -6190,6 +6217,9 @@
             "type": "string",
             "title": "Described"
           },
+          "titled": {
+            "$ref": "#/components/schemas/Titled"
+          },
           "ran": {
             "anyOf": [
               {
@@ -6248,6 +6278,7 @@
           "cases",
           "seeds",
           "described",
+          "titled",
           "ran",
           "finished"
         ],
@@ -6347,6 +6378,9 @@
           "described": {
             "type": "string",
             "title": "Described"
+          },
+          "titled": {
+            "$ref": "#/components/schemas/Titled"
           },
           "ran": {
             "anyOf": [
@@ -6449,6 +6483,7 @@
           "cases",
           "seeds",
           "described",
+          "titled",
           "ran",
           "finished",
           "rig",
@@ -7202,6 +7237,80 @@
           "deleted"
         ],
         "title": "ThreadDetail"
+      },
+      "Titled": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "what it ran: its configuration's name, else the run's own"
+          },
+          "replaced": {
+            "items": {
+              "$ref": "#/components/schemas/Replaced"
+            },
+            "type": "array",
+            "title": "Replaced",
+            "description": "what its variation replaced, but the model it ran under"
+          },
+          "at": {
+            "type": "string",
+            "title": "At",
+            "description": "what it ran under: its handle, else its endpoint or its engine"
+          },
+          "case": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case",
+            "description": "its case's title, when it ran one"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "translated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated",
+            "description": "the language its request was translated into, when it was"
+          },
+          "greedy": {
+            "type": "boolean",
+            "title": "Greedy"
+          },
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Seeds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "replaced",
+          "at",
+          "case",
+          "cases",
+          "translated",
+          "greedy",
+          "seeds"
+        ],
+        "title": "Titled"
       },
       "Tried": {
         "properties": {

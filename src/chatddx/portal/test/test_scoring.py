@@ -8,7 +8,13 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.api.test.helpers import family, thread
-from chatddx.portal.test.helpers import ran_template, said, shown, submitted
+from chatddx.portal.test.helpers import (
+    ran_template,
+    run_title,
+    said,
+    shown,
+    submitted,
+)
 from chatddx.test.world import LINES, NATIVE
 
 __all__ = ["ran_template"]
@@ -74,7 +80,7 @@ def test_a_scorer_names_its_judges_what_it_reads_and_how_its_runs_scored(
         means = " ".join(shown_mean(m) for m in graded["means"])
         assert f'href="/runs/{r["id"]}"' in page
         assert re.search(
-            re.escape(r["described"]) + r" \S+ \S+ " + re.escape(means), text
+            re.escape(run_title(r)) + r" \S+ \S+ " + re.escape(means), text
         )
 
 

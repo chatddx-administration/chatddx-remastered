@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, upright %}
+{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, run_title, upright %}
 
 {% macro datum(value, key=None) %}
 {%- if value is mapping -%}
@@ -240,7 +240,7 @@
 
     {% for p in pending %}
     <div data-pending="{{ loop.index0 }}" class="mb-2 rounded-lg bg-primary/5 px-3 py-2 text-sm">
-      <a href="/runs/{{ p.run }}">{{ p.described }}</a> <span class="text-muted-foreground">{{ pgettext("after a run", "is under way; reload to see it once it is done.") }}</span>
+      <a href="/runs/{{ p.run }}">{{ run_title(p.titled) }}</a> <span class="text-muted-foreground">{{ pgettext("after a run", "is under way; reload to see it once it is done.") }}</span>
     </div>
     {% endfor %}
 
@@ -271,7 +271,7 @@
     {% for a in answers %}
     <details data-answer="{{ loop.index0 }}" class="border-t border-border/60">
       <summary class="grid cursor-pointer items-center gap-2 px-1 py-2 text-sm" style="grid-template-columns: {{ columns }}">
-        <span class="min-w-0" title="{{ a.described }}"><span class="block truncate">{{ a.described }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
+        {% set titled = run_title(a.titled) %}<span class="min-w-0" title="{{ titled | striptags }}"><span class="block truncate">{{ titled }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
         <span>{{ outcome(a.outcome) }}</span>
         {% if scorer %}
         {% if a["values"] is none %}

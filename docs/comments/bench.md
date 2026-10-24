@@ -103,6 +103,17 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # (src/chatddx/inventory/check.py:broken), so none does.
 ```
 
+<<<<<<< signed
+=======
+## `src/chatddx/bench/seen.py:Seen.titled`
+
+```
+# Policy: a run is titled by what it ran, its configuration and what its variation
+# replaced but the model, which is said apart as what it ran under, and its own name
+# when no variation of a configuration ran.
+```
+
+>>>>>>> @stamp
 ## `src/chatddx/bench/seen.py:WITH`
 
 ```

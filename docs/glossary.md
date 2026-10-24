@@ -496,6 +496,14 @@ build of it included. `src/chatddx/rig.py:rig`
 :Role (person) — Admin, clinician, developer, ops or researcher; a person may hold several, and nothing checks one yet.
 `src/chatddx/identity/identity.py:Role`
 
+```
+AGENT: add
+A term for how a run is shown, said in the reader's locale from its parts.
+---
+:Run title — How a run is shown: what it ran, its configuration's name and what its variation replaced but the model,
+else the run's own name; then the model it ran under, its case or how many, the language it was translated into, and
+its seeds or replicates. Built when asked from what its start recorded. `src/chatddx/bench/seen.py:Seen.titled`
+```
 :Run — One execution of a trial at one endpoint, written as a log: what it was set to do, each item's calls, and its
 finish. `src/chatddx/ledger/run.py:Run`
 

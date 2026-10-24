@@ -5,12 +5,35 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
-from chatddx.portal.test.helpers import ran_template, shown, variation_props
+from chatddx.portal.test.helpers import (
+    ran_template,
+    run_title,
+    shown,
+    variation_props,
+)
 from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import TEST
 
 __all__ = ["ran_template"]
+
+
+@pytest.mark.usefixtures("alice")
+def test_a_run_is_titled_by_its_parts_in_the_locale_asked_for(
+    signed: TestClient,
+) -> None:
+    [run] = [
+        r
+        for r in signed.get("/api/runs").json()
+        if r["titled"]["case"] and len(r["seeds"]) == 1 and not r["titled"]["greedy"]
+    ][:1]
+    titled = run["titled"]
+    asked = signed.get(f"/runs/{run['id']}", headers={"accept-language": "sv"})
+    swedish = (
+        f"{titled['name']} · {titled['at']} · {titled['case']} · frö {run['seeds'][0]}"
+    )
+    assert escape(swedish) in asked.text
+    assert escape(run_title(run)) in shown(signed, f"/runs/{run['id']}")
 
 
 @pytest.mark.slow
@@ -27,7 +50,7 @@ def test_a_person_s_runs_are_listed_and_each_is_read_on_its_page(
         assert (f'href="/runs/{r["id"]}"' in listed_left) == (r["id"] in left)
         page = shown(signed, f"/runs/{r['id']}")
         detail = signed.get(f"/api/runs/{r['id']}").json()
-        assert escape(r["described"]) in page
+        assert escape(run_title(r)) in page
         for item in detail["items"]:
             assert f">{item['outcome']}</span>" in page
         row = listed.split(f'value="{r["id"]}"', 1)[1].split("</tr>", 1)[0]

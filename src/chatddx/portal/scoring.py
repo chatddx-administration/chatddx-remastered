@@ -18,7 +18,7 @@ from chatddx.api import (
 )
 from chatddx.api.events import graded_of
 from chatddx.api.state import refused
-from chatddx.bench import Ambiguous, Bench, MovedOn, NotFound
+from chatddx.bench import Ambiguous, Bench, MovedOn, NotFound, Titled
 from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog import read as catalog_read, threads as catalog_threads
 from chatddx.factors.base import Component, Finding, resolve
@@ -287,7 +287,7 @@ class _Judged:
 @dataclass(frozen=True)
 class _Disagreed:
     run: UUID
-    described: str
+    titled: Titled
     case: str
     replicate: int
     label: str
@@ -643,7 +643,7 @@ def _verdicts(
                     disagreed.append(
                         _Disagreed(
                             run=started.run,
-                            described=bench.described(started),
+                            titled=bench.titled(started),
                             case=bench.title(item.key.case),
                             replicate=item.key.replicate,
                             label=label,

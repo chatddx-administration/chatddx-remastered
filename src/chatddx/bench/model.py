@@ -169,6 +169,24 @@ class Moved:
 
 
 @dataclass(frozen=True)
+class Replaced:
+    part: str
+    title: str | None
+
+
+@dataclass(frozen=True)
+class Titled:
+    name: str
+    replaced: list[Replaced]
+    at: str
+    case: str | None
+    cases: int
+    translated: str | None
+    greedy: bool
+    seeds: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class Taken:
     taken: dict[str, int]
     kept: dict[str, int]

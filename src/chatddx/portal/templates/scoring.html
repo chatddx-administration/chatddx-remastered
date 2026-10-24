@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, outdated, pane, updating with context %}
+{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, outdated, pane, run_title, updating with context %}
 
 {% set th = "pb-2 pr-4 font-medium" %}
 {% set td = "py-1.5 pr-4 align-top" %}
@@ -128,7 +128,7 @@
         <tbody>
           {% for f in scorer.fared %}
           <tr class="border-t border-border/60">
-            <td class="{{ td }}"><a href="/runs/{{ f.run.id }}">{{ f.run.described }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
+            <td class="{{ td }}"><a href="/runs/{{ f.run.id }}">{{ run_title(f.run.titled) }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
             {% for m in f.means %}<td class="{{ td }} font-mono">{{ mean(m, scorer.views[loop.index0].unit) }}</td>{% endfor %}
           </tr>
           {% endfor %}
@@ -238,7 +238,7 @@
     <h3 class="mb-2 mt-5 text-sm font-semibold">{{ _("Where its seeds disagree") }}</h3>
     <ul class="space-y-1 text-sm">
       {% for d in judge.disagreed %}
-      <li><a href="/runs/{{ d.run }}">{{ d.described }}</a> · {{ _("%(case)s, replicate %(replicate)s", case=d.case, replicate=d.replicate) }} · {{ d.label }}: <span class="font-mono">{% for s in d.seeds %}{{ mean(s) }}{{ " " if not loop.last }}{% endfor %}</span></li>
+      <li><a href="/runs/{{ d.run }}">{{ run_title(d.titled) }}</a> · {{ _("%(case)s, replicate %(replicate)s", case=d.case, replicate=d.replicate) }} · {{ d.label }}: <span class="font-mono">{% for s in d.seeds %}{{ mean(s) }}{{ " " if not loop.last }}{% endfor %}</span></li>
       {% endfor %}
     </ul>
     {% endif %}

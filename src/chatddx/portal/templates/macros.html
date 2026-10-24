@@ -74,6 +74,10 @@
 
 {% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
 
+{% macro run_title(t) -%}
+{{ t.name }}{% for r in t.replaced %}, {{ pgettext("a part replaced", "%(part)s: %(title)s", part=r.part | kind, title=r.title) if r.title is not none else pgettext("a part replaced", "no %(part)s", part=r.part | kind) }}{% endfor %} · {{ t.at }} · {{ t.case if t.case else ngettext("%(num)s case", "%(num)s cases", t.cases) }}{% if t.translated %} · {{ _("translated into %(language)s", language=t.translated | language) }}{% endif %} · {% if t.greedy %}{{ pgettext("sampling", "greedy") if t.seeds | length == 1 else ngettext("greedy, %(num)s replicate", "greedy, %(num)s replicates", t.seeds | length) }}{% else %}{{ ngettext("seed %(seeds)s", "seeds %(seeds)s", t.seeds | length, seeds=t.seeds | join(", ")) }}{% endif %}
+{%- endmacro %}
+
 {% macro outdated() %}<span class="inline-flex rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">{{ pgettext("a thread", "Out of date") }}</span>{% endmacro %}
 
 {% macro updating(thread, next=none) %}
@@ -129,9 +133,9 @@
     <tbody>
       {% for r in runs %}
       <tr class="border-t border-border/60">
-        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="{{ _('Compare %(run)s', run=r.described) }}"></td>
+        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="{{ _('Compare %(run)s', run=run_title(r.titled)) }}"></td>
         <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ r.at | when }}</td>
-        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}">{{ r.described }}</a></td>
+        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}">{{ run_title(r.titled) }}</a></td>
         {% set counted, rest = tallies[r.id] %}
         <td class="py-2 pr-4 align-top"><div class="flex flex-wrap items-center gap-1">{% for said, n in counted %}{{ outcome(said, n) }}{% endfor %}{% if rest %}<span class="whitespace-nowrap text-xs text-muted-foreground">{{ ngettext("%(num)s missing", "%(num)s missing", rest) if r.finished else ngettext("%(num)s to go", "%(num)s to go", rest) }}</span>{% endif %}</div></td>
         <td class="py-2 pr-4 align-top">{{ _("yes") if r.finished else _("no") }}</td>

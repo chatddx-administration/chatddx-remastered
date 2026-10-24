@@ -91,11 +91,8 @@ def review(
     at = next((i for i, f in enumerate(listed) if f.id == family), None)
     left = _left(bench, ran, held)
     answers = _answers(bench, ran, picked.case, held, left)
-    pending = [
-        {"run": str(r.id), "described": r.described}
-        for r, _ in ran
-        if r.job is not None and r.job.status in _OPEN
-    ]
+    under_way = [r for r, _ in ran if r.job is not None and r.job.status in _OPEN]
+    pending = [{"run": str(r.id), "titled": r.titled} for r in under_way]
     own = _own(bench, expected)
     offered = (
         []
@@ -144,7 +141,10 @@ def review(
             for a in appendices
         ],
         "back": back,
-        "pending": pending,
+        "pending": [
+            {"run": str(r.id), "titled": r.titled.model_dump(mode="json")}
+            for r in under_way
+        ],
         "previous": previous,
         "next": following,
     }
@@ -581,7 +581,7 @@ def _answers(
             found.append(
                 {
                     "run": str(r.id),
-                    "described": r.described,
+                    "titled": r.titled,
                     "model": r.model,
                     "at": r.at,
                     "anchor": at,

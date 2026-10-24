@@ -2596,7 +2596,8 @@ msgstr "Visa"
 msgid "Every case you see"
 msgstr "Varje fall du har tillgång till"
 
-#: src/chatddx/portal/templates/lab.html
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/runner.html
 #, python-format
 msgid "%(num)s case"
@@ -3042,6 +3043,42 @@ msgstr "misslyckat"
 #, python-format
 msgid "%(status)s: %(why)s"
 msgstr "%(status)s: %(why)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "a part replaced"
+msgid "%(part)s: %(title)s"
+msgstr "%(part)s: %(title)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgctxt "a part replaced"
+msgid "no %(part)s"
+msgstr "utan %(part)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "translated into %(language)s"
+msgstr "översatt till %(language)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+msgctxt "sampling"
+msgid "greedy"
+msgstr "girig"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "greedy, %(num)s replicate"
+msgid_plural "greedy, %(num)s replicates"
+msgstr[0] "girig, %(num)s replikat"
+msgstr[1] "girig, %(num)s replikat"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "seed %(seeds)s"
+msgid_plural "seeds %(seeds)s"
+msgstr[0] "frö %(seeds)s"
+msgstr[1] "frön %(seeds)s"
 
 #: src/chatddx/portal/templates/macros.html
 msgctxt "a thread"

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, findings, outcome, json, job, mean %}
+{% from "macros.html" import heading, section, facts, findings, outcome, json, job, mean, run_title %}
 {% block title %}{{ _("Run") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/runs">← {{ _("Runs") }}</a></nav>
-  {{ heading(run.described) }}
+  {{ heading(run_title(run.titled)) }}
 
   {% if under_way or left or run.endpoint or resumable %}
   <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 text-sm">
