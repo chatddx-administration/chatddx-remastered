@@ -127,9 +127,9 @@ describe("the languages a run is sent in", () => {
     case: DIGEST(id),
   });
   const look: Schemas["Carried"][] = [
-    { language: "en", families: [1, 4], translated: false, skeleton: DIGEST(10), refused: null },
-    { language: "sv", families: [2], translated: true, skeleton: DIGEST(11), refused: null },
-    { language: "de", families: [3], translated: false, skeleton: null, refused: "no translations into de" },
+    { language: "en", families: [1, 4], translated: false, skeleton: DIGEST(10), refused: null, untranslated: false },
+    { language: "sv", families: [2], translated: true, skeleton: DIGEST(11), refused: null, untranslated: false },
+    { language: "de", families: [3], translated: false, skeleton: null, refused: "no translations into de", untranslated: true },
   ];
 
   it("are the look's, a family picked beyond it going as its language's, or unknown", () => {

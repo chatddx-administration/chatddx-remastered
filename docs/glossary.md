@@ -802,6 +802,13 @@ judge)
 
 Raised by a look (`src/chatddx/bench/seen.py:missing`).
 
+```
+AGENT: reword
+The cases left out are said where the languages a variation is sent in are, no longer as a finding.
+---
+:translations.missing — A language its translations go into that doesn't compile, though no case it is tried on is
+in it. (warning; configuration)
+```
 :translations.missing — Cases in a language its translations can't carry it into, left out; or a language its
 translations go into that doesn't compile. (warning; configuration)
 

@@ -60,14 +60,14 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     made = signed.get(f"/api{path}").json()
     assert made["language"] == "sv"
     page = shown(signed, path)
-    assert f">{escape(LINES_GUIDED)}, in sv</option>" in page
+    assert f">{escape(LINES_GUIDED)}, in Swedish</option>" in page
     assert f'href="/lab/run?trial={made["id"]}"' in page and "None of yours." in page
     again = signed.post(f"{path}/edit", data=submitted(page, f"{path}/edit"))
     assert again.status_code == 303
     assert len(signed.get(f"/api{path}/edits").json()) == 1
 
     got = written(signed, begun(signed, "crlf", "nfd"), "mixed")
-    assert got.status_code == 422 and "in one language, not in en and sv" in got.text
+    assert got.status_code == 422 and "in one language, not in English and Swedish" in got.text
 
     tab = shown(signed, "/library?kind=trial")
     assert f'name="trial" value="{made["id"]}"' in tab

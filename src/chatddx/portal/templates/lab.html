@@ -59,7 +59,7 @@
   <header class="mb-4">
     <h1 class="text-xl font-bold tracking-tight">{{ named(configuration) }}</h1>
     <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      <span>{{ _("a judge's") if judged else (_("in %(language)s", language=configuration.language) if configuration.language else _("in no language known")) }}</span>
+      <span>{{ _("a judge's") if judged else (_("in %(language)s", language=configuration.language | language) if configuration.language else _("in no language known")) }}</span>
       {% if origin %}<span>·</span><span>{% if me.varies %}{% trans origin=origin, parts=varies(me) %}<a href="/lab/{{ origin }}">a fork</a>, varying {{ parts }}{% endtrans %}{% else %}<a href="/lab/{{ origin }}">{{ _("a fork") }}</a>{% endif %}</span>{% endif %}
       <span>·</span><a href="/threads/{{ configuration.id }}">{{ _("its page in the Library") }}</a>
       {% if translations %}<span>·</span><span>{% trans id=translations[0], name=translations[1] %}translations: <a href="/threads/{{ id }}">{{ name }}</a>{% endtrans %}</span>{% endif %}

@@ -415,6 +415,10 @@ class Carried(_Schema):
     translated: bool
     skeleton: str | None = Field(description="the request they are sent as")
     refused: str | None = Field(description="why they can't be sent, and are left out")
+    untranslated: bool = Field(
+        description="whether they are left out as the configuration has no "
+        + "translations into their language"
+    )
 
 
 class Variation(_Schema):

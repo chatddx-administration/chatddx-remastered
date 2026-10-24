@@ -73,7 +73,7 @@
   <header class="mb-3">
     <h1 class="text-xl font-bold tracking-tight">{{ family.name }}</h1>
     <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      {% if family.language %}<span>{{ family.language }}</span>{% endif %}
+      {% if family.language %}<span>{{ family.language | language }}</span>{% endif %}
       {% for t in family.tags %}{{ chip(t) }}{% endfor %}
       {% if family.owner and family.owner != person.login %}<span>{{ _("owned by %(owner)s", owner=family.owner) }}</span>{% endif %}
       <a href="/cases/{{ family.id }}">{{ _("in the Library") }}</a>

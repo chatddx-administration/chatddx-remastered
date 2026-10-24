@@ -249,7 +249,7 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         "lines has no translations into sv",
     )
     with pytest.raises(
-        ValueError, match="no case can be sent: lines has no translations into sv"
+        ValueError, match="lines has no translations into sv, which its cases are in"
     ):
         _ = bench.start(lines, QWEN, [svenska, nfd], (7,))
 

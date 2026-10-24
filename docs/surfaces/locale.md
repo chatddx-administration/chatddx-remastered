@@ -58,6 +58,15 @@ Raises:
 `src/chatddx/locale/locale.py:gettext`
 
 * `message: str`
+<<<<<<< signed
+=======
+* ∟`str`
+
+## `language_name`
+`src/chatddx/locale/locale.py:language_name`
+
+* `tag: str`
+>>>>>>> @stamp
 * ∟`str`
 
 ## `Locale` `@dataclass(frozen=True)`

@@ -652,7 +652,11 @@ Finds:
 16. `judge.model_unmatched`: `"the skeleton is worked out for %(worked)s, and the judge's model is %(serves)s"` (through `_made_for`)
 17. `language.unknown`: `"the request's language is unknown"` (`info`, through `_languages`)
 18. `language.unknown`: `"the language of %(unknown)s of %(num)s cases is unknown"` (`info`, through `_languages`)
+<<<<<<< signed
 19. `language.mixed`: `"the request is %(request)s, but %(num)s of %(cases)s cases is %(languages)s" / "the request is %(request)s, but %(num)s of %(cases)s cases are %(languages)s"` (through `_languages`)
+=======
+19. `language.mixed`: `"the request is %(language)s, but %(num)s of %(cases)s cases is %(languages)s" / "the request is %(language)s, but %(num)s of %(cases)s cases are %(languages)s"` (through `_languages`)
+>>>>>>> @stamp
 20. `judge.greedy_seeds`: `"the judge is greedy, so its %(num)s seeds send the same request"` (through `_judge`)
 
 ## `LocalEngine` `(Component)`

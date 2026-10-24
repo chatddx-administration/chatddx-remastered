@@ -41,7 +41,7 @@ def test_a_trial_s_cases_are_in_one_language_its_skeleton_goes_into(
     refused = [
         (
             composed(bench, LINES_GUIDED, "crlf", "svenska"),
-            "a trial's cases are in one language, not in en and sv",
+            "a trial's cases are in one language, not in en, sv",
         ),
         (composed(bench, LINES, "svenska"), "has no translations into sv"),
         (composed(bench, JUDGE, "crlf"), "judge skeleton"),

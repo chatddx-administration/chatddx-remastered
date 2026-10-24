@@ -33,7 +33,7 @@
   {% for language in t.languages + t.cased + ([t.into] if new else []) %}
   {% set what = _("it translates into it") if language in t.languages else (_("cases you see are in it") if language in t.cased else _("it doesn't translate into it yet")) %}
   <a href="{{ base }}?into={{ language | urlencode }}{{ kept }}"{% if language == t.into %} aria-current="page"{% endif %} title="{{ what }}"
-     class="view{{ '' if language in t.languages else ' italic' }}">{{ language }}<span class="sr-only">, {{ what }}</span></a>
+     class="view{{ '' if language in t.languages else ' italic' }}">{{ language | language }}<span class="sr-only">, {{ what }}</span></a>
   {% endfor %}
   {% if editable %}
   <form method="get" action="{{ base }}" class="ml-2 inline-flex items-center gap-1">
@@ -59,7 +59,7 @@
   <input type="hidden" name="head" value="{{ thread.head.id }}">
   <input type="hidden" name="into" value="{{ t.into }}">
 {% endif %}
-  {% for e in t.entries %}{{ entry(e, loop.index0, editable) }}{% else %}<p class="text-sm text-muted-foreground">{{ _("Nothing to translate into %(language)s.", language=t.into) }}</p>{% endfor %}
+  {% for e in t.entries %}{{ entry(e, loop.index0, editable) }}{% else %}<p class="text-sm text-muted-foreground">{{ _("Nothing to translate into %(language)s.", language=t.into | language) }}</p>{% endfor %}
 {% if editable %}
   <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
     <button class="primary">{{ _("Save it") }}</button>

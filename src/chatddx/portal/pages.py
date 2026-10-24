@@ -61,6 +61,7 @@ templates.env.filters.update(
     pretty=_pretty,
     visible=visible,
     kind=worded,
+    language=locale.language_name,
     localized=locale.localized,
     refusal=_refusal,
 )

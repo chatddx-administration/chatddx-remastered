@@ -24,7 +24,7 @@
     (_("Kind"), word | kind),
     (_("Owner"), thread.owner or "—"),
     (_("Shared with"), thread.collaborators | join(", ") or "—"),
-    (_("Language"), thread.language or "—"),
+    (_("Language"), thread.language | language if thread.language else "—"),
     (_("Forked from"), origin_link),
     (_("Tags"), tagged),
     (_("Description"), thread.description or "—"),

@@ -99,6 +99,7 @@ class Carried:
     skeleton: Skeleton | None = None
     translated: bool = False
     refused: str | None = None
+    untranslated: bool = False
 
 
 @dataclass(frozen=True)

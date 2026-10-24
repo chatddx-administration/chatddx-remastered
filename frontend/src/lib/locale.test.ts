@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listed, localized, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
+import { languageName, listed, localized, refusal, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
 
 describe("a message", () => {
   it("is said as it is written where the page's catalog doesn't hold it", () => {
@@ -71,6 +71,25 @@ describe("a message", () => {
       "vLLM 0.24 raises temperature 1e-05 to 0.01",
       "the server didn't answer",
     ]);
+  });
+
+  it("names a language by its name in the page's locale, as what is worded does", () => {
+    const worded = "no translations into %(into)s, nor %(languages)s";
+    const given = { into: "sv", languages: "en, pt-BR" };
+    speaking({ tag: "en", messages: {} });
+    expect(["sv", "pt-BR", "x"].map(languageName)).toEqual(["Swedish", "Portuguese (Brazil)", "x"]);
+    expect(refusal("no translations into sv", worded, given)).toBe(
+      "no translations into Swedish, nor English and Portuguese (Brazil)",
+    );
+    expect(refusal("no case a", "no case %(case)s", { case: "a" })).toBe("no case a");
+    speaking({
+      tag: "sv",
+      messages: { [`refusal\u0004${worded}`]: "inga översättningar till %(into)s, eller %(languages)s" },
+    });
+    expect(languageName("en")).toBe("engelska");
+    expect(refusal("no translations into sv", worded, given)).toBe(
+      "inga översättningar till svenska, eller engelska och portugisiska (Brasilien)",
+    );
   });
 
   it("fails on a placeholder given nothing, as the server's do", () => {

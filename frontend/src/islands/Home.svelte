@@ -12,7 +12,7 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { Textarea } from "$lib/components/ui/textarea";
   import { api, type Schemas, why } from "$lib/api/client";
-  import { t, tn } from "$lib/locale";
+  import { languageName, t, tn } from "$lib/locale";
   import { watch } from "$lib/runs/events";
   import { begun, failed, fold } from "$lib/runs/progress";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
@@ -222,7 +222,7 @@
               <Label for="language">{t("Written in")}</Label>
               <NativeSelect.Root id="language" bind:value={language} disabled={busy}>
                 {#each languages as l (l)}
-                  <NativeSelect.Option value={l}>{l}</NativeSelect.Option>
+                  <NativeSelect.Option value={l}>{languageName(l)}</NativeSelect.Option>
                 {/each}
               </NativeSelect.Root>
             </div>

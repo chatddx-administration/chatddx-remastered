@@ -3218,6 +3218,11 @@
             ],
             "title": "Refused",
             "description": "why they can't be sent, and are left out"
+          },
+          "untranslated": {
+            "type": "boolean",
+            "title": "Untranslated",
+            "description": "whether they are left out as the configuration has no translations into their language"
           }
         },
         "additionalProperties": false,
@@ -3227,7 +3232,8 @@
           "families",
           "translated",
           "skeleton",
-          "refused"
+          "refused",
+          "untranslated"
         ],
         "title": "Carried"
       },

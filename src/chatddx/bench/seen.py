@@ -444,7 +444,9 @@ class Seen:
             some = [c for c in cases if sent[c] == language]
             if language not in into:
                 refused = f"{variation.label} has no translations into {language}"
-                found.append(Carried(language, some, refused=refused))
+                found.append(
+                    Carried(language, some, refused=refused, untranslated=True)
+                )
                 continue
             try:
                 skeleton = self.skeleton(variation, language)
@@ -1042,45 +1044,31 @@ def check_expecting(
         )
 
 
+# Policy: the cases left out are said with what is sent
+# (src/chatddx/bench/model.py:Carried.refused), so what is found is a translation that
+# doesn't compile into a language no case of them is in.
 def missing(
     seen: Seen, variation: TriedVariation, carried: Sequence[Carried]
 ) -> list[Finding]:
-    found = [
-        _missing(variation, each.refused, each)
-        for each in carried
-        if each.refused is not None
-    ]
     recipe = variation.varied
     if recipe is None:
-        return found
+        return []
     looked = {c.language for c in carried} | {recipe_language(seen.rows, recipe)}
+    found: list[Finding] = []
     for language in translated(recipe, seen.store.get):
         if language in looked:
             continue
         try:
             _ = seen.skeleton(variation, language)
         except StructuralError as e:
-            found.append(_missing(variation, str(e)))
+            found.append(
+                Finding(
+                    code="translations.missing",
+                    message=str(e),
+                    subject=variation.configuration.digest,
+                )
+            )
     return found
-
-
-def _missing(
-    variation: TriedVariation, refused: str, carried: Carried | None = None
-) -> Finding:
-    subject = variation.configuration.digest
-    if carried is None:
-        return Finding(code="translations.missing", message=refused, subject=subject)
-    return Finding.of(
-        "translations.missing",
-        (
-            "%(num)s case is in %(language)s, and left out: %(refused)s",
-            "%(num)s cases are in %(language)s, and left out: %(refused)s",
-        ),
-        subject=subject,
-        num=len(carried.cases),
-        language=str(carried.language),
-        refused=refused,
-    )
 
 
 def _language_in(

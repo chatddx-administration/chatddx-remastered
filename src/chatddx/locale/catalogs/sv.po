@@ -479,14 +479,6 @@ msgstr ""
 "Ingen modell i Biblioteket pekar på de här vikterna, fast en borde: "
 "använd en annan modell så länge."
 
-#: src/chatddx/bench/seen.py
-#, python-format
-msgctxt "translations.missing"
-msgid "%(num)s case is in %(language)s, and left out: %(refused)s"
-msgid_plural "%(num)s cases are in %(language)s, and left out: %(refused)s"
-msgstr[0] "%(num)s fall är på %(language)s och lämnas utanför: %(refused)s"
-msgstr[1] "%(num)s fall är på %(language)s och lämnas utanför: %(refused)s"
-
 #: src/chatddx/factors/cases.py
 msgctxt "case.drift"
 msgid "the vignette at the source differs from the case's"
@@ -599,16 +591,16 @@ msgstr[1] "språket i %(unknown)s av %(num)s fall är okänt"
 #, python-format
 msgctxt "language.mixed"
 msgid ""
-"the request is %(request)s, but %(num)s of %(cases)s cases is "
+"the request is %(language)s, but %(num)s of %(cases)s cases is "
 "%(languages)s"
 msgid_plural ""
-"the request is %(request)s, but %(num)s of %(cases)s cases are "
+"the request is %(language)s, but %(num)s of %(cases)s cases are "
 "%(languages)s"
 msgstr[0] ""
-"förfrågan är på %(request)s, men %(num)s av %(cases)s fall är på "
+"förfrågan är på %(language)s, men %(num)s av %(cases)s fall är på "
 "%(languages)s"
 msgstr[1] ""
-"förfrågan är på %(request)s, men %(num)s av %(cases)s fall är på "
+"förfrågan är på %(language)s, men %(num)s av %(cases)s fall är på "
 "%(languages)s"
 
 #: src/chatddx/factors/lint.py
@@ -963,6 +955,16 @@ msgid "%(kind)s %(thread)s's changes don't fit its origin's head: %(refused)s"
 msgstr ""
 "ändringarna i %(kind)s %(thread)s passar inte ursprungets senaste "
 "version: %(refused)s"
+
+#: src/chatddx/bench/runs.py
+#, python-format
+msgctxt "refusal"
+msgid ""
+"%(configuration)s has no translations into %(languages)s, which its cases"
+" are in"
+msgstr ""
+"%(configuration)s har inga översättningar till %(languages)s, som dess "
+"fall är på"
 
 #: src/chatddx/bench/runs.py
 #, python-format
@@ -5616,6 +5618,15 @@ msgstr "En körning per språk: %(runs)s."
 #, python-format
 msgid "%(run)s."
 msgstr "%(run)s."
+
+#: frontend/src/islands/Variation.svelte
+#, python-format
+msgid ""
+"Left out: %(cases)s in %(language)s, which %(configuration)s has no "
+"translations into."
+msgstr ""
+"Utelämnade: %(cases)s på %(language)s, som %(configuration)s inte har "
+"några översättningar till."
 
 #: frontend/src/islands/Variation.svelte
 #, python-format

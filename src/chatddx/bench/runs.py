@@ -55,6 +55,13 @@ def start(
     carried = seen.languages(variation, cases)
     sent = [c for c in carried if c.skeleton is not None]
     left_out = [c for c in carried if c.skeleton is None]
+    if not sent and left_out and all(c.untranslated for c in left_out):
+        raise Invalid.of(
+            "%(configuration)s has no translations into %(languages)s, which its cases "
+            + "are in",
+            configuration=variation.label,
+            languages=", ".join(str(c.language) for c in left_out),
+        )
     if not sent:
         raise Invalid.of(
             "no case can be sent: %(refused)s",

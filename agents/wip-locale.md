@@ -275,6 +275,12 @@ Each step leaves the portal working in English, and Swedish appearing only where
      *alias*; out of date *ouppdaterad* and to update *uppdatera*, with *Uppdatera alla*; the outcomes *giltig*,
      *slutförd*, *räddad*, *ogiltig*, *med fel*, *oläsbar* and *stoppad*, cut short *avkortat*, and halt *avbryta*;
      what you see *det du har tillgång till*.
+   - **Decided: a language by its name**, in the reader's locale (`src/chatddx/locale/locale.py:language_name`, the
+     `language` filter and the islands' `languageName()`), wherever a language is shown, and in a finding or a
+     refusal whose parameter is named `language`, `into` or `languages`, the last tags separated by `, `; a field a
+     tag is typed in takes a tag.
+   - **Decided: the cases left out are said once**, with the languages a variation is sent in, in a sentence of
+     their own where the configuration has no translations into theirs, not as `translations.missing`.
    - **Decided: no "it" in a button or a heading**, where Swedish would say *den* or *det* by a word the message
      doesn't know: `Delete it` is *Radera*, `Its versions` *Versioner*.
    - **Decided: one message for ops**, `Copy this and send it to drift@chatddx.com:`, wherever a page or an island

@@ -52,6 +52,17 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 ```
 # Policy: A judge's skeleton is linted on its handle's latest engine, where it would
 # judge, and on none where it can't.
+<<<<<<< signed
+=======
+```
+
+## `src/chatddx/bench/seen.py:missing`
+
+```
+# Policy: the cases left out are said with what is sent
+# (src/chatddx/bench/model.py:Carried.refused), so what is found is a translation that
+# doesn't compile into a language no case of them is in.
+>>>>>>> @stamp
 ```
 
 ## `src/chatddx/bench/seen.py:Seen._applies`

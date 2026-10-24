@@ -72,9 +72,9 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     assert '"seed": 7' in written
     assert f"en: {len(CASES) - len(sv)} cases, as written" in written
     assert (
-        f"[warning] translations.missing: {len(sv)} cases are in sv, and left out: "
-        + "lines has no translations into sv"
-    ) in written
+        f"sv: {len(sv)} cases, left out: lines has no translations into sv" in written
+    )
+    assert "translations.missing" not in written
     assert "sv: 3 cases, translated" in say(f"use {LINES_GUIDED}", "show")
 
 

@@ -11,6 +11,7 @@ from chatddx.factors import Finding, Invalid
 from chatddx.locale import Locales, localizing
 from chatddx.locale.test.helpers import catalog
 from chatddx.portal.pages import refusal_of, templates
+from chatddx.portal.test.helpers import said
 
 
 def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
@@ -136,6 +137,20 @@ def test_a_page_says_which_language_it_is_in(signed: TestClient) -> None:
     assert '<html lang="sv">' in asked.text
     home = signed.get("/", headers={"accept-language": "sv"}).text
     assert '<script type="application/json" id="locale">{"tag": "sv", ' in home
+
+
+@pytest.mark.usefixtures("alice")
+def test_a_language_is_said_by_its_name_in_the_locale_asked_for(
+    signed: TestClient,
+) -> None:
+    [family] = [f for f in signed.get("/api/families").json() if f["language"] == "sv"][
+        :1
+    ]
+    path = f"/cases/{family['id']}"
+    english = said(signed.get(path).text)
+    swedish = said(signed.get(path, headers={"accept-language": "sv"}).text)
+    assert " Language Swedish " in english and " sv " not in english
+    assert " Språk svenska " in swedish
 
 
 @pytest.mark.usefixtures("alice")

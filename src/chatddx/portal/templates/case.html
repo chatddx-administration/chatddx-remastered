@@ -20,7 +20,7 @@
     (_("Kind"), "case" | kind),
     (_("Owner"), case.owner or "—"),
     (_("Shared with"), case.collaborators | join(", ") or "—"),
-    (_("Language"), case.language or "—"),
+    (_("Language"), case.language | language if case.language else "—"),
     (_("Tags"), tagged),
     (_("Description"), case.description or "—"),
   ]) }}

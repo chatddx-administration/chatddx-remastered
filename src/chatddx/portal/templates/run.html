@@ -28,10 +28,10 @@
   {% call section(_("The run")) %}
   {% set trial_held %}{% if trial %}<a href="/threads/{{ trial[0] }}">{{ trial[1] }}</a> {% endif %}<span class="font-mono text-xs text-muted-foreground">{{ run.trial | short }}</span>{% endset %}
   {% set held %}{% if configuration %}<a href="{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
-  {% set started_with %}{% for other, language in together %}<a href="/runs/{{ other }}">{{ _("%(run)s, in %(language)s", run=(other | string)[:8], language=language or _("a language unknown")) }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% endset %}
+  {% set started_with %}{% for other, language in together %}<a href="/runs/{{ other }}">{{ _("%(run)s, in %(language)s", run=(other | string)[:8], language=language | language if language else _("a language unknown")) }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% endset %}
   {{ facts([
     (_("Started"), run.at | when),
-    (_("Language"), run.language or "—"),
+    (_("Language"), run.language | language if run.language else "—"),
     (_("Started with"), started_with),
     (_("Finished"), run.finished_at | when),
     (_("Job"), job(run.job)),

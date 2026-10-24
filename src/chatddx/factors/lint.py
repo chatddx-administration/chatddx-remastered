@@ -305,13 +305,13 @@ def _languages(c: Trial, languages: Languages) -> Iterable[Finding]:
         yield Finding.of(
             "language.mixed",
             (
-                "the request is %(request)s, but %(num)s of %(cases)s cases is "
+                "the request is %(language)s, but %(num)s of %(cases)s cases is "
                 + "%(languages)s",
-                "the request is %(request)s, but %(num)s of %(cases)s cases are "
+                "the request is %(language)s, but %(num)s of %(cases)s cases are "
                 + "%(languages)s",
             ),
             subject=c.digest,
-            request=request,
+            language=request,
             num=len(other),
             cases=len(cases),
             languages=", ".join(sorted(set(other))),

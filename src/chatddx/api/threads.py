@@ -261,6 +261,7 @@ def variation(
                 translated=c.translated,
                 skeleton=None if c.skeleton is None else c.skeleton.digest,
                 refused=c.refused,
+                untranslated=c.untranslated,
             )
             for c in carried
         ],

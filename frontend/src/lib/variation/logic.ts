@@ -91,6 +91,7 @@ export type Carriage = {
   families: Schemas["Family"][];
   translated: boolean;
   refused: string | null;
+  untranslated: boolean;
   known: boolean;
 };
 
@@ -110,6 +111,7 @@ export function carried(sent: Schemas["Family"][], languages: Schemas["Carried"]
       families: [],
       translated: c?.translated ?? false,
       refused: c?.refused ?? null,
+      untranslated: c?.untranslated ?? false,
       known: c !== undefined,
     };
     group.families.push(f);

@@ -120,6 +120,10 @@ Finds:
 * `translated: bool`
 * `skeleton: str | None = Field(description="the request they are sent as")`
 * `refused: str | None = Field(description="why they can't be sent, and are left out")`
+<<<<<<< signed
+=======
+* `untranslated: bool = Field(…)`
+>>>>>>> @stamp
 
 ## `case` `@router.post("/families/{family}/cases", status_code=201)`
 `src/chatddx/api/families.py:case`
