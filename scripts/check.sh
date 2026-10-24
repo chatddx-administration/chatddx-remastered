@@ -6,7 +6,7 @@
 set -euo pipefail
 
 docs() {
-  python scripts/refcheck.py
+  chatddx refcheck
 }
 
 package() {
@@ -38,7 +38,7 @@ browser() {
 # before work proceeds, so it flags all of it at once and no change git sees runs it.
 baseline() {
   local flagged=0
-  python scripts/refcheck.py | sed 's/^/flag: /' >&2 || flagged=1
+  chatddx refcheck | sed 's/^/flag: /' >&2 || flagged=1
   chatddx openapi | cmp -s - frontend/openapi.json || {
     echo "flag: frontend/openapi.json: behind the code at the baseline: the code changed without" \
       "chatddx openapi; investigate before work proceeds" >&2
@@ -75,7 +75,7 @@ base() {
 changed() {
   local paths
   paths="$(git diff --name-only "$(base)" && git ls-files --others --exclude-standard)"
-  grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|scripts/refcheck\.py|src/)' <<<"$paths" && echo docs
+  grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|src/)' <<<"$paths" && echo docs
   grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
   grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
   grep -qE '^(src/chatddx/|frontend/src/)' <<<"$paths" && echo locale

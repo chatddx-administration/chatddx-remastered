@@ -187,11 +187,14 @@
                 ./agents
                 ./AGENTS.md
                 ./README.md
-                ./scripts/refcheck.py
                 ./src
               ])
               {
-                nativeBuildInputs = [ pkgs.python313 ];
+                nativeBuildInputs = [ (devEnv system) ];
+                preBuild = ''
+                  unset PYTHONPATH
+                  export HOME="$TMPDIR" REPO_ROOT="$PWD"
+                '';
               };
 
           # Compromise: scripts/check.sh's browser stage isn't checked here, for the browser

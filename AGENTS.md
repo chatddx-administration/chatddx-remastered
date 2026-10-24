@@ -115,7 +115,7 @@ Agents aren't expected to run this, just know it exists.
 
 ### Docs
 
-- `python scripts/refcheck.py` checks for broken references and commits off main.
+- `chatddx refcheck` checks for broken references and commits off main.
 
 ## Development stages
 

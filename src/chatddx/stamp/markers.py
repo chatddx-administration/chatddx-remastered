@@ -11,9 +11,9 @@ PENDING = (
 )
 
 
-def _sides(text: str) -> tuple[list[str], list[str]]:
+def _sides(text: str) -> tuple[list[str], list[tuple[int, str]]]:
     kept: list[str] = []
-    now: list[str] = []
+    now: list[tuple[int, str]] = []
     opened: int | None = None
     divided = False
     for n, line in enumerate(text.splitlines(), 1):
@@ -29,7 +29,7 @@ def _sides(text: str) -> tuple[list[str], list[str]]:
             if not divided:
                 kept.append(line)
             if opened is None or divided:
-                now.append(line)
+                now.append((n, line))
     if opened is not None:
         raise ValueError(f"line {opened}: a stamp isn't closed")
     return kept, now
@@ -40,6 +40,10 @@ def signed(text: str) -> list[str]:
 
 
 def applied(text: str) -> list[str]:
+    return [line for _, line in _sides(text)[1]]
+
+
+def applied_lines(text: str) -> list[tuple[int, str]]:
     return _sides(text)[1]
 
 

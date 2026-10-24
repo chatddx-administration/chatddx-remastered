@@ -78,7 +78,6 @@ def proofs(packages: Iterable[str]) -> list[Proof]:
     return found
 
 
-# Duplication: scripts/refcheck.py:sources, which runs without chatddx.
 def documents() -> list[Path]:
     root, written = settings.PROJECT_ROOT, {SURFACES, COMMENTS, WHOOPSES}
     found = [p for p in (root / "docs").rglob("*.md") if not written & set(p.parents)]

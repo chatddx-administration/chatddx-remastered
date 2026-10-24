@@ -1,5 +1,3 @@
-import shutil
-import subprocess
 from pathlib import Path
 from textwrap import dedent
 
@@ -13,6 +11,9 @@ from chatddx.stamp.index import index, whoopses
 from chatddx.stamp.markers import restamped, signed, stamped
 from chatddx.stamp.page import page
 from chatddx.stamp.trace import Trace
+from chatddx.test.helpers import committing_as_bob, git, needs_git
+
+__all__ = ["committing_as_bob"]
 
 
 def sourced(tmp_path: Path, files: dict[str, str]) -> Path:
@@ -1098,24 +1099,7 @@ def test_write_says_how_many_stamps_it_wrote_to_each_proof(
     assert capsys.readouterr().out == "nothing to write\n"
 
 
-# Accommodating for nix's sandbox, which checks the package without git.
-needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="no git")
-
-
-@pytest.fixture
-def as_bob(monkeypatch: pytest.MonkeyPatch) -> None:
-    for role in ("AUTHOR", "COMMITTER"):
-        monkeypatch.setenv(f"GIT_{role}_NAME", "bob")
-        monkeypatch.setenv(f"GIT_{role}_EMAIL", "bob@example.org")
-
-
 ALICE = "--author=alice <alice@example.org>"
-
-
-def git(root: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args], cwd=root, capture_output=True, text=True, check=True
-    ).stdout.strip()
 
 
 @pytest.mark.slow

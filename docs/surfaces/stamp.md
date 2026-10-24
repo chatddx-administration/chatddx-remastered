@@ -26,6 +26,19 @@ Finds:
 
 * `text: str`
 * ∟`list[str]`
+<<<<<<< signed
+=======
+
+Raises:
+1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
+2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
+
+## `applied_lines`
+`src/chatddx/stamp/markers.py:applied_lines`
+
+* `text: str`
+* ∟`list[tuple[int, str]]`
+>>>>>>> @stamp
 
 Raises:
 1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)

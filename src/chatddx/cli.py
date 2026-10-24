@@ -394,6 +394,19 @@ def _stamp(args: argparse.Namespace) -> None:
         stamp.write(args.package)
 
 
+def _refcheck(_: argparse.Namespace) -> None:
+    # Compromise: as in _stamp, for chatddx.stamp, which it reads the docs with.
+    from chatddx import refcheck
+
+    try:
+        found = refcheck.check()
+    except ValueError as e:
+        raise SystemExit(f"refcheck: {e}") from None
+    if found:
+        print("\n".join(found))
+        raise SystemExit(1)
+
+
 def _locale(args: argparse.Namespace) -> None:
     if args.localing == "check":
         locale.check(args.baseline)
@@ -690,6 +703,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "pending, the last step of a handover, and say against what and how many",
     )
     stamp_docs.set_defaults(run=_stamp, stamping="docs")
+
+    refchecking = commands.add_parser(
+        "refcheck",
+        help="check what the docs refer to: files, their sections, code, the "
+        + "glossary's terms and commits on main",
+    )
+    refchecking.set_defaults(run=_refcheck)
 
     localing = commands.add_parser(
         "locale",

@@ -113,6 +113,15 @@ Finds:
 `src/chatddx/test/world.py:CLINICIAN`
 
 `CLINICIAN = "clinician"`
+<<<<<<< signed
+=======
+
+## `committing_as_bob` `@pytest.fixture(name="as_bob")`
+`src/chatddx/test/helpers.py:committing_as_bob`
+
+* `monkeypatch: pytest.MonkeyPatch`
+* ∟`None`
+>>>>>>> @stamp
 
 ## `COMPARED`
 `src/chatddx/test/world.py:COMPARED`
@@ -277,6 +286,16 @@ Finds:
 
 `GAP = re.compile(r"\S {2,}\S")`
 
+<<<<<<< signed
+=======
+## `git`
+`src/chatddx/test/helpers.py:git`
+
+* `root: Path`
+* `*args: str`
+* ∟`str`
+
+>>>>>>> @stamp
 ## `GPT_OSS`
 `src/chatddx/test/world.py:GPT_OSS`
 
@@ -372,6 +391,14 @@ Finds:
 `src/chatddx/test/world.py:NATIVE_TOOLS`
 
 `NATIVE_TOOLS = "native-tools"`
+<<<<<<< signed
+=======
+
+## `needs_git`
+`src/chatddx/test/helpers.py:needs_git`
+
+`needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="no git")`
+>>>>>>> @stamp
 
 ## `NOW`
 `src/chatddx/test/helpers.py:NOW`

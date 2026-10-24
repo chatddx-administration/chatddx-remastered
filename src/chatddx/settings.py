@@ -55,6 +55,7 @@ STAGES = {
     "ledger": Stage.SOLIDIFIED,
     "locale": Stage.SOLIDIFIED,
     "portal": Stage.SOLIDIFIED,
+    "refcheck": Stage.SOLIDIFIED,
     "repl": Stage.SOLIDIFIED,
     "rig": Stage.SOLIDIFIED,
     "runner": Stage.SOLIDIFIED,
