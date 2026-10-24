@@ -1,3 +1,5 @@
+import shutil
+import subprocess
 from pathlib import Path
 from textwrap import dedent
 
@@ -8,7 +10,7 @@ from chatddx.settings import Stage
 from chatddx.stamp import Proof, markers, proofs
 from chatddx.stamp.code import Code
 from chatddx.stamp.index import index, whoopses
-from chatddx.stamp.markers import signed, stamped
+from chatddx.stamp.markers import restamped, signed, stamped
 from chatddx.stamp.page import page
 from chatddx.stamp.trace import Trace
 
@@ -869,6 +871,35 @@ def test_an_unclosed_stamp_is_refused() -> None:
         _ = signed("<<<<<<< signed\na\n=======\nb\n")
 
 
+def test_a_doc_is_stamped_whole_from_its_text_at_the_base_to_what_it_says_now() -> None:
+    once = restamped("# a\nb\nc\n", "# A\nb\nc\nd\n")
+    assert once == dedent(
+        f"""\
+        <<<<<<< signed
+        # a
+        =======
+        # A
+        {CLOSING}
+        b
+        c
+        <<<<<<< signed
+        =======
+        d
+        {CLOSING}
+        """
+    )
+    assert markers.applied(once) == ["# A", "b", "c", "d"]
+    assert restamped("# a\nb\nc\n", once) == once
+    assert restamped("# a\nb\nc\n", applied(once)) == once
+    assert restamped("# a\nb\nc\n", "# a\nb\nc\n") == "# a\nb\nc\n"
+
+
+def test_a_new_doc_is_one_stamp_and_a_base_s_own_stamps_are_read_as_signed() -> None:
+    assert restamped(None, "a\nb\n") == f"<<<<<<< signed\n=======\na\nb\n{CLOSING}\n"
+    pending = restamped("a\nb\n", "a\nB\n")
+    assert restamped(pending, "a\nb\nc\n") == restamped("a\nb\n", "a\nb\nc\n")
+
+
 def test_a_proof_counts_the_stamps_it_holds_and_those_a_write_would_add() -> None:
     once = stamped("## e\na\nb\nc\n", "## e\nA\nb\nc\n")
     twice = stamped(once, "## e\nA\nb\nC\n")
@@ -1015,6 +1046,34 @@ def test_check_flags_a_module_with_no_stage_a_proof_no_module_writes_and_a_broke
     )
 
 
+def test_check_flags_a_doc_s_stamps_pending_and_refuses_a_conflict_in_one(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
+    (tmp_path / "agents").mkdir()
+    _ = (tmp_path / "agents" / "wip-x.md").write_text(restamped("a\n", "b\n"))
+    stamp.check([], baseline=False)
+    assert capsys.readouterr() == ("", "flag: agents/wip-x.md: 1 stamp pending\n")
+
+    with pytest.raises(SystemExit) as e:
+        stamp.check([], baseline=True)
+    assert e.value.code == 1
+    assert capsys.readouterr().err == (
+        "flag: agents/wip-x.md: 1 stamp pending at the baseline: a human stamps them "
+        + "before work proceeds\n"
+    )
+
+    _ = (tmp_path / "AGENTS.md").write_text(
+        "<<<<<<< HEAD\na\n=======\nb\n>>>>>>> main\n"
+    )
+    with pytest.raises(SystemExit) as e:
+        stamp.check([], baseline=False)
+    assert e.value.code == 1
+    assert capsys.readouterr().err == (
+        "flag: AGENTS.md: line 1: a conflict marker that isn't a stamp's\n"
+    )
+
+
 def test_write_says_how_many_stamps_it_wrote_to_each_proof(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -1037,6 +1096,70 @@ def test_write_says_how_many_stamps_it_wrote_to_each_proof(
     faked(monkeypatch, tmp_path / "again", ("a", "## e\n", "## e\n"))
     stamp.write([])
     assert capsys.readouterr().out == "nothing to write\n"
+
+
+# Accommodating for nix's sandbox, which checks the package without git.
+@pytest.mark.skipif(shutil.which("git") is None, reason="no git")
+def test_docs_stamps_each_change_to_a_doc_since_the_base(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def git(*args: str) -> str:
+        identity = ["-c", "user.name=alice", "-c", "user.email=alice@example.org"]
+        return subprocess.run(
+            ["git", *identity, *args],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+    def wrote(files: dict[str, str]) -> None:
+        for name, text in files.items():
+            (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+            _ = (tmp_path / name).write_text(text)
+
+    moved = "".join(f"line {n}\n" for n in range(8))
+    wrote(
+        {
+            "AGENTS.md": "a\nb\n",
+            "docs/kept.md": "k\n",
+            "docs/moved.md": moved,
+            "docs/surfaces/s.md": "## s\n",
+            "src/x.md": "x\n",
+        }
+    )
+    _ = git("init", "-q")
+    _ = git("add", "-A")
+    _ = git("commit", "-qm", "base")
+    base = git("rev-parse", "HEAD")
+    monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
+    for docs in ("surfaces", "comments", "whoopses"):
+        monkeypatch.setattr(stamp, docs.upper(), tmp_path / "docs" / docs)
+
+    (tmp_path / "agents").mkdir()
+    _ = git("mv", "docs/moved.md", "agents/wip-moved.md")
+    wrote({"AGENTS.md": "a\nB\n", "agents/wip-moved.md": moved + "more\n"})
+    _ = git("commit", "-qam", "session")
+    wrote({"docs/new.md": "n\n", "docs/surfaces/s.md": "## t\n", "src/x.md": "y\n"})
+    stamp.docs(base)
+    assert sorted(capsys.readouterr().out.splitlines()) == [
+        "AGENTS.md: 1 stamp",
+        "agents/wip-moved.md: 1 stamp",
+        "docs/new.md: 1 stamp",
+    ]
+    assert (tmp_path / "AGENTS.md").read_text() == restamped("a\nb\n", "a\nB\n")
+    assert (tmp_path / "agents" / "wip-moved.md").read_text() == (
+        restamped(moved, moved + "more\n")
+    )
+    assert (tmp_path / "docs" / "new.md").read_text() == restamped(None, "n\n")
+    assert (tmp_path / "docs" / "kept.md").read_text() == "k\n"
+    assert (tmp_path / "docs" / "surfaces" / "s.md").read_text() == "## t\n"
+    assert (tmp_path / "src" / "x.md").read_text() == "y\n"
+
+    stamp.docs(base)
+    assert capsys.readouterr().out == "nothing to write\n"
+    with pytest.raises(SystemExit, match="^stamp docs: no base: "):
+        stamp.docs(None)
 
 
 @pytest.mark.slow

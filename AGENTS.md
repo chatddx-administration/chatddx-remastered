@@ -44,6 +44,14 @@ Rules 3 and 4 become "Comments" and "Docstrings" under "Documentation".
 2. Run `scripts/check.sh`:
    - relay flags
    - flip what the budget suggests when it feels right
+```
+AGENT: replace
+The doc stamp's place: after the handover is committed and before it is pushed.
+---
+3. Commit, run `chatddx stamp docs` and commit what it writes, then push, and open the pull request if one was
+   asked for.
+```
+
 3. Commit and push, and open the pull request if one was asked for.
 
 ## Handling errors and warnings
@@ -125,7 +133,7 @@ Agents aren't expected to run this, just know it exists.
 ```
 AGENT: amend
 refcheck now also flags a commit the docs name that isn't on origin/main, taking one a shallow clone doesn't reach to be
-on it.
+on it, and reads a stamp pending as written now.
 ---
 - `python scripts/refcheck.py` checks for broken references and commits off main.
 ```
@@ -182,14 +190,13 @@ A move entails deduplication and updating references.
 
 ```
 AGENT: replace
-With a universal doc stamp, every doc is the agents' to write and the humans' to stamp, so rule 1, its suggestions and
-the exemption of `agents/*` go, and what is left of rules 2-6 are conventions. Not built yet: `chatddx stamp` stamps
-only what it writes from the code.
+With the doc stamp, every doc is the agents' to write and the humans' to stamp, so rule 1, its suggestions and the
+exemption of `agents/*` go, and what is left of rules 2-6 are conventions.
 ---
 ## Documentation
 
-Every doc is stamped: an agent writes it, and `chatddx stamp write` keeps each change since the human-reviewed commit
-the session starts from as a stamp pending, a git conflict for a human to stamp.
+Every doc is stamped: an agent writes it, and the handover's `chatddx stamp docs` keeps each change since the commit
+`.claude/hooks/session-start.sh` pins as a stamp pending, a git conflict for a human to stamp before the next baseline.
 ```
 
 ## Documentation rules

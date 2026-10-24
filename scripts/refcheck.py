@@ -39,11 +39,19 @@ def sources(root: Path) -> list[Path]:
     )
 
 
+# Duplication: src/chatddx/stamp/markers.py:applied, which refcheck runs without: a stamp
+# pending is read as written now.
 def prose(path: Path) -> list[tuple[int, str]]:
     lines: list[tuple[int, str]] = []
-    fence = False
+    fence = signed = False
     for n, line in enumerate(path.read_text().splitlines(), 1):
-        if line.lstrip().startswith("```"):
+        if line == "<<<<<<< signed":
+            signed = True
+        elif signed:
+            signed = line != "======="
+        elif line.startswith(">>>>>>> "):
+            continue
+        elif line.lstrip().startswith("```"):
             fence = not fence
         elif not fence:
             lines.append((n, line))

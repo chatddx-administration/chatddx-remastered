@@ -21,6 +21,19 @@ Finds:
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
 
+<<<<<<< signed
+=======
+## `applied`
+`src/chatddx/stamp/markers.py:applied`
+
+* `text: str`
+* ∟`list[str]`
+
+Raises:
+1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
+2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
+
+>>>>>>> @stamp
 ## `check`
 `src/chatddx/stamp/__init__.py:check`
 
@@ -146,6 +159,25 @@ Raises:
 
 `type Def = ast.FunctionDef | ast.AsyncFunctionDef`
 
+<<<<<<< signed
+=======
+## `docs`
+`src/chatddx/stamp/__init__.py:docs`
+
+* `base: str | None`
+* ∟`None`
+
+Raises:
+1. `SystemExit`: `"stamp docs: no base: set CHATDDX_STAMP_BASE to the commit the session started at"`
+2. `SystemExit`: `"stamp docs: git {args[0]}: {e.stderr.strip()}"` (from `subprocess.CalledProcessError`, through `_changed`)
+3. `SystemExit`: `"stamp docs: {_shown(path)}: {e}"` (from `ValueError`)
+
+## `documents`
+`src/chatddx/stamp/__init__.py:documents`
+
+* ∟`list[Path]`
+
+>>>>>>> @stamp
 ## `File` `@dataclass(frozen=True)`
 `src/chatddx/stamp/code.py:File`
 
@@ -257,6 +289,16 @@ Raises:
 * `validated: bool = False`
 * `origin: str | None = None`
 
+<<<<<<< signed
+=======
+## `restamped`
+`src/chatddx/stamp/markers.py:restamped`
+
+* `base: str | None`
+* `current: str`
+* ∟`str`
+
+>>>>>>> @stamp
 ## `signed`
 `src/chatddx/stamp/markers.py:signed`
 
@@ -264,8 +306,13 @@ Raises:
 * ∟`list[str]`
 
 Raises:
+<<<<<<< signed
 1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"`
 2. `ValueError`: `"line {opened}: a stamp isn't closed"`
+=======
+1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
+2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
+>>>>>>> @stamp
 
 ## `Spanned`
 `src/chatddx/stamp/code.py:Spanned`
