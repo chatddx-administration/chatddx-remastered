@@ -47,11 +47,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, sort
 # Policy: never spelled whole, so that a search for it finds the stamps pending alone.
 ```
 
-<<<<<<< signed
-## `src/chatddx/stamp/test/test_stamp.py:test_docs_stamps_each_change_to_a_doc_since_the_base`
-=======
 ## `src/chatddx/stamp/test/test_stamp.py:needs_git`
->>>>>>> @stamp
 
 ```
 # Accommodating for nix's sandbox, which checks the package without git.
