@@ -2,30 +2,23 @@
 
 LLMs aren't deterministic like traditional programs: the same question can get a different answer, and a model behind an
 API can change overnight. Nor do they have what makes a human's judgement trustworthy: reputation, introspection and
-accountability.
-
-A model can't tell why it answered as it did, and can't be held to account when it's wrong. That poses a range of
-challenges for LLM assistance in emergency care, starting with knowing how accurate it is, in a way others can reproduce
-and examine.
+accountability. It can't be held to account when it's wrong. That poses a range of challenges for LLM assistance in
+emergency care, starting with knowing how it performs, in a way others can reproduce and examine.
 
 ChatDDX is a rig that measures how accurately LLMs produce differential diagnoses and management plans from
 emergency-care case vignettes. Everything that can change an answer or its score (prompts, sampling, engines, model
 weights, cases, seeds, expectations, scorers) is a factor, pinned by its digest. That way the environment of a run, "the
 cage", can be rebuilt and delivered with its results.
 
-<<<<<<< signed
-It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, without
-storing them and sending them only to cleared endpoints. Answers are scored by strict pattern matching, and later by LLM
-=======
-It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, sending them
-only to cleared endpoints: one fetched from its source is kept only as a fingerprint, and one a person types is kept in
-the rig's own store, cleared by definition. Answers are scored by strict pattern matching, and later by LLM
->>>>>>> @stamp
-judges. Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
+It records each exchange and handles sensitive vignettes as a fingerprint to be resolved only at cleared endpoints.
+There is a sandbox chat for "typed vignettes" where the clinicians are responsible for de-identification.
+
+- Scoring can be done with pattern matching and LLM judges.
+- Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
 
 ## Developing
 
-On a basic Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
+On a Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
 
 ### Nix with flakes
 
