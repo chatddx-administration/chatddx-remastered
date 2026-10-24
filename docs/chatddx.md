@@ -81,8 +81,12 @@ docs/modules/, and its public surface is in docs/surfaces/.
 
 Beside them, `cli` is the `chatddx` command, `settings` the project-wide source of truth, `rig` the rig's own build and
 `whoops` the error a person is told of. `fake_vllm` stands in for vLLM 0.24 where none runs, and `scripted` runs the
+<<<<<<< signed
+scripted runs it answers. `test` and `conftest` are what the tests share, and `stamp` writes what is stamped.
+=======
 scripted runs it answers. `test` and `conftest` are what the tests share, `stamp` writes what is stamped, and `refcheck`
 checks what the docs refer to.
+>>>>>>> @stamp
 
 ## How it runs
 
