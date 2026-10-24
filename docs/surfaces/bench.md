@@ -78,11 +78,7 @@ Raises:
 1. `ValueError`: `"{digest} isn't a stored {what}"` (through `_stored_parts`)
 2. `ValueError`: `"a person doesn't write {component.kind_name} components"`
 3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_carried`)
-<<<<<<< signed
-4. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_carried`)
-=======
 4. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_carried`)
->>>>>>> @stamp
 5. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_carried`)
 
 ## `Bench.edit`
@@ -103,11 +99,7 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-<<<<<<< signed
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
-=======
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
->>>>>>> @stamp
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.follow`
@@ -155,11 +147,7 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-<<<<<<< signed
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
-=======
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
->>>>>>> @stamp
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.leave`
@@ -205,11 +193,7 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-<<<<<<< signed
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
-=======
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
->>>>>>> @stamp
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.outdated`
@@ -351,18 +335,11 @@ Heads-up: the gate's `Refused` passes through.
 Raises:
 1. `ValueError`: `"{variation.label} is a judge configuration: a judge is asked as runs are scored, and isn't run on cases"`
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
-<<<<<<< signed
-3. `Invalid`: `"no case can be sent: %(refused)s", refused="; ".join(c.refused or "" for c in left_out)`
-4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
-5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
-6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
-=======
 3. `Invalid`: `"%(configuration)s has no translations into %(languages)s, which its cases are in", configuration=variation.label, languages=", ".join(str(c.language) for c in left_out)`
 4. `Invalid`: `"no case can be sent: %(refused)s", refused="; ".join(c.refused or "" for c in left_out)`
 5. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
 7. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
->>>>>>> @stamp
 
 ## `Bench.start_trials`
 `src/chatddx/bench/runs.py:start_trials`
@@ -472,10 +449,7 @@ Raises:
 * `skeleton: Skeleton | None = None`
 * `translated: bool = False`
 * `refused: str | None = None`
-<<<<<<< signed
-=======
 * `untranslated: bool = False`
->>>>>>> @stamp
 
 ## `check_expecting`
 `src/chatddx/bench/seen.py:check_expecting`
@@ -682,12 +656,7 @@ Raises:
 * ∟`list[Finding]`
 
 Finds:
-<<<<<<< signed
-1. `translations.missing`: `refused` (through `_missing`)
-2. `translations.missing`: `"%(num)s case is in %(language)s, and left out: %(refused)s" / "%(num)s cases are in %(language)s, and left out: %(refused)s"` (through `_missing`)
-=======
 1. `translations.missing`: `str(e)` (from `StructuralError`)
->>>>>>> @stamp
 
 ## `MODEL`
 `src/chatddx/bench/model.py:MODEL`
