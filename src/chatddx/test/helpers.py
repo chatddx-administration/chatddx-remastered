@@ -1,9 +1,12 @@
+import shutil
+import subprocess
 import time
 from collections import defaultdict, deque
 from collections.abc import Generator
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import NamedTuple
 from uuid import uuid4
 
@@ -32,6 +35,8 @@ INSTRUCTION = (
     + "your assessment."
 )
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
+# Accommodating for nix's sandbox, which checks the package without git.
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="no git")
 
 
 # Accommodating for PostgreSQL: a session closed a moment ago may still be ending on the
@@ -177,6 +182,19 @@ def added_alice(conn: Connection) -> Person:
 @pytest.fixture(name="bob")
 def added_bob(conn: Connection) -> Person:
     return People(conn).add("bob", "Bob")
+
+
+@pytest.fixture(name="as_bob")
+def committing_as_bob(monkeypatch: pytest.MonkeyPatch) -> None:
+    for role in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{role}_NAME", "bob")
+        monkeypatch.setenv(f"GIT_{role}_EMAIL", "bob@example.org")
+
+
+def git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", *args], cwd=root, capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 @pytest.fixture(name="bench")

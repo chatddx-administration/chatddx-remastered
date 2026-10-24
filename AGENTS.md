@@ -17,12 +17,11 @@ This document contains project-wide instructions written by humans for agents.
 
 ## Workflow
 
-The workflow is a session's: it starts from a human-reviewed commit and ends with a handover. What the session commits
-in between is its own.
+The workflow spans over a session, starts from a human-reviewed commit and ends with a handover.
 
 ### 1. Before work starts
 
-Run `scripts/check.sh baseline`: on non-zero exit, pause work and relay the flags.
+Run `./check.sh baseline`: on non-zero exit, pause work and relay the flags.
 
 ### 2. Between units of work
 
@@ -33,11 +32,11 @@ you see fit, a session's hooks may ask for both at a turn's end, but neither is 
 
 When asked for a handover or pull request:
 
-1. Remove all comments and docstrings that don't pass doc rule 3 and 4 respectively (pre-existing included).
-2. Run `scripts/check.sh`:
+1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" respectively (pre-existing included).
+2. Run `./check.sh`:
    - relay flags
    - flip what the budget suggests when it feels right
-3. Commit and push, and open the pull request if one was asked for.
+3. Commit, run `chatddx stamp docs` and commit what it writes, then push.
 
 ## Handling errors and warnings
 
@@ -73,11 +72,11 @@ way, tell the user, in `message`:
 - what's going on
 - what they can do now
 
-and put in `pass_on` what they are to pass on to developers and ops, as it is.
+and, if `Whoops`, put in `pass_on` what they are to pass on to developers and ops, as it is.
 
 ## Tests and checks
 
-Handover check tool is `scripts/check.sh`, capture stdout for budget output and flags to relay. It takes ~350s when diff
+Handover check tool is `./check.sh`, capture stdout for budget output and flags to relay. It takes ~350s when diff
 against `origin/main` hits all stages, mostly due to browser tests and the budget run.
 
 ### Python
@@ -109,13 +108,24 @@ Agents aren't expected to run this, just know it exists.
 
 `nix flake check` runs:
 
-- `scripts/check.sh`'s docs, package and frontend stages
+- `check.sh`'s docs, package and frontend stages
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 
 ### Docs
 
-- `python scripts/refcheck.py` checks for broken references.
+- `chatddx refcheck` checks for broken references and commits off main.
+
+## Scripts and commands
+
+What reads or makes the project's own things, its code, docs, data or settings, is Python behind `chatddx`, a module
+with its stage and tests. What only runs other programs in order and goes by their exit codes is a shell script. A
+script may call `chatddx`; `chatddx` calls no script.
+
+- `check.sh`, at the root, is run by agents and humans both.
+- `scripts/` is the human's side of the workflow, which agents aren't meant to run but may read to see it:
+  `scripts/fetch.sh` pulls a handover and checks its baseline, `scripts/stamp.sh` commits what a human stamped and
+  prints the revision the next session starts at, and `scripts/merge.sh` squashes a branch onto main.
 
 ## Development stages
 
@@ -128,7 +138,7 @@ A thing under development is in one of the following stages:
 5. Itemized - Has one or more items in `docs/backlog.md`
 6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
 7. Drafted - Exists as a moving target in `src/chatddx/<name>*` and `agents/wip-<name>.md`
-8. Solidified - Docs under rule 1 in `docs/modules/<name>.md`
+8. Solidified - Its surface stamped, and its docs, if any, in `docs/modules/<name>.md`
 9. Cemented: TBD
 10. Protected: TBD
 
@@ -136,47 +146,21 @@ Drafts and above are declared in `src/chatddx/settings.py:STAGES`, and `chatddx 
 `src/chatddx/` without one. What `chatddx stamp` writes of a module from which stage on is
 `src/chatddx/settings.py:STAMPED_FROM`.
 
-Things can bounce around freely across these stages but are only in one stage at a time. Docs are moved and reworked in
-separate commits:
+Things can bounce around freely across these stages but are only in one stage at a time, which `chatddx stamp check`
+checks of a module: an `agents/wip-<name>.md` past Drafted, or a `docs/modules/<name>.md` before Solidified, is a module
+in two. A doc is moved in a commit of its own, and a move entails deduplication and updating references.
 
-- when entering rule 1: Rework -> commit -> move -> commit -> insert suggestions.
-- when leaving rule 1: Move -> commit -> rework.
-- when moving within rule 1: Move -> commit -> insert suggestions.
+## Documentation
 
-A move entails deduplication and updating references.
+The handover's `chatddx stamp docs` inserts git conflict markers between the latest commit a human made and now, a human
+needs to stamp these for next baseline to pass.
 
-## Documentation rules
+- The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
+  provide options.
+- Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
+  collaborator-one, admin).
 
-### 1. Humans write, agents suggest.
-
-In all docs, except `agents/*`, agents are only allowed to insert suggestions.
-
-A suggestion is as a fenced code-block immediately above the subject to change. The backticks are part of the template,
-use 4 backticks as envelope if the suggestion contains a code-block.
-
-```
-AGENT: <verb>
-<short explanation>
----
-<optional suggestion for new content>
-```
-
-Locations stamped (tracked by `chatddx stamp [write|check]`):
-
-- `docs/surfaces/*`
-- `docs/comments/*`
-- `docs/whoopses/*`
-
-### 2. Docs refer to the code, the code speaks for itself.
-
-The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
-provide options.
-
-- The module-scoped documentation is in `docs/modules/<module>.md`.
-- The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
-- References from code to docs are never allowed.
-
-### 3. When and how to write a comment.
+## Comments
 
 - A) Every line of comment imposes a readability tax.
 - B) A future reader can be saved work by knowing about non-evident details.
@@ -185,28 +169,15 @@ provide options.
 1. Prefix with the comment's nature
 2. Tell what's non-evident and only what the code doesn't already tell
 
-Comments are stamped.
-
-### 4. When and how to write a docstring
+## Docstrings
 
 Public solidified entry points may have a docstring that describes their cost and utility. The cost is the resources it
 invokes, locks it holds and complexity of its operations. The utility is derived from its responsibility without any
 assumptions about the caller.
 
-It is written as a direct continuation of its signature, raises and findings; only fill in the blanks.
+Docstrings are stamped along with signature, raises and findings and the docstring should read as a direct continuation
+of these.
 
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
 - ∟ When B outweighs A, a docstring by that amount is justified.
-
-Docstrings are stamped along with signature, raises and findings.
-
-### 5. Don't reference branch commits
-
-They'll be squashed.
-
-### 6. Placeholder username
-
-- For placeholder usernames in docs and tests, use
-  1. alice, bob, carol...
-  2. semantic names (archive, guest, nobody, other, collaborator-one, admin).

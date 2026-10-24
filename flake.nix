@@ -129,7 +129,7 @@
           text = builtins.readFile ./scripts/dev-db.sh;
         };
 
-      # Optimization: a stage of scripts/check.sh sees only the files it reads, so that nix runs
+      # Optimization: a stage of check.sh sees only the files it reads, so that nix runs
       # it again only when one of them changes.
       check =
         system: stage: fileset: attrs:
@@ -143,12 +143,12 @@
               root = ./.;
               fileset = lib.fileset.unions [
                 fileset
-                ./scripts/check.sh
+                ./check.sh
               ];
             };
             buildPhase = ''
               runHook preBuild
-              bash scripts/check.sh ${stage}
+              bash check.sh ${stage}
               runHook postBuild
             '';
             installPhase = "touch $out";
@@ -187,14 +187,17 @@
                 ./agents
                 ./AGENTS.md
                 ./README.md
-                ./scripts/refcheck.py
                 ./src
               ])
               {
-                nativeBuildInputs = [ pkgs.python313 ];
+                nativeBuildInputs = [ (devEnv system) ];
+                preBuild = ''
+                  unset PYTHONPATH
+                  export HOME="$TMPDIR" REPO_ROOT="$PWD"
+                '';
               };
 
-          # Compromise: scripts/check.sh's browser stage isn't checked here, for the browser
+          # Compromise: check.sh's browser stage isn't checked here, for the browser
           # it starts.
           package =
             check system "package"
@@ -290,6 +293,7 @@
             shellHook = ''
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
+              export PATH="$REPO_ROOT/scripts:$PATH"
               export CHATDDX_STATE_HOME="$HOME/.local/state"
               set -a && source "$REPO_ROOT/.env" && set +a
               echo "• Flake version: ${version}"

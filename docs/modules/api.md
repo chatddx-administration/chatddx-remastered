@@ -49,8 +49,8 @@ public. The surface is stamped in `docs/surfaces/api.md`.
   `LISTEN`/`NOTIFY`, and the rows as they land; a comment line keeps a quiet stream alive. `done` is the last event. The
   events' names and data are `src/chatddx/api/schemas.py:EVENTS`, in the OpenAPI document's components.
 - **The OpenAPI document is kept.** `frontend/openapi.json` is what `chatddx openapi` prints, and the portal's islands
-  are typed from it (openapi-typescript, openapi-fetch). `scripts/check.sh` fails while it is behind the code, and flags
-  it changing without `docs/surfaces/api.md`, or the other way round.
+  are typed from it (openapi-typescript, openapi-fetch). `check.sh` fails while it is behind the code, and flags it
+  changing without `docs/surfaces/api.md`, or the other way round.
 
 ## Sensitive
 

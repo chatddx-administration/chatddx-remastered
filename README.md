@@ -2,24 +2,23 @@
 
 LLMs aren't deterministic like traditional programs: the same question can get a different answer, and a model behind an
 API can change overnight. Nor do they have what makes a human's judgement trustworthy: reputation, introspection and
-accountability.
-
-A model can't tell why it answered as it did, and can't be held to account when it's wrong. That poses a range of
-challenges for LLM assistance in emergency care, starting with knowing how accurate it is, in a way others can reproduce
-and examine.
+accountability. It can't be held to account when it's wrong. That poses a range of challenges for LLM assistance in
+emergency care, starting with knowing how it performs, in a way others can reproduce and examine.
 
 ChatDDX is a rig that measures how accurately LLMs produce differential diagnoses and management plans from
 emergency-care case vignettes. Everything that can change an answer or its score (prompts, sampling, engines, model
 weights, cases, seeds, expectations, scorers) is a factor, pinned by its digest. That way the environment of a run, "the
 cage", can be rebuilt and delivered with its results.
 
-It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, without
-storing them and sending them only to cleared endpoints. Answers are scored by strict pattern matching, and later by LLM
-judges. Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
+It records each exchange and handles sensitive vignettes as a fingerprint to be resolved only at cleared endpoints.
+There is a sandbox chat for "typed vignettes" where the clinicians are responsible for de-identification.
+
+- Scoring can be done with pattern matching and LLM judges.
+- Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
 
 ## Developing
 
-On a basic Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
+On a Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
 
 ### Nix with flakes
 
@@ -98,6 +97,20 @@ pytest                  # everything
 pytest -m "not slow"    # the quick run
 pytest -n 4             # everything on 4 workers (pytest-xdist)
 ```
+
+### Stamping
+
+An agent's handover leaves what it changed as stamps pending, git conflicts to resolve as you see fit. The scripts in
+`scripts/` are on the dev shell's `PATH`, and pull and push through `as.sh` as `$CHATDDX_DEV`:
+
+```sh
+fetch.sh             # pull the handover and check its baseline, which flags the stamps pending
+stamp.sh             # check the baseline, commit as "stamp", push, print the revision
+stamp.sh "message"   # the same, committed as the message
+merge.sh             # squash the branch onto main, push main, delete the branch, print main's revision
+```
+
+Start the next session at the revision `stamp.sh` prints.
 
 ### The sample world
 

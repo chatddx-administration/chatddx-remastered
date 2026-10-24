@@ -388,8 +388,23 @@ def _stamp(args: argparse.Namespace) -> None:
 
     if args.stamping == "check":
         stamp.check(args.package, args.baseline)
+    elif args.stamping == "docs":
+        stamp.docs()
     else:
         stamp.write(args.package)
+
+
+def _refcheck(_: argparse.Namespace) -> None:
+    # Compromise: as in _stamp, for chatddx.stamp, which it reads the docs with.
+    from chatddx import refcheck
+
+    try:
+        found = refcheck.check()
+    except ValueError as e:
+        raise SystemExit(f"refcheck: {e}") from None
+    if found:
+        print("\n".join(found))
+        raise SystemExit(1)
 
 
 def _locale(args: argparse.Namespace) -> None:
@@ -655,14 +670,15 @@ def main(argv: Sequence[str] | None = None) -> None:
     stamping = commands.add_parser(
         "stamp",
         help="the surfaces in docs/surfaces/, the comment indexes in docs/comments/ and "
-        + "the whoopses and asserts in docs/whoopses/, written from the code, with what "
-        + "changed as a git conflict for a human to stamp",
+        + "the whoopses and asserts in docs/whoopses/, written from the code, and the "
+        + "other docs as an agent wrote them, with what changed as a git conflict for a "
+        + "human to stamp",
     )
     stamp_commands = stamping.add_subparsers(required=True)
     stamp_check = stamp_commands.add_parser(
         "check",
         help="write nothing; flag stamps pending, and fail while a surface or an index "
-        + "is behind the code",
+        + "is behind the code or a doc holds a conflict that isn't a stamp",
     )
     _ = stamp_check.add_argument(
         "--baseline",
@@ -681,6 +697,19 @@ def main(argv: Sequence[str] | None = None) -> None:
             help="the modules, such as bench or cli (settings.STAGES)",
         )
         stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
+    stamp_docs = stamp_commands.add_parser(
+        "docs",
+        help="keep each change to a doc since the latest commit a human made as stamps "
+        + "pending, the last step of a handover, and say against what and how many",
+    )
+    stamp_docs.set_defaults(run=_stamp, stamping="docs")
+
+    refchecking = commands.add_parser(
+        "refcheck",
+        help="check what the docs refer to: files, their sections, code, the "
+        + "glossary's terms and commits on main",
+    )
+    refchecking.set_defaults(run=_refcheck)
 
     localing = commands.add_parser(
         "locale",

@@ -737,7 +737,8 @@ picks its model by handle and its fill rule), scoring, translations (as translat
 - Translators are researchers.
 - A person also stands to a thread, a family, a run or a score as its owner or a collaborator, and one person, the
   archive, owns what data sets load (:Owner, collaborator; :Archive).
-- Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, rule 6).
+
+- Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, "Documentation").
 
 ### The database
 

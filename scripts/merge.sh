@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Usage: scripts/squash.sh [branch], the current one unless named, and MAIN for another
+# Usage: merge.sh [branch], the current one unless named, and MAIN for another
 # target than main. Squashes the branch's commits beyond main's tip into one on main, with
-# the message git opens an editor for, then rebases the branch onto main so the two are
-# the same; an empty message, or :cq in vim, changes nothing.
+# the message git opens an editor for, switches to main and pushes it, deletes the branch
+# here and on origin, and prints main's new revision; an empty message, or :cq in vim,
+# changes nothing.
 set -euo pipefail
 
 main=${MAIN:-main}
@@ -14,6 +15,9 @@ die() {
 }
 
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
+cd "$(git rev-parse --show-toplevel)"
+[[ -n ${CHATDDX_DEV:-} ]] || die "CHATDDX_DEV is unset, so as.sh has no one to push as"
+command -v as.sh >/dev/null || die "no as.sh on PATH to push with"
 [[ $branch != "$main" ]] || die "branch must differ from $main"
 
 main_sha=$(git rev-parse --verify -q "refs/heads/$main^{commit}") || die "no local branch '$main'"
@@ -39,6 +43,11 @@ while read -r wt ref; do
 done < <(git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{print w, $2}')
 
 orig=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
+git checkout -q "$branch"
+./check.sh baseline >&2 || {
+  git checkout -q "$orig"
+  die "'$branch' doesn't hold at the baseline, for the flags above; nothing was changed"
+}
 
 msgfile=$(mktemp)
 trap 'rm -f "$msgfile"' EXIT
@@ -47,7 +56,7 @@ git log --reverse --format='%B' "$main_sha..$branch_sha" >"$msgfile"
 git checkout -q --detach "$branch_sha"
 git reset -q --soft "$main_sha"
 
-if ! git commit -e -F "$msgfile"; then
+if ! git commit -e -F "$msgfile" >&2; then
   git reset -q --soft "$branch_sha"
   git checkout -q "$orig"
   die "commit aborted; nothing was changed"
@@ -62,23 +71,10 @@ new=$(git rev-parse HEAD)
   }
 
 git update-ref -m "squash-to-main: $branch" "refs/heads/$main" "$new" "$main_sha"
-
-git checkout -q "$branch"
-git rebase -q --onto "$main" "$branch"
-
-[[ $(git rev-parse "$branch") == $(git rev-parse "$main") ]] || die "unexpected: '$branch' != '$main' after rebase"
-
-[[ $orig != "$branch" ]] && git checkout -q "$orig"
-
-cat <<EOF
-Squashed $count commit(s) of '$branch' into $(git rev-parse --short "$new") on '$main'.
-'$branch' now equals '$main'.
-
-Old tip of '$branch': $branch_sha
-
-Push:
-  git push origin $main && git push --force-with-lease origin $branch
-
-Followers with work on top of the old '$branch':
-  git fetch && git rebase --onto origin/$branch $branch_sha <their-branch>
-EOF
+git checkout -q "$main"
+as.sh "$CHATDDX_DEV" git push --quiet origin "$main"
+git branch -q -D "$branch"
+if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
+  as.sh "$CHATDDX_DEV" git push --quiet origin --delete "$branch"
+fi
+git rev-parse --short "$main"

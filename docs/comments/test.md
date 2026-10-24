@@ -57,6 +57,12 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorte
 # it, and may connect again between settling and dropping after its test has ended.
 ```
 
+## `src/chatddx/test/helpers.py:needs_git`
+
+```
+# Accommodating for nix's sandbox, which checks the package without git.
+```
+
 ## `src/chatddx/test/helpers.py:one_attempt`
 
 ```
