@@ -101,8 +101,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # Dependency: a case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 ```
 
-<<<<<<< signed
-=======
 ## `src/chatddx/bench/test/test_updating.py:test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date`
 
 ```
@@ -110,7 +108,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # engines serving them at the endpoints, loaded with init-data.
 ```
 
->>>>>>> @stamp
 ## `src/chatddx/bench/updating.py:_behind`
 
 ```
