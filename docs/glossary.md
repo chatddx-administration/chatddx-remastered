@@ -708,14 +708,7 @@ picks its model by handle and its fill rule), scoring, translations (as translat
 - A person also stands to a thread, a family, a run or a score as its owner or a collaborator, and one person, the
   archive, owns what data sets load (:Owner, collaborator; :Archive).
 
-```
-AGENT: amend
-Follows AGENTS.md's suggestion that folds rule 6 into its "Documentation", referred to by section for refcheck to check.
----
 - Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, "Documentation").
-```
-
-- Placeholder people in docs and tests are alice, bob, carol…, or semantic names (`AGENTS.md`, rule 6).
 
 ### The database
 
