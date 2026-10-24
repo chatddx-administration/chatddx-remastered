@@ -128,7 +128,7 @@ docs/surfaces/*. All findings are listed in docs/glossary.md, "Findings".
 - docs/glossary.md: every term, one line each (`grep '^:Term' docs/glossary.md`).
 - docs/modules/: a module's docs, beside its surface in docs/surfaces/ and the indexes of its comments in docs/comments/
   and of its whoopses and asserts in docs/whoopses/, which `chatddx stamp` writes from the code.
-- docs/bench.md: the bench, which every edge goes through.
+- docs/modules/bench.md: the bench, which every edge goes through.
 - docs/backlog.md: open work, a section for each pull request.
 - agents/: a thing planned or drafted, as `plan-<name>.md` and `wip-<name>.md` (AGENTS.md, "Development stages").
 - docs/migrations.md: the database's migrations, by schema and tier.
