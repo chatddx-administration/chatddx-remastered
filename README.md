@@ -13,9 +13,14 @@ emergency-care case vignettes. Everything that can change an answer or its score
 weights, cases, seeds, expectations, scorers) is a factor, pinned by its digest. That way the environment of a run, "the
 cage", can be rebuilt and delivered with its results.
 
+<<<<<<< signed
+It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, without
+storing them and sending them only to cleared endpoints. Answers are scored by strict pattern matching, and later by LLM
+=======
 It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, sending them
 only to cleared endpoints: one fetched from its source is kept only as a fingerprint, and one a person types is kept in
 the rig's own store, cleared by definition. Answers are scored by strict pattern matching, and later by LLM
+>>>>>>> @stamp
 judges. Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
 
 ## Developing

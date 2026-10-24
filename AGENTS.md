@@ -37,8 +37,12 @@ When asked for a handover or pull request:
 2. Run `scripts/check.sh`:
    - relay flags
    - flip what the budget suggests when it feels right
+<<<<<<< signed
+3. Commit and push, and open the pull request if one was asked for.
+=======
 3. Commit, run `chatddx stamp docs` and commit what it writes, then push, and open the pull request if one was
    asked for.
+>>>>>>> @stamp
 
 ## Handling errors and warnings
 
@@ -143,9 +147,12 @@ in two. A doc is moved in a commit of its own, and a move entails deduplication 
 
 ## Documentation
 
+<<<<<<< signed
+=======
 Every doc is stamped: an agent writes it, and the handover's `chatddx stamp docs` keeps each change since the commit
 `.claude/hooks/session-start.sh` pins as a stamp pending, a git conflict for a human to stamp before the next baseline.
 
+>>>>>>> @stamp
 - The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
   provide options.
 - Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
