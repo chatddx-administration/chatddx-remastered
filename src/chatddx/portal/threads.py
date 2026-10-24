@@ -12,7 +12,7 @@ from starlette.datastructures import FormData
 from chatddx import catalog
 from chatddx.api import families, schemas, threads as api
 from chatddx.api.state import Refusing, refused
-from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
+from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, Titled, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read
 from chatddx.factors.base import Component, Invalid, language_tag, resolve
 from chatddx.factors.cases import Appendix
@@ -102,8 +102,11 @@ def library_page(
 ) -> Response:
     words = [*KINDS, "case"]
     shelves = shelved(bench, _BEGUN)
+    stale = len(bench.outdated_own())
     if kind is None:
-        return page(request, "library.html", person=bench.person, shelves=shelves)
+        return page(
+            request, "library.html", person=bench.person, shelves=shelves, stale=stale
+        )
     if kind not in words:
         raise NotFound.of(
             "no kind %(kind)s: the kinds are %(kinds)s",
@@ -148,6 +151,7 @@ def library_page(
         person=bench.person,
         typed=typed,
         shelves=shelves,
+        stale=stale,
         about=next(s.kinds[kind] for s in SHELVES if kind in s.kinds),
         word=kind,
         listing=listing,
@@ -610,9 +614,9 @@ def _editable(held: Component, body: dict[str, JsonValue]) -> list[str]:
 
 def _ran(
     bench: Bench, versions: list[schemas.Edit]
-) -> list[tuple[int, RunStarted, str]]:
+) -> list[tuple[int, RunStarted, Titled]]:
     at = {v.digest: i for i, v in enumerate(versions, 1)}
-    return [(at[r.trial], r, bench.described(r)) for r in bench.runs() if r.trial in at]
+    return [(at[r.trial], r, bench.titled(r)) for r in bench.runs() if r.trial in at]
 
 
 def _recipe(bench: Bench, edit: int) -> dict[str, JsonValue] | None:
@@ -800,6 +804,35 @@ def following_moved(
     with refused():
         _ = bench.follow_moved(thread, head)
     return _back(thread, next)
+
+
+@router.post("/threads/{thread}/update")
+def updating(
+    bench: BenchDep,
+    thread: int,
+    head: Annotated[int, Form()],
+    next: Annotated[str | None, Form()] = None,
+) -> Response:
+    with refused():
+        _ = bench.update(thread, head)
+    return _back(thread, next)
+
+
+@router.post("/library/update")
+def updating_all(request: Request, bench: BenchDep) -> Response:
+    done = bench.update_all()
+    shown = {u.thread: api.thread(bench, u.thread) for u in done}
+    return page(
+        request,
+        "updated.html",
+        person=bench.person,
+        updated=[shown[u.thread] for u in done if u.written is not None],
+        refused=[
+            (shown[u.thread], refusal_of(u.refused))
+            for u in done
+            if u.refused is not None
+        ],
+    )
 
 
 @router.post("/threads/{thread}/take")

@@ -213,6 +213,11 @@ def test_init_data_updates_and_gives_forks(
         origin is not None and titles.title(rows, gift) == titles.title(rows, origin)
         for gift, origin in gifts
     )
+    assert all(read.about(rows, Subject(thread=t)).name is None for t, _ in gifts)
+    gift, origin = gifts[0]
+    assert origin is not None
+    derived = Entry(field=EntryField.NAME, value=titles.title(rows, origin))
+    Catalog(conn).note(Subject(thread=gift), derived, alice.id)
     again = init(
         conn,
         plan,
@@ -222,8 +227,10 @@ def test_init_data_updates_and_gives_forks(
         giftbag=True,
     )
     assert {line.split(": ")[1] for line in again if line.startswith("[giftbag")} == {
-        "kept"
+        "kept",
+        "its name taken back",
     }
+    assert read.about(rows, Subject(thread=gift)).name is None
 
     gone = vignettes({})
     lines = init(conn, plan, {"noted": CASES["noted"]}, gone, alice)

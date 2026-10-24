@@ -3,6 +3,9 @@ type Given = Record<string, string | number>;
 type Coded = { code: string; message: string; wording: string | string[] | null; params: Given };
 
 const PLACEHOLDER = /%(?:\((\w+)\)s|%)/g;
+// Policy: a parameter named so holds a language's tag, and one named languages tags
+// separated by ", ", each said by its name, as the server says them.
+const LANGUAGE_PARAMS = ["language", "into"];
 let spoken: Catalog | undefined;
 
 export function speaking(given: Catalog): void {
@@ -44,13 +47,36 @@ export function refusal(detail: string, wording: string | string[], params: Give
 }
 
 // Accommodating for JavaScript, which writes some numbers other than Python does: what the
-// page's catalog doesn't hold is said as the server wrote it.
+// page's catalog doesn't hold is said as the server wrote it, but for the languages it
+// names, which the server writes by their tags.
 function worded(context: string, written: string, wording: string | string[], params: Given): string {
   const [singular, plural] = typeof wording === "string" ? [wording] : wording;
-  if (singular === undefined || !(keyed(singular, context) in catalog().messages)) return written;
+  const named = languaged(params);
+  if (singular === undefined) return written;
+  if (!(keyed(singular, context) in catalog().messages) && named === params) return written;
   return plural === undefined
-    ? tp(context, singular, params)
-    : tnp(context, singular, plural, Number(params.num), params);
+    ? tp(context, singular, named)
+    : tnp(context, singular, plural, Number(params.num), named);
+}
+
+export function languageName(tag: string): string {
+  try {
+    return new Intl.DisplayNames([catalog().tag], { type: "language", languageDisplay: "standard" }).of(tag) ?? tag;
+  } catch {
+    return tag;
+  }
+}
+
+function languaged(params: Given): Given {
+  const keys = Object.keys(params).filter((k) => k === "languages" || LANGUAGE_PARAMS.includes(k));
+  if (keys.length === 0) return params;
+  const found = { ...params };
+  for (const key of keys) {
+    const value = found[key];
+    if (typeof value !== "string") continue;
+    found[key] = key === "languages" ? listed(value.split(", ").map(languageName)) : languageName(value);
+  }
+  return found;
 }
 
 export function listed(items: string[], type: "conjunction" | "disjunction" = "conjunction"): string {

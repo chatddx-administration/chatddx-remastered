@@ -84,6 +84,20 @@ Raises:
 * `by: int`
 * `at: datetime`
 
+## `case_title`
+`src/chatddx/catalog/titles.py:case_title`
+
+* `rows: Reader`
+* `digest: str`
+* ∟`CaseTitle | None`
+
+## `CaseTitle` `@dataclass(frozen=True)`
+`src/chatddx/catalog/titles.py:CaseTitle`
+
+* `name: str`
+* `appendices: tuple[str, ...]`
+* `earlier: bool`
+
 ## `check_adoptable`
 `src/chatddx/catalog/families.py:check_adoptable`
 

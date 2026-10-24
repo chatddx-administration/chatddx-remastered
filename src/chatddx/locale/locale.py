@@ -10,7 +10,8 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import IO, Any, Protocol, cast
 
-from babel.core import Locale as Language, negotiate_locale
+from babel.core import Locale as Language, UnknownLocaleError, negotiate_locale
+from babel.lists import format_list
 from babel.messages.catalog import Catalog, Message
 from babel.messages.extract import DEFAULT_KEYWORDS, extract
 from babel.messages.mofile import write_mo
@@ -29,6 +30,8 @@ __all__ = [
     "Proof",
     "check",
     "gettext",
+    "language_name",
+    "listed",
     "localized",
     "localizing",
     "ngettext",
@@ -55,6 +58,9 @@ _CALLED = re.compile(
     rf"(?<![\w$.])(tnp|tn|tp|th|t)\(\s*{_STRING}(?:\s*,\s*{_STRING})?(?:\s*,\s*{_STRING})?"
 )
 _FILLED = re.compile(r"%\(\w+\)s|%%")
+# Policy: a parameter named so holds a language's tag, and one named languages tags
+# separated by ", ", each said by its name where the message is said.
+_LANGUAGE_PARAMS = ("language", "into")
 
 
 @dataclass(frozen=True)
@@ -158,13 +164,36 @@ def refusal(wording: str | Sequence[str], params: Mapping[str, object]) -> str:
     return _localized(_REFUSAL, wording, params)
 
 
+def language_name(tag: str) -> str:
+    try:
+        said = Language.parse(tag, sep="-").get_display_name(_LOCALIZING.get().tag)
+    except (ValueError, UnknownLocaleError):
+        return tag
+    return tag if said is None else said
+
+
+def listed(items: Sequence[str]) -> str:
+    return format_list(list(items), locale=_LOCALIZING.get().tag)
+
+
 def _localized(
     context: str, wording: str | Sequence[str], params: Mapping[str, object]
 ) -> str:
+    named = _languaged(params)
     if isinstance(wording, str):
-        return pgettext(context, wording) % params
+        return pgettext(context, wording) % named
     singular, plural = wording
-    return npgettext(context, singular, plural, cast(int, params["num"])) % params
+    return npgettext(context, singular, plural, cast(int, params["num"])) % named
+
+
+def _languaged(params: Mapping[str, object]) -> dict[str, object]:
+    found = dict(params)
+    for key in _LANGUAGE_PARAMS:
+        if isinstance(held := found.get(key), str):
+            found[key] = language_name(held)
+    if isinstance(held := found.get("languages"), str):
+        found["languages"] = listed([language_name(tag) for tag in held.split(", ")])
+    return found
 
 
 def _islands(

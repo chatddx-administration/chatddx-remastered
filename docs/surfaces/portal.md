@@ -184,6 +184,24 @@ Raises:
 Raises:
 1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)` (through `_case_page`)
 
+## `Cased` `(Protocol)`
+`src/chatddx/portal/titles.py:Cased`
+
+## `Cased.appendices` `@property`
+`src/chatddx/portal/titles.py:Cased.appendices`
+
+* ∟`Sequence[str]`
+
+## `Cased.earlier` `@property`
+`src/chatddx/portal/titles.py:Cased.earlier`
+
+* ∟`bool`
+
+## `Cased.name` `@property`
+`src/chatddx/portal/titles.py:Cased.name`
+
+* ∟`str`
+
 ## `Change` `@dataclass(frozen=True)`
 `src/chatddx/portal/changes.py:Change`
 
@@ -789,6 +807,19 @@ Raises:
 * `left: bool = False`
 * ∟`Response`
 
+## `said_case`
+`src/chatddx/portal/titles.py:said_case`
+
+* `case: Cased`
+* `brief: bool = False`
+* ∟`str`
+
+## `said_thread`
+`src/chatddx/portal/titles.py:said_thread`
+
+* `thread: schemas.Thread`
+* ∟`str`
+
 ## `cases.saying` `@router.post("/cases/{family}/said")`
 `src/chatddx/portal/cases.py:saying`
 
@@ -1088,6 +1119,22 @@ Raises:
 
 * `scorer: Scorer`
 * ∟`str | None`
+
+## `updating` `@router.post("/threads/{thread}/update")`
+`src/chatddx/portal/threads.py:updating`
+
+* `bench: BenchDep`
+* `thread: int`
+* `head: Annotated[int, Form()]`
+* `next: Annotated[str | None, Form()] = None`
+* ∟`Response`
+
+## `updating_all` `@router.post("/library/update")`
+`src/chatddx/portal/threads.py:updating_all`
+
+* `request: Request`
+* `bench: BenchDep`
+* ∟`Response`
 
 ## `viewed`
 `src/chatddx/portal/lab.py:viewed`

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, mean, section %}
+{% from "macros.html" import heading, mean, run_title, section %}
 
 {% block title %}{{ _("Comparing runs") }} · ChatDDX{% endblock %}
 {% block main %}
@@ -16,7 +16,7 @@
           <th class="pb-2 pr-4 font-medium"></th>
           {% for r in compared.runs %}
           <th class="pb-2 pr-4 align-bottom font-medium">
-            <a class="block" href="/runs/{{ r.id }}">{{ r.described }}</a>
+            <a class="block" href="/runs/{{ r.id }}">{{ run_title(r.titled) }}</a>
             <span class="font-normal">{{ (r.model or "—") if r.latest else _("%(model)s, an earlier engine", model=r.model or "—") }} · {{ r.at | when }}</span>
           </th>
           {% endfor %}

@@ -28,14 +28,14 @@ export function why(error: unknown): string {
   const failure = error as Partial<Schemas["Error"]> | undefined;
   const detail = failure?.detail;
   if (typeof detail === "string" && failure?.code === "whoops") {
-    return t("%(message)s Pass this on to ops, as it is: %(pass_on)s", {
+    return t("%(message)s Copy this and send it to drift@chatddx.com: %(pass_on)s", {
       message: whoops(detail),
       pass_on: failure.pass_on ?? "",
     });
   }
   if (typeof detail === "string" && failure?.wording) return refusal(detail, failure.wording, failure.params ?? {});
   if (detail === undefined) return t("the server didn't say why");
-  return t("%(title)s. Pass this on to ops, as it is: %(pass_on)s", {
+  return t("%(title)s. Copy this and send it to drift@chatddx.com: %(pass_on)s", {
     title: titled(failure?.code),
     pass_on: typeof detail === "string" ? detail : detail.map((d) => JSON.stringify(d)).join("; "),
   });

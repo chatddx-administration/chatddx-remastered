@@ -176,7 +176,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
     _ = page.goto(f"/lab/{configuration(LINES)}?tag=swedish")
     expect(
         page.get_by_text(
-            "Left out: 3 cases in sv, as lines has no translations into sv."
+            "Left out: 3 cases in Swedish, which lines has no translations into."
         )
     ).to_be_visible()
 
@@ -184,7 +184,8 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
         _ = page.goto(f"/lab/{configuration(LINES_GUIDED)}?tag=swedish")
         expect(
             page.get_by_text(
-                "A run per language: in en, 1 case; in sv, 3 cases, translated."
+                "A run per language: in English, 1 case; in Swedish, 3 cases, "
+                + "translated."
             )
         ).to_be_visible()
         expect(page.get_by_text("Left out")).to_have_count(0)
@@ -192,7 +193,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
         page.get_by_role("button", name="Run it").click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
         first = page.url.rsplit("/", 1)[1]
-        other = page.get_by_role("link", name=re.compile(r", in sv$"))
+        other = page.get_by_role("link", name=re.compile(r", in Swedish$"))
         expect(other).to_be_visible()
         other.click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
@@ -847,7 +848,7 @@ def test_a_trial_is_begun_of_the_picked_cases_in_their_language_and_run(
     page.get_by_role("button", name="Write it").click()
     page.wait_for_url(re.compile(r"/threads/\d+$"))
     expect(page.get_by_label("skeleton")).to_have_text(
-        re.compile(f"{LINES_GUIDED}, in sv")
+        re.compile(f"{LINES_GUIDED}, in Swedish")
     )
 
     page.get_by_role("link", name="Run it").click()

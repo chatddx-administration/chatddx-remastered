@@ -204,7 +204,7 @@ def test_a_case_is_run_from_its_review_and_followed_there(
         page = shown(signed, back)
         assert 'data-pending="0"' in page and "1 under way" in page
         assert _review_props(page)["pending"] == [
-            {"run": run["id"], "described": run["described"]}
+            {"run": run["id"], "titled": run["titled"]}
         ]
         _ = settled(signed, run["id"])
     page = shown(signed, back)

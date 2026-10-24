@@ -5,7 +5,15 @@ from textwrap import dedent
 import pytest
 
 from chatddx.factors import Finding
-from chatddx.locale import Locales, localized, localizing, proofs, refusal, tr
+from chatddx.locale import (
+    Locales,
+    language_name,
+    localized,
+    localizing,
+    proofs,
+    refusal,
+    tr,
+)
 from chatddx.locale.test.helpers import catalog
 
 
@@ -226,6 +234,37 @@ def test_a_refusal_is_said_in_the_locale_where_its_wording_is_translated(
         assert refusal(worded, {"num": 2}) == "2 körningar för mycket"
         assert refusal("no case %(case)s", {"case": "a"}) == "no case a"
     assert refusal(worded, {"num": 1}) == "1 run too many"
+
+
+def test_a_language_is_said_by_its_name_in_the_locale_and_in_what_names_it(
+    tmp_path: Path,
+) -> None:
+    sv = Locales(
+        catalog(
+            tmp_path,
+            """
+            msgctxt "refusal"
+            msgid "no translations into %(into)s, nor %(languages)s"
+            msgstr "inga översättningar till %(into)s, eller %(languages)s"
+            """,
+        )
+    ).negotiate("sv")
+    worded = "no translations into %(into)s, nor %(languages)s"
+    given = {"into": "sv", "languages": "en, pt-BR"}
+    assert [language_name(tag) for tag in ("sv", "pt-BR", "xx")] == [
+        "Swedish",
+        "Portuguese (Brazil)",
+        "xx",
+    ]
+    assert refusal(worded, given) == (
+        "no translations into Swedish, nor English and Portuguese (Brazil)"
+    )
+    with localizing(sv):
+        assert language_name("en") == "engelska"
+        assert refusal(worded, given) == (
+            "inga översättningar till svenska, eller engelska och portugisiska "
+            + "(Brasilien)"
+        )
 
 
 def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> None:

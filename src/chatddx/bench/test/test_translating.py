@@ -11,7 +11,7 @@ from chatddx.factors.request import (
 from chatddx.test.world import LINES_GUIDED, NATIVE, QWEN
 
 
-def test_translations_that_leave_a_text_out_are_said_whatever_the_cases(
+def test_translations_that_leave_a_text_out_are_said_with_its_cases_or_found(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN).engine
@@ -26,8 +26,10 @@ def test_translations_that_leave_a_text_out_are_said_whatever_the_cases(
     assert said() == [refused]
     cases = [f.case for f in bench.families() if f.about.language == "sv"]
     n = len(cases)
-    assert said(bench.languages(varied, cases)) == [
-        f"{n} cases are in sv, and left out: {refused}"
+    carried = bench.languages(varied, cases)
+    assert said(carried) == []
+    assert [(c.language, len(c.cases), c.refused) for c in carried] == [
+        ("sv", n, refused)
     ]
     guided = bench.variation(LINES_GUIDED)
     assert not [

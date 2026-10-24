@@ -16,7 +16,7 @@ export type Review = {
   expected: Expecting;
   appendices: ({ editor: AppendixEditing; digest: string } | null)[];
   back: string;
-  pending: { run: string; described: string }[];
+  pending: { run: string; titled: Schemas["Titled"] }[];
   previous: string | null;
   next: string | null;
 };

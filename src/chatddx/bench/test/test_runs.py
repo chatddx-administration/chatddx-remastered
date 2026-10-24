@@ -1,11 +1,14 @@
+from dataclasses import replace
+
 import pytest
 
 from chatddx import settings
-from chatddx.bench import Bench, NotFound, OverQuota
+from chatddx.bench import Bench, NotFound, OverQuota, Replaced, Titled
 from chatddx.bench.handles import broken
 from chatddx.bench.test.helpers import varying
 from chatddx.catalog import Entry, EntryField, Subject, read
 from chatddx.catalog.language import language_of
+from chatddx.catalog.titles import CaseTitle
 from chatddx.curation import Plan
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.scoring import Judge
@@ -98,6 +101,12 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     assert varying(bench, started.run) == ran
     assert read.about(bench.rows, Subject(run=started.run)).name == varied.label
     assert varying(bench, bench.again(started, (8,)).run) == ran
+    crlf = CaseTitle("crlf", (), False)
+    plainly = Titled(LINES, [], QWEN_ARTIFACT, crlf, 1, None, False, (7,))
+    assert bench.titled(plain) == plainly
+    assert bench.titled(started) == replace(
+        plainly, replaced=[Replaced("reasoning", "off")]
+    )
 
 
 def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
@@ -115,6 +124,8 @@ def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
     assert started.endpoint is not None and started.endpoint.name == GPT_OSS
     assert resolve(bench.store.get, started.trial, Trial).engine == engine
     assert varying(bench, started.run) == (named.configuration, {"model": gpt_oss})
+    titled = bench.titled(started)
+    assert (titled.name, titled.replaced, titled.at) == (LINES, [], GPT_OSS_ARTIFACT)
     with pytest.raises(ValueError, match=f"endpoint '{QWEN}' serves another model"):
         _ = bench.start(swapped, QWEN, cases, (7,))
 
@@ -249,7 +260,7 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         "lines has no translations into sv",
     )
     with pytest.raises(
-        ValueError, match="no case can be sent: lines has no translations into sv"
+        ValueError, match="lines has no translations into sv, which its cases are in"
     ):
         _ = bench.start(lines, QWEN, [svenska, nfd], (7,))
 

@@ -50,6 +50,7 @@ def _case_of(bench: Bench, case: str, default: str) -> schemas.FamilyCase:
     return schemas.FamilyCase(
         case=case,
         title=bench.title(case),
+        titled=schemas.CaseTitle.of(bench.titled_case(case)),
         appendices=list(held.appendices),
         default=case == default,
         expectations=[

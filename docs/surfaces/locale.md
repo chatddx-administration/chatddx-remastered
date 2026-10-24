@@ -60,6 +60,18 @@ Raises:
 * `message: str`
 * ∟`str`
 
+## `language_name`
+`src/chatddx/locale/locale.py:language_name`
+
+* `tag: str`
+* ∟`str`
+
+## `listed`
+`src/chatddx/locale/locale.py:listed`
+
+* `items: Sequence[str]`
+* ∟`str`
+
 ## `Locale` `@dataclass(frozen=True)`
 `src/chatddx/locale/locale.py:Locale`
 

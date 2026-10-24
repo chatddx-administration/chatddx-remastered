@@ -17,16 +17,13 @@
 <div class="mx-auto max-w-xl px-4 py-16 text-center">
   <h1 class="mb-4 text-3xl font-bold">{{ titles.get(error.code, _("Something went wrong")) }}</h1>
   {% if error.detail is string %}
-  {% if error.code == "error" %}
+  {% if error.code == "whoops" %}
   <p class="mb-2 text-muted-foreground">{{ error.detail }}</p>
-  <p class="mb-8 text-sm text-muted-foreground">{{ _("It's for ops to mend: tell them what it says.") }}</p>
-  {% elif error.code == "whoops" %}
-  <p class="mb-2 text-muted-foreground">{{ error.detail }}</p>
-  <p class="mb-8 text-sm text-muted-foreground">{{ _("Pass this on to ops, as it is:") }} <span class="font-mono">{{ error.pass_on }}</span></p>
+  <p class="mb-8 text-sm text-muted-foreground">{{ _("Copy this and send it to drift@chatddx.com:") }} <span class="font-mono">{{ error.pass_on }}</span></p>
   {% elif error.wording %}
   <p class="mb-8 text-muted-foreground">{{ error | refusal }}</p>
   {% else %}
-  <p class="mb-8 text-sm text-muted-foreground">{{ _("Pass this on to ops, as it is:") }} <span class="font-mono">{{ error.detail }}</span></p>
+  <p class="mb-8 text-sm text-muted-foreground">{{ _("Copy this and send it to drift@chatddx.com:") }} <span class="font-mono">{{ error.detail }}</span></p>
   {% endif %}
   {% else %}
   <p class="mb-2 text-muted-foreground">{{ _("The request didn't hold together:") }}</p>

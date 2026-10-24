@@ -5,6 +5,7 @@ from functools import partial
 from pydantic import JsonValue
 
 from chatddx.catalog import (
+    About,
     Entry,
     EntryField,
     Labels,
@@ -354,6 +355,8 @@ class _Init:
                 for t in threads.forks(self.rows, thread)
             }
             mine = {t: about for t, about in forks.items() if about.owner == user.id}
+            if kind == "expectation":
+                self._unnamed(user, name, thread, mine)
             if any(not about.deleted for about in mine.values()):
                 self.lines.append(f"[giftbag {kind}] {name}: kept")
                 continue
@@ -371,13 +374,18 @@ class _Init:
                 continue
             head = threads.head(self.rows, thread)
             about = read.about(self.rows, Subject(thread=thread))
+            # Policy: an expectation with no name is said by its case where it is shown,
+            # so its fork takes no title derived of it as a name.
+            named = about.name or (
+                None if kind == "expectation" else titles.title(self.rows, thread)
+            )
             made = Subject(
                 thread=self.catalog.create(
                     head.digest,
                     user.id,
                     compilation=head.compilation,
                     forked_from=head.id,
-                    name=about.name or titles.title(self.rows, thread),
+                    name=named,
                 ).thread
             )
             for tag in sorted(about.tags):
@@ -386,6 +394,18 @@ class _Init:
                 said = Entry(field=EntryField.DESCRIPTION, value=about.description)
                 self.catalog.note(made, said, user.id)
             self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
+
+    # Policy: a name an earlier giftbag gave a fork of an expectation, its origin's title,
+    # is taken back, as an expectation with no name is said by its case.
+    def _unnamed(
+        self, user: Person, name: str, thread: int, forks: dict[int, About]
+    ) -> None:
+        derived = titles.title(self.rows, thread)
+        for fork, about in forks.items():
+            if about.name == derived:
+                taken = Entry(field=EntryField.NAME, present=False)
+                self.catalog.note(Subject(thread=fork), taken, user.id)
+                self.lines.append(f"[giftbag expectation] {name}: its name taken back")
 
     def _expecting(self, user: Person, thread: int) -> bool:
         head = self.store.get(threads.head(self.rows, thread).digest)

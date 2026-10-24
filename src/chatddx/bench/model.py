@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from chatddx.catalog import About, Behind, Divergence, Edit, Part
+from chatddx.catalog.titles import CaseTitle
 from chatddx.factors.base import Component, Finding
 from chatddx.factors.cases import Vignette
 from chatddx.factors.engine import Model
@@ -99,6 +100,7 @@ class Carried:
     skeleton: Skeleton | None = None
     translated: bool = False
     refused: str | None = None
+    untranslated: bool = False
 
 
 @dataclass(frozen=True)
@@ -165,6 +167,24 @@ class Moved:
     digest: str | None
     compilation: str | None
     refused: str | None
+
+
+@dataclass(frozen=True)
+class Replaced:
+    part: str
+    title: str | None
+
+
+@dataclass(frozen=True)
+class Titled:
+    name: str
+    replaced: list[Replaced]
+    at: str
+    case: CaseTitle | None
+    cases: int
+    translated: str | None
+    greedy: bool
+    seeds: tuple[int, ...]
 
 
 @dataclass(frozen=True)

@@ -4,10 +4,12 @@
   import { t } from "$lib/locale";
   import { watch } from "$lib/runs/events";
   import { begun, fold } from "$lib/runs/progress";
+  import { runTitle } from "$lib/runs/titles";
+  import type { Schemas } from "$lib/api/client";
   import { doing } from "./review";
 
-  let { run, described, done }: { run: string; described: string; done: () => void } = $props();
-  const given = untrack(() => ({ run, described, done }));
+  let { run, titled, done }: { run: string; titled: Schemas["Titled"]; done: () => void } = $props();
+  const given = untrack(() => ({ run, titled, done }));
 
   let progress = $state(begun());
   let lost = $state<string | null>(null);
@@ -24,7 +26,7 @@
 
 <div class="flex flex-wrap items-center gap-x-2" aria-live="polite">
   {#if !progress.done && !lost}<LoaderCircleIcon class="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />{/if}
-  <a class="text-primary hover:underline" href="/runs/{given.run}">{given.described}</a>
+  <a class="text-primary hover:underline" href="/runs/{given.run}">{runTitle(given.titled)}</a>
   <span class={lost ? "text-destructive" : "text-muted-foreground"}>{said}</span>
   {#if progress.done}<a class="text-primary hover:underline" href={location.pathname + location.search}>{t("Show it")}</a>{/if}
 </div>

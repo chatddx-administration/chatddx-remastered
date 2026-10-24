@@ -966,7 +966,6 @@ def test_phases_without_a_canary_set_are_refused_before_anything_is_written(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize("concurrency", [1, 2])
-@pytest.mark.slow
 def test_resuming_sends_what_an_unfinished_log_lacks_and_finishes_it(
     conn: Connection,
     inventory: Inventory,

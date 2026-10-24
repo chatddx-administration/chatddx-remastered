@@ -32,6 +32,7 @@ from chatddx.factors.request import (
     Recipe,
     translated,
 )
+from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import suggest_seeds
 
 from . import schemas
@@ -82,7 +83,20 @@ def thread_of(
         language=languages[edit.id],
         translated=_translated(bench, edit),
         head=_edit_of(bench, edit, kind),
+        outdated=bench.outdated(edit, kind),
+        expecting=_expecting(bench, edit, about) if kind == "expectation" else None,
     )
+
+
+# Policy: an expectation with no name is said by its case, in the reader's locale, rather
+# than by a title derived in English.
+def _expecting(
+    bench: Bench, edit: catalog.Edit, about: catalog.About
+) -> schemas.CaseTitle | None:
+    if about.name is not None:
+        return None
+    case = resolve(bench.store.get, edit.digest, Expectation).case
+    return schemas.CaseTitle.of(bench.titled_case(case))
 
 
 def _translated(bench: Bench, edit: catalog.Edit) -> list[str]:
@@ -260,6 +274,7 @@ def variation(
                 translated=c.translated,
                 skeleton=None if c.skeleton is None else c.skeleton.digest,
                 refused=c.refused,
+                untranslated=c.untranslated,
             )
             for c in carried
         ],

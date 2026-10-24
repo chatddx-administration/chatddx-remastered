@@ -79,3 +79,10 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/api/`, sorted
 # Accommodating for the fixtures, which make the next test's database meanwhile:
 # only the look's database's queries count.
 ```
+
+## `src/chatddx/api/threads.py:_expecting`
+
+```
+# Policy: an expectation with no name is said by its case, in the reader's locale, rather
+# than by a title derived in English.
+```

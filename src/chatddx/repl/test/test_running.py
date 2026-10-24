@@ -131,7 +131,6 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
     written = say(f"use {TOOL_ANSWER}", "run bom")
 

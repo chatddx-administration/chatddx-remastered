@@ -53,7 +53,7 @@
   </form>
   {% else %}
   {% set of %}{% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}{% endset %}
-  <p class="mb-3 text-sm text-muted-foreground">{{ _("The texts of %(configuration)s, into %(language)s.", configuration=of, language=into) }} <a class="view" href="/library/new?kind=translations">{{ _("Pick another") }}</a></p>
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("The texts of %(configuration)s, into %(language)s.", configuration=of, language=into | language) }} <a class="view" href="/library/new?kind=translations">{{ _("Pick another") }}</a></p>
   <form method="post" action="{{ action }}" class="grid gap-4">
     <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">{{ _("name") }}</span>
       <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>

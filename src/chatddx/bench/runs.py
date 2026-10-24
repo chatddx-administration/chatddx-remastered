@@ -55,6 +55,13 @@ def start(
     carried = seen.languages(variation, cases)
     sent = [c for c in carried if c.skeleton is not None]
     left_out = [c for c in carried if c.skeleton is None]
+    if not sent and left_out and all(c.untranslated for c in left_out):
+        raise Invalid.of(
+            "%(configuration)s has no translations into %(languages)s, which its cases "
+            + "are in",
+            configuration=variation.label,
+            languages=", ".join(str(c.language) for c in left_out),
+        )
     if not sent:
         raise Invalid.of(
             "no case can be sent: %(refused)s",
@@ -119,10 +126,9 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
     handle = seen.handle(weights)
     if handle.weights != weights:
         raise Invalid.of(
-            "run %(run)s ran weights %(handle)s no longer holds: run its "
-            + "configuration, followed, instead",
+            "run %(run)s is out of date: run its configuration instead, once that is "
+            + "updated",
             run=str(run.run),
-            handle=handle.name,
         )
     at = seen.served(handle)
     return _begun(
@@ -260,8 +266,7 @@ def start_trials(
                 serving = seen.inventory.serving(made.engine)
             except LookupError:
                 raise Invalid.of(
-                    "no endpoint here serves the engine of %(trial)s: follow its handle",
-                    trial=name,
+                    "%(trial)s is out of date: update it on its page", trial=name
                 ) from None
             at = seen.endpoint(serving)
             canaries = at.spec.canaries

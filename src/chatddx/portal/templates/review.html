@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, upright %}
+{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, run_title, upright %}
 
 {% macro datum(value, key=None) %}
 {%- if value is mapping -%}
@@ -73,7 +73,7 @@
   <header class="mb-3">
     <h1 class="text-xl font-bold tracking-tight">{{ family.name }}</h1>
     <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      {% if family.language %}<span>{{ family.language }}</span>{% endif %}
+      {% if family.language %}<span>{{ family.language | language }}</span>{% endif %}
       {% for t in family.tags %}{{ chip(t) }}{% endfor %}
       {% if family.owner and family.owner != person.login %}<span>{{ _("owned by %(owner)s", owner=family.owner) }}</span>{% endif %}
       <a href="/cases/{{ family.id }}">{{ _("in the Library") }}</a>
@@ -83,7 +83,7 @@
   <nav class="mb-3 flex flex-wrap gap-x-2.5 gap-y-1 text-xs" aria-label="{{ _('Its cases') }}">
     {% for c in cases %}
     <a href="{{ here }}{{ query(case=c.case, **keep) }}"{% if c.case == case.case %} aria-current="page"{% endif %}
-       class="view">{{ _("the vignette alone") if not c.appendices else (_("with %(appendices)s", appendices=c.title.split(" with ", 1)[1]) if " with " in c.title else ngettext("with %(num)s appendix", "with %(num)s appendices", c.appendices | length)) }}</a>
+       class="view">{{ _("the vignette alone") if not c.appendices else _("with %(appendices)s", appendices=c.titled.appendices | listed) }}</a>
     {% endfor %}
   </nav>
   {% endif %}
@@ -223,7 +223,7 @@
         <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
         <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Configuration") }}</span>
           <select name="configuration" class="h-9 {{ field }}">
-            {% for t in configurations %}<option value="{{ t.id }}">{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}</option>{% endfor %}
+            {% for t in configurations %}<option value="{{ t.id }}"{% if t.outdated %} disabled{% endif %}>{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}{% if t.outdated %} ({{ pgettext("a thread", "out of date") }}){% endif %}</option>{% endfor %}
           </select></label>
         <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Model") }}</span>
           <select name="model" class="h-9 {{ field }}">
@@ -240,7 +240,7 @@
 
     {% for p in pending %}
     <div data-pending="{{ loop.index0 }}" class="mb-2 rounded-lg bg-primary/5 px-3 py-2 text-sm">
-      <a href="/runs/{{ p.run }}">{{ p.described }}</a> <span class="text-muted-foreground">{{ pgettext("after a run", "is under way; reload to see it once it is done.") }}</span>
+      <a href="/runs/{{ p.run }}">{{ run_title(p.titled) }}</a> <span class="text-muted-foreground">{{ pgettext("after a run", "is under way; reload to see it once it is done.") }}</span>
     </div>
     {% endfor %}
 
@@ -271,7 +271,7 @@
     {% for a in answers %}
     <details data-answer="{{ loop.index0 }}" class="border-t border-border/60">
       <summary class="grid cursor-pointer items-center gap-2 px-1 py-2 text-sm" style="grid-template-columns: {{ columns }}">
-        <span class="min-w-0" title="{{ a.described }}"><span class="block truncate">{{ a.described }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
+        {% set titled = run_title(a.titled) %}<span class="min-w-0" title="{{ titled | striptags }}"><span class="block truncate">{{ titled }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
         <span>{{ outcome(a.outcome) }}</span>
         {% if scorer %}
         {% if a["values"] is none %}

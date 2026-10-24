@@ -38,6 +38,42 @@ def said(page: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", main))
 
 
+def case_title(case: dict[str, Any]) -> str:
+    n = len(case["appendices"])
+    said = (
+        case["name"]
+        if not n
+        else f"{case['name']} + {n} appendi" + ("x" if n == 1 else "ces")
+    )
+    return f"{said} (earlier)" if case["earlier"] else said
+
+
+def run_title(run: dict[str, Any]) -> str:
+    titled = run["titled"]
+    what = [titled["name"]]
+    for r in titled["replaced"]:
+        part = r["part"].replace("_", " ")
+        what.append(f"no {part}" if r["title"] is None else f"{part}: {r['title']}")
+    n = len(titled["seeds"])
+    cases = "1 case" if titled["cases"] == 1 else f"{titled['cases']} cases"
+    seeds = ", ".join(str(s) for s in titled["seeds"])
+    return " · ".join(
+        [
+            ", ".join(what),
+            titled["at"],
+            case_title(titled["case"]) if titled["case"] else cases,
+            *(
+                [f"translated into {titled['translated']}"]
+                if titled["translated"]
+                else []
+            ),
+            ("greedy" if n == 1 else f"greedy, {n} replicates")
+            if titled["greedy"]
+            else (f"seed {seeds}" if n == 1 else f"seeds {seeds}"),
+        ]
+    )
+
+
 def variation_props(page: str) -> dict[str, Any]:
     opened = '<script type="application/json" id="variation-props">'
     return json.loads(page.split(opened, 1)[1].split("</script>", 1)[0])

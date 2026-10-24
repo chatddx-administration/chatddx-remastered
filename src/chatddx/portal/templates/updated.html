@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, named with context %}
+{% block title %}{{ _("Updated") }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library">← {{ _("Library") }}</a></nav>
+  {{ heading(_("Updated"), _("What of yours was out of date, in the order it was updated.")) }}
+  {% call section(_("A new version of each")) %}
+  {% if updated %}
+  <ul class="space-y-1.5 text-sm">
+    {% for t in updated %}<li><a href="/threads/{{ t.id }}">{{ named(t) }}</a> <span class="text-muted-foreground">{{ t.word | kind }}</span></li>{% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
+  {% endif %}
+  {% endcall %}
+  {% if refused %}
+  {% call section(_("Not updated")) %}
+  <ul class="space-y-1.5 text-sm">
+    {% for t, why in refused %}<li><a href="/threads/{{ t.id }}">{{ named(t) }}</a> <span class="text-muted-foreground">{{ t.word | kind }}</span>: <span class="text-warning">{{ why }}</span></li>{% endfor %}
+  </ul>
+  {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -12,7 +12,8 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { api, type Schemas, why } from "$lib/api/client";
   import { worded } from "$lib/kinds";
-  import { listed as joined, localized, t, th, tn, tp } from "$lib/locale";
+  import { languageName, listed as joined, localized, t, th, tn, tp } from "$lib/locale";
+  import { runTitle } from "$lib/runs/titles";
   import {
     type Carriage,
     carried,
@@ -133,7 +134,7 @@
 
   function carriage(c: Carriage): string {
     const given = {
-      where: c.language === null ? t("in its own language") : t("in %(language)s", { language: c.language }),
+      where: c.language === null ? t("in its own language") : t("in %(language)s", { language: languageName(c.language) }),
       cases: cases(c.families.length),
     };
     if (c.translated && !c.known) return t("%(where)s, %(cases)s, translated, if it can be", given);
@@ -561,11 +562,17 @@
       <ul class="space-y-1 text-sm text-warning" aria-live="polite">
         {#each leftOut as c (c.language)}
           <li>
-            {t("Left out: %(cases)s in %(language)s, as %(refused)s.", {
-              cases: cases(c.families.length),
-              language: c.language ?? "",
-              refused: c.refused ?? "",
-            })}
+            {c.untranslated
+              ? t("Left out: %(cases)s in %(language)s, which %(configuration)s has no translations into.", {
+                  cases: cases(c.families.length),
+                  language: c.language ? languageName(c.language) : "",
+                  configuration: look.label,
+                })
+              : t("Left out: %(cases)s in %(language)s, as %(refused)s.", {
+                  cases: cases(c.families.length),
+                  language: c.language ? languageName(c.language) : "",
+                  refused: c.refused ?? "",
+                })}
           </li>
         {/each}
       </ul>
@@ -641,7 +648,7 @@
             <tr class="border-t border-border/60">
               <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{when(run.at)}</td>
               <td class="py-2 pr-4 align-top">
-                <a href="/runs/{run.id}" class="text-primary hover:underline">{run.described}</a>
+                <a href="/runs/{run.id}" class="text-primary hover:underline">{runTitle(run.titled)}</a>
               </td>
               <td class="whitespace-nowrap py-2 pr-4 align-top">{run.model ?? "—"}</td>
               <td class="py-2 align-top">{run.finished ? tp("a run finished", "yes") : tp("a run finished", "no")}</td>

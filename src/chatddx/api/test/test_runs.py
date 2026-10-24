@@ -252,7 +252,7 @@ def test_a_start_is_a_run_per_language_and_leaves_out_what_it_can_t_send(
     got = signed.post("/api/runs", json={**asked(signed), "families": alone})
     assert got.status_code == 422
     assert got.json()["detail"] == (
-        "no case can be sent: lines has no translations into sv"
+        "lines has no translations into sv, which its cases are in"
     )
 
 

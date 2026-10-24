@@ -47,7 +47,6 @@ def listed(bench: Bench, line: str) -> str:
     return repl.console.export_text()
 
 
-@pytest.mark.slow
 def test_configurations_are_listed_a_row_per_name_with_its_languages_and_parts(
     bench: Bench,
 ):
@@ -90,7 +89,6 @@ def test_judge_configurations_are_listed_apart(bench: Bench):
     assert lines[apart + 1].split()[0] == "configuration"
 
 
-@pytest.mark.slow
 def test_configurations_name_lists_each_one_by_that_name(bench: Bench):
     written = listed(bench, "configurations lines")
     rows = [

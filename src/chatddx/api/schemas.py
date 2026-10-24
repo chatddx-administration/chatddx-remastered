@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from chatddx import catalog, settings
+from chatddx.catalog.titles import CaseTitle as Titling
 from chatddx.factors import base as factors
 from chatddx.factors.cases import CleanupOp
 from chatddx.factors.request import RECIPE_PARTS
@@ -119,6 +120,20 @@ class Edit(_Schema):
     labels: Labels | None = Field(default=None, description="a scorer edit's")
 
 
+class CaseTitle(_Schema):
+    name: str = Field(description="its family's name, else its vignette's SOURCE/ID")
+    appendices: list[str] = Field(description="its appendices' titles, in order")
+    earlier: bool = Field(
+        description="whether its vignette is an earlier one than its family's"
+    )
+
+    @classmethod
+    def of(cls, titled: Titling) -> Self:
+        return cls(
+            name=titled.name, appendices=list(titled.appendices), earlier=titled.earlier
+        )
+
+
 class Thread(_Schema):
     id: int
     kind: str
@@ -133,6 +148,16 @@ class Thread(_Schema):
         + "into"
     )
     head: Edit
+    outdated: bool = Field(
+        description="whether its head can't be used until it is updated: it holds "
+        + "weights its model's handle no longer holds, asks a judge that does, or "
+        + "names an engine no endpoint here serves"
+    )
+    expecting: CaseTitle | None = Field(
+        None,
+        description="an expectation's with no name: the case it is for, by which it is "
+        + "said",
+    )
 
 
 class ThreadDetail(Thread):
@@ -410,6 +435,10 @@ class Carried(_Schema):
     translated: bool
     skeleton: str | None = Field(description="the request they are sent as")
     refused: str | None = Field(description="why they can't be sent, and are left out")
+    untranslated: bool = Field(
+        description="whether they are left out as the configuration has no "
+        + "translations into their language"
+    )
 
 
 class Variation(_Schema):
@@ -426,7 +455,7 @@ class Variation(_Schema):
     model: str | None = Field(description="the handle it runs under")
     problem: str | None = Field(
         description="why it can't run: its handle doesn't resolve, which is ops' to "
-        + "mend, its model is behind its handle, or it names no model"
+        + "mend, it is out of date, or it names no model"
     )
     findings: list[Finding] | None
     languages: list[Carried] = Field(
@@ -498,6 +527,7 @@ class NewAppendix(_Schema):
 class FamilyCase(_Schema):
     case: str
     title: str
+    titled: CaseTitle
     appendices: list[str]
     default: bool = Field(description="the case the family stands for")
     expectations: list[Expected]
@@ -785,6 +815,30 @@ class RunJob(_Schema):
     ended: datetime | None
 
 
+class Replaced(_Schema):
+    part: str
+    title: str | None = Field(description="what it holds instead; null for nothing")
+
+
+class Titled(_Schema):
+    name: str = Field(
+        description="what it ran: its configuration's name, else the run's own"
+    )
+    replaced: list[Replaced] = Field(
+        description="what its variation replaced, but the model it ran under"
+    )
+    at: str = Field(
+        description="what it ran under: its handle, else its endpoint or its engine"
+    )
+    case: CaseTitle | None = Field(description="its case's title, when it ran one")
+    cases: int
+    translated: str | None = Field(
+        description="the language its request was translated into, when it was"
+    )
+    greedy: bool
+    seeds: list[int]
+
+
 class Ran(_Schema):
     configuration: int
     head: int = Field(description="the edit it varied")
@@ -813,6 +867,7 @@ class Run(_Schema):
     cases: list[str]
     seeds: list[int]
     described: str
+    titled: Titled
     ran: Ran | None = Field(
         description="the variation it ran, as it was started; null for a run started "
         + "from a trial alone"

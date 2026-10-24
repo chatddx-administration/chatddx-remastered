@@ -13,12 +13,15 @@ from .model import (
     Moved,
     Proposed,
     Reach,
+    Replaced,
     Started,
     Taken,
+    Titled,
     Written,
     word_of,
 )
 from .runs import ScorerStarted, ScoringEvent
+from .updating import Updated
 from .variation import TriedVariation
 
 __all__ = [
@@ -40,11 +43,14 @@ __all__ = [
     "OverQuota",
     "Proposed",
     "Reach",
+    "Replaced",
     "ScorerStarted",
     "ScoringEvent",
     "Started",
     "Taken",
+    "Titled",
     "TriedVariation",
+    "Updated",
     "Written",
     "word_of",
 ]

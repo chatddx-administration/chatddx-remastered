@@ -12,6 +12,7 @@ from chatddx.api import families as api, schemas, threads
 from chatddx.api.state import refused
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import Subject
+from chatddx.catalog.titles import CaseTitle
 from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.locale import tr
@@ -119,7 +120,7 @@ def _thread_of(bench: Bench, digest: str) -> int | None:
 @dataclass(frozen=True)
 class _Earlier:
     case: str
-    title: str
+    titled: CaseTitle
     appendices: list[str]
     replacement: str
     stored: bool
@@ -130,7 +131,7 @@ def _earlier(bench: Bench, case: str) -> _Earlier:
     made, _ = catalog.families.replacement(bench.rows, case)
     return _Earlier(
         case,
-        bench.title(case),
+        bench.titled_case(case),
         list(held.appendices),
         made,
         bench.rows.kind(made) is not None,

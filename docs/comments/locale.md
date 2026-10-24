@@ -20,6 +20,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 # leaves out the name of the function called, which it reads.
 ```
 
+## `src/chatddx/locale/locale.py:_LANGUAGE_PARAMS`
+
+```
+# Policy: a parameter named so holds a language's tag, and one named languages tags
+# separated by ", ", each said by its name where the message is said.
+```
+
 ## `src/chatddx/locale/locale.py:_LOCALIZING`
 
 ```

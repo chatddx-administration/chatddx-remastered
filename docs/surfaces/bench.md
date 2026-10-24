@@ -53,7 +53,7 @@ Heads-up: the gate's `Refused` passes through.
 Raises:
 1. `ValueError`: `"run {run.run} was sent to no endpoint, so it can't run again"`
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
-3. `Invalid`: `"run %(run)s ran weights %(handle)s no longer holds: run its configuration, followed, instead", run=str(run.run), handle=handle.name`
+3. `Invalid`: `"run %(run)s is out of date: run its configuration instead, once that is updated", run=str(run.run)`
 4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_begun`)
 5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_begun`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_begun`)
@@ -78,7 +78,7 @@ Raises:
 1. `ValueError`: `"{digest} isn't a stored {what}"` (through `_stored_parts`)
 2. `ValueError`: `"a person doesn't write {component.kind_name} components"`
 3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_carried`)
-4. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_carried`)
+4. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_carried`)
 5. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_carried`)
 
 ## `Bench.edit`
@@ -99,7 +99,7 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
+8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.follow`
@@ -127,7 +127,7 @@ Raises:
 Raises:
 1. `NotFound`: `"no configuration {thread} of yours"`
 2. `ValueError`: `"configuration {thread} was compiled for nothing that has moved on"`
-3. `Invalid`: `"configuration %(thread)s can't follow %(what)s %(about)s: %(refused)s", thread=thread, what=_what(made), about=str(made.about), refused=str(made.refused)`
+3. `Invalid`: `"configuration %(thread)s can't be updated to %(what)s %(about)s: %(refused)s", thread=thread, what=_what(made), about=str(made.about), refused=str(made.refused)`
 
 ## `Bench.fork`
 `src/chatddx/bench/components.py:fork`
@@ -147,7 +147,7 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
+8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.leave`
@@ -193,8 +193,20 @@ Raises:
 5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
 6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=" and ".join(known)` (through `_written`)
+8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
+
+## `Bench.outdated`
+`src/chatddx/bench/updating.py:outdated`
+
+* `edit: Edit`
+* `kind: str`
+* ∟`bool`
+
+## `Bench.outdated_own`
+`src/chatddx/bench/updating.py:outdated_own`
+
+* ∟`list[int]`
 
 ## `Bench.proposal`
 `src/chatddx/bench/following.py:proposal`
@@ -323,10 +335,11 @@ Heads-up: the gate's `Refused` passes through.
 Raises:
 1. `ValueError`: `"{variation.label} is a judge configuration: a judge is asked as runs are scored, and isn't run on cases"`
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
-3. `Invalid`: `"no case can be sent: %(refused)s", refused="; ".join(c.refused or "" for c in left_out)`
-4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
-5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
-6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
+3. `Invalid`: `"%(configuration)s has no translations into %(languages)s, which its cases are in", configuration=variation.label, languages=", ".join(str(c.language) for c in left_out)`
+4. `Invalid`: `"no case can be sent: %(refused)s", refused="; ".join(c.refused or "" for c in left_out)`
+5. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
+6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
+7. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
 
 ## `Bench.start_trials`
 `src/chatddx/bench/runs.py:start_trials`
@@ -351,7 +364,7 @@ Raises:
 4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
 5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
-7. `Invalid`: `"no endpoint here serves the engine of %(trial)s: follow its handle", trial=name`
+7. `Invalid`: `"%(trial)s is out of date: update it on its page", trial=name`
 
 ## `Bench.take`
 `src/chatddx/bench/taking.py:take`
@@ -394,6 +407,23 @@ Raises:
 5. `ValueError`: `str(e)` (from `LookupError`)
 6. `OverQuota`: `"%(login)s has typed %(num)s cases in the last day, as many as a day takes", login=seen.person.login, num=typed`
 
+## `Bench.update`
+`src/chatddx/bench/updating.py:update`
+
+* `thread: int`
+* `head: int`
+* ∟`Written | None`
+
+Raises:
+1. `NotFound`: `"no {word} {thread} of yours"`
+2. `Invalid`: `"%(name)s can't be updated until %(judge)s is", name=name, judge=seen.title(judge)` (through `_scorer`)
+3. `Invalid`: `"%(name)s can't be updated: %(refused)s", name=name, refused=str(e)` (from `ValueError`, through `_judge`)
+
+## `Bench.update_all`
+`src/chatddx/bench/updating.py:update_all`
+
+* ∟`list[Updated]`
+
 ## `bound`
 `src/chatddx/bench/components.py:bound`
 
@@ -419,6 +449,7 @@ Raises:
 * `skeleton: Skeleton | None = None`
 * `translated: bool = False`
 * `refused: str | None = None`
+* `untranslated: bool = False`
 
 ## `check_expecting`
 `src/chatddx/bench/seen.py:check_expecting`
@@ -625,8 +656,7 @@ Raises:
 * ∟`list[Finding]`
 
 Finds:
-1. `translations.missing`: `refused` (through `_missing`)
-2. `translations.missing`: `"%(num)s case is in %(language)s, and left out: %(refused)s" / "%(num)s cases are in %(language)s, and left out: %(refused)s"` (through `_missing`)
+1. `translations.missing`: `str(e)` (from `StructuralError`)
 
 ## `MODEL`
 `src/chatddx/bench/model.py:MODEL`
@@ -701,6 +731,12 @@ Raises:
 
 `REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)`
 
+## `Replaced` `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Replaced`
+
+* `part: str`
+* `title: str | None`
+
 ## `SAVED`
 `src/chatddx/bench/model.py:SAVED`
 
@@ -762,7 +798,7 @@ Raises:
 1. `ValueError`: `"endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(weights)}"`
 2. `Invalid`: `"%(configuration)s names no model: name the one to run it under", configuration=variation.label`
 3. `ValueError`: `"{variation.label} runs under its model's handle: set its model instead"`
-4. `Invalid`: `"%(configuration)s's model is behind %(handle)s, which holds other weights now: follow it first", configuration=variation.label, handle=handle.name`
+4. `Invalid`: `"%(configuration)s is out of date: update it on its page", configuration=variation.label`
 
 ## `Seen.case_titled`
 `src/chatddx/bench/seen.py:Seen.case_titled`
@@ -873,7 +909,7 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
-1. `Invalid`: `"%(judge)s: its model is behind %(handle)s, which holds other weights now: follow it first", judge=self.title(judge.digest), handle=handle.name`
+1. `Invalid`: `"%(judge)s is out of date: update it on its page", judge=self.title(judge.digest)`
 
 ## `Seen.labels`
 `src/chatddx/bench/seen.py:Seen.labels`
@@ -1032,6 +1068,18 @@ Raises:
 * `digest: str`
 * ∟`str`
 
+## `Seen.titled`
+`src/chatddx/bench/seen.py:Seen.titled`
+
+* `run: RunStarted`
+* ∟`Titled`
+
+## `Seen.titled_case`
+`src/chatddx/bench/seen.py:Seen.titled_case`
+
+* `case: str`
+* ∟`CaseTitle`
+
 ## `Seen.under`
 `src/chatddx/bench/seen.py:Seen.under`
 
@@ -1075,6 +1123,18 @@ Raises:
 * `kept: dict[str, int]`
 * `choosing: dict[str, list[int]]`
 * `missing: list[str]`
+
+## `Titled` `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Titled`
+
+* `name: str`
+* `replaced: list[Replaced]`
+* `at: str`
+* `case: CaseTitle | None`
+* `cases: int`
+* `translated: str | None`
+* `greedy: bool`
+* `seeds: tuple[int, ...]`
 
 ## `trial`
 `src/chatddx/bench/seen.py:trial`
@@ -1122,6 +1182,18 @@ Raises:
 `src/chatddx/bench/variation.py:TriedVariation.varied`
 
 * ∟`Recipe | None`
+
+## `UPDATED`
+`src/chatddx/bench/updating.py:UPDATED`
+
+`UPDATED = ("skeleton", "judge", "scorer", "trial")`
+
+## `Updated` `@dataclass(frozen=True)`
+`src/chatddx/bench/updating.py:Updated`
+
+* `thread: int`
+* `written: Written | None`
+* `refused: ValueError | None`
 
 ## `WITH`
 `src/chatddx/bench/seen.py:WITH`

@@ -85,12 +85,7 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     served = endpoint(signed, QWEN)["engine"]
     assert (request["model"], request["seed"]) == (served, 7)
     assert "‹vignette›‹appendices›" in str(request["messages"])
-    assert [(f["code"], f["message"]) for f in shown["findings"]] == [
-        (
-            "translations.missing",
-            "3 cases are in sv, and left out: lines has no translations into sv",
-        )
-    ]
+    assert shown["findings"] == []
     english, swedish = shown["languages"]
     assert (english["language"], english["translated"], english["refused"]) == (
         "en",
@@ -102,6 +97,10 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
         "sv",
         3,
         None,
+    )
+    assert (swedish["refused"], swedish["untranslated"]) == (
+        "lines has no translations into sv",
+        True,
     )
 
 
@@ -245,7 +244,8 @@ def test_a_variation_is_rendered_and_linted_for_the_engine_serving_its_model(
     shown = variation(signed, web)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
-    assert {"vllm.native_tools_uncallable", "translations.missing"} <= codes
+    assert "vllm.native_tools_uncallable" in codes
+    assert [c["language"] for c in shown["languages"] if c["untranslated"]] == ["sv"]
     assert variation(signed, web, seed=shown["seed"]) == shown
 
     english = variation(signed, web, tag="targets")
@@ -325,7 +325,8 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
         return {f["code"] for f in shown["findings"]}
 
     assert not {"language.unknown", "translations.missing"} & codes(tag="targets")
-    assert "translations.missing" in codes()
+    left = variation(signed, web, reasoning=off)["languages"]
+    assert [c["language"] for c in left if c["untranslated"]] == ["sv"]
 
     guided = thread(signed, "configuration", LINES_GUIDED)
     shown = variation(signed, guided, reasoning=off)
@@ -537,7 +538,6 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     assert signed.get(edits).json()[-1] == mine["head"]
 
 
-@pytest.mark.slow
 def test_trying_forking_and_editing_need_a_session(
     client: TestClient, bench: Bench
 ) -> None:

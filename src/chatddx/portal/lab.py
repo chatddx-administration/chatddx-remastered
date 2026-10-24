@@ -22,10 +22,11 @@ from chatddx.catalog import threads
 from chatddx.factors.base import Invalid, StructuralError, resolve
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 from chatddx.factors.trial import Order, Trial
-from chatddx.locale import tr
+from chatddx.locale import pgettext, tr
 
 from .pages import BenchDep, own_first, page, refusal_of
 from .scoring import unit_in
+from .titles import said_case
 
 router = APIRouter()
 
@@ -328,10 +329,7 @@ def _starting(bench: Bench, thread: int) -> _Starting:
         at = bench.endpoint(bench.inventory.serving(held.engine))
     except LookupError:
         named = shown.name or shown.title
-        why = tr(
-            "no endpoint here serves the engine of %(trial)s: follow its handle",
-            trial=named,
-        )
+        why = tr("%(trial)s is out of date: update it on its page", trial=named)
         return _Starting(shown, versions, held, None, why)
     return _Starting(shown, versions, held, at, None)
 
@@ -421,9 +419,7 @@ def _column(
     return Column(
         tuple(skeletons),
         name,
-        tr("its model is behind %(handle)s: follow it", handle=name)
-        if behind
-        else None,
+        pgettext("a thread", "out of date") if behind else None,
     )
 
 
@@ -488,4 +484,4 @@ def _higher(mean: float | None) -> tuple[bool, float]:
 
 def _titles(bench: Bench, compared: schemas.Compared | None) -> dict[str, str]:
     apart = [] if compared is None else compared.apart
-    return {c.case: bench.title(c.case) for c in apart}
+    return {c.case: said_case(bench.titled_case(c.case)) for c in apart}

@@ -76,3 +76,9 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/catalog/`, so
 # Duplication: src/chatddx/store/migrations/0012-t2-catalog.sql repeats the language
 # rule.
 ```
+
+## `src/chatddx/catalog/titles.py:title`
+
+```
+# Policy: an expectation is told by its case, a fork of one as well as its origin.
+```

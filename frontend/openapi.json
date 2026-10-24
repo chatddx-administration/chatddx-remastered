@@ -3218,6 +3218,11 @@
             ],
             "title": "Refused",
             "description": "why they can't be sent, and are left out"
+          },
+          "untranslated": {
+            "type": "boolean",
+            "title": "Untranslated",
+            "description": "whether they are left out as the configuration has no translations into their language"
           }
         },
         "additionalProperties": false,
@@ -3227,9 +3232,40 @@
           "families",
           "translated",
           "skeleton",
-          "refused"
+          "refused",
+          "untranslated"
         ],
         "title": "Carried"
+      },
+      "CaseTitle": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "its family's name, else its vignette's SOURCE/ID"
+          },
+          "appendices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Appendices",
+            "description": "its appendices' titles, in order"
+          },
+          "earlier": {
+            "type": "boolean",
+            "title": "Earlier",
+            "description": "whether its vignette is an earlier one than its family's"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "appendices",
+          "earlier"
+        ],
+        "title": "CaseTitle"
       },
       "Checked": {
         "properties": {
@@ -3710,6 +3746,9 @@
             "type": "string",
             "title": "Title"
           },
+          "titled": {
+            "$ref": "#/components/schemas/CaseTitle"
+          },
           "appendices": {
             "items": {
               "type": "string"
@@ -3735,6 +3774,7 @@
         "required": [
           "case",
           "title",
+          "titled",
           "appendices",
           "default",
           "expectations"
@@ -4353,6 +4393,22 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
+          "expecting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTitle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "an expectation's with no name: the case it is for, by which it is said"
+          },
           "origin": {
             "anyOf": [
               {
@@ -4407,6 +4463,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "origin",
           "base",
           "varies",
@@ -4677,6 +4734,22 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
+          "expecting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTitle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "an expectation's with no name: the case it is for, by which it is said"
+          },
           "description": {
             "anyOf": [
               {
@@ -4734,6 +4807,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "description",
           "collaborators",
           "forked_from",
@@ -6035,6 +6109,33 @@
         ],
         "title": "RenderedAgain"
       },
+      "Replaced": {
+        "properties": {
+          "part": {
+            "type": "string",
+            "title": "Part"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "what it holds instead; null for nothing"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part",
+          "title"
+        ],
+        "title": "Replaced"
+      },
       "Rig": {
         "properties": {
           "distribution": {
@@ -6172,6 +6273,9 @@
             "type": "string",
             "title": "Described"
           },
+          "titled": {
+            "$ref": "#/components/schemas/Titled"
+          },
           "ran": {
             "anyOf": [
               {
@@ -6230,6 +6334,7 @@
           "cases",
           "seeds",
           "described",
+          "titled",
           "ran",
           "finished"
         ],
@@ -6329,6 +6434,9 @@
           "described": {
             "type": "string",
             "title": "Described"
+          },
+          "titled": {
+            "$ref": "#/components/schemas/Titled"
           },
           "ran": {
             "anyOf": [
@@ -6431,6 +6539,7 @@
           "cases",
           "seeds",
           "described",
+          "titled",
           "ran",
           "finished",
           "rig",
@@ -7026,6 +7135,22 @@
           },
           "head": {
             "$ref": "#/components/schemas/Edit"
+          },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
+          "expecting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTitle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "an expectation's with no name: the case it is for, by which it is said"
           }
         },
         "additionalProperties": false,
@@ -7040,7 +7165,8 @@
           "tags",
           "language",
           "translated",
-          "head"
+          "head",
+          "outdated"
         ],
         "title": "Thread"
       },
@@ -7115,6 +7241,22 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "outdated": {
+            "type": "boolean",
+            "title": "Outdated",
+            "description": "whether its head can't be used until it is updated: it holds weights its model's handle no longer holds, asks a judge that does, or names an engine no endpoint here serves"
+          },
+          "expecting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTitle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "an expectation's with no name: the case it is for, by which it is said"
+          },
           "description": {
             "anyOf": [
               {
@@ -7165,6 +7307,7 @@
           "language",
           "translated",
           "head",
+          "outdated",
           "description",
           "collaborators",
           "forked_from",
@@ -7172,6 +7315,79 @@
           "deleted"
         ],
         "title": "ThreadDetail"
+      },
+      "Titled": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "what it ran: its configuration's name, else the run's own"
+          },
+          "replaced": {
+            "items": {
+              "$ref": "#/components/schemas/Replaced"
+            },
+            "type": "array",
+            "title": "Replaced",
+            "description": "what its variation replaced, but the model it ran under"
+          },
+          "at": {
+            "type": "string",
+            "title": "At",
+            "description": "what it ran under: its handle, else its endpoint or its engine"
+          },
+          "case": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTitle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "its case's title, when it ran one"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "translated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated",
+            "description": "the language its request was translated into, when it was"
+          },
+          "greedy": {
+            "type": "boolean",
+            "title": "Greedy"
+          },
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Seeds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "replaced",
+          "at",
+          "case",
+          "cases",
+          "translated",
+          "greedy",
+          "seeds"
+        ],
+        "title": "Titled"
       },
       "Tried": {
         "properties": {
@@ -7404,7 +7620,7 @@
               }
             ],
             "title": "Problem",
-            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, its model is behind its handle, or it names no model"
+            "description": "why it can't run: its handle doesn't resolve, which is ops' to mend, it is out of date, or it names no model"
           },
           "findings": {
             "anyOf": [

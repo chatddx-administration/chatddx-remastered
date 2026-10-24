@@ -120,6 +120,7 @@ Finds:
 * `translated: bool`
 * `skeleton: str | None = Field(description="the request they are sent as")`
 * `refused: str | None = Field(description="why they can't be sent, and are left out")`
+* `untranslated: bool = Field(…)`
 
 ## `case` `@router.post("/families/{family}/cases", status_code=201)`
 `src/chatddx/api/families.py:case`
@@ -131,6 +132,19 @@ Finds:
 
 Raises:
 1. `ValueError`: `"{given.replacing} isn't a case of family {family}"`
+
+## `CaseTitle` `(_Schema)`
+`src/chatddx/api/schemas.py:CaseTitle`
+
+* `name: str = Field(description="its family's name, else its vignette's SOURCE/ID")`
+* `appendices: list[str] = Field(description="its appendices' titles, in order")`
+* `earlier: bool = Field(…)`
+
+## `CaseTitle.of` `@classmethod`
+`src/chatddx/api/schemas.py:CaseTitle.of`
+
+* `titled: Titling`
+* ∟`Self`
 
 ## `check` `@router.post("/components/check")`
 `src/chatddx/api/world.py:check`
@@ -382,6 +396,7 @@ Raises:
 
 * `case: str`
 * `title: str`
+* `titled: CaseTitle`
 * `appendices: list[str]`
 * `default: bool = Field(description="the case the family stands for")`
 * `expectations: list[Expected]`
@@ -1143,6 +1158,12 @@ Raises:
 * `same: bool`
 * `why: str | None`
 
+## `Replaced` `(_Schema)`
+`src/chatddx/api/schemas.py:Replaced`
+
+* `part: str`
+* `title: str | None = Field(description="what it holds instead; null for nothing")`
+
 ## `resume` `@router.post("/runs/{run}/resume", …)`
 `src/chatddx/api/runs.py:resume`
 
@@ -1211,6 +1232,7 @@ Raises:
 * `cases: list[str]`
 * `seeds: list[int]`
 * `described: str`
+* `titled: Titled`
 * `ran: Ran | None = Field(…)`
 * `finished: bool`
 * `unscored: list[Unscored] | None = Field(…)`
@@ -1653,6 +1675,8 @@ Raises:
 * `language: str | None = Field(description="its head's")`
 * `translated: list[str] = Field(…)`
 * `head: Edit`
+* `outdated: bool = Field(…)`
+* `expecting: CaseTitle | None = Field(…)`
 
 ## `thread` `@router.get("/threads/{thread}")`
 `src/chatddx/api/threads.py:thread`
@@ -1697,6 +1721,18 @@ Raises:
 1. `HTTPException`: `422, "no kind {kind!r}: the kinds are {', '.join(KINDS)}"`
 2. `HTTPException`: `422, "only a configuration has a purpose"`
 3. `HTTPException`: `422, "only a configuration answers"`
+
+## `Titled` `(_Schema)`
+`src/chatddx/api/schemas.py:Titled`
+
+* `name: str = Field(…)`
+* `replaced: list[Replaced] = Field(…)`
+* `at: str = Field(…)`
+* `case: CaseTitle | None = Field(description="its case's title, when it ran one")`
+* `cases: int`
+* `translated: str | None = Field(…)`
+* `greedy: bool`
+* `seeds: list[int]`
 
 ## `told`
 `src/chatddx/api/telling.py:told`

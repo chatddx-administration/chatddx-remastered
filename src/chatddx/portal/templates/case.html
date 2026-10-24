@@ -20,7 +20,7 @@
     (_("Kind"), "case" | kind),
     (_("Owner"), case.owner or "—"),
     (_("Shared with"), case.collaborators | join(", ") or "—"),
-    (_("Language"), case.language or "—"),
+    (_("Language"), case.language | language if case.language else "—"),
     (_("Tags"), tagged),
     (_("Description"), case.description or "—"),
   ]) }}
@@ -60,7 +60,7 @@
   <ul class="space-y-3 text-sm" aria-label="{{ _('Its cases') }}">
     {% for c in cases %}
     <li class="rounded-lg border border-border/60 p-3">
-      <div class="flex flex-wrap items-baseline gap-x-3"><span class="font-medium">{{ c.title }}</span><span class="font-mono text-xs text-muted-foreground">{{ c.case | short }}</span></div>
+      <div class="flex flex-wrap items-baseline gap-x-3"><span class="font-medium">{{ c.titled | case }}</span><span class="font-mono text-xs text-muted-foreground">{{ c.case | short }}</span></div>
       {% set appended %}{% for a in c.appendices %}{% if held[a] %}<a href="/threads/{{ held[a] }}">{{ titles[a] }}</a>{% else %}{{ titles[a] }}{% endif %}{{ ", " if not loop.last }}{% else %}{{ pgettext("no appendices", "none") }}{% endfor %}{% endset %}
       <p class="mt-1 text-muted-foreground">{{ _("appendices: %(appendices)s", appendices=appended) }}</p>
       {% if latest %}

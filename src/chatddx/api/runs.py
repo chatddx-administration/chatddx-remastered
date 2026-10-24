@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from chatddx.bench import Bench, Graded, NotFound, Started
+from chatddx.bench import Bench, Graded, NotFound, Started, Titled
 from chatddx.catalog import Subject
 from chatddx.catalog.language import language_of
 from chatddx.catalog.read import about as about_of
@@ -263,6 +263,7 @@ def _run_of(
         cases=list(trial.cases),
         seeds=list(trial.seeds),
         described=bench.described(started),
+        titled=_titled(bench.titled(started)),
         ran=None
         if ran is None
         else schemas.Ran(configuration=ran.thread, head=ran.id, parts=about.replaced),
@@ -271,6 +272,21 @@ def _run_of(
         if unscored is None
         else [schemas.Unscored(scorer=s, name=bench.title(s)) for s in unscored],
         job=_job_of(placed),
+    )
+
+
+def _titled(titled: Titled) -> schemas.Titled:
+    return schemas.Titled(
+        name=titled.name,
+        replaced=[
+            schemas.Replaced(part=r.part, title=r.title) for r in titled.replaced
+        ],
+        at=titled.at,
+        case=None if titled.case is None else schemas.CaseTitle.of(titled.case),
+        cases=titled.cases,
+        translated=titled.translated,
+        greedy=titled.greedy,
+        seeds=list(titled.seeds),
     )
 
 

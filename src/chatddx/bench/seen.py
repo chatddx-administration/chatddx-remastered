@@ -8,7 +8,7 @@ from pydantic import JsonValue
 
 from chatddx.catalog import About, Edit, Subject, read, threads, titles
 from chatddx.catalog.language import language_of, languages_of, recipe_language
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import CaseTitle, short
 from chatddx.factors.base import (
     Component,
     Finding,
@@ -58,6 +58,8 @@ from .model import (
     Graded,
     Handle,
     Reach,
+    Replaced,
+    Titled,
     word_of,
 )
 from .variation import TriedVariation
@@ -303,10 +305,8 @@ class Seen:
         handle = self.handle(judge.model)
         if handle.weights != judge.model:
             raise Invalid.of(
-                "%(judge)s: its model is behind %(handle)s, which holds other weights "
-                + "now: follow it first",
+                "%(judge)s is out of date: update it on its page",
                 judge=self.title(judge.digest),
-                handle=handle.name,
             )
         return self.served(handle)
 
@@ -348,10 +348,8 @@ class Seen:
         handle = self.handle(weights)
         if handle.weights != weights:
             raise Invalid.of(
-                "%(configuration)s's model is behind %(handle)s, which holds other "
-                + "weights now: follow it first",
+                "%(configuration)s is out of date: update it on its page",
                 configuration=variation.label,
-                handle=handle.name,
             )
         return self.served(handle)
 
@@ -448,7 +446,9 @@ class Seen:
             some = [c for c in cases if sent[c] == language]
             if language not in into:
                 refused = f"{variation.label} has no translations into {language}"
-                found.append(Carried(language, some, refused=refused))
+                found.append(
+                    Carried(language, some, refused=refused, untranslated=True)
+                )
                 continue
             try:
                 skeleton = self.skeleton(variation, language)
@@ -774,6 +774,46 @@ class Seen:
             case several:
                 raise Ambiguous(f"{len(several)} runs of yours start with {found!r}")
 
+    # Policy: a run is titled by what it ran, its configuration and what its variation
+    # replaced but the model, which is said apart as what it ran under, and its own name
+    # when no variation of a configuration ran.
+    def titled(self, run: RunStarted) -> Titled:
+        trial = resolve(self.store.get, run.trial, Trial)
+        handle, _ = self.under(trial.engine)
+        about = read.about(self.rows, Subject(run=run.run))
+        varied = None if about.varied is None else self.rows.edit(about.varied)
+        name = (
+            about.name or self.title(trial.skeleton)
+            if varied is None
+            else titles.title(self.rows, varied.thread)
+        )
+        replaced = [
+            Replaced(part, None if digest is None else self.title(digest))
+            for part, digest in about.replaced.items()
+            if part != "model" and varied is not None
+        ]
+        into = {c.into for c in self.store.compilations(trial.skeleton)}
+        return Titled(
+            name=name,
+            replaced=replaced,
+            at=handle.name
+            if handle is not None
+            else self.title(trial.engine)
+            if run.endpoint is None
+            else run.endpoint.name,
+            case=self.titled_case(trial.cases[0]) if len(trial.cases) == 1 else None,
+            cases=len(trial.cases),
+            translated=next(iter(into))
+            if len(into) == 1 and None not in into
+            else None,
+            greedy=resolve(self.store.get, trial.skeleton, Skeleton).greedy,
+            seeds=trial.seeds,
+        )
+
+    def titled_case(self, case: str) -> CaseTitle:
+        found = titles.case_title(self.rows, case)
+        return CaseTitle(self.title(case), (), False) if found is None else found
+
     def described(self, run: RunStarted) -> str:
         trial = resolve(self.store.get, run.trial, Trial)
         handle, _ = self.under(trial.engine)
@@ -1046,45 +1086,31 @@ def check_expecting(
         )
 
 
+# Policy: the cases left out are said with what is sent
+# (src/chatddx/bench/model.py:Carried.refused), so what is found is a translation that
+# doesn't compile into a language no case of them is in.
 def missing(
     seen: Seen, variation: TriedVariation, carried: Sequence[Carried]
 ) -> list[Finding]:
-    found = [
-        _missing(variation, each.refused, each)
-        for each in carried
-        if each.refused is not None
-    ]
     recipe = variation.varied
     if recipe is None:
-        return found
+        return []
     looked = {c.language for c in carried} | {recipe_language(seen.rows, recipe)}
+    found: list[Finding] = []
     for language in translated(recipe, seen.store.get):
         if language in looked:
             continue
         try:
             _ = seen.skeleton(variation, language)
         except StructuralError as e:
-            found.append(_missing(variation, str(e)))
+            found.append(
+                Finding(
+                    code="translations.missing",
+                    message=str(e),
+                    subject=variation.configuration.digest,
+                )
+            )
     return found
-
-
-def _missing(
-    variation: TriedVariation, refused: str, carried: Carried | None = None
-) -> Finding:
-    subject = variation.configuration.digest
-    if carried is None:
-        return Finding(code="translations.missing", message=refused, subject=subject)
-    return Finding.of(
-        "translations.missing",
-        (
-            "%(num)s case is in %(language)s, and left out: %(refused)s",
-            "%(num)s cases are in %(language)s, and left out: %(refused)s",
-        ),
-        subject=subject,
-        num=len(carried.cases),
-        language=str(carried.language),
-        refused=refused,
-    )
 
 
 def _language_in(

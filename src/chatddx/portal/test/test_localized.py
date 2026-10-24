@@ -11,6 +11,7 @@ from chatddx.factors import Finding, Invalid
 from chatddx.locale import Locales, localizing
 from chatddx.locale.test.helpers import catalog
 from chatddx.portal.pages import refusal_of, templates
+from chatddx.portal.test.helpers import said
 
 
 def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
@@ -112,18 +113,18 @@ def test_a_refusal_is_said_by_its_wording_and_what_isn_t_worded_is_passed_on(
             msgid "That can't be done"
             msgstr "Det går inte"
 
-            msgid "%(title)s. Pass this on to ops, as it is: %(pass_on)s"
-            msgstr "%(title)s. Skicka det här vidare som det är: %(pass_on)s"
+            msgid "%(title)s. Copy this and send it to drift@chatddx.com: %(pass_on)s"
+            msgstr "%(title)s. Kopiera och skicka detta till drift@chatddx.com: %(pass_on)s"
             """,
         )
     ).negotiate("sv")
     with localizing(sv):
         assert refusal_of(Invalid.of("a fork is named")) == "en förgrening har ett namn"
         assert refusal_of(ValueError("slots used twice")) == (
-            "Det går inte. Skicka det här vidare som det är: slots used twice"
+            "Det går inte. Kopiera och skicka detta till drift@chatddx.com: slots used twice"
         )
     assert refusal_of(ValueError("slots used twice")) == (
-        "That can't be done. Pass this on to ops, as it is: slots used twice"
+        "That can't be done. Copy this and send it to drift@chatddx.com: slots used twice"
     )
 
 
@@ -136,6 +137,43 @@ def test_a_page_says_which_language_it_is_in(signed: TestClient) -> None:
     assert '<html lang="sv">' in asked.text
     home = signed.get("/", headers={"accept-language": "sv"}).text
     assert '<script type="application/json" id="locale">{"tag": "sv", ' in home
+
+
+@pytest.mark.usefixtures("alice")
+@pytest.mark.slow
+def test_a_case_and_an_expectation_with_no_name_are_said_in_the_locale_asked_for(
+    signed: TestClient,
+) -> None:
+    sv = {"accept-language": "sv"}
+    [appended] = [
+        c
+        for f in signed.get("/api/families").json()
+        for c in signed.get(f"/api/families/{f['id']}").json()["cases"]
+        if c["titled"]["appendices"]
+    ][:1]
+    titled = appended["titled"]
+    assert (
+        appended["title"] == f"{titled['name']} with {', '.join(titled['appendices'])}"
+    )
+    expectations = signed.get("/library?kind=expectation", headers=sv).text
+    assert "facit för " in expectations and "expectation for " not in expectations
+    english = said(signed.get("/library?kind=expectation").text)
+    assert "expectation for " in english
+
+
+@pytest.mark.usefixtures("alice")
+@pytest.mark.slow
+def test_a_language_is_said_by_its_name_in_the_locale_asked_for(
+    signed: TestClient,
+) -> None:
+    [family] = [f for f in signed.get("/api/families").json() if f["language"] == "sv"][
+        :1
+    ]
+    path = f"/cases/{family['id']}"
+    english = said(signed.get(path).text)
+    swedish = said(signed.get(path, headers={"accept-language": "sv"}).text)
+    assert " Language Swedish " in english and " sv " not in english
+    assert " Språk svenska " in swedish
 
 
 @pytest.mark.usefixtures("alice")

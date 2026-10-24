@@ -68,9 +68,7 @@ def test_trials_are_written_in_their_cases_language_and_run_as_one_start(
     mixed = {"component": composed(signed, "crlf", "nfd"), "name": "mixed"}
     got = signed.post("/api/threads", json=mixed)
     assert got.status_code == 422
-    assert (
-        got.json()["detail"] == "a trial's cases are in one language, not in en and sv"
-    )
+    assert got.json()["detail"] == "a trial's cases are in one language, not in en, sv"
     configuration = thread(signed, "configuration", LINES_GUIDED)["head"]["id"]
     got = signed.post("/api/runs/trials", json={"trials": [configuration]})
     assert got.status_code == 404

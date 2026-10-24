@@ -74,6 +74,33 @@
 
 {% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
 
+{% macro run_title(t) -%}
+{{ t.name }}{% for r in t.replaced %}, {{ pgettext("a part replaced", "%(part)s: %(title)s", part=r.part | kind, title=r.title) if r.title is not none else pgettext("a part replaced", "no %(part)s", part=r.part | kind) }}{% endfor %} · {{ t.at }} · {{ t.case | case(brief=true) if t.case else ngettext("%(num)s case", "%(num)s cases", t.cases) }}{% if t.translated %} · {{ _("translated into %(language)s", language=t.translated | language) }}{% endif %} · {% if t.greedy %}{{ pgettext("sampling", "greedy") if t.seeds | length == 1 else ngettext("greedy, %(num)s replicate", "greedy, %(num)s replicates", t.seeds | length) }}{% else %}{{ ngettext("seed %(seeds)s", "seeds %(seeds)s", t.seeds | length, seeds=t.seeds | join(", ")) }}{% endif %}
+{%- endmacro %}
+
+{% macro outdated() %}<span class="inline-flex rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">{{ pgettext("a thread", "Out of date") }}</span>{% endmacro %}
+
+{% macro updating(thread, next=none) %}
+{% if thread.outdated and not thread.deleted %}
+<div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+  {{ outdated() }}
+  <span>
+    {%- if thread.kind == "judge" %}{{ _("Its model has new weights, so it can't judge until it is updated.") }}
+    {%- elif thread.kind == "scorer" %}{{ _("It asks a judge that is out of date, so it can't score until it is updated.") }}
+    {%- elif thread.kind == "trial" %}{{ _("No endpoint here serves its engine, so it can't run until it is updated.") }}
+    {%- else %}{{ _("Its model has new weights, so it can't run until it is updated.") }}{% endif -%}
+  </span>
+  {% if thread.owner == person.login %}
+  <form method="post" action="/threads/{{ thread.id }}/update">
+    <input type="hidden" name="head" value="{{ thread.head.id }}">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button class="primary">{{ _("Update") }}</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {% macro json(value) %}<pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{{ value | pretty }}</pre>{% endmacro %}
 
 {% macro tabs(items) %}
@@ -106,9 +133,9 @@
     <tbody>
       {% for r in runs %}
       <tr class="border-t border-border/60">
-        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="{{ _('Compare %(run)s', run=r.described) }}"></td>
+        <td class="py-2 pr-2 align-top"><input type="checkbox" name="run" value="{{ r.id }}" form="compare" aria-label="{{ _('Compare %(run)s', run=run_title(r.titled)) }}"></td>
         <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ r.at | when }}</td>
-        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}">{{ r.described }}</a></td>
+        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}">{{ run_title(r.titled) }}</a></td>
         {% set counted, rest = tallies[r.id] %}
         <td class="py-2 pr-4 align-top"><div class="flex flex-wrap items-center gap-1">{% for said, n in counted %}{{ outcome(said, n) }}{% endfor %}{% if rest %}<span class="whitespace-nowrap text-xs text-muted-foreground">{{ ngettext("%(num)s missing", "%(num)s missing", rest) if r.finished else ngettext("%(num)s to go", "%(num)s to go", rest) }}</span>{% endif %}</div></td>
         <td class="py-2 pr-4 align-top">{{ _("yes") if r.finished else _("no") }}</td>
@@ -141,7 +168,7 @@
 {% set opened = "relative px-3 pb-3 xl:max-h-[calc(100dvh-9rem)] xl:overflow-y-auto" %}
 
 {% macro named(t) -%}
-{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}
+{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t | titled) }}
 {%- endmacro %}
 
 {% macro mean(value, unit="") -%}

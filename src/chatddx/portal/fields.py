@@ -15,9 +15,10 @@ from chatddx.factors import Invalid, Worded
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Purpose
-from chatddx.locale import tr
+from chatddx.locale import language_name, tr
 
 from .pages import own_first, refusal_of
+from .titles import said_case
 
 type Shape = Literal[
     "pick",
@@ -159,7 +160,11 @@ def choices(
         for family in bench.families():
             bare = Case(vignette=family.vignette).digest
             for case in family.cases:
-                named = family.name if case == bare else bench.title(case)
+                named = (
+                    family.name
+                    if case == bare
+                    else said_case(bench.titled_case(case))
+                )
                 _ = found.setdefault(case, named)
     elif set(kinds) <= _ENGINES:
         found = _engines(bench)
@@ -217,7 +222,11 @@ def _held(bench: Bench, digest: str, found: Mapping[str, str]) -> str:
                 c.recipe == made.recipe and c.into is None
                 for c in bench.rows.compilations(head)
             ):
-                return tr("%(name)s, in %(language)s", name=named, language=made.into)
+                return tr(
+                    "%(name)s, in %(language)s",
+                    name=named,
+                    language=language_name(made.into),
+                )
     return tr("%(name)s, as it is held", name=bench.title(digest))
 
 

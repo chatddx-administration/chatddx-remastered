@@ -45,6 +45,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, s
 # test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
 ```
 
+## `src/chatddx/curation/write.py:_Init._unnamed`
+
+```
+# Policy: a name an earlier giftbag gave a fork of an expectation, its origin's title,
+# is taken back, as an expectation with no name is said by its case.
+```
+
 ## `src/chatddx/curation/write.py:_Init.appended`
 
 ```
@@ -64,4 +71,11 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, s
 ```
 # Policy: a thread's origin is set when it is created (put), so a re-run only
 # reports one that differs from the data's.
+```
+
+## `src/chatddx/curation/write.py:_Init.giftbag`
+
+```
+# Policy: an expectation with no name is said by its case where it is shown,
+# so its fork takes no title derived of it as a name.
 ```

@@ -107,7 +107,7 @@ def test_a_column_whose_weights_its_handle_no_longer_holds_says_so(
     bench.conn.commit()
     mine = thread(signed, "configuration", LINES_INSTRUCTED)
     text = said(shown(signed, f"/lab/{mine['id']}"))
-    assert f"its model is behind {QWEN_ARTIFACT}: follow it" in text
+    assert "out of date" in text
     assert "None of them has a run at its model's latest engine yet." in text
 
 
@@ -135,7 +135,7 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
     got = paged.get(f"/lab/{lines['id']}?model={weights}")
     assert got.status_code == 500, said(got.text)[:300]
     assert said(got.text).startswith(
-        f"> That shouldn't have happened {whoops} Pass this on to ops, as it is: {pass_on} "
+        f"> That shouldn't have happened {whoops} Copy this and send it to drift@chatddx.com: {pass_on} "
     )
     asked = paged.get(f"/api/threads/{lines['id']}/variation?model={weights}")
     assert (asked.status_code, asked.json()) == (
@@ -157,7 +157,7 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
         f"/lab/{lines['id']}?model={weights}", headers={"accept-language": "sv"}
     )
     assert (
-        f"Ingen modell i biblioteket håller vikterna: ta en annan så länge. Pass this on to ops, as it is: {pass_on} "
+        f"Ingen modell i biblioteket håller vikterna: ta en annan så länge. Copy this and send it to drift@chatddx.com: {pass_on} "
         in said(sv.text)
     )
 
@@ -299,7 +299,7 @@ def test_a_configuration_follows_its_corrected_facts_from_its_pages(
     recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
     page = shown(signed, path)
-    assert corrected in page and ">Follow<" in page
+    assert corrected in page and ">Update<" in page
     page = shown(signed, f"/threads/{mine['id']}")
     assert corrected in page and f'action="/threads/{mine["id"]}/moved/follow"' in page
 

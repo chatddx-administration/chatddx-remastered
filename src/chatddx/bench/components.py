@@ -229,7 +229,7 @@ def _carried(seen: Seen, trial: Trial) -> tuple[Trial, Registry, list[str]]:
     if len(known) > 1:
         raise Invalid.of(
             "a trial's cases are in one language, not in %(languages)s",
-            languages=" and ".join(known),
+            languages=", ".join(known),
         )
     made = seen.rows.compilations(trial.skeleton)
     recipe = made[0].recipe if made else None

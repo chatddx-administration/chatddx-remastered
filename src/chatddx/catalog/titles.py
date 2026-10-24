@@ -1,6 +1,7 @@
 import json
 import re
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from functools import partial
 
 from pydantic import JsonValue
@@ -46,6 +47,13 @@ from .read import Reader, about, abouts, heads_of
 from .threads import divergence, head
 
 Title = Callable[[str], str]
+
+
+@dataclass(frozen=True)
+class CaseTitle:
+    name: str
+    appendices: tuple[str, ...]
+    earlier: bool
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SAMPLED = (
@@ -117,8 +125,8 @@ def _describe_recipe(recipe: Recipe, title: Title) -> str:
     return described if recipe.purpose == "generation" else f"judge: {described}"
 
 
-def _describe_case(root: str, appendices: Iterable[str], title: Title) -> str:
-    titles = [title(a) for a in appendices]
+def _describe_case(root: str, appendices: Iterable[str]) -> str:
+    titles = list(appendices)
     return f"{root} with {', '.join(titles)}" if titles else root
 
 
@@ -190,7 +198,9 @@ def describe(component: Component, title: Title) -> str:
         case Expectation(case=case):
             return f"expectation for {title(case)}"
         case Case(vignette=vignette, appendices=appendices):
-            return _describe_case(f"{vignette.source}/{vignette.id}", appendices, title)
+            return _describe_case(
+                f"{vignette.source}/{vignette.id}", (title(a) for a in appendices)
+            )
         case LocalModel(repo=repo):
             return repo
         case LocalEngine(model=model, runtime=runtime, hardware=hardware):
@@ -214,6 +224,10 @@ def title(rows: Reader, thread: int) -> str:
     name = about(rows, Subject(thread=thread)).name
     if name is not None:
         return name
+    current = head(rows, thread)
+    # Policy: an expectation is told by its case, a fork of one as well as its origin.
+    if rows.kind(current.digest) == "expectation":
+        return _derive(rows, current.digest)
     diverged = divergence(rows, thread)
     if diverged is not None:
         base = title(rows, diverged.base.thread)
@@ -222,7 +236,6 @@ def title(rows: Reader, thread: int) -> str:
             for path, (_, after) in diverged.varies.items()
         ]
         return ", ".join([base, *changes]) if changes else f"a fork of {base}"
-    current = head(rows, thread)
     return _derive(rows, current.digest, current.compilation)
 
 
@@ -247,17 +260,27 @@ def title_of(rows: Reader, digest: str) -> str:
     return _derive(rows, digest)
 
 
-def _case_title(rows: Reader, digest: str) -> str:
+def case_title(rows: Reader, digest: str) -> CaseTitle | None:
     family = family_of(rows, digest)
     if family is None:
-        return _derive(rows, digest)
+        return None
     case = resolve(rows.get, digest, Case)
     current = rows.bindings([family])[-1].vignette
     name = about(rows, Subject(family=family)).name
-    root = name or f"{current.source}/{current.id}"
-    if case.vignette != current:
-        root += " (earlier)"
-    return _describe_case(root, case.appendices, partial(title_of, rows))
+    return CaseTitle(
+        name or f"{current.source}/{current.id}",
+        tuple(title_of(rows, a) for a in case.appendices),
+        case.vignette != current,
+    )
+
+
+def _case_title(rows: Reader, digest: str) -> str:
+    made = case_title(rows, digest)
+    if made is None:
+        return _derive(rows, digest)
+    return _describe_case(
+        made.name + (" (earlier)" if made.earlier else ""), made.appendices
+    )
 
 
 def _derive(rows: Reader, digest: str, compilation: str | None = None) -> str:

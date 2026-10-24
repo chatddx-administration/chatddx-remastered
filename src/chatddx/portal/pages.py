@@ -21,6 +21,7 @@ from chatddx.identity import Person
 from chatddx.store import People, UnderWay
 
 from .shelves import worded
+from .titles import said_case, said_thread
 from .translations import visible
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -61,6 +62,10 @@ templates.env.filters.update(
     pretty=_pretty,
     visible=visible,
     kind=worded,
+    language=locale.language_name,
+    listed=locale.listed,
+    case=said_case,
+    titled=said_thread,
     localized=locale.localized,
     refusal=_refusal,
 )
@@ -142,7 +147,7 @@ def refusal_of(e: Exception) -> str:
     if isinstance(e, Worded) and e.wording is not None:
         return locale.refusal(e.wording, e.params)
     return locale.tr(
-        "%(title)s. Pass this on to ops, as it is: %(pass_on)s",
+        "%(title)s. Copy this and send it to drift@chatddx.com: %(pass_on)s",
         title=locale.tr("That can't be done"),
         pass_on=str(e),
     )
