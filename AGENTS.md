@@ -37,7 +37,8 @@ When asked for a handover or pull request:
 2. Run `scripts/check.sh`:
    - relay flags
    - flip what the budget suggests when it feels right
-3. Commit and push, and open the pull request if one was asked for.
+3. Commit, run `chatddx stamp docs` and commit what it writes, then push, and open the pull request if one was
+   asked for.
 
 ## Handling errors and warnings
 
@@ -141,6 +142,9 @@ checks of a module: an `agents/wip-<name>.md` past Drafted, or a `docs/modules/<
 in two. A doc is moved in a commit of its own, and a move entails deduplication and updating references.
 
 ## Documentation
+
+Every doc is stamped: an agent writes it, and the handover's `chatddx stamp docs` keeps each change since the commit
+`.claude/hooks/session-start.sh` pins as a stamp pending, a git conflict for a human to stamp before the next baseline.
 
 - The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
   provide options.
