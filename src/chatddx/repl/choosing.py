@@ -1,6 +1,6 @@
 from rich.text import Text
 
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.request import RECIPE_PARTS
 
 from .shell import NONE, Repl
@@ -60,6 +60,6 @@ def save(repl: Repl, name: str) -> None:
     repl.variation = repl.bench.variation(saved.edit.thread)
     repl.forget()
     repl.console.print(
-        Text(f"saved as {name}: {saved.what} {short(saved.edit.digest)}")
+        Text(f"saved as {name}: {saved.what} {display_digest(saved.edit.digest)}")
     )
     _ = repl.say_variation(repl.variation)

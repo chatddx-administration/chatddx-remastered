@@ -69,6 +69,7 @@ class Reply:
     finish: str
     runaway: int = 0
     hang_up: int | None = None
+    hold: int | None = None
 
 
 def pick(served: Sequence[Served], body: dict[str, Any]) -> Served:
@@ -318,7 +319,13 @@ def scripted(served: Served, body: dict[str, Any], turn: Turn) -> Reply:
         "length" if turn.runaway else "tool_calls" if calls and not named else "stop"
     )
     reply = Reply(
-        turn.reasoning, turn.content, calls, finish, turn.runaway, turn.hang_up
+        turn.reasoning,
+        turn.content,
+        calls,
+        finish,
+        turn.runaway,
+        turn.hang_up,
+        turn.hold,
     )
     return _placed(served, body, reply)
 

@@ -4,7 +4,7 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import Graded
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
@@ -19,7 +19,8 @@ from .render import (
     REFUSED,
     TOKENS,
     Transcript,
-    clipped_line,
+    display_clipped_line,
+    display_value,
     outcome,
     scored_findings,
     show_answer,
@@ -27,7 +28,6 @@ from .render import (
     show_scores,
     show_summary,
     show_table,
-    value_of,
 )
 from .shell import Repl
 
@@ -55,7 +55,7 @@ def runs(repl: Repl, count: str = "20") -> None:
         table.add_row(
             str(started.run)[:8],
             when(started),
-            short(started.trial),
+            display_digest(started.trial),
             bench.described(started),
             _outcomes(repl, run),
             "\n".join(_means(g) for g in graded),
@@ -115,7 +115,7 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
 
 
 def said(repl: Repl, started: RunStarted) -> None:
-    trial = short(started.trial)
+    trial = display_digest(started.trial)
     what = repl.bench.described(started)
     repl.console.print(
         Text(f"run {str(started.run)[:8]} of trial {trial}: {what}", style="bold")
@@ -142,7 +142,7 @@ def _lines(repl: Repl, skeleton: Skeleton, items: tuple[RunItem, ...]) -> None:
         line = Text(f"{names[item.key.case]:<{width}}  {usage(item)[1]:>{TOKENS}}")
         _ = line.append(f"  {word}", style=style)
         if why is not None:
-            _ = line.append(f"  {clipped_line(why)}", style=REFUSED)
+            _ = line.append(f"  {display_clipped_line(why)}", style=REFUSED)
         repl.console.print(line)
 
 
@@ -155,7 +155,7 @@ def _outcomes(repl: Repl, run: Run) -> Text:
         [(word, style, why)] = words
         _ = text.append(word, style=style)
         if why is not None:
-            _ = text.append(f": {clipped_line(why, 40)}", style=REFUSED)
+            _ = text.append(f": {display_clipped_line(why, 40)}", style=REFUSED)
     elif words:
         counted = Counter(word for word, _, _ in words)
         _ = text.append(", ".join(f"{n} {word}" for word, n in counted.items()))
@@ -174,6 +174,6 @@ def _means(graded: Graded) -> str:
             s.value for s in graded.score.items if s.view == i and s.value is not None
         ]
         means.append(
-            value_of(mean(values), unit_of(graded.scorer, i)) if values else "—"
+            display_value(mean(values), unit_of(graded.scorer, i)) if values else "—"
         )
     return f"{graded.name} {'/'.join(means)}"

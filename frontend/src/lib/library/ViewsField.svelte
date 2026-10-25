@@ -25,7 +25,11 @@
   let labels = $state([...untrack(() => named)]);
   let judges = $state<JudgeChoice[]>([...held.judges]);
   const titles = $derived({ ...held.titles, ...Object.fromEntries(judges.map((j) => [j.digest, j.name])) });
-  const asked = choices(untrack(() => schema), null, t("the whole expectation"));
+  const asked = choices(
+    untrack(() => schema),
+    null,
+    t("the whole expectation"),
+  );
   const answered = answeredChoices(held.outputs);
 
   $effect(() => {

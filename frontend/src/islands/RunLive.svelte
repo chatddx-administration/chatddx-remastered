@@ -54,7 +54,9 @@
       </span>
     {:else}
       <LoaderCircleIcon class="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
-      <span class="text-sm text-muted-foreground">{scoring ? tp("a run under way", "Scoring") : tp("a run under way", "Sending")}</span>
+      <span class="text-sm text-muted-foreground"
+        >{scoring ? tp("a run under way", "Scoring") : tp("a run under way", "Sending")}</span
+      >
     {/if}
   </div>
 
@@ -75,7 +77,12 @@
       ></div>
     </div>
     <p class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-      <span>{tn("%(ended)s of %(of)s item ended", "%(ended)s of %(of)s items ended", counted.of, { ended: counted.ended, of: counted.of })}</span>
+      <span
+        >{tn("%(ended)s of %(of)s item ended", "%(ended)s of %(of)s items ended", counted.of, {
+          ended: counted.ended,
+          of: counted.of,
+        })}</span
+      >
       {#each counted.outcomes as [said, n] (said)}<Badge variant="outline">{outcomes(said, n)}</Badge>{/each}
     </p>
 
@@ -84,23 +91,37 @@
         <details class="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
           <summary class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span class="font-medium">{titled(item)}</span>
-            {#if item.outcome}<Badge variant={item.outcome === "valid" || item.outcome === "completed" ? "secondary" : "destructive"}>{outcome(item.outcome)}</Badge>{/if}
-            {#if item.phase === "sending"}<LoaderCircleIcon class="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />{/if}
+            {#if item.outcome}<Badge
+                variant={item.outcome === "valid" || item.outcome === "completed" ? "secondary" : "destructive"}
+                >{outcome(item.outcome)}</Badge
+              >{/if}
+            {#if item.phase === "sending"}<LoaderCircleIcon
+                class="size-3.5 animate-spin text-muted-foreground"
+                aria-hidden="true"
+              />{/if}
             <span class="text-muted-foreground">{doing(item)}</span>
-            {#if item.tools}<span class="text-muted-foreground">{tn("%(n)s tool call", "%(n)s tool calls", item.tools, { n: item.tools })}</span>{/if}
+            {#if item.tools}<span class="text-muted-foreground"
+                >{tn("%(n)s tool call", "%(n)s tool calls", item.tools, { n: item.tools })}</span
+              >{/if}
             {#if item.why}<span class="text-muted-foreground">{item.why}</span>{/if}
           </summary>
           {#if item.text.reasoning}
             <p class="mt-2 text-xs font-medium text-muted-foreground">{t("Thinking")}</p>
-            <div class="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">{item.text.reasoning}</div>
+            <div class="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">
+              {item.text.reasoning}
+            </div>
           {/if}
           {#if item.text.content || item.text.tool_call}
             <p class="mt-2 text-xs font-medium text-muted-foreground">{t("Answer")}</p>
-            <div class="mt-1 max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-xs">{item.text.content}{item.text.tool_call}</div>
+            <div class="mt-1 max-h-72 overflow-y-auto whitespace-pre-wrap font-mono text-xs">
+              {item.text.content}{item.text.tool_call}
+            </div>
           {/if}
           {#if item.phase === "waiting"}<p class="mt-2 text-xs text-muted-foreground">{t("Not sent yet.")}</p>{/if}
           {#if item.phase === "ended" && !item.text.content && !item.text.reasoning}
-            <p class="mt-2 text-xs text-muted-foreground">{t("It ended before this page followed it; its answer is on the run's page once it is done.")}</p>
+            <p class="mt-2 text-xs text-muted-foreground">
+              {t("It ended before this page followed it; its answer is on the run's page once it is done.")}
+            </p>
           {/if}
         </details>
       {/each}
@@ -117,12 +138,27 @@
           {#if s.score === null}
             <span class="text-muted-foreground">{t("waiting")}</span>
           {:else}
-            {#if !after && progress.scores === null}<LoaderCircleIcon class="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />{/if}
+            {#if !after && progress.scores === null}<LoaderCircleIcon
+                class="size-3.5 animate-spin text-muted-foreground"
+                aria-hidden="true"
+              />{/if}
             {@const scored = tn("%(n)s scored", "%(n)s scored", s.scored, { n: s.scored })}
             <span class="text-muted-foreground">
-              {s.views ? t("%(scored)s over %(views)s", { scored, views: tn("%(n)s view", "%(n)s views", s.views, { n: s.views }) }) : scored}
+              {s.views
+                ? t("%(scored)s over %(views)s", {
+                    scored,
+                    views: tn("%(n)s view", "%(n)s views", s.views, { n: s.views }),
+                  })
+                : scored}
             </span>
-            {#if s.asked}<span class="text-muted-foreground">{tn("judges answered %(answered)s of %(asked)s", "judges answered %(answered)s of %(asked)s", s.asked, { answered: s.answered, asked: s.asked })}</span>{/if}
+            {#if s.asked}<span class="text-muted-foreground"
+                >{tn(
+                  "judges answered %(answered)s of %(asked)s",
+                  "judges answered %(answered)s of %(asked)s",
+                  s.asked,
+                  { answered: s.answered, asked: s.asked },
+                )}</span
+              >{/if}
           {/if}
         </li>
       {/each}
@@ -133,12 +169,16 @@
     <ul class="mt-6 space-y-1.5 text-sm">
       {#each progress.noted as finding, i (i)}
         <li class="flex gap-2">
-          {#if finding.level === "warning"}<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-warning" />{:else}<InfoIcon class="mt-0.5 size-4 shrink-0 text-primary" />{/if}
+          {#if finding.level === "warning"}<TriangleAlertIcon
+              class="mt-0.5 size-4 shrink-0 text-warning"
+            />{:else}<InfoIcon class="mt-0.5 size-4 shrink-0 text-primary" />{/if}
           <span>{localized(finding)}</span>
         </li>
       {/each}
       {#each progress.errors as error, i (i)}
-        <li class="flex gap-2 text-destructive"><TriangleAlertIcon class="mt-0.5 size-4 shrink-0" /><span>{error}</span></li>
+        <li class="flex gap-2 text-destructive">
+          <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" /><span>{error}</span>
+        </li>
       {/each}
     </ul>
   {/if}

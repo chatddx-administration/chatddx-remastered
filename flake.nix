@@ -96,7 +96,7 @@
             inherit (finalAttrs) pname version;
             src = ./frontend;
             fetcherVersion = 4;
-            hash = "sha256-/i0p8mORqPJPC2A9QDfjLP9/p2yLcuKTojfPLcQpUpI=";
+            hash = "sha256-Q+TMatq+nx/dv5EzbaG5TP9DsqVXKMIiFG78GJYAneg=";
           };
           buildPhase = ''
             runHook preBuild
@@ -227,6 +227,34 @@
                   dev-db start
                 '';
                 postBuild = "dev-db stop";
+              };
+
+          format =
+            check system "format"
+              (lib.fileset.unions [
+                ./src
+                ./frontend
+                ./docs
+                ./agents
+                ./AGENTS.md
+                ./README.md
+                ./pyproject.toml
+                ./.prettierrc
+                ./.prettierignore
+              ])
+              {
+                pnpmRoot = "frontend";
+                inherit (frontend system) pnpmDeps;
+                nativeBuildInputs = [
+                  (devEnv system)
+                  pkgs.nodejs_22
+                  pkgs.pnpm
+                  pkgs.pnpmConfigHook
+                ];
+                preBuild = ''
+                  unset PYTHONPATH
+                  export HOME="$TMPDIR"
+                '';
               };
 
           frontend =

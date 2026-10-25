@@ -178,6 +178,20 @@ Raises:
 * `title: Title`
 * ∟`str`
 
+## `display_count`
+`src/chatddx/catalog/titles.py:display_count`
+
+* `n: int`
+* `one: str`
+* `many: str | None = None`
+* ∟`str`
+
+## `display_digest`
+`src/chatddx/catalog/titles.py:display_digest`
+
+* `digest: str`
+* ∟`str`
+
 ## `Divergence` `(_Frozen)`
 `src/chatddx/catalog/model.py:Divergence`
 
@@ -579,12 +593,6 @@ Raises:
 `src/chatddx/catalog/model.py:RUN_FIELDS`
 
 `RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})`
-
-## `short`
-`src/chatddx/catalog/titles.py:short`
-
-* `digest: str`
-* ∟`str`
 
 ## `stale_cases`
 `src/chatddx/catalog/families.py:stale_cases`

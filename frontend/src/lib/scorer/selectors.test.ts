@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { chosen, choices, same } from "./selectors";
 
-const TARGETS = JSON.parse(readFileSync(new URL("../../../../worlds/sample/_data/schemas/targets.json", import.meta.url), "utf8"));
+const TARGETS = JSON.parse(
+  readFileSync(new URL("../../../../worlds/sample/_data/schemas/targets.json", import.meta.url), "utf8"),
+);
 const PLAN = JSON.parse(
   readFileSync(new URL("../../../../worlds/sample/_data/schemas/management_plan_v1.json", import.meta.url), "utf8"),
 );

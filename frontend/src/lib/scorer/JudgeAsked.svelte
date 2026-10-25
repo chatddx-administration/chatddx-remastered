@@ -39,7 +39,11 @@
       {#each messages as m, i (i)}
         <li>
           <span class="font-medium text-muted-foreground">{m.role}</span>
-          <div class="mt-0.5 max-h-56 overflow-y-auto whitespace-pre-wrap rounded bg-background/70 p-2 font-mono text-[0.7rem] leading-relaxed">{m.content}</div>
+          <div
+            class="mt-0.5 max-h-56 overflow-y-auto whitespace-pre-wrap rounded bg-background/70 p-2 font-mono text-[0.7rem] leading-relaxed"
+          >
+            {m.content}
+          </div>
         </li>
       {/each}
     </ol>

@@ -20,8 +20,8 @@ from chatddx.factors.base import LANGUAGE
 from chatddx.identity import Person
 from chatddx.store import People, UnderWay
 
-from .shelves import worded
-from .titles import said_case, said_thread
+from .shelves import display_kind
+from .titles import display_case, display_thread
 from .translations import visible
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -39,15 +39,15 @@ templates.env.install_gettext_callables(  # pyright: ignore[reportAttributeAcces
 )
 
 
-def _when(at: datetime | None) -> str:
+def _display_time(at: datetime | None) -> str:
     return "—" if at is None else at.strftime("%Y-%m-%d %H:%M")
 
 
-def _short(digest: str | None) -> str:
+def _display_digest(digest: str | None) -> str:
     return "—" if digest is None else digest.removeprefix("sha256:")[:12]
 
 
-def _pretty(value: JsonValue) -> str:
+def _display_json(value: JsonValue) -> str:
     return json.dumps(value, indent=2, ensure_ascii=False)
 
 
@@ -57,15 +57,15 @@ def _refusal(error: schemas.Error) -> str:
 
 
 templates.env.filters.update(
-    when=_when,
-    short=_short,
-    pretty=_pretty,
+    when=_display_time,
+    short=_display_digest,
+    pretty=_display_json,
     visible=visible,
-    kind=worded,
-    language=locale.language_name,
-    listed=locale.listed,
-    case=said_case,
-    titled=said_thread,
+    kind=display_kind,
+    language=locale.display_language,
+    listed=locale.display_list,
+    case=display_case,
+    titled=display_thread,
     localized=locale.localized,
     refusal=_refusal,
 )

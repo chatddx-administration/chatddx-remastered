@@ -50,7 +50,7 @@ Some 600 to 800 messages, of which three habits of the templates make more work 
   (konfiguration, konfigurationen) and compounds it, so a word dropped in reads wrong more often than not.
 - **English plurals by hand**, `"" if n == 1 else "s"`, in 13 places.
 
-The rest holds already: dates are written `%Y-%m-%d %H:%M` (`src/chatddx/portal/pages.py:_when`), which Swedish reads as
+The rest holds already: dates are written `%Y-%m-%d %H:%M` (`src/chatddx/portal/pages.py:_display_time`), which Swedish reads as
 it is, and `src/chatddx/portal/templates/base.html` has a `lang` to set.
 
 ## How it works
@@ -91,7 +91,7 @@ time, so that Babel matches a changed message only to one translated.
 - **A kind's word**, built: drawn by one filter, `{{ word | kind }}`, translated with `pgettext("kind", …)` from
   `src/chatddx/portal/shelves.py:_WORDS`, which a no-op `pgettext_noop` marks and boot holds to the kinds shelved, so
   that whether Swedish translates it is decided in the catalog (see "Open"). A list of kinds is sorted by its words as
-  said (`src/chatddx/portal/shelves.py:Shelved.worded`).
+  said (`src/chatddx/portal/shelves.py:Shelved.display_kind`).
 - **How a message is written**, as every page's are:
   - a sentence whole, its alternatives each a message (`_("None you see of these.") if … else _("None you see.")`);
   - a sentence with links or markup in it a `{% trans %}` block, the markup in its message;
@@ -125,7 +125,7 @@ time, so that Babel matches a changed message only to one translated.
   - what the server says too is said with the server's message, context and placeholders, so that it is translated once:
     an outcome's word (`frontend/src/lib/runs/outcomes.ts`), a kind's (`frontend/src/lib/kinds.ts`), `view %(n)s`,
     `%(sent)s in, %(got)s out`;
-  - a list of words is put together by the page's locale (`listed()`, `Intl.ListFormat`);
+  - a list of words is put together by the page's locale (`display_list()`, the islands' `displayList()`, `Intl.ListFormat`);
   - a table of words defined at a module's top is translated there, as an island's script runs once the page that holds
     its catalog is parsed.
 - **A whoops**, built, is `Whoops(message, pass_on)`: the API answers it with `detail`, its message, and `pass_on`, as
@@ -169,8 +169,7 @@ time, so that Babel matches a changed message only to one translated.
 - **Take: its context is `refusal`**, the English as written its key, as a whoops's is; a code of its own only where one
   is needed, which nothing needs yet.
 - **Extracted**, built, from each `raise X.of(…)` in `src/chatddx/` (`src/chatddx/locale/locale.py:_refusals`); a
-  wording not written where it is raised is marked where it is written, with `pgettext_noop("refusal", …)`, as
-  `src/chatddx/portal/threads.py:_NAMED` is.
+  wording not written where it is raised is marked where it is written, with `pgettext_noop("refusal", …)`.
 - **Answered**, built: the API's `Error` carries `wording` and `params` beside `detail`
   (`src/chatddx/api/app.py:_worded`), through `src/chatddx/api/state.py:refused` too
   (`src/chatddx/api/state.py:Refusing`).
@@ -260,28 +259,31 @@ Each step leaves the portal working in English, and Swedish appearing only where
      which Babel's catalog checks and the boot check pass with every mark cleared; the portal says nothing in Swedish
      until a mark is cleared.
    - **Take: the words**, as the glossary's terms are drafted, for a reviewer to hold the rest to: case _fall_, family
-     _familj_, vignette _vinjett_, appendix _bilaga_, configuration _konfiguration_, recipe _recept_, skeleton
-     _skelett_, part _del_, chunk _block_, output _svarsform_, passthrough _genomsläpp_, toolset _verktygsuppsättning_,
-     few shot _exempel_, run _körning_, item _post_, replicate _replikat_, seed _frö_, view _vy_, metric _mått_, finding
-     _anmärkning_, lint _kontroll_, model _modell_, engine _motor_, endpoint _ändpunkt_, thread _tråd_, fork
-     _förgrening_, origin _ursprung_, cleared _godkänd_, sensitive _känslig_, the Library _Biblioteket_, the Lab
-     _Labbet_, Review _Granskning_.
+     _familj_, vignette _vinjett_, appendix _bilaga_, configuration _konfiguration_, recipe _recept_, part _del_, chunk
+     _block_, output _svarsform_, passthrough _genomsläpp_, toolset _verktygsuppsättning_, few shot _exempel_, run
+     _körning_, item _post_, replicate _replikat_, view _vy_, metric _mått_, finding _anmärkning_, lint _kontroll_,
+     model _modell_, endpoint _ändpunkt_, thread _tråd_, fork _förgrening_, origin _ursprung_, cleared _godkänd_,
+     sensitive _känslig_, the Library _Biblioteket_, the Lab _Labbet_, Review _Granskning_.
    - **Decided: the words reviewed**: the World _Miljön_; scorer _rättare_, score and Scoring _rättning_, to score
      _rätta_; judge _bedömare_, its grading _bedöma_, verdict _omdöme_; expectation _facit_, expectation schema
      _facitschema_; trial _försök_, an attempt always _anropsförsök_; kind _typ_; follow _uppdatera_; handle _alias_;
-     out of date _ouppdaterad_ and to update _uppdatera_, with _Uppdatera alla_; the outcomes _giltig_, _slutförd_,
-     _räddad_, _ogiltig_, _med fel_, _oläsbar_ and _stoppad_, cut short _avkortat_, and halt _avbryta_; what you see
-     _det du har tillgång till_.
-   - **Decided: a language by its name**, in the reader's locale (`src/chatddx/locale/locale.py:language_name`, the
-     `language` filter and the islands' `languageName()`), wherever a language is shown, and in a finding or a refusal
+     out of date _ouppdaterad_ and to update _uppdatera_, with _Uppdatera alla_; seed _seed_; engine _inferensserver_;
+     skeleton _förfrågningsmall_; greedy _temperatur 0_, saying where it matters that it always picks the most likely
+     next token; the outcomes _giltig_, _slutförd_, _räddad_, _ogiltig_, _med fel_, _oläsbar_ and _stoppad_, cut short
+     _avkortat_, and halt _avbryta_; what you see _det du har tillgång till_.
+   - **Decided: a language by its name**, in the reader's locale (`src/chatddx/locale/locale.py:display_language`, the
+     `language` filter and the islands' `displayLanguage()`), wherever a language is shown, and in a finding or a refusal
      whose parameter is named `language`, `into` or `languages`, the last tags separated by `, `; a field a tag is typed
      in takes a tag.
+   - **Decided: a list as the reader's locale says one**, in a finding or a refusal whose parameter is named `slots`,
+     `inserts` or `worked`, names separated by `, ` (`src/chatddx/locale/locale.py:_LISTED_PARAMS`), as `languages` is.
    - **Decided: a run is titled from its parts** (`src/chatddx/bench/seen.py:Seen.titled`), said by the portal's
-     `run_title` macro and the islands' `runTitle()`: its configuration's name and what its variation replaced, each by
-     its part's word and what it holds, then its model, its case or how many, its language and its seeds, set apart by
-     `·`. `Seen.described` stays English, for the repl, the CLI and the logs.
+     `run_title` macro and the islands' `runTitle()` as one sentence: its case or how many, in its language, with its
+     configuration's name in backticks and what its variation replaced in parentheses, each by its part's word and what
+     it holds, on its model, and its seeds in parentheses: ``3 svenska fall med `diagnoses` på qwen3-8b (seed 7)``.
+     `Seen.described` stays English, for the repl, the CLI and the logs.
    - **Decided: a case is titled from its parts** (`src/chatddx/catalog/titles.py:case_title`), said by the portal's
-     `case` filter (`src/chatddx/portal/titles.py:said_case`) and the islands' `caseTitle()`:
+     `case` filter (`src/chatddx/portal/titles.py:display_case`) and the islands' `caseTitle()`:
      `%(case)s with %(appendices)s`, and briefly `%(case)s + %(num)s appendices` in a run's title; the English stays
      what the repl and scripted runs name a case by.
    - **Decided: what is shown has a name**, and a title derived of what a thread holds is the repl's: an expectation

@@ -23,6 +23,7 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Canary, CanarySet, Execution, Trial, replicates
+from chatddx.fake_vllm.script import Script, Turn
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.ledger import (
@@ -482,9 +483,7 @@ def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     assert item.call.error == STOPPED
 
 
-@pytest.mark.usefixtures("delayed")
 @pytest.mark.parametrize("concurrency", [1, 2])
-@pytest.mark.slow
 def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     conn: Connection,
     inventory: Inventory,
@@ -492,23 +491,26 @@ def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     plan: Plan,
     concurrency: int,
 ) -> None:
-    running = Runner(conn, inventory, alice).start(
-        trial(plan),
-        plan.registry,
-        QWEN,
-        Execution(concurrency=concurrency),
-        canaries=CANARIES,
-    )
+    canaries = [Turn(content="Fine.")] * len(CANARIES.canaries)
+    held = [Turn(content="Chest pain has many causes.", hold=1)] * concurrency
     deltas: list[Streamed] = []
     halt = Halt()
 
     def halting(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             deltas.append(event)
-            if len(deltas) == 2:
+            if len({d.key for d in deltas}) == concurrency and not halt.is_set():
                 elsewhere(halt.set)
 
-    running.send(Heard(then=halting), halt)
+    with faked(inventory, plan.registry.get, script=Script([*canaries, *held])):
+        running = Runner(conn, inventory, alice).start(
+            trial(plan),
+            plan.registry,
+            QWEN,
+            Execution(concurrency=concurrency),
+            canaries=CANARIES,
+        )
+        running.send(Heard(then=halting), halt)
     findings = running.finish()
     stored = Store(conn).run(running.run)
     assert [i.call.error for i in stored.items] == [STOPPED] * concurrency

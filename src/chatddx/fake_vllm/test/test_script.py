@@ -1,4 +1,7 @@
+import http.client
 import json
+import select
+import socket
 import tomllib
 import urllib.error
 import urllib.request
@@ -139,6 +142,69 @@ def test_a_scripted_request_still_meets_vllm_s_checks() -> None:
     assert script.next() == (1, script.turns[0])
 
 
+HELD = """
+[[turn]]
+content = "Biliary colic, likely"
+hold = 1
+
+[[turn]]
+content = "Cholecystitis"
+hold = 0
+
+[[turn]]
+content = "Pancreatitis"
+"""
+
+
+def test_a_held_turn_waits_for_the_client_to_hang_up() -> None:
+    script = Script.of(tomllib.loads(HELD))
+    with serving([Served.of(QWEN_MODEL)], "127.0.0.1", 0, script=script) as (h, p):
+        held = http.client.HTTPConnection(h, p, timeout=10)
+        held.request("POST", "/v1/chat/completions", body())
+        sock = held.sock
+        streamed = held.getresponse()
+        lines = [streamed.readline() for _ in range(4)]
+        _ = sock.settimeout(0.1)
+        with pytest.raises(TimeoutError):
+            _ = streamed.readline()
+        held.close()
+        events = [json.loads(e.removeprefix(b"data: ")) for e in lines if e.strip()]
+
+        unstreamed = http.client.HTTPConnection(h, p, timeout=0.1)
+        unstreamed.request("POST", "/v1/chat/completions", body(stream=False))
+        with pytest.raises(TimeoutError):
+            _ = unstreamed.getresponse()
+        unstreamed.close()
+
+        status, chunks, done = post(f"http://{h}:{p}", body())
+
+    assert said(events, "content") == "Biliary "
+    assert (status, done, said(chunks, "content")) == (200, True, "Pancreatitis")
+
+
+def test_a_held_turn_goes_on_once_its_script_is_released() -> None:
+    script = Script.of(tomllib.loads(HELD))
+    sent = body()
+    request = b"POST /v1/chat/completions HTTP/1.0\r\n"
+    request += b"Content-Length: %d\r\n\r\n%s" % (len(sent), sent)
+    served = serving([Served.of(QWEN_MODEL)], "127.0.0.1", 0, script=script)
+    with served as (h, p), socket.create_connection((h, p), timeout=10) as held:
+        held.sendall(request)
+        got = b""
+        while got.count(b"data: ") < 2 or not got.endswith(b"\n\n"):
+            got += held.recv(4096)
+        assert select.select([held], [], [], 0.1)[0] == []
+        script.release()
+        while chunk := held.recv(4096):
+            got += chunk
+
+    _, stream = got.split(b"\r\n\r\n", 1)
+    data = [e.removeprefix(b"data: ") for e in stream.split(b"\n\n") if e]
+    assert data[-1] == b"[DONE]"
+    events = [json.loads(e) for e in data[:-1]]
+    assert said(events, "content") == "Biliary colic, likely"
+
+
 @pytest.mark.parametrize(
     ("text", "refusal"),
     [
@@ -146,6 +212,8 @@ def test_a_scripted_request_still_meets_vllm_s_checks() -> None:
         ("[[turn]]\nwords = 'x'\n", r"turn 1 has no \['words'\]"),
         ("[[turn]]\ncontent = 1\n", "turn 1.content is text"),
         ("[[turn]]\nhang_up = -1\n", "turn 1.hang_up is a count"),
+        ("[[turn]]\nhold = -1\n", "turn 1.hold is a count"),
+        ("[[turn]]\nhang_up = 1\nhold = 1\n", "turn 1 hangs up or holds, not both"),
         ("[[turn]]\ntool_calls = [{ name = 'x', id = 'y' }]\n", r"has no \['id'\]"),
     ],
 )

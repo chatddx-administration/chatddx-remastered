@@ -15,10 +15,10 @@ from chatddx.factors import Invalid, Worded
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import model_of
 from chatddx.factors.request import Purpose
-from chatddx.locale import language_name, tr
+from chatddx.locale import display_language, tr
 
 from .pages import own_first, refusal_of
-from .titles import said_case
+from .titles import display_case
 
 type Shape = Literal[
     "pick",
@@ -163,7 +163,7 @@ def choices(
                 named = (
                     family.name
                     if case == bare
-                    else said_case(bench.titled_case(case))
+                    else display_case(bench.titled_case(case))
                 )
                 _ = found.setdefault(case, named)
     elif set(kinds) <= _ENGINES:
@@ -225,7 +225,7 @@ def _held(bench: Bench, digest: str, found: Mapping[str, str]) -> str:
                 return tr(
                     "%(name)s, in %(language)s",
                     name=named,
-                    language=language_name(made.into),
+                    language=display_language(made.into),
                 )
     return tr("%(name)s, as it is held", name=bench.title(digest))
 
@@ -321,9 +321,10 @@ def _json(name: str, given: str) -> JsonValue:
 
 
 def kept(
-    found: list[Field], form: FormData, e: ValueError
+    found: list[Field], form: FormData, e: ValueError | None
 ) -> tuple[list[Field], list[str]]:
-    by_field, rest = _refusals(e, [f.name for f in found if f.editable])
+    names = [f.name for f in found if f.editable]
+    by_field, rest = ({}, []) if e is None else _refusals(e, names)
     return [_kept(f, form, by_field.get(f.name)) for f in found], rest
 
 

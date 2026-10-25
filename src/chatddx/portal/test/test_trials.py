@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.api.test.helpers import endpoint, family, thread
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.engine import model_of
 from chatddx.identity import Person
 from chatddx.portal.test.helpers import said, shown, submitted, world_served
@@ -67,7 +67,10 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     assert len(signed.get(f"/api{path}/edits").json()) == 1
 
     got = written(signed, begun(signed, "crlf", "nfd"), "mixed")
-    assert got.status_code == 422 and "in one language, not in English and Swedish" in got.text
+    assert (
+        got.status_code == 422
+        and "in one language, not in English and Swedish" in got.text
+    )
 
     tab = shown(signed, "/library?kind=trial")
     assert f'name="trial" value="{made["id"]}"' in tab
@@ -131,7 +134,7 @@ def test_a_world_broken_under_a_running_app_is_paged_with_its_boot_check(
     weights = model_of(inventory.endpoint(QWEN).engine, Store(conn).get).digest
     _ = Catalog(conn).create(weights, alice.id, name="twin")
     broken = (
-        f"RuntimeError: {short(weights)} is held by 2 model threads, not one: "
+        f"RuntimeError: {display_digest(weights)} is held by 2 model threads, not one: "
         + "fix boot-check src/chatddx/bench/handles.py:broken"
     )
     for path in (action, f"/lab/{lines['id']}"):

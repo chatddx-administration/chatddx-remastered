@@ -46,5 +46,8 @@
   {#if hint}<span class="text-xs text-warning">{hint}</span>{/if}</label
 >
 <label class="grid gap-1"
-  ><span class="text-muted-foreground">{t("Seeds, a call each")}</span><input class="{FIELD} font-mono" bind:value={seeds} /></label
+  ><span class="text-muted-foreground">{t("Seeds, a call each")}</span><input
+    class="{FIELD} font-mono"
+    bind:value={seeds}
+  /></label
 >

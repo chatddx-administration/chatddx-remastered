@@ -148,6 +148,9 @@ def test_translations_are_begun_of_a_configuration_s_texts(signed: TestClient) -
     given = submitted(shown(signed, action), action)
     [text] = entries(given)
     written = {**given, "name": ["lines in Swedish"], "t.0": ["Lista diagnoserna."]}
+    got = signed.post(action, data={**written, "name": [" "]})
+    assert got.status_code == 422
+    assert '<span class="text-destructive">name</span>' in got.text
     got = signed.post(action, data=written)
     assert got.status_code == 303
     made = signed.get(f"/api{got.headers['location']}").json()

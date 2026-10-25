@@ -33,20 +33,6 @@ Finds:
 * `repl: Repl`
 * ∟`None`
 
-## `clipped`
-`src/chatddx/repl/render.py:clipped`
-
-* `text: str`
-* `lines: int = 30`
-* ∟`str`
-
-## `clipped_line`
-`src/chatddx/repl/render.py:clipped_line`
-
-* `text: str`
-* `width: int = 60`
-* ∟`str`
-
 ## `Command` `@dataclass(frozen=True)`
 `src/chatddx/repl/commands.py:Command`
 
@@ -85,6 +71,33 @@ Finds:
 
 * `findings: Iterable[Finding]`
 * ∟`list[tuple[Finding, int]]`
+
+## `display_clipped`
+`src/chatddx/repl/render.py:display_clipped`
+
+* `text: str`
+* `lines: int = 30`
+* ∟`str`
+
+## `display_clipped_line`
+`src/chatddx/repl/render.py:display_clipped_line`
+
+* `text: str`
+* `width: int = 60`
+* ∟`str`
+
+## `display_some`
+`src/chatddx/repl/render.py:display_some`
+
+* `names: Iterable[str]`
+* ∟`str`
+
+## `display_value`
+`src/chatddx/repl/render.py:display_value`
+
+* `value: float | None`
+* `unit: str = ""`
+* ∟`str`
 
 ## `drawn_seed`
 `src/chatddx/repl/shell.py:drawn_seed`
@@ -223,14 +236,6 @@ Finds:
 * `skeleton: Skeleton`
 * `item: RunItem`
 * ∟`tuple[str, str, str | None]`
-
-## `plural`
-`src/chatddx/repl/render.py:plural`
-
-* `n: int`
-* `one: str`
-* `many: str | None = None`
-* ∟`str`
 
 ## `reasoning`
 `src/chatddx/repl/inspecting.py:reasoning`
@@ -450,12 +455,6 @@ Finds:
 * `graded: list[Graded]`
 * ∟`None`
 
-## `some`
-`src/chatddx/repl/render.py:some`
-
-* `names: Iterable[str]`
-* ∟`str`
-
 ## `STYLES`
 `src/chatddx/repl/render.py:STYLES`
 
@@ -586,13 +585,6 @@ Finds:
 `src/chatddx/repl/render.py:VALID`
 
 `VALID = "green"`
-
-## `value_of`
-`src/chatddx/repl/render.py:value_of`
-
-* `value: float | None`
-* `unit: str = ""`
-* ∟`str`
 
 ## `when`
 `src/chatddx/repl/reviewing.py:when`

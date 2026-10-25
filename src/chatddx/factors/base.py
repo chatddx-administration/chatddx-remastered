@@ -4,7 +4,7 @@ import json
 import re
 import types
 import typing
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from functools import cached_property
 from typing import (
@@ -80,6 +80,10 @@ def canonical_bytes(doc: JsonValue) -> bytes:
 
 def sorted_keys[V](mapping: dict[str, V]) -> dict[str, V]:
     return dict(sorted(mapping.items()))
+
+
+def display_names(names: Iterable[str]) -> str:
+    return ", ".join(sorted(names))
 
 
 LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")

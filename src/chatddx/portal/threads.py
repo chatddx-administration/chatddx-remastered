@@ -29,29 +29,13 @@ from .editors import editors
 from .fields import Field, choices, fields, fresh, kept, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, refusable, refusal_of, within
 from .scoring import checked, code_of, unshipped
-from .shelves import SHELVES, shelved, worded
+from .shelves import SHELVES, display_kind, shelved
 from .translations import begun, posted, translating, written as translated
 
 # Accommodating for configurations, which a person writes as recipes, not as components.
 _AUTHORED = WRITTEN | {"skeleton"}
 _BEGUN = [w for w in KINDS if set(KINDS[w]) & _AUTHORED]
 
-_NAMED = {
-    "appendix": pgettext_noop("refusal", "a new appendix is named"),
-    "configuration": pgettext_noop("refusal", "a new configuration is named"),
-    "expectation": pgettext_noop("refusal", "a new expectation is named"),
-    "few_shot": pgettext_noop("refusal", "a new few shot is named"),
-    "instructions": pgettext_noop("refusal", "a new instructions is named"),
-    "judge": pgettext_noop("refusal", "a new judge is named"),
-    "output": pgettext_noop("refusal", "a new output is named"),
-    "passthrough": pgettext_noop("refusal", "a new passthrough is named"),
-    "prompt": pgettext_noop("refusal", "a new prompt is named"),
-    "reasoning": pgettext_noop("refusal", "a new reasoning is named"),
-    "sampling": pgettext_noop("refusal", "a new sampling is named"),
-    "scorer": pgettext_noop("refusal", "a new scorer is named"),
-    "toolset": pgettext_noop("refusal", "a new toolset is named"),
-    "trial": pgettext_noop("refusal", "a new trial is named"),
-}
 _PURPOSES: dict[Purpose, str] = {
     "generation": pgettext_noop("purpose", "generation"),
     "judge": pgettext_noop("purpose", "judge"),
@@ -75,6 +59,7 @@ class Typed:
     labels: str | None = None
     about: dict[str, str] | None = None
     kept: bool = True
+    unnamed: bool = False
 
 
 @router.get("/library")
@@ -264,40 +249,41 @@ def writing(
     model = _begun(kind)
     name = str(form.get("name", "")).strip()
     if model is Translations:
+        refusals: list[str] = []
         try:
-            if not name:
-                raise Invalid.of("new translations are named")
-            written = bench.new(translated(None, into or "", posted(form)), name)
+            made = translated(None, into or "", posted(form))
+            if name:
+                written = bench.new(made, name)
+                return RedirectResponse(f"/threads/{written.edit.thread}", 303)
         except ValueError as e:
             if not refusable(e):
                 raise
-            return _beginning_translations(
-                request, bench, configuration, into, [refusal_of(e)], 422
-            )
-        return RedirectResponse(f"/threads/{written.edit.thread}", 303)
+            refusals = [refusal_of(e)]
+        return _beginning_translations(
+            request, bench, configuration, into, refusals, 422, unnamed=not name
+        )
     with refused(NotFound):
         found = fresh(model, _given(bench, request, model))
     language = str(form.get("language", "")).strip() or None
     labels = str(form.get("labels", "{}"))
+    declined: ValueError | None = None
     try:
-        if not name and kind in _NAMED:
-            raise Invalid.of(_NAMED[kind])
-        if not name:
-            raise Invalid.of("a new %(kind)s is named", kind=worded(kind))
         made = model.model_validate(parsed(found, form))
-        written = bench.new(
-            made,
-            name,
-            language if isinstance(made, Component) else None,
-            _labels(labels) if isinstance(made, Scorer) else None,
-        )
+        if name:
+            written = bench.new(
+                made,
+                name,
+                language if isinstance(made, Component) else None,
+                _labels(labels) if isinstance(made, Scorer) else None,
+            )
+            return RedirectResponse(f"/threads/{written.edit.thread}", 303)
     except ValueError as e:
         if not refusable(e):
             raise
-        found, refusals = kept(found, form, e)
-        typed = Typed(refusals, name, language, labels)
-        return _begin_page(request, bench, kind, model, found, typed)
-    return RedirectResponse(f"/threads/{written.edit.thread}", 303)
+        declined = e
+    found, refusals = kept(found, form, declined)
+    typed = Typed(refusals, name, language, labels, unnamed=not name)
+    return _begin_page(request, bench, kind, model, found, typed)
 
 
 def _labels(typed: str) -> Labels:
@@ -369,6 +355,7 @@ def _beginning_translations(
     into: str | None,
     refusals: list[str] | None = None,
     status: int = 200,
+    unnamed: bool = False,
 ) -> Response:
     entries = None
     if configuration is not None and into:
@@ -396,7 +383,7 @@ def _beginning_translations(
         configuration=configuration,
         into=into,
         entries=entries,
-        typed=None if refusals is None else Typed(refusals),
+        typed=None if refusals is None else Typed(refusals, unnamed=unnamed),
     )
 
 
@@ -476,7 +463,7 @@ def _thread_page(
         raise NotFound.of(
             "no version %(at)s of %(kind)s %(thread)s: it has %(versions)s",
             at=at,
-            kind=worded(word),
+            kind=display_kind(word),
             thread=thread,
             versions=len(versions),
         )

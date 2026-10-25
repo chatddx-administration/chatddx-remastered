@@ -8,7 +8,7 @@ from pydantic import JsonValue
 
 from chatddx.catalog import About, Edit, Subject, read, threads, titles
 from chatddx.catalog.language import language_of, languages_of, recipe_language
-from chatddx.catalog.titles import CaseTitle, short
+from chatddx.catalog.titles import CaseTitle, display_digest
 from chatddx.factors.base import (
     Component,
     Finding,
@@ -238,7 +238,7 @@ class Seen:
         model = self._model_of(spec.engine)
         if model is None:
             raise NotFound(
-                f"endpoint {name!r} serves engine {short(spec.engine)}, which isn't in "
+                f"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in "
                 + "the store: load its World with init-data"
             )
         return Endpoint(name, spec, model)
@@ -259,14 +259,13 @@ class Seen:
             held = sorted({e.thread for e in self.rows.edits_holding([weights])})
             if not held:
                 raise Whoops(
-                    "No model in the Library holds these weights, though one should: "
-                    + "use another model meanwhile.",
-                    pass_on=f"{short(weights)} is held by no model thread: check the "
+                    "The model has no handle and can't be used.",
+                    pass_on=f"{display_digest(weights)} is held by no model thread: check the "
                     + "RuntimeErrors",
                 )
             if len(held) > 1:
                 raise RuntimeError(
-                    f"{short(weights)} is held by {len(held)} model threads, not one: "
+                    f"{display_digest(weights)} is held by {len(held)} model threads, not one: "
                     + "fix boot-check src/chatddx/bench/handles.py:broken"
                 )
             about = read.about(self.rows, Subject(thread=held[0]))

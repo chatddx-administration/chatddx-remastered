@@ -113,14 +113,28 @@
     {@const judge = judgeOf(view)}
     <li class="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2.5">
       <div class="flex items-center gap-2">
-        <input
-          class="{FIELD} min-w-0 flex-1 font-medium"
-          aria-label={t("Its label")}
-          bind:value={labels[at]}
-        />
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Move it up")} disabled={at === 0} onclick={() => moved(at, -1)}>↑</button>
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Move it down")} disabled={at === views.length - 1} onclick={() => moved(at, 1)}>↓</button>
-        <button type="button" class="rounded px-1.5 hover:bg-muted disabled:opacity-40" aria-label={t("Leave it out")} disabled={views.length === 1} onclick={() => dropped(at)}>×</button>
+        <input class="{FIELD} min-w-0 flex-1 font-medium" aria-label={t("Its label")} bind:value={labels[at]} />
+        <button
+          type="button"
+          class="rounded px-1.5 hover:bg-muted disabled:opacity-40"
+          aria-label={t("Move it up")}
+          disabled={at === 0}
+          onclick={() => moved(at, -1)}>↑</button
+        >
+        <button
+          type="button"
+          class="rounded px-1.5 hover:bg-muted disabled:opacity-40"
+          aria-label={t("Move it down")}
+          disabled={at === views.length - 1}
+          onclick={() => moved(at, 1)}>↓</button
+        >
+        <button
+          type="button"
+          class="rounded px-1.5 hover:bg-muted disabled:opacity-40"
+          aria-label={t("Leave it out")}
+          disabled={views.length === 1}
+          onclick={() => dropped(at)}>×</button
+        >
       </div>
       <div class="grid gap-2 sm:grid-cols-2">
         <SelectorPicker
@@ -130,7 +144,12 @@
           label={t("Reads of what is expected")}
         />
         <div class="grid content-start gap-1">
-          <SelectorPicker choices={answered} value={view.output ?? ""} set={(v) => (view.output = v)} label={t("Reads of the answer")} />
+          <SelectorPicker
+            choices={answered}
+            value={view.output ?? ""}
+            set={(v) => (view.output = v)}
+            label={t("Reads of the answer")}
+          />
           <label class="flex items-center gap-2">
             <input
               type="checkbox"
@@ -172,7 +191,10 @@
                 if (picked === "new") writing = at;
                 else {
                   writing = null;
-                  judged(view, judges.find((j) => j.digest === picked));
+                  judged(
+                    view,
+                    judges.find((j) => j.digest === picked),
+                  );
                 }
               }}
             >
@@ -188,7 +210,10 @@
           {#if takes(view, "at")}
             <span class="min-w-48">
               <SelectorPicker
-                choices={verdictAt(judge.output_schema).map((p) => ({ label: p.slice(1).replaceAll("/", " › ").replaceAll("_", " "), selector: p }))}
+                choices={verdictAt(judge.output_schema).map((p) => ({
+                  label: p.slice(1).replaceAll("/", " › ").replaceAll("_", " "),
+                  selector: p,
+                }))}
                 value={typeof view.params?.at === "string" ? view.params.at : ""}
                 set={(v) => (view.params = { ...view.params, at: v })}
                 label={named.at ?? tp("a verdict", "at")}
@@ -214,12 +239,25 @@
         <section class="space-y-2 rounded-lg border border-dashed border-border p-2.5" aria-label={t("A new judge")}>
           <div class="flex items-center gap-2">
             <p class="text-sm font-medium">{t("A new judge")}</p>
-            <button type="button" class="ml-auto rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={() => (writing = null)}
-              >{t("Not now")}</button
+            <button
+              type="button"
+              class="ml-auto rounded-md border border-border px-3 py-1 hover:bg-muted"
+              onclick={() => (writing = null)}>{t("Not now")}</button
             >
           </div>
           <JudgeEditor
-            editor={{ kind: "judge", mode: "new", name: "", body: null, configuration: null, handle: null, problem: null, judging, models, me }}
+            editor={{
+              kind: "judge",
+              mode: "new",
+              name: "",
+              body: null,
+              configuration: null,
+              handle: null,
+              problem: null,
+              judging,
+              models,
+              me,
+            }}
             made={(j) => {
               judges.push(j);
               writing = null;

@@ -26,7 +26,7 @@ msgstr "välj ett fall eller fler att ta för"
 #: src/chatddx/portal/templates/run.html
 #, python-format
 msgid "%(model)s, an earlier engine"
-msgstr "%(model)s, en tidigare motor"
+msgstr "%(model)s, en tidigare inferensserver"
 
 #: src/chatddx/portal/fields.py
 #, python-format
@@ -38,7 +38,7 @@ msgstr "%(name)s, på %(language)s"
 msgid "%(name)s, as it is held"
 msgstr "%(name)s, som den hålls"
 
-#: src/chatddx/portal/fields.py
+#: src/chatddx/portal/fields.py src/chatddx/portal/templates/begun.html
 msgid "This is needed."
 msgstr "Det här behövs."
 
@@ -102,8 +102,8 @@ msgstr "verktygsanrop: %(name)s"
 
 #: src/chatddx/portal/scoring.py
 #, python-format
-msgid "%(problems)s: write a new scorer from the Library to score with it"
-msgstr "%(problems)s: skriv en ny rättare från Biblioteket att rätta med"
+msgid "%(problems)s: create a new scorer to score with"
+msgstr "%(problems)s: skapa en ny rättare att rätta med"
 
 #: src/chatddx/portal/scoring.py
 #, python-format
@@ -213,13 +213,15 @@ msgstr "Modeller"
 
 #: src/chatddx/portal/shelves.py
 msgid "The models, the engines serving them and what is known about them."
-msgstr "Modellerna, motorerna som serverar dem och vad som är känt om dem."
+msgstr ""
+"Modellerna, inferensservrarna som tillhandahåller dem och vad som är känt"
+" om dem."
 
 #: src/chatddx/portal/shelves.py
 msgid "Fixed probes sent with a run, which show whether an engine changed."
 msgstr ""
-"Fasta prober som skickas med en körning, och som visar om en motor "
-"ändrats."
+"Fasta prober som skickas med en körning, och som visar om en "
+"inferensserver ändrats."
 
 #: src/chatddx/portal/shelves.py
 msgid "What answers requests: a model served by given software on given hardware."
@@ -251,7 +253,7 @@ msgstr "Hur svar rättas."
 
 #: src/chatddx/portal/shelves.py
 msgid "A model asked to grade answers, with its configuration and seeds."
-msgstr "En modell som ombeds bedöma svar, med sin konfiguration och sina frön."
+msgstr "En modell som ombeds bedöma svar, med sin konfiguration och sina seeds."
 
 #: src/chatddx/portal/shelves.py
 msgid "Grades answers against expectations, a view at a time."
@@ -266,8 +268,10 @@ msgid "What is run."
 msgstr "Det som körs."
 
 #: src/chatddx/portal/shelves.py
-msgid "A configuration on an engine, over cases, with seeds."
-msgstr "En konfiguration på en motor, över fall, med frön."
+msgid "A configuration run on an engine, with chosen cases and seeds."
+msgstr ""
+"En konfiguration som körs på en inferensserver, med utvalda fall och "
+"seeds."
 
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
@@ -292,7 +296,7 @@ msgstr "konfiguration"
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
 msgid "engine"
-msgstr "motor"
+msgstr "inferensserver"
 
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
@@ -380,76 +384,6 @@ msgid "trial"
 msgstr "försök"
 
 #: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new appendix is named"
-msgstr "en ny bilaga behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new configuration is named"
-msgstr "en ny konfiguration behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new expectation is named"
-msgstr "ett nytt facit behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new few shot is named"
-msgstr "ett nytt exempel behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new instructions is named"
-msgstr "nya instruktioner behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new judge is named"
-msgstr "en ny bedömare behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new output is named"
-msgstr "en ny svarsform behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new passthrough is named"
-msgstr "ett nytt genomsläpp behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new prompt is named"
-msgstr "en ny prompt behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new reasoning is named"
-msgstr "ett nytt resonemang behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new sampling is named"
-msgstr "en ny sampling behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new scorer is named"
-msgstr "en ny rättare behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new toolset is named"
-msgstr "en ny verktygsuppsättning behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "a new trial is named"
-msgstr "ett nytt försök behöver ett namn"
-
-#: src/chatddx/portal/threads.py
 msgctxt "purpose"
 msgid "generation"
 msgstr "generering"
@@ -489,12 +423,8 @@ msgstr ""
 
 #: src/chatddx/bench/seen.py
 msgctxt "whoops"
-msgid ""
-"No model in the Library holds these weights, though one should: use "
-"another model meanwhile."
-msgstr ""
-"Ingen modell i Biblioteket pekar på de här vikterna, fast en borde: "
-"använd en annan modell så länge."
+msgid "The model has no handle and can't be used."
+msgstr "Modellen saknar alias och går inte att använda."
 
 #: src/chatddx/factors/cases.py
 msgctxt "case.drift"
@@ -517,9 +447,11 @@ msgstr "closure %(closure)s är ingen sökväg i Nix-förrådet"
 #, python-format
 msgctxt "view.unreachable"
 msgid ""
-"view %(view)s's expectation selector %(selector)s reaches nothing in the "
-"expectation schema"
-msgstr "vy %(view)s:s facitväljare %(selector)s når ingenting i facitschemat"
+"view %(view)s picks %(selector)s from the expectation, but its schema has"
+" no %(selector)s"
+msgstr ""
+"vy %(view)s hämtar %(selector)s ur facit, men facitschemat saknar "
+"%(selector)s"
 
 #: src/chatddx/factors/lint.py
 #, python-format
@@ -533,8 +465,8 @@ msgid ""
 "the schema has $ref, which this engine isn't known to resolve; "
 "inline_refs@1 removes them"
 msgstr ""
-"schemat har $ref, som den här motorn inte är känd för att lösa upp; "
-"inline_refs@1 tar bort dem"
+"schemat har $ref, som den här inferensservern inte är känd för att lösa "
+"upp; inline_refs@1 tar bort dem"
 
 #: src/chatddx/factors/lint.py
 #, python-format
@@ -543,8 +475,8 @@ msgid ""
 "the parameters of tool %(tool)s have $ref, which this engine isn't known "
 "to resolve"
 msgstr ""
-"parametrarna för verktyget %(tool)s har $ref, som den här motorn inte är "
-"känd för att lösa upp"
+"parametrarna för verktyget %(tool)s har $ref, som den här inferensservern"
+" inte är känd för att lösa upp"
 
 #: src/chatddx/factors/lint.py
 #, python-format
@@ -624,25 +556,29 @@ msgstr[1] ""
 #, python-format
 msgctxt "trial.engine_unmatched"
 msgid ""
-"the skeleton is worked out for %(worked)s, and the engine serves "
+"the skeleton is worked out for %(worked)s, but the engine serves "
 "%(serves)s"
-msgstr "skelettet är framtaget för %(worked)s, och motorn serverar %(serves)s"
+msgstr ""
+"förfrågningsmallen är gjord för %(worked)s, men inferensservern "
+"tillhandahåller %(serves)s"
 
 #: src/chatddx/factors/lint.py
 #, python-format
 msgctxt "judge.model_unmatched"
 msgid ""
-"the skeleton is worked out for %(worked)s, and the judge's model is "
+"the skeleton is worked out for %(worked)s, but the judge's model is "
 "%(serves)s"
-msgstr "skelettet är framtaget för %(worked)s, och bedömarens modell är %(serves)s"
+msgstr ""
+"förfrågningsmallen är gjord för %(worked)s, men bedömarens modell är "
+"%(serves)s"
 
 #: src/chatddx/factors/lint.py
 #, python-format
 msgctxt "judge.greedy_seeds"
 msgid "the judge is greedy, so its %(num)s seeds send the same request"
 msgid_plural "the judge is greedy, so its %(num)s seeds send the same request"
-msgstr[0] "bedömaren är girig, så dess %(num)s frö skickar samma förfrågan"
-msgstr[1] "bedömaren är girig, så dess %(num)s frön skickar samma förfrågan"
+msgstr[0] "bedömaren har temperatur 0, så dess %(num)s seed skickar samma förfrågan"
+msgstr[1] "bedömaren har temperatur 0, så dess %(num)s seeds skickar samma förfrågan"
 
 #: src/chatddx/facts/lint.py
 msgctxt "facts.reasoning_unmatched"
@@ -674,8 +610,8 @@ msgstr "inga fakta om %(name)s, så kontrollerna på modellnivå hoppades över"
 msgctxt "execution.retries"
 msgid "%(num)s calls took more than the %(allowed)s attempts allowed"
 msgid_plural "%(num)s calls took more than the %(allowed)s attempts allowed"
-msgstr[0] "%(num)s anrop tog fler än de %(allowed)s tillåtna anropsförsöken"
-msgstr[1] "%(num)s anrop tog fler än de %(allowed)s tillåtna anropsförsöken"
+msgstr[0] "%(num)s anrop överskred de %(allowed)s tillåtna"
+msgstr[1] "%(num)s anrop överskred de %(allowed)s tillåtna"
 
 #: src/chatddx/ledger/call.py
 #, python-format
@@ -807,11 +743,11 @@ msgstr ""
 #, python-format
 msgctxt "view.unreachable"
 msgid ""
-"view %(view)s's output selector %(selector)s reaches nothing in the run's"
-" output schema"
+"view %(view)s picks %(selector)s from the output, but the run's output "
+"schema has no %(selector)s"
 msgstr ""
-"vy %(view)s:s utdataväljare %(selector)s når ingenting i körningens "
-"utdataschema"
+"vy %(view)s hämtar %(selector)s ur svaret, men körningens utdataschema "
+"saknar %(selector)s"
 
 #: src/chatddx/ledger/score.py
 #, python-format
@@ -820,8 +756,8 @@ msgid ""
 "the scorer code ran at version %(ran)s of %(entry_point)s, not the "
 "version the scorer pins (%(pinned)s)"
 msgstr ""
-"rättarkoden kördes med version %(ran)s av %(entry_point)s, inte versionen"
-" rättaren fäster (%(pinned)s)"
+"rättningen kördes med version %(ran)s av %(entry_point)s, men rättaren är"
+" låst till version %(pinned)s"
 
 #: src/chatddx/ledger/score.py
 msgctxt "score.run_unfinished"
@@ -854,8 +790,8 @@ msgstr[1] "%(num)s poster saknas"
 msgctxt "judge.incomplete"
 msgid "view %(view)s's value rests on %(called)s of %(num)s judge seeds"
 msgid_plural "view %(view)s's value rests on %(called)s of %(num)s judge seeds"
-msgstr[0] "vy %(view)s:s värde vilar på %(called)s av %(num)s bedömarfrö"
-msgstr[1] "vy %(view)s:s värde vilar på %(called)s av %(num)s bedömarfrön"
+msgstr[0] "vy %(view)s:s värde vilar på %(called)s av bedömarens %(num)s seed"
+msgstr[1] "vy %(view)s:s värde vilar på %(called)s av bedömarens %(num)s seeds"
 
 #: src/chatddx/runner/run.py
 #, python-format
@@ -1062,7 +998,7 @@ msgstr "modellen %(model)s är raderad: välj en annan"
 #, python-format
 msgctxt "refusal"
 msgid "no endpoint here serves model %(model)s: pick another"
-msgstr "ingen ändpunkt här serverar modellen %(model)s: välj en annan"
+msgstr "ingen ändpunkt här tillhandahåller modellen %(model)s: välj en annan"
 
 #: src/chatddx/bench/seen.py
 #, python-format
@@ -1541,17 +1477,6 @@ msgid "no kind %(kind)s: the kinds are %(kinds)s"
 msgstr "ingen typ %(kind)s: typerna är %(kinds)s"
 
 #: src/chatddx/portal/threads.py
-msgctxt "refusal"
-msgid "new translations are named"
-msgstr "nya översättningar behöver ett namn"
-
-#: src/chatddx/portal/threads.py
-#, python-format
-msgctxt "refusal"
-msgid "a new %(kind)s is named"
-msgstr "%(kind)s: ett namn behövs"
-
-#: src/chatddx/portal/threads.py
 #, python-format
 msgctxt "refusal"
 msgid "labels: %(refused)s"
@@ -1603,8 +1528,8 @@ msgid ""
 "endpoint %(endpoint)s can't be confirmed: it serves nothing at %(url)s, "
 "not %(expected)s"
 msgstr ""
-"ändpunkten %(endpoint)s kan inte bekräftas: den serverar ingenting på "
-"%(url)s, inte %(expected)s"
+"ändpunkten %(endpoint)s kan inte bekräftas: den tillhandahåller ingenting"
+" på %(url)s, inte %(expected)s"
 
 #: src/chatddx/runner/gate.py
 #, python-format
@@ -1613,8 +1538,8 @@ msgid ""
 "endpoint %(endpoint)s can't be confirmed: it serves %(served)s at "
 "%(url)s, not %(expected)s"
 msgstr ""
-"ändpunkten %(endpoint)s kan inte bekräftas: den serverar %(served)s på "
-"%(url)s, inte %(expected)s"
+"ändpunkten %(endpoint)s kan inte bekräftas: den tillhandahåller "
+"%(served)s på %(url)s, inte %(expected)s"
 
 #: src/chatddx/runner/gate.py
 #, python-format
@@ -1794,6 +1719,10 @@ msgid "A new %(kind)s"
 msgstr "Ny: %(kind)s"
 
 #: src/chatddx/portal/templates/begun.html
+msgid "name"
+msgstr "namn"
+
+#: src/chatddx/portal/templates/begun.html
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/compare.html
 #: src/chatddx/portal/templates/run.html
@@ -1867,10 +1796,6 @@ msgstr "Texterna i %(configuration)s, till %(language)s."
 #: src/chatddx/portal/templates/begun.html
 msgid "Pick another"
 msgstr "Välj en annan"
-
-#: src/chatddx/portal/templates/begun.html
-msgid "name"
-msgstr "namn"
 
 #: src/chatddx/portal/templates/begun.html
 msgid "Write it"
@@ -2227,8 +2152,8 @@ msgid ""
 "Some ran under %(models)s at different engines: grouped under it, they "
 "aren't like for like."
 msgstr ""
-"Några kördes under %(models)s på olika motorer: grupperade under den är "
-"de inte jämförbara."
+"Några kördes under %(models)s på olika inferensservrar: grupperade under "
+"den är de inte jämförbara."
 
 #: src/chatddx/portal/templates/compare.html
 msgctxt "between the last two names"
@@ -2629,7 +2554,7 @@ msgid ""
 " model's latest engine."
 msgstr ""
 "%(cases)s, under %(model)s: varje kolumn är din senaste körning av den på"
-" modellens senaste motor."
+" modellens senaste inferensserver."
 
 #: src/chatddx/portal/templates/lab.html
 #, python-format
@@ -2638,7 +2563,7 @@ msgid ""
 "engine."
 msgstr ""
 "%(cases)s: varje kolumn är din senaste körning av den på modellens "
-"senaste motor."
+"senaste inferensserver."
 
 #: src/chatddx/portal/templates/lab.html
 #, python-format
@@ -2660,12 +2585,12 @@ msgstr "inte körd"
 #, python-format
 msgid "%(num)s at an earlier engine"
 msgid_plural "%(num)s at an earlier engine"
-msgstr[0] "%(num)s på en tidigare motor"
-msgstr[1] "%(num)s på en tidigare motor"
+msgstr[0] "%(num)s på en tidigare inferensserver"
+msgstr[1] "%(num)s på en tidigare inferensserver"
 
 #: src/chatddx/portal/templates/lab.html
 msgid "None of them has a run at its model's latest engine yet."
-msgstr "Ingen av dem har någon körning på modellens senaste motor än."
+msgstr "Ingen av dem har någon körning på modellens senaste inferensserver än."
 
 #: src/chatddx/portal/templates/lab.html
 #, python-format
@@ -3075,27 +3000,39 @@ msgstr "utan %(part)s"
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
 #, python-format
-msgid "translated into %(language)s"
-msgstr "översatt till %(language)s"
+msgid "%(case)s in %(language)s"
+msgstr "%(case)s på %(language)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "%(num)s %(language)s case"
+msgid_plural "%(num)s %(language)s cases"
+msgstr[0] "%(num)s %(language)s fall"
+msgstr[1] "%(num)s %(language)s fall"
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
 msgctxt "sampling"
 msgid "greedy"
-msgstr "girig"
+msgstr "temperatur 0"
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
 #, python-format
 msgid "greedy, %(num)s replicate"
 msgid_plural "greedy, %(num)s replicates"
-msgstr[0] "girig, %(num)s replikat"
-msgstr[1] "girig, %(num)s replikat"
+msgstr[0] "temperatur 0, %(num)s replikat"
+msgstr[1] "temperatur 0, %(num)s replikat"
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
 #, python-format
 msgid "seed %(seeds)s"
 msgid_plural "seeds %(seeds)s"
-msgstr[0] "frö %(seeds)s"
-msgstr[1] "frön %(seeds)s"
+msgstr[0] "seed %(seeds)s"
+msgstr[1] "seeds %(seeds)s"
+
+#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "%(cases)s with %(configuration)s on %(model)s (%(seeds)s)"
+msgstr "%(cases)s med %(configuration)s på %(model)s (%(seeds)s)"
 
 #: src/chatddx/portal/templates/macros.html
 msgctxt "a thread"
@@ -3117,8 +3054,8 @@ msgstr ""
 #: src/chatddx/portal/templates/macros.html
 msgid "No endpoint here serves its engine, so it can't run until it is updated."
 msgstr ""
-"Ingen ändpunkt här serverar dess motor, så det kan inte köras förrän det "
-"uppdateras."
+"Ingen ändpunkt här når dess inferensserver, så det kan inte köras förrän "
+"det uppdateras."
 
 #: src/chatddx/portal/templates/macros.html
 msgid "Its model has new weights, so it can't run until it is updated."
@@ -3634,11 +3571,11 @@ msgstr "Startad med"
 #: src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/world.html
 msgid "Engine"
-msgstr "Motor"
+msgstr "Inferensserver"
 
 #: src/chatddx/portal/templates/run.html
 msgid "Seeds"
-msgstr "Frön"
+msgstr "Seeds"
 
 #: src/chatddx/portal/templates/run.html
 msgid "Trial"
@@ -3741,8 +3678,8 @@ msgstr[1] "%(num)s verktygsomgångar före det sista anropet."
 #, python-format
 msgid "%(num)s seed"
 msgid_plural "%(num)s seeds"
-msgstr[0] "%(num)s frö"
-msgstr[1] "%(num)s frön"
+msgstr[0] "%(num)s seed"
+msgstr[1] "%(num)s seeds"
 
 #: src/chatddx/portal/templates/runner.html
 msgid "version"
@@ -3794,8 +3731,8 @@ msgid ""
 "Left empty, each endpoint's execution; a shuffled order's seed is drawn. "
 "The trials run as one start, queued as your job."
 msgstr ""
-"Lämnat tomt, varje ändpunkts utförande; en blandad ordnings frö dras. "
-"Försöken körs som en start, köade som ditt jobb."
+"Lämnat tomt, varje ändpunkts utförande; för en blandad ordning dras ett "
+"seed. Försöken körs som en start, köade som ditt jobb."
 
 #: src/chatddx/portal/templates/runner.html
 #: src/chatddx/portal/templates/starting.html
@@ -4114,7 +4051,7 @@ msgstr "Frågad under"
 #: frontend/src/lib/scorer/JudgeFields.svelte
 #: src/chatddx/portal/templates/scoring.html
 msgid "Seeds, a call each"
-msgstr "Frön, ett anrop vardera"
+msgstr "Seeds, ett anrop vardera"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its slots filled by"
@@ -4122,7 +4059,7 @@ msgstr "Luckor fylls av"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Served now at"
-msgstr "Serveras nu på"
+msgstr "Tillhandahålls nu på"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid ""
@@ -4189,8 +4126,8 @@ msgid ""
 "picks of what is expected of %(case)s: a view fills them with what it "
 "picks of each."
 msgstr ""
-"Med sitt första frö och svaret som platshållare, och det %(view)s väljer "
-"ur facit för %(case)s: en vy fyller dem med det den väljer av vart och "
+"Med sitt första seed och svaret som platshållare, och det %(view)s väljer"
+" ur facit för %(case)s: en vy fyller dem med det den väljer av vart och "
 "ett."
 
 #: src/chatddx/portal/templates/scoring.html
@@ -4198,8 +4135,8 @@ msgid ""
 "With its first seed and the answer as a placeholder, and the expectation "
 "as one: a view fills them with what it picks of each."
 msgstr ""
-"Med sitt första frö och svaret som platshållare, och facit som en: en vy "
-"fyller dem med det den väljer av vart och ett."
+"Med sitt första seed och svaret som platshållare, och facit som en: en vy"
+" fyller dem med det den väljer av vart och ett."
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Changing what it is asked takes scripts."
@@ -4219,15 +4156,15 @@ msgstr "Bedömda poster"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its seeds agree"
-msgstr "Samstämmighet mellan frön"
+msgstr "Samstämmighet mellan seeds"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "A seed gave none"
-msgstr "Ett frö gav inget"
+msgstr "Ett seed gav inget"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Where its seeds disagree"
-msgstr "Där frönas omdömen går isär"
+msgstr "Där omdömena från olika seeds går isär"
 
 #: src/chatddx/portal/templates/scoring.html
 #, python-format
@@ -4241,7 +4178,7 @@ msgid ""
 "view's metric reads of their verdicts."
 msgstr ""
 "Över den senaste rättningen av dina körningar under varje rättare som "
-"frågar någon version av den: en posts frön är överens när vart och ett "
+"frågar någon version av den: en posts seeds är överens när vart och ett "
 "gav samma värde, vilket dess vys mått läser ur deras omdömen."
 
 #: src/chatddx/portal/templates/scoring.html
@@ -4271,7 +4208,7 @@ msgstr "Kör försök"
 
 #: src/chatddx/portal/templates/starting.html
 msgid "Each trial's version at the endpoint serving its engine."
-msgstr "Varje försöks version på ändpunkten som serverar dess motor."
+msgstr "Varje försöks version på ändpunkten för dess inferensserver."
 
 #: src/chatddx/portal/templates/starting.html
 msgid ""
@@ -4708,13 +4645,13 @@ msgid ""
 "Where each engine is served; a run goes to the endpoint serving its "
 "engine."
 msgstr ""
-"Där varje motor serveras; en körning går till ändpunkten som serverar "
-"dess motor."
+"Där varje inferensserver nås; en körning går till ändpunkten för dess "
+"inferensserver."
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
 msgid "serves %(model)s"
-msgstr "serverar %(model)s"
+msgstr "tillhandahåller %(model)s"
 
 #: src/chatddx/portal/templates/world.html
 msgid "Address"
@@ -4726,7 +4663,7 @@ msgstr "Värd"
 
 #: src/chatddx/portal/templates/world.html
 msgid "none: a remote engine"
-msgstr "ingen: en fjärrmotor"
+msgstr "ingen: en extern inferensserver"
 
 #: src/chatddx/portal/templates/world.html
 msgid "Capacity"
@@ -4793,8 +4730,8 @@ msgid ""
 "The machines that run local engines, and where each keeps the model files"
 " and chat templates its engines pin."
 msgstr ""
-"Maskinerna som kör lokala motorer, och var var och en håller "
-"modellfilerna och chattmallarna dess motorer fäster."
+"Maskinerna som kör lokala inferensservrar, och var var och en håller "
+"modellfilerna och chattmallarna som dess inferensservrar är låsta till."
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
@@ -5043,15 +4980,15 @@ msgstr "vikterna det pekar på"
 
 #: frontend/src/lib/scorer/judging.ts
 msgid "a judge has a seed or more"
-msgstr "en bedömare har ett frö eller fler"
+msgstr "en bedömare har ett seed eller fler"
 
 #: frontend/src/lib/scorer/judging.ts
 msgid "seeds are whole numbers, 0 or more"
-msgstr "frön är heltal, 0 eller mer"
+msgstr "seeds är heltal, 0 eller mer"
 
 #: frontend/src/lib/scorer/judging.ts
 msgid "each seed once"
-msgstr "varje frö en gång"
+msgstr "varje seed en gång"
 
 #: frontend/src/lib/scorer/rewriting.ts
 #, python-format
@@ -5370,8 +5307,8 @@ msgstr[1] "%(n)s poster"
 #, python-format
 msgid "%(n)s seed drawn"
 msgid_plural "%(n)s seeds drawn"
-msgstr[0] "%(n)s dragen frö"
-msgstr[1] "%(n)s dragna frön"
+msgstr[0] "%(n)s draget seed"
+msgstr[1] "%(n)s dragna seeds"
 
 #: frontend/src/islands/Variation.svelte
 #, python-format
@@ -5381,8 +5318,9 @@ msgid ""
 "send the same request, which measures the engine's nondeterminism."
 msgstr ""
 "Skickar %(items)s under %(model)s, en i taget, ett replikat vardera under"
-" %(seeds)s; dess sampling är girig, så inget frö skickas och dess "
-"replikat skickar samma förfrågan, vilket mäter motorns icke-determinism."
+" %(seeds)s; den samplar med temperatur 0, alltså alltid den mest "
+"sannolika nästa token, så inget seed skickas och dess replikat skickar "
+"samma förfrågan, vilket mäter inferensserverns icke-determinism."
 
 #: frontend/src/islands/Variation.svelte
 #, python-format
@@ -5399,8 +5337,8 @@ msgid ""
 "Sends %(items)s under %(model)s, one at a time; its sampling is greedy, "
 "so the seed isn't sent."
 msgstr ""
-"Skickar %(items)s under %(model)s, en i taget; dess sampling är girig, så"
-" fröet skickas inte."
+"Skickar %(items)s under %(model)s, en i taget; den samplar med temperatur"
+" 0, alltså alltid den mest sannolika nästa token, så inget seed skickas."
 
 #: frontend/src/islands/Variation.svelte
 #, python-format
@@ -5468,7 +5406,7 @@ msgstr ""
 
 #: frontend/src/islands/Variation.svelte
 msgid "greedy: no seed is sent"
-msgstr "girig: inget frö skickas"
+msgstr "temperatur 0: inget seed skickas"
 
 #: frontend/src/islands/Variation.svelte
 #, python-format
@@ -5643,7 +5581,7 @@ msgstr "Ingen familj med det namnet."
 
 #: frontend/src/islands/Variation.svelte
 msgid "Seed"
-msgstr "Frö"
+msgstr "Seed"
 
 #: frontend/src/islands/Variation.svelte
 msgid "Score it when it's done"
@@ -6038,8 +5976,8 @@ msgstr "Av"
 #, python-format
 msgid "%(n)s seed"
 msgid_plural "%(n)s seeds"
-msgstr[0] "%(n)s frö"
-msgstr[1] "%(n)s frön"
+msgstr[0] "%(n)s seed"
+msgstr[1] "%(n)s seeds"
 
 #: frontend/src/lib/scorer/ScorerViews.svelte
 #, python-format

@@ -6,6 +6,8 @@ const PLACEHOLDER = /%(?:\((\w+)\)s|%)/g;
 // Policy: a parameter named so holds a language's tag, and one named languages tags
 // separated by ", ", each said by its name, as the server says them.
 const LANGUAGE_PARAMS = ["language", "into"];
+// Policy: a parameter named so holds names separated by ", ", said as a list, as the server says it.
+const LISTED_PARAMS = ["slots", "inserts", "worked"];
 let spoken: Catalog | undefined;
 
 export function speaking(given: Catalog): void {
@@ -48,10 +50,10 @@ export function refusal(detail: string, wording: string | string[], params: Give
 
 // Accommodating for JavaScript, which writes some numbers other than Python does: what the
 // page's catalog doesn't hold is said as the server wrote it, but for the languages it
-// names, which the server writes by their tags.
+// names and the lists it holds, which the server writes by their tags and joined by ", ".
 function worded(context: string, written: string, wording: string | string[], params: Given): string {
   const [singular, plural] = typeof wording === "string" ? [wording] : wording;
-  const named = languaged(params);
+  const named = said(params);
   if (singular === undefined) return written;
   if (!(keyed(singular, context) in catalog().messages) && named === params) return written;
   return plural === undefined
@@ -59,7 +61,7 @@ function worded(context: string, written: string, wording: string | string[], pa
     : tnp(context, singular, plural, Number(params.num), named);
 }
 
-export function languageName(tag: string): string {
+export function displayLanguage(tag: string): string {
   try {
     return new Intl.DisplayNames([catalog().tag], { type: "language", languageDisplay: "standard" }).of(tag) ?? tag;
   } catch {
@@ -67,19 +69,23 @@ export function languageName(tag: string): string {
   }
 }
 
-function languaged(params: Given): Given {
-  const keys = Object.keys(params).filter((k) => k === "languages" || LANGUAGE_PARAMS.includes(k));
+function said(params: Given): Given {
+  const keys = Object.keys(params).filter(
+    (k) => k === "languages" || LANGUAGE_PARAMS.includes(k) || LISTED_PARAMS.includes(k),
+  );
   if (keys.length === 0) return params;
   const found = { ...params };
   for (const key of keys) {
     const value = found[key];
     if (typeof value !== "string") continue;
-    found[key] = key === "languages" ? listed(value.split(", ").map(languageName)) : languageName(value);
+    if (key === "languages") found[key] = displayList(value.split(", ").map(displayLanguage));
+    else if (LISTED_PARAMS.includes(key)) found[key] = displayList(value.split(", "));
+    else found[key] = displayLanguage(value);
   }
   return found;
 }
 
-export function listed(items: string[], type: "conjunction" | "disjunction" = "conjunction"): string {
+export function displayList(items: string[], type: "conjunction" | "disjunction" = "conjunction"): string {
   return new Intl.ListFormat(catalog().tag, { type }).format(items);
 }
 

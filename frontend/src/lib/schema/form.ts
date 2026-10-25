@@ -128,7 +128,8 @@ export function kept(value: unknown, schema: Schema, root: Schema): unknown {
       if (!p.required && v === "") continue;
       out[p.name] = v;
     }
-    for (const [k, v] of Object.entries(value)) if (!(k in out) && !shape.properties.some((p) => p.name === k)) out[k] = v;
+    for (const [k, v] of Object.entries(value))
+      if (!(k in out) && !shape.properties.some((p) => p.name === k)) out[k] = v;
     return out;
   }
   if (shape.is === "list" && Array.isArray(value)) return value.map((v) => kept(v, shape.items, root));

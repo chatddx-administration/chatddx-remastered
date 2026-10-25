@@ -35,14 +35,21 @@
       return;
     }
     item = items.data.find((i) => i.replicate === given.replicate) ?? null;
-    if (scored?.data) views = viewed(scored.data.items, given.replicate, untrack(() => labels), untrack(() => units));
+    if (scored?.data)
+      views = viewed(
+        scored.data.items,
+        given.replicate,
+        untrack(() => labels),
+        untrack(() => units),
+      );
     else if (scored) problem = why(scored.error);
   });
 </script>
 
 {#if !read}
   <p class="flex items-center gap-2 text-muted-foreground">
-    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" /> {t("The answer…")}
+    <LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" />
+    {t("The answer…")}
   </p>
 {:else}
   {#if problem}<p class="mb-2 text-destructive">{problem}</p>{/if}
@@ -50,7 +57,9 @@
     {@const value = item.answer.value}
     {#if item.why}<p class="mb-2 text-muted-foreground">{item.why}</p>{/if}
     {#if item.answer.problem}
-      <p class="mb-2 text-warning">{item.answer.problem}{#if item.answer.salvaged}{" "}{t("(cut short)")}{/if}</p>
+      <p class="mb-2 text-warning">
+        {item.answer.problem}{#if item.answer.salvaged}{" "}{t("(cut short)")}{/if}
+      </p>
     {/if}
     {#if value === null || value === undefined}
       <p class="text-muted-foreground">{t("Nothing could be read.")}</p>
@@ -59,7 +68,11 @@
     {:else if given.plan && isPlan(value)}
       <ManagementPlan plan={value} />
     {:else}
-      <pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre>
+      <pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{JSON.stringify(
+          value,
+          null,
+          2,
+        )}</pre>
     {/if}
   {/if}
   {#if views.length}
@@ -74,5 +87,7 @@
       {/each}
     </dl>
   {/if}
-  <a class="mt-2 inline-block text-xs text-primary hover:underline" href="/runs/{given.run}#item-{given.anchor}">{t("On its run's page")}</a>
+  <a class="mt-2 inline-block text-xs text-primary hover:underline" href="/runs/{given.run}#item-{given.anchor}"
+    >{t("On its run's page")}</a
+  >
 {/if}

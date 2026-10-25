@@ -27,7 +27,8 @@ export function isInsert(s: Seg): s is Insert {
 
 export function segmentsOf(text: unknown): Seg[] {
   if (typeof text === "string") return [text];
-  if (Array.isArray(text)) return text.filter((s): s is Seg => typeof s === "string" || (typeof s === "object" && s !== null));
+  if (Array.isArray(text))
+    return text.filter((s): s is Seg => typeof s === "string" || (typeof s === "object" && s !== null));
   return [""];
 }
 

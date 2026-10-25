@@ -110,8 +110,8 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
     findings = [
         Finding.of(
             "view.unreachable",
-            "view %(view)s's output selector %(selector)s reaches nothing in the "
-            + "run's output schema",
+            "view %(view)s picks %(selector)s from the output, but the run's "
+            + "output schema has no %(selector)s",
             subject=scoring.scorer,
             view=i,
             selector=repr(view.output),

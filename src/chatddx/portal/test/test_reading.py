@@ -34,7 +34,9 @@ def test_a_run_is_titled_by_its_parts_in_the_locale_asked_for(
     titled = run["titled"]
     asked = signed.get(f"/runs/{run['id']}", headers={"accept-language": "sv"})
     case = titled["case"]["name"]
-    swedish = f"{titled['name']} · {titled['at']} · {case} · frö {run['seeds'][0]}"
+    swedish = (
+        f"{case} med `{titled['name']}` på {titled['at']} (seed {run['seeds'][0]})"
+    )
     assert escape(swedish) in asked.text
     assert escape(run_title(run)) in shown(signed, f"/runs/{run['id']}")
 

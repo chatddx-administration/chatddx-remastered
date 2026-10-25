@@ -11,10 +11,10 @@
   <div>
     <p aria-hidden="true" class="mb-1 border-t border-border px-2 pt-3 font-semibold text-foreground">{{ _(shelf.heading) }}</p>
     <ul aria-label="{{ _(shelf.heading) }}" class="grid gap-0.5">
-      {% for k in kinds | sort(attribute="worded") %}
+      {% for k in kinds | sort(attribute="display_kind") %}
       {% set here = k.word == word %}
       <li><a href="/library?kind={{ k.word }}"{% if here %} aria-current="page"{% endif %} class="flex items-center gap-2 px-2 py-1">
-        <span class="min-w-0 flex-1 truncate">{{ k.worded }}</span>
+        <span class="min-w-0 flex-1 truncate">{{ k.display_kind }}</span>
         {% if not k.written and k.word != "case" %}<span class="text-muted-foreground" title="{{ _('Loaded with data sets: read here, not written') }}">{{ locked() }}<span class="sr-only">{{ pgettext("after a kind's word", ", loaded with data sets") }}</span></span>{% endif %}
         <span class="text-xs tabular-nums text-muted-foreground">{{ k.seen }}</span>
       </a></li>
@@ -50,9 +50,9 @@
       {% for shelf, kinds in shelves %}
       {% call section(_(shelf.heading), about=_(shelf.about)) %}
       <ul class="grid gap-3 text-sm">
-        {% for k in kinds | sort(attribute="worded") %}
+        {% for k in kinds | sort(attribute="display_kind") %}
         <li class="grid gap-x-4 gap-y-0.5 sm:grid-cols-[11rem_1fr]">
-          <a class="font-medium" href="/library?kind={{ k.word }}">{{ k.worded }}</a>
+          <a class="font-medium" href="/library?kind={{ k.word }}">{{ k.display_kind }}</a>
           <div>
             <p>{{ _(k.about) }}</p>
             <p class="text-xs text-muted-foreground">{{ ngettext("%(num)s yours", "%(num)s yours", k.mine) }} · {{ ngettext("%(num)s shared with you", "%(num)s shared with you", k.seen - k.mine) }}{% if k.word == "case" %} · {{ _("loaded with data sets, or typed on Home") }}{% elif not k.written %} · {{ _("loaded with data sets") }}{% endif %}</p>

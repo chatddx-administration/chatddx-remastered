@@ -27,6 +27,12 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 # separated by ", ", each said by its name where the message is said.
 ```
 
+## `src/chatddx/locale/locale.py:_LISTED_PARAMS`
+
+```
+# Policy: a parameter named so holds names separated by ", ", said as a list.
+```
+
 ## `src/chatddx/locale/locale.py:_LOCALIZING`
 
 ```

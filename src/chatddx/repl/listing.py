@@ -9,10 +9,10 @@ from rich.text import Text
 from chatddx.bench import Bench
 from chatddx.catalog import Subject, read, threads, titles
 from chatddx.catalog.language import edit_languages
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_count, display_digest
 from chatddx.factors.request import RECIPE_PARTS, Recipe, translated
 
-from .render import LABEL, REFUSED, plural
+from .render import LABEL, REFUSED
 from .shell import Repl
 
 
@@ -205,7 +205,9 @@ def endpoints(repl: Repl) -> None:
         try:
             found = bench.endpoint(name)
         except LookupError:
-            said = Text(f"{short(spec.engine)}, not in the store", style=REFUSED)
+            said = Text(
+                f"{display_digest(spec.engine)}, not in the store", style=REFUSED
+            )
             table.add_row(name, said, "", str(spec.url), cleared)
             continue
         table.add_row(
@@ -220,5 +222,7 @@ def cases(repl: Repl) -> None:
     repl.console.print(Text("  ".join(f.name for f in families)))
     tags = Counter(tag for f in families for tag in f.about.tags)
     tagged = ", ".join(f"{tag} {n}" for tag, n in sorted(tags.items()))
-    said = plural(len(families), "case") + (f"; tagged {tagged}" if tagged else "")
+    said = display_count(len(families), "case") + (
+        f"; tagged {tagged}" if tagged else ""
+    )
     repl.console.print(said, style=LABEL)

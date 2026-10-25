@@ -31,7 +31,14 @@ export function configurationChoices(judging: Judging[], me: string, held: Holdi
     label: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
   }));
   if (!held || listed.some((c) => c.value === held.skeleton)) return listed;
-  return [{ key: "held", value: held.skeleton, label: t("%(configuration)s, as it is asked now", { configuration: held.configuration }) }, ...listed];
+  return [
+    {
+      key: "held",
+      value: held.skeleton,
+      label: t("%(configuration)s, as it is asked now", { configuration: held.configuration }),
+    },
+    ...listed,
+  ];
 }
 
 export function modelChoices(models: Serving[], held: Holding | null = null): Option[] {
@@ -60,7 +67,9 @@ export function seedsOf(text: string): number[] | string {
 }
 
 export function verdictAt(schema: Schema | null): string[] {
-  return choices(schema, null, "").filter((c) => c.selector.startsWith("/")).map((c) => c.selector);
+  return choices(schema, null, "")
+    .filter((c) => c.selector.startsWith("/"))
+    .map((c) => c.selector);
 }
 
 function field(schema: Schema | null, at: string): Schema | null {

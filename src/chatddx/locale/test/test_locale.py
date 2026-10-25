@@ -7,7 +7,7 @@ import pytest
 from chatddx.factors import Finding
 from chatddx.locale import (
     Locales,
-    language_name,
+    display_language,
     localized,
     localizing,
     proofs,
@@ -251,7 +251,7 @@ def test_a_language_is_said_by_its_name_in_the_locale_and_in_what_names_it(
     ).negotiate("sv")
     worded = "no translations into %(into)s, nor %(languages)s"
     given = {"into": "sv", "languages": "en, pt-BR"}
-    assert [language_name(tag) for tag in ("sv", "pt-BR", "xx")] == [
+    assert [display_language(tag) for tag in ("sv", "pt-BR", "xx")] == [
         "Swedish",
         "Portuguese (Brazil)",
         "xx",
@@ -260,10 +260,36 @@ def test_a_language_is_said_by_its_name_in_the_locale_and_in_what_names_it(
         "no translations into Swedish, nor English and Portuguese (Brazil)"
     )
     with localizing(sv):
-        assert language_name("en") == "engelska"
+        assert display_language("en") == "engelska"
         assert refusal(worded, given) == (
             "inga översättningar till svenska, eller engelska och portugisiska "
             + "(Brasilien)"
+        )
+
+
+def test_slots_and_inserts_are_said_as_lists_in_the_locale(tmp_path: Path) -> None:
+    sv = Locales(
+        catalog(
+            tmp_path,
+            """
+            msgctxt "refusal"
+            msgid "judge requests need slots %(slots)s"
+            msgstr "bedömningar behöver luckorna %(slots)s"
+            """,
+        )
+    ).negotiate("sv")
+    worded = "judge requests need slots %(slots)s"
+    given = {"slots": "completion, expectation"}
+    assert refusal(worded, given) == (
+        "judge requests need slots completion and expectation"
+    )
+    twice = "inserts used more than once: %(inserts)s"
+    assert refusal(twice, {"inserts": "schema, tool_guidance"}) == (
+        "inserts used more than once: schema and tool_guidance"
+    )
+    with localizing(sv):
+        assert refusal(worded, given) == (
+            "bedömningar behöver luckorna completion och expectation"
         )
 
 

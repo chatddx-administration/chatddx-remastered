@@ -20,7 +20,7 @@ from chatddx.catalog import (
     titles,
 )
 from chatddx.catalog.language import language_of
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors import request
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
@@ -134,7 +134,7 @@ def test_skeleton_threads_carry_their_recipe(conn: Connection) -> None:
     judge = resolve(reg.get, ids["judge"], Judge)
     hand_written = catalog.create(judge.skeleton, alice.id)
     assert hand_written.compilation is None
-    shown = f"judge configuration {short(judge.skeleton)}"
+    shown = f"judge configuration {display_digest(judge.skeleton)}"
     assert titles.title(rows, hand_written.thread) == shown
 
 

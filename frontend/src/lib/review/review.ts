@@ -21,7 +21,13 @@ export type Review = {
   next: string | null;
 };
 
-export type Read = { label: string; metric: string; measures: string | null; judge: string | null; expectation: string };
+export type Read = {
+  label: string;
+  metric: string;
+  measures: string | null;
+  judge: string | null;
+  expectation: string;
+};
 export type Version = { at: string; by: string; digest: string; data: unknown };
 export type Expecting = {
   editor: ExpectationEditing | null;

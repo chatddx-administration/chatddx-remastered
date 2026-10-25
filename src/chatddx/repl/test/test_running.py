@@ -5,13 +5,14 @@ from collections.abc import Callable
 import pytest
 
 from chatddx.bench import Bench
+from chatddx.catalog.titles import display_count
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
-from chatddx.repl.render import Tally, Transcript, plural
+from chatddx.repl.render import Tally, Transcript
 from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, by_hand, cells, tagged
@@ -289,7 +290,7 @@ def test_run_tag_over_several_languages_runs_each(bench: Bench, say: Say):
     swedish = [name for name in tagged("swedish") if CASES[name].language == "sv"]
     english = len(tagged("swedish")) - len(swedish)
 
-    assert f"{plural(english, 'case')} tagged swedish, in en (seed 7)" in written
+    assert f"{display_count(english, 'case')} tagged swedish, in en (seed 7)" in written
     assert f"{len(swedish)} cases tagged swedish, in sv, translated (seed 7)" in written
     assert "left out" not in written
     assert sorted(len(r.items) for r in ran(bench)) == sorted([english, len(swedish)])

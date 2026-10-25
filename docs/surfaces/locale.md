@@ -54,22 +54,22 @@ Raises:
 
 * ∟`str | Sequence[str] | None`
 
-## `gettext`
-`src/chatddx/locale/locale.py:gettext`
-
-* `message: str`
-* ∟`str`
-
-## `language_name`
-`src/chatddx/locale/locale.py:language_name`
+## `display_language`
+`src/chatddx/locale/locale.py:display_language`
 
 * `tag: str`
 * ∟`str`
 
-## `listed`
-`src/chatddx/locale/locale.py:listed`
+## `display_list`
+`src/chatddx/locale/locale.py:display_list`
 
 * `items: Sequence[str]`
+* ∟`str`
+
+## `gettext`
+`src/chatddx/locale/locale.py:gettext`
+
+* `message: str`
 * ∟`str`
 
 ## `Locale` `@dataclass(frozen=True)`

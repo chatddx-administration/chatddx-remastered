@@ -143,12 +143,8 @@ export function whereSaveGoes(given: {
   const own = given.configuration.owner === given.me;
   const same = name === (given.configuration.name ?? given.configuration.title);
   if (own && given.latest && same) {
-    return given.changed
-      ? { to: "version", version: given.versions + 1 }
-      : { to: "nothing", because: "unchanged" };
+    return given.changed ? { to: "version", version: given.versions + 1 } : { to: "nothing", because: "unchanged" };
   }
-  const namesakes = given.configurations.filter(
-    (t) => t.owner === given.me && (t.name ?? t.title) === name,
-  ).length;
+  const namesakes = given.configurations.filter((t) => t.owner === given.me && (t.name ?? t.title) === name).length;
   return { to: "fork", namesakes };
 }

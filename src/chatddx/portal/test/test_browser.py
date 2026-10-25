@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 import uvicorn
 from fastapi import FastAPI
-from playwright.sync_api import Error, Page, Route, expect, sync_playwright
+from playwright.sync_api import Browser, Error, Page, Route, expect, sync_playwright
 
 from chatddx import settings
 from chatddx.identity import Person
@@ -77,23 +77,30 @@ def portal(served: FastAPI) -> Iterator[str]:
     running.join(5)
 
 
-@pytest.fixture
-def page(portal: str, alice: Person) -> Iterator[Page]:
-    assert alice.login == "alice"
+@pytest.fixture(scope="session")
+def browser() -> Iterator[Browser]:
     with sync_playwright() as playwright:
         try:
-            browser = playwright.chromium.launch(executable_path=settings.chromium())
+            launched = playwright.chromium.launch(executable_path=settings.chromium())
         except Error as e:
             pytest.fail(f"no browser for Playwright: {e.message.splitlines()[0]}")
-        opened = browser.new_page(base_url=portal)
-        opened.set_default_timeout(15_000)
-        _ = opened.goto("/sign-in")
-        opened.fill('input[name="login"]', "alice")
-        opened.fill('input[name="password"]', PASSWORD)
-        opened.click("button:has-text('Sign in')")
-        opened.wait_for_url(portal + "/")
-        yield opened
-        browser.close()
+        yield launched
+        launched.close()
+
+
+@pytest.fixture
+def page(browser: Browser, portal: str, alice: Person) -> Iterator[Page]:
+    assert alice.login == "alice"
+    context = browser.new_context(base_url=portal)
+    opened = context.new_page()
+    opened.set_default_timeout(15_000)
+    _ = opened.goto("/sign-in")
+    opened.fill('input[name="login"]', "alice")
+    opened.fill('input[name="password"]', PASSWORD)
+    opened.click("button:has-text('Sign in')")
+    opened.wait_for_url(portal + "/")
+    yield opened
+    context.close()
 
 
 def test_a_variation_is_run_watched_halted_scored_again_and_run_again(

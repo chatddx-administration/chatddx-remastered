@@ -75,7 +75,20 @@
 {% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
 
 {% macro run_title(t) -%}
-{{ t.name }}{% for r in t.replaced %}, {{ pgettext("a part replaced", "%(part)s: %(title)s", part=r.part | kind, title=r.title) if r.title is not none else pgettext("a part replaced", "no %(part)s", part=r.part | kind) }}{% endfor %} · {{ t.at }} · {{ t.case | case(brief=true) if t.case else ngettext("%(num)s case", "%(num)s cases", t.cases) }}{% if t.translated %} · {{ _("translated into %(language)s", language=t.translated | language) }}{% endif %} · {% if t.greedy %}{{ pgettext("sampling", "greedy") if t.seeds | length == 1 else ngettext("greedy, %(num)s replicate", "greedy, %(num)s replicates", t.seeds | length) }}{% else %}{{ ngettext("seed %(seeds)s", "seeds %(seeds)s", t.seeds | length, seeds=t.seeds | join(", ")) }}{% endif %}
+{%- set configuration -%}`{{ t.name }}`{% if t.replaced %} ({% for r in t.replaced %}{{ ", " if not loop.first }}{{ pgettext("a part replaced", "%(part)s: %(title)s", part=r.part | kind, title=r.title) if r.title is not none else pgettext("a part replaced", "no %(part)s", part=r.part | kind) }}{% endfor %}){% endif %}{%- endset -%}
+{%- if t.case -%}
+{%- set cases = _("%(case)s in %(language)s", case=t.case | case(brief=true), language=t.translated | language) if t.translated else t.case | case(brief=true) -%}
+{%- elif t.translated -%}
+{%- set cases = ngettext("%(num)s %(language)s case", "%(num)s %(language)s cases", t.cases, language=t.translated | language) -%}
+{%- else -%}
+{%- set cases = ngettext("%(num)s case", "%(num)s cases", t.cases) -%}
+{%- endif -%}
+{%- if t.greedy -%}
+{%- set seeds = pgettext("sampling", "greedy") if t.seeds | length == 1 else ngettext("greedy, %(num)s replicate", "greedy, %(num)s replicates", t.seeds | length) -%}
+{%- else -%}
+{%- set seeds = ngettext("seed %(seeds)s", "seeds %(seeds)s", t.seeds | length, seeds=t.seeds | join(", ")) -%}
+{%- endif -%}
+{{ _("%(cases)s with %(configuration)s on %(model)s (%(seeds)s)", cases=cases, configuration=configuration, model=t.at, seeds=seeds) }}
 {%- endmacro %}
 
 {% macro outdated() %}<span class="inline-flex rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">{{ pgettext("a thread", "Out of date") }}</span>{% endmacro %}

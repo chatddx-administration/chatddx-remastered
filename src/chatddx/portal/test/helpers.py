@@ -13,6 +13,7 @@ from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.inventory import Inventory, World
+from chatddx.locale import display_language
 from chatddx.portal.app import app
 from chatddx.test.helpers import PASSWORD
 from chatddx.test.world import TEST
@@ -50,28 +51,29 @@ def case_title(case: dict[str, Any]) -> str:
 
 def run_title(run: dict[str, Any]) -> str:
     titled = run["titled"]
-    what = [titled["name"]]
+    replaced: list[str] = []
     for r in titled["replaced"]:
         part = r["part"].replace("_", " ")
-        what.append(f"no {part}" if r["title"] is None else f"{part}: {r['title']}")
-    n = len(titled["seeds"])
-    cases = "1 case" if titled["cases"] == 1 else f"{titled['cases']} cases"
-    seeds = ", ".join(str(s) for s in titled["seeds"])
-    return " · ".join(
-        [
-            ", ".join(what),
-            titled["at"],
-            case_title(titled["case"]) if titled["case"] else cases,
-            *(
-                [f"translated into {titled['translated']}"]
-                if titled["translated"]
-                else []
-            ),
-            ("greedy" if n == 1 else f"greedy, {n} replicates")
-            if titled["greedy"]
-            else (f"seed {seeds}" if n == 1 else f"seeds {seeds}"),
-        ]
+        replaced.append(f"no {part}" if r["title"] is None else f"{part}: {r['title']}")
+    configuration = f"`{titled['name']}`" + (
+        f" ({', '.join(replaced)})" if replaced else ""
     )
+    language = titled["translated"] and display_language(titled["translated"])
+    n = titled["cases"]
+    if titled["case"]:
+        cases = case_title(titled["case"]) + (f" in {language}" if language else "")
+    else:
+        cases = " ".join(
+            [str(n), *([language] if language else []), "case" if n == 1 else "cases"]
+        )
+    k = len(titled["seeds"])
+    numbers = ", ".join(str(s) for s in titled["seeds"])
+    seeds = (
+        ("greedy" if k == 1 else f"greedy, {k} replicates")
+        if titled["greedy"]
+        else (f"seed {numbers}" if k == 1 else f"seeds {numbers}")
+    )
+    return f"{cases} with {configuration} on {titled['at']} ({seeds})"
 
 
 def variation_props(page: str) -> dict[str, Any]:

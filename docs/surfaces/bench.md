@@ -830,7 +830,7 @@ Raises:
 
 Raises:
 1. `NotFound`: `str(e)` (from `LookupError`)
-2. `NotFound`: `"endpoint {name!r} serves engine {short(spec.engine)}, which isn't in the store: load its World with init-data"`
+2. `NotFound`: `"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in the store: load its World with init-data"`
 
 ## `Seen.expectation`
 `src/chatddx/bench/seen.py:Seen.expectation`
@@ -887,7 +887,7 @@ Raises:
 * ∟`Handle`
 
 Raises:
-1. `RuntimeError`: `"{short(weights)} is held by {len(held)} model threads, not one: fix boot-check src/chatddx/bench/handles.py:broken"`
+1. `RuntimeError`: `"{display_digest(weights)} is held by {len(held)} model threads, not one: fix boot-check src/chatddx/bench/handles.py:broken"`
 
 ## `Seen.handle_named`
 `src/chatddx/bench/seen.py:Seen.handle_named`

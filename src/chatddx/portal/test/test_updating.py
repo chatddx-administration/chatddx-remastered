@@ -30,7 +30,9 @@ def test_what_is_out_of_date_is_tagged_and_updated_one_by_one_or_all(
     lab = said(shown(signed, f"/lab/{configuration['id']}"))
     assert "Its model has new weights, so it can't run until it is updated." in lab
     scoring = said(shown(signed, f"/scoring/{mine}"))
-    assert "Its model has new weights, so it can't judge until it is updated." in scoring
+    assert (
+        "Its model has new weights, so it can't judge until it is updated." in scoring
+    )
     read_only = shown(signed, f"/threads/{theirs['id']}")
     assert "Out of date" in said(read_only)
     assert f"/threads/{theirs['id']}/update" not in read_only

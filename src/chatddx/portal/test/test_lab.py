@@ -11,7 +11,7 @@ from pydantic import JsonValue
 from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.engine import FileDigest, LocalModel
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
@@ -127,15 +127,15 @@ def test_weights_no_model_thread_holds_are_a_whoops_where_they_are_tried(
     _ = store.add(registry, [weights])
     bench.conn.commit()
     lines = thread(signed, "configuration", LINES)
-    whoops = (
-        "No model in the Library holds these weights, though one should: use "
-        + "another model meanwhile."
+    whoops = "The model has no handle and can't be used."
+    pass_on = (
+        f"{display_digest(weights)} is held by no model thread: check the RuntimeErrors"
     )
-    pass_on = f"{short(weights)} is held by no model thread: check the RuntimeErrors"
     got = paged.get(f"/lab/{lines['id']}?model={weights}")
     assert got.status_code == 500, said(got.text)[:300]
     assert said(got.text).startswith(
-        f"> That shouldn't have happened {whoops} Copy this and send it to drift@chatddx.com: {pass_on} "
+        f"> That shouldn't have happened {escape(whoops)} Copy this and send it to "
+        + f"drift@chatddx.com: {pass_on} "
     )
     asked = paged.get(f"/api/threads/{lines['id']}/variation?model={weights}")
     assert (asked.status_code, asked.json()) == (

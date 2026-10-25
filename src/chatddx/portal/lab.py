@@ -26,7 +26,7 @@ from chatddx.locale import pgettext, tr
 
 from .pages import BenchDep, own_first, page, refusal_of
 from .scoring import unit_in
-from .titles import said_case
+from .titles import display_case
 
 router = APIRouter()
 
@@ -484,4 +484,4 @@ def _higher(mean: float | None) -> tuple[bool, float]:
 
 def _titles(bench: Bench, compared: schemas.Compared | None) -> dict[str, str]:
     apart = [] if compared is None else compared.apart
-    return {c.case: said_case(bench.titled_case(c.case)) for c in apart}
+    return {c.case: display_case(bench.titled_case(c.case)) for c in apart}

@@ -21,6 +21,27 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorte
 # session's teardown.
 ```
 
+## `src/chatddx/test/budget.py:Budget.pytest_runtest_makereport`
+
+```
+# Accommodating for pytest-xdist, whose workers run the tests and set up the fixtures
+# while the controller sums the reports: what the budget weighs rides on them.
+```
+
+## `src/chatddx/test/budget.py:MARGIN`
+
+```
+# Policy: a test's time varies from run to run, and more so beside other workers, so only
+# one off from the cut by this factor is worth marking or unmarking.
+```
+
+## `src/chatddx/test/budget.py:WAITED`
+
+```
+# Dependency: src/chatddx/conftest.py:db takes a copy made ahead on Copies' threads, so
+# waiting for it weighs the copying, which falls behind beside other workers, not the test.
+```
+
 ## `src/chatddx/test/helpers.py:_settled`
 
 ```
@@ -88,6 +109,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorte
 
 ```
 # Accommodating for a regex's newline, written as the two characters \n.
+```
+
+## `src/chatddx/test/test_tests.py:parsed`
+
+```
+# Optimization: parsed once for the tests that read them, as a fixture, so that the slow
+# budget weighs it as set up for many rather than charging whichever test parses first.
 ```
 
 ## `src/chatddx/test/test_tests.py:WORD`

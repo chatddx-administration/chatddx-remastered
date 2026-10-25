@@ -256,6 +256,10 @@ def test_a_refused_form_is_shown_again_with_what_was_typed_and_why(
         ["0"],
         ["</s>"],
     )
+    assert '<span class="text-destructive">name</span>' not in got.text
+    got = signed.post(action, data={**written, "name": [" "]})
+    assert '<span class="text-destructive">name</span>' in got.text
+    assert '<dt class="text-destructive">max output tokens</dt>' in got.text
 
     said = {"name": "quiet", "description": "Thinks not.", "tags": "a"}
     got = signed.post(f"{path}/said", data={**said, "shared": "nobody-at-all"})
@@ -375,7 +379,10 @@ def test_a_chunk_is_written_from_nothing(signed: TestClient) -> None:
         ["max_completion_tokens"],
     )
     got = signed.post(action, data={**given, "f.temperature": ["0.3"]})
-    assert got.status_code == 422 and "a new sampling is named" in got.text
+    assert got.status_code == 422
+    assert '<span class="text-destructive">name</span>' in got.text
+    assert "This is needed." in got.text
+    assert submitted(got.text, action)["f.temperature"] == ["0.3"]
     got = signed.post(
         action, data={**given, "name": ["warm"], "f.temperature": ["0.3"]}
     )
@@ -554,10 +561,7 @@ def test_a_scorer_of_code_that_isn_t_shipped_says_to_write_a_new_one(
     assert f'action="/threads/{made.thread}/edit"' not in page
     said = f"{held.entry_point} is at version {held.version} in chatddx "
     assert said in page
-    assert (
-        f", not {held.version + 1}: write a new scorer from the Library to score with it"
-        in page
-    )
+    assert f", not {held.version + 1}: create a new scorer to score with" in page
 
 
 @pytest.mark.slow

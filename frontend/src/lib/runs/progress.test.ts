@@ -66,7 +66,14 @@ describe("a run's progress", () => {
       why: "halted",
     });
     expect([a.phase, a.kind, a.outcome, a.received, a.text.content]).toEqual(["ended", null, "valid", 3, "Colic"]);
-    expect(tally(progress)).toEqual({ ended: 2, of: 2, outcomes: [["valid", 1], ["stopped", 1]] });
+    expect(tally(progress)).toEqual({
+      ended: 2,
+      of: 2,
+      outcomes: [
+        ["valid", 1],
+        ["stopped", 1],
+      ],
+    });
   });
 
   it("holds an item per case and seed, each case's together", () => {
@@ -82,16 +89,21 @@ describe("a run's progress", () => {
   it("follows the scoring scorer by scorer, with its judges", () => {
     const progress = folded([
       ["run.finished", { findings: [] }],
-      ["run.scoring", { scorers: [{ scorer: "x", name: "plan" }, { scorer: "y", name: "notes" }] }],
+      [
+        "run.scoring",
+        {
+          scorers: [
+            { scorer: "x", name: "plan" },
+            { scorer: "y", name: "notes" },
+          ],
+        },
+      ],
       ["score.started", { scorer: "x", name: "plan", score: "s1", labels: ["a", "b"] }],
       ["score.item", { score: "s1", case: "a", replicate: 0, view: 0, value: 1, detail: null }],
       ["score.item", { score: "s1", case: "a", replicate: 0, view: 1, value: 0, detail: null }],
       ["score.started", { scorer: "y", name: "notes", score: "s2", labels: ["graded"] }],
       ["judge.asked", { case: "a", replicate: 0, scorer: "y", view: 0, judge: "j", seed_index: 0 }],
-      [
-        "judge.answered",
-        { case: "a", replicate: 0, view: 0, judge: "j", seed_index: 0, verdict: null, call: null },
-      ],
+      ["judge.answered", { case: "a", replicate: 0, view: 0, judge: "j", seed_index: 0, verdict: null, call: null }],
       ["score.noted", { level: "warning", code: "c", message: "m", subject: null, wording: null, params: {} }],
       ["run.scored", { scores: [] }],
       ["done", { halted: false }],
@@ -111,10 +123,23 @@ describe("a run's progress", () => {
 
 describe("a run that went wrong", () => {
   it("says what failed, else that it didn't finish, as a run told from the ledger has no errors", () => {
-    expect(failed(folded([["run.started", STARTED], ["run.finished", { findings: [] }], ["done", { halted: null }]]))).toBe(
-      null,
-    );
-    expect(failed(folded([["run.started", STARTED], ["done", { halted: null }]]))).toBe("the run didn't finish");
+    expect(
+      failed(
+        folded([
+          ["run.started", STARTED],
+          ["run.finished", { findings: [] }],
+          ["done", { halted: null }],
+        ]),
+      ),
+    ).toBe(null);
+    expect(
+      failed(
+        folded([
+          ["run.started", STARTED],
+          ["done", { halted: null }],
+        ]),
+      ),
+    ).toBe("the run didn't finish");
     const errored = folded([
       ["run.started", STARTED],
       ["error", { detail: "run r failed: boom" }],

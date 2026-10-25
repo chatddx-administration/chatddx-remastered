@@ -1,5 +1,5 @@
 from chatddx.catalog import Subject, read
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.inventory import Inventory, broken as shared
 from chatddx.store import Rows
 
@@ -16,7 +16,7 @@ def broken(rows: Rows, inventory: Inventory) -> list[str]:
         held.setdefault(edit.digest, set()).add(edit.thread)
     found = [
         f"model threads {', '.join(abouts[Subject(thread=t)].name or str(t) for t in sorted(by))} "
-        + f"hold weights {short(digest)}, which one model thread should"
+        + f"hold weights {display_digest(digest)}, which one model thread should"
         for digest, by in held.items()
         if len(by) > 1
     ]

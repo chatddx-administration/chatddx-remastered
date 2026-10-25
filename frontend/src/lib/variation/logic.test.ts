@@ -1,17 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "$lib/api/client";
-import {
-  carried,
-  choicesOf,
-  keptWith,
-  PARTS,
-  type Picked,
-  queryOf,
-  replaced,
-  tagged,
-  whereSaveGoes,
-} from "./logic";
+import { carried, choicesOf, keptWith, PARTS, type Picked, queryOf, replaced, tagged, whereSaveGoes } from "./logic";
 
 const DIGEST = (n: number) => `sha256:${String(n).padStart(64, "0")}`;
 
@@ -26,7 +16,15 @@ function thread(id: number, name: string | null, owner: string | null, digest: s
     tags: [],
     language: null,
     translated: [],
-    head: { id: id * 10, digest, compilation: null, based_on: null, by: owner ?? "nobody", at: "2026-10-13T12:00:00Z", labels: null },
+    head: {
+      id: id * 10,
+      digest,
+      compilation: null,
+      based_on: null,
+      by: owner ?? "nobody",
+      at: "2026-10-13T12:00:00Z",
+      labels: null,
+    },
     outdated: false,
   };
 }
@@ -88,7 +86,10 @@ describe("a part's choices", () => {
         thread(5, "medium", "alice", DIGEST(3)),
       ],
       "alice",
-      [{ digest: DIGEST(9), title: "older" }, { digest: DIGEST(2), title: "ignored" }],
+      [
+        { digest: DIGEST(9), title: "older" },
+        { digest: DIGEST(2), title: "ignored" },
+      ],
     );
     expect(choices).toEqual([
       { digest: DIGEST(2), text: "bob/off" },
@@ -129,7 +130,14 @@ describe("the languages a run is sent in", () => {
   const look: Schemas["Carried"][] = [
     { language: "en", families: [1, 4], translated: false, skeleton: DIGEST(10), refused: null, untranslated: false },
     { language: "sv", families: [2], translated: true, skeleton: DIGEST(11), refused: null, untranslated: false },
-    { language: "de", families: [3], translated: false, skeleton: null, refused: "no translations into de", untranslated: true },
+    {
+      language: "de",
+      families: [3],
+      translated: false,
+      skeleton: null,
+      refused: "no translations into de",
+      untranslated: true,
+    },
   ];
 
   it("are the look's, a family picked beyond it going as its language's, or unknown", () => {

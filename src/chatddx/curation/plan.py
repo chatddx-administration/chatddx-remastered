@@ -120,7 +120,7 @@ type _Stanza = dict[str, JsonValue]
 _TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 
-def _short(text: str) -> str:
+def _display_text(text: str) -> str:
     return repr(text if len(text) <= 60 else text[:57] + "…")
 
 
@@ -356,9 +356,13 @@ def plan_factors(
                             f"{where}: {stanza}: each entry is a text and its translation"
                         )
                 if text not in texts:
-                    raise ValueError(f"{where}: {stanza} holds no text {_short(text)}")
+                    raise ValueError(
+                        f"{where}: {stanza} holds no text {_display_text(text)}"
+                    )
                 if entries.setdefault(text, translation) != translation:
-                    raise ValueError(f"{where}: {_short(text)} is translated two ways")
+                    raise ValueError(
+                        f"{where}: {_display_text(text)} is translated two ways"
+                    )
         return entries
 
     def plan_table(table: str) -> None:

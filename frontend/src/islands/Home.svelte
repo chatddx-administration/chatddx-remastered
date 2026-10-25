@@ -12,7 +12,7 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { Textarea } from "$lib/components/ui/textarea";
   import { api, type Schemas, why } from "$lib/api/client";
-  import { languageName, t, tn } from "$lib/locale";
+  import { displayLanguage, t, tn } from "$lib/locale";
   import { watch } from "$lib/runs/events";
   import { begun, failed, fold } from "$lib/runs/progress";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
@@ -98,7 +98,9 @@
       const started = await api.POST("/api/runs", {
         body: {
           configuration,
-          ...(compiled ? { parts: { model: models.find((m) => m.name === model)?.weights ?? null } } : { under: model }),
+          ...(compiled
+            ? { parts: { model: models.find((m) => m.name === model)?.weights ?? null } }
+            : { under: model }),
           families: [typed.family],
           score: false,
         },
@@ -144,7 +146,9 @@
       <StethoscopeIcon class="size-10 text-primary-foreground" />
     </div>
     <h1 class="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-      {@html t('<span class="gradient-text">Emergency</span> <span class="text-foreground">Differential Diagnostics</span>')}
+      {@html t(
+        '<span class="gradient-text">Emergency</span> <span class="text-foreground">Differential Diagnostics</span>',
+      )}
     </h1>
     <p class="mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground">
       {t("Describe the patient's symptoms and history for a differential and a management plan.")}
@@ -199,12 +203,7 @@
           <div class="flex flex-col gap-4 sm:flex-row">
             <div class="grid gap-2">
               <Label for="model">{t("Model")}</Label>
-              <NativeSelect.Root
-                id="model"
-                class="min-w-52"
-                bind:value={model}
-                disabled={busy}
-              >
+              <NativeSelect.Root id="model" class="min-w-52" bind:value={model} disabled={busy}>
                 {#each models as m (m.name)}
                   <NativeSelect.Option value={m.name}>{m.name}</NativeSelect.Option>
                 {/each}
@@ -222,7 +221,7 @@
               <Label for="language">{t("Written in")}</Label>
               <NativeSelect.Root id="language" bind:value={language} disabled={busy}>
                 {#each languages as l (l)}
-                  <NativeSelect.Option value={l}>{languageName(l)}</NativeSelect.Option>
+                  <NativeSelect.Option value={l}>{displayLanguage(l)}</NativeSelect.Option>
                 {/each}
               </NativeSelect.Root>
             </div>
@@ -231,11 +230,7 @@
             type="submit"
             size="lg"
             class="gap-2 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
-            disabled={busy ||
-              !text.trim() ||
-              characters > limit ||
-              configuration === undefined ||
-              model === undefined}
+            disabled={busy || !text.trim() || characters > limit || configuration === undefined || model === undefined}
           >
             {#if busy}
               <LoaderCircleIcon class="animate-spin" />
@@ -278,7 +273,9 @@
         {#if answer.problem || answer.salvaged}
           <Alert.Root class="rounded-2xl border-warning/30">
             <TriangleAlertIcon class="text-warning" />
-            <Alert.Title>{answer.salvaged ? t("The answer was cut short") : t("The answer breaks its schema")}</Alert.Title>
+            <Alert.Title
+              >{answer.salvaged ? t("The answer was cut short") : t("The answer breaks its schema")}</Alert.Title
+            >
             {#if answer.problem}<Alert.Description>{answer.problem}</Alert.Description>{/if}
           </Alert.Root>
         {/if}

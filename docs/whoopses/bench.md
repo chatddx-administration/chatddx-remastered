@@ -29,9 +29,8 @@ assert each.skeleton is not None
 
 ```
 raise Whoops(
-    "No model in the Library holds these weights, though one should: "
-    + "use another model meanwhile.",
-    pass_on=f"{short(weights)} is held by no model thread: check the "
+    "The model has no handle and can't be used.",
+    pass_on=f"{display_digest(weights)} is held by no model thread: check the "
     + "RuntimeErrors",
 )
 ```

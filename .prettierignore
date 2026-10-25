@@ -1,4 +1,24 @@
+# Policy: prettier formats what is named here and nothing else, so that what isn't, such as the portal's Jinja
+# templates, a world's data or what a tool writes, is left as it is.
+/*
+!/frontend/
+!/docs/
+!/agents/
+!/AGENTS.md
+!/README.md
+
 # Compromise: chatddx stamp writes what changed as a git conflict, which prettier reads as markdown and reformats.
-docs/comments/
-docs/surfaces/
-docs/whoopses/
+/docs/comments/
+/docs/surfaces/
+/docs/whoopses/
+
+# Accommodating for what tools write: chatddx openapi, compared byte for byte by check.sh, pnpm, openapi-typescript and
+# vite.
+/frontend/openapi.json
+/frontend/pnpm-lock.yaml
+/frontend/src/lib/api/schema.d.ts
+/frontend/dist/
+
+# Accommodating for shadcn-svelte, whose components are copied in as it writes them.
+/frontend/components.json
+/frontend/src/lib/components/ui/

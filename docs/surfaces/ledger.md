@@ -148,7 +148,7 @@ Raises:
 7. `StructuralError`: `"{item.key}: duplicate judge calls for view {item.view}"` (through `_judged`)
 
 Finds:
-1. `view.unreachable`: `"view %(view)s's output selector %(selector)s reaches nothing in the run's output schema"`
+1. `view.unreachable`: `"view %(view)s picks %(selector)s from the output, but the run's output schema has no %(selector)s"`
 2. `judge.incomplete`: `"view %(view)s's value rests on %(called)s of %(num)s judge seeds"` (through `_judged`)
 3. `score.scorer_code`: `"the scorer code ran at version %(ran)s of %(entry_point)s, not the version the scorer pins (%(pinned)s)"`
 4. `score.run_unfinished`: `"the run hasn't finished"`

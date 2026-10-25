@@ -394,9 +394,10 @@ round through `next_request`.
 `chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
 TOML script instead of deciding the reply itself, after the same checks. A turn has `reasoning`, `content`, `tool_calls`
 (each a `name` and `arguments`, a table or a JSON string), `finish`, `runaway` (newlines after the content), `hang_up`
-(tokens streamed before the server goes away; an unstreamed request gets no answer) and `status` (an error answered
-instead, `content` its message); a request past the last turn gets 500. A file may hold other keys; the fake reads only
-`turn`.
+(tokens streamed before the server goes away; an unstreamed request gets no answer), `hold` (tokens streamed before the
+stream waits for the client to hang up or the script to be released; an unstreamed request waits unanswered) and
+`status` (an error answered instead, `content` its message); a request past the last turn gets 500. A file may hold
+other keys; the fake reads only `turn`.
 
 - **Turns in order.** Each request takes the next turn, streamed or not, as `chat.py:stream` and `chat.py:completion`
   shape a reply. Its finish is `finish`, else `length` after a runaway, `tool_calls` with calls, `stop` otherwise. fake
@@ -405,6 +406,10 @@ instead, `content` its message); a request past the last turn gets 500. A file m
 - **Reasoning placed.** A turn's reasoning goes where the server puts it: separated with a reasoning parser, else in the
   content, in `<think>` or Harmony's channels. vLLM, no item · `chat.py:_placed` ·
   `test_a_scripted_thought_goes_where_the_server_puts_reasoning`
+- **Held open.** A turn's `hold` keeps its stream open, neither ended nor gone, until the client hangs up, as a
+  generation that hasn't ended would, or until `Script.release` lets every held turn go on; a turn hangs up or holds,
+  not both. fake · `server.py:_Handler._released` · `test_a_held_turn_waits_for_the_client_to_hang_up`,
+  `test_a_held_turn_goes_on_once_its_script_is_released`
 - **Checked first.** A request the fake refuses gets its refusal and takes no turn. fake · `server.py:_Handler._reply` ·
   `test_a_scripted_request_still_meets_vllm_s_checks`
 - **Read whole.** A script without turns, a turn with a key it doesn't know, or a value of the wrong kind is refused

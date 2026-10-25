@@ -226,7 +226,7 @@ def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
     graded = bench.variation("judge-graded").configuration.digest
     gpt_oss = bench.endpoint(GPT_OSS).model.digest
     judge = Judge(skeleton=graded, model=gpt_oss, seeds=(1,))
-    said = f"the skeleton is worked out for {QWEN_MODEL}, and the judge's model is "
+    said = f"the skeleton is worked out for {QWEN_MODEL}, but the judge's model is "
     for findings in (
         bench.check(judge).findings,
         bench.new(judge, "elsewhere").findings,

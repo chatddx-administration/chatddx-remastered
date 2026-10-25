@@ -93,7 +93,7 @@ SHELVES = (
     Shelf(
         N_("Trials"),
         N_("What is run."),
-        {"trial": N_("A configuration on an engine, over cases, with seeds.")},
+        {"trial": N_("A configuration run on an engine, with chosen cases and seeds.")},
     ),
 )
 
@@ -136,7 +136,7 @@ if sorted(_WORDS) != _SHELVED:
     )
 
 
-def worded(word: str) -> str:
+def display_kind(word: str) -> str:
     return pgettext("kind", _WORDS.get(word, word.replace("_", " ")))
 
 
@@ -153,8 +153,8 @@ class Shelved:
     written: bool
 
     @property
-    def worded(self) -> str:
-        return worded(self.word)
+    def display_kind(self) -> str:
+        return display_kind(self.word)
 
 
 def shelved(bench: Bench, written: list[str]) -> list[tuple[Shelf, list[Shelved]]]:

@@ -42,7 +42,12 @@
   let data = $state(given.data ?? blank(root, root));
 
   function component(): Component {
-    return { kind: "expectation", case: given.case, expectation_schema: given.schema, data: kept(data, root, root) as never };
+    return {
+      kind: "expectation",
+      case: given.case,
+      expectation_schema: given.schema,
+      data: kept(data, root, root) as never,
+    };
   }
 
   $effect(() => {

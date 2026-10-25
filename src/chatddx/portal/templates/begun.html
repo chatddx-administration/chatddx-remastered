@@ -19,6 +19,12 @@
   "translations": _("A new translations"),
   "trial": _("A new trial"),
 }.get(word, _("A new %(kind)s", kind=word | kind)) %}
+{% macro naming(typed) %}
+{% set unnamed = typed and typed.unnamed %}
+<label class="grid max-w-xl gap-1 text-sm"><span class="{{ 'text-destructive' if unnamed else 'text-muted-foreground' }}">{{ _("name") }}</span>
+  <input name="name" required value="{{ typed.name or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
+  {%- if unnamed %}<span class="text-xs text-destructive">{{ _("This is needed.") }}</span>{% endif %}</label>
+{% endmacro %}
 {% block title %}{{ titled }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
@@ -55,8 +61,7 @@
   {% set of %}{% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}{% endset %}
   <p class="mb-3 text-sm text-muted-foreground">{{ _("The texts of %(configuration)s, into %(language)s.", configuration=of, language=into | language) }} <a class="view" href="/library/new?kind=translations">{{ _("Pick another") }}</a></p>
   <form method="post" action="{{ action }}" class="grid gap-4">
-    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">{{ _("name") }}</span>
-      <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    {{ naming(typed) }}
     <div>{% for e in entries %}{{ entry(e, loop.index0, true, false) }}{% endfor %}</div>
     <div class="flex flex-wrap items-center gap-3 text-sm">
       <button class="primary">{{ _("Write it") }}</button>
@@ -68,8 +73,7 @@
   {% else %}
   {% call section(_("What it holds"), "holds") %}
   <form method="post" action="{{ action }}" class="grid gap-4">
-    <label class="grid max-w-xl gap-1 text-sm"><span class="text-muted-foreground">{{ _("name") }}</span>
-      <input name="name" required value="{{ typed.name or '' if typed else '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    {{ naming(typed) }}
     {{ rows(fields, picked, titles, links) }}
     {% if languaged %}
     <label class="grid max-w-xs gap-1 text-sm"><span class="text-muted-foreground">{{ _("language") }}</span>

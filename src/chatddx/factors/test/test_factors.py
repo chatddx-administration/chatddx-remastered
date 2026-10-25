@@ -462,7 +462,7 @@ def test_output_guidance_goes_where_it_is_inserted(reg: Registry) -> None:
 
 
 def test_inserts_are_checked_per_chunk() -> None:
-    with pytest.raises(ValidationError, match="cannot use inserts"):
+    with pytest.raises(ValidationError, match=r"cannot use inserts schema\b"):
         _ = Instructions(text=(Insert(insert="schema"),))
     with pytest.raises(ValidationError, match="cannot use inserts"):
         _ = Output(contract=TextOutput(), guidance=(Insert(insert="output_guidance"),))
@@ -581,7 +581,7 @@ def test_skeleton_structure_is_enforced() -> None:
     user = Message(role="user", content=(Slot(slot="vignette"),))
     with pytest.raises(ValidationError, match="may not set"):
         _ = Skeleton(messages=(user,), body={"seed": 1}, contract=TextOutput())
-    with pytest.raises(ValidationError, match="need slots"):
+    with pytest.raises(ValidationError, match=r"need slots vignette\b"):
         _ = Skeleton(
             messages=(Message(role="user", content=("hi",)),), contract=TextOutput()
         )
@@ -1460,8 +1460,8 @@ def test_views_are_checked_against_the_expectation_schema(reg: Registry) -> None
     assert [(f.code, f.message) for f in lint(reg, [scorer])] == [
         (
             "view.unreachable",
-            "view 1's expectation selector '$.targets' reaches nothing in the "
-            + "expectation schema",
+            "view 1 picks '$.targets' from the expectation, but its schema has no "
+            + "'$.targets'",
         )
     ]
 
@@ -1782,7 +1782,7 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
     assert found(gpt_oss) == [
         (
             "trial.engine_unmatched",
-            "the skeleton is worked out for google/gemma-3-12b-it, and the engine "
+            "the skeleton is worked out for google/gemma-3-12b-it, but the engine "
             + "serves openai/gpt-oss-20b",
         )
     ]
@@ -1792,7 +1792,7 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
     assert found(gpt_oss, judged=True) == [
         (
             "judge.model_unmatched",
-            "the skeleton is worked out for google/gemma-3-12b-it, and the judge's "
+            "the skeleton is worked out for google/gemma-3-12b-it, but the judge's "
             + "model is openai/gpt-oss-20b",
         )
     ]

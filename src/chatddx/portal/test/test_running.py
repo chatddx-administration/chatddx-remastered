@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.fake_vllm.script import Script, Turn
 from chatddx.inventory import Inventory
 from chatddx.portal.test.helpers import shown, world_served
 from chatddx.store import Store
@@ -197,7 +198,9 @@ def test_a_case_is_run_from_its_review_and_followed_there(
         "score": "true",
         "back": back,
     }
-    with faked(world, Store(conn).get, delay=0.2):
+    answer = "Costochondritis\nPneumothorax"
+    held = Script([Turn(content=answer, hold=1), Turn(content=answer)])
+    with faked(world, Store(conn).get, script=held):
         got = signed.post(f"/review/{crlf['id']}/runs", data=form)
         assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
         [run] = signed.get("/api/runs", params={"reaching": crlf["case"]}).json()
@@ -206,6 +209,7 @@ def test_a_case_is_run_from_its_review_and_followed_there(
         assert _review_props(page)["pending"] == [
             {"run": run["id"], "titled": run["titled"]}
         ]
+        held.release()
         _ = settled(signed, run["id"])
     page = shown(signed, back)
     given = _review_props(page)

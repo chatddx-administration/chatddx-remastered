@@ -12,7 +12,7 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { api, type Schemas, why } from "$lib/api/client";
   import { worded } from "$lib/kinds";
-  import { languageName, listed as joined, localized, t, th, tn, tp } from "$lib/locale";
+  import { displayLanguage, displayList, localized, t, th, tn, tp } from "$lib/locale";
   import { runTitle } from "$lib/runs/titles";
   import {
     type Carriage,
@@ -94,7 +94,10 @@
     families.filter((f) => f.name.toLowerCase().includes(narrowed.trim().toLowerCase())).slice(0, 200),
   );
   const scorers = $derived(
-    look.reach.reduce((found, r) => found.set(r.name, [...(found.get(r.name) ?? []), r]), new Map<string, Schemas["Reach"][]>()),
+    look.reach.reduce(
+      (found, r) => found.set(r.name, [...(found.get(r.name) ?? []), r]),
+      new Map<string, Schemas["Reach"][]>(),
+    ),
   );
 
   function pickedOf(variation: Schemas["Variation"]): Picked {
@@ -127,14 +130,20 @@
       return t("Sends %(items)s under %(model)s, one at a time, a replicate each under %(seeds)s.", given);
     }
     if (look.greedy) {
-      return t("Sends %(items)s under %(model)s, one at a time; its sampling is greedy, so the seed isn't sent.", given);
+      return t(
+        "Sends %(items)s under %(model)s, one at a time; its sampling is greedy, so the seed isn't sent.",
+        given,
+      );
     }
     return t("Sends %(items)s under %(model)s, one at a time.", given);
   }
 
   function carriage(c: Carriage): string {
     const given = {
-      where: c.language === null ? t("in its own language") : t("in %(language)s", { language: languageName(c.language) }),
+      where:
+        c.language === null
+          ? t("in its own language")
+          : t("in %(language)s", { language: displayLanguage(c.language) }),
       cases: cases(c.families.length),
     };
     if (c.translated && !c.known) return t("%(where)s, %(cases)s, translated, if it can be", given);
@@ -271,10 +280,13 @@
   </div>
   <p class="mb-1 text-sm">
     {#if version !== versions.length}
-      {@html th('<span class="font-medium">%(label)s</span><span class="text-muted-foreground">, on version %(n)s</span>', {
-        label: look.label,
-        n: version,
-      })}
+      {@html th(
+        '<span class="font-medium">%(label)s</span><span class="text-muted-foreground">, on version %(n)s</span>',
+        {
+          label: look.label,
+          n: version,
+        },
+      )}
     {:else}
       <span class="font-medium">{look.label}</span>
     {/if}
@@ -379,7 +391,9 @@
         {#each given.everyTag as tag (tag)}
           <button
             type="button"
-            class="rounded-full border px-2.5 py-0.5 text-xs {tags.includes(tag) ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}"
+            class="rounded-full border px-2.5 py-0.5 text-xs {tags.includes(tag)
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-muted-foreground hover:bg-muted'}"
             aria-pressed={tags.includes(tag)}
             onclick={() => retagged(tag)}>{tag}</button
           >
@@ -393,7 +407,9 @@
 
   <h3 class="mb-2 text-sm font-medium">{t("What the lints say")}</h3>
   {#if look.findings === null}
-    <p class="text-sm text-muted-foreground">{compiled ? t("No lints while it can't run.") : t("Pick a model to lint it under.")}</p>
+    <p class="text-sm text-muted-foreground">
+      {compiled ? t("No lints while it can't run.") : t("Pick a model to lint it under.")}
+    </p>
   {:else if look.findings.length === 0}
     <p class="text-sm text-muted-foreground">{tp("no lints", "Nothing.")}</p>
   {:else}
@@ -455,14 +471,19 @@
                         {tn("%(n)s without one", "%(n)s without one", view.missing.length, { n: view.missing.length })}
                       </summary>
                       <p class="mt-1 text-xs">
-                        {#each view.missing as family, j (family)}<a class="text-primary hover:underline" href="/cases/{family}">{familyNames[family] ?? family}</a>{j < view.missing.length - 1 ? ", " : ""}{/each}
+                        {#each view.missing as family, j (family)}<a
+                            class="text-primary hover:underline"
+                            href="/cases/{family}">{familyNames[family] ?? family}</a
+                          >{j < view.missing.length - 1 ? ", " : ""}{/each}
                       </p>
                     </details>
                   {/if}
                   {#if view.choosing.length}
                     <p class="mt-1 text-xs text-warning">
                       {t("Several to choose from:")}
-                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/cases/{family}">{familyNames[family] ?? family}</a>{j < view.choosing.length - 1 ? ", " : ""}{/each}
+                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/cases/{family}"
+                          >{familyNames[family] ?? family}</a
+                        >{j < view.choosing.length - 1 ? ", " : ""}{/each}
                     </p>
                   {/if}
                 </td>
@@ -481,117 +502,119 @@
 </section>
 
 {#if !given.judged}
-<section class="mb-6 border-t border-border/60 pt-4">
-  <h2 class="mb-4 text-lg font-semibold">{t("Running it")}</h2>
-  <form class="space-y-4" onsubmit={run}>
-    <fieldset class="space-y-2">
-      <legend class="mb-1.5 text-sm font-medium">{t("On the cases")}</legend>
-      <label class="flex items-center gap-2 text-sm">
-        <input type="radio" name="cases" checked={!picking} onchange={() => (picking = false)} />
-        {tags.length
-          ? t("tagged %(tags)s (%(n)s)", { tags: joined(tags, "disjunction"), n: tagged(families, tags).length })
-          : t("every one you see (%(n)s)", { n: tagged(families, tags).length })}
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <input type="radio" name="cases" checked={picking} onchange={() => (picking = true)} />
-        {t("of the families picked (%(n)s)", { n: chosen.length })}
-      </label>
-      {#if picking}
-        <div class="ml-6 space-y-2">
-          {#if chosen.length}
-            <div class="flex flex-wrap gap-1.5">
-              {#each families.filter((f) => chosen.includes(f.id)) as f (f.id)}
-                <button
-                  type="button"
-                  class="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/20"
-                  aria-label={t("Leave out %(name)s", { name: f.name })}
-                  onclick={() => toggled(f.id)}>{f.name} ×</button
-                >
+  <section class="mb-6 border-t border-border/60 pt-4">
+    <h2 class="mb-4 text-lg font-semibold">{t("Running it")}</h2>
+    <form class="space-y-4" onsubmit={run}>
+      <fieldset class="space-y-2">
+        <legend class="mb-1.5 text-sm font-medium">{t("On the cases")}</legend>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="radio" name="cases" checked={!picking} onchange={() => (picking = false)} />
+          {tags.length
+            ? t("tagged %(tags)s (%(n)s)", { tags: displayList(tags, "disjunction"), n: tagged(families, tags).length })
+            : t("every one you see (%(n)s)", { n: tagged(families, tags).length })}
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="radio" name="cases" checked={picking} onchange={() => (picking = true)} />
+          {t("of the families picked (%(n)s)", { n: chosen.length })}
+        </label>
+        {#if picking}
+          <div class="ml-6 space-y-2">
+            {#if chosen.length}
+              <div class="flex flex-wrap gap-1.5">
+                {#each families.filter((f) => chosen.includes(f.id)) as f (f.id)}
+                  <button
+                    type="button"
+                    class="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/20"
+                    aria-label={t("Leave out %(name)s", { name: f.name })}
+                    onclick={() => toggled(f.id)}>{f.name} ×</button
+                  >
+                {/each}
+              </div>
+            {/if}
+            <Input
+              bind:value={narrowed}
+              placeholder={t("Find a family by name")}
+              class="max-w-sm"
+              aria-label={t("Find a family")}
+            />
+            <div class="max-h-48 max-w-sm overflow-y-auto rounded-md border border-border p-2 text-sm">
+              {#each listed as f (f.id)}
+                <label class="flex items-center gap-2 py-0.5">
+                  <input type="checkbox" checked={chosen.includes(f.id)} onchange={() => toggled(f.id)} />
+                  {f.name}
+                </label>
+              {:else}
+                <p class="text-muted-foreground">{t("No family by that name.")}</p>
               {/each}
             </div>
-          {/if}
-          <Input
-            bind:value={narrowed}
-            placeholder={t("Find a family by name")}
-            class="max-w-sm"
-            aria-label={t("Find a family")}
-          />
-          <div class="max-h-48 max-w-sm overflow-y-auto rounded-md border border-border p-2 text-sm">
-            {#each listed as f (f.id)}
-              <label class="flex items-center gap-2 py-0.5">
-                <input type="checkbox" checked={chosen.includes(f.id)} onchange={() => toggled(f.id)} />
-                {f.name}
-              </label>
-            {:else}
-              <p class="text-muted-foreground">{t("No family by that name.")}</p>
-            {/each}
           </div>
+        {/if}
+      </fieldset>
+      <div class="flex flex-wrap items-end gap-4">
+        <div class="space-y-1.5">
+          <Label for="run-seed">{t("Seed")}</Label>
+          <Input id="run-seed" type="number" min="0" bind:value={seed} disabled={replicates > 1} class="w-36" />
         </div>
-      {/if}
-    </fieldset>
-    <div class="flex flex-wrap items-end gap-4">
-      <div class="space-y-1.5">
-        <Label for="run-seed">{t("Seed")}</Label>
-        <Input id="run-seed" type="number" min="0" bind:value={seed} disabled={replicates > 1} class="w-36" />
+        <div class="space-y-1.5">
+          <Label for="run-replicates">{t("Replicates")}</Label>
+          <Input id="run-replicates" type="number" min="1" bind:value={replicates} class="w-24" />
+        </div>
+        <label class="flex items-center gap-2 pb-2 text-sm">
+          <input type="checkbox" bind:checked={scored} />
+          {t("Score it when it's done")}
+        </label>
       </div>
-      <div class="space-y-1.5">
-        <Label for="run-replicates">{t("Replicates")}</Label>
-        <Input id="run-replicates" type="number" min="1" bind:value={replicates} class="w-24" />
-      </div>
-      <label class="flex items-center gap-2 pb-2 text-sm">
-        <input type="checkbox" bind:checked={scored} />
-        {t("Score it when it's done")}
-      </label>
-    </div>
-    <p class="text-sm" aria-live="polite">
-      {sends()}
-      {#if look.model !== null && sent.length > 0 && items > 0 && largest > given.itemsPerRun}
-        <span class="text-warning">
-          {tn("A run holds at most %(n)s.", "A run holds at most %(n)s.", given.itemsPerRun, { n: given.itemsPerRun })}
-        </span>
-      {/if}
-    </p>
-    {#if sent.length > 0 && (carriages.length > 1 || carriages.some((c) => c.translated || !c.known))}
       <p class="text-sm" aria-live="polite">
-        {sending.length > 1
-          ? t("A run per language: %(runs)s.", { runs: sending.map(carriage).join("; ") })
-          : t("%(run)s.", { run: sending.map(carriage).join("; ") })}
+        {sends()}
+        {#if look.model !== null && sent.length > 0 && items > 0 && largest > given.itemsPerRun}
+          <span class="text-warning">
+            {tn("A run holds at most %(n)s.", "A run holds at most %(n)s.", given.itemsPerRun, {
+              n: given.itemsPerRun,
+            })}
+          </span>
+        {/if}
       </p>
-    {/if}
-    {#if leftOut.length}
-      <ul class="space-y-1 text-sm text-warning" aria-live="polite">
-        {#each leftOut as c (c.language)}
-          <li>
-            {c.untranslated
-              ? t("Left out: %(cases)s in %(language)s, which %(configuration)s has no translations into.", {
-                  cases: cases(c.families.length),
-                  language: c.language ? languageName(c.language) : "",
-                  configuration: look.label,
-                })
-              : t("Left out: %(cases)s in %(language)s, as %(refused)s.", {
-                  cases: cases(c.families.length),
-                  language: c.language ? languageName(c.language) : "",
-                  refused: c.refused ?? "",
-                })}
-          </li>
-        {/each}
-      </ul>
-    {/if}
-    {#if unstarted}
-      <Alert.Root variant="destructive">
-        <TriangleAlertIcon />
-        <Alert.Description>{unstarted}</Alert.Description>
-      </Alert.Root>
-    {/if}
-    <Button
-      type="submit"
-      disabled={look.model === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
-    >
-      {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
-      {t("Run it")}
-    </Button>
-  </form>
-</section>
+      {#if sent.length > 0 && (carriages.length > 1 || carriages.some((c) => c.translated || !c.known))}
+        <p class="text-sm" aria-live="polite">
+          {sending.length > 1
+            ? t("A run per language: %(runs)s.", { runs: sending.map(carriage).join("; ") })
+            : t("%(run)s.", { run: sending.map(carriage).join("; ") })}
+        </p>
+      {/if}
+      {#if leftOut.length}
+        <ul class="space-y-1 text-sm text-warning" aria-live="polite">
+          {#each leftOut as c (c.language)}
+            <li>
+              {c.untranslated
+                ? t("Left out: %(cases)s in %(language)s, which %(configuration)s has no translations into.", {
+                    cases: cases(c.families.length),
+                    language: c.language ? displayLanguage(c.language) : "",
+                    configuration: look.label,
+                  })
+                : t("Left out: %(cases)s in %(language)s, as %(refused)s.", {
+                    cases: cases(c.families.length),
+                    language: c.language ? displayLanguage(c.language) : "",
+                    refused: c.refused ?? "",
+                  })}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      {#if unstarted}
+        <Alert.Root variant="destructive">
+          <TriangleAlertIcon />
+          <Alert.Description>{unstarted}</Alert.Description>
+        </Alert.Root>
+      {/if}
+      <Button
+        type="submit"
+        disabled={look.model === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
+      >
+        {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
+        {t("Run it")}
+      </Button>
+    </form>
+  </section>
 {/if}
 
 <section class="mb-6 border-t border-border/60 pt-4">
@@ -628,35 +651,36 @@
 </section>
 
 {#if !given.judged}
-<section class="mb-6 border-t border-border/60 pt-4">
-  <h2 class="mb-4 text-lg font-semibold">{t("Its runs")}</h2>
-  {#if runs.length === 0}
-    <p class="text-sm text-muted-foreground">{t("No runs of it.")}</p>
-  {:else}
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th class="pb-2 pr-4 font-medium">{t("Started")}</th>
-            <th class="pb-2 pr-4 font-medium">{t("Run")}</th>
-            <th class="pb-2 pr-4 font-medium">{t("Model")}</th>
-            <th class="pb-2 font-medium">{t("Finished")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each runs as run (run.id)}
-            <tr class="border-t border-border/60">
-              <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{when(run.at)}</td>
-              <td class="py-2 pr-4 align-top">
-                <a href="/runs/{run.id}" class="text-primary hover:underline">{runTitle(run.titled)}</a>
-              </td>
-              <td class="whitespace-nowrap py-2 pr-4 align-top">{run.model ?? "—"}</td>
-              <td class="py-2 align-top">{run.finished ? tp("a run finished", "yes") : tp("a run finished", "no")}</td>
+  <section class="mb-6 border-t border-border/60 pt-4">
+    <h2 class="mb-4 text-lg font-semibold">{t("Its runs")}</h2>
+    {#if runs.length === 0}
+      <p class="text-sm text-muted-foreground">{t("No runs of it.")}</p>
+    {:else}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th class="pb-2 pr-4 font-medium">{t("Started")}</th>
+              <th class="pb-2 pr-4 font-medium">{t("Run")}</th>
+              <th class="pb-2 pr-4 font-medium">{t("Model")}</th>
+              <th class="pb-2 font-medium">{t("Finished")}</th>
             </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
-</section>
+          </thead>
+          <tbody>
+            {#each runs as run (run.id)}
+              <tr class="border-t border-border/60">
+                <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{when(run.at)}</td>
+                <td class="py-2 pr-4 align-top">
+                  <a href="/runs/{run.id}" class="text-primary hover:underline">{runTitle(run.titled)}</a>
+                </td>
+                <td class="whitespace-nowrap py-2 pr-4 align-top">{run.model ?? "—"}</td>
+                <td class="py-2 align-top">{run.finished ? tp("a run finished", "yes") : tp("a run finished", "no")}</td
+                >
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
+  </section>
 {/if}

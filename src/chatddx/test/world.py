@@ -10,6 +10,7 @@ from chatddx import settings
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import Resolver
 from chatddx.facts import BUNDLED, Facts
+from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, World, start_up
@@ -119,10 +120,15 @@ def freed(to: Path, world: Path = TEST) -> Path:
 
 @contextmanager
 def faked(
-    world: Inventory, get: Resolver, endpoint: str = QWEN, delay: float = 0.0
+    world: Inventory,
+    get: Resolver,
+    endpoint: str = QWEN,
+    delay: float = 0.0,
+    script: Script | None = None,
 ) -> Generator[None]:
     startup = start_up(world, get, endpoint)
-    with serving([Served.of(startup.argv[0], startup.argv[1:])], delay=delay):
+    served = Served.of(startup.argv[0], startup.argv[1:])
+    with serving([served], delay=delay, script=script):
         yield
 
 

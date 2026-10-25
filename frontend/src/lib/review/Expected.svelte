@@ -88,7 +88,10 @@
 {#snippet beside(field: string)}
   {@const here = views.filter((v) => v.field === field)}
   {#if here.length}
-    <ul class="ml-2 space-y-0.5 border-l-2 border-primary/30 pl-2 text-xs" aria-label={t("What reads %(field)s", { field: field.replaceAll("_", " ") })}>
+    <ul
+      class="ml-2 space-y-0.5 border-l-2 border-primary/30 pl-2 text-xs"
+      aria-label={t("What reads %(field)s", { field: field.replaceAll("_", " ") })}
+    >
       {#each here as v (v.at)}<li>{@render reads(v.view, v.at)}</li>{/each}
     </ul>
   {/if}
@@ -99,7 +102,11 @@
     <Composer {composing} schema={editor.json_schema} {data} {back} changed={composed} />
   {:else}
     <div class="mb-3 flex flex-wrap gap-2 text-xs">
-      <button type="button" class="rounded-md border border-border px-2.5 py-1 font-medium hover:bg-muted" onclick={() => (open = true)}>
+      <button
+        type="button"
+        class="rounded-md border border-border px-2.5 py-1 font-medium hover:bg-muted"
+        onclick={() => (open = true)}
+      >
         {composing.scorer
           ? composing.scorer.mode === "edit"
             ? t("Compose %(scorer)s", { scorer: composing.scorer.name })
@@ -110,7 +117,15 @@
   {/if}
 {/if}
 
-<ExpectationEditor {editor} digest={given.digest} opened={true} quiet changed={(d) => (data = d)} {beside} to={() => back} />
+<ExpectationEditor
+  {editor}
+  digest={given.digest}
+  opened={true}
+  quiet
+  changed={(d) => (data = d)}
+  {beside}
+  to={() => back}
+/>
 
 {#if problem}<p class="mt-2 text-xs text-destructive">{problem}</p>{/if}
 {#if elsewhere.length}
@@ -133,9 +148,22 @@
     </summary>
     <div class="mt-2 rounded-lg border border-border/60 p-3">
       <nav class="mb-2 flex items-center gap-2 text-xs" aria-label={t("Versions")}>
-        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === 0} aria-label={t("The version before")} onclick={() => (shown -= 1)}>◀</button>
-        <span class="font-medium">{t("Version %(at)s of %(last)s", { at: shown + 1, last: given.history.length })}</span>
-        <button type="button" class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40" disabled={shown === given.history.length - 1} aria-label={t("The version after")} onclick={() => (shown += 1)}>▶</button>
+        <button
+          type="button"
+          class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40"
+          disabled={shown === 0}
+          aria-label={t("The version before")}
+          onclick={() => (shown -= 1)}>◀</button
+        >
+        <span class="font-medium">{t("Version %(at)s of %(last)s", { at: shown + 1, last: given.history.length })}</span
+        >
+        <button
+          type="button"
+          class="rounded-md border border-border px-2 py-0.5 hover:bg-muted disabled:opacity-40"
+          disabled={shown === given.history.length - 1}
+          aria-label={t("The version after")}
+          onclick={() => (shown += 1)}>▶</button
+        >
         <span class="text-muted-foreground">{when(version.at)}, {version.by}</span>
       </nav>
       {#if before}

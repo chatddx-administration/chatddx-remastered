@@ -57,9 +57,10 @@ Finds:
 
 * `took: defaultdict[str, float]`
 * `shared: defaultdict[str, float]`
+* `waited: defaultdict[str, float]`
 * `slow: set[str]`
 * `skipped: set[str]`
-* `running: str`
+* `pending: list[tuple[str, tuple[str, float]]]`
 * `last: str`
 * `depth: int`
 
@@ -78,11 +79,11 @@ Finds:
 * `report: pytest.TestReport`
 * ∟`None`
 
-## `Budget.pytest_runtest_logstart`
-`src/chatddx/test/budget.py:Budget.pytest_runtest_logstart`
+## `Budget.pytest_runtest_makereport` `@pytest.hookimpl(wrapper=True)`
+`src/chatddx/test/budget.py:Budget.pytest_runtest_makereport`
 
-* `nodeid: str`
-* ∟`None`
+* `item: pytest.Item`
+* ∟`Generator[None, pytest.TestReport, pytest.TestReport]`
 
 ## `Budget.pytest_runtest_teardown`
 `src/chatddx/test/budget.py:Budget.pytest_runtest_teardown`
@@ -232,6 +233,7 @@ Finds:
 * `get: Resolver`
 * `endpoint: str = QWEN`
 * `delay: float = 0.0`
+* `script: Script | None = None`
 * ∟`Generator[None]`
 
 ## `few`
@@ -310,6 +312,12 @@ Finds:
 
 `INSTRUCTION = …`
 
+## `item`
+`src/chatddx/test/test_budget.py:item`
+
+* `nodeid: str`
+* ∟`pytest.Item`
+
 ## `JUDGE`
 `src/chatddx/test/world.py:JUDGE`
 
@@ -346,10 +354,19 @@ Finds:
 * `name: str`
 * `said: list[str]`
 
+## `made`
+`src/chatddx/test/test_budget.py:made`
+
+* `budget: Budget`
+* `nodeid: str`
+* `when: Literal["setup", "call", "teardown"]`
+* `duration: float`
+* ∟`pytest.TestReport`
+
 ## `MARGIN`
 `src/chatddx/test/budget.py:MARGIN`
 
-`MARGIN = 1.5`
+`MARGIN = 3.0`
 
 ## `MISTRAL`
 `src/chatddx/test/world.py:MISTRAL`
@@ -407,6 +424,11 @@ Finds:
 * `at: datetime`
 * `until: datetime | None = None`
 * ∟`tuple[Attempt, ...]`
+
+## `parsed` `@pytest.fixture(scope="session")`
+`src/chatddx/test/test_tests.py:parsed`
+
+* ∟`list[tuple[Path, ast.Module]]`
 
 ## `PASSWORD`
 `src/chatddx/test/helpers.py:PASSWORD`
@@ -502,6 +524,13 @@ Finds:
 
 `SRC = settings.PROJECT_ROOT / "src"`
 
+## `summary`
+`src/chatddx/test/test_budget.py:summary`
+
+* `budget: Budget`
+* `config: pytest.Config`
+* ∟`list[str]`
+
 ## `TARGETS_SCHEMA`
 `src/chatddx/test/test_sample.py:TARGETS_SCHEMA`
 
@@ -527,16 +556,25 @@ Finds:
 ## `test_a_name_tests_share_is_spelled_once_in_world_py`
 `src/chatddx/test/test_tests.py:test_a_name_tests_share_is_spelled_once_in_world_py`
 
+* `parsed: list[tuple[Path, ast.Module]]`
 * ∟`None`
 
 ## `test_a_test_matches_a_table_s_cells_not_its_padding` `@pytest.mark.slow`
 `src/chatddx/test/test_tests.py:test_a_test_matches_a_table_s_cells_not_its_padding`
 
+* `parsed: list[tuple[Path, ast.Module]]`
 * ∟`None`
 
 ## `test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest` `@pytest.mark.slow`
 `src/chatddx/test/test_tests.py:test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest`
 
+* `parsed: list[tuple[Path, ast.Module]]`
+* ∟`None`
+
+## `test_a_worker_s_tests_are_weighed_as_they_would_be_alone`
+`src/chatddx/test/test_budget.py:test_a_worker_s_tests_are_weighed_as_they_would_be_alone`
+
+* `pytestconfig: pytest.Config`
 * ∟`None`
 
 ## `test_each_endpoint_serves_the_engine_planned_under_its_name`
@@ -579,6 +617,12 @@ Finds:
 ## `test_kompismoln_s_sources_are_the_sample_s`
 `src/chatddx/test/test_sample.py:test_kompismoln_s_sources_are_the_sample_s`
 
+* ∟`None`
+
+## `test_only_a_test_far_off_the_cut_is_marked_or_unmarked`
+`src/chatddx/test/test_budget.py:test_only_a_test_far_off_the_cut_is_marked_or_unmarked`
+
+* `pytestconfig: pytest.Config`
 * ∟`None`
 
 ## `test_padding_is_told_from_a_line_s_indent_and_an_f_string_s_values`
@@ -648,6 +692,7 @@ Finds:
 ## `test_what_tests_share_is_written_once`
 `src/chatddx/test/test_tests.py:test_what_tests_share_is_written_once`
 
+* `parsed: list[tuple[Path, ast.Module]]`
 * ∟`None`
 
 ## `test_what_the_fake_writes_holds_to_each_data_set_s_schemas` `@pytest.mark.parametrize("path", …)`
@@ -675,6 +720,11 @@ Finds:
 `src/chatddx/test/world.py:UNKNOWN_MODEL`
 
 `UNKNOWN_MODEL = "unknown"`
+
+## `WAITED`
+`src/chatddx/test/budget.py:WAITED`
+
+`WAITED = frozenset({"db"})`
 
 ## `WORD`
 `src/chatddx/test/test_tests.py:WORD`

@@ -284,6 +284,25 @@ Raises:
 * `thread: int`
 * ∟`Response`
 
+## `display_case`
+`src/chatddx/portal/titles.py:display_case`
+
+* `case: Cased`
+* `brief: bool = False`
+* ∟`str`
+
+## `display_kind`
+`src/chatddx/portal/shelves.py:display_kind`
+
+* `word: str`
+* ∟`str`
+
+## `display_thread`
+`src/chatddx/portal/titles.py:display_thread`
+
+* `thread: schemas.Thread`
+* ∟`str`
+
 ## `edges`
 `src/chatddx/portal/translations.py:edges`
 
@@ -300,7 +319,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 2. `Invalid`: `"configuration %(thread)s is written by hand: it has no recipe to pick parts of", thread=thread`
 3. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
 
@@ -464,7 +483,7 @@ Raises:
 
 * `found: list[Field]`
 * `form: FormData`
-* `e: ValueError`
+* `e: ValueError | None`
 * ∟`tuple[list[Field], list[str]]`
 
 ## `keyed`
@@ -807,19 +826,6 @@ Raises:
 * `left: bool = False`
 * ∟`Response`
 
-## `said_case`
-`src/chatddx/portal/titles.py:said_case`
-
-* `case: Cased`
-* `brief: bool = False`
-* ∟`str`
-
-## `said_thread`
-`src/chatddx/portal/titles.py:said_thread`
-
-* `thread: schemas.Thread`
-* ∟`str`
-
 ## `cases.saying` `@router.post("/cases/{family}/said")`
 `src/chatddx/portal/cases.py:saying`
 
@@ -845,7 +851,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `scorer_choices`
 `src/chatddx/portal/scoring.py:scorer_choices`
@@ -929,8 +935,8 @@ Raises:
 * `written: list[str]`
 * ∟`list[tuple[Shelf, list[Shelved]]]`
 
-## `Shelved.worded` `@property`
-`src/chatddx/portal/shelves.py:Shelved.worded`
+## `Shelved.display_kind` `@property`
+`src/chatddx/portal/shelves.py:Shelved.display_kind`
 
 * ∟`str`
 
@@ -1063,7 +1069,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=worded(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `to_sign_in`
 `src/chatddx/portal/pages.py:to_sign_in`
@@ -1099,6 +1105,7 @@ Raises:
 * `labels: str | None = None`
 * `about: dict[str, str] | None = None`
 * `kept: bool = True`
+* `unnamed: bool = False`
 
 ## `unit_in`
 `src/chatddx/portal/scoring.py:unit_in`
@@ -1163,12 +1170,6 @@ Raises:
 * `next: str | None`
 * ∟`str`
 
-## `worded`
-`src/chatddx/portal/shelves.py:worded`
-
-* `word: str`
-* ∟`str`
-
 ## `world` `@router.get("/world")`
 `src/chatddx/portal/world.py:world`
 
@@ -1189,11 +1190,8 @@ Raises:
 
 Raises:
 1. `NotFound`: `"no %(kind)s is begun here: what is begun here is %(kinds)s", kind=kind, kinds=", ".join(_BEGUN)` (through `_begun`)
-2. `Invalid`: `"new translations are named"`
-3. `Refusing`: `422, e` (from `NotFound`, through `_beginning_translations`)
-4. `Invalid`: `_NAMED[kind]`
-5. `Invalid`: `"a new %(kind)s is named", kind=worded(kind)`
-6. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
+2. `Refusing`: `422, e` (from `NotFound`, through `_beginning_translations`)
+3. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
 
 ## `written`
 `src/chatddx/portal/translations.py:written`

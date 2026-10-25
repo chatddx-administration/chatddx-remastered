@@ -25,7 +25,7 @@ from chatddx.store import Queue, UnderWay
 from .lab import linked, viewed
 from .pages import BenchDep, page
 from .scoring import unit_in
-from .titles import said_case
+from .titles import display_case
 
 PLAN = "management_plan_v1"
 SHOWN = 50
@@ -95,7 +95,7 @@ def comparing(
         "compare.html",
         person=bench.person,
         compared=compared,
-        titles={case: said_case(bench.titled_case(case)) for case in cases},
+        titles={case: display_case(bench.titled_case(case)) for case in cases},
         by=picked,
         at=at,
         grouped=grouped,
@@ -114,7 +114,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     left = (
         [] if under_way or shown.finished_at is None else bench.unscored(bench.run(run))
     )
-    titles = {case: said_case(bench.titled_case(case)) for case in shown.cases}
+    titles = {case: display_case(bench.titled_case(case)) for case in shown.cases}
     together = [
         (
             r.run,

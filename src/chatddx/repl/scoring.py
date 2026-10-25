@@ -5,6 +5,7 @@ from rich.text import Text
 
 from chatddx.bench import Bench, Family, Graded
 from chatddx.catalog import About, Edit, Subject, read, titles
+from chatddx.catalog.titles import display_count
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import RunStarted
 
@@ -13,13 +14,12 @@ from .render import (
     LATER,
     REFUSED,
     VALID,
-    plural,
+    display_some,
     scored_findings,
     show_judged,
     show_scores,
     show_summary,
     show_table,
-    some,
 )
 from .reviewing import said
 from .running import SCORING, Held
@@ -83,7 +83,9 @@ def scorers(repl: Repl) -> None:
     for column in ("scorer", "view", "metric", "reads", "held to", "owner", "in use"):
         table.add_column(column)
 
-    for edit, about, scorer in sorted(bench.scorers(), key=lambda s: _named(bench, s)):
+    for edit, about, scorer in sorted(
+        bench.scorers(), key=lambda s: _display_scorer(bench, s)
+    ):
         held = read.labels(bench.rows, edit.id).items()
         labels = {position: label for (part, position), label in held if part == "view"}
         owner = "" if about.owner == bench.person.id else bench.login(about.owner)
@@ -145,7 +147,7 @@ def take(repl: Repl, *words: str) -> None:
         by = f" from {owner}" if owner else ""
         repl.console.print(
             Text(
-                f"take: {plural(len(picked), 'case')}{tagged}, under "
+                f"take: {display_count(len(picked), 'case')}{tagged}, under "
                 + f"{bench.title(schema)}{by}",
                 style="bold",
             )
@@ -155,26 +157,29 @@ def take(repl: Repl, *words: str) -> None:
         table.add_column()
         table.add_row(
             "taken",
-            Text(_some(names, taken.taken), style=VALID if taken.taken else LABEL),
+            Text(
+                _display_cases(names, taken.taken),
+                style=VALID if taken.taken else LABEL,
+            ),
         )
         if taken.kept:
-            table.add_row("yours already", _some(names, taken.kept))
+            table.add_row("yours already", _display_cases(names, taken.kept))
         if taken.choosing:
             choosing = (
                 f"{names[case]} ({' '.join(sorted(_owners(repl, threads)))})"
                 for case, threads in taken.choosing.items()
             )
-            said = Text(some(choosing), style=LATER)
+            said = Text(display_some(choosing), style=LATER)
             _ = said.append(": take from OWNER", style=LABEL)
             table.add_row("to choose from", said)
         if taken.missing:
-            table.add_row("none shared", _some(names, taken.missing))
+            table.add_row("none shared", _display_cases(names, taken.missing))
         repl.console.print(table)
 
 
-def _some(names: dict[str, str], cases: Iterable[str]) -> str:
+def _display_cases(names: dict[str, str], cases: Iterable[str]) -> str:
     listed = sorted(names[c] for c in cases)
-    return f"{len(listed)}: {some(listed)}" if listed else "none"
+    return f"{len(listed)}: {display_some(listed)}" if listed else "none"
 
 
 def _owners(repl: Repl, threads: Iterable[int]) -> set[str]:
@@ -183,6 +188,6 @@ def _owners(repl: Repl, threads: Iterable[int]) -> set[str]:
     return {bench.login(about.owner) for about in held.values()}
 
 
-def _named(bench: Bench, scorer: tuple[Edit, About, Scorer]) -> str:
+def _display_scorer(bench: Bench, scorer: tuple[Edit, About, Scorer]) -> str:
     edit, about, _ = scorer
     return about.name or titles.title(bench.rows, edit.thread)

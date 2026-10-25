@@ -9,7 +9,16 @@ from typing import Any, cast
 from .served import Refused
 
 _FIELDS = frozenset(
-    {"reasoning", "content", "tool_calls", "finish", "runaway", "hang_up", "status"}
+    {
+        "reasoning",
+        "content",
+        "tool_calls",
+        "finish",
+        "runaway",
+        "hang_up",
+        "hold",
+        "status",
+    }
 )
 
 
@@ -21,6 +30,7 @@ class Turn:
     finish: str | None = None
     runaway: int = 0
     hang_up: int | None = None
+    hold: int | None = None
     status: int | None = None
 
 
@@ -56,7 +66,10 @@ def turn(where: str, value: object) -> Turn:
     reasoning = held.get("reasoning")
     finish = held.get("finish")
     hang_up = held.get("hang_up")
+    hold = held.get("hold")
     status = held.get("status")
+    if hang_up is not None and hold is not None:
+        raise Refused(f"{where} hangs up or holds, not both")
     calls = held.get("tool_calls", [])
     if not isinstance(calls, list):
         raise Refused(f"{where}.tool_calls is a list")
@@ -70,6 +83,7 @@ def turn(where: str, value: object) -> Turn:
         finish=None if finish is None else _str(f"{where}.finish", finish),
         runaway=_count(f"{where}.runaway", held.get("runaway", 0)),
         hang_up=None if hang_up is None else _count(f"{where}.hang_up", hang_up),
+        hold=None if hold is None else _count(f"{where}.hold", hold),
         status=None if status is None else _count(f"{where}.status", status),
     )
 
@@ -81,6 +95,7 @@ class Script:
         self.turns: tuple[Turn, ...] = tuple(turns)
         self._next: int = 0
         self._lock: threading.Lock = threading.Lock()
+        self.released: threading.Event = threading.Event()
 
     @classmethod
     def of(cls, data: dict[str, Any], where: str = "the script") -> "Script":
@@ -96,6 +111,9 @@ class Script:
     def load(cls, path: Path) -> "Script":
         with path.open("rb") as f:
             return cls.of(tomllib.load(f), str(path))
+
+    def release(self) -> None:
+        self.released.set()
 
     def next(self) -> tuple[int, Turn] | None:
         with self._lock:

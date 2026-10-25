@@ -159,6 +159,7 @@ Raises:
 * `finish: str`
 * `runaway: int = 0`
 * `hang_up: int | None = None`
+* `hold: int | None = None`
 
 ## `respond`
 `src/chatddx/fake_vllm/chat.py:respond`
@@ -194,6 +195,7 @@ Raises:
 `src/chatddx/fake_vllm/script.py:Script`
 
 * `turns: tuple[Turn, ...]`
+* `released: threading.Event`
 
 ## `Script.__init__`
 `src/chatddx/fake_vllm/script.py:Script.__init__`
@@ -220,6 +222,11 @@ Raises:
 
 Raises:
 1. `Refused`: `"{where} has no [[turn]]"`
+
+## `Script.release`
+`src/chatddx/fake_vllm/script.py:Script.release`
+
+* ∟`None`
 
 ## `scripted`
 `src/chatddx/fake_vllm/chat.py:scripted`
@@ -343,6 +350,7 @@ Raises:
 * `finish: str | None = None`
 * `runaway: int = 0`
 * `hang_up: int | None = None`
+* `hold: int | None = None`
 * `status: int | None = None`
 
 ## `turn`
@@ -355,10 +363,11 @@ Raises:
 Raises:
 1. `Refused`: `"{where} is a table"`
 2. `Refused`: `"{where} has no {sorted(stray)}"`
-3. `Refused`: `"{where}.tool_calls is a list"`
-4. `Refused`: `"{where} is text, not {value!r}"` (through `_str`)
-5. `Refused`: `"{where} is a table of a name and arguments"` (through `_call`)
-6. `Refused`: `"{where} is a count, not {value!r}"` (through `_count`)
+3. `Refused`: `"{where} hangs up or holds, not both"`
+4. `Refused`: `"{where}.tool_calls is a list"`
+5. `Refused`: `"{where} is text, not {value!r}"` (through `_str`)
+6. `Refused`: `"{where} is a table of a name and arguments"` (through `_call`)
+7. `Refused`: `"{where} is a count, not {value!r}"` (through `_count`)
 
 ## `validate`
 `src/chatddx/fake_vllm/chat.py:validate`

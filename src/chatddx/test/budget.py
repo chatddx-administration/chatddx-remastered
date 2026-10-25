@@ -1,25 +1,32 @@
 import time
 from collections import defaultdict
 from collections.abc import Generator
+from typing import cast
 
 import pytest
 
 QUICK = 1 / 8
-MARGIN = 1.5
+# Policy: a test's time varies from run to run, and more so beside other workers, so only
+# one off from the cut by this factor is worth marking or unmarking.
+MARGIN = 3.0
+# Dependency: src/chatddx/conftest.py:db takes a copy made ahead on Copies' threads, so
+# waiting for it weighs the copying, which falls behind beside other workers, not the test.
+WAITED = frozenset({"db"})
+_SHARED = "budget: shared"
+_WAITED = "budget: waited"
+_LAST = "budget: last"
 
 
 class Budget:
     def __init__(self) -> None:
         self.took: defaultdict[str, float] = defaultdict(float)
         self.shared: defaultdict[str, float] = defaultdict(float)
+        self.waited: defaultdict[str, float] = defaultdict(float)
         self.slow: set[str] = set()
         self.skipped: set[str] = set()
-        self.running: str = ""
+        self.pending: list[tuple[str, tuple[str, float]]] = []
         self.last: str = ""
         self.depth: int = 0
-
-    def pytest_runtest_logstart(self, nodeid: str) -> None:
-        self.running = nodeid
 
     # Policy: a fixture wider than a test is set up for every test after it, so the one
     # that happens to set it up isn't charged for it; nor is the last test for the
@@ -28,7 +35,8 @@ class Budget:
     def pytest_fixture_setup(
         self, fixturedef: pytest.FixtureDef[object]
     ) -> Generator[None, object, object]:
-        if fixturedef.scope == "function":
+        waited = fixturedef.argname in WAITED
+        if fixturedef.scope == "function" and not waited:
             return (yield)
         began = time.perf_counter()
         self.depth += 1
@@ -38,8 +46,8 @@ class Budget:
             self.depth -= 1
             if self.depth == 0:
                 spent = time.perf_counter() - began
-                self.shared[fixturedef.argname] += spent
-                self.took[self.running] -= spent
+                kind = _WAITED if waited else _SHARED
+                self.pending.append((kind, (fixturedef.argname, spent)))
 
     def pytest_runtest_teardown(
         self, item: pytest.Item, nextitem: pytest.Item | None
@@ -47,8 +55,27 @@ class Budget:
         if nextitem is None:
             self.last = item.nodeid
 
+    # Accommodating for pytest-xdist, whose workers run the tests and set up the fixtures
+    # while the controller sums the reports: what the budget weighs rides on them.
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_makereport(
+        self, item: pytest.Item
+    ) -> Generator[None, pytest.TestReport, pytest.TestReport]:
+        report = yield
+        report.user_properties.extend(self.pending)
+        self.pending = []
+        if report.when == "teardown" and item.nodeid == self.last:
+            report.user_properties.append((_LAST, True))
+        return report
+
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
-        if report.when == "teardown" and report.nodeid == self.last:
+        said = [(str(name), value) for name, value in report.user_properties]
+        for name, value in said:
+            if name in (_SHARED, _WAITED):
+                argname, spent = cast(tuple[str, float], value)
+                (self.shared if name == _SHARED else self.waited)[argname] += spent
+                self.took[report.nodeid] -= spent
+        if (_LAST, True) in said:
             return
         self.took[report.nodeid] += report.duration
         if "slow" in report.keywords:
@@ -84,6 +111,9 @@ class Budget:
         say(f"{total:.1f} s in {len(took)} tests; slow from {cut:.3f} s on")
         say(f"the quick run takes {quick:.1f} s of it, {quick / total:.0%}")
         say(f"set up once for many tests: {shared}")
+        if self.waited:
+            waited = ", ".join(f"{name} {t:.1f} s" for name, t in self.waited.items())
+            say(f"waited for, made ahead: {waited}")
         for nodeid in sorted(mark):
             say(f"mark slow: {nodeid} ({took[nodeid]:.3f} s)")
         for nodeid in sorted(unmark):

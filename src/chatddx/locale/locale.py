@@ -29,9 +29,9 @@ __all__ = [
     "Localizing",
     "Proof",
     "check",
+    "display_language",
+    "display_list",
     "gettext",
-    "language_name",
-    "listed",
     "localized",
     "localizing",
     "ngettext",
@@ -61,6 +61,8 @@ _FILLED = re.compile(r"%\(\w+\)s|%%")
 # Policy: a parameter named so holds a language's tag, and one named languages tags
 # separated by ", ", each said by its name where the message is said.
 _LANGUAGE_PARAMS = ("language", "into")
+# Policy: a parameter named so holds names separated by ", ", said as a list.
+_LISTED_PARAMS = ("slots", "inserts", "worked")
 
 
 @dataclass(frozen=True)
@@ -164,7 +166,7 @@ def refusal(wording: str | Sequence[str], params: Mapping[str, object]) -> str:
     return _localized(_REFUSAL, wording, params)
 
 
-def language_name(tag: str) -> str:
+def display_language(tag: str) -> str:
     try:
         said = Language.parse(tag, sep="-").get_display_name(_LOCALIZING.get().tag)
     except (ValueError, UnknownLocaleError):
@@ -172,27 +174,32 @@ def language_name(tag: str) -> str:
     return tag if said is None else said
 
 
-def listed(items: Sequence[str]) -> str:
+def display_list(items: Sequence[str]) -> str:
     return format_list(list(items), locale=_LOCALIZING.get().tag)
 
 
 def _localized(
     context: str, wording: str | Sequence[str], params: Mapping[str, object]
 ) -> str:
-    named = _languaged(params)
+    named = _said(params)
     if isinstance(wording, str):
         return pgettext(context, wording) % named
     singular, plural = wording
     return npgettext(context, singular, plural, cast(int, params["num"])) % named
 
 
-def _languaged(params: Mapping[str, object]) -> dict[str, object]:
+def _said(params: Mapping[str, object]) -> dict[str, object]:
     found = dict(params)
     for key in _LANGUAGE_PARAMS:
         if isinstance(held := found.get(key), str):
-            found[key] = language_name(held)
+            found[key] = display_language(held)
     if isinstance(held := found.get("languages"), str):
-        found["languages"] = listed([language_name(tag) for tag in held.split(", ")])
+        found["languages"] = display_list(
+            [display_language(tag) for tag in held.split(", ")]
+        )
+    for key in _LISTED_PARAMS:
+        if isinstance(held := found.get(key), str):
+            found[key] = display_list(held.split(", "))
     return found
 
 

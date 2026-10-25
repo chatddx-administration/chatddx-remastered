@@ -29,7 +29,7 @@ from chatddx.locale import tr
 from chatddx.scorers.shipped import problems, unit_of
 
 from .pages import BenchDep, own_first, page, refusal_of, within
-from .titles import said_case
+from .titles import display_case
 
 SHOWN = 50
 
@@ -74,7 +74,7 @@ def code_of(bench: Bench, entry_point: str | None = None) -> schemas.ScorerCode:
 def unshipped(scorer: Scorer) -> str | None:
     if found := problems(scorer):
         return tr(
-            "%(problems)s: write a new scorer from the Library to score with it",
+            "%(problems)s: create a new scorer to score with",
             problems="; ".join(found),
         )
     return None
@@ -645,7 +645,7 @@ def _verdicts(
                         _Disagreed(
                             run=started.run,
                             titled=bench.titled(started),
-                            case=said_case(bench.titled_case(item.key.case)),
+                            case=display_case(bench.titled_case(item.key.case)),
                             replicate=item.key.replicate,
                             label=label,
                             seeds=seeds,

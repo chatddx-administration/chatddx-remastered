@@ -162,7 +162,9 @@
       {#if view.judge}
         <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
         {#if judge}
-          <a class="text-primary hover:underline" href="/scoring/{judge.thread}">{t("What it is asked is changed on Scoring")}</a>
+          <a class="text-primary hover:underline" href="/scoring/{judge.thread}"
+            >{t("What it is asked is changed on Scoring")}</a
+          >
         {/if}
       {/if}
     {/snippet}

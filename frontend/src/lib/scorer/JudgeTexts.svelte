@@ -10,7 +10,7 @@
   import { api } from "$lib/api/client";
   import Findings from "$lib/editors/Findings.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
-  import { listed, t } from "$lib/locale";
+  import { displayList, t } from "$lib/locale";
   import { type Part, rewritten } from "./rewriting";
   import TextSegments from "./TextSegments.svelte";
   import { asked, type Seg, segmentsOf, textOf } from "./texts";
@@ -107,7 +107,7 @@
     const said = changed.map((p) =>
       p === "output" ? t("what it is told to answer") : p === "prompt" ? t("its prompt") : t("its instructions"),
     );
-    return t("Saves %(parts)s as your own.", { parts: listed(said) });
+    return t("Saves %(parts)s as your own.", { parts: displayList(said) });
   }
 
   async function save(): Promise<void> {
@@ -120,7 +120,10 @@
   }
 </script>
 
-<section class="space-y-3 rounded-lg border border-dashed border-primary/40 p-2.5" aria-label={t("What its judge is asked, as you write it")}>
+<section
+  class="space-y-3 rounded-lg border border-dashed border-primary/40 p-2.5"
+  aria-label={t("What its judge is asked, as you write it")}
+>
   <p class="text-muted-foreground">
     {t(
       "What %(judge)s is asked, written as you would have it. Saving keeps each text you change as a version of your own, the judge's request with them, and a judge of your own asked through it. The scorers asking %(judge)s keep asking the version they ask until they follow yours, from its page.",
@@ -130,7 +133,12 @@
   <div class="grid gap-3 lg:grid-cols-2">
     <div class="space-y-3">
       {#if parts.instructions}
-        <TextSegments label={t("Its instructions")} segs={instructions} set={(s) => (instructions = s)} inserts={guiding} />
+        <TextSegments
+          label={t("Its instructions")}
+          segs={instructions}
+          set={(s) => (instructions = s)}
+          inserts={guiding}
+        />
       {/if}
       {#if parts.output}
         <TextSegments
@@ -141,7 +149,13 @@
         />
       {/if}
       {#if parts.prompt}
-        <TextSegments label={t("Its prompt")} segs={prompt} set={(s) => (prompt = s)} slots={judgeSlots} inserts={guiding} />
+        <TextSegments
+          label={t("Its prompt")}
+          segs={prompt}
+          set={(s) => (prompt = s)}
+          slots={judgeSlots}
+          inserts={guiding}
+        />
       {/if}
     </div>
     <div>
@@ -150,7 +164,11 @@
         {#each preview as m, i (i)}
           <li>
             <span class="font-medium text-muted-foreground">{m.role}</span>
-            <div class="mt-0.5 whitespace-pre-wrap rounded bg-background/70 p-2 font-mono text-[0.7rem] leading-relaxed">{m.content}</div>
+            <div
+              class="mt-0.5 whitespace-pre-wrap rounded bg-background/70 p-2 font-mono text-[0.7rem] leading-relaxed"
+            >
+              {m.content}
+            </div>
           </li>
         {/each}
       </ol>
@@ -170,6 +188,8 @@
       disabled={busy || changed.length === 0 || blocked}
       onclick={save}>{t("Save what it is asked")}</button
     >
-    <button type="button" class="rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={left}>{t("Not now")}</button>
+    <button type="button" class="rounded-md border border-border px-3 py-1 hover:bg-muted" onclick={left}
+      >{t("Not now")}</button
+    >
   </div>
 </section>

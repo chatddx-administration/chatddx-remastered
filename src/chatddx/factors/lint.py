@@ -8,7 +8,7 @@ from pydantic import JsonValue
 from referencing.exceptions import Unresolvable
 from referencing.jsonschema import UnknownDialect, specification_with
 
-from .base import Component, Finding, resolve
+from .base import Component, Finding, display_names, resolve
 from .bundle import Registry
 from .engine import (
     REASONING_FLAGS,
@@ -58,8 +58,8 @@ def _scorer(c: Scorer, registry: Registry) -> Iterable[Finding]:
         if not reaches(schema, view.expectation):
             yield Finding.of(
                 "view.unreachable",
-                "view %(view)s's expectation selector %(selector)s reaches nothing "
-                + "in the expectation schema",
+                "view %(view)s picks %(selector)s from the expectation, but its "
+                + "schema has no %(selector)s",
                 subject=c.digest,
                 view=i,
                 selector=repr(view.expectation),
@@ -343,11 +343,11 @@ def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
     serves = model_of(c.engine if isinstance(c, Trial) else c.model, registry.get).name
     if serves in models:
         return
-    worked = ", ".join(sorted(models))
+    worked = display_names(models)
     if isinstance(c, Trial):
         yield Finding.of(
             "trial.engine_unmatched",
-            "the skeleton is worked out for %(worked)s, and the engine serves "
+            "the skeleton is worked out for %(worked)s, but the engine serves "
             + "%(serves)s",
             subject=c.digest,
             worked=worked,
@@ -356,7 +356,7 @@ def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
     else:
         yield Finding.of(
             "judge.model_unmatched",
-            "the skeleton is worked out for %(worked)s, and the judge's model is "
+            "the skeleton is worked out for %(worked)s, but the judge's model is "
             + "%(serves)s",
             subject=c.digest,
             worked=worked,

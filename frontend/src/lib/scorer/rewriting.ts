@@ -22,7 +22,9 @@ export async function rewritten(
   judge: JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number },
   bodies: Partial<Record<Part, Record<string, unknown>>>,
   me: string,
-): Promise<{ judge: JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number } } | { problem: string }> {
+): Promise<
+  { judge: JudgeChoice & { texts: Texts; body: Record<string, unknown>; head: number } } | { problem: string }
+> {
   const parts: Partial<Record<Part, string>> = {};
   const now = JSON.parse(JSON.stringify(judge.texts)) as Texts;
   for (const [part, body] of Object.entries(bodies) as [Part, Record<string, unknown>][]) {
@@ -43,7 +45,10 @@ export async function rewritten(
   now.configuration = { thread: made.thread, head: made.head, mine: true, name: configuration?.name ?? requested };
   now.recipe = { ...judge.texts.recipe, ...parts };
   const body = { ...judge.body, skeleton: made.digest };
-  const asked = await written({ thread: judge.thread, head: judge.head, mine: judge.owner === me, name: judge.name }, { component: body });
+  const asked = await written(
+    { thread: judge.thread, head: judge.head, mine: judge.owner === me, name: judge.name },
+    { component: body },
+  );
   if ("problem" in asked) return { problem: t("the judge: %(problem)s", { problem: asked.problem }) };
   return {
     judge: {

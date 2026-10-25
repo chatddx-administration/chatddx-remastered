@@ -22,9 +22,16 @@
           <div class="mt-0.5 whitespace-pre-wrap break-words font-mono text-xs">{shown(change.after)}</div>
         {:else if change.was === "removed"}
           <span class="text-destructive">{tp("change", "removed")}</span>
-          <div class="mt-0.5 whitespace-pre-wrap break-words font-mono text-xs line-through">{shown(change.before)}</div>
+          <div class="mt-0.5 whitespace-pre-wrap break-words font-mono text-xs line-through">
+            {shown(change.before)}
+          </div>
         {:else if change.words}
-          <div class="mt-0.5 whitespace-pre-wrap break-words">{#each change.words as w, i (i)}{#if w.added}<ins class="bg-success/15 text-success no-underline">{w.value}</ins>{:else if w.removed}<del class="bg-destructive/10 text-destructive">{w.value}</del>{:else}{w.value}{/if}{/each}</div>
+          <div class="mt-0.5 whitespace-pre-wrap break-words">
+            {#each change.words as w, i (i)}{#if w.added}<ins class="bg-success/15 text-success no-underline"
+                  >{w.value}</ins
+                >{:else if w.removed}<del class="bg-destructive/10 text-destructive">{w.value}</del
+                >{:else}{w.value}{/if}{/each}
+          </div>
         {:else}
           <div class="mt-0.5 font-mono text-xs">
             <del class="bg-destructive/10 text-destructive">{shown(change.before)}</del>

@@ -1,7 +1,6 @@
 import ast
 import re
 from collections import defaultdict
-from functools import cache
 from pathlib import Path
 from textwrap import dedent
 
@@ -21,8 +20,10 @@ WORD = re.compile(r"[a-z]+")
 SHARING = re.compile(r"(^|\.)(test_\w+|conftest)$")
 
 
-@cache
-def _tests() -> list[tuple[Path, ast.Module]]:
+# Optimization: parsed once for the tests that read them, as a fixture, so that the slow
+# budget weighs it as set up for many rather than charging whichever test parses first.
+@pytest.fixture(scope="session")
+def parsed() -> list[tuple[Path, ast.Module]]:
     return [
         (path, ast.parse(path.read_text()))
         for path in sorted(SRC.rglob("*.py"))
@@ -63,10 +64,12 @@ def _strings(node: ast.stmt) -> list[tuple[ast.Constant, str]]:
 
 
 @pytest.mark.slow
-def test_a_test_matches_a_table_s_cells_not_its_padding() -> None:
+def test_a_test_matches_a_table_s_cells_not_its_padding(
+    parsed: list[tuple[Path, ast.Module]],
+) -> None:
     padded = [
         f"{path.relative_to(SRC)}:{n}: {line!r}"
-        for path, tree in _tests()
+        for path, tree in parsed
         for n, line in _asserted(tree)
         if GAP.search(line)
     ]
@@ -90,8 +93,10 @@ def test_padding_is_told_from_a_line_s_indent_and_an_f_string_s_values() -> None
     assert [n for n, line in found if GAP.search(line)] == [1, 2]
 
 
-def test_a_name_tests_share_is_spelled_once_in_world_py() -> None:
-    world = dict(_tests())[WORLD]
+def test_a_name_tests_share_is_spelled_once_in_world_py(
+    parsed: list[tuple[Path, ast.Module]],
+) -> None:
+    world = dict(parsed)[WORLD]
     spelled = {
         id(c): value
         for node in world.body
@@ -108,7 +113,7 @@ def test_a_name_tests_share_is_spelled_once_in_world_py() -> None:
     ]
     again += [
         (path, c)
-        for path, tree in _tests()
+        for path, tree in parsed
         if path != WORLD
         for node in tree.body
         for c, value in _strings(node)
@@ -137,10 +142,12 @@ def _written(node: ast.stmt) -> bool:
 
 
 @pytest.mark.slow
-def test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest() -> None:
+def test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest(
+    parsed: list[tuple[Path, ast.Module]],
+) -> None:
     taken = [
         f"{path.relative_to(SRC)}:{node.lineno}: {name}"
-        for path, tree in _tests()
+        for path, tree in parsed
         for node in ast.walk(tree)
         if isinstance(node, (ast.Import, ast.ImportFrom))
         for name in _imported(node)
@@ -153,9 +160,11 @@ def test_a_test_takes_what_it_shares_from_helpers_not_a_test_or_a_conftest() -> 
     )
 
 
-def test_what_tests_share_is_written_once() -> None:
+def test_what_tests_share_is_written_once(
+    parsed: list[tuple[Path, ast.Module]],
+) -> None:
     written: defaultdict[str, list[str]] = defaultdict(list)
-    for path, tree in _tests():
+    for path, tree in parsed:
         for node in tree.body:
             if _written(node):
                 written[ast.dump(node)].append(f"{path.relative_to(SRC)}:{node.lineno}")

@@ -44,8 +44,7 @@
         rows="1"
         aria-label={t("%(label)s, text %(n)s", { label, n: Math.floor(at / 2) + 1 })}
         value={s}
-        oninput={(e) => typed(at, e.currentTarget.value)}
-      ></textarea>
+        oninput={(e) => typed(at, e.currentTarget.value)}></textarea>
     {:else}
       <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary">
         ‹{named(s)}›

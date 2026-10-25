@@ -33,10 +33,11 @@ you see fit, a session's hooks may ask for both at a turn's end, but neither is 
 When asked for a handover or pull request:
 
 1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" respectively (pre-existing included).
-2. Run `./check.sh`:
+2. Format, see "Formatting".
+3. Run `./check.sh`:
    - relay flags
    - flip what the budget suggests when it feels right
-3. Commit, run `chatddx stamp docs` and commit what it writes, then push.
+4. Commit, run `chatddx stamp docs` and commit what it writes, then push.
 
 ## Handling errors and warnings
 
@@ -76,8 +77,8 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 ## Tests and checks
 
-Handover check tool is `./check.sh`, capture stdout for budget output and flags to relay. It takes ~350s when diff
-against `origin/main` hits all stages, mostly due to browser tests and the budget run.
+Handover check tool is `./check.sh`, capture stdout for budget output and flags to relay. It takes ~250s when diff
+against `origin/main` hits all stages, which run side by side, mostly due to browser tests and the budget run.
 
 ### Python
 
@@ -95,6 +96,12 @@ against `origin/main` hits all stages, mostly due to browser tests and the budge
 - `pnpm --dir frontend check` type checks frontend
 - `pnpm --dir frontend test` tests frontend takes less than 2s
 
+### Formatting
+
+- `ruff format` formats the Python.
+- `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets through.
+- `./check.sh format` checks both.
+
 ### Browser
 
 - `CHATDDX_CHROMIUM=/opt/pw-browsers/chromium` is in your env and should be good.
@@ -108,7 +115,7 @@ Agents aren't expected to run this, just know it exists.
 
 `nix flake check` runs:
 
-- `check.sh`'s docs, package and frontend stages
+- `check.sh`'s docs, package, frontend and format stages
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 

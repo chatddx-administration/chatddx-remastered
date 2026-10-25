@@ -87,6 +87,9 @@ class _Handler(BaseHTTPRequestHandler):
             if reply.hang_up is not None:
                 self.log_message("went away, as the script says, before answering")
                 return
+            if reply.hold is not None and not self._released():
+                self.log_message("held, as the script says, until the client hung up")
+                return
             self._json(200, completion(served, body, reply))
             return
 
@@ -98,6 +101,17 @@ class _Handler(BaseHTTPRequestHandler):
         for i, (event, generated) in enumerate(stream(served, body, reply)):
             if i and reply.hang_up is not None and sent >= reply.hang_up:
                 self.log_message("went away, as the script says, after %d tokens", sent)
+                return
+            if (
+                i
+                and reply.hold is not None
+                and sent >= reply.hold
+                and not self._released()
+            ):
+                self.log_message(
+                    "held, as the script says, after %d tokens until the client hung up",
+                    sent,
+                )
                 return
             if (i and not self._next_token()) or not self._sent(event.encode()):
                 self.log_message("aborted: the client hung up after %d tokens", sent)
@@ -138,14 +152,23 @@ class _Handler(BaseHTTPRequestHandler):
 
     # Accommodating for vLLM, which hears a hang-up from the socket while it waits for
     # the next token, rather than at the next write.
-    def _next_token(self) -> bool:
-        ready, _, _ = select.select([self.connection], [], [], self.delay)
+    def _next_token(self, delay: float | None = None) -> bool:
+        ready, _, _ = select.select(
+            [self.connection], [], [], self.delay if delay is None else delay
+        )
         if not ready:
             return True
         try:
             return self.connection.recv(1, socket.MSG_PEEK) != b""
         except OSError:
             return False
+
+    def _released(self) -> bool:
+        assert self.script is not None
+        while not self.script.released.is_set():
+            if not self._next_token(0.01):
+                return False
+        return True
 
     def _sent(self, data: bytes) -> bool:
         try:

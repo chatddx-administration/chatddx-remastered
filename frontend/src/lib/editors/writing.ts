@@ -57,12 +57,7 @@ export async function written(at: Target, body: Record<string, unknown>): Promis
     : { problem: why(got.error), moved: null };
 }
 
-export async function saved(
-  editing: Editing,
-  name: string,
-  component: Component,
-  views?: Labelled,
-): Promise<Saved> {
+export async function saved(editing: Editing, name: string, component: Component, views?: Labelled): Promise<Saved> {
   const at = {
     thread: editing.mode === "new" ? null : (editing.thread ?? 0),
     head: editing.head ?? 0,

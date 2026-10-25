@@ -55,6 +55,7 @@ class CaseTitle:
     appendices: tuple[str, ...]
     earlier: bool
 
+
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SAMPLED = (
     "temperature",
@@ -68,18 +69,18 @@ _SAMPLED = (
 )
 
 
-def short(digest: str) -> str:
+def display_digest(digest: str) -> str:
     return digest.removeprefix("sha256:")[:6]
 
 
-def _snippet(text: str, limit: int = 40) -> str:
+def _display_snippet(text: str, limit: int = 40) -> str:
     words = " ".join(text.split())
     if len(words) > limit:
         words = words[: limit + 1].rsplit(" ", 1)[0] + "…"
     return f'"{words}"'
 
 
-def _count(n: int, one: str, many: str | None = None) -> str:
+def display_count(n: int, one: str, many: str | None = None) -> str:
     return f"{n} {one if n == 1 else many or one + 's'}"
 
 
@@ -138,7 +139,7 @@ def _describe_change(path: str, after: JsonValue, title: Title) -> str:
         case str() if _DIGEST.match(after):
             return f"{key}: {title(after)}"
         case str():
-            return f"{key}: {_snippet(after)}"
+            return f"{key}: {_display_snippet(after)}"
         case _:
             return f"{key}: {_value(after)}"
 
@@ -146,11 +147,11 @@ def _describe_change(path: str, after: JsonValue, title: Title) -> str:
 def describe(component: Component, title: Title) -> str:
     match component:
         case Instructions(text=text):
-            return _snippet(_text(text))
+            return _display_snippet(_text(text))
         case FewShot(messages=messages):
-            return f"few-shot, {_count(len(messages), 'message')}"
+            return f"few-shot, {display_count(len(messages), 'message')}"
         case Prompt(segments=segments):
-            return _snippet(_text(segments))
+            return _display_snippet(_text(segments))
         case Output(contract=contract, json_schema=schema):
             kind = f"tool {contract.name}" if contract.kind == "tool" else contract.kind
             described = _schema(schema)
@@ -177,24 +178,26 @@ def describe(component: Component, title: Title) -> str:
             return "with " + ", ".join(title(t) for t in tools)
         case Translations(into=into):
             texts = max(len(entries) for entries in into.values())
-            return f"translations into {', '.join(into)}, {_count(texts, 'text')}"
+            return (
+                f"translations into {', '.join(into)}, {display_count(texts, 'text')}"
+            )
         case Passthrough(body=body):
             return "passthrough: " + ", ".join(body)
         case Skeleton(purpose=purpose):
-            return f"{purpose} configuration {short(component.digest)}"
+            return f"{purpose} configuration {display_digest(component.digest)}"
         case Trial(skeleton=skeleton, engine=engine, cases=cases, seeds=seeds):
             return (
                 f"{title(skeleton)} on {title(engine)}, "
-                + f"{_count(len(cases), 'case')}, {_count(len(seeds), 'seed')}"
+                + f"{display_count(len(cases), 'case')}, {display_count(len(seeds), 'seed')}"
             )
         case Judge(skeleton=skeleton, model=model):
             return f"judge {title(skeleton)} under {title(model)}"
         case Scorer(entry_point=entry_point, version=version):
             return f"scorer {entry_point} v{version}"
         case Scoring(scorer=scorer, expectations=expectations):
-            return f"{title(scorer)} against {_count(len(expectations), 'expectation')}"
+            return f"{title(scorer)} against {display_count(len(expectations), 'expectation')}"
         case Appendix(text=text):
-            return _snippet(text)
+            return _display_snippet(text)
         case Expectation(case=case):
             return f"expectation for {title(case)}"
         case Case(vignette=vignette, appendices=appendices):
@@ -213,11 +216,14 @@ def describe(component: Component, title: Title) -> str:
         case ModelFacts(model=model):
             return f"facts about {model}"
         case ExpectationSchema(json_schema=schema):
-            return _schema(schema) or f"expectation schema {short(component.digest)}"
+            return (
+                _schema(schema)
+                or f"expectation schema {display_digest(component.digest)}"
+            )
         case CanarySet(canaries=canaries):
-            return _count(len(canaries), "canary", "canaries")
+            return display_count(len(canaries), "canary", "canaries")
         case _:
-            return f"{component.kind_name} {short(component.digest)}"
+            return f"{component.kind_name} {display_digest(component.digest)}"
 
 
 def title(rows: Reader, thread: int) -> str:

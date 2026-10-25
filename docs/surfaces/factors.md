@@ -295,6 +295,12 @@ Raises:
 
 `Digest = Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]`
 
+## `display_names`
+`src/chatddx/factors/base.py:display_names`
+
+* `names: Iterable[str]`
+* ∟`str`
+
 ## `distinct` `[T]`
 `src/chatddx/factors/base.py:distinct`
 
@@ -512,8 +518,8 @@ Raises:
 * `text: Text`
 
 Raises:
-1. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Instructions._inserts`, in a `ValidationError`)
-2. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Instructions._inserts`, in a `ValidationError`)
+1. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts` (through `Instructions._inserts`, in a `ValidationError`)
+2. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=inserts` (through `Instructions._inserts`, in a `ValidationError`)
 
 ## `Invalid` `(Worded, ValueError)`
 `src/chatddx/factors/base.py:Invalid`
@@ -636,7 +642,7 @@ Raises:
 Finds:
 1. `model.revision`: `"revision %(revision)s is not a commit and can move"` (through `_model`)
 2. `engine.closure`: `"closure %(closure)s is not a Nix store path"` (through `_engine`)
-3. `view.unreachable`: `"view %(view)s's expectation selector %(selector)s reaches nothing in the expectation schema"` (through `_scorer`)
+3. `view.unreachable`: `"view %(view)s picks %(selector)s from the expectation, but its schema has no %(selector)s"` (through `_scorer`)
 4. `output.schema_invalid`: `message` (through `_output`)
 5. `expectation_schema.invalid`: `message` (through `_expectation_schema`)
 6. `expectation.unchecked`: `"a $ref in the schema can't be resolved: %(ref)s"` (from `Unresolvable`, through `_expectation`)
@@ -648,8 +654,8 @@ Finds:
 12. `vllm.tools_refused`: `"vLLM 0.24 refuses tool_choice %(choice)s without --enable-auto-tool-choice and --tool-call-parser; for harmony and Mistral models it goes out unconstrained instead"` (through `_pair`)
 13. `vllm.native_tools_uncallable`: `"with tool_choice auto, vLLM 0.24 constrains the whole answer to response_format, so no tool can be called"` (through `_pair`)
 14. `vllm.grammar_before_reasoning`: `"without --reasoning-parser, vLLM 0.24 constrains the answer from its first token, so a model can't reason first"` (`{"warning" if reasons else "info"}`, through `_pair`)
-15. `trial.engine_unmatched`: `"the skeleton is worked out for %(worked)s, and the engine serves %(serves)s"` (through `_made_for`)
-16. `judge.model_unmatched`: `"the skeleton is worked out for %(worked)s, and the judge's model is %(serves)s"` (through `_made_for`)
+15. `trial.engine_unmatched`: `"the skeleton is worked out for %(worked)s, but the engine serves %(serves)s"` (through `_made_for`)
+16. `judge.model_unmatched`: `"the skeleton is worked out for %(worked)s, but the judge's model is %(serves)s"` (through `_made_for`)
 17. `language.unknown`: `"the request's language is unknown"` (`info`, through `_languages`)
 18. `language.unknown`: `"the language of %(unknown)s of %(num)s cases is unknown"` (`info`, through `_languages`)
 19. `language.mixed`: `"the request is %(language)s, but %(num)s of %(cases)s cases is %(languages)s" / "the request is %(language)s, but %(num)s of %(cases)s cases are %(languages)s"` (through `_languages`)
@@ -815,8 +821,8 @@ Raises:
 Raises:
 1. `Invalid`: `"an output's schema goes in json_schema, not its contract"` (through `Output._schema_placement`, in a `ValidationError`)
 2. `Invalid`: `"%(contract)s contracts need json_schema", contract=self.contract.kind` (through `Output._schema_placement`, in a `ValidationError`)
-3. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Output._inserts`, in a `ValidationError`)
-4. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Output._inserts`, in a `ValidationError`)
+3. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
+4. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
 5. `Invalid`: `"only an output with a schema can show it"` (through `Output._inserts`, in a `ValidationError`)
 6. `Invalid`: `"schema ops need a schema"` (through `Output._schema_ops`, in a `ValidationError`)
 
@@ -948,11 +954,11 @@ Finds:
 * `segments: tuple[Segment | Insert, ...] = Field(min_length=1)`
 
 Raises:
-1. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=str(sorted(stray))` (through `Prompt._slots`, in a `ValidationError`)
-2. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=str(sorted(missing))` (through `Prompt._slots`, in a `ValidationError`)
-3. `Invalid`: `"slots used more than once: %(slots)s", slots=str(sorted(dupes))` (through `Prompt._slots`, in a `ValidationError`)
-4. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=str(sorted(stray))` (through `Prompt._slots`, in a `ValidationError`)
-5. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))` (through `Prompt._slots`, in a `ValidationError`)
+1. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=slots` (through `Prompt._slots`, in a `ValidationError`)
+2. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=slots` (through `Prompt._slots`, in a `ValidationError`)
+3. `Invalid`: `"slots used more than once: %(slots)s", slots=slots` (through `Prompt._slots`, in a `ValidationError`)
+4. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts` (through `Prompt._slots`, in a `ValidationError`)
+5. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=inserts` (through `Prompt._slots`, in a `ValidationError`)
 
 ## `Purpose`
 `src/chatddx/factors/request.py:Purpose`
@@ -1372,9 +1378,9 @@ Raises:
 
 Raises:
 1. `ValueError`: `"body may not set {sorted(owned)}"` (through `Skeleton._structure`, in a `ValidationError`)
-2. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=str(sorted(stray))` (through `Skeleton._structure`, in a `ValidationError`)
-3. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=str(sorted(missing))` (through `Skeleton._structure`, in a `ValidationError`)
-4. `Invalid`: `"slots used more than once: %(slots)s", slots=str(sorted(dupes))` (through `Skeleton._structure`, in a `ValidationError`)
+2. `Invalid`: `"%(purpose)s requests cannot use slots %(slots)s", purpose=purpose, slots=slots` (through `Skeleton._structure`, in a `ValidationError`)
+3. `Invalid`: `"%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=slots` (through `Skeleton._structure`, in a `ValidationError`)
+4. `Invalid`: `"slots used more than once: %(slots)s", slots=slots` (through `Skeleton._structure`, in a `ValidationError`)
 5. `ValueError`: `"a skeleton has max_rounds exactly when it has tools"` (through `Skeleton._structure`, in a `ValidationError`)
 6. `Invalid`: `"a tool needs a function with a name, not %(tool)s", tool=repr(tool)` (through `Skeleton._structure`, in a `ValidationError`)
 7. `Invalid`: `"tools must be a list"` (through `Skeleton._structure`, in a `ValidationError`)

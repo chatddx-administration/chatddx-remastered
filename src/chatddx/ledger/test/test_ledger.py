@@ -713,8 +713,8 @@ def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> Non
     assert [(f.code, f.message) for f in check_score(score, run, reg)] == [
         (
             "view.unreachable",
-            "view 1's output selector '$.ddx.first' reaches nothing in the run's "
-            + "output schema",
+            "view 1 picks '$.ddx.first' from the output, but the run's output "
+            + "schema has no '$.ddx.first'",
         )
     ]
 

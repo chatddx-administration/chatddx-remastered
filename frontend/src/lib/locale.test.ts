@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { languageName, listed, localized, refusal, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
+import { displayLanguage, displayList, localized, refusal, speaking, t, th, tn, tnp, tp, whoops } from "./locale";
 
 describe("a message", () => {
   it("is said as it is written where the page's catalog doesn't hold it", () => {
@@ -37,8 +37,8 @@ describe("a message", () => {
     expect(th('<a href="/runs/%(run)s">%(name)s</a>', { run: 1, name: "<b>&'\"" })).toBe(
       '<a href="/runs/1">&#60;b&#62;&#38;&#39;&#34;</a>',
     );
-    expect(listed(["a", "b", "c"], "disjunction")).toBe("a, b, or c");
-    expect(listed(["a", "b"])).toBe("a and b");
+    expect(displayList(["a", "b", "c"], "disjunction")).toBe("a, b, or c");
+    expect(displayList(["a", "b"])).toBe("a and b");
   });
 
   it("from below the portal, is said by its code where the page's catalog holds it, else as it comes", () => {
@@ -77,7 +77,7 @@ describe("a message", () => {
     const worded = "no translations into %(into)s, nor %(languages)s";
     const given = { into: "sv", languages: "en, pt-BR" };
     speaking({ tag: "en", messages: {} });
-    expect(["sv", "pt-BR", "x"].map(languageName)).toEqual(["Swedish", "Portuguese (Brazil)", "x"]);
+    expect(["sv", "pt-BR", "x"].map(displayLanguage)).toEqual(["Swedish", "Portuguese (Brazil)", "x"]);
     expect(refusal("no translations into sv", worded, given)).toBe(
       "no translations into Swedish, nor English and Portuguese (Brazil)",
     );
@@ -86,9 +86,30 @@ describe("a message", () => {
       tag: "sv",
       messages: { [`refusal\u0004${worded}`]: "inga översättningar till %(into)s, eller %(languages)s" },
     });
-    expect(languageName("en")).toBe("engelska");
+    expect(displayLanguage("en")).toBe("engelska");
     expect(refusal("no translations into sv", worded, given)).toBe(
       "inga översättningar till svenska, eller engelska och portugisiska (Brasilien)",
+    );
+  });
+
+  it("says slots and inserts as lists in the page's locale, as what is worded does", () => {
+    const worded = "judge requests need slots %(slots)s";
+    const given = { slots: "completion, expectation" };
+    speaking({ tag: "en", messages: {} });
+    expect(refusal("judge requests need slots completion, expectation", worded, given)).toBe(
+      "judge requests need slots completion and expectation",
+    );
+    const twice = "inserts used more than once: %(inserts)s";
+    const inserts = { inserts: "schema, tool_guidance" };
+    expect(refusal("inserts used more than once: schema, tool_guidance", twice, inserts)).toBe(
+      "inserts used more than once: schema and tool_guidance",
+    );
+    speaking({
+      tag: "sv",
+      messages: { [`refusal\u0004${worded}`]: "bedömningar behöver luckorna %(slots)s" },
+    });
+    expect(refusal("judge requests need slots completion, expectation", worded, given)).toBe(
+      "bedömningar behöver luckorna completion och expectation",
     );
   });
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Usage: ./check.sh [docs|package|frontend|locale|browser|baseline]..., from the repository's root
+# Usage: ./check.sh [docs|package|frontend|locale|format|browser|baseline]..., from the repository's root
 # in the dev shell with its database up (dev-db start). Each stage checks what a kind of
 # change can break and writes nothing git tracks; with no stage named, the stages of what
-# changed since the branch left origin/main, or $CHECK_BASE.
+# changed since the branch left origin/main, or $CHECK_BASE. It fails if any stage does.
 set -euo pipefail
 
 docs() {
@@ -16,7 +16,7 @@ package() {
   crosscheck
   ruff check
   basedpyright
-  pytest -p chatddx.test.budget
+  pytest -n 4 -p chatddx.test.budget
 }
 
 frontend() {
@@ -26,6 +26,11 @@ frontend() {
 
 locale() {
   chatddx locale check
+}
+
+format() {
+  ruff format --check
+  frontend/node_modules/.bin/prettier --check .
 }
 
 # Compromise: on their own, for the browser they start.
@@ -79,8 +84,24 @@ changed() {
   grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
   grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
   grep -qE '^(src/chatddx/|frontend/src/)' <<<"$paths" && echo locale
+  grep -qE '^(src/|frontend/|docs/|agents/|AGENTS\.md|README\.md|pyproject\.toml|\.prettier)' <<<"$paths" && echo format
   grep -qE '^(frontend/|src/chatddx/portal/)' <<<"$paths" && echo browser
   return 0
+}
+
+# Optimization: stages named together run side by side, and what each says is said in
+# order once all have run.
+# Accommodating for bash, which ignores errexit wherever a status is tested: each stage
+# runs as a process of its own, so that it still stops at its first failure.
+# Dependency: frontend's check and browser's build both write
+# frontend/src/lib/api/schema.d.ts (pnpm types), so they run one after the other.
+lane() {
+  local stage rc
+  for stage in "$@"; do
+    rc=0
+    bash "${BASH_SOURCE[0]}" "$stage" >"$said/$stage.out" 2>"$said/$stage.err" || rc=$?
+    echo "$rc" >"$said/$stage.rc"
+  done
 }
 
 stages=("$@")
@@ -88,12 +109,31 @@ if [[ ${#stages[@]} -eq 0 ]]; then
   mapfile -t stages < <(changed)
   [[ ${#stages[@]} -gt 0 ]] || echo "• nothing to check: no stage reads what the branch changed" >&2
 fi
+built=()
+others=()
 for stage in "${stages[@]}"; do
   case "$stage" in
-  docs | package | frontend | locale | browser | baseline)
-    echo "• $stage" >&2
-    "$stage"
-    ;;
-  *) fail "no stage $stage: docs, package, frontend, locale, browser or baseline" ;;
+  frontend | browser) built+=("$stage") ;;
+  docs | package | locale | format | baseline) others+=("$stage") ;;
+  *) fail "no stage $stage: docs, package, frontend, locale, format, browser or baseline" ;;
   esac
 done
+if [[ ${#stages[@]} -eq 1 ]]; then
+  echo "• ${stages[0]}" >&2
+  "${stages[0]}"
+  exit
+fi
+said="$(mktemp -d)"
+trap 'rm -rf "$said"' EXIT
+[[ ${#built[@]} -eq 0 ]] || lane "${built[@]}" &
+for stage in "${others[@]}"; do
+  lane "$stage" &
+done
+wait
+failed=()
+for stage in "${stages[@]}"; do
+  cat "$said/$stage.err" >&2
+  cat "$said/$stage.out"
+  [[ $(cat "$said/$stage.rc") -eq 0 ]] || failed+=("$stage")
+done
+[[ ${#failed[@]} -eq 0 ]] || fail "• failed: ${failed[*]}"

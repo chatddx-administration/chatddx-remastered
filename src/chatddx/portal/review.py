@@ -28,7 +28,7 @@ from .cases import appended, written_for
 from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped
-from .titles import said_case
+from .titles import display_case
 
 _ANSWERS = 50
 _OPEN = ("queued", "under way")
@@ -353,7 +353,7 @@ def _editing(
     return {
         **given,
         "mode": "new",
-        "name": tr("expectation for %(case)s", case=said_case(picked.titled)),
+        "name": tr("expectation for %(case)s", case=display_case(picked.titled)),
         "data": _started(shown, picked, schema),
     }
 

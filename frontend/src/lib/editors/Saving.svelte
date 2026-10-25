@@ -5,7 +5,16 @@
   import { Input } from "$lib/components/ui/input";
   import { t } from "$lib/locale";
   import Findings from "./Findings.svelte";
-  import { type Checked, checked, type Component, type Editing, type Labelled, type Saved, said, saved } from "./writing";
+  import {
+    type Checked,
+    checked,
+    type Component,
+    type Editing,
+    type Labelled,
+    type Saved,
+    said,
+    saved,
+  } from "./writing";
 
   type Wrote = Extract<Saved, { to: string }>;
 

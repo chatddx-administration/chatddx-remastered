@@ -78,7 +78,12 @@ function listed(name: string, items: Schema, root: Schema, values: unknown[], fo
     found.push({ label, selector: `${each}${member(field)}` });
   }
   for (const by of strings(items, root)) {
-    const seen = new Set(values.filter(held).map((v) => v[by]).filter((v): v is string => typeof v === "string"));
+    const seen = new Set(
+      values
+        .filter(held)
+        .map((v) => v[by])
+        .filter((v): v is string => typeof v === "string"),
+    );
     for (const value of seen) {
       const which = `$${member(name)}[?@${member(by)} == '${quoted(value)}']`;
       for (const field of fields.filter((f) => f !== by)) {

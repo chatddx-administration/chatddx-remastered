@@ -24,6 +24,7 @@ from .base import (
     Resolver,
     Settings,
     StructuralError,
+    display_names,
     distinct,
     resolve,
     sorted_keys,
@@ -136,15 +137,13 @@ def _inserts(segments: Iterable[object]) -> list[InsertName]:
 def _check_inserts(kind: str, segments: Iterable[object]) -> list[InsertName]:
     used = _inserts(segments)
     if stray := set(used) - INSERTS_BY_KIND[kind]:
+        inserts = display_names(stray)
         raise Invalid.of(
-            "%(kind)s cannot use inserts %(inserts)s",
-            kind=kind,
-            inserts=str(sorted(stray)),
+            "%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts
         )
     if dupes := {i for i in used if used.count(i) > 1}:
-        raise Invalid.of(
-            "inserts used more than once: %(inserts)s", inserts=str(sorted(dupes))
-        )
+        inserts = display_names(dupes)
+        raise Invalid.of("inserts used more than once: %(inserts)s", inserts=inserts)
     return used
 
 
@@ -703,21 +702,20 @@ def _check_slots(
 ) -> None:
     used = [s.slot for c in contents for s in c if isinstance(s, Slot)]
     if stray := set(used) - SLOTS_BY_PURPOSE[purpose]:
+        slots = display_names(stray)
         raise Invalid.of(
             "%(purpose)s requests cannot use slots %(slots)s",
             purpose=purpose,
-            slots=str(sorted(stray)),
+            slots=slots,
         )
     if missing := _REQUIRED_SLOTS[purpose] - set(used):
+        slots = display_names(missing)
         raise Invalid.of(
-            "%(purpose)s requests need slots %(slots)s",
-            purpose=purpose,
-            slots=str(sorted(missing)),
+            "%(purpose)s requests need slots %(slots)s", purpose=purpose, slots=slots
         )
     if dupes := {s for s in used if used.count(s) > 1}:
-        raise Invalid.of(
-            "slots used more than once: %(slots)s", slots=str(sorted(dupes))
-        )
+        slots = display_names(dupes)
+        raise Invalid.of("slots used more than once: %(slots)s", slots=slots)
 
 
 _Translate = Callable[[str], str]

@@ -1,13 +1,10 @@
 from chatddx.catalog import Subject, families, read
+from chatddx.catalog.titles import display_count
 from chatddx.factors.base import Fingerprint
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource
 from chatddx.store.catalog import Catalog, Rows
 from chatddx.store.store import Connection
-
-
-def _count(n: int, one: str, many: str) -> str:
-    return f"{n} {one if n == 1 else many}"
 
 
 def repair(
@@ -42,9 +39,9 @@ def repair(
                 continue
             done = catalog.repair(family, archive.id, id=new, fingerprint=fingerprint)
             moved = (
-                _count(len(done.cases), "case", "cases"),
-                _count(len(done.appendices), "appendix", "appendices"),
-                _count(len(done.moves), "thread", "threads"),
+                display_count(len(done.cases), "case", "cases"),
+                display_count(len(done.appendices), "appendix", "appendices"),
+                display_count(len(done.moves), "thread", "threads"),
             )
             lines.append(
                 f"[repair case] {id}: {what} {at}; family {family} moved, with "

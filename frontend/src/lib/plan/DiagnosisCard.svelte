@@ -34,9 +34,7 @@
 </script>
 
 <div class="group animate-slide-up" style:animation-delay="{index * 80}ms">
-  <div
-    class="pane overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10"
-  >
+  <div class="pane overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10">
     <div class={cn("h-1", shown.bar)}></div>
     <button
       type="button"
@@ -53,9 +51,7 @@
             >
               {index + 1}
             </span>
-            <h3
-              class="text-lg font-semibold text-foreground transition-colors group-hover:text-primary"
-            >
+            <h3 class="text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
               {diagnosis.diagnosis}
             </h3>
           </div>

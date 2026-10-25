@@ -91,23 +91,6 @@ at the endpoint share it. `src/chatddx/inventory/inventory.py:EndpointSpec.capac
 
 :Case — A vignette plus the appendices sent with it, in order. `src/chatddx/factors/cases.py:Case`
 
-```
-AGENT: reword
-A case's title is now made of its parts, said in the reader's locale where it is shown; the English is what the repl
-and scripted runs name a case by.
----
-:Case title — How a case is named: its family's name, its vignette's `SOURCE/ID` when the family has none, its
-appendices' titles and whether its vignette is an earlier one, said where it is shown in the reader's locale
-(`src/chatddx/catalog/titles.py:case_title`). The repl and scripted runs name a case by its English, `with APPENDIX, …`
-for a case that sends appendices, each appendix by its thread's name. `src/chatddx/bench/seen.py:Seen.case_titled`
-```
-:Case title — How the repl names a case: its family's name, its vignette's `SOURCE/ID` when the family has none, or
-either `with APPENDIX, …` for a case that sends appendices, each appendix by its thread's name.
-`src/chatddx/bench/seen.py:Seen.case_titled`
-
-:Catalog — Threads and their versions, families and where their vignettes are, and what is said of them: how people
-name, own, share and follow components and records. `src/chatddx/catalog/`
-
 :Chunk — A component that fills one of a recipe's nine chunk parts: instructions, few-shot, prompt, output, sampling,
 reasoning, passthrough, translations or toolset. Not to be confused with a slot.
 `src/chatddx/factors/request.py:CHUNK_PARTS`
@@ -390,21 +373,6 @@ none. `src/chatddx/scorers/scorer.py:NO_TARGET`
 :Origin — The thread a fork was started from, of the same kind. The fork's base is one of its versions, and following
 brings the fork onto its head. `src/chatddx/catalog/threads.py:origin`
 
-```
-AGENT: add
-A term for what can't be used until it is updated, and for updating it.
----
-:Out of date — What can't be used until it is updated: a configuration or a judge holding weights its model's handle
-no longer holds, a scorer asking such a judge, and a trial whose engine no endpoint here serves. Only what is blocked:
-facts corrected since a configuration was compiled leave it usable. `src/chatddx/bench/updating.py:outdated`
-
-:Updating — Keeping a new version of the person's own that can be used again: a configuration following its facts, a
-judge on its handle's weights, a scorer asking its judges' latest versions and a trial at the engine serving its model
-now, each compiled again where it was compiled from a recipe. `src/chatddx/bench/updating.py:update`
-```
-:Outcome — How an item ended, from its last call and the answer read from it: stopped, errored, unread, salvaged,
-completed, invalid or valid. `src/chatddx/runner/outcome.py:Outcome`
-
 :Output (answer) — What a model wrote for an item, which a view picks from. `src/chatddx/ledger/run.py:RunItem`
 
 :Output (chunk) — A chunk that says what shape the answer has and how it is enforced: a contract, a schema (needed
@@ -505,17 +473,6 @@ build of it included. `src/chatddx/rig.py:rig`
 
 :Role (person) — Admin, clinician, developer, ops or researcher; a person may hold several, and nothing checks one yet.
 `src/chatddx/identity/identity.py:Role`
-
-```
-AGENT: add
-A term for how a run is shown, said in the reader's locale from its parts.
----
-:Run title — How a run is shown: what it ran, its configuration's name and what its variation replaced but the model,
-else the run's own name; then the model it ran under, its case or how many, the language it was translated into, and
-its seeds or replicates. Built when asked from what its start recorded. `src/chatddx/bench/seen.py:Seen.titled`
-```
-:Run — One execution of a trial at one endpoint, written as a log: what it was set to do, each item's calls, and its
-finish. `src/chatddx/ledger/run.py:Run`
 
 :Runner — What starts or resumes a run at an endpoint, sends its items and canaries, runs its tools, and writes the run.
 `src/chatddx/runner/run.py:Runner`
@@ -763,7 +720,7 @@ judge.
 
 :engine.closure — Its runtime's closure isn't a Nix store path. (warning; local engine)
 
-:view.unreachable — A view's expectation selector reaches nothing in the expectation schema. (warning; scorer)
+:view.unreachable — A view picks from the expectation what its schema doesn't have. (warning; scorer)
 
 :expectation_schema.invalid — Its `$schema` names no draft that can be checked, or it breaks its draft. (warning;
 expectation schema)
@@ -821,15 +778,8 @@ judge)
 
 Raised by a look (`src/chatddx/bench/seen.py:missing`).
 
-```
-AGENT: reword
-The cases left out are said where the languages a variation is sent in are, no longer as a finding.
----
-:translations.missing — A language its translations go into that doesn't compile, though no case it is tried on is
-in it. (warning; configuration)
-```
-:translations.missing — Cases in a language its translations can't carry it into, left out; or a language its
-translations go into that doesn't compile. (warning; configuration)
+:translations.missing — A language its translations go into that doesn't compile, though no case it is tried on is in
+it. (warning; configuration)
 
 ### The inventory
 
@@ -953,7 +903,7 @@ last item call finished. (warning)
 Raised by `src/chatddx/ledger/score.py:check_score`, with `src/chatddx/ledger/call.py` and
 `src/chatddx/ledger/record.py:check_seal`, when a scoring pass finishes; repeatable, so never stored.
 
-:view.unreachable — A view's output selector reaches nothing in the run's output schema. (warning; scorer)
+:view.unreachable — A view picks from the output what the run's output schema doesn't have. (warning; scorer)
 
 :judge.incomplete — A view's value rests on fewer of its judge's seeds than declared. (warning; item)
 

@@ -9,7 +9,7 @@ from rich.text import Text
 
 from chatddx.bench import KINDS, Carried, Family, Graded, NotFound, TriedVariation
 from chatddx.catalog import About
-from chatddx.catalog.titles import describe, short
+from chatddx.catalog.titles import describe, display_count, display_digest
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import served_model_name
@@ -31,10 +31,9 @@ from .render import (
     LABEL,
     LATER,
     REFUSED,
-    clipped,
-    plural,
+    display_clipped,
+    display_some,
     show_summary,
-    some,
     writes,
 )
 from .shell import Repl
@@ -109,11 +108,15 @@ def _show_variation(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     for message in messages:
         assert isinstance(message, dict)
         repl.console.print(str(message["role"]), style="bold")
-        repl.console.print(Text(clipped(str(message["content"]))))
+        repl.console.print(Text(display_clipped(str(message["content"]))))
 
     repl.console.print("body", style="bold")
     repl.console.print(
-        Text(clipped(json.dumps(_abridged(request), indent=2, ensure_ascii=False)))
+        Text(
+            display_clipped(
+                json.dumps(_abridged(request), indent=2, ensure_ascii=False)
+            )
+        )
     )
 
     if skeleton.greedy:
@@ -137,7 +140,7 @@ def _show_variation(repl: Repl, tags: tuple[str, ...] = ()) -> None:
 
 
 def _carried(carried: Carried) -> Text:
-    cases = plural(len(carried.cases), "case")
+    cases = display_count(len(carried.cases), "case")
     if carried.refused is not None:
         said = f"{carried.language}: {cases}, left out: {carried.refused}"
         return Text(said, style=LATER)
@@ -184,7 +187,11 @@ def _show_scorers(
     where = f" tagged {' or '.join(tags)}" if tags else ""
     table = Table(box=None, header_style="bold")
 
-    for column in ("scorer", "view", f"of {plural(len(families), 'case')}{where}"):
+    for column in (
+        "scorer",
+        "view",
+        f"of {display_count(len(families), 'case')}{where}",
+    ):
         table.add_column(column)
 
     for reach in repl.bench.reach(variation, families):
@@ -194,11 +201,12 @@ def _show_scorers(
             said = Text(f"{reach.have} have it")
             if reach.missing:
                 _ = said.append(
-                    f"; missing: {some(f.name for f in reach.missing)}", style=LATER
+                    f"; missing: {display_some(f.name for f in reach.missing)}",
+                    style=LATER,
                 )
             if reach.choosing:
                 _ = said.append(
-                    f"; to choose from: {some(f.name for f in reach.choosing)}",
+                    f"; to choose from: {display_some(f.name for f in reach.choosing)}",
                     style=REFUSED,
                 )
         table.add_row(reach.scorer, reach.label, said)
@@ -218,7 +226,7 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
         skeleton = bench.skeleton(variation)
         header = Text(f"configuration {variation.label}", style="bold")
         _ = header.append(", unsaved")
-        _ = header.append(f"  {short(skeleton.digest)}", style=LABEL)
+        _ = header.append(f"  {display_digest(skeleton.digest)}", style=LABEL)
         repl.console.print(header)
         repl.console.print(_fields(repl, skeleton))
         return
@@ -268,7 +276,7 @@ def _show_component(
     if about is not None and (owner := _owner(repl, about)):
         _ = header.append(f", {owner}'s")
 
-    _ = header.append(f"  {short(digest)}", style=LABEL)
+    _ = header.append(f"  {display_digest(digest)}", style=LABEL)
     repl.console.print(header)
     table = _fields(repl, bench.store.get(digest))
 
@@ -339,7 +347,9 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
         return
 
     said = "it scored" if word == "scorer" else "with it"
-    repl.console.print(f"{plural(len(runs), 'run')} of yours {said}", style=LABEL)
+    repl.console.print(
+        f"{display_count(len(runs), 'run')} of yours {said}", style=LABEL
+    )
     graded = [g for run in runs for g in bench.scores_of(run) if g.score is not None]
 
     if scored:
@@ -377,7 +387,7 @@ def _judged(repl: Repl, judge: str) -> None:
         for c in i.judge_calls
     )
     repl.console.print(
-        f"{plural(runs, 'run')} of yours it judged, in {plural(calls, 'call')}",
+        f"{display_count(runs, 'run')} of yours it judged, in {display_count(calls, 'call')}",
         style=LABEL,
     )
     show_summary(repl.console, judged)
@@ -430,12 +440,14 @@ def _text(repl: Repl, value: JsonValue) -> Text:
         case [*items] if all(isinstance(i, str) and _DIGEST.match(i) for i in items):
             return Text(", ".join(repl.bench.title(str(i)) for i in items))
         case str():
-            return Text(clipped(value))
+            return Text(display_clipped(value))
         case list() if all(isinstance(i, (str, int, float)) for i in value):
             return Text(" ".join(str(i) for i in value))
         case dict() | list():
             titled = _titled(repl, value)
-            return Text(clipped(json.dumps(titled, indent=2, ensure_ascii=False)))
+            return Text(
+                display_clipped(json.dumps(titled, indent=2, ensure_ascii=False))
+            )
         case _:
             return Text(json.dumps(value))
 
@@ -455,7 +467,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
     if owner := _owner(repl, family.about):
         _ = header.append(f", {owner}'s")
 
-    _ = header.append(f"  {short(digest)}", style=LABEL)
+    _ = header.append(f"  {display_digest(digest)}", style=LABEL)
     repl.console.print(header)
 
     table = Table(box=None, show_header=False)
@@ -466,13 +478,13 @@ def _show_case(repl: Repl, name: str | None) -> None:
 
     try:
         raw = fetch_vignette(bench.conn, bench.inventory, vignette)
-        table.add_row("vignette", clipped(raw.decode(errors="replace")))
+        table.add_row("vignette", display_clipped(raw.decode(errors="replace")))
     except LookupError as e:
         table.add_row("vignette", Text(str(e), style=REFUSED))
 
     for appendix in case.appendices:
         text = resolve(bench.store.get, appendix, Appendix).text
-        table.add_row(f"appendix {bench.title(appendix)}", clipped(text))
+        table.add_row(f"appendix {bench.title(appendix)}", display_clipped(text))
 
     if digest == family.case:
         _sending(repl, table, family)
@@ -500,7 +512,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
             owners = {bench.login(a.owner) for _, a in bench.shared(digest, schema)}
             if owners:
                 _ = said.append(
-                    f"; shared by {some(sorted(owners))}: take", style=LABEL
+                    f"; shared by {display_some(sorted(owners))}: take", style=LABEL
                 )
             table.add_row(label, said)
         else:
@@ -583,13 +595,15 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     if not runs:
         repl.console.print("no runs of yours at this endpoint", style=LABEL)
     else:
-        repl.console.print(f"{plural(len(runs), 'run')} of yours at it", style=LABEL)
+        repl.console.print(
+            f"{display_count(len(runs), 'run')} of yours at it", style=LABEL
+        )
 
     judged = [n for n in (_judge_calls(repl, r, name) for r in ran) if n]
     if judged:
         repl.console.print(
-            f"judged {plural(len(judged), 'run')} of yours at it, in "
-            + plural(sum(judged), "call"),
+            f"judged {display_count(len(judged), 'run')} of yours at it, in "
+            + display_count(sum(judged), "call"),
             style=LABEL,
         )
 

@@ -6,7 +6,7 @@ from pydantic import HttpUrl
 from chatddx.api.state import AppState
 from chatddx.api.test.helpers import bearer, endpoint
 from chatddx.bench.handles import broken
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.engine import model_of
 from chatddx.identity import Person
 from chatddx.inventory import EndpointSpec, Inventory
@@ -139,7 +139,7 @@ def test_a_world_broken_under_a_running_app_is_answered_raw(
     weights = model_of(inventory.endpoint(QWEN).engine, Store(conn).get).digest
     _ = Catalog(conn).create(weights, alice.id, name="twin")
     assert broken(Rows(conn), inventory) == [
-        f"model threads {QWEN_ARTIFACT}, twin hold weights {short(weights)}, which one "
+        f"model threads {QWEN_ARTIFACT}, twin hold weights {display_digest(weights)}, which one "
         + "model thread should"
     ]
     with TestClient(
@@ -153,7 +153,7 @@ def test_a_world_broken_under_a_running_app_is_answered_raw(
         500,
         {
             "code": "error",
-            "detail": f"RuntimeError: {short(weights)} is held by 2 model threads, "
+            "detail": f"RuntimeError: {display_digest(weights)} is held by 2 model threads, "
             + "not one: fix boot-check src/chatddx/bench/handles.py:broken",
         },
     )

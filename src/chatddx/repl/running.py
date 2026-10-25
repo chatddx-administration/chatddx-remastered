@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.text import Text
 
 from chatddx.bench import Bench, Carried, Endpoint, Graded, Started, TriedVariation
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_count, display_digest
 from chatddx.ledger import RunItem, RunStarted
 from chatddx.runner import (
     ItemEnded,
@@ -27,7 +27,6 @@ from .render import (
     Tally,
     Transcript,
     outcome,
-    plural,
     scored_findings,
     show_answer,
     show_judged,
@@ -141,7 +140,7 @@ def tagged(repl: Repl, *tags: str) -> None:
 
     for left in started.left_out:
         repl.console.print(
-            f"left out: {plural(len(left.cases), 'case')} in {left.language}, "
+            f"left out: {display_count(len(left.cases), 'case')} in {left.language}, "
             + f"as {left.refused}",
             style=LATER,
         )
@@ -171,7 +170,7 @@ def _tagged(
     cases = len(carried.cases)
     repl.console.print(
         Text(
-            f"{title}{plural(cases, 'case')} {tagged_as} (seed {repl.seed})",
+            f"{title}{display_count(cases, 'case')} {tagged_as} (seed {repl.seed})",
             style="bold",
         )
     )
@@ -217,7 +216,7 @@ def _tagged(
 
     if len(ended) < cases:
         repl.console.print(
-            f"stopped after {len(ended)} of {plural(cases, 'case')}", style=LABEL
+            f"stopped after {len(ended)} of {display_count(cases, 'case')}", style=LABEL
         )
 
     repl.say_findings([n.finding for n in noted], tally=True)
@@ -233,7 +232,7 @@ def _recorded(repl: Repl, running: Running) -> None:
     trial = running.started.trial
     runs = [r for r in repl.bench.runs() if r.trial == trial]
     repl.console.print(
-        f"recorded as run {len(runs)} of trial {short(trial)}, "
+        f"recorded as run {len(runs)} of trial {display_digest(trial)}, "
         + f"run {str(running.run)[:8]}",
         style=LABEL,
     )

@@ -10,7 +10,7 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import Bench, Graded, ScoringEvent
-from chatddx.catalog.titles import short
+from chatddx.catalog.titles import display_digest
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import Part, parts
@@ -103,30 +103,26 @@ def writes(values: dict[str, JsonValue], prefix: str = "") -> str:
     return " ".join(field for field in fields if field)
 
 
-def some(names: Iterable[str]) -> str:
+def display_some(names: Iterable[str]) -> str:
     listed = list(names)
     more = len(listed) - _NAMED
     return " ".join(listed[:_NAMED]) + (f" and {more} more" if more > 0 else "")
 
 
-def clipped(text: str, lines: int = 30) -> str:
+def display_clipped(text: str, lines: int = 30) -> str:
     kept = text.splitlines()
     if len(kept) <= lines:
         return text
     return "\n".join(kept[:lines]) + f"\n… {len(kept) - lines} more lines"
 
 
-def plural(n: int, one: str, many: str | None = None) -> str:
-    return f"{n} {one if n == 1 else many or one + 's'}"
-
-
-def value_of(value: float | None, unit: str = "") -> str:
+def display_value(value: float | None, unit: str = "") -> str:
     if value is None:
         return "—"
     return unit + (str(int(value)) if value.is_integer() else f"{value:.3g}")
 
 
-def clipped_line(text: str, width: int = 60) -> str:
+def display_clipped_line(text: str, width: int = 60) -> str:
     line = text.splitlines()[0] if text else ""
     return line if len(line) <= width else line[: width - 1] + "…"
 
@@ -249,7 +245,7 @@ class Tally:
         line = self._line()
         _ = line.append(f"  {word}", style=style)
         if said is not None:
-            _ = line.append(f"  {clipped_line(said)}", style=REFUSED)
+            _ = line.append(f"  {display_clipped_line(said)}", style=REFUSED)
         self.live.update(line, refresh=True)
 
     def _line(self) -> Text:
@@ -307,7 +303,7 @@ def _verdict_of(view: View, verdict: JsonValue | None) -> tuple[str | None, str 
         return None, None
     at = view.params.get("at")
     if not isinstance(at, str) or not isinstance(verdict, dict):
-        return clipped_line(_shown(verdict)), None
+        return display_clipped_line(_shown(verdict)), None
     picked = select(verdict, at)
     said = f"{at.rsplit('/', 1)[-1]} {_shown(picked[0]) if picked else '—'}"
     top = at.split("/")[1] if at.startswith("/") else None
@@ -402,19 +398,19 @@ def _shown(value: JsonValue) -> str:
 
 def _detail(detail: JsonValue) -> Text:
     if not isinstance(detail, dict):
-        return Text("" if detail is None else clipped_line(_shown(detail)))
+        return Text("" if detail is None else display_clipped_line(_shown(detail)))
     text = Text()
     match detail:
         case {"answer": str() as answer}:
-            _ = text.append(clipped_line(answer))
+            _ = text.append(display_clipped_line(answer))
         case {"seeds": list() as seeds}:
             values = [s if isinstance(s, float | int) else None for s in seeds]
-            _ = text.append("by seed: " + ", ".join(value_of(v) for v in values))
+            _ = text.append("by seed: " + ", ".join(display_value(v) for v in values))
         case _:
             pass
     if isinstance(reason := detail.get("reason"), str):
         _ = text.append(f"  {reason}" if text else reason, style=LABEL)
-    return text if text or not detail else Text(clipped_line(_shown(detail)))
+    return text if text or not detail else Text(display_clipped_line(_shown(detail)))
 
 
 def show_scores(console: Console, graded: list[Graded]) -> None:
@@ -437,7 +433,7 @@ def show_scores(console: Console, graded: list[Graded]) -> None:
             table.add_row(
                 g.name if not shown else "",
                 g.label(item.view),
-                value_of(item.value, unit_of(g.scorer, item.view)),
+                display_value(item.value, unit_of(g.scorer, item.view)),
                 _detail(item.detail),
             )
             shown = True
@@ -477,14 +473,16 @@ def show_table(
         table.add_column(f"{g.name}\n{g.label(i)}")
 
     def title(item: RunItem) -> tuple[str, int]:
-        return names.get(item.key.case, short(item.key.case)), item.key.replicate
+        return names.get(
+            item.key.case, display_digest(item.key.case)
+        ), item.key.replicate
 
     for item in sorted(items, key=title):
         values = [held.get((g.name, i, item.key)) for g, i in columns]
         table.add_row(
-            names.get(item.key.case, short(item.key.case)),
+            names.get(item.key.case, display_digest(item.key.case)),
             *(
-                value_of(None if s is None else s.value, unit_of(g.scorer, i))
+                display_value(None if s is None else s.value, unit_of(g.scorer, i))
                 for s, (g, i) in zip(values, columns, strict=True)
             ),
         )
@@ -542,8 +540,8 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
             name if name not in shown else "",
             labels[(name, i)],
             str(len(values)),
-            value_of(mean(values), units[(name, i)]) if values else "—",
-            value_of(stderr(values)) if values else "—",
+            display_value(mean(values), units[(name, i)]) if values else "—",
+            display_value(stderr(values)) if values else "—",
             *(
                 str(n) if n else ""
                 for n in (
