@@ -582,17 +582,6 @@ class Endpoint(_Schema):
     problem: str | None
 
 
-class Model(_Schema):
-    name: str = Field(description="the handle")
-    weights: str = Field(description="the weights it holds now, by digest")
-    engine: str = Field(description="its latest engine")
-    facts: JsonValue
-    takes_typed: bool = Field(
-        description="whether a case typed into the World's database source can run "
-        + "under it: the source isn't sensitive, or its endpoint is cleared for it"
-    )
-
-
 class Component(_Schema):
     digest: str
     kind: str

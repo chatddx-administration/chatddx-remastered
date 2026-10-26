@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.helpers import thread
 from chatddx.fake_vllm.script import Script, Turn
 from chatddx.inventory import Inventory
 from chatddx.portal.test.helpers import shown, world_served
@@ -323,9 +324,7 @@ def test_a_case_run_from_its_review_under_another_model_runs_with_that_model(
     query = {"kind": "configuration", "name": LINES, "owner": "alice"}
     [lines] = signed.get("/api/threads", params=query).json()
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
-    [gpt_oss] = [
-        m for m in signed.get("/api/models").json() if m["name"] == GPT_OSS_ARTIFACT
-    ]
+    gpt_oss = thread(signed, "model", GPT_OSS_ARTIFACT, "archive")
     form = {
         "configuration": str(lines["id"]),
         "case": crlf["case"],
@@ -342,5 +341,5 @@ def test_a_case_run_from_its_review_under_another_model_runs_with_that_model(
         GPT_OSS_ARTIFACT,
         True,
     )
-    assert run["ran"]["parts"] == {"model": gpt_oss["weights"]}
+    assert run["ran"]["parts"] == {"model": gpt_oss["head"]["digest"]}
     assert run["described"].startswith(f"{LINES}+model=")

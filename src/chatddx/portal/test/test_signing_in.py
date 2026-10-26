@@ -39,7 +39,11 @@ def test_signing_in_opens_a_session_the_api_shares(
     client: TestClient, alice: Person
 ) -> None:
     got = signing_in(client, next="/?a=b")
-    assert (got.status_code, got.headers["location"]) == (303, "/?a=b")
+    assert (got.status_code, got.headers["location"]) == (
+        303,
+        "/sign-in?next=%2F%3Fa%3Db&signed=true",
+    )
+    assert client.get(got.headers["location"]).headers["location"] == "/?a=b"
     cookie = got.headers["set-cookie"]
     assert cookie.startswith(f"{COOKIE}=")
     assert {"httponly", "path=/", "samesite=lax", "secure"} <= {
@@ -62,6 +66,22 @@ def test_a_wrong_password_asks_again(client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+def test_a_session_the_browser_doesn_t_keep_is_said_on_signing_in(
+    served: FastAPI,
+) -> None:
+    with TestClient(
+        served, base_url="http://pelle.example:8000", follow_redirects=False
+    ) as plain:
+        got = signing_in(plain)
+        assert got.status_code == 303 and "secure" in got.headers["set-cookie"].lower()
+        back = plain.get(got.headers["location"])
+        assert back.status_code == 200
+        assert "your browser didn't keep the session" in back.text
+        assert plain.get("/").status_code == 303
+    assert "didn't keep" not in plain.get("/sign-in").text
+
+
+@pytest.mark.usefixtures("alice")
 @pytest.mark.slow
 def test_signing_in_leads_only_within_the_site(client: TestClient) -> None:
     for away in (
@@ -69,7 +89,8 @@ def test_signing_in_leads_only_within_the_site(client: TestClient) -> None:
         "https://elsewhere.example",
         "/\\elsewhere.example",
     ):
-        assert signing_in(client, next=away).headers["location"] == "/"
+        went = signing_in(client, next=away).headers["location"]
+        assert client.get(went).headers["location"] == "/"
         assert client.get("/sign-in", params={"next": away}).headers["location"] == "/"
 
 

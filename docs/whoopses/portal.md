@@ -35,6 +35,12 @@ assert isinstance(error.detail, str)
 assert isinstance(e, SignInFirst)
 ```
 
+## `src/chatddx/portal/world.py:_pinned`
+
+```
+assert isinstance(engine, LocalEngine | RemoteEngine)
+```
+
 ## `src/chatddx/portal/world.py:world`
 
 ```

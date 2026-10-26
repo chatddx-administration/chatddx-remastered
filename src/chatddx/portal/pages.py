@@ -71,8 +71,9 @@ templates.env.filters.update(
 )
 
 # Accommodating for Jinja, whose globals are typed as its own defaults are.
-cast(dict[str, object], templates.env.globals)["language_pattern"] = (
-    LANGUAGE.pattern.strip("^$")
+cast(dict[str, object], templates.env.globals).update(
+    language_pattern=LANGUAGE.pattern.strip("^$"),
+    settings=settings,
 )
 
 router = APIRouter()
@@ -194,21 +195,30 @@ def paged(
 
 
 @router.get("/")
-def home(request: Request, person: PersonDep) -> Response:
+def home(request: Request, bench: BenchDep) -> Response:
     return page(
         request,
         "home.html",
-        person=person,
+        person=bench.person,
         island="home",
-        home={"limit": settings.TYPED_TEXT_LIMIT},
+        home={
+            "limit": settings.TYPED_TEXT_LIMIT,
+            "models": [
+                {"name": h.name, "weights": h.weights}
+                for h, at in bench.handles()
+                if at is not None and bench.inventory.takes_typed(at.name)
+            ],
+        },
     )
 
 
 @router.get("/sign-in")
-def signing_in_page(request: Request, conn: ConnDep, next: str = "/") -> Response:
+def signing_in_page(
+    request: Request, conn: ConnDep, next: str = "/", signed: bool = False
+) -> Response:
     if _person(request, conn) is not None:
         return RedirectResponse(within(next), 303)
-    return page(request, "sign-in.html", next=within(next))
+    return page(request, "sign-in.html", next=within(next), unkept=signed)
 
 
 @router.post("/sign-in")
@@ -224,7 +234,10 @@ def signing_in(
     person = people.authenticate(login, password)
     if person is None:
         return page(request, "sign-in.html", next=within(next), login=login, wrong=True)
-    signed = RedirectResponse(within(next), 303)
+    # Policy: a sign-in passes by the sign-in page once more, which sends the person on if
+    # their browser kept the session's cookie and says so if it didn't.
+    query = urlencode({"next": within(next), "signed": "true"})
+    signed = RedirectResponse(f"/sign-in?{query}", 303)
     keep_cookie(signed, people.open_session(person.id))
     return signed
 

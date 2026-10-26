@@ -338,10 +338,16 @@
     content: "+ " / "";
     @apply font-semibold;
   }
-  a.view {
+  :is(a, button).view {
     @apply font-normal text-muted-foreground underline decoration-current decoration-dotted shadow-none;
     &:hover {
       @apply text-foreground;
+    }
+    &:is(button) {
+      @apply cursor-pointer;
+    }
+    &:disabled {
+      @apply cursor-default no-underline opacity-50;
     }
     &[aria-current] {
       @apply font-semibold text-foreground no-underline;

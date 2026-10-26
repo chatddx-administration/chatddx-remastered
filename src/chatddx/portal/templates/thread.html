@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, findings, named, refusal, run_title, updating with context %}
+{% from "macros.html" import heading, section, facts, chip, findings, named, paged, refusal, run_title, updating with context %}
 {% from "fields.html" import rows %}
 {% from "translations.html" import translations %}
 {% block title %}{{ thread | titled }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library?kind={{ word }}">← {{ word | kind }}</a></nav>
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="{{ home }}">← {{ _("World") if in_world else word | kind }}</a></nav>
   {{ heading(thread | titled) }}
   {{ refusal(typed, request) }}
 
@@ -159,7 +159,8 @@
   </ul>
   {% endif %}
   <h3>{{ _("Its versions") }}</h3>
-  <ol class="space-y-1 text-sm">
+  {% call paged(versions | length) %}
+  <ol class="space-y-1 text-sm" data-paged>
     {% for v in versions | reverse %}
     {% set i = last - loop.index0 %}
     <li class="flex flex-wrap gap-x-3">
@@ -170,17 +171,20 @@
     {% endfor %}
   </ol>
   {% endcall %}
+  {% endcall %}
 
   {% if ran is not none %}
   {% call section(_("Its runs"), "runs") %}
   {% if not thread.deleted %}<p class="mb-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/run?trial={{ thread }}">Run it</a>, in the Lab{% endtrans %}</p>{% endif %}
-  <ul class="space-y-1 text-sm">
+  {% call paged(ran | length) %}
+  <ul class="space-y-1 text-sm" data-paged>
     {% for i, r, titled in ran %}
     <li class="flex flex-wrap gap-x-3"><a href="/runs/{{ r.run }}">{{ run_title(titled) }}</a><span class="text-muted-foreground">{{ _("version %(n)s, %(at)s", n=i, at=r.at | when) }}</span></li>
     {% else %}
     <li class="text-muted-foreground">{{ _("None of yours.") }}</li>
     {% endfor %}
   </ul>
+  {% endcall %}
   {% endcall %}
   {% endif %}
 

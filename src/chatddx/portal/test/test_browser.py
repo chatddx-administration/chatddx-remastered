@@ -27,7 +27,9 @@ from chatddx.test.world import (
     JUDGE,
     LINES,
     LINES_GUIDED,
+    QWEN,
     QWEN_ARTIFACT,
+    QWEN_BARE_ARTIFACT,
     faked,
 )
 
@@ -45,9 +47,10 @@ def _settled(page: Page, run: str) -> None:
     raise AssertionError(f"run {run} is still under way")
 
 
-def _model(page: Page, name: str) -> dict[str, Any]:
-    [found] = [m for m in page.request.get("/api/models").json() if m["name"] == name]
-    return found
+def _weights(page: Page, name: str) -> str:
+    query: dict[str, str | float | bool] = {"kind": "model", "name": name}
+    [found] = page.request.get("/api/threads", params=query).json()
+    return found["head"]["digest"]
 
 
 @pytest.fixture
@@ -124,18 +127,17 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
         expect(
             page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
         ).to_be_visible()
-        gpt_oss = _model(page, GPT_OSS_ARTIFACT)["weights"]
+        gpt_oss = _weights(page, GPT_OSS_ARTIFACT)
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", gpt_oss)
         expect(page.get_by_text(f"Runs under {GPT_OSS_ARTIFACT}.")).to_be_visible()
-        qwen = _model(page, QWEN_ARTIFACT)["weights"]
+        qwen = _weights(page, QWEN_ARTIFACT)
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", qwen)
         expect(
             page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
         ).to_be_visible()
         page.get_by_label("of the families picked").check()
-        page.get_by_label("Find a family").fill("crlf")
         page.get_by_label("crlf", exact=True).check()
         expect(page.get_by_text("Sends 1 item under")).to_be_visible()
         page.get_by_role("button", name="Run it").click()
@@ -826,7 +828,7 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
     _ = page.get_by_label("prompt", exact=True).select_option(prompt)
     _ = page.get_by_label("output", exact=True).select_option(label=LINES)
     _ = page.get_by_label("sampling", exact=True).select_option(warm)
-    model = _model(page, QWEN_ARTIFACT)["weights"]
+    model = _weights(page, QWEN_ARTIFACT)
     _ = page.get_by_label("model", exact=True).select_option(model)
     page.get_by_label("name", exact=True).fill("lines-warm")
     page.get_by_role("button", name="Write it").click()
@@ -919,6 +921,73 @@ def test_a_press_shows_until_the_next_page_comes_and_sends_its_form_once(
     expect(page.locator("html")).to_have_attribute("data-leaving", "")
 
 
+def test_the_library_s_kinds_scroll_on_their_own_beside_a_long_page(
+    page: Page,
+) -> None:
+    page.set_viewport_size({"width": 1280, "height": 480})
+    _ = page.goto("/library?kind=configuration")
+    _ = page.evaluate("scrollTo(0, 600)")
+    kinds = page.get_by_role("navigation", name="Kinds")
+    held = kinds.locator(":scope > div").bounding_box()
+    assert held is not None and held["y"] + held["height"] <= 480
+    tool = kinds.get_by_role("link", name=re.compile(r"^tool\b"))
+    tool.scroll_into_view_if_needed()
+    expect(tool).to_be_in_viewport()
+    assert page.evaluate("scrollY") == 600
+
+    judge = kinds.get_by_role("link", name=re.compile(r"^judge\b"))
+    judge.click()
+    page.wait_for_url("**/library?kind=judge")
+    expect(judge).to_be_in_viewport()
+    assert page.evaluate("scrollY") == 0
+
+
+def test_a_long_list_is_paged_found_in_and_shows_the_page_a_jump_is_to(
+    page: Page, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 2)
+    query: dict[str, str | float | bool] = {"kind": "model"}
+    handles = {
+        h["name"]: h["id"]
+        for h in page.request.get("/api/threads", params=query).json()
+    }
+    names = sorted(handles)
+    _ = page.goto("/world")
+    listed = page.locator("#handles")
+    shown = listed.locator("details:visible")
+    pages = listed.get_by_role("navigation", name="Pages")
+    expect(shown).to_have_count(2)
+    expect(pages).to_contain_text(f"page 1 of {(len(names) + 1) // 2}")
+    expect(pages.get_by_role("button", name="Previous")).to_be_disabled()
+    pages.get_by_role("button", name="Next").click()
+    expect(pages).to_contain_text("page 2 of")
+    expect(shown.first).to_have_id(f"handle-{handles[names[2]]}")
+
+    listed.get_by_role("searchbox").fill(QWEN_BARE_ARTIFACT.upper())
+    expect(shown).to_have_count(1)
+    expect(listed).to_contain_text(f"1 of {len(names)}")
+    expect(pages).to_be_hidden()
+
+    last = f"handle-{handles[names[-1]]}"
+    _ = page.evaluate(f"location.hash = '#{last}'")
+    expect(page.locator(f"#{last}")).to_be_visible()
+    expect(page.locator(f"#{last}")).to_have_attribute("open", "")
+    expect(listed.get_by_role("searchbox")).to_have_value("")
+
+
+def test_a_jump_to_a_card_of_the_world_opens_it(page: Page) -> None:
+    query: dict[str, str | float | bool] = {"kind": "model", "name": QWEN_ARTIFACT}
+    handle = page.request.get("/api/threads", params=query).json()[0]
+    _ = page.goto(f"/world#handle-{handle['id']}")
+    card = page.locator(f"#handle-{handle['id']}")
+    expect(card).to_have_attribute("open", "")
+    endpoint = page.locator(f'[id="endpoint-{QWEN}"]')
+    expect(endpoint).not_to_have_attribute("open", "")
+    card.locator(f'a[href="#endpoint-{QWEN}"]').click()
+    expect(endpoint).to_have_attribute("open", "")
+    expect(endpoint).to_be_in_viewport()
+
+
 def test_a_case_over_the_limit_isn_t_sent_and_says_why(
     page: Page, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -985,3 +1054,103 @@ def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
         )
     ).to_be_visible()
     assert errors == []
+
+
+def _lines(page: Page) -> dict[str, Any]:
+    query: dict[str, str | float | bool] = {"kind": "configuration", "name": LINES}
+    [lines] = page.request.get(
+        "/api/threads", params={**query, "owner": "alice"}
+    ).json()
+    return lines
+
+
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
+def test_a_variation_s_runs_are_paged_and_found_in_on_the_server(
+    page: Page, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 2)
+    lines = _lines(page)
+    query: dict[str, str | float | bool] = {
+        "reaching": lines["head"]["digest"],
+        "limit": 200,
+    }
+    reaching = page.request.get("/api/runs", params=query).json()
+    assert len(reaching) > 2
+    _ = page.goto(f"/lab/{lines['id']}")
+    held = page.get_by_role("heading", name="Its runs", exact=True).locator("..")
+    links = held.locator("tbody a")
+    pages = held.get_by_role("navigation", name="Pages")
+    expect(links).to_have_count(2)
+    expect(pages).to_contain_text("page 1")
+    seen = set(links.evaluate_all("found => found.map(a => a.getAttribute('href'))"))
+    pages.get_by_role("button", name="Next").click()
+    expect(pages).to_contain_text("page 2")
+    shown = links.evaluate_all("found => found.map(a => a.getAttribute('href'))")
+    assert shown and not seen & set(shown)
+
+    held.get_by_role("searchbox").fill("no-such-word")
+    held.get_by_role("button", name="Find").click()
+    expect(held).to_contain_text("None you see of these.")
+    expect(pages).to_be_hidden()
+    held.get_by_role("searchbox").fill(LINES.upper())
+    held.get_by_role("button", name="Find").click()
+    expect(links).to_have_count(2)
+    expect(pages).to_contain_text("page 1")
+
+
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
+def test_the_cases_picked_for_a_run_are_paged_and_found_in_without_sending_it(
+    page: Page, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 2)
+    names = sorted(f["name"] for f in page.request.get("/api/families").json())
+    runs = len(page.request.get("/api/runs", params={"limit": 200}).json())
+    _ = page.goto(f"/lab/{_lines(page)['id']}")
+    page.get_by_label(re.compile("of the families picked")).check()
+    finding = page.get_by_role("searchbox", name="Find a family")
+    picker = page.locator("fieldset").filter(has=finding)
+    pages = picker.get_by_role("navigation", name="Pages")
+    expect(picker.get_by_role("checkbox")).to_have_count(2)
+    expect(pages).to_contain_text(f"page 1 of {(len(names) + 1) // 2}")
+    pages.get_by_role("button", name="Next").click()
+    expect(pages).to_contain_text("page 2 of")
+
+    word = names[-1]
+    finding.fill(word.upper())
+    matching = [n for n in names if word.lower() in n.lower()]
+    expect(picker.get_by_role("checkbox")).to_have_count(min(2, len(matching)))
+    expect(picker.get_by_role("checkbox", name=word, exact=True)).to_be_visible()
+    expect(picker).to_contain_text(f"{len(matching)} of {len(names)}")
+    finding.press("Enter")
+    assert len(page.request.get("/api/runs", params={"limit": 200}).json()) == runs
+
+
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
+def test_a_run_s_items_are_paged_and_found_in_as_they_come(
+    page: Page,
+    monkeypatch: pytest.MonkeyPatch,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 1)
+    with faked(world, Store(conn).get, delay=0.3):
+        _ = page.goto(f"/lab/{_lines(page)['id']}")
+        page.get_by_label(re.compile("of the families picked")).check()
+        for name in ("crlf", "noted"):
+            page.get_by_role("searchbox", name="Find a family").fill(name)
+            page.get_by_label(name, exact=True).check()
+        page.get_by_role("button", name="Run it").click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        live = page.locator("#run-live")
+        pages = live.get_by_role("navigation", name="Pages")
+        expect(pages).to_contain_text("page 1 of 2")
+        expect(live.locator("details")).to_have_count(1)
+        pages.get_by_role("button", name="Next").click()
+        expect(pages).to_contain_text("page 2 of 2")
+        live.get_by_role("searchbox").fill("NOTED")
+        expect(live.locator("details")).to_have_count(1)
+        expect(live.locator("details summary")).to_contain_text("noted")
+        expect(live).to_contain_text("1 of 2")
+        expect(pages).to_be_hidden()
+        page.get_by_role("button", name="Halt").click()
+        expect(page.get_by_role("heading", name="Items")).to_be_visible()

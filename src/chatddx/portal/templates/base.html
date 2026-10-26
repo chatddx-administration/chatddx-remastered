@@ -59,6 +59,78 @@
       });
     }
   </script>
+  <script>
+    // Policy: a list marked paged shows a page of its rows at a time, and its search keeps the
+    // rows that say every word typed; the page a row is on is shown when it is jumped to, or is
+    // the current one. Without scripts, every row shows.
+    {
+      const said = (at, values) => at.dataset.said.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+      const paged = [];
+      const paging = (held) => {
+        const rows = [...held.querySelector("[data-paged]").children];
+        const per = Number(held.dataset.rows);
+        const finding = held.querySelector("[data-finding]");
+        const pages = held.querySelector("[data-pages]");
+        let matching = rows;
+        let at = 0;
+        const show = () => {
+          const last = Math.max(0, Math.ceil(matching.length / per) - 1);
+          at = Math.min(at, last);
+          const shown = new Set(matching.slice(at * per, (at + 1) * per));
+          for (const row of rows) row.hidden = !shown.has(row);
+          if (finding) {
+            const told = finding.querySelector("[data-said]");
+            told.textContent = said(told, { shown: matching.length, of: rows.length });
+          }
+          if (pages) {
+            pages.hidden = matching.length <= per;
+            const told = pages.querySelector("[data-said]");
+            told.textContent = said(told, { at: at + 1, of: last + 1 });
+            pages.querySelector("[data-previous]").disabled = at === 0;
+            pages.querySelector("[data-next]").disabled = at === last;
+          }
+        };
+        const find = (typed) => {
+          const words = typed.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+          matching = rows.filter((row) => {
+            const text = row.textContent.toLocaleLowerCase();
+            return words.every((word) => text.includes(word));
+          });
+          at = 0;
+          show();
+        };
+        const reveal = (row) => {
+          if (!matching.includes(row)) {
+            finding.querySelector("input").value = "";
+            find("");
+          }
+          at = Math.floor(matching.indexOf(row) / per);
+          show();
+        };
+        finding?.querySelector("input").addEventListener("input", (typed) => find(typed.target.value));
+        if (finding) finding.hidden = false;
+        pages?.querySelector("[data-previous]").addEventListener("click", () => (at--, show()));
+        pages?.querySelector("[data-next]").addEventListener("click", () => (at++, show()));
+        const current = rows.find((row) => row.querySelector("[aria-current]"));
+        if (current) reveal(current);
+        else show();
+        paged.push({ rows, reveal });
+      };
+      const jumped = (hash) => {
+        const target = hash && document.getElementById(decodeURIComponent(hash.slice(1)));
+        for (const { rows, reveal } of target ? paged : []) {
+          const row = rows.find((row) => row.contains(target));
+          if (row) reveal(row);
+        }
+      };
+      addEventListener("DOMContentLoaded", () => {
+        for (const held of document.querySelectorAll("[data-paging]")) paging(held);
+        jumped(location.hash);
+      });
+      addEventListener("click", (clicked) => jumped(clicked.target.closest?.('a[href^="#"]')?.hash));
+      addEventListener("hashchange", () => jumped(location.hash));
+    }
+  </script>
 </head>
 <body class="gradient-bg relative min-h-screen overflow-x-hidden">
   <header class="relative z-20 flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
@@ -67,7 +139,7 @@
       {% if person %}
       <nav aria-label="{{ _('Pages') }}" class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
         {% for href, label in [("/review", _("Review")), ("/lab", _("Lab")), ("/scoring", _("Scoring")), ("/runs", _("Runs")), ("/library", _("Library")), ("/world", _("World"))] %}
-        {% set here = request.url.path == href or request.url.path.startswith(href ~ "/") or (href == "/library" and request.url.path.startswith(("/threads/", "/cases/"))) %}
+        {% set here = request.url.path == href or request.url.path.startswith(href ~ "/") or (href == "/library" and request.url.path.startswith(("/threads/", "/cases/")) and not in_world) or (href == "/world" and in_world) %}
         <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="px-2 py-1.5">{{ label }}</a>
         {% endfor %}
       </nav>

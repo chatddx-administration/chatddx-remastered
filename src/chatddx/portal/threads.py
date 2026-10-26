@@ -29,12 +29,10 @@ from .editors import editors
 from .fields import Field, choices, fields, fresh, kept, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, refusable, refusal_of, within
 from .scoring import checked, code_of, unshipped
-from .shelves import SHELVES, display_kind, shelved
+from .shelves import AUTHORED, IN_WORLD, SHELVES, display_kind, shelved
 from .translations import begun, posted, translating, written as translated
 
-# Accommodating for configurations, which a person writes as recipes, not as components.
-_AUTHORED = WRITTEN | {"skeleton"}
-_BEGUN = [w for w in KINDS if set(KINDS[w]) & _AUTHORED]
+_BEGUN = [w for w in KINDS if set(KINDS[w]) & AUTHORED]
 
 _PURPOSES: dict[Purpose, str] = {
     "generation": pgettext_noop("purpose", "generation"),
@@ -85,8 +83,8 @@ def library_page(
     pick: Literal["all"] | None = None,
     schema: str | None = None,
 ) -> Response:
-    words = [*KINDS, "case"]
-    shelves = shelved(bench, _BEGUN)
+    words = [w for s in SHELVES for w in s.kinds]
+    shelves = shelved(bench)
     stale = len(bench.outdated_own())
     if kind is None:
         return page(
@@ -148,7 +146,6 @@ def library_page(
         purposes={
             t.id: pgettext("purpose", _PURPOSES[p]) for t, p in found if p is not None
         },
-        written=bool(set(KINDS.get(kind, ())) & _AUTHORED),
         begun=kind in _BEGUN,
         cases=sorted(
             cases, key=lambda f: (f.owner != bench.person.login, f.name.lower())
@@ -530,6 +527,8 @@ def _thread_page(
         typed=typed,
         thread=shown,
         word=word,
+        in_world=word in IN_WORLD,
+        home=_home(word, thread),
         versions=versions,
         at=at,
         fields=found,
@@ -555,11 +554,8 @@ def _thread_page(
         changed=None
         if before is None
         else composed or changes(before.model_dump(mode="json"), body),
-        revertible=mine
-        and not latest
-        and not shown.deleted
-        and shown.kind in _AUTHORED,
-        authored=shown.kind in _AUTHORED,
+        revertible=mine and not latest and not shown.deleted and shown.kind in AUTHORED,
+        authored=shown.kind in AUTHORED,
         origin=origin,
         mine=mine,
         proposal=None if follows is None else follows.origin,
@@ -666,7 +662,13 @@ def leaving(bench: BenchDep, thread: int) -> Response:
     word = word_of(api.thread(bench, thread).kind)
     with refused(NotFound):
         _ = bench.leave(Subject(thread=thread))
-    return RedirectResponse(f"/library?kind={word}", 303)
+    return RedirectResponse(_home(word, thread), 303)
+
+
+def _home(word: str, thread: int) -> str:
+    if word in IN_WORLD:
+        return f"/world#{IN_WORLD[word]}-{thread}"
+    return f"/library?kind={word}"
 
 
 @router.post("/threads/{thread}/edit")

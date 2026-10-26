@@ -190,7 +190,6 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     assert "none of yours" in line_of(written, "expectation")
 
 
-@pytest.mark.slow
 def test_show_without_a_name_shows_the_variation_s(say: Say):
     written = say(f"use {LINES}", "show output")
 

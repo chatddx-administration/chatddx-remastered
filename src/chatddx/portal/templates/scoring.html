@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, outdated, pane, run_title, updating with context %}
+{% from "macros.html" import chip, facts, findings as listed_findings, json, mean, named, outdated, paged, pane, run_title, updating with context %}
 
 {% set th = "pb-2 pr-4 font-medium" %}
 {% set td = "py-1.5 pr-4 align-top" %}
@@ -120,22 +120,24 @@
   <section class="{{ part }}" aria-label="{{ _('How it scored') }}">
     <h2 class="{{ h2 }}">{{ _("How it scored") }}</h2>
     {% if scorer.fared %}
+    {% call paged(scorer.fared | length) %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
           <tr><th class="{{ th }}">{{ _("Run") }}</th>{% for v in scorer.views %}<th class="{{ th }}">{{ v.label }}</th>{% endfor %}</tr>
         </thead>
-        <tbody>
+        <tbody data-paged>
           {% for f in scorer.fared %}
           <tr class="border-t border-border/60">
-            <td class="{{ td }}"><a href="/runs/{{ f.run.id }}">{{ run_title(f.run.titled) }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
+            <td class="{{ td }}"><a href="/runs/{{ f.run.run }}">{{ run_title(f.titled) }}</a> <span class="text-xs text-muted-foreground">{{ f.run.at | when }}</span></td>
             {% for m in f.means %}<td class="{{ td }} font-mono">{{ mean(m, scorer.views[loop.index0].unit) }}</td>{% endfor %}
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% set compared %}/runs/compare?{% for f in scorer.fared %}run={{ f.run.id }}{{ '&' if not loop.last }}{% endfor %}{% endset %}
+    {% endcall %}
+    {% set compared %}/runs/compare?{% for f in scorer.fared %}run={{ f.run.run }}{{ '&' if not loop.last }}{% endfor %}{% endset %}
     <p class="mt-3 text-xs text-muted-foreground">{{ _("Your runs scored by this version, newest first, each by the mean of its latest score under each view.") }}{% if scorer.fared | length > 1 %} {% trans href=compared %}<a class="bench" href="{{ href }}">Compare them</a> over the cases they share.{% endtrans %}{% endif %}</p>
     {% else %}
     <p class="text-sm text-muted-foreground">{% trans %}No run of yours is scored by this version: runs left to score are on <a class="bench" href="/runs?left=true">Runs</a>.{% endtrans %}</p>
@@ -216,12 +218,13 @@
   <section class="{{ part }}" aria-label="{{ _('Its verdicts') }}">
     <h2 class="{{ h2 }}">{{ _("Its verdicts") }}</h2>
     {% if judge.judged %}
+    {% call paged(judge.judged | length) %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
           <tr><th class="{{ th }}">{{ _("Scorer · view") }}</th><th class="{{ th }}">{{ _("Items judged") }}</th><th class="{{ th }}">{{ _("Its seeds agree") }}</th><th class="{{ th }}">{{ _("A seed gave none") }}</th><th class="{{ th }}">{{ _("Mean") }}</th></tr>
         </thead>
-        <tbody>
+        <tbody data-paged>
           {% for j in judge.judged %}
           <tr class="border-t border-border/60">
             <th scope="row" class="{{ td }} text-left font-medium">{{ j.scorer }} · {{ j.label }}</th>
@@ -234,13 +237,16 @@
         </tbody>
       </table>
     </div>
+    {% endcall %}
     {% if judge.disagreed %}
     <h3 class="mb-2 mt-5 text-sm font-semibold">{{ _("Where its seeds disagree") }}</h3>
-    <ul class="space-y-1 text-sm">
+    {% call paged(judge.disagreed | length) %}
+    <ul class="space-y-1 text-sm" data-paged>
       {% for d in judge.disagreed %}
       <li><a href="/runs/{{ d.run }}">{{ run_title(d.titled) }}</a> · {{ _("%(case)s, replicate %(replicate)s", case=d.case, replicate=d.replicate) }} · {{ d.label }}: <span class="font-mono">{% for s in d.seeds %}{{ mean(s) }}{{ " " if not loop.last }}{% endfor %}</span></li>
       {% endfor %}
     </ul>
+    {% endcall %}
     {% endif %}
     <p class="mt-3 text-xs text-muted-foreground">{{ _("Over the latest score of your runs under each scorer asking any version of it: an item's seeds agree when each gave the same value, which its view's metric reads of their verdicts.") }}</p>
     {% else %}

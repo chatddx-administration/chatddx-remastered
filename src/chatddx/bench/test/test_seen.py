@@ -39,10 +39,12 @@ from chatddx.test.world import (
     QWEN,
     QWEN_ARTIFACT,
     QWEN_BARE,
+    QWEN_BARE_ARTIFACT,
     QWEN_MODEL,
     REMOTE,
     TEST,
     TOOL_ANSWER,
+    UNKNOWN_MODEL,
 )
 
 
@@ -566,6 +568,28 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     assert refused.refused == (
         f"endpoint {REMOTE!r} needs the secret in $CHATDDX_TEST_REMOTE, which isn't set"
     )
+
+
+def test_every_handle_is_had_with_the_endpoint_serving_it_or_none(
+    conn: Connection, alice: Person, bench: Bench
+) -> None:
+    served = {
+        QWEN_ARTIFACT: QWEN,
+        QWEN_BARE_ARTIFACT: QWEN_BARE,
+        GPT_OSS_ARTIFACT: GPT_OSS,
+        MISTRAL_ARTIFACT: MISTRAL,
+        UNKNOWN_MODEL: REMOTE,
+    }
+    found = bench.handles()
+    assert [h.name for h, _ in found] == sorted(served)
+    for handle, at in found:
+        assert at is not None and at.name == served[handle.name]
+        assert model_of(at.engine, bench.store.get).digest == handle.weights
+
+    inventory = bench.inventory
+    endpoints = {n: e for n, e in inventory.endpoints.items() if n != QWEN}
+    unserved = Bench(conn, alice, inventory.model_copy(update={"endpoints": endpoints}))
+    assert {h.name: at for h, at in unserved.handles()}[QWEN_ARTIFACT] is None
 
 
 def test_a_judged_scoring_pins_its_judges_latest_engines_or_says_why_it_can_t(

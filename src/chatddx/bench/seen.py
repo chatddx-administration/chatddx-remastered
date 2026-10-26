@@ -278,6 +278,16 @@ class Seen:
         edit, about = self.thread(name, "model")
         return Handle(about.name or name, edit.thread, edit.digest)
 
+    def handles(self) -> list[tuple[Handle, Endpoint | None]]:
+        found: list[tuple[Handle, Endpoint | None]] = []
+        for edit, about in self.threads("model"):
+            handle = Handle(about.name or str(edit.thread), edit.thread, edit.digest)
+            try:
+                found.append((handle, self.served(handle)))
+            except ValueError:
+                found.append((handle, None))
+        return sorted(found, key=lambda f: f[0].name)
+
     def served(self, handle: Handle) -> Endpoint:
         if handle.deleted:
             raise Invalid.of(

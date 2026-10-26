@@ -89,7 +89,8 @@ time, so that Babel matches a changed message only to one translated.
   - a word drawn from a fixed set, such as a configuration's purpose or a part of a response, from a table of
     `pgettext_noop` marks, translated with `pgettext()` and the same context.
 - **A kind's word**, built: drawn by one filter, `{{ word | kind }}`, translated with `pgettext("kind", …)` from
-  `src/chatddx/portal/shelves.py:_WORDS`, which a no-op `pgettext_noop` marks and boot holds to the kinds shelved, so
+  `src/chatddx/portal/shelves.py:_WORDS`, which a no-op `pgettext_noop` marks and boot holds to the kinds shelved and
+  shown in the World, so
   that whether Swedish translates it is decided in the catalog (see "Open"). A list of kinds is sorted by its words as
   said (`src/chatddx/portal/shelves.py:Shelved.display_kind`).
 - **How a message is written**, as every page's are:

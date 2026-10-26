@@ -5,7 +5,7 @@
 {% block main %}
 <div class="mx-auto max-w-6xl px-4 py-8">
   <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/runs">← {{ _("runs") }}</a></nav>
-  {{ heading(_("Comparing runs"), _("Side by side over the items every one of them holds.")) }}
+  {{ heading(_("Comparing runs"), _("To see how runs fare against each other, side by side over the items they all hold.")) }}
 
   {% call section(_("How they fare")) %}
   {% if grouped %}<p class="mb-3 rounded-lg bg-warning/10 p-3 text-sm">{{ _("Some ran under %(models)s at different engines: grouped under it, they aren't like for like.", models=grouped | join(pgettext("between the last two names", " and "))) }}</p>{% endif %}

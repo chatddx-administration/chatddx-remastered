@@ -177,7 +177,7 @@ def review(
         pending=pending,
         left=left,
         configurations=_configurations(bench),
-        models=[m.name for m in api_world.models(bench)],
+        models=[h.name for h, at in bench.handles() if at is not None],
         most=settings.ITEMS_PER_RUN,
         at=None if at is None else at + 1,
         previous=previous,

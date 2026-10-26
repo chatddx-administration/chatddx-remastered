@@ -21,14 +21,13 @@
 
   type Phase = "idle" | "typing" | "running" | "reading" | "done";
 
-  let { limit }: { limit: number } = $props();
+  let { limit, models }: { limit: number; models: { name: string; weights: string }[] } = $props();
   let login = $state<string>();
   let text = $state("");
   // Accommodating for Python, which counts a text's code points where JavaScript counts its
   // UTF-16 units.
   const characters = $derived([...text].length);
   let configurations = $state<Schemas["Thread"][]>([]);
-  let models = $state<Schemas["Model"][]>([]);
   let configuration = $state<number>();
   let model = $state<string>();
   let language = $state<string>();
@@ -43,19 +42,17 @@
   const busy = $derived(phase === "typing" || phase === "running" || phase === "reading");
 
   onMount(async () => {
-    const [me, found, served] = await Promise.all([
+    const [me, found] = await Promise.all([
       api.GET("/api/me"),
       api.GET("/api/threads", { params: { query: { kind: "configuration", answers: PLAN } } }),
-      api.GET("/api/models"),
     ]);
-    if (!me.data || !found.data || !served.data) {
-      failure = why(me.error ?? found.error ?? served.error);
+    if (!me.data || !found.data) {
+      failure = why(me.error ?? found.error);
       return;
     }
     login = me.data.login;
     // Policy: what is out of date isn't offered, as only a researcher can update it.
     configurations = preferred(found.data.filter((c) => !c.outdated));
-    models = served.data.filter((m) => m.takes_typed);
     model = models[0]?.name;
     configuration = configurations[0]?.id;
   });

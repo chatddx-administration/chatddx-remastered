@@ -1,8 +1,7 @@
 from fastapi import APIRouter
 from pydantic import JsonValue
 
-from chatddx.bench import KINDS, WRITTEN, Bench, Checked, Handle, NotFound
-from chatddx.factors.engine import model_of
+from chatddx.bench import KINDS, WRITTEN, Bench, Checked, NotFound
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
 from chatddx.factors.select import select
@@ -51,31 +50,6 @@ def endpoints(bench: BenchDep) -> list[schemas.Endpoint]:
         _endpoint_of(bench, name, spec)
         for name, spec in sorted(bench.inventory.endpoints.items())
     ]
-
-
-@router.get("/models")
-def models(bench: BenchDep) -> list[schemas.Model]:
-    known = bench.facts.models
-    found: list[schemas.Model] = []
-    for edit, about in bench.threads("model"):
-        handle = Handle(about.name or str(edit.thread), edit.thread, edit.digest)
-        weights = model_of(edit.digest, bench.store.get).name
-        try:
-            at = bench.served(handle)
-        except ValueError:
-            continue
-        found.append(
-            schemas.Model(
-                name=handle.name,
-                weights=edit.digest,
-                engine=at.engine,
-                facts=known[weights].model_dump(mode="json")
-                if weights in known
-                else None,
-                takes_typed=bench.inventory.takes_typed(at.name),
-            )
-        )
-    return sorted(found, key=lambda m: m.name)
 
 
 @router.get("/components/{digest}")

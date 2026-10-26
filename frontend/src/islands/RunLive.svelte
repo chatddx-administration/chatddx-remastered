@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export type Live = { run: string; titles: Record<string, string> };
+  export type Live = { run: string; titles: Record<string, string>; rowsPerPage: number };
 </script>
 
 <script lang="ts">
@@ -9,6 +9,9 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { Badge } from "$lib/components/ui/badge";
   import { localized, t, tn, tp } from "$lib/locale";
+  import Finding from "$lib/paging/Finding.svelte";
+  import Pages from "$lib/paging/Pages.svelte";
+  import { found, paged } from "$lib/paging/paging";
   import { watch } from "$lib/runs/events";
   import { outcome, outcomes } from "$lib/runs/outcomes";
   import { begun, fold, type Item, tally } from "$lib/runs/progress";
@@ -20,6 +23,11 @@
   let lost = $state<string | null>(null);
   const counted = $derived(tally(progress));
   const scoring = $derived(progress.scorings.length > 0);
+  const rows = given.rowsPerPage;
+  let query = $state("");
+  let at = $state(0);
+  const listed = $derived(found(progress.items, said, query));
+  const shown = $derived(paged(listed, at, rows));
 
   onMount(() => {
     watch(given.run, (name, data) => fold(progress, name, data))
@@ -32,6 +40,10 @@
   function titled(item: Item): string {
     const title = given.titles[item.case] ?? item.case.slice(7, 19);
     return item.replicate ? `${title} #${item.replicate}` : title;
+  }
+
+  function said(item: Item): string {
+    return [titled(item), item.outcome ? outcome(item.outcome) : "", item.why ?? ""].join(" ");
   }
 
   function doing(item: Item): string {
@@ -86,8 +98,11 @@
       {#each counted.outcomes as [said, n] (said)}<Badge variant="outline">{outcomes(said, n)}</Badge>{/each}
     </p>
 
+    {#if progress.items.length >= rows}
+      <Finding bind:query onchanged={() => (at = 0)} shown={listed.length} of={progress.items.length} />
+    {/if}
     <div class="space-y-1.5">
-      {#each progress.items as item (`${item.case}#${item.replicate}`)}
+      {#each shown.shown as item (`${item.case}#${item.replicate}`)}
         <details class="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
           <summary class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span class="font-medium">{titled(item)}</span>
@@ -126,6 +141,9 @@
         </details>
       {/each}
     </div>
+    {#if listed.length > rows}
+      <Pages at={shown.at} last={shown.last} onpage={(n) => (at = n)} />
+    {/if}
   {/if}
 
   {#if scoring}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, findings, outcome, json, job, mean, run_title %}
+{% from "macros.html" import heading, section, facts, findings, outcome, json, job, mean, paged, run_title %}
 {% block title %}{{ _("Run") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
@@ -61,12 +61,13 @@
   <script type="application/json" id="run-live-props">{{ live | tojson }}</script>
   {% else %}
   {% call section(_("Items")) %}
+  {% call paged(run.items | length) %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
         <tr><th class="pb-2 pr-4 font-medium">{{ _("Case") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Replicate") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Outcome") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Tokens") }}</th></tr>
       </thead>
-      <tbody>
+      <tbody data-paged>
         {% for item in run.items %}
         <tr class="border-t border-border/60">
           <td class="py-2 pr-4 align-top"><a href="#item-{{ loop.index }}">{{ titles[item.case] }}</a></td>
@@ -81,6 +82,7 @@
     </table>
   </div>
   {% endcall %}
+  {% endcall %}
 
   {% call section(_("Scores")) %}
   {% for graded, rows, units in scores %}
@@ -90,25 +92,29 @@
       {% elif not graded.finished %}<span class="text-sm font-normal text-warning">: {{ _("not finished") }}</span>{% endif %}
     </h3>
     {% if graded.labels and rows %}
+    {% call paged(rows | length) %}
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
           <tr><th class="pb-2 pr-4 font-medium">{{ _("Case") }}</th>{% for label in graded.labels %}<th class="pb-2 pr-4 font-medium">{{ label }}</th>{% endfor %}</tr>
         </thead>
-        <tbody>
+        <tbody data-paged>
           {% for case, at, values in rows %}
           <tr class="border-t border-border/60">
             <td class="py-2 pr-4 align-top">{{ titles.get(case, case | short) }}{% if at %} #{{ at }}{% endif %}</td>
             {% for value in values %}<td class="py-2 pr-4 align-top tabular-nums">{{ mean(value, units[loop.index0]) }}</td>{% endfor %}
           </tr>
           {% endfor %}
+        </tbody>
+        <tfoot>
           <tr class="border-t border-border font-medium">
             <td class="py-2 pr-4">{{ _("Mean") }}</td>
             {% for m in graded.means %}<td class="py-2 pr-4 tabular-nums">{{ mean(m, units[loop.index0]) }}</td>{% endfor %}
           </tr>
-        </tbody>
+        </tfoot>
       </table>
     </div>
+    {% endcall %}
     {% endif %}
   </div>
   {% else %}
@@ -116,6 +122,8 @@
   {% endfor %}
   {% endcall %}
 
+  {% call paged(items | length) %}
+  <div data-paged>
   {% for item in items %}
   {% call section(titles[item.case] ~ (" #" ~ item.replicate if item.replicate else ""), "item-" ~ loop.index) %}
   <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
@@ -151,6 +159,8 @@
   {% if item.turns %}<p class="mt-4 text-sm text-muted-foreground">{{ ngettext("%(num)s tool round before the last call.", "%(num)s tool rounds before the last call.", item.turns | length) }}</p>{% endif %}
   {% endcall %}
   {% endfor %}
+  </div>
+  {% endcall %}
   {% endif %}
 </div>
 {% endblock %}

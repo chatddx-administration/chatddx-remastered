@@ -14,19 +14,12 @@ from chatddx.store import Catalog, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.helpers import ZERO
 from chatddx.test.world import (
-    GPT_OSS,
-    GPT_OSS_ARTIFACT,
     LINES,
-    MISTRAL,
-    MISTRAL_ARTIFACT,
     QWEN,
     QWEN_ARTIFACT,
-    QWEN_BARE,
-    QWEN_BARE_ARTIFACT,
     QWEN_MODEL,
     REMOTE,
     TEST,
-    UNKNOWN_MODEL,
 )
 
 NOTED = {
@@ -98,38 +91,6 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
         "http://127.0.0.1:1/v1/",
     )
     assert "isn't in the store" in shown["problem"]
-
-
-def test_models_are_their_handles_each_with_its_latest_engine_and_facts(
-    signed: TestClient,
-) -> None:
-    models = {m["name"]: m for m in signed.get("/api/models").json()}
-    endpoints = {e["name"]: e for e in signed.get("/api/endpoints").json()}
-    for handle, at in (
-        (QWEN_ARTIFACT, QWEN),
-        (QWEN_BARE_ARTIFACT, QWEN_BARE),
-        (GPT_OSS_ARTIFACT, GPT_OSS),
-        (MISTRAL_ARTIFACT, MISTRAL),
-        (UNKNOWN_MODEL, REMOTE),
-    ):
-        held, served = models.pop(handle), endpoints[at]
-        assert (held["weights"], held["engine"]) == (served["serves"], served["engine"])
-        assert held["takes_typed"] == served["takes_typed"]
-        assert (held["facts"] is None) == (handle == UNKNOWN_MODEL)
-    assert models == {}
-
-
-def test_a_model_no_endpoint_here_serves_is_none_to_run_under(
-    served: FastAPI, signed: TestClient
-) -> None:
-    held = served.state.chatddx
-    endpoints = {n: e for n, e in held.inventory.endpoints.items() if n != QWEN}
-    served.state.chatddx = AppState(
-        held.conninfo,
-        held.inventory.model_copy(update={"endpoints": endpoints}),
-        held.listener,
-    )
-    assert QWEN_ARTIFACT not in {m["name"] for m in signed.get("/api/models").json()}
 
 
 def test_a_world_broken_under_a_running_app_is_answered_raw(

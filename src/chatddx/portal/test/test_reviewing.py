@@ -8,6 +8,13 @@ from markupsafe import escape
 
 from chatddx.api.test.helpers import family
 from chatddx.portal.test.helpers import ran_template, run_title, shown
+from chatddx.test.world import (
+    GPT_OSS_ARTIFACT,
+    MISTRAL_ARTIFACT,
+    QWEN_ARTIFACT,
+    QWEN_BARE_ARTIFACT,
+    UNKNOWN_MODEL,
+)
 
 __all__ = ["ran_template"]
 
@@ -288,8 +295,13 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     assert {j["digest"] for j in composing["judging"]} == {
         j["head"]["digest"] for j in judging
     }
-    models = {m["name"] for m in signed.get("/api/models").json() if m["engine"]}
-    assert {m["name"] for m in composing["models"]} == models
+    assert {m["name"] for m in composing["models"]} == {
+        QWEN_ARTIFACT,
+        QWEN_BARE_ARTIFACT,
+        GPT_OSS_ARTIFACT,
+        MISTRAL_ARTIFACT,
+        UNKNOWN_MODEL,
+    }
     blank = composing["blank"]
     assert blank["expectation_schema"] == body["expectation_schema"]
     code = signed.get("/api/scorer-code").json()[0]

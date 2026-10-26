@@ -57,6 +57,11 @@ Finds:
 
 * ∟`str | None`
 
+## `ROWS_PER_PAGE`
+`src/chatddx/settings.py:ROWS_PER_PAGE`
+
+`ROWS_PER_PAGE = 25`
+
 ## `RUNS_PER_DAY`
 `src/chatddx/settings.py:RUNS_PER_DAY`
 

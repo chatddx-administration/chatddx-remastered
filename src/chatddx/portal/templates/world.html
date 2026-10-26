@@ -1,10 +1,42 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, json %}
+{% from "macros.html" import heading, section, facts, chip, paged %}
 {% set card = "rounded-lg border border-border/60 bg-background/40 p-3" %}
+{% set column = "pb-2 pr-4 font-medium" %}
+{% set row = "py-1 pr-4 text-left align-top font-normal" %}
+{% macro weights(w) -%}
+{%- if w.kind == "model.local" -%}
+{{ ngettext("%(repo)s at revision %(revision)s, %(num)s file", "%(repo)s at revision %(revision)s, %(num)s files", w.files | length, repo=w.repo, revision=w.revision) }}
+{%- else -%}
+{{ _("%(name)s from %(provider)s", name=w.name, provider=w.provider) }}
+{%- endif -%}
+{%- endmacro %}
+{% macro to_handle(h) %}{% if h %}<a href="#handle-{{ h.thread }}">{{ h.name }}</a>{% else %}{{ pgettext("no handle", "none") }}{% endif %}{% endmacro %}
+{% macro to_endpoint(name) %}{% if name %}<a href="#endpoint-{{ name }}">{{ name }}</a>{% else %}{{ pgettext("no endpoint", "none") }}{% endif %}{% endmacro %}
+{% macro to_host(name) %}<a href="#host-{{ name }}">{{ name }}</a>{% endmacro %}
+{% macro bound(name) %}{% if named.get(name) %}{{ to_handle(named[name]) }}{% else %}{{ name }}{% endif %}{% endmacro %}
+{% macro history(thread) %}<a href="/threads/{{ thread }}">{{ _("its versions") }}</a>{% endmacro %}
+{% macro level(name) %}<span class="font-mono text-xs">{{ name }}</span>{% endmacro %}
+{% macro said(r) -%}
+{%- if r.refused is not none and r.nearest -%}
+{% trans why=r.refused, nearest=level(r.nearest) %}refused: {{ why }}, so {{ nearest }} is asked for instead{% endtrans %}
+{%- elif r.refused is not none -%}
+{{ _("refused: %(why)s", why=r.refused) }}
+{%- elif r.like is not none -%}
+{% trans like=level(r.like) %}as {{ like }}{% endtrans %}
+{%- elif r.writes == "" -%}
+{{ _("taken, adding nothing to the request") }}
+{%- elif r.writes is not none -%}
+{% trans sent=level(r.writes) %}sends {{ sent }}{% endtrans %}
+{%- elif r.note -%}
+{{ _("taken: %(note)s", note=r.note) }}
+{%- else -%}
+{{ _("taken") }}
+{%- endif -%}
+{%- endmacro %}
 {% block title %}{{ _("World") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  {{ heading(_("World"), _("What the portal was started in: where its vignettes are, the endpoints and hosts it sends to, what it binds, and the models a configuration can run under.")) }}
+  {{ heading(_("World"), _("What the portal runs on that you don't write, so that every run can say what answered it and where its cases came from.")) }}
 
   {% call section(_("The World")) %}
   {% set read %}<ul class="space-y-0.5 font-mono text-xs">{% for f in files %}<li>{{ f }}</li>{% endfor %}</ul>{% endset %}
@@ -15,44 +47,185 @@
   ]) }}
   {% endcall %}
 
-  {% call section(_("Sources"), "sources") %}
-  <p class="mb-3 text-sm text-muted-foreground">{{ _("Where the vignettes are fetched from. A sensitive source's cases are sent only to the endpoints cleared for it, and no vignette is shown here.") }}</p>
-  <div class="space-y-2">
-    {% for s in sources %}
-    <div class="{{ card }} text-sm">
-      <p><span class="font-medium">{{ s.source.name }}</span> {{ chip(_("sensitive") if s.source.sensitive else _("not sensitive")) }}</p>
-      <div class="mt-2">
-      {% set where %}{% if s.source.kind == "directory" %}{% trans path=s.source.path, suffix=s.source.suffix %}<span class="font-mono text-xs">{{ path }}</span>, a vignette a <span class="font-mono text-xs">{{ suffix }}</span> file{% endtrans %}{% else %}{{ _("texts typed into the database") }}{% endif %}{% endset %}
-      {% set held %}{% if s.unread %}<span class="text-warning">{{ _("its directory can't be read: %(why)s", why=s.unread) }}</span>{% elif s.vignettes is not none %}{{ ngettext("%(num)s vignette", "%(num)s vignettes", s.vignettes) }}{% else %}{{ _("as many as are typed") }}{% endif %}{% endset %}
+  {% call section(_("Handles"), "handles") %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("Names to pick a model by, which stay the same when ops put new weights under them.") }}</p>
+  {% call paged(handles | length) %}
+  <div class="space-y-2" data-paged>
+    {% for h in handles %}
+    <details id="handle-{{ h.thread }}" class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ h.name }}</span>
+        <span class="text-muted-foreground">{{ h.weights.name }}</span>
+        {% if h.endpoint is none %}<span class="text-warning">{{ _("no endpoint serves its weights, so it can't be picked") }}</span>{% endif %}</summary>
+      <div class="mt-3">
+      {% set engine %}{% if h.engine %}<a href="#engine-{{ h.engine.thread }}">{{ h.engine.name }}</a>{% else %}{{ pgettext("no engine", "none") }}{% endif %}{% endset %}
+      {% set host %}{% if h.host %}{{ to_host(h.host) }}{% elif h.endpoint %}{{ _("none: a remote engine") }}{% else %}{{ pgettext("no host", "none") }}{% endif %}{% endset %}
+      {% set known %}{% if h.facts %}<a href="#facts-{{ h.facts }}">{{ h.weights.name }}</a>{% else %}{{ pgettext("no facts", "none") }}{% endif %}{% endset %}
       {{ facts([
-        (_("Where"), where),
-        (_("Holds"), held),
-        (_("Cleaned up by"), s.source.cleanup | join(", ") or "—"),
-        (_("Cleared for it"), s.cleared | join(", ") or _("no endpoint")),
+        (_("Weights"), weights(h.weights)),
+        (_("Engine"), engine),
+        (_("Endpoint"), to_endpoint(h.endpoint)),
+        (_("Host"), host),
+        (_("Facts"), known),
+        (_("History"), history(h.thread)),
       ]) }}
       </div>
-    </div>
+    </details>
     {% else %}
     <p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
     {% endfor %}
   </div>
   {% endcall %}
+  {% endcall %}
+
+  {% call section(_("Facts"), "facts") %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("What is known about each model, so that a configuration asks it only for what it can do.") }}</p>
+  {% call paged(known | length) %}
+  <div class="space-y-2" data-paged>
+    {% for k in known %}
+    {% set f = k.facts %}
+    <details id="facts-{{ k.thread }}" class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ f.model }}</span>
+        <span class="text-muted-foreground">{% if k.handles %}{{ _("for %(handles)s", handles=k.handles | map(attribute="name") | listed) }}{% else %}{{ _("no handle here holds it") }}{% endif %}</span></summary>
+      <div class="mt-3 space-y-4 text-sm">
+        {% set specs = [
+          (_("Family"), f.family) if f.family is not none else none,
+          (_("Parameters"), _("%(total)s billion, %(active)s billion active", total="%g" | format(f.parameters_b), active="%g" | format(f.active_parameters_b)) if f.active_parameters_b is not none else _("%(total)s billion", total="%g" | format(f.parameters_b))) if f.parameters_b is not none else none,
+          (_("Quantization"), f.quantization) if f.quantization is not none else none,
+          (_("Context"), ngettext("%(num)s token", "%(num)s tokens", f.context_length)) if f.context_length is not none else none,
+          (_("Licence"), f.licence) if f.licence is not none else none,
+        ] | reject("none") | list %}
+        {% if specs %}{{ facts(specs) }}{% endif %}
+        {% if k.reasoning %}
+        <div>
+          <h3 class="mb-1 font-medium">{{ _("Reasoning") }}</h3>
+          <table class="text-sm">
+            <thead class="text-left text-xs text-muted-foreground"><tr><th class="{{ column }}">{{ _("Level") }}</th><th class="{{ column }}">{{ _("What it does") }}</th></tr></thead>
+            <tbody>
+              {% for r in k.reasoning %}
+              <tr>
+                <th scope="row" class="{{ row }}">{% if r.name == "budget" %}{{ _("thinking budget") }}{% else %}{{ level(r.name) }}{% endif %}{% if r.default %} {{ chip(_("default")) }}{% endif %}</th>
+                <td class="py-1 pr-4 align-top">{{ said(r) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+        {% if k.sampling %}
+        <div>
+          <h3 class="mb-1 font-medium">{{ _("Recommended sampling") }}</h3>
+          <div class="overflow-x-auto">
+          <table class="text-sm">
+            <thead class="text-left text-xs text-muted-foreground"><tr><th class="{{ column }}">{{ _("Level") }}</th>{% for name in k.sampled %}<th class="{{ column }} font-mono">{{ name }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for at, values in k.sampling %}
+              <tr>
+                <th scope="row" class="{{ row }}">{% if at == "generation_config" %}{% trans config=level(at) %}the model's {{ config }}{% endtrans %}{% else %}{{ level(at) }}{% endif %}</th>
+                {% for name in k.sampled %}<td class="py-1 pr-4 align-top font-mono text-xs">{{ values.get(name, "—") }}</td>{% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          </div>
+        </div>
+        {% endif %}
+        {% if k.output %}
+        <div>
+          <h3 class="mb-1 font-medium">{{ _("Output contracts") }}</h3>
+          <table class="text-sm">
+            <thead class="text-left text-xs text-muted-foreground"><tr><th class="{{ column }}">{{ _("Contract") }}</th><th class="{{ column }}">{{ _("What it does") }}</th></tr></thead>
+            <tbody>
+              {% for r in k.output %}
+              <tr>
+                <th scope="row" class="{{ row }}">{{ level(r.name) }}{% if r.default %} {{ chip(_("default")) }}{% endif %}</th>
+                <td class="py-1 pr-4 align-top">{{ said(r) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+        {% set held %}{% for h in k.handles %}{{ to_handle(h) }}{{ ", " if not loop.last }}{% else %}{{ pgettext("no handle", "none") }}{% endfor %}{% endset %}
+        {{ facts([
+          (_("Handles"), held),
+          (_("History"), history(k.thread)),
+        ]) }}
+      </div>
+    </details>
+    {% else %}
+    <p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
+    {% endfor %}
+  </div>
+  {% endcall %}
+  {% endcall %}
+
+  {% call section(_("Engines"), "engines") %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("What answers requests, pinned by all that can change an answer, so that a run says exactly what answered it.") }}</p>
+  {% call paged(engines | length) %}
+  <div class="space-y-2" data-paged>
+    {% for p in engines %}
+    {% set e = p.engine %}
+    <details id="engine-{{ p.thread }}" class="{{ card }}">
+      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ p.name }}</span>
+        <span class="text-muted-foreground">{% if e.kind == "engine.local" %}{{ _("vLLM %(version)s on %(gpu)s", version=e.runtime.version, gpu=e.hardware.gpu) }}{% else %}{{ _("a remote API's model") }}{% endif %}</span>
+        {% if p.endpoint is none %}<span class="text-muted-foreground">{{ _("no endpoint serves it") }}</span>{% endif %}</summary>
+      <div class="mt-3 text-sm">
+        {% if p.about.description or p.about.tags %}
+        <p class="mb-3">{{ p.about.description or "" }}{% for tag in p.about.tags | sort %} {{ chip(tag) }}{% endfor %}</p>
+        {% endif %}
+        {% if e.kind == "engine.local" %}
+        {% set template %}<span class="font-mono text-xs">{{ e.chat_template[:12] }}</span>{% if p.template %} {% trans path=p.template, host=to_host(p.host) %}kept at <span class="font-mono text-xs">{{ path }}</span> on {{ host }}{% endtrans %}{% endif %}{% endset %}
+        {% set argv %}{% if e.argv %}<span class="font-mono text-xs">{{ p.argv }}</span>{% else %}{{ pgettext("no arguments", "none") }}{% endif %}{% endset %}
+        {% set env %}{% if e.env %}<ul class="space-y-0.5 font-mono text-xs">{% for name, value in e.env.items() %}<li>{{ name }}={{ value }}</li>{% endfor %}</ul>{% else %}{{ pgettext("no variables", "none") }}{% endif %}{% endset %}
+        {% set runtime %}{% trans version=e.runtime.version, closure=e.runtime.closure %}vLLM {{ version }}, from <span class="font-mono text-xs">{{ closure }}</span>{% endtrans %}{% endset %}
+        {{ facts([
+          (_("Weights"), weights(p.weights)),
+          (_("Handle"), to_handle(weighed.get(p.weights.digest))),
+          (_("Hardware"), _("%(gpu)s, compute capability %(capability)s, %(vram)s MiB, driver %(driver)s", gpu=e.hardware.gpu, capability=e.hardware.compute_capability | join("."), vram=e.hardware.vram_mib, driver=e.hardware.driver)),
+          (_("Runtime"), runtime),
+          (_("Chat template"), template),
+          (_("Arguments"), argv),
+          (_("Environment"), env),
+          (_("API"), e.api),
+          (_("Endpoint"), to_endpoint(p.endpoint)),
+          (_("History"), history(p.thread)),
+        ]) }}
+        {% else %}
+        {{ facts([
+          (_("Model"), weights(p.weights)),
+          (_("Handle"), to_handle(weighed.get(p.weights.digest))),
+          (_("API"), e.api),
+          (_("Endpoint"), to_endpoint(p.endpoint)),
+          (_("History"), history(p.thread)),
+        ]) }}
+        {% endif %}
+      </div>
+    </details>
+    {% else %}
+    <p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
+    {% endfor %}
+  </div>
+  {% endcall %}
+  {% endcall %}
 
   {% call section(_("Endpoints"), "endpoints") %}
-  <p class="mb-3 text-sm text-muted-foreground">{{ _("Where each engine is served; a run goes to the endpoint serving its engine.") }}</p>
-  <div class="space-y-2">
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("Where each engine is reached, so that a run knows where to send, how much at once and which cases may go.") }}</p>
+  {% call paged(endpoints | length) %}
+  <div class="space-y-2" data-paged>
     {% for s in endpoints %}
     {% set e = s.endpoint %}
-    <details class="{{ card }}">
+    {% set handle = serving.get(e.name) %}
+    <details id="endpoint-{{ e.name }}" class="{{ card }}">
       <summary class="cursor-pointer text-sm"><span class="font-medium">{{ e.name }}</span>
-        <span class="text-muted-foreground">{% if e.model %}{{ _("serves %(model)s", model=e.model) }}{% endif %}</span>
+        <span class="text-muted-foreground">{% if handle %}{{ _("serves %(model)s", model=handle.name) }}{% elif e.model %}{{ _("serves %(model)s", model=e.model) }}{% endif %}</span>
         {% if e.problem %}<span class="text-warning">{{ e.problem }}</span>{% endif %}</summary>
       <div class="mt-3">
-      {% set engine %}{% if s.engine %}<a href="/threads/{{ s.engine }}">{{ e.title or e.engine | short }}</a>{% else %}{{ e.title or e.engine | short }}{% endif %}{% endset %}
+      {% set engine %}{% if s.engine %}<a href="#engine-{{ s.engine }}">{{ e.title or e.engine | short }}</a>{% else %}{{ e.title or e.engine | short }}{% endif %}{% endset %}
       {{ facts([
         (_("Engine"), engine),
+        (_("Handle"), to_handle(handle)),
         (_("Address"), e.url),
-        (_("Host"), e.host or _("none: a remote engine")),
+        (_("Host"), to_host(e.host) if e.host else _("none: a remote engine")),
         (_("Capacity"), ngettext("%(num)s at once", "%(num)s at once", e.capacity)),
         (_("Runs by default"), _("%(concurrency)s, %(order)s, %(retries)s", concurrency=ngettext("%(num)s at once", "%(num)s at once", s.spec.execution.concurrency), order=s.spec.execution.order, retries=ngettext("%(num)s retry", "%(num)s retries", s.spec.execution.retries))),
         (_("Canaries"), s.canaries or pgettext("no canaries", "none")),
@@ -67,21 +240,23 @@
     {% endfor %}
   </div>
   {% endcall %}
+  {% endcall %}
 
   {% call section(_("Hosts"), "hosts") %}
-  <p class="mb-3 text-sm text-muted-foreground">{{ _("The machines that run local engines, and where each keeps the model files and chat templates its engines pin.") }}</p>
-  <div class="space-y-2">
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("The machines that run local engines, so that the files an engine pins can be found on them.") }}</p>
+  {% call paged(hosts | length) %}
+  <div class="space-y-2" data-paged>
     {% for name, h in hosts %}
-    <details class="{{ card }}">
+    <details id="host-{{ name }}" class="{{ card }}">
       <summary class="cursor-pointer text-sm"><span class="font-medium">{{ name }}</span> <span class="text-muted-foreground">{{ _("listening on %(bind)s", bind=h.bind) }}</span></summary>
       <div class="mt-3 grid gap-3 text-sm">
         <div>
           <h3 class="mb-1 font-medium">{{ _("Models") }}</h3>
-          <ul class="space-y-0.5">{% for digest, at in h.models.items() %}<li>{{ titles[digest] }} <span class="font-mono text-xs text-muted-foreground">{{ at }}</span></li>{% else %}<li class="text-muted-foreground">{{ _("None.") }}</li>{% endfor %}</ul>
+          <ul class="space-y-0.5">{% for digest, at in h.models.items() %}<li>{% if weighed.get(digest) %}{{ to_handle(weighed[digest]) }}{% else %}{{ titles[digest] }}{% endif %} <span class="font-mono text-xs text-muted-foreground">{{ at }}</span></li>{% else %}<li class="text-muted-foreground">{{ _("None.") }}</li>{% endfor %}</ul>
         </div>
         <div>
           <h3 class="mb-1 font-medium">{{ _("Chat templates") }}</h3>
-          <ul class="space-y-0.5">{% for sha, at in h.templates.items() %}<li><span class="font-mono text-xs">{{ sha[:12] }}</span> <span class="font-mono text-xs text-muted-foreground">{{ at }}</span></li>{% else %}<li class="text-muted-foreground">{{ _("None.") }}</li>{% endfor %}</ul>
+          <ul class="space-y-0.5">{% for sha, at in h.templates.items() %}<li><span class="font-mono text-xs">{{ sha[:12] }}</span> <span class="font-mono text-xs text-muted-foreground">{{ at }}</span>{% if pinning[sha] %} {{ _("pinned by") }} {% for p in pinning[sha] %}<a href="#engine-{{ p.thread }}">{{ p.name }}</a>{{ ", " if not loop.last }}{% endfor %}{% endif %}</li>{% else %}<li class="text-muted-foreground">{{ _("None.") }}</li>{% endfor %}</ul>
         </div>
       </div>
     </details>
@@ -90,26 +265,50 @@
     {% endfor %}
   </div>
   {% endcall %}
-
-  {% call section(_("Bindings"), "bindings") %}
-  {% set judged %}{% for judge, handle in judges %}{% trans judge=judge, handle=handle %}<span class="font-medium">{{ judge }}</span> to {{ handle }}{% endtrans %}{{ ", " if not loop.last }}{% else %}{{ pgettext("no judges", "none") }}{% endfor %}{% endset %}
-  {{ facts([
-    (_("Configurations are made for"), configurations or _("no model")),
-    (_("Judges are bound"), judged),
-  ]) }}
   {% endcall %}
 
-  {% call section(_("Models"), "models") %}
-  <p class="mb-3 text-sm text-muted-foreground">{{ _("The models a configuration can run under, each by its handle.") }}</p>
-  <div class="space-y-2">
-    {% for m in models %}
-    <details class="{{ card }}">
-      <summary class="cursor-pointer text-sm"><span class="font-medium">{{ m.name }}</span>
-        <span class="text-muted-foreground">{% if m.facts is none %}{{ _("no facts") }}{% endif %}</span></summary>
-      {% if m.facts is not none %}<div class="mt-3">{{ json(m.facts) }}</div>{% endif %}
-    </details>
+  {% call section(_("Sources"), "sources") %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("Where the vignettes come from, so that a sensitive one goes only where it is cleared; none is shown here.") }}</p>
+  {% call paged(sources | length) %}
+  <div class="space-y-2" data-paged>
+    {% for s in sources %}
+    <div class="{{ card }} text-sm">
+      <p><span class="font-medium">{{ s.source.name }}</span> {{ chip(_("sensitive") if s.source.sensitive else _("not sensitive")) }}</p>
+      <div class="mt-2">
+      {% set where %}{% if s.source.kind == "directory" %}{% trans path=s.source.path, suffix=s.source.suffix %}<span class="font-mono text-xs">{{ path }}</span>, a vignette a <span class="font-mono text-xs">{{ suffix }}</span> file{% endtrans %}{% else %}{{ _("texts typed into the database") }}{% endif %}{% endset %}
+      {% set held %}{% if s.unread %}<span class="text-warning">{{ _("its directory can't be read: %(why)s", why=s.unread) }}</span>{% elif s.vignettes is not none %}{{ ngettext("%(num)s vignette", "%(num)s vignettes", s.vignettes) }}{% else %}{{ _("as many as are typed") }}{% endif %}{% endset %}
+      {% set cleared %}{% for e in s.cleared %}{{ to_endpoint(e) }}{{ ", " if not loop.last }}{% else %}{{ _("no endpoint") }}{% endfor %}{% endset %}
+      {{ facts([
+        (_("Where"), where),
+        (_("Holds"), held),
+        (_("Cleaned up by"), s.source.cleanup | join(", ") or "—"),
+        (_("Cleared for it"), cleared),
+      ]) }}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm text-muted-foreground">{{ _("None.") }}</p>
     {% endfor %}
   </div>
   {% endcall %}
+  {% endcall %}
+
+  {% call section(_("Bindings"), "bindings") %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("So that a data set's configurations and judges run on models this portal serves.") }}</p>
+  {% set judged %}{% for judge, handle in judges %}{% trans judge=judge, handle=bound(handle) %}<span class="font-medium">{{ judge }}</span> to {{ handle }}{% endtrans %}{{ ", " if not loop.last }}{% else %}{{ pgettext("no judges", "none") }}{% endfor %}{% endset %}
+  {{ facts([
+    (_("Configurations are made for"), bound(configurations) if configurations else _("no model")),
+    (_("Judges are bound"), judged),
+  ]) }}
+  {% endcall %}
 </div>
+<script>
+  // Policy: a jump to a card opens it, whether followed on the page or arrived at.
+  {
+    const open = (hash) => hash && document.getElementById(decodeURIComponent(hash.slice(1)))?.closest("details")?.setAttribute("open", "");
+    addEventListener("click", (clicked) => open(clicked.target.closest?.('a[href^="#"]')?.hash));
+    addEventListener("hashchange", () => open(location.hash));
+    open(location.hash);
+  }
+</script>
 {% endblock %}

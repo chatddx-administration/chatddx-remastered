@@ -90,6 +90,11 @@ Raises:
 
 * ∟`list[str]`
 
+## `AUTHORED`
+`src/chatddx/portal/shelves.py:AUTHORED`
+
+`AUTHORED = WRITTEN | {"skeleton"}`
+
 ## `lab.beginning` `@router.get("/lab/run")`
 `src/chatddx/portal/lab.py:beginning`
 
@@ -358,7 +363,8 @@ Raises:
 ## `scoring.Fared` `@dataclass(frozen=True)`
 `src/chatddx/portal/scoring.py:Fared`
 
-* `run: schemas.Run`
+* `run: RunStarted`
+* `titled: Titled`
 * `means: list[float | None]`
 
 ## `Field` `@dataclass(frozen=True)`
@@ -468,8 +474,13 @@ Raises:
 `src/chatddx/portal/pages.py:home`
 
 * `request: Request`
-* `person: PersonDep`
+* `bench: BenchDep`
 * ∟`Response`
+
+## `IN_WORLD`
+`src/chatddx/portal/shelves.py:IN_WORLD`
+
+`IN_WORLD = {"model": "handle", "engine": "engine", "facts": "facts"}`
 
 ## `Island` `@dataclass(frozen=True)`
 `src/chatddx/portal/assets.py:Island`
@@ -824,6 +835,7 @@ Raises:
 * `bench: BenchDep`
 * `number: Annotated[int, Query(alias="page", ge=1)] = 1`
 * `left: bool = False`
+* `q: str = ""`
 * ∟`Response`
 
 ## `cases.saying` `@router.post("/cases/{family}/said")`
@@ -918,6 +930,7 @@ Raises:
 * `heading: str`
 * `about: str`
 * `kinds: dict[str, str]`
+* `read_only: bool = False`
 
 ## `Shelved` `@dataclass(frozen=True)`
 `src/chatddx/portal/shelves.py:Shelved`
@@ -926,13 +939,11 @@ Raises:
 * `about: str`
 * `mine: int`
 * `seen: int`
-* `written: bool`
 
 ## `shelved`
 `src/chatddx/portal/shelves.py:shelved`
 
 * `bench: Bench`
-* `written: list[str]`
 * ∟`list[tuple[Shelf, list[Shelved]]]`
 
 ## `Shelved.display_kind` `@property`
@@ -944,16 +955,6 @@ Raises:
 `src/chatddx/portal/shelves.py:SHELVES`
 
 `SHELVES = (…)`
-
-## `runs.SHOWN`
-`src/chatddx/portal/runs.py:SHOWN`
-
-`SHOWN = 50`
-
-## `scoring.SHOWN`
-`src/chatddx/portal/scoring.py:SHOWN`
-
-`SHOWN = 50`
 
 ## `signed_in`
 `src/chatddx/portal/pages.py:signed_in`
@@ -991,6 +992,7 @@ Raises:
 * `request: Request`
 * `conn: ConnDep`
 * `next: str = "/"`
+* `signed: bool = False`
 * ∟`Response`
 
 ## `signing_out` `@router.post("/sign-out")`

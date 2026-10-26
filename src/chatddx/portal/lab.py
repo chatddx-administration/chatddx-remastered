@@ -14,7 +14,6 @@ from chatddx.api import (
     runs as api_runs,
     schemas,
     threads as api,
-    world as api_world,
 )
 from chatddx.api.state import refused
 from chatddx.bench import Bench, Endpoint, Handle, NotFound
@@ -125,7 +124,7 @@ def lab(
     varied = bench.variation(thread, None, query.head)
     recipe = varied.recipe
     judged = recipe is not None and recipe.purpose == "judge"
-    models = api_world.models(bench)
+    models = [h for h, at in bench.handles() if at is not None]
     look = api.variation(bench, thread, query)
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
@@ -134,7 +133,9 @@ def lab(
     proposal = None if follows is None else follows.origin
     lineage = api.lineage(bench, thread)
     families = api_families.families(bench)
-    runs = api_runs.runs(bench, reaching=look.skeleton, limit=20)
+    runs = api_runs.runs(
+        bench, reaching=look.skeleton, limit=settings.ROWS_PER_PAGE + 1
+    )
     base = {p: None if recipe is None else getattr(recipe, p) for p in RECIPE_PARTS}
     purpose = "judge" if judged else "generation"
     with refused(NotFound):
@@ -181,6 +182,7 @@ def lab(
         "everyTag": sorted({t for f in families for t in f.tags}),
         "families": [f.model_dump(mode="json") for f in families],
         "itemsPerRun": settings.ITEMS_PER_RUN,
+        "rowsPerPage": settings.ROWS_PER_PAGE,
         "runs": [r.model_dump(mode="json") for r in runs],
     }
     ordered = _ordered(lineage, {} if fared is None else fared.mean_of)
@@ -281,9 +283,7 @@ def _origin(bench: Bench, forked_from: int | None) -> int | None:
     return None if found is None else found.thread
 
 
-def _choices(
-    bench: Bench, part: str, models: list[schemas.Model]
-) -> list[schemas.Thread]:
+def _choices(bench: Bench, part: str, models: list[Handle]) -> list[schemas.Thread]:
     found = api.threads(bench, part)
     if part != "model":
         return found

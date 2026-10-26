@@ -11,7 +11,6 @@ from pydantic import JsonValue
 
 from chatddx.api import (
     families as api_families,
-    runs as api_runs,
     schemas,
     threads as api,
     world as api_world,
@@ -25,13 +24,12 @@ from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.factors.scoring import Judge, Scorer, fill_text
 from chatddx.factors.select import select
+from chatddx.ledger import RunStarted
 from chatddx.locale import tr
 from chatddx.scorers.shipped import problems, unit_of
 
 from .pages import BenchDep, own_first, page, refusal_of, within
 from .titles import display_case
-
-SHOWN = 50
 
 router = APIRouter()
 
@@ -59,7 +57,9 @@ def _judge_choices(bench: Bench) -> dict[str, list[dict[str, Any]]]:
             for t in configurations
         ],
         "models": [
-            {"name": m.name, "weights": m.weights} for m in api_world.models(bench)
+            {"name": h.name, "weights": h.weights}
+            for h, at in bench.handles()
+            if at is not None
         ],
     }
 
@@ -228,7 +228,8 @@ class _Covered:
 
 @dataclass(frozen=True)
 class Fared:
-    run: schemas.Run
+    run: RunStarted
+    titled: Titled
     means: list[float | None]
 
 
@@ -448,13 +449,12 @@ def _covered(bench: Bench, schema: str) -> _Covered:
 
 def _fared(bench: Bench, scorer: str) -> list[Fared]:
     found: list[Fared] = []
-    for r in api_runs.runs(bench, limit=SHOWN, scored_by=scorer):
+    for started in bench.runs(scored_by=scorer):
         graded = next(
-            (g for g in bench.scores_of(bench.run(r.id)) if g.scorer.digest == scorer),
-            None,
+            (g for g in bench.scores_of(started) if g.scorer.digest == scorer), None
         )
         if graded is not None:
-            found.append(Fared(r, graded_of(graded).means))
+            found.append(Fared(started, bench.titled(started), graded_of(graded).means))
     return found
 
 
@@ -640,7 +640,7 @@ def _verdicts(
                 held.short += None in seeds
                 if item.value is not None:
                     held.values.append(item.value)
-                if len(given) > 1 and len(disagreed) < SHOWN:
+                if len(given) > 1:
                     disagreed.append(
                         _Disagreed(
                             run=started.run,

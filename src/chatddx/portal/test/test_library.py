@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
+from chatddx import settings
 from chatddx.api.test.helpers import family, thread
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import FileDigest, LocalModel
@@ -53,10 +54,11 @@ def test_the_library_shelves_every_kind_under_its_heading_with_what_it_is(
     listed = signed.get("/api/threads", params={"kind": "reasoning"}).json()
     mine = sum(t["owner"] == "alice" for t in listed)
     assert (
-        f"reasoning How much the model thinks before it answers. {mine} yours · "
-        + f"{len(listed) - mine} shared with you"
+        "reasoning How much the model thinks before it answers, which can change the "
+        + f"answer. {mine} yours · {len(listed) - mine} shared with you"
     ) in said(page)
-    for word in ("tool", "expectation_schema", "canary_set", "model", "reasoning"):
+
+    for word in ("tool", "expectation_schema", "canary_set", "reasoning"):
         [entry, *_] = re.findall(
             rf'href="/library\?kind={word}"[^>]*>(.*?)</a>', page, re.DOTALL
         )
@@ -64,11 +66,33 @@ def test_the_library_shelves_every_kind_under_its_heading_with_what_it_is(
 
     tab = shown(signed, "/library?kind=reasoning")
     assert 'href="/library?kind=reasoning" aria-current="page"' in tab
-    assert escape("How much the model thinks before it answers.") in tab
+    assert escape("How much the model thinks before it answers") in tab
     assert re.findall(r'href="/library"( aria-current="page")?[^>]*>Overview', tab) == [
         "",
         "",
     ]
+
+
+@pytest.mark.slow
+def test_what_ops_ship_is_shelved_last_and_what_the_world_shows_isn_t(
+    signed: TestClient,
+) -> None:
+    page = shown(signed, "/library")
+    headings = re.findall(r"<h2[^>]*>([^<]+)</h2>", page)
+    assert headings[-1] == "Operations" and "Models" not in headings
+    for word in ("model", "engine", "facts"):
+        assert f'href="/library?kind={word}"' not in page
+        assert signed.get(f"/library?kind={word}").status_code == 404
+    for word, card in (("model", "handle"), ("engine", "engine"), ("facts", "facts")):
+        [held, *_] = signed.get("/api/threads", params={"kind": word}).json()
+        page = shown(signed, f"/threads/{held['id']}")
+        assert f'<a href="/world#{card}-{held["id"]}">← World</a>' in page
+        assert '<a href="/world" aria-current="page"' in page
+        assert '<a href="/library" aria-current="page"' not in page
+    tool = thread(signed, "tool", "lookup", "archive")
+    assert '<a href="/library" aria-current="page"' in shown(
+        signed, f"/threads/{tool['id']}"
+    )
 
 
 @pytest.mark.slow
@@ -115,9 +139,20 @@ def test_a_shelf_is_found_in_by_what_is_said_and_its_cases_narrowed_by_tags(
     under = shown(
         signed, f"/library?kind=expectation&schema={targets['head']['digest']}"
     )
-    assert f"{len(expected)} of {len(expected)}" in said(under)
+    assert all(f'href="/threads/{t["id"]}"' in under for t in expected)
     none = shown(signed, "/library?kind=expectation&schema=sha256:0")
-    assert f"0 of {len(expected)}" in said(none) and "None you see of these." in none
+    assert "None you see of these." in none and 'href="/threads/' not in none
+
+
+@pytest.mark.slow
+def test_a_shelf_is_found_in_only_from_as_many_as_a_page_holds(
+    signed: TestClient,
+) -> None:
+    for word in ("reasoning", "configuration"):
+        held = len(signed.get("/api/threads", params={"kind": word}).json())
+        page = shown(signed, f"/library?kind={word}")
+        assert ('name="q"' in page) == (held >= settings.ROWS_PER_PAGE), word
+        assert "<tbody data-paged>" in page and "<div data-finding" not in page
 
 
 @pytest.mark.slow
@@ -129,7 +164,6 @@ def test_the_library_lists_configurations_of_either_purpose(signed: TestClient) 
     for t in (lines, judge):
         assert f'href="/threads/{t["id"]}"' in page
     assert ">generation</td>" in page and ">judge</td>" in page
-    assert "written through data sets" not in page
 
 
 @pytest.mark.slow
@@ -190,7 +224,6 @@ def test_a_thread_s_fields_are_edited_by_its_owner_and_read_by_others(
     lookup = thread(signed, "tool", "lookup", "archive")
     page = shown(signed, f"/threads/{lookup['id']}")
     assert "/edit" not in page and "Fork it" not in page
-    assert "written through data sets" not in page
 
     lines = thread(signed, "output", LINES)
     path = f"/threads/{lines['id']}"
@@ -363,8 +396,10 @@ def test_every_kind_a_person_writes_is_begun_from_the_library(
         assert ("Show its texts" if word == "translations" else "Write it") in begun
         if word in ("instructions", "translations"):
             assert 'pattern="[a-z]{2,3}(-[A-Za-z0-9]{1,8})*"' in begun
-    for word in ("tool", "expectation_schema", "canary_set", "model", "engine"):
+    for word in ("tool", "expectation_schema", "canary_set"):
         assert "/library/new" not in shown(signed, f"/library?kind={word}")
+        assert signed.get(f"/library/new?kind={word}").status_code == 404
+    for word in ("model", "engine", "facts"):
         assert signed.get(f"/library/new?kind={word}").status_code == 404
     assert signed.get("/library/new?kind=stack").status_code == 404
 
@@ -409,7 +444,8 @@ def test_a_judge_s_configuration_model_and_seeds_are_edited_on_its_page(
     page = f"/threads/{verdict['id']}"
     assert "/edit" not in shown(signed, page)
     body = signed.get(f"/api/components/{verdict['head']['digest']}").json()["body"]
-    models = {m["name"]: m["weights"] for m in signed.get("/api/models").json()}
+    handles = signed.get("/api/threads", params={"kind": "model"}).json()
+    models = {t["name"]: t["head"]["digest"] for t in handles}
     assert body["model"] == models[QWEN_ARTIFACT]
 
     made = signed.post(

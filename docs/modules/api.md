@@ -15,7 +15,9 @@ public. The surface is stamped in `docs/surfaces/api.md`.
   HttpOnly, SameSite=Lax, for `settings.SESSION_TTL`. Every route but signing in needs the session, as a bearer token or
   the cookie. A cookie's unsafe requests, and every sign-in, must come from this site's pages
   (`src/chatddx/api/people.py:same_origin`, by `Sec-Fetch-Site`, else `Origin`, and one saying neither, as a script's,
-  passes); a bearer's needn't. Sessions are rows in the database, so every process serving it knows them.
+  passes); a bearer's needn't. Sessions are rows in the database, so every process serving it knows them. A browser
+  keeps the cookie only where the site is reached over HTTPS or at localhost, so the portal's sign-in passes by its page
+  once more, which says so when it wasn't kept (`src/chatddx/portal/pages.py:signing_in`).
 
 - **Strict schemas.** A request with a field the API doesn't know is a 422. A component is written as its JSON, `kind`
   included, as `GET /api/components/{digest}` gives its `body`; `GET /api/kinds` gives each kind's JSON Schema. Checking

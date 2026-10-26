@@ -1609,39 +1609,6 @@
         ]
       }
     },
-    "/api/models": {
-      "get": {
-        "tags": [
-          "world"
-        ],
-        "summary": "Models",
-        "operationId": "models_api_models_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Model"
-                  },
-                  "type": "array",
-                  "title": "Response Models Api Models Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
-    },
     "/api/components/{digest}": {
       "get": {
         "tags": [
@@ -2089,6 +2056,18 @@
               "title": "With"
             },
             "description": "a run: the runs started with it, itself the first of them"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "words each run's title says, whatever their case: its configuration's, a part's replaced, its case's and its model's names",
+              "default": "",
+              "title": "Q"
+            },
+            "description": "words each run's title says, whatever their case: its configuration's, a part's replaced, its case's and its model's names"
           }
         ],
         "responses": {
@@ -4894,43 +4873,6 @@
           "judged"
         ],
         "title": "Metric"
-      },
-      "Model": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "the handle"
-          },
-          "weights": {
-            "type": "string",
-            "title": "Weights",
-            "description": "the weights it holds now, by digest"
-          },
-          "engine": {
-            "type": "string",
-            "title": "Engine",
-            "description": "its latest engine"
-          },
-          "facts": {
-            "$ref": "#/components/schemas/JsonValue"
-          },
-          "takes_typed": {
-            "type": "boolean",
-            "title": "Takes Typed",
-            "description": "whether a case typed into the World's database source can run under it: the source isn't sensitive, or its endpoint is cleared for it"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "weights",
-          "engine",
-          "facts",
-          "takes_typed"
-        ],
-        "title": "Model"
       },
       "ModelDigest": {
         "anyOf": [

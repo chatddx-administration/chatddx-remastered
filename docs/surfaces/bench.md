@@ -895,6 +895,11 @@ Raises:
 * `name: str`
 * ∟`Handle`
 
+## `Seen.handles`
+`src/chatddx/bench/seen.py:Seen.handles`
+
+* ∟`list[tuple[Handle, Endpoint | None]]`
+
 ## `Seen.holder`
 `src/chatddx/bench/seen.py:Seen.holder`
 

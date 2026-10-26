@@ -180,11 +180,10 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
 def test_a_judge_is_written_over_a_judge_configuration(signed: TestClient) -> None:
     query = {"kind": "configuration", "purpose": "judge", "name": JUDGE}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
-    models = {m["name"]: m["weights"] for m in signed.get("/api/models").json()}
     judge = {
         "kind": "judge",
         "skeleton": judging["head"]["digest"],
-        "model": models[QWEN_ARTIFACT],
+        "model": thread(signed, "model", QWEN_ARTIFACT, "archive")["head"]["digest"],
         "seeds": [1, 2],
     }
     got = signed.post("/api/threads", json={"component": judge, "name": "twice"})

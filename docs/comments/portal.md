@@ -96,6 +96,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # caused, so it is passed on as it is.
 ```
 
+## `src/chatddx/portal/pages.py:signing_in`
+
+```
+# Policy: a sign-in passes by the sign-in page once more, which sends the person on if
+# their browser kept the session's cookie and says so if it didn't.
+```
+
 ## `src/chatddx/portal/runs.py:halting`
 
 ```
@@ -114,6 +121,19 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 ```
 # Accommodating for a job ending once its run's rows are written: asked before the run
 # is read.
+```
+
+## `src/chatddx/portal/shelves.py:AUTHORED`
+
+```
+# Accommodating for configurations, which a person writes as recipes, not as components.
+```
+
+## `src/chatddx/portal/shelves.py:IN_WORLD`
+
+```
+# Dependency: the cards of src/chatddx/portal/templates/world.html, by the kinds they
+# show.
 ```
 
 ## `src/chatddx/portal/test/conftest.py:paged`
@@ -157,12 +177,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # the navigations a press starts are cancelled instead, which leaves the page as pressed.
 ```
 
-## `src/chatddx/portal/threads.py:_AUTHORED`
-
-```
-# Accommodating for configurations, which a person writes as recipes, not as components.
-```
-
 ## `src/chatddx/portal/threads.py:_drawn`
 
 ```
@@ -193,4 +207,11 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 
 ```
 # Accommodating for browsers, which send a textarea's line breaks as CRLF.
+```
+
+## `src/chatddx/portal/world.py:_sent`
+
+```
+# Dependency: what src/chatddx/factors/request.py:compile_request sends of a level's
+# writes.
 ```

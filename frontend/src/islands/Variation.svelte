@@ -13,6 +13,9 @@
   import { api, type Schemas, why } from "$lib/api/client";
   import { worded } from "$lib/kinds";
   import { displayLanguage, displayList, localized, t, th, tn, tp } from "$lib/locale";
+  import Finding from "$lib/paging/Finding.svelte";
+  import Pages from "$lib/paging/Pages.svelte";
+  import { found, paged } from "$lib/paging/paging";
   import { runTitle } from "$lib/runs/titles";
   import {
     type Carriage,
@@ -38,12 +41,18 @@
   const head = given.look.head.id;
   const latest = versions.at(-1)?.id ?? head;
   const version = versions.findIndex((v) => v.id === head) + 1;
+  const rows = given.rowsPerPage;
 
   let look = $state(given.look);
   let picked = $state<Picked>(pickedOf(given.look));
   let under = $state<string | null>(given.under);
   let tags = $state<string[]>(given.tags);
-  let runs = $state(given.runs);
+  let runs = $state(given.runs.slice(0, rows));
+  let runsMore = $state(given.runs.length > rows);
+  let runsAt = $state(0);
+  let runsTyped = $state("");
+  let runsSought = $state("");
+  let runsLost = $state<string | null>(null);
   let looking = $state(false);
   let failure = $state<string | null>(null);
   let name = $state(configuration.name ?? configuration.title);
@@ -52,6 +61,7 @@
   let picking = $state(false);
   let chosen = $state<number[]>([]);
   let narrowed = $state("");
+  let pickingAt = $state(0);
   let seed = $state(given.look.seed);
   let replicates = $state(1);
   let scored = $state(true);
@@ -90,9 +100,8 @@
   const leftOut = $derived(carriages.filter((c) => c.refused !== null));
   const items = $derived(sending.reduce((n, c) => n + c.families.length, 0) * Math.max(1, replicates));
   const largest = $derived(Math.max(0, ...sending.map((c) => c.families.length)) * Math.max(1, replicates));
-  const listed = $derived(
-    families.filter((f) => f.name.toLowerCase().includes(narrowed.trim().toLowerCase())).slice(0, 200),
-  );
+  const listed = $derived(found(families, (f) => f.name, narrowed));
+  const pickable = $derived(paged(listed, pickingAt, rows));
   const scorers = $derived(
     look.reach.reduce(
       (found, r) => found.set(r.name, [...(found.get(r.name) ?? []), r]),
@@ -194,11 +203,28 @@
     history.replaceState(null, "", `?${keptWith(query, location.search)}`);
     relink();
     if (moved) {
-      const found = await api.GET("/api/runs", {
-        params: { query: { reaching: got.data.skeleton, limit: 20 } },
-      });
-      if (sent === asked && found.data) runs = found.data;
+      runsTyped = "";
+      await runsOf(0, "");
     }
+  }
+
+  // Policy: a variation's runs are paged and found in on the server, as they keep coming.
+  let runsAsked = 0;
+  async function runsOf(at: number, sought: string): Promise<void> {
+    const sent = ++runsAsked;
+    const got = await api.GET("/api/runs", {
+      params: { query: { reaching: look.skeleton, limit: rows + 1, offset: at * rows, q: sought } },
+    });
+    if (sent !== runsAsked) return;
+    if (!got.data) {
+      runsLost = why(got.error);
+      return;
+    }
+    runsLost = null;
+    runs = got.data.slice(0, rows);
+    runsMore = got.data.length > rows;
+    runsAt = at;
+    runsSought = sought;
   }
 
   function pick(part: Part, digest: string): void {
@@ -531,14 +557,20 @@
                 {/each}
               </div>
             {/if}
-            <Input
-              bind:value={narrowed}
-              placeholder={t("Find a family by name")}
-              class="max-w-sm"
-              aria-label={t("Find a family")}
-            />
-            <div class="max-h-48 max-w-sm overflow-y-auto rounded-md border border-border p-2 text-sm">
-              {#each listed as f (f.id)}
+            {#if families.length >= rows}
+              <div class="max-w-sm">
+                <Finding
+                  bind:query={narrowed}
+                  onchanged={() => (pickingAt = 0)}
+                  label={t("Find a family")}
+                  placeholder={t("Find a family by name")}
+                  shown={listed.length}
+                  of={families.length}
+                />
+              </div>
+            {/if}
+            <div class="max-w-sm rounded-md border border-border p-2 text-sm">
+              {#each pickable.shown as f (f.id)}
                 <label class="flex items-center gap-2 py-0.5">
                   <input type="checkbox" checked={chosen.includes(f.id)} onchange={() => toggled(f.id)} />
                   {f.name}
@@ -547,6 +579,9 @@
                 <p class="text-muted-foreground">{t("No family by that name.")}</p>
               {/each}
             </div>
+            {#if listed.length > rows}
+              <Pages at={pickable.at} last={pickable.last} onpage={(at) => (pickingAt = at)} />
+            {/if}
           </div>
         {/if}
       </fieldset>
@@ -653,8 +688,12 @@
 {#if !given.judged}
   <section class="mb-6 border-t border-border/60 pt-4">
     <h2 class="mb-4 text-lg font-semibold">{t("Its runs")}</h2>
+    {#if runsSought || runsAt > 0 || runs.length >= rows}
+      <Finding bind:query={runsTyped} onsent={(sought) => runsOf(0, sought)} />
+    {/if}
+    {#if runsLost}<p class="mb-3 text-sm text-destructive">{runsLost}</p>{/if}
     {#if runs.length === 0}
-      <p class="text-sm text-muted-foreground">{t("No runs of it.")}</p>
+      <p class="text-sm text-muted-foreground">{runsSought ? t("None you see of these.") : t("No runs of it.")}</p>
     {:else}
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -681,6 +720,9 @@
           </tbody>
         </table>
       </div>
+    {/if}
+    {#if runsAt > 0 || runsMore}
+      <Pages at={runsAt} more={runsMore} onpage={(at) => runsOf(at, runsSought)} />
     {/if}
   </section>
 {/if}

@@ -24,6 +24,8 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
+ROWS_PER_PAGE = 25
+
 
 class Stage(IntEnum):
     FELT = 1

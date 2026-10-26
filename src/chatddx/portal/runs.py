@@ -9,6 +9,7 @@ from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
+from chatddx import settings
 from chatddx.api import queue as api_queue, runs as api, schemas
 from chatddx.api.state import refused
 from chatddx.bench import Bench, NotFound
@@ -28,7 +29,6 @@ from .scoring import unit_in
 from .titles import display_case
 
 PLAN = "management_plan_v1"
-SHOWN = 50
 _TALLIED: tuple[Outcome, ...] = (
     "valid",
     "completed",
@@ -54,19 +54,36 @@ def runs(
     bench: BenchDep,
     number: Annotated[int, Query(alias="page", ge=1)] = 1,
     left: bool = False,
+    q: str = "",
 ) -> Response:
-    found = api.runs(bench, limit=SHOWN + 1, offset=(number - 1) * SHOWN, unscored=left)
+    per = settings.ROWS_PER_PAGE
+    found = api.runs(
+        bench, limit=per + 1, offset=(number - 1) * per, unscored=left, q=q
+    )
+    shown = found[:per]
     return page(
         request,
         "runs.html",
         person=bench.person,
-        runs=found[:SHOWN],
-        tallies={r.id: _tally(bench, r) for r in found[:SHOWN]},
+        runs=shown,
+        tallies={r.id: _tally(bench, r) for r in shown},
         number=number,
-        more=len(found) > SHOWN,
+        newer=_paged(number - 1, left, q) if number > 1 else None,
+        older=_paged(number + 1, left, q) if len(found) > per else None,
         left=left,
+        q=q,
+        searched=bool(q.strip()) or len(bench.runs()) >= per,
         queue=api_queue.queue(bench),
     )
+
+
+def _paged(number: int, left: bool, q: str) -> str:
+    query: dict[str, str | int] = {"page": number}
+    if left:
+        query["left"] = "true"
+    if q.strip():
+        query["q"] = q
+    return f"/runs?{urlencode(query)}"
 
 
 @router.get("/runs/compare")
@@ -148,7 +165,11 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         left=[bench.title(s) for s in left],
         together=sorted(together, key=lambda r: str(r[1])),
         trial=_trial_of(bench, shown.trial),
-        live={"run": str(run), "titles": titles},
+        live={
+            "run": str(run),
+            "titles": titles,
+            "rowsPerPage": settings.ROWS_PER_PAGE,
+        },
         island="run",
     )
 

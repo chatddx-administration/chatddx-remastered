@@ -227,8 +227,8 @@ def test_what_the_portal_s_python_says_is_said_in_the_locale_asked_for(
             msgid "Trials"
             msgstr "Försök"
 
-            msgid "What is run."
-            msgstr "Det som körs."
+            msgid "So that a run can be repeated: the same configuration, cases and seeds again."
+            msgstr "Så att en körning kan upprepas."
 
             msgctxt "refusal"
             msgid "no kind %(kind)s: the kinds are %(kinds)s"
@@ -243,8 +243,8 @@ def test_what_the_portal_s_python_says_is_said_in_the_locale_asked_for(
     sv = {"accept-language": "sv"}
     overview = signed.get("/library", headers=sv).text
     headings = re.findall(r"<h2[^>]*>([^<]+)</h2>", overview)
-    assert headings == ["Cases", "Configurations", "Försök", "Models", "Scoring"]
-    assert "Det som körs." in overview
+    assert headings == ["Cases", "Configurations", "Försök", "Scoring", "Operations"]
+    assert "Så att en körning kan upprepas." in overview
 
     nowhere = signed.get("/library?kind=nope", headers=sv)
     assert nowhere.status_code == 404 and "ingen sort" in nowhere.text

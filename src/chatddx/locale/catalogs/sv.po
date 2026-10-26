@@ -126,120 +126,117 @@ msgid "Cases"
 msgstr "Fall"
 
 #: src/chatddx/portal/shelves.py
-msgid "What a model is asked about, and what a good answer holds."
-msgstr "Vad en modell frågas om, och vad ett bra svar innehåller."
+#, 
+msgid ""
+"So that every model is asked about the same patients, and graded against "
+"the same good answers."
+msgstr "Så att varje modell frågas om samma patienter och rättas mot samma facit."
 
 #: src/chatddx/portal/shelves.py
+#, 
 msgid ""
-"Extra text written for a case's vignette, such as lab results, sent along"
-" with it."
+"What a vignette leaves out, such as lab results, written so that a case "
+"can include it."
 msgstr ""
-"Extra text skriven till ett falls vinjett, som labbsvar, och skickad med "
-"den."
+"Det en vinjett saknar, som labbsvar, skrivet så att ett fall kan ta med "
+"det."
 
 #: src/chatddx/portal/shelves.py
-msgid "A vignette, with the appendices sent along with it."
-msgstr "En vinjett, med bilagorna som skickas med den."
-
-#: src/chatddx/portal/shelves.py
+#, 
 msgid ""
-"What a good answer to one case holds, written in an expectation schema's "
-"form."
-msgstr "Vad ett bra svar på ett fall innehåller, skrivet i ett facitschemas form."
+"A vignette and the appendices sent with it, so that every model is asked "
+"the same."
+msgstr ""
+"En vinjett och bilagorna som skickas med den, så att varje modell frågas "
+"om samma sak."
 
 #: src/chatddx/portal/shelves.py
-msgid "The form expectations are written in, which a scorer grades against."
-msgstr "Formen som facit skrivs i, och som en rättare rättar mot."
+#, 
+msgid "What a good answer to one case holds, so that answers to it can be graded."
+msgstr "Vad ett bra svar på ett fall innehåller, så att svar på det kan rättas."
 
 #: src/chatddx/portal/shelves.py
 msgid "Configurations"
 msgstr "Konfigurationer"
 
 #: src/chatddx/portal/shelves.py
+#, 
 msgid ""
-"What is sent to a model: a configuration is put together from its parts "
-"and a model."
+"So that what is sent to a model can be changed a part at a time, and the "
+"changes compared."
 msgstr ""
-"Det som skickas till en modell: en konfiguration sätts ihop av sina delar"
-" och en modell."
+"Så att det som skickas till en modell kan ändras en del i taget, och "
+"ändringarna jämföras."
 
 #: src/chatddx/portal/shelves.py
-msgid "Everything a request sends but the case: its parts and its model."
-msgstr "Allt en förfrågan skickar utom fallet: dess delar och dess modell."
-
-#: src/chatddx/portal/shelves.py
-msgid "Example exchanges, sent before the case."
-msgstr "Exempel på utbyten, som skickas före fallet."
-
-#: src/chatddx/portal/shelves.py
-msgid "The first message: what the model is and what it is to do."
-msgstr "Det första meddelandet: vad modellen är och vad den ska göra."
-
-#: src/chatddx/portal/shelves.py
-msgid "The shape the answer takes, and how it is held to it."
-msgstr "Formen svaret tar, och hur det hålls till den."
-
-#: src/chatddx/portal/shelves.py
-msgid "Request options no other part covers, sent as written."
-msgstr "Förfrågningsval som ingen annan del täcker, skickade som de är skrivna."
-
-#: src/chatddx/portal/shelves.py
-msgid "The last message: where the case goes, and what is asked of it."
-msgstr "Det sista meddelandet: var fallet hamnar, och vad som frågas om det."
-
-#: src/chatddx/portal/shelves.py
-msgid "How much the model thinks before it answers."
-msgstr "Hur mycket modellen tänker innan den svarar."
-
-#: src/chatddx/portal/shelves.py
-msgid "How freely the model picks its words, and how long the answer may be."
-msgstr "Hur fritt modellen väljer sina ord, och hur långt svaret får vara."
-
-#: src/chatddx/portal/shelves.py
-msgid "A function the model may call, such as a web search."
-msgstr "En funktion modellen kan anropa, som en webbsökning."
-
-#: src/chatddx/portal/shelves.py
-msgid "The tools a configuration offers, and how to use them."
-msgstr "Verktygen en konfiguration erbjuder, och hur de används."
-
-#: src/chatddx/portal/shelves.py
-msgid "A configuration's texts in another language, for cases written in it."
-msgstr "En konfigurations texter på ett annat språk, för fall skrivna på det."
-
-#: src/chatddx/portal/shelves.py src/chatddx/portal/templates/world.html
-msgid "Models"
-msgstr "Modeller"
-
-#: src/chatddx/portal/shelves.py
-msgid "The models, the engines serving them and what is known about them."
-msgstr ""
-"Modellerna, inferensservrarna som tillhandahåller dem och vad som är känt"
-" om dem."
-
-#: src/chatddx/portal/shelves.py
-msgid "Fixed probes sent with a run, which show whether an engine changed."
-msgstr ""
-"Fasta prober som skickas med en körning, och som visar om en "
-"inferensserver ändrats."
-
-#: src/chatddx/portal/shelves.py
-msgid "What answers requests: a model served by given software on given hardware."
-msgstr ""
-"Det som svarar på förfrågningar: en modell serverad av en given "
-"programvara på en given hårdvara."
-
-#: src/chatddx/portal/shelves.py
+#, 
 msgid ""
-"What is known about a model: its reasoning levels, recommended sampling "
-"and limits."
+"Everything sent with a case, put together from parts, so that one can "
+"change while the rest hold still."
 msgstr ""
-"Vad som är känt om en modell: dess resonemangsnivåer, rekommenderad "
-"sampling och begränsningar."
+"Allt som skickas med ett fall, ihopsatt av delar, så att en kan ändras "
+"medan resten står still."
 
 #: src/chatddx/portal/shelves.py
-msgid "A model's weights, pinned so that a run can be repeated."
-msgstr "En modells vikter, fästa så att en körning kan upprepas."
+#, 
+msgid "Worked examples sent before the case, to show the model what is wanted."
+msgstr ""
+"Lösta exempel som skickas före fallet, för att visa modellen vad som "
+"önskas."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "The first message, telling the model its role and its task."
+msgstr "Det första meddelandet, som ger modellen dess roll och dess uppgift."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "The shape an answer must take, so that it can be read and graded."
+msgstr "Formen ett svar måste ha, så att det kan läsas och rättas."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "For request options no other part covers, sent as written."
+msgstr ""
+"För förfrågningsval som ingen annan del täcker, skickade som de är "
+"skrivna."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "The last message, which puts the case to the model and asks for an answer."
+msgstr ""
+"Det sista meddelandet, som lägger fram fallet för modellen och ber om ett"
+" svar."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "How much the model thinks before it answers, which can change the answer."
+msgstr "Hur mycket modellen tänker innan den svarar, vilket kan ändra svaret."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "To steer how freely the model picks its words, and how long it may answer."
+msgstr ""
+"För att styra hur fritt modellen väljer sina ord, och hur långt den får "
+"svara."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"The tools a configuration offers and how to use them, so that a model can"
+" look things up."
+msgstr ""
+"Verktygen en konfiguration erbjuder och hur de används, så att en modell "
+"kan slå upp saker."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"A configuration's texts in another language, so that a case is asked in "
+"its own language."
+msgstr ""
+"En konfigurations texter på ett annat språk, så att ett fall frågas på "
+"sitt eget språk."
 
 #: frontend/src/islands/RunLive.svelte src/chatddx/portal/shelves.py
 #: src/chatddx/portal/templates/base.html
@@ -248,30 +245,86 @@ msgid "Scoring"
 msgstr "Rättning"
 
 #: src/chatddx/portal/shelves.py
-msgid "How answers are graded."
-msgstr "Hur svar rättas."
+#, 
+msgid ""
+"So that answers can be compared, each graded against what a good answer "
+"holds."
+msgstr ""
+"Så att svar kan jämföras, vart och ett rättat mot vad ett bra svar "
+"innehåller."
 
 #: src/chatddx/portal/shelves.py
-msgid "A model asked to grade answers, with its configuration and seeds."
-msgstr "En modell som ombeds bedöma svar, med sin konfiguration och sina seeds."
+#, 
+msgid "A model that grades what no pattern can, asked the same way each time."
+msgstr ""
+"En modell som bedömer det inget mönster kan, tillfrågad på samma sätt "
+"varje gång."
 
 #: src/chatddx/portal/shelves.py
-msgid "Grades answers against expectations, a view at a time."
-msgstr "Rättar svar mot facit, en vy i taget."
+#, 
+msgid ""
+"Grades answers against expectations, so that configurations can be "
+"compared by numbers."
+msgstr "Rättar svar mot facit, så att konfigurationer kan jämföras med siffror."
 
 #: src/chatddx/portal/shelves.py
 msgid "Trials"
 msgstr "Försök"
 
 #: src/chatddx/portal/shelves.py
-msgid "What is run."
-msgstr "Det som körs."
+#, 
+msgid ""
+"So that a run can be repeated: the same configuration, cases and seeds "
+"again."
+msgstr "Så att en körning kan upprepas: samma konfiguration, fall och seeds igen."
 
 #: src/chatddx/portal/shelves.py
-msgid "A configuration run on an engine, with chosen cases and seeds."
+#, 
+msgid ""
+"A configuration with its cases and seeds fixed, so that its run can be "
+"repeated."
 msgstr ""
-"En konfiguration som körs på en inferensserver, med utvalda fall och "
-"seeds."
+"En konfiguration med sina fall och seeds fastlagda, så att dess körning "
+"kan upprepas."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid "Operations"
+msgstr "Drift"
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"Shipped with the data sets by developers and ops, so that everyone picks "
+"from the same; read here, not written."
+msgstr ""
+"Levereras med datamängderna av utvecklare och drift, så att alla väljer "
+"ur samma; läses här, skrivs inte."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"Fixed probes sent with a run, to catch an engine that changed between "
+"runs."
+msgstr ""
+"Fasta prober som skickas med en körning, för att fånga en inferensserver "
+"som ändrats mellan körningar."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"The form expectations are written in, so that a scorer knows where to "
+"look."
+msgstr "Formen facit skrivs i, så att en rättare vet var den ska titta."
+
+#: src/chatddx/portal/shelves.py
+#, 
+msgid ""
+"A function a model may call, such as a web search, to look up what it "
+"doesn't know."
+msgstr ""
+"En funktion en modell kan anropa, som en webbsökning, för att slå upp det"
+" den inte vet."
 
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
@@ -1643,6 +1696,7 @@ msgid "Library"
 msgstr "Bibliotek"
 
 #: src/chatddx/portal/templates/base.html
+#: src/chatddx/portal/templates/thread.html
 #: src/chatddx/portal/templates/world.html
 msgid "World"
 msgstr "Miljö"
@@ -2138,8 +2192,13 @@ msgid "runs"
 msgstr "körningar"
 
 #: src/chatddx/portal/templates/compare.html
-msgid "Side by side over the items every one of them holds."
-msgstr "Sida vid sida över posterna som var och en av dem har."
+#, 
+msgid ""
+"To see how runs fare against each other, side by side over the items they"
+" all hold."
+msgstr ""
+"För att se hur körningar klarar sig mot varandra, sida vid sida över "
+"posterna de alla har."
 
 #: src/chatddx/portal/templates/compare.html
 #: src/chatddx/portal/templates/lab.html
@@ -2628,13 +2687,13 @@ msgid ", loaded with data sets"
 msgstr ", laddat med datamängder"
 
 #: src/chatddx/portal/templates/library.html
+#, 
 msgid ""
-"Everything you work with, by kind, your own first. Each is kept with "
-"every version of it: a change saves a new version, and nothing is lost."
+"Everything you work with, kept with every version, so that nothing is "
+"lost and every run can be traced to what it ran. Your own first."
 msgstr ""
-"Allt du arbetar med, efter typ, ditt eget först. Vart och ett sparas med "
-"varje version av det: en ändring sparar en ny version, och inget går "
-"förlorat."
+"Allt du arbetar med, sparat med varje version, så att inget går förlorat "
+"och varje körning kan spåras till det den körde. Ditt eget först."
 
 #: src/chatddx/portal/templates/library.html
 #, python-format
@@ -2675,10 +2734,6 @@ msgid "loaded with data sets, or typed on Home"
 msgstr "laddade med datamängder, eller skrivna på Start"
 
 #: src/chatddx/portal/templates/library.html
-msgid "loaded with data sets"
-msgstr "laddade med datamängder"
-
-#: src/chatddx/portal/templates/library.html
 msgid "None is begun here: a case comes from a data set, or is typed on Home."
 msgstr ""
 "Inga påbörjas här: ett fall kommer från en datamängd, eller skrivs på "
@@ -2688,7 +2743,10 @@ msgstr ""
 msgid "Write a new one"
 msgstr "Skriv en ny"
 
+#: frontend/src/lib/paging/Finding.svelte
 #: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/runs.html
 msgid "Find"
 msgstr "Sök"
 
@@ -2710,12 +2768,15 @@ msgstr "under vilket schema som helst"
 msgid "under %(schema)s"
 msgstr "under %(schema)s"
 
+#: frontend/src/lib/paging/Finding.svelte
 #: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/macros.html
 #, python-format
 msgid "%(shown)s of %(of)s"
 msgstr "%(shown)s av %(of)s"
 
 #: src/chatddx/portal/templates/library.html
+#: src/chatddx/portal/templates/runs.html
 msgid "show every one"
 msgstr "visa alla"
 
@@ -2781,6 +2842,7 @@ msgctxt "after the button Begin a trial of the picked"
 msgid "Its cases are the picked, and its language theirs."
 msgstr "Dess fall är de valda, och dess språk deras."
 
+#: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/library.html
 msgid "None you see of these."
 msgstr "Inga som du har tillgång till av dessa."
@@ -2829,10 +2891,6 @@ msgstr ""
 "class=\"font-medium\">Påbörja ett försök av de valda</span>; eller prova "
 "en konfiguration på fall direkt i <a class=\"bench\" "
 "href=\"/lab\">Labbet</a>."
-
-#: src/chatddx/portal/templates/library.html
-msgid "These are written through data sets, by developers and ops."
-msgstr "Dessa skrivs genom datamängder, av utvecklare och drift."
 
 #: src/chatddx/portal/templates/library.html
 msgid "Your deleted"
@@ -2985,6 +3043,38 @@ msgstr "misslyckat"
 #, python-format
 msgid "%(status)s: %(why)s"
 msgstr "%(status)s: %(why)s"
+
+#: frontend/src/lib/paging/Finding.svelte
+#: src/chatddx/portal/templates/macros.html
+#, 
+msgid "Find by what it says"
+msgstr "Sök på det som står"
+
+#: frontend/src/lib/paging/Pages.svelte
+#: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/runs.html
+#, 
+msgctxt "of a list"
+msgid "Pages"
+msgstr "Sidor"
+
+#: frontend/src/lib/paging/Pages.svelte
+#: src/chatddx/portal/templates/macros.html
+#, 
+msgid "Previous"
+msgstr "Föregående"
+
+#: frontend/src/lib/paging/Pages.svelte
+#: src/chatddx/portal/templates/macros.html
+#, , python-format
+msgid "page %(at)s of %(of)s"
+msgstr "sida %(at)s av %(of)s"
+
+#: frontend/src/lib/paging/Pages.svelte
+#: src/chatddx/portal/templates/macros.html
+#, 
+msgid "Next"
+msgstr "Nästa"
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
 #, python-format
@@ -3458,6 +3548,7 @@ msgstr "Konfiguration"
 #: frontend/src/islands/Home.svelte frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/world.html
 msgid "Model"
 msgstr "Modell"
 
@@ -3743,8 +3834,13 @@ msgstr[0] "Kör"
 msgstr[1] "Kör"
 
 #: src/chatddx/portal/templates/runs.html
-msgid "Your runs, newest first."
-msgstr "Dina körningar, nyaste först."
+#, 
+msgid ""
+"Your runs, newest first, to follow what is under way and open what has "
+"finished."
+msgstr ""
+"Dina körningar, nyaste först, för att följa det som pågår och öppna det "
+"som är klart."
 
 #: src/chatddx/portal/templates/runs.html
 msgid "Your queue"
@@ -3808,8 +3904,18 @@ msgid "All runs"
 msgstr "Alla körningar"
 
 #: src/chatddx/portal/templates/runs.html
+#, 
+msgid "Find by configuration, part, case or model"
+msgstr "Sök på konfiguration, del, fall eller modell"
+
+#: src/chatddx/portal/templates/runs.html
 msgid "Newer"
 msgstr "Nyare"
+
+#: frontend/src/lib/paging/Pages.svelte src/chatddx/portal/templates/runs.html
+#, , python-format
+msgid "page %(at)s"
+msgstr "sida %(at)s"
 
 #: src/chatddx/portal/templates/runs.html
 msgid "Older"
@@ -3944,6 +4050,7 @@ msgid "Judge"
 msgstr "Bedömare"
 
 #: src/chatddx/portal/templates/scoring.html
+#: src/chatddx/portal/templates/world.html
 msgid "Parameters"
 msgstr "Parametrar"
 
@@ -4193,6 +4300,16 @@ msgstr "Anmärkningar"
 #: src/chatddx/portal/templates/sign-in.html
 msgid "Wrong login or password."
 msgstr "Fel inloggningsnamn eller lösenord."
+
+#: src/chatddx/portal/templates/sign-in.html
+msgid ""
+"You were signed in, but your browser didn't keep the session. A browser "
+"keeps it only where the portal is reached over HTTPS or at localhost, "
+"with cookies allowed: open the portal so and sign in again."
+msgstr ""
+"Du loggades in, men webbläsaren behöll inte sessionen. En webbläsare "
+"behåller den bara där portalen nås över HTTPS eller på localhost, med "
+"kakor tillåtna: öppna portalen så och logga in igen."
 
 #: src/chatddx/portal/templates/sign-in.html
 msgid "Login"
@@ -4506,8 +4623,13 @@ msgid "Updated"
 msgstr "Uppdaterat"
 
 #: src/chatddx/portal/templates/updated.html
-msgid "What of yours was out of date, in the order it was updated."
-msgstr "Det av ditt som var ouppdaterat, i den ordning det uppdaterades."
+#, 
+msgid ""
+"What of yours was out of date, updated in this order so that it runs on "
+"the models served now."
+msgstr ""
+"Det av ditt som var ouppdaterat, uppdaterat i den här ordningen så att "
+"det körs på de modeller som tillhandahålls nu."
 
 #: src/chatddx/portal/templates/updated.html
 msgid "A new version of each"
@@ -4537,14 +4659,77 @@ msgid "The vignette"
 msgstr "Vinjetten"
 
 #: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(repo)s at revision %(revision)s, %(num)s file"
+msgid_plural "%(repo)s at revision %(revision)s, %(num)s files"
+msgstr[0] "%(repo)s vid revision %(revision)s, %(num)s fil"
+msgstr[1] "%(repo)s vid revision %(revision)s, %(num)s filer"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(name)s from %(provider)s"
+msgstr "%(name)s från %(provider)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no handle"
+msgid "none"
+msgstr "inget"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no endpoint"
+msgid "none"
+msgstr "ingen"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "its versions"
+msgstr "dess versioner"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "refused: %(why)s, so %(nearest)s is asked for instead"
+msgstr "avvisad: %(why)s, så %(nearest)s efterfrågas i stället"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "refused: %(why)s"
+msgstr "avvisad: %(why)s"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "as %(like)s"
+msgstr "som %(like)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "taken, adding nothing to the request"
+msgstr "godtagen, utan tillägg till förfrågan"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "sends %(sent)s"
+msgstr "skickar %(sent)s"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "taken: %(note)s"
+msgstr "godtagen: %(note)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "taken"
+msgstr "godtagen"
+
+#: src/chatddx/portal/templates/world.html
+#, 
 msgid ""
-"What the portal was started in: where its vignettes are, the endpoints "
-"and hosts it sends to, what it binds, and the models a configuration can "
-"run under."
+"What the portal runs on that you don't write, so that every run can say "
+"what answered it and where its cases came from."
 msgstr ""
-"Vad portalen startades i: var dess vinjetter finns, ändpunkterna och "
-"värdarna den skickar till, vad den binder, och modellerna en "
-"konfiguration kan köras under."
+"Det portalen körs på som du inte skriver, så att varje körning kan säga "
+"vad som svarade och varifrån dess fall kom."
 
 #: src/chatddx/portal/templates/world.html
 msgid "The World"
@@ -4568,85 +4753,282 @@ msgid "%(rig)s at %(revision)s"
 msgstr "%(rig)s vid %(revision)s"
 
 #: src/chatddx/portal/templates/world.html
-msgid "Sources"
-msgstr "Källor"
+#, 
+msgid "Handles"
+msgstr "Alias"
 
 #: src/chatddx/portal/templates/world.html
+#, 
 msgid ""
-"Where the vignettes are fetched from. A sensitive source's cases are sent"
-" only to the endpoints cleared for it, and no vignette is shown here."
+"Names to pick a model by, which stay the same when ops put new weights "
+"under them."
 msgstr ""
-"Varifrån vinjetterna hämtas. En känslig källas fall skickas bara till "
-"ändpunkter som är godkända för den, och ingen vinjett visas här."
+"Namn att välja en modell med, som står kvar när drift lägger nya vikter "
+"under dem."
 
 #: src/chatddx/portal/templates/world.html
-msgid "sensitive"
-msgstr "känslig"
+#, 
+msgid "no endpoint serves its weights, so it can't be picked"
+msgstr "ingen ändpunkt tillhandahåller dess vikter, så det kan inte väljas"
 
 #: src/chatddx/portal/templates/world.html
-msgid "not sensitive"
-msgstr "inte känslig"
+#, 
+msgctxt "no engine"
+msgid "none"
+msgstr "ingen"
+
+#: src/chatddx/portal/templates/world.html
+msgid "none: a remote engine"
+msgstr "ingen: en extern inferensserver"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no host"
+msgid "none"
+msgstr "ingen"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no facts"
+msgid "none"
+msgstr "inga"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Weights"
+msgstr "Vikter"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Endpoint"
+msgstr "Ändpunkt"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Host"
+msgstr "Värd"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Facts"
+msgstr "Fakta"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "History"
+msgstr "Historik"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid ""
+"What is known about each model, so that a configuration asks it only for "
+"what it can do."
+msgstr ""
+"Det som är känt om varje modell, så att en konfiguration bara ber den om "
+"det den kan."
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "for %(handles)s"
+msgstr "för %(handles)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "no handle here holds it"
+msgstr "inget alias här pekar på den"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Family"
+msgstr "Modellfamilj"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(total)s billion, %(active)s billion active"
+msgstr "%(total)s miljarder, %(active)s miljarder aktiva"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(total)s billion"
+msgstr "%(total)s miljarder"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Quantization"
+msgstr "Kvantisering"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Context"
+msgstr "Kontext"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(num)s token"
+msgid_plural "%(num)s tokens"
+msgstr[0] "%(num)s token"
+msgstr[1] "%(num)s token"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Licence"
+msgstr "Licens"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Reasoning"
+msgstr "Resonemang"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Level"
+msgstr "Nivå"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "What it does"
+msgstr "Vad den gör"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "thinking budget"
+msgstr "tankebudget"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "default"
+msgstr "standard"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Recommended sampling"
+msgstr "Rekommenderad sampling"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "the model's %(config)s"
+msgstr "modellens %(config)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Output contracts"
+msgstr "Svarsformens kontrakt"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Contract"
+msgstr "Kontrakt"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Engines"
+msgstr "Inferensservrar"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid ""
+"What answers requests, pinned by all that can change an answer, so that a"
+" run says exactly what answered it."
+msgstr ""
+"Det som svarar på förfrågningar, låst till allt som kan ändra ett svar, "
+"så att en körning säger exakt vad som svarade."
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "vLLM %(version)s on %(gpu)s"
+msgstr "vLLM %(version)s på %(gpu)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "a remote API's model"
+msgstr "en modell bakom ett externt API"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "no endpoint serves it"
+msgstr "ingen ändpunkt tillhandahåller den"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "kept at <span class=\"font-mono text-xs\">%(path)s</span> on %(host)s"
+msgstr "sparad i <span class=\"font-mono text-xs\">%(path)s</span> på %(host)s"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no arguments"
+msgid "none"
+msgstr "inga"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgctxt "no variables"
+msgid "none"
+msgstr "inga"
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
 msgid ""
-"<span class=\"font-mono text-xs\">%(path)s</span>, a vignette a <span "
-"class=\"font-mono text-xs\">%(suffix)s</span> file"
+"vLLM %(version)s, from <span class=\"font-mono text-"
+"xs\">%(closure)s</span>"
 msgstr ""
-"<span class=\"font-mono text-xs\">%(path)s</span>, en vinjett per <span "
-"class=\"font-mono text-xs\">%(suffix)s</span>-fil"
+"vLLM %(version)s, från <span class=\"font-mono text-"
+"xs\">%(closure)s</span>"
 
 #: src/chatddx/portal/templates/world.html
-msgid "texts typed into the database"
-msgstr "texter skrivna i databasen"
+#, 
+msgid "Handle"
+msgstr "Alias"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid "Hardware"
+msgstr "Hårdvara"
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
-msgid "its directory can't be read: %(why)s"
-msgstr "dess katalog kan inte läsas: %(why)s"
+msgid ""
+"%(gpu)s, compute capability %(capability)s, %(vram)s MiB, driver "
+"%(driver)s"
+msgstr ""
+"%(gpu)s, compute capability %(capability)s, %(vram)s MiB, drivrutin "
+"%(driver)s"
 
 #: src/chatddx/portal/templates/world.html
-#, python-format
-msgid "%(num)s vignette"
-msgid_plural "%(num)s vignettes"
-msgstr[0] "%(num)s vinjett"
-msgstr[1] "%(num)s vinjetter"
+#, 
+msgid "Runtime"
+msgstr "Körmiljö"
 
 #: src/chatddx/portal/templates/world.html
-msgid "as many as are typed"
-msgstr "så många som skrivits"
+#, 
+msgid "Chat template"
+msgstr "Chattmall"
 
 #: src/chatddx/portal/templates/world.html
-msgid "Where"
-msgstr "Var"
+#, 
+msgid "Arguments"
+msgstr "Argument"
 
 #: src/chatddx/portal/templates/world.html
-msgid "Holds"
-msgstr "Innehåller"
+#, 
+msgid "Environment"
+msgstr "Miljövariabler"
 
 #: src/chatddx/portal/templates/world.html
-msgid "Cleaned up by"
-msgstr "Städas av"
-
-#: src/chatddx/portal/templates/world.html
-msgid "Cleared for it"
-msgstr "Godkänd för den"
-
-#: src/chatddx/portal/templates/world.html
-msgid "no endpoint"
-msgstr "ingen ändpunkt"
+#, 
+msgid "API"
+msgstr "API"
 
 #: src/chatddx/portal/templates/world.html
 msgid "Endpoints"
 msgstr "Ändpunkter"
 
 #: src/chatddx/portal/templates/world.html
+#, 
 msgid ""
-"Where each engine is served; a run goes to the endpoint serving its "
-"engine."
+"Where each engine is reached, so that a run knows where to send, how much"
+" at once and which cases may go."
 msgstr ""
-"Där varje inferensserver nås; en körning går till ändpunkten för dess "
-"inferensserver."
+"Var varje inferensserver nås, så att en körning vet vart den ska skicka, "
+"hur mycket i taget och vilka fall som får gå dit."
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
@@ -4656,14 +5038,6 @@ msgstr "tillhandahåller %(model)s"
 #: src/chatddx/portal/templates/world.html
 msgid "Address"
 msgstr "Adress"
-
-#: src/chatddx/portal/templates/world.html
-msgid "Host"
-msgstr "Värd"
-
-#: src/chatddx/portal/templates/world.html
-msgid "none: a remote engine"
-msgstr "ingen: en extern inferensserver"
 
 #: src/chatddx/portal/templates/world.html
 msgid "Capacity"
@@ -4726,12 +5100,13 @@ msgid "Hosts"
 msgstr "Värdar"
 
 #: src/chatddx/portal/templates/world.html
+#, 
 msgid ""
-"The machines that run local engines, and where each keeps the model files"
-" and chat templates its engines pin."
+"The machines that run local engines, so that the files an engine pins can"
+" be found on them."
 msgstr ""
-"Maskinerna som kör lokala inferensservrar, och var var och en håller "
-"modellfilerna och chattmallarna som dess inferensservrar är låsta till."
+"Maskinerna som kör lokala inferensservrar, så att filerna en "
+"inferensserver är låst till kan hittas på dem."
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
@@ -4739,12 +5114,100 @@ msgid "listening on %(bind)s"
 msgstr "lyssnar på %(bind)s"
 
 #: src/chatddx/portal/templates/world.html
+msgid "Models"
+msgstr "Modeller"
+
+#: src/chatddx/portal/templates/world.html
 msgid "Chat templates"
 msgstr "Chattmallar"
 
 #: src/chatddx/portal/templates/world.html
+#, 
+msgid "pinned by"
+msgstr "fäst av"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Sources"
+msgstr "Källor"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid ""
+"Where the vignettes come from, so that a sensitive one goes only where it"
+" is cleared; none is shown here."
+msgstr ""
+"Varifrån vinjetterna kommer, så att en känslig bara går dit den är "
+"godkänd för; ingen visas här."
+
+#: src/chatddx/portal/templates/world.html
+msgid "sensitive"
+msgstr "känslig"
+
+#: src/chatddx/portal/templates/world.html
+msgid "not sensitive"
+msgstr "inte känslig"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid ""
+"<span class=\"font-mono text-xs\">%(path)s</span>, a vignette a <span "
+"class=\"font-mono text-xs\">%(suffix)s</span> file"
+msgstr ""
+"<span class=\"font-mono text-xs\">%(path)s</span>, en vinjett per <span "
+"class=\"font-mono text-xs\">%(suffix)s</span>-fil"
+
+#: src/chatddx/portal/templates/world.html
+msgid "texts typed into the database"
+msgstr "texter skrivna i databasen"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "its directory can't be read: %(why)s"
+msgstr "dess katalog kan inte läsas: %(why)s"
+
+#: src/chatddx/portal/templates/world.html
+#, python-format
+msgid "%(num)s vignette"
+msgid_plural "%(num)s vignettes"
+msgstr[0] "%(num)s vinjett"
+msgstr[1] "%(num)s vinjetter"
+
+#: src/chatddx/portal/templates/world.html
+msgid "as many as are typed"
+msgstr "så många som skrivits"
+
+#: src/chatddx/portal/templates/world.html
+msgid "no endpoint"
+msgstr "ingen ändpunkt"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Where"
+msgstr "Var"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Holds"
+msgstr "Innehåller"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Cleaned up by"
+msgstr "Städas av"
+
+#: src/chatddx/portal/templates/world.html
+msgid "Cleared for it"
+msgstr "Godkänd för den"
+
+#: src/chatddx/portal/templates/world.html
 msgid "Bindings"
 msgstr "Bindningar"
+
+#: src/chatddx/portal/templates/world.html
+#, 
+msgid ""
+"So that a data set's configurations and judges run on models this portal "
+"serves."
+msgstr ""
+"Så att en datamängds konfigurationer och bedömare körs på modeller som "
+"den här portalen tillhandahåller."
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
@@ -4767,14 +5230,6 @@ msgstr "ingen modell"
 #: src/chatddx/portal/templates/world.html
 msgid "Judges are bound"
 msgstr "Bedömare är bundna"
-
-#: src/chatddx/portal/templates/world.html
-msgid "The models a configuration can run under, each by its handle."
-msgstr "Modellerna en konfiguration kan köras under, var och en med sitt alias."
-
-#: src/chatddx/portal/templates/world.html
-msgid "no facts"
-msgstr "inga fakta"
 
 #: frontend/src/islands/library.ts
 msgid "Write it as JSON"
@@ -5568,12 +6023,12 @@ msgid "Leave out %(name)s"
 msgstr "Utelämna %(name)s"
 
 #: frontend/src/islands/Variation.svelte
-msgid "Find a family by name"
-msgstr "Sök en familj på namn"
-
-#: frontend/src/islands/Variation.svelte
 msgid "Find a family"
 msgstr "Sök en familj"
+
+#: frontend/src/islands/Variation.svelte
+msgid "Find a family by name"
+msgstr "Sök en familj på namn"
 
 #: frontend/src/islands/Variation.svelte
 msgid "No family by that name."

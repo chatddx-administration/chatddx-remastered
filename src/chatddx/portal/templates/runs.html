@@ -3,7 +3,7 @@
 {% block title %}{{ _("Runs") }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
-  {{ heading(_("Runs"), _("Your runs, newest first.")) }}
+  {{ heading(_("Runs"), _("Your runs, newest first, to follow what is under way and open what has finished.")) }}
   {% call section(_("Your queue")) %}
   <div class="flex flex-wrap items-center gap-3 text-sm">
     {% set queued, under_way = ngettext("%(num)s queued", "%(num)s queued", queue.queued), ngettext("%(num)s under way", "%(num)s under way", queue.under_way) %}
@@ -20,12 +20,21 @@
   {% endcall %}
   {{ tabs([("/runs", _("All"), not left), ("/runs?left=true", _("Left to score"), left)]) }}
   {% call section(_("Left to score") if left else _("All runs")) %}
+  {% if searched %}
+  <form method="get" action="/runs" role="search" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+    {% if left %}<input type="hidden" name="left" value="true">{% endif %}
+    <input type="search" name="q" value="{{ q }}" aria-label="{{ _('Find') }}" placeholder="{{ _('Find by configuration, part, case or model') }}" class="h-9 min-w-0 flex-1 basis-60 rounded-md border border-input bg-transparent px-2.5">
+    <button>{{ _("Find") }}</button>
+    {% if q %}<a class="view" href="/runs{{ '?left=true' if left else '' }}">{{ _("show every one") }}</a>{% endif %}
+  </form>
+  {% endif %}
   {{ runs_table(runs, tallies, left) }}
-  {% if number > 1 or more %}
-  <div class="mt-4 flex justify-between text-sm">
-    {% if number > 1 %}<a class="view" href="/runs?page={{ number - 1 }}{{ '&left=true' if left else '' }}">{{ _("Newer") }}</a>{% else %}<span></span>{% endif %}
-    {% if more %}<a class="view" href="/runs?page={{ number + 1 }}{{ '&left=true' if left else '' }}">{{ _("Older") }}</a>{% endif %}
-  </div>
+  {% if newer or older %}
+  <nav aria-label="{{ pgettext('of a list', 'Pages') }}" class="mt-4 flex flex-wrap items-center gap-3 text-sm">
+    {% if newer %}<a class="view" href="{{ newer }}">{{ _("Newer") }}</a>{% endif %}
+    <span class="text-muted-foreground">{{ _("page %(at)s", at=number) }}</span>
+    {% if older %}<a class="view" href="{{ older }}">{{ _("Older") }}</a>{% endif %}
+  </nav>
   {% endif %}
   {% endcall %}
 </div>

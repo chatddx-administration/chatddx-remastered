@@ -17,5 +17,6 @@ export type Props = {
   everyTag: string[];
   families: Schemas["Family"][];
   itemsPerRun: number;
+  rowsPerPage: number;
   runs: Schemas["Run"][];
 };

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from chatddx.bench import KINDS, Bench
+from chatddx.bench import KINDS, WRITTEN, Bench
 from chatddx.catalog import threads as catalog_threads
 from chatddx.identity import sees
 from chatddx.locale import N_, pgettext, pgettext_noop, tr
@@ -11,97 +11,149 @@ class Shelf:
     heading: str
     about: str
     kinds: dict[str, str]
+    read_only: bool = False
 
 
 SHELVES = (
     Shelf(
         N_("Cases"),
-        N_("What a model is asked about, and what a good answer holds."),
+        N_(
+            "So that every model is asked about the same patients, and graded against "
+            + "the same good answers."
+        ),
         {
             "appendix": N_(
-                "Extra text written for a case's vignette, such as lab results, sent "
-                + "along with it."
+                "What a vignette leaves out, such as lab results, written so that a "
+                + "case can include it."
             ),
-            "case": N_("A vignette, with the appendices sent along with it."),
+            "case": N_(
+                "A vignette and the appendices sent with it, so that every model is "
+                + "asked the same."
+            ),
             "expectation": N_(
-                "What a good answer to one case holds, written in an expectation "
-                + "schema's form."
-            ),
-            "expectation_schema": N_(
-                "The form expectations are written in, which a scorer grades against."
+                "What a good answer to one case holds, so that answers to it can be "
+                + "graded."
             ),
         },
     ),
     Shelf(
         N_("Configurations"),
         N_(
-            "What is sent to a model: a configuration is put together from its parts "
-            + "and a model."
+            "So that what is sent to a model can be changed a part at a time, and the "
+            + "changes compared."
         ),
         {
             "configuration": N_(
-                "Everything a request sends but the case: its parts and its model."
+                "Everything sent with a case, put together from parts, so that one can "
+                + "change while the rest hold still."
             ),
-            "few_shot": N_("Example exchanges, sent before the case."),
+            "few_shot": N_(
+                "Worked examples sent before the case, to show the model what is wanted."
+            ),
             "instructions": N_(
-                "The first message: what the model is and what it is to do."
+                "The first message, telling the model its role and its task."
             ),
-            "output": N_("The shape the answer takes, and how it is held to it."),
-            "passthrough": N_("Request options no other part covers, sent as written."),
+            "output": N_(
+                "The shape an answer must take, so that it can be read and graded."
+            ),
+            "passthrough": N_(
+                "For request options no other part covers, sent as written."
+            ),
             "prompt": N_(
-                "The last message: where the case goes, and what is asked of it."
+                "The last message, which puts the case to the model and asks for an "
+                + "answer."
             ),
-            "reasoning": N_("How much the model thinks before it answers."),
+            "reasoning": N_(
+                "How much the model thinks before it answers, which can change the "
+                + "answer."
+            ),
             "sampling": N_(
-                "How freely the model picks its words, and how long the answer may be."
+                "To steer how freely the model picks its words, and how long it may "
+                + "answer."
             ),
-            "tool": N_("A function the model may call, such as a web search."),
-            "toolset": N_("The tools a configuration offers, and how to use them."),
+            "toolset": N_(
+                "The tools a configuration offers and how to use them, so that a model "
+                + "can look things up."
+            ),
             "translations": N_(
-                "A configuration's texts in another language, for cases written in it."
+                "A configuration's texts in another language, so that a case is asked "
+                + "in its own language."
             ),
-        },
-    ),
-    Shelf(
-        N_("Models"),
-        N_("The models, the engines serving them and what is known about them."),
-        {
-            "canary_set": N_(
-                "Fixed probes sent with a run, which show whether an engine changed."
-            ),
-            "engine": N_(
-                "What answers requests: a model served by given software on given "
-                + "hardware."
-            ),
-            "facts": N_(
-                "What is known about a model: its reasoning levels, recommended "
-                + "sampling and limits."
-            ),
-            "model": N_("A model's weights, pinned so that a run can be repeated."),
         },
     ),
     Shelf(
         N_("Scoring"),
-        N_("How answers are graded."),
+        N_(
+            "So that answers can be compared, each graded against what a good answer "
+            + "holds."
+        ),
         {
             "judge": N_(
-                "A model asked to grade answers, with its configuration and seeds."
+                "A model that grades what no pattern can, asked the same way each time."
             ),
-            "scorer": N_("Grades answers against expectations, a view at a time."),
+            "scorer": N_(
+                "Grades answers against expectations, so that configurations can be "
+                + "compared by numbers."
+            ),
         },
     ),
     Shelf(
         N_("Trials"),
-        N_("What is run."),
-        {"trial": N_("A configuration run on an engine, with chosen cases and seeds.")},
+        N_(
+            "So that a run can be repeated: the same configuration, cases and seeds "
+            + "again."
+        ),
+        {
+            "trial": N_(
+                "A configuration with its cases and seeds fixed, so that its run can be "
+                + "repeated."
+            )
+        },
+    ),
+    Shelf(
+        N_("Operations"),
+        N_(
+            "Shipped with the data sets by developers and ops, so that everyone picks "
+            + "from the same; read here, not written."
+        ),
+        {
+            "canary_set": N_(
+                "Fixed probes sent with a run, to catch an engine that changed between "
+                + "runs."
+            ),
+            "expectation_schema": N_(
+                "The form expectations are written in, so that a scorer knows where to "
+                + "look."
+            ),
+            "tool": N_(
+                "A function a model may call, such as a web search, to look up what it "
+                + "doesn't know."
+            ),
+        },
+        read_only=True,
     ),
 )
 
+# Dependency: the cards of src/chatddx/portal/templates/world.html, by the kinds they
+# show.
+IN_WORLD = {"model": "handle", "engine": "engine", "facts": "facts"}
+
+# Accommodating for configurations, which a person writes as recipes, not as components.
+AUTHORED = WRITTEN | {"skeleton"}
+
 _SHELVED = sorted(w for s in SHELVES for w in s.kinds)
-if _SHELVED != sorted([*KINDS, "case"]):
+if sorted([*_SHELVED, *IN_WORLD]) != sorted([*KINDS, "case"]):
     raise RuntimeError(
-        f"the Library shelves every kind once: it shelves {', '.join(_SHELVED)}, the "
-        + f"kinds are {', '.join(sorted([*KINDS, 'case']))}"
+        "the Library shelves once every kind the World doesn't show: it shelves "
+        + f"{', '.join(_SHELVED)}, the World shows {', '.join(IN_WORLD)}, the kinds "
+        + f"are {', '.join(sorted([*KINDS, 'case']))}"
+    )
+_READ = sorted(w for w in _SHELVED if w in KINDS and not set(KINDS[w]) & AUTHORED)
+_OPERATED = sorted(w for s in SHELVES if s.read_only for w in s.kinds)
+if _READ != _OPERATED:
+    raise RuntimeError(
+        "the read-only shelves hold the kinds nobody writes here: they hold "
+        + f"{', '.join(_OPERATED)}, nobody writes {', '.join(_READ)}"
     )
 
 
@@ -129,19 +181,16 @@ _WORDS = {
     "translations": pgettext_noop("kind", "translations"),
     "trial": pgettext_noop("kind", "trial"),
 }
-if sorted(_WORDS) != _SHELVED:
+if sorted(_WORDS) != sorted([*_SHELVED, *IN_WORLD]):
     raise RuntimeError(
-        f"a word for each kind the Library shelves: {', '.join(sorted(_WORDS))} are "
-        + f"worded, {', '.join(_SHELVED)} shelved"
+        "a word for each kind the Library shelves or the World shows: "
+        + f"{', '.join(sorted(_WORDS))} are worded, {', '.join(_SHELVED)} shelved and "
+        + f"{', '.join(IN_WORLD)} shown"
     )
 
 
 def display_kind(word: str) -> str:
     return pgettext("kind", _WORDS.get(word, word.replace("_", " ")))
-
-
-def _label(word: str) -> str:
-    return word.replace("_", " ")
 
 
 @dataclass(frozen=True)
@@ -150,34 +199,32 @@ class Shelved:
     about: str
     mine: int
     seen: int
-    written: bool
 
     @property
     def display_kind(self) -> str:
         return display_kind(self.word)
 
 
-def shelved(bench: Bench, written: list[str]) -> list[tuple[Shelf, list[Shelved]]]:
+def shelved(bench: Bench) -> list[tuple[Shelf, list[Shelved]]]:
     counted = _counted(bench)
     return [
         (
             shelf,
-            [
-                Shelved(w, shelf.kinds[w], *counted[w], w in written)
-                for w in sorted(shelf.kinds, key=_label)
-            ],
+            [Shelved(w, shelf.kinds[w], *counted[w]) for w in shelf.kinds],
         )
-        for shelf in sorted(SHELVES, key=lambda s: tr(s.heading))
+        for shelf in sorted(SHELVES, key=lambda s: (s.read_only, tr(s.heading)))
     ]
 
 
 def _counted(bench: Bench) -> dict[str, tuple[int, int]]:
     person = bench.person.id
     counted: dict[str, tuple[int, int]] = {}
-    for word, kinds in KINDS.items():
+    for word in _SHELVED:
+        if word == "case":
+            continue
         seen = [
             a
-            for k in kinds
+            for k in KINDS[word]
             for _, a in catalog_threads.heads(bench.rows, k)
             if sees(person, a)
         ]

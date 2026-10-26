@@ -6,6 +6,8 @@
     <h1 class="mb-6 text-2xl font-bold">{{ _("Sign in") }}</h1>
     {% if wrong %}
     <p role="alert" class="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{{ _("Wrong login or password.") }}</p>
+    {% elif unkept %}
+    <p role="alert" class="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{{ _("You were signed in, but your browser didn't keep the session. A browser keeps it only where the portal is reached over HTTPS or at localhost, with cookies allowed: open the portal so and sign in again.") }}</p>
     {% endif %}
     <form method="post" action="/sign-in" class="grid gap-4">
       <input type="hidden" name="next" value="{{ next }}">

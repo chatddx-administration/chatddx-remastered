@@ -73,6 +73,14 @@ Drafted:
 - **A press**: the script in `src/chatddx/portal/templates/base.html` marks what was pressed and runs a bar along the
   top until the next page comes, and keeps a form from being sent twice meanwhile; Back, and Stop where the browser has
   the Navigation API, clear it.
+- **A long list**: a page holds `settings.ROWS_PER_PAGE` rows, 25. A list that may grow is wrapped in
+  `src/chatddx/portal/templates/macros.html:paged`, which gives it a search box from as many rows and a pager past them;
+  the script in `base.html` keeps the rows that say every word typed, shows a page of them at a time, and shows the page
+  a row is on when it is jumped to or holds the current one. Without scripts every row shows. Runs are searched by their
+  titles and paged on the server instead (`src/chatddx/portal/runs.py:runs`), and the Library's own search, with its
+  tags and schemas, stays on the server, from as many rows. The islands do the same with `frontend/src/lib/paging/`,
+  their page size given in their props: a variation's runs on the server, the cases picked for a run and a run's items
+  under way in the browser.
 
 Open:
 
@@ -102,18 +110,22 @@ Decided, for the internal deploy where clinicians and researchers work on the sa
 ### What it holds
 
 `/library` is an overview of the shelves (`src/chatddx/portal/shelves.py:SHELVES`): each kind under its heading with
-what it is in a line, how many of it are the person's own and how many are shared with them, and whether data sets load
-it. The same shelves, with how many of each the person sees, are the sidebar of `/library?kind=WORD`
-(`src/chatddx/portal/threads.py:library`), which says what the kind is and lists every thread of it the person sees,
-their own first, a fork with what it is forked from, configurations of either purpose with their purpose; on the trial
-tab, the picked are run together on `/lab/run`, and with none it says how one is begun. The kind's deleted threads, or
-deleted cases, are listed under it with **Restore**.
+what it is in a line, and how many of it are the person's own and how many are shared with them. The same shelves, with
+how many of each the person sees, are the sidebar of `/library?kind=WORD` (`src/chatddx/portal/threads.py:library`),
+which scrolls on its own beside a long page and opens at the kind shown, which says what the kind is and lists every
+thread of it the person sees, their own first, a fork with what it is forked from, configurations of either purpose with
+their purpose; on the trial tab, the picked are run together on `/lab/run`, and with none it says how one is begun. The
+kind's deleted threads, or deleted cases, are listed under it with **Restore**. The kinds the World shows
+(`src/chatddx/portal/shelves.py:IN_WORLD`) are on no shelf: their tabs answer 404 as an unknown kind's do, and their
+threads' pages lead back to their cards in the World. The Operations shelf, last whatever the language, is read-only
+(`src/chatddx/portal/shelves.py:Shelf`): it holds what developers and ops ship with data sets, boot holds it to exactly
+the kinds nobody writes here, and each of its kinds has a lock in the sidebar.
 
-A shelf is found in by words, `q`, each of which its name, owner, tags or description holds, and says how many of how
-many it shows; an expectation's by the schema it is written to as well, picked where the person sees more than one. Each
-row says under its name what is said of it, and the columns a phone has no room for are left out there. On the case and
-trial shelves, **Pick every one shown** picks them without scripts, and what is done with the picked stays in view below
-the list as it scrolls.
+A shelf of as many rows as a page holds is found in by words, `q`, each of which its name, owner, tags or description
+holds, and says how many of how many it shows; an expectation's by the schema it is written to as well, picked where the
+person sees more than one. Each row says under its name what is said of it, and the columns a phone has no room for are
+left out there. On the case and trial shelves, **Pick every one shown** picks them without scripts, and what is done
+with the picked stays in view below the list as it scrolls.
 
 What the giftbag forks for a person carries its origin's tags and description, and an unnamed origin's title as its name
 (`src/chatddx/curation/write.py:_Init.giftbag`), so that the person's shelves read as the archive's do.

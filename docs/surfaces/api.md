@@ -839,25 +839,10 @@ Raises:
 * `judged: bool = Field(…)`
 * `unit: str | None = Field(…)`
 
-## `Model` `(_Schema)`
-`src/chatddx/api/schemas.py:Model`
-
-* `name: str = Field(description="the handle")`
-* `weights: str = Field(description="the weights it holds now, by digest")`
-* `engine: str = Field(description="its latest engine")`
-* `facts: JsonValue`
-* `takes_typed: bool = Field(…)`
-
 ## `ModelDigest`
 `src/chatddx/api/schemas.py:ModelDigest`
 
 `ModelDigest`
-
-## `models` `@router.get("/models")`
-`src/chatddx/api/world.py:models`
-
-* `bench: BenchDep`
-* ∟`list[schemas.Model]`
 
 ## `Moved` `(_Schema)`
 `src/chatddx/api/schemas.py:Moved`
@@ -1281,6 +1266,7 @@ Raises:
 * `scored_by: Annotated[str | None, Query(description="a scorer's digest")] = None`
 * `unscored: Annotated[bool, Query(description='only the finished runs left to be scored by some scorer')] = False`
 * `started_with: Annotated[UUID | None, Query(alias='with', description='a run: the runs started with it, itself the first of them')] = None`
+* `q: Annotated[str, Query(description="words each run's title says, whatever their case: its " + "configuration's, a part's replaced, its case's and its model's names")] = ""`
 * ∟`list[schemas.Run]`
 
 ## `RunScoredData` `(_Schema)`

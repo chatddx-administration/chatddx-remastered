@@ -332,17 +332,33 @@ def runs(
             description="a run: the runs started with it, itself the first of them",
         ),
     ] = None,
+    q: Annotated[
+        str,
+        Query(
+            description="words each run's title says, whatever their case: its "
+            + "configuration's, a part's replaced, its case's and its model's names"
+        ),
+    ] = "",
 ) -> list[schemas.Run]:
     found = bench.runs(
         reaching=reaching, scored_by=scored_by, started_with=started_with
     )
     if trial is not None:
         found = [r for r in found if r.trial == trial]
+    if words := q.casefold().split():
+        found = [r for r in found if _says(bench.titled(r), words)]
     left: dict[UUID, list[str]] = {}
     if unscored:
         left = {r.run: scorers for r, scorers in bench.outstanding()}
         found = [r for r in found if r.run in left]
     return _runs_of(bench, found[offset : offset + limit], left)
+
+
+def _says(titled: Titled, words: list[str]) -> bool:
+    case = [] if titled.case is None else [titled.case.name, *titled.case.appendices]
+    replaced = [r.title for r in titled.replaced if r.title is not None]
+    said = " ".join([titled.name, *replaced, *case, titled.at]).casefold()
+    return all(word in said for word in words)
 
 
 def _runs_of(
