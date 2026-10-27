@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 from urllib.parse import urlencode
 
@@ -8,13 +9,6 @@ from markupsafe import escape
 
 from chatddx.api.test.helpers import family
 from chatddx.portal.test.helpers import ran_template, run_title, shown
-from chatddx.test.world import (
-    GPT_OSS_ARTIFACT,
-    MISTRAL_ARTIFACT,
-    QWEN_ARTIFACT,
-    QWEN_BARE_ARTIFACT,
-    UNKNOWN_MODEL,
-)
 
 __all__ = ["ran_template"]
 
@@ -39,7 +33,7 @@ def test_review_opens_the_first_case_of_the_list_and_keeps_its_tag(
 
 
 @pytest.mark.slow
-def test_a_case_is_reviewed_with_what_is_expected_and_what_each_view_reads_of_it(
+def test_a_case_is_reviewed_with_what_is_expected_and_not_what_reads_it(
     signed: TestClient,
 ) -> None:
     noted = family(signed, "noted")
@@ -57,14 +51,11 @@ def test_a_case_is_reviewed_with_what_is_expected_and_what_each_view_reads_of_it
     judged = next(t for t in scorers if t["name"] == "judged")
     page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
     held = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
-    selectors = [v["expectation"] for v in held["views"]]
-    picks = signed.post(
-        "/api/picks", json={"document": expected["data"], "selectors": selectors}
-    ).json()
-    carol = next(p for p, s in zip(picks, selectors, strict=True) if "carol" in s)
-    assert carol["items"] and all(escape(i) in page for i in carol["items"])
-    for s in selectors:
-        assert escape(s) in page
+    for v in held["views"]:
+        assert escape(v["expectation"]) not in page
+    assert "Read by" not in page and f'href="/scoring/{judged["id"]}"' not in page
+    schema = signed.get(f"/api/components/{expected['expectation_schema']}").json()
+    assert f"under {schema['title']}" not in page
 
 
 @pytest.mark.slow
@@ -75,9 +66,16 @@ def test_the_answers_to_a_case_are_listed_with_each_view_s_value_and_nothing_sen
     scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
     judged = next(t for t in scorers if t["name"] == "judged")
     page = shown(signed, f"/review/{noted['id']}")
-    assert f'scorer={judged["id"]}" aria-current="page"' in page
+    assert "how judged scored it" in page
     runs = signed.get("/api/runs", params={"reaching": noted["case"]}).json()
     assert runs
+    ran = sum(
+        i["case"] == noted["case"]
+        for r in runs
+        for i in signed.get(f"/api/runs/{r['id']}/items").json()
+    )
+    listed = page.split(f'href="/review/{noted["id"]}"', 1)[1].split("</a>", 1)[0]
+    assert f">{ran}</span>" in listed and f"run {ran} time" in listed
     given = props(page)
     assert {a["run"] for a in given["answers"]} == {r["id"] for r in runs}
     for r in runs:
@@ -104,29 +102,60 @@ def test_a_family_s_other_case_shows_its_appendices(signed: TestClient) -> None:
     cases = signed.get(f"/api/families/{whitespace['id']}").json()["cases"]
     labs = next(c for c in cases if c["appendices"])
     page = shown(signed, f"/review/{whitespace['id']}")
-    assert "None in this case." in page
+    assert "<article" not in page and "Appendices, in order" not in page
+    assert ">without appendices</a>" in page
     assert urlencode({"case": labs["case"]}) in page
+    noted = family(signed, "noted")
+    for f, appended in ((whitespace, True), (noted, False)):
+        listed = page.split(f'href="/review/{f["id"]}"', 1)[1].split("</a>", 1)[0]
+        assert (", with appendices" in listed) == appended, f["name"]
     page = shown(signed, f"/review/{whitespace['id']}?case={labs['case']}")
     assert "CRP 180 mg/L, leukocytes 16." in page
     assert props(page)["case"] == labs["case"]
 
 
 @pytest.mark.slow
-def test_the_list_steps_to_the_case_before_and_after_with_what_is_picked(
+def test_the_list_holds_each_tag_picked_and_any_language_picked(
     signed: TestClient,
 ) -> None:
-    listed = signed.get("/api/families", params={"tag": "targets"}).json()
-    assert len(listed) >= 3
-    first, second, third = listed[:3]
-    page = shown(signed, f"/review/{second['id']}?tag=targets")
-    given = props(page)
-    assert given["previous"] == f"/review/{first['id']}?tag=targets"
-    assert given["next"] == f"/review/{third['id']}?tag=targets"
-    assert (
-        props(shown(signed, f"/review/{first['id']}?tag=targets"))["previous"] is None
+    every = signed.get("/api/families").json()
+    noted = family(signed, "noted")
+
+    def listed(query: str) -> set[int]:
+        page = shown(signed, f"/review/{noted['id']}?{query}")
+        held = page.split('aria-label="Cases"', 1)[1].split("</ol>", 1)[0]
+        assert "<kbd>" not in page and "<summary" not in held
+        items = re.findall(
+            r'<li data-tags=[^>]*?( hidden)?>\s*<a href="/review/(\d+)', held
+        )
+        assert len(items) == len(every)
+        return {int(id) for hidden, id in items if not hidden}
+
+    both = {f["id"] for f in every if {"targets", "swedish"} <= set(f["tags"])}
+    targets = {f["id"] for f in every if "targets" in f["tags"]}
+    assert both and both < targets
+    assert listed("tag=targets") == targets
+    assert listed("tag=targets&tag=swedish") == both
+    languages = {f["language"] for f in every if f["language"]}
+    assert len(languages) > 1
+    for language in languages:
+        spoken = {f["id"] for f in every if f["language"] == language}
+        assert listed(f"language={language}") == spoken
+        assert listed(f"tag=targets&language={language}") == spoken & targets
+    assert listed(f"language={'&language='.join(languages)}") == {
+        f["id"] for f in every if f["language"]
+    }
+
+    page = shown(signed, f"/review/{noted['id']}?tag=targets&tag=swedish")
+    assert props(page).keys() >= {"about"} and "next" not in props(page)
+    assert re.search(
+        r'tag=targets" data-tag="swedish" aria-current="true" class="view">swedish</a>',
+        page,
     )
-    for f in listed:
-        assert f'href="/review/{f["id"]}?tag=targets"' in page
+    assert re.search(
+        r'tag=swedish" data-tag="targets" aria-current="true" class="view">targets</a>',
+        page,
+    )
 
 
 @pytest.mark.slow
@@ -140,7 +169,7 @@ def test_what_review_can_t_find_is_not_found(signed: TestClient) -> None:
 
 
 @pytest.mark.slow
-def test_the_expectation_is_edited_in_place_with_its_versions_and_what_reads_it(
+def test_the_expectation_is_edited_in_place_with_its_versions_alone(
     signed: TestClient,
 ) -> None:
     noted = family(signed, "noted")
@@ -158,10 +187,7 @@ def test_the_expectation_is_edited_in_place_with_its_versions_and_what_reads_it(
     )
     assert expected["digest"] == held["expectation"]
     assert expected["history"][-1]["digest"] == held["expectation"]
-    body = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
-    assert [v["expectation"] for v in expected["views"]] == [
-        v["expectation"] for v in body["views"]
-    ]
+    assert set(expected) == {"editor", "digest", "history"}
     assert given["back"] == f"/review/{noted['id']}?scorer={judged['id']}"
 
 
@@ -236,6 +262,9 @@ def test_an_appendix_written_in_review_is_added_to_the_case_it_is_written_in(
     page = shown(signed, at)
     assert "Gallstones on ultrasound." in page
     assert "f.appendices" not in page and "owned by" not in page
+    held = page.split('id="review-vignette"', 1)[1].split("<details", 1)[0]
+    assert "<article" in held and "/threads/" not in held
+    assert f'action="/review/{crlf["id"]}/appendices/0/remove"' in page
     given = props(page)
     [appendix] = given["appendices"]
     assert appendix["digest"] == ultrasound
@@ -245,7 +274,27 @@ def test_an_appendix_written_in_review_is_added_to_the_case_it_is_written_in(
     assert editor["data"] == default["expectations"][0]["data"]
 
     labs, again = written("labs", "Bilirubin 40.", alone["case"], at)
-    assert again == f"{back}&{urlencode({'case': built(ultrasound, labs)['case']})}"
+    both = built(ultrasound, labs)["case"]
+    assert again == f"{back}&{urlencode({'case': both})}"
+
+    def removed(position: int, case: str) -> str:
+        got = signed.post(
+            f"/review/{crlf['id']}/appendices/{position}/remove",
+            data={"case": case, "back": again},
+        )
+        assert got.status_code == 303
+        return got.headers["location"]
+
+    assert removed(1, both) == at
+    assert removed(0, both) == f"{back}&{urlencode({'case': built(labs)['case']})}"
+    bare = f"{back}&{urlencode({'case': default['case']})}"
+    assert removed(0, built(labs)["case"]) == bare
+    assert "<article" not in shown(signed, removed(0, alone["case"]))
+    got = signed.post(f"/review/{crlf['id']}/appendices/2/remove", data={"case": both})
+    assert got.status_code == 404
+    elsewhere = {"Sec-Fetch-Site": "cross-site"}
+    got = signed.post(f"/review/{crlf['id']}/appendices/0/remove", headers=elsewhere)
+    assert got.status_code == 403
 
 
 @pytest.mark.slow
@@ -254,63 +303,10 @@ def test_the_record_says_each_view_s_mean_over_the_answers(signed: TestClient) -
     scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
     judged = next(t for t in scorers if t["name"] == "judged")
     page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
-    assert 'data-drawer="record"' in page and 'data-drawer="cases"' in page
+    assert 'data-drawer="record"' in page and 'data-drawer="cases"' not in page
     for label in props(page)["labels"]:
         assert f"<dt>{escape(label)}</dt>" in page
     assert "mean of 1" in page
-
-
-@pytest.mark.slow
-def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
-    signed: TestClient,
-) -> None:
-    noted = family(signed, "noted")
-    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
-    judged = next(t for t in scorers if t["name"] == "judged")
-    given = props(shown(signed, f"/review/{noted['id']}?scorer={judged['id']}"))
-    composing = given["expected"]["composing"]
-    held = composing["scorer"]
-    body = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
-    assert (held["thread"], held["head"], held["digest"]) == (
-        judged["id"],
-        judged["head"]["id"],
-        judged["head"]["digest"],
-    )
-    assert held["body"] == body and held["labels"] == given["labels"]
-    assert held["mode"] == ("edit" if judged["owner"] == "alice" else "fork")
-    judged = {v["judge"] for v in body["views"] if v["judge"]}
-    assert judged <= set(composing["titles"])
-    judges = signed.get("/api/threads", params={"kind": "judge"}).json()
-    assert {j["digest"] for j in composing["judges"]} == {
-        j["head"]["digest"] for j in judges
-    }
-    verdict = next(j for j in composing["judges"] if j["name"] == "verdict")
-    assert verdict["output_schema"]["title"] == "Verdict" and verdict["seeds"] == [1]
-    assert not any("texts" in j for j in composing["judges"])
-    query = {"kind": "configuration", "purpose": "judge"}
-    judging = signed.get("/api/threads", params=query).json()
-    assert {j["digest"] for j in composing["judging"]} == {
-        j["head"]["digest"] for j in judging
-    }
-    assert {m["name"] for m in composing["models"]} == {
-        QWEN_ARTIFACT,
-        QWEN_BARE_ARTIFACT,
-        GPT_OSS_ARTIFACT,
-        MISTRAL_ARTIFACT,
-        UNKNOWN_MODEL,
-    }
-    blank = composing["blank"]
-    assert blank["expectation_schema"] == body["expectation_schema"]
-    code = signed.get("/api/scorer-code").json()[0]
-    assert (blank["entry_point"], blank["version"]) == (
-        code["entry_point"],
-        code["version"],
-    )
-    assert composing["metrics"] == code["metrics"]
-    runs = signed.get("/api/runs", params={"reaching": noted["case"]}).json()
-    assert composing["runs"] == [r["id"] for r in runs]
-    assert composing["case"] == noted["case"]
-    assert None in {o["title"] for o in composing["outputs"]}
 
 
 @pytest.mark.slow

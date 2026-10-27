@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import { t, th } from "$lib/locale";
+  import { t } from "$lib/locale";
   import SchemaField from "./SchemaField.svelte";
-  import { blank, chosen, deref, type Schema, widget, without as leaving } from "./form";
+  import { authored, blank, chosen, deref, fieldName, type Schema, widget, without as leaving } from "./form";
 
   let {
     schema,
@@ -10,23 +9,30 @@
     value,
     set,
     label = "",
-    beside,
     quiet = false,
+    framed = true,
+    me,
+    hidden = [],
   }: {
     schema: Schema;
     root: Schema;
     value: unknown;
     set: (v: unknown) => void;
     label?: string;
-    beside?: Snippet<[string]>;
     quiet?: boolean;
+    framed?: boolean;
+    me?: string;
+    hidden?: string[];
   } = $props();
 
   const shape = $derived(widget(schema, root));
   const about = $derived(deref(schema, root));
   const described = $derived(typeof about.description === "string" ? about.description : "");
   const said = $derived(quiet ? "" : described);
-  const named = $derived(label.replaceAll("_", " "));
+  const named = $derived(fieldName(label));
+  const frame = $derived(
+    !framed || (quiet && !named) ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3",
+  );
   let typed = $state<string | null>(null);
   let broken = $state<string | null>(null);
 
@@ -44,6 +50,15 @@
     return Object.fromEntries(Object.entries(fields()).filter(([k]) => k !== name));
   }
 
+  function byMe(schema: Schema): boolean {
+    return me !== undefined && authored(widget(schema, root), root);
+  }
+
+  function authorOf(item: unknown): string {
+    const held = typeof item === "object" && item !== null ? (item as Record<string, unknown>).author : undefined;
+    return typeof held === "string" ? held : "";
+  }
+
   function parsed(text: string): void {
     typed = text;
     try {
@@ -56,37 +71,37 @@
 </script>
 
 {#if shape.is === "object"}
-  <fieldset class={quiet && !named ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3"}>
+  <fieldset class={frame}>
     {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#each shape.properties as p (p.name)}
-      {#if p.required || p.name in fields()}
+      {#if hidden.includes(p.name)}{:else if p.required || p.name in fields() || byMe(p.schema)}
         <div class="flex items-start gap-2">
           <div class="min-w-0 flex-1">
             <SchemaField
               schema={p.schema}
               {root}
               value={fields()[p.name]}
-              set={(v) => set({ ...fields(), [p.name]: v })}
+              set={(v) => set(v === undefined ? without(p.name) : { ...fields(), [p.name]: v })}
               label={p.name}
               {quiet}
+              {me}
             />
           </div>
-          {#if !p.required}
+          {#if !p.required && !byMe(p.schema)}
             <button
               type="button"
               class="mt-6 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
-              aria-label={t("Leave out %(name)s", { name: p.name.replaceAll("_", " ") })}
+              aria-label={t("Leave out %(name)s", { name: fieldName(p.name) })}
               onclick={() => set(without(p.name))}>×</button
             >
           {/if}
         </div>
-        {@render beside?.(p.name)}
       {:else}
         <button
           type="button"
           class="mr-2 rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-          onclick={() => set({ ...fields(), [p.name]: blank(p.schema, root) })}>+ {p.name.replaceAll("_", " ")}</button
+          onclick={() => set({ ...fields(), [p.name]: blank(p.schema, root) })}>+ {fieldName(p.name)}</button
         >
       {/if}
     {/each}
@@ -94,7 +109,7 @@
 {:else if shape.is === "union"}
   {@const at = chosen(shape, value)}
   {@const rest = leaving(at.schema, shape.key)}
-  <fieldset class={quiet && !named ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3"}>
+  <fieldset class={frame}>
     {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     <label class="grid gap-1 text-sm">
@@ -118,28 +133,76 @@
         {value}
         set={(v) => set({ ...(v as Record<string, unknown>), [shape.key]: at.value })}
         {quiet}
+        {me}
       />
     {/if}
   </fieldset>
 {:else if shape.is === "or-none"}
-  <div class="space-y-2">
+  <fieldset class={frame}>
+    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
+    {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     <label class="flex items-center gap-2 text-sm">
       <input
         type="checkbox"
         checked={value === false}
         onchange={(e) => set(e.currentTarget.checked ? false : blank(shape.schema, root))}
       />
-      <span
-        >{@html th('<span class="font-medium" title="%(about)s">%(field)s</span>: none expected', {
-          about: quiet ? described : "",
-          field: named,
-        })}</span
-      >
+      {t("none expected")}
     </label>
-    {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#if value !== false}
-      <SchemaField schema={shape.schema} {root} {value} {set} label={named} {quiet} />
+      <SchemaField schema={shape.schema} {root} {value} {set} {quiet} {me} framed={false} />
     {/if}
+  </fieldset>
+{:else if shape.is === "list" && me !== undefined && authored(shape, root)}
+  {@const mine = items().findIndex((x) => authorOf(x) === me)}
+  <div class="space-y-2">
+    {#if mine === -1}
+      <button
+        type="button"
+        class="rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+        onclick={() => set([...items(), { ...(blank(shape.items, root) as Record<string, unknown>), author: me }])}
+        >+ {named}</button
+      >
+    {:else}
+      <div class="flex items-start gap-2">
+        <div class="min-w-0 flex-1">
+          <SchemaField
+            schema={shape.items}
+            {root}
+            value={items()[mine]}
+            set={(v) => set(items().map((x, j) => (j === mine ? v : x)))}
+            label={named}
+            {quiet}
+            {me}
+            hidden={["author"]}
+          />
+        </div>
+        <button
+          type="button"
+          class="mt-2 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
+          aria-label={t("Leave out %(name)s", { name: named })}
+          onclick={() => {
+            const left = items().filter((_, j) => j !== mine);
+            set(left.length ? left : undefined);
+          }}>×</button
+        >
+      </div>
+    {/if}
+    {#each items() as item, i (i)}
+      {#if i !== mine}
+        <details class="rounded-lg border border-border/60 px-3 py-2 text-sm">
+          <summary class="cursor-pointer text-muted-foreground"
+            >{t("%(field)s by %(author)s", { field: named, author: authorOf(item) })}</summary
+          >
+          <dl class="mt-2 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1">
+            {#each Object.entries(item as Record<string, unknown>).filter(([k]) => k !== "author") as [k, v] (k)}
+              <dt class="text-muted-foreground">{fieldName(k)}</dt>
+              <dd class="whitespace-pre-wrap break-words">{typeof v === "string" ? v : JSON.stringify(v)}</dd>
+            {/each}
+          </dl>
+        </details>
+      {/if}
+    {/each}
   </div>
 {:else if shape.is === "list"}
   <div class="space-y-2">
@@ -155,6 +218,7 @@
             set={(v) => set(items().map((x, j) => (j === i ? v : x)))}
             label="{named} {i + 1}"
             {quiet}
+            {me}
           />
         </div>
         <button

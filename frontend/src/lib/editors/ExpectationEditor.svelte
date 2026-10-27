@@ -7,11 +7,12 @@
     schema: string;
     json_schema: Record<string, unknown>;
     data: unknown;
+    me?: string;
   };
 </script>
 
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
+  import { untrack } from "svelte";
   import { t } from "$lib/locale";
   import { blank, kept } from "$lib/schema/form";
   import SchemaField from "$lib/schema/SchemaField.svelte";
@@ -22,16 +23,12 @@
     editor,
     digest = null,
     opened,
-    changed,
-    beside,
     quiet = false,
     to,
   }: {
     editor: ExpectationEditing;
     digest?: string | null;
     opened?: boolean;
-    changed?: (data: unknown) => void;
-    beside?: Snippet<[string]>;
     quiet?: boolean;
     to?: (saved: Extract<Saved, { to: string }>) => string;
   } = $props();
@@ -49,10 +46,6 @@
       data: kept(data, root, root) as never,
     };
   }
-
-  $effect(() => {
-    if (changed) changed(kept(data, root, root));
-  });
 </script>
 
 {#if !open}
@@ -63,7 +56,7 @@
   >
 {:else}
   <div class="space-y-3">
-    <SchemaField schema={root} {root} value={data} set={(v) => (data = v)} {beside} {quiet} />
-    <Saving editing={given} {component} {digest} {to} />
+    <SchemaField schema={root} {root} value={data} set={(v) => (data = v)} {quiet} me={given.me} />
+    <Saving editing={given} {component} {digest} {to} {quiet} />
   </div>
 {/if}

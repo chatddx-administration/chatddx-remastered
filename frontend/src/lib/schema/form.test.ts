@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { blank, deref, kept, type Schema, widget } from "./form";
+import { authored, blank, deref, fieldName, kept, type Schema, widget } from "./form";
 
 const TARGETS = JSON.parse(
   readFileSync(new URL("../../../../worlds/test/_data/schemas/targets.json", import.meta.url), "utf8"),
@@ -80,5 +80,20 @@ describe("a union told apart by a field each of its members fixes", () => {
     const tool = deref({ $ref: "#/$defs/Tool" }, CONTRACT);
     const description = (tool.properties as Record<string, Schema>).description ?? {};
     expect(widget(description, CONTRACT)).toEqual({ is: "text", long: true });
+  });
+});
+
+describe("a field's name", () => {
+  it("is its own, spaced, but for those worded for clinicians", () => {
+    expect(fieldName("author")).toBe("author");
+    expect(fieldName("dont_miss")).toBe("Must not be missed");
+    expect(fieldName("text")).toBe("Own note");
+  });
+});
+
+describe("a list of what people wrote", () => {
+  it("is told by its items' author", () => {
+    expect(authored(widget(at("notes"), TARGETS), TARGETS)).toBe(true);
+    expect(authored(widget(at("diagnosis"), TARGETS), TARGETS)).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
   import InfoIcon from "@lucide/svelte/icons/info";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { localized, t } from "$lib/locale";
+  import { localized } from "$lib/locale";
   import type { Checked } from "./writing";
 
   let { found }: { found: Checked | null } = $props();
@@ -22,6 +22,4 @@
       </li>
     {/each}
   </ul>
-{:else if found}
-  <p class="text-sm text-muted-foreground">{t("Nothing to say of it.")}</p>
 {/if}

@@ -22,10 +22,6 @@ SHELVES = (
             + "the same good answers."
         ),
         {
-            "appendix": N_(
-                "What a vignette leaves out, such as lab results, written so that a "
-                + "case can include it."
-            ),
             "case": N_(
                 "A vignette and the appendices sent with it, so that every model is "
                 + "asked the same."
@@ -138,15 +134,22 @@ SHELVES = (
 # show.
 IN_WORLD = {"model": "handle", "engine": "engine", "facts": "facts"}
 
+# Policy: an appendix is written and shown in Review alone, in the case it goes with, so
+# the Library shelves none and has no page of one; a case built of appendices is written
+# there too, so the Library shelves cases locked.
+IN_REVIEW = frozenset({"appendix"})
+REVIEWED = frozenset({"case"})
+
 # Accommodating for configurations, which a person writes as recipes, not as components.
 AUTHORED = WRITTEN | {"skeleton"}
 
 _SHELVED = sorted(w for s in SHELVES for w in s.kinds)
-if sorted([*_SHELVED, *IN_WORLD]) != sorted([*KINDS, "case"]):
+if sorted([*_SHELVED, *IN_WORLD, *IN_REVIEW]) != sorted([*KINDS, "case"]):
     raise RuntimeError(
-        "the Library shelves once every kind the World doesn't show: it shelves "
-        + f"{', '.join(_SHELVED)}, the World shows {', '.join(IN_WORLD)}, the kinds "
-        + f"are {', '.join(sorted([*KINDS, 'case']))}"
+        "the Library shelves once every kind the World and Review don't show: it "
+        + f"shelves {', '.join(_SHELVED)}, the World shows {', '.join(IN_WORLD)}, "
+        + f"Review {', '.join(IN_REVIEW)}, the kinds are "
+        + f"{', '.join(sorted([*KINDS, 'case']))}"
     )
 _READ = sorted(w for w in _SHELVED if w in KINDS and not set(KINDS[w]) & AUTHORED)
 _OPERATED = sorted(w for s in SHELVES if s.read_only for w in s.kinds)
@@ -181,11 +184,11 @@ _WORDS = {
     "translations": pgettext_noop("kind", "translations"),
     "trial": pgettext_noop("kind", "trial"),
 }
-if sorted(_WORDS) != sorted([*_SHELVED, *IN_WORLD]):
+if sorted(_WORDS) != sorted([*_SHELVED, *IN_WORLD, *IN_REVIEW]):
     raise RuntimeError(
-        "a word for each kind the Library shelves or the World shows: "
+        "a word for each kind the Library shelves or the World or Review shows: "
         + f"{', '.join(sorted(_WORDS))} are worded, {', '.join(_SHELVED)} shelved and "
-        + f"{', '.join(IN_WORLD)} shown"
+        + f"{', '.join([*IN_WORLD, *IN_REVIEW])} shown"
     )
 
 
@@ -199,6 +202,7 @@ class Shelved:
     about: str
     mine: int
     seen: int
+    reviewed: bool
 
     @property
     def display_kind(self) -> str:
@@ -210,7 +214,10 @@ def shelved(bench: Bench) -> list[tuple[Shelf, list[Shelved]]]:
     return [
         (
             shelf,
-            [Shelved(w, shelf.kinds[w], *counted[w]) for w in shelf.kinds],
+            [
+                Shelved(w, shelf.kinds[w], *counted[w], w in REVIEWED)
+                for w in shelf.kinds
+            ],
         )
         for shelf in sorted(SHELVES, key=lambda s: (s.read_only, tr(s.heading)))
     ]

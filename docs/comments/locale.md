@@ -64,6 +64,11 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 ## `src/chatddx/locale/locale.py:proofs`
 
 ```
+# Accommodating for Babel, which reads the "#, " left where a message's only flag,
+# fuzzy, is deleted by hand as a flag of its own, and writes it back.
+```
+
+```
 # Accommodating for Babel, which matches a new message to an untranslated plural one as
 # if it were translated: what holds no translation comes anew from the code.
 ```

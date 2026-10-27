@@ -27,6 +27,7 @@
     to,
     made,
     labels,
+    quiet = false,
   }: {
     editing: Editing;
     component: () => Component | null;
@@ -36,6 +37,7 @@
     to?: (saved: Wrote) => string;
     made?: (saved: Wrote, name: string) => void;
     labels?: () => Labelled;
+    quiet?: boolean;
   } = $props();
 
   let name = $state(untrack(() => editing.name));
@@ -105,7 +107,9 @@
         <Input bind:value={name} autocomplete="off" />
       </label>
     {/if}
-    <p class="text-sm" aria-live="polite">{said(editing, name, unchanged)}</p>
+    {#if !quiet || editing.mode === "edit"}
+      <p class="text-sm" aria-live="polite">{said(editing, name, unchanged)}</p>
+    {/if}
     {#if problem}<p class="text-sm text-destructive">{problem}</p>{/if}
     {#if note}<p class="text-sm text-success">{note}</p>{/if}
     <Button type="submit" disabled={busy || unready || nameless || (editing.mode === "edit" && unchanged)}>

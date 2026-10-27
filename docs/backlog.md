@@ -46,6 +46,7 @@ in agents/ tracks is that plan's, not this document's.
   - [The data's stage, said in code](#the-datas-stage-said-in-code)
   - [Missing tests](#missing-tests)
   - [The archive's configuration under another name](#the-archives-configuration-under-another-name)
+  - [Appendices without threads](#appendices-without-threads)
 - [Waiting](#waiting)
   - [Splits beyond `lines@1`](#splits-beyond-lines1)
   - [Shipped code: scorers and tools](#shipped-code-scorers-and-tools)
@@ -517,6 +518,20 @@ is refused on a lint.
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a shared
   configuration's, compiled to its skeleton, becomes a thread of the person's own, and only a look's `held_by` says so
   (src/chatddx/api/threads.py). An expectation the same as one the person holds is refused.
+
+### Appendices without threads
+
+An appendix as part of its case alone, with no thread of its own, removing as much of what a thread gives it as can go.
+
+Decided: an appendix is never handled outside the case it goes with; Review writes and shows it there, and the Library
+has no shelf of appendices and no page of one (src/chatddx/portal/shelves.py:IN_REVIEW).
+
+- **An appendix is a thread** (src/chatddx/bench/model.py:KINDS), with an owner, versions, sharing and deletion of its
+  own, which nothing but its case needs, and the API still lists and writes it as one.
+- **Taking it out of a case** in Review moves to the case without it, and the case with it stays among its family's
+  cases, as a case is immutable.
+- **A case's title names its appendices by their threads' names**, and `case_titled` looks them up by those names
+  (src/chatddx/bench/seen.py:Seen.case_titled), so an appendix without a thread needs its name kept elsewhere.
 
 ## Waiting
 

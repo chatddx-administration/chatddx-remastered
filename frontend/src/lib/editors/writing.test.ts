@@ -4,7 +4,7 @@ import { said } from "./writing";
 describe("where a save goes", () => {
   it("is a new version of one's own, unless nothing changed", () => {
     expect(said({ mode: "edit", name: "x" }, "x", false)).toBe("Saves a new version of it.");
-    expect(said({ mode: "edit", name: "x" }, "x", true)).toBe("Nothing to save: it holds this already.");
+    expect(said({ mode: "edit", name: "x" }, "x", true)).toBe("");
   });
 
   it("is a new thread, or a fork, named", () => {

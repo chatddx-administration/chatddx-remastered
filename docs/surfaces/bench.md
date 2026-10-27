@@ -272,6 +272,8 @@ restored expectation thread the person's expectations of its case and schema.
 
 Heads-up:
 - Only families take language.
+- A family's tags and language are said by those it is shared with as well as by
+  its owner; the rest of it, and of a thread, by its owner alone.
 - An expectation thread is refused while the person owns another of its case and
   schema.
 

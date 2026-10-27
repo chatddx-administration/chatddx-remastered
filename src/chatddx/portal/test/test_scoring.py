@@ -261,13 +261,10 @@ def test_a_scorer_follows_a_judge_s_latest_version_from_the_judge_s_page(
 
 
 @pytest.mark.slow
-def test_a_scorer_and_a_judge_are_led_to_from_review_and_the_library(
+def test_a_scorer_and_a_judge_are_led_to_from_the_library(
     signed: TestClient,
 ) -> None:
     judged = thread(signed, "scorer", "judged", "archive")
     verdict = thread(signed, "judge", "verdict", "archive")
     for t in (judged, verdict):
         assert f'href="/scoring/{t["id"]}"' in shown(signed, f"/threads/{t['id']}")
-    noted = family(signed, "noted")
-    page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
-    assert f'href="/scoring/{judged["id"]}"' in page

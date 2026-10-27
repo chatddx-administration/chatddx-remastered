@@ -3,7 +3,6 @@
 {% from "fields.html" import rows %}
 {% from "translations.html" import entry %}
 {% set titled = {
-  "appendix": _("A new appendix"),
   "configuration": _("A new configuration"),
   "expectation": _("A new expectation"),
   "few_shot": _("A new few shot"),
@@ -31,19 +30,7 @@
   <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library?kind={{ word }}">← {{ word | kind }}</a></nav>
   {{ heading(titled, _("A thread of your own, from what is given here.")) }}
   {{ refusal(typed, request) }}
-  {% if cases is defined %}
-  {% call section(_("Its case"), "case") %}
-  <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">
-    <input type="hidden" name="kind" value="{{ word }}">
-    <label class="grid gap-1"><span class="text-muted-foreground">{{ "case" | kind }}</span>
-      <select name="family" class="h-9 rounded-md border border-input bg-transparent px-2.5">
-        {% for id, named in cases %}<option value="{{ id }}">{{ named }}</option>{% endfor %}
-      </select></label>
-    <button>{{ _("Write one for it") }}</button>
-    <span class="basis-full text-xs text-muted-foreground">{{ _("An appendix is written for one case's vignette, and sent with it by the cases that include it: pick the case first. A case's page begins one too.") }}</span>
-  </form>
-  {% endcall %}
-  {% elif word == "translations" %}
+  {% if word == "translations" %}
   {% call section(_("What it holds"), "holds") %}
   {% if entries is none %}
   <form method="get" action="/library/new" class="flex flex-wrap items-end gap-3 text-sm">

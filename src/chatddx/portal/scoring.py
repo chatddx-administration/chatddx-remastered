@@ -84,17 +84,6 @@ def unit_in(bench: Bench, scorer: str, view: int) -> str:
     return unit_of(resolve(bench.store.get, scorer, Scorer), view)
 
 
-def blank(code: schemas.ScorerCode, schema: str) -> dict[str, Any]:
-    unjudged = [m.name for m in code.metrics if not m.judged]
-    return {
-        "kind": "scorer",
-        "entry_point": code.entry_point,
-        "version": code.version,
-        "expectation_schema": schema,
-        "views": [{"metric": unjudged[0] if unjudged else code.metrics[0].name}],
-    }
-
-
 def scorer_choices(
     bench: Bench, code: schemas.ScorerCode, judged: Iterable[str] = ()
 ) -> dict[str, Any]:

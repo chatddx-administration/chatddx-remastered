@@ -55,7 +55,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name`
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
 
 ## `AskedBy` `@dataclass(frozen=True)`
 `src/chatddx/portal/scoring.py:AskedBy`
@@ -140,25 +140,6 @@ Raises:
 
 `type BenchDep = Annotated[Bench, Depends(page_bench)]`
 
-## `blank`
-`src/chatddx/portal/scoring.py:blank`
-
-* `code: schemas.ScorerCode`
-* `schema: str`
-* ∟`dict[str, Any]`
-
-## `building` `@router.post("/cases/{family}/cases")`
-`src/chatddx/portal/cases.py:building`
-
-* `request: Request`
-* `bench: BenchDep`
-* `family: int`
-* `appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None`
-* ∟`Response`
-
-Raises:
-1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)` (through `_case_page`)
-
 ## `built`
 `src/chatddx/portal/cases.py:built`
 
@@ -190,7 +171,7 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)` (through `_case_page`)
+1. `NotFound`: `"no version %(at)s of case %(family)s: it has %(versions)s", at=at, family=family, versions=len(bindings)`
 
 ## `Cased` `(Protocol)`
 `src/chatddx/portal/titles.py:Cased`
@@ -327,9 +308,10 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
-2. `Invalid`: `"configuration %(thread)s is written by hand: it has no recipe to pick parts of", thread=thread`
-3. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
+1. `NotFound`: `"no page of %(kind)s %(thread)s: it is in Review, in the case it goes with", kind=display_kind(word), thread=thread` (through `_thread_page`)
+2. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+3. `Invalid`: `"configuration %(thread)s is written by hand: it has no recipe to pick parts of", thread=thread`
+4. `Invalid`: `"labels: %(refused)s", refused=e.errors()[0]["msg"]` (from `ValidationError`, through `_labels`)
 
 ## `editors`
 `src/chatddx/portal/editors.py:editors`
@@ -479,6 +461,11 @@ Raises:
 * `request: Request`
 * `bench: BenchDep`
 * ∟`Response`
+
+## `IN_REVIEW`
+`src/chatddx/portal/shelves.py:IN_REVIEW`
+
+`IN_REVIEW = frozenset({"appendix"})`
 
 ## `IN_WORLD`
 `src/chatddx/portal/shelves.py:IN_WORLD`
@@ -688,6 +675,20 @@ Raises:
 * `e: Exception`
 * ∟`str`
 
+## `removing_in_review` `@router.post("/review/{family}/appendices/{at}/remove")`
+`src/chatddx/portal/review.py:removing_in_review`
+
+* `bench: BenchDep`
+* `family: int`
+* `at: int`
+* `case: Annotated[str, Form()]`
+* `back: Annotated[str | None, Form()] = None`
+* ∟`Response`
+
+Raises:
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
+2. `NotFound`: `"no appendix %(at)s in %(case)s", at=at, case=display_case(picked.titled)`
+
 ## `replacing` `@router.post("/cases/{family}/replacement")`
 `src/chatddx/portal/cases.py:replacing`
 
@@ -740,12 +741,18 @@ Raises:
 * `schema: str | None = None`
 * `scorer: int | None = None`
 * `tag: Tags = None`
+* `language: Tags = None`
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name`
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
 2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema`
 3. `NotFound`: `"no scorer %(scorer)s reading that schema for you", scorer=scorer`
+
+## `REVIEWED`
+`src/chatddx/portal/shelves.py:REVIEWED`
+
+`REVIEWED = frozenset({"case"})`
 
 ## `reviewing` `@router.get("/review")`
 `src/chatddx/portal/review.py:reviewing`
@@ -753,6 +760,7 @@ Raises:
 * `request: Request`
 * `bench: BenchDep`
 * `tag: Tags = None`
+* `language: Tags = None`
 * ∟`Response`
 
 ## `ROUTE`
@@ -866,7 +874,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+1. `NotFound`: `"no page of %(kind)s %(thread)s: it is in Review, in the case it goes with", kind=display_kind(word), thread=thread` (through `_thread_page`)
+2. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `scorer_choices`
 `src/chatddx/portal/scoring.py:scorer_choices`
@@ -942,6 +951,7 @@ Raises:
 * `about: str`
 * `mine: int`
 * `seen: int`
+* `reviewed: bool`
 
 ## `shelved`
 `src/chatddx/portal/shelves.py:shelved`
@@ -1074,7 +1084,8 @@ Raises:
 * ∟`Response`
 
 Raises:
-1. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
+1. `NotFound`: `"no page of %(kind)s %(thread)s: it is in Review, in the case it goes with", kind=display_kind(word), thread=thread` (through `_thread_page`)
+2. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
 ## `to_sign_in`
 `src/chatddx/portal/pages.py:to_sign_in`
@@ -1209,10 +1220,3 @@ Raises:
 Raises:
 1. `ValueError`: `tr("translations hold a language or more: translate a text, or delete them")`
 2. `ValueError`: `e.errors()[0]["msg"].removeprefix("Value error, ")` (from `ValidationError`)
-
-## `written_for`
-`src/chatddx/portal/cases.py:written_for`
-
-* `bench: Bench`
-* `family: int`
-* ∟`list[schemas.Thread]`

@@ -347,6 +347,11 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
     assert '#, fuzzy\nmsgid "The Library"\nmsgstr "Bibliotek"' in moved.written
     assert '"%(n)s run"' not in moved.written
 
+    _ = moved.path.write_text(moved.written.replace("#, fuzzy\n", "#, \n"))
+    [reviewed] = proofs([], root, catalogs)
+    assert reviewed.behind and reviewed.fuzzy == 0
+    assert f'#: {template}\nmsgid "The Library"\nmsgstr "Bibliotek"' in reviewed.written
+
 
 def test_an_island_s_page_holds_what_the_islands_say_and_what_is_said_below_the_portal(
     tmp_path: Path,

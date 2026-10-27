@@ -5,13 +5,17 @@ This document contains project-wide instructions for agents.
 ## Environment
 
 - Project-wide settings are in `chatddx.settings`.
-- Archeology is not allowed unless said otherwise, the commit given has all you need.
+- Archeology is not allowed unless said otherwise; the commit given has all you need.
 
-## Workflow
+## Session
 
 Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`.
 
-When asked to hand over, run `./dev/agent.sh hand-over`.
+When asked to hand over:
+
+1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" in the files the session has touched,
+   pre-existing included.
+2. Run `./dev/agent.sh hand-over`.
 
 All `./dev/agent.sh` commands are silent on success or print instructions for you to act on. All `./dev/agent.sh` exits
 are 0 except `turn-end`, which exits 2 on failure.
@@ -34,18 +38,18 @@ If it's a runtime error that could have been known at boot:
 1. write a check that crashes it at boot
 2. attach a "fix boot-check <boot-check>" message, should it occur at runtime
 
-### 2. Raw writes to stderr and/or edges
+### 2. Raw writes to stderr
 
-These are for developers and ops, so:
+If it needs the attention of developers or operations:
 
 - minimize tampering with the message
 - maximize simplicity in handling
 
-### 3. Inform UX runtime
+### 3. Tell the user
 
-Users should not be able to cause errors, and so the possibility for error should be addressed rather than the error
-itself. If it's not a good time for that kind of investigation, raise `Whoops(message, pass_on)` and move on. Either
-way, tell the user, in `message`:
+If it needs the attention of the user, consider that users should not be able to cause errors, and so the possibility
+for error should be addressed rather than the error itself. If it's not a good time for that kind of investigation,
+raise `Whoops(message, pass_on)` and move on. Either way, tell the user, in `message`:
 
 - what's going on
 - what they can do now
@@ -54,8 +58,8 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 ## Tests and checks
 
-`./check.sh [stage]...` runs the stages named, or all of them, side by side, ~250s for all, mostly due to browser tests
-and the budget run.
+- `./check.sh` checks everything and takes ~250s, mostly due to browser tests and the budget run.
+- `./write.sh` writes the OpenAPI document, locale catalogs, stamps and formats the code.
 
 ### Python
 
@@ -77,12 +81,11 @@ and the budget run.
 - `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets
   through.
 - `./check.sh format` checks both.
-- `./write.sh` runs both, and writes what else follows from the code: the OpenAPI document, the catalogs and the stamps.
 
 ### Browser
 
-- `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s, against the frontend as
-  `pnpm --dir frontend build` last built it.
+- run `pnpm --dir frontend build` first if the frontend changed
+- `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s
 
 ### Nix
 
@@ -96,7 +99,7 @@ Agents aren't expected to run this, just know it exists.
 
 ### Docs
 
-- `chatddx refcheck` checks for broken references and commits off main.
+- `chatddx refcheck` checks for broken references including commits not in main.
 
 ## Development stages
 
@@ -113,13 +116,8 @@ A thing under development is in one of the following stages:
 9. Cemented: TBD
 10. Protected: TBD
 
-Drafts and above are declared in `src/chatddx/settings.py:STAGES`, and `chatddx stamp check` fails on a module in
-`src/chatddx/` without one. What `chatddx stamp` writes of a module from which stage on is
-`src/chatddx/settings.py:STAMPED_FROM`.
-
-Things can bounce around freely across these stages but are only in one stage at a time, which `chatddx stamp check`
-checks of a module: an `agents/wip-<name>.md` past Drafted, or a `docs/modules/<name>.md` before Solidified, is a module
-in two. A doc is moved in a commit of its own, and a move entails deduplication and updating references.
+Things can bounce around freely across these stages but are only in one stage at a time, a doc is moved in a commit of
+its own, and a move entails deduplication and updating references.
 
 ## Documentation
 
@@ -133,24 +131,19 @@ in two. A doc is moved in a commit of its own, and a move entails deduplication 
 
 - A) Every line of comment imposes a readability tax.
 - B) A future reader can be saved work by knowing about non-evident details.
-- ∟ When B is considerable enough to offset A, a comment is justified.
+- ⇒ When B is considerable enough to offset A, a comment is justified.
 
 1. Prefix with the comment's nature
 2. Tell what's non-evident and only what the code doesn't already tell
 
-Before running `./dev/agent.sh hand-over`, remove every comment that doesn't pass, pre-existing included.
-
 ## Docstrings
 
-Public solidified entry points may have a docstring that describes their cost and utility. The cost is the resources it
-invokes, locks it holds and complexity of its operations. The utility is derived from its responsibility without any
-assumptions about the caller.
+Public names may have a docstring that describes their cost and utility. The cost is the resources it invokes, locks it
+holds and complexity of its operations. The utility is derived from its responsibility without any assumptions about the
+caller.
 
-Docstrings are stamped along with signature, raises and findings and the docstring should read as a direct continuation
-of these.
+Docstrings are stamped along with signature and raises and the docstring should read as a direct continuation of these.
 
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
-- ∟ When B outweighs A, a docstring by that amount is justified.
-
-Before running `./dev/agent.sh hand-over`, remove every docstring that doesn't pass, pre-existing included.
+- ⇒ When B outweighs A, a docstring by that amount is justified.

@@ -123,6 +123,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # Accommodating for configurations, which a person writes as recipes, not as components.
 ```
 
+## `src/chatddx/portal/shelves.py:IN_REVIEW`
+
+```
+# Policy: an appendix is written and shown in Review alone, in the case it goes with, so
+# the Library shelves none and has no page of one; a case built of appendices is written
+# there too, so the Library shelves cases locked.
+```
+
 ## `src/chatddx/portal/shelves.py:IN_WORLD`
 
 ```

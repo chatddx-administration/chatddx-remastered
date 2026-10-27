@@ -15,7 +15,8 @@
       {% set here = k.word == word %}
       <li><a href="/library?kind={{ k.word }}"{% if here %} aria-current="page"{% endif %} class="flex items-center gap-2 px-2 py-1">
         <span class="min-w-0 flex-1 truncate">{{ k.display_kind }}</span>
-        {% if shelf.read_only %}<span class="text-muted-foreground" title="{{ _('Loaded with data sets: read here, not written') }}">{{ locked() }}<span class="sr-only">{{ pgettext("after a kind's word", ", loaded with data sets") }}</span></span>{% endif %}
+        {% if shelf.read_only %}<span class="text-muted-foreground" title="{{ _('Loaded with data sets: read here, not written') }}">{{ locked() }}<span class="sr-only">{{ pgettext("after a kind's word", ", loaded with data sets") }}</span></span>
+        {%- elif k.reviewed %}<span class="text-muted-foreground" title="{{ _('Written in Review: read here, not written') }}">{{ locked() }}<span class="sr-only">{{ pgettext("after a kind's word", ", written in Review") }}</span></span>{% endif %}
         <span class="text-xs tabular-nums text-muted-foreground">{{ k.seen }}</span>
       </a></li>
       {% endfor %}

@@ -378,6 +378,10 @@ def proofs(
     for tag, path in sorted(paths.items()):
         current = path.read_text() if path.exists() else None
         catalog = _begun(tag) if current is None else read_po(StringIO(current), tag)
+        # Accommodating for Babel, which reads the "#, " left where a message's only flag,
+        # fuzzy, is deleted by hand as a flag of its own, and writes it back.
+        for m in catalog:
+            m.flags.discard("")
         # Accommodating for Babel, which matches a new message to an untranslated plural one as
         # if it were translated: what holds no translation comes anew from the code.
         for m in [m for m in catalog if m.id and not _translated(m)]:

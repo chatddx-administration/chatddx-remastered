@@ -29,12 +29,16 @@ def say(
 
     Heads-up:
     - Only families take language.
+    - A family's tags and language are said by those it is shared with as well as by
+      its owner; the rest of it, and of a thread, by its owner alone.
     - An expectation thread is refused while the person owns another of its case and
       schema.
     """
     what = _what(seen, subject)
     about = read.about(seen.rows, subject)
-    if about.owner != seen.person.id:
+    tagging = (name, description, collaborators, deleted) == (..., ..., None, None)
+    shared = subject.family is not None and collaborates(seen.person.id, about)
+    if about.owner != seen.person.id and not (tagging and shared):
         raise NotFound(f"no {what} of yours")
     changing = (name, description, tags, collaborators, language) != (
         ...,

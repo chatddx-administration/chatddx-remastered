@@ -206,9 +206,9 @@
   box-shadow: 0 0 40px -10px color-mix(in oklab, var(--primary) 40%, transparent);
 }
 
-/* Policy: a button is styled by being one, so a template's buttons carry no utilities, only their kind: primary, danger, small. */
+/* Policy: a button is styled by being one, so a template's buttons carry no utilities, only their kind: primary, danger, small, icon. */
 @layer components {
-  :is(button:not([class]), button.primary, button.danger, button.small) {
+  :is(button:not([class]), button.primary, button.danger, button.small, button.icon) {
     @apply inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-1.5 text-sm leading-5 font-medium text-foreground shadow-xs transition-colors select-none;
     &:hover {
       @apply bg-muted;
@@ -262,6 +262,16 @@
   }
   button.small {
     @apply min-h-7 gap-1.5 px-2.5 py-0.5 text-xs leading-4;
+  }
+  button.icon {
+    @apply size-7 min-h-7 border-transparent bg-transparent p-0 text-muted-foreground shadow-none;
+    &:hover,
+    &[aria-pressed="true"] {
+      @apply text-foreground;
+    }
+    &[aria-pressed="true"] {
+      @apply bg-muted;
+    }
   }
 
   /* Policy: what was pressed shows until the next page comes, as base.html's script marks it. */

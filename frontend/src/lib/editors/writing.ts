@@ -7,7 +7,7 @@ export type Component = Schemas["ComponentBody"];
 
 export function said(editing: Editing, name: string, unchanged: boolean): string {
   if (editing.mode === "edit") {
-    return unchanged ? t("Nothing to save: it holds this already.") : t("Saves a new version of it.");
+    return unchanged ? "" : t("Saves a new version of it.");
   }
   if (!name.trim()) return t("Give it a name to save it.");
   return editing.mode === "new"

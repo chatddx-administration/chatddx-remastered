@@ -20,10 +20,13 @@ from chatddx.test.world import (
     GPT_OSS_ARTIFACT,
     JUDGE,
     LINES,
+    MISTRAL_ARTIFACT,
     NATIVE,
     OFF,
     QWEN_ARTIFACT,
+    QWEN_BARE_ARTIFACT,
     QWEN_MODEL,
+    UNKNOWN_MODEL,
 )
 
 
@@ -38,7 +41,8 @@ def test_the_library_lists_each_kind_one_s_own_first(signed: TestClient) -> None
     assert page.index(f'/threads/{mine[0]["id"]}"') < page.index(
         f'/threads/{others[0]["id"]}"'
     )
-    assert 'href="/library?kind=appendix"' in page and "Library" in page
+    assert 'href="/library?kind=case"' in page and "Library" in page
+    assert "/library?kind=appendix" not in page
     assert signed.get("/library?kind=stack").status_code == 404
 
 
@@ -63,6 +67,11 @@ def test_the_library_shelves_every_kind_under_its_heading_with_what_it_is(
             rf'href="/library\?kind={word}"[^>]*>(.*?)</a>', page, re.DOTALL
         )
         assert ("loaded with data sets" in entry) == (word != "reasoning"), word
+    for word in ("case", "expectation"):
+        [entry, *_] = re.findall(
+            rf'href="/library\?kind={word}"[^>]*>(.*?)</a>', page, re.DOTALL
+        )
+        assert ("written in Review" in entry) == (word == "case"), word
 
     tab = shown(signed, "/library?kind=reasoning")
     assert 'href="/library?kind=reasoning" aria-current="page"' in tab
@@ -231,8 +240,45 @@ def test_a_thread_s_fields_are_edited_by_its_owner_and_read_by_others(
 
 
 @pytest.mark.slow
+def test_a_scorer_s_views_are_offered_what_they_can_read_and_judges_to_ask(
+    signed: TestClient,
+) -> None:
+    query = {"kind": "scorer", "name": "judged"}
+    [judged] = signed.get("/api/threads", params=query).json()
+    forks = f"/api/threads/{judged['id']}/forks"
+    mine = signed.post(forks, json={"name": "mine"}).json()
+    page = shown(signed, f"/threads/{mine['id']}")
+    held = page.split('<script type="application/json" id="library-props">', 1)[1]
+    scoring = json.loads(held.split("</script>", 1)[0])["scoring"]
+    body = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
+    assert {v["judge"] for v in body["views"] if v["judge"]} <= set(scoring["titles"])
+    judges = signed.get("/api/threads", params={"kind": "judge"}).json()
+    assert {j["digest"] for j in scoring["judges"]} == {
+        j["head"]["digest"] for j in judges
+    }
+    verdict = next(j for j in scoring["judges"] if j["name"] == "verdict")
+    assert verdict["output_schema"]["title"] == "Verdict" and verdict["seeds"] == [1]
+    assert not any("texts" in j for j in scoring["judges"])
+    query = {"kind": "configuration", "purpose": "judge"}
+    judging = signed.get("/api/threads", params=query).json()
+    assert {j["digest"] for j in scoring["judging"]} == {
+        j["head"]["digest"] for j in judging
+    }
+    assert {m["name"] for m in scoring["models"]} == {
+        QWEN_ARTIFACT,
+        QWEN_BARE_ARTIFACT,
+        GPT_OSS_ARTIFACT,
+        MISTRAL_ARTIFACT,
+        UNKNOWN_MODEL,
+    }
+    code = signed.get("/api/scorer-code").json()[0]
+    assert scoring["metrics"] == code["metrics"]
+    assert None in {o["title"] for o in scoring["outputs"]}
+
+
+@pytest.mark.slow
 def test_a_thread_s_form_sent_as_it_is_writes_nothing(signed: TestClient) -> None:
-    for word in (*CHUNK_PARTS, "appendix", "expectation", "scorer", "judge"):
+    for word in (*CHUNK_PARTS, "expectation", "scorer", "judge"):
         query = {"kind": word, "owner": "alice"}
         for t in signed.get("/api/threads", params=query).json():
             path = f"/threads/{t['id']}"
@@ -626,24 +672,22 @@ def test_a_scorer_is_written_from_nothing_with_its_labels(signed: TestClient) ->
 
 
 @pytest.mark.slow
-def test_an_appendix_and_an_expectation_are_written_from_nothing(
+def test_an_expectation_is_written_from_nothing_and_an_appendix_only_in_review(
     signed: TestClient,
 ) -> None:
+    assert signed.get("/library?kind=appendix").status_code == 404
+    for kind in ("appendix", "case"):
+        got = signed.get("/library/new", params={"kind": kind})
+        assert got.status_code == 404 and f"no {kind} is begun here" in got.text
     crlf = family(signed)
-    [case, *_] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    vignette = signed.get(f"/api/components/{case['case']}").json()["body"]["vignette"]
-    picking = shown(signed, "/library/new?kind=appendix")
-    assert 'name="f.vignette"' not in picking and 'name="f.text"' not in picking
-    assert f'<option value="{crlf["id"]}">crlf</option>' in picking
-    action = f"/library/new?kind=appendix&family={crlf['id']}"
-    page = shown(signed, action)
-    assert 'name="f.vignette"' not in page
-    written = {**submitted(page, action), "name": ["fluid"]}
-    got = signed.post(action, data={**written, "f.text": ["Free fluid.\r\n"]})
-    assert got.status_code == 303
-    fluid = signed.get(f"/api{got.headers['location']}").json()
-    held = signed.get(f"/api/components/{fluid['head']['digest']}").json()["body"]
-    assert (held["vignette"], held["text"]) == (vignette, "Free fluid.\n")
+    given = {"name": "fluid", "text": "Free fluid."}
+    assert (
+        signed.post(f"/review/{crlf['id']}/appendices", data=given).status_code == 303
+    )
+    query = {"kind": "appendix", "owner": "alice", "name": "fluid"}
+    [fluid] = signed.get("/api/threads", params=query).json()
+    got = signed.get(f"/threads/{fluid['id']}")
+    assert got.status_code == 404 and "it is in Review" in got.text
 
     [mine] = signed.get(
         "/api/threads", params={"kind": "expectation", "owner": "alice"}

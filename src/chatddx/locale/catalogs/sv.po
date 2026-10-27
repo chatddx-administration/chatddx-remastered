@@ -15,10 +15,6 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #: src/chatddx/portal/cases.py
-msgid "a case is built of one appendix or more: pick one"
-msgstr "ett fall kan ha en eller fler bilagor: välj en"
-
-#: src/chatddx/portal/cases.py
 msgid "pick one case or more to take for"
 msgstr "välj ett fall eller fler att ta för"
 
@@ -67,8 +63,7 @@ msgstr "Det går inte"
 msgid "expectation for %(case)s"
 msgstr "facit för %(case)s"
 
-#: frontend/src/lib/library/editors.ts frontend/src/lib/review/Expected.svelte
-#: frontend/src/lib/scorer/Composer.svelte
+#: frontend/src/lib/library/editors.ts
 #: frontend/src/lib/scorer/ScorerViews.svelte src/chatddx/portal/review.py
 #: src/chatddx/portal/scoring.py
 #, python-format
@@ -126,23 +121,12 @@ msgid "Cases"
 msgstr "Fall"
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "So that every model is asked about the same patients, and graded against "
 "the same good answers."
 msgstr "Så att varje modell frågas om samma patienter och rättas mot samma facit."
 
 #: src/chatddx/portal/shelves.py
-#, 
-msgid ""
-"What a vignette leaves out, such as lab results, written so that a case "
-"can include it."
-msgstr ""
-"Det en vinjett saknar, som labbsvar, skrivet så att ett fall kan ta med "
-"det."
-
-#: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "A vignette and the appendices sent with it, so that every model is asked "
 "the same."
@@ -151,7 +135,6 @@ msgstr ""
 "om samma sak."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "What a good answer to one case holds, so that answers to it can be graded."
 msgstr "Vad ett bra svar på ett fall innehåller, så att svar på det kan rättas."
 
@@ -160,7 +143,6 @@ msgid "Configurations"
 msgstr "Konfigurationer"
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "So that what is sent to a model can be changed a part at a time, and the "
 "changes compared."
@@ -169,7 +151,6 @@ msgstr ""
 "ändringarna jämföras."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "Everything sent with a case, put together from parts, so that one can "
 "change while the rest hold still."
@@ -178,50 +159,42 @@ msgstr ""
 "medan resten står still."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "Worked examples sent before the case, to show the model what is wanted."
 msgstr ""
 "Lösta exempel som skickas före fallet, för att visa modellen vad som "
 "önskas."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "The first message, telling the model its role and its task."
 msgstr "Det första meddelandet, som ger modellen dess roll och dess uppgift."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "The shape an answer must take, so that it can be read and graded."
 msgstr "Formen ett svar måste ha, så att det kan läsas och rättas."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "For request options no other part covers, sent as written."
 msgstr ""
 "För förfrågningsval som ingen annan del täcker, skickade som de är "
 "skrivna."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "The last message, which puts the case to the model and asks for an answer."
 msgstr ""
 "Det sista meddelandet, som lägger fram fallet för modellen och ber om ett"
 " svar."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "How much the model thinks before it answers, which can change the answer."
 msgstr "Hur mycket modellen tänker innan den svarar, vilket kan ändra svaret."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "To steer how freely the model picks its words, and how long it may answer."
 msgstr ""
 "För att styra hur fritt modellen väljer sina ord, och hur långt den får "
 "svara."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "The tools a configuration offers and how to use them, so that a model can"
 " look things up."
@@ -230,7 +203,6 @@ msgstr ""
 "kan slå upp saker."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "A configuration's texts in another language, so that a case is asked in "
 "its own language."
@@ -245,7 +217,6 @@ msgid "Scoring"
 msgstr "Rättning"
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "So that answers can be compared, each graded against what a good answer "
 "holds."
@@ -254,14 +225,12 @@ msgstr ""
 "innehåller."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "A model that grades what no pattern can, asked the same way each time."
 msgstr ""
 "En modell som bedömer det inget mönster kan, tillfrågad på samma sätt "
 "varje gång."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "Grades answers against expectations, so that configurations can be "
 "compared by numbers."
@@ -272,14 +241,12 @@ msgid "Trials"
 msgstr "Försök"
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "So that a run can be repeated: the same configuration, cases and seeds "
 "again."
 msgstr "Så att en körning kan upprepas: samma konfiguration, fall och seeds igen."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "A configuration with its cases and seeds fixed, so that its run can be "
 "repeated."
@@ -288,12 +255,10 @@ msgstr ""
 "kan upprepas."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid "Operations"
 msgstr "Drift"
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "Shipped with the data sets by developers and ops, so that everyone picks "
 "from the same; read here, not written."
@@ -302,7 +267,6 @@ msgstr ""
 "ur samma; läses här, skrivs inte."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "Fixed probes sent with a run, to catch an engine that changed between "
 "runs."
@@ -311,14 +275,12 @@ msgstr ""
 "som ändrats mellan körningar."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "The form expectations are written in, so that a scorer knows where to "
 "look."
 msgstr "Formen facit skrivs i, så att en rättare vet var den ska titta."
 
 #: src/chatddx/portal/shelves.py
-#, 
 msgid ""
 "A function a model may call, such as a web search, to look up what it "
 "doesn't know."
@@ -1473,12 +1435,6 @@ msgstr "inget försök %(thread)s för %(login)s"
 #: src/chatddx/portal/review.py
 #, python-format
 msgctxt "refusal"
-msgid "no case %(case)s of %(family)s"
-msgstr "inget fall %(case)s av %(family)s"
-
-#: src/chatddx/portal/review.py
-#, python-format
-msgctxt "refusal"
 msgid "no expectation schema %(schema)s for you"
 msgstr "inget facitschema %(schema)s för dig"
 
@@ -1491,8 +1447,20 @@ msgstr "ingen rättare %(scorer)s som läser det schemat för dig"
 #: src/chatddx/portal/review.py
 #, python-format
 msgctxt "refusal"
+msgid "no appendix %(at)s in %(case)s"
+msgstr "ingen bilaga %(at)s i %(case)s"
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgctxt "refusal"
 msgid "no case %(case)s of family %(family)s"
 msgstr "inget fall %(case)s av familjen %(family)s"
+
+#: src/chatddx/portal/review.py
+#, python-format
+msgctxt "refusal"
+msgid "no case %(case)s of %(family)s"
+msgstr "inget fall %(case)s av %(family)s"
 
 #: src/chatddx/portal/runs.py
 msgctxt "refusal"
@@ -1540,6 +1508,14 @@ msgstr "etiketter: %(refused)s"
 msgctxt "refusal"
 msgid "no %(kind)s is begun here: what is begun here is %(kinds)s"
 msgstr "ingen %(kind)s påbörjas här: det som påbörjas här är %(kinds)s"
+
+#: src/chatddx/portal/threads.py
+#, python-format
+msgctxt "refusal"
+msgid "no page of %(kind)s %(thread)s: it is in Review, in the case it goes with"
+msgstr ""
+"ingen sida för %(kind)s %(thread)s: den finns i Granskning, i fallet den "
+"hör till"
 
 #: src/chatddx/portal/threads.py
 #, python-format
@@ -1706,10 +1682,6 @@ msgid "Sign out"
 msgstr "Logga ut"
 
 #: src/chatddx/portal/templates/begun.html
-msgid "A new appendix"
-msgstr "En ny bilaga"
-
-#: src/chatddx/portal/templates/begun.html
 msgid "A new configuration"
 msgstr "En ny konfiguration"
 
@@ -1750,7 +1722,6 @@ msgstr "Ett nytt resonemang"
 msgid "A new sampling"
 msgstr "En ny sampling"
 
-#: frontend/src/lib/scorer/Composer.svelte
 #: src/chatddx/portal/templates/begun.html
 msgid "A new scorer"
 msgstr "En ny rättare"
@@ -1791,22 +1762,6 @@ msgstr "Brödsmulor"
 #: src/chatddx/portal/templates/begun.html
 msgid "A thread of your own, from what is given here."
 msgstr "En egen tråd, utifrån det som visas här."
-
-#: src/chatddx/portal/templates/begun.html
-msgid "Its case"
-msgstr "Fall"
-
-#: src/chatddx/portal/templates/begun.html
-msgid "Write one for it"
-msgstr "Skriv en till det"
-
-#: src/chatddx/portal/templates/begun.html
-msgid ""
-"An appendix is written for one case's vignette, and sent with it by the "
-"cases that include it: pick the case first. A case's page begins one too."
-msgstr ""
-"En bilaga skrivs till ett falls vinjett, och skickas med den av de fall "
-"som tar med den: välj fallet först. Ett falls sida påbörjar också en."
 
 #: src/chatddx/portal/templates/begun.html
 #: src/chatddx/portal/templates/case.html
@@ -1900,6 +1855,7 @@ msgstr "Skriver en ny egen tråd."
 msgid "You deleted it: nobody else sees it, and it isn't offered anywhere."
 msgstr "Du har raderat detta: ingen annan ser det, och det erbjuds ingenstans."
 
+#: frontend/src/lib/review/Expected.svelte
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/library.html
 #: src/chatddx/portal/templates/thread.html
@@ -2073,36 +2029,6 @@ msgid "None stored."
 msgstr "Ingen lagrad."
 
 #: src/chatddx/portal/templates/case.html
-msgid "Begun of it"
-msgstr "Påbörjat av det"
-
-#: src/chatddx/portal/templates/case.html
-msgid "A case of its appendices"
-msgstr "Ett fall av dess bilagor"
-
-#: src/chatddx/portal/templates/case.html
-msgid "A case of its appendices, picked one a line, in order:"
-msgstr "Ett fall av dess bilagor, valda en per rad, i ordning:"
-
-#: src/chatddx/portal/templates/case.html
-#, python-format
-msgid "appendix %(n)s"
-msgstr "bilaga %(n)s"
-
-#: src/chatddx/portal/templates/case.html
-msgctxt "no appendix"
-msgid "none"
-msgstr "ingen"
-
-#: src/chatddx/portal/templates/case.html
-msgid "Build it"
-msgstr "Bygg"
-
-#: src/chatddx/portal/templates/case.html
-msgid "A new appendix of its vignette"
-msgstr "En ny bilaga till dess vinjett"
-
-#: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/thread.html
 msgid "Its versions"
 msgstr "Versioner"
@@ -2192,7 +2118,6 @@ msgid "runs"
 msgstr "körningar"
 
 #: src/chatddx/portal/templates/compare.html
-#, 
 msgid ""
 "To see how runs fare against each other, side by side over the items they"
 " all hold."
@@ -2687,7 +2612,15 @@ msgid ", loaded with data sets"
 msgstr ", laddat med datamängder"
 
 #: src/chatddx/portal/templates/library.html
-#, 
+msgid "Written in Review: read here, not written"
+msgstr "Skrivs i Granskning: läses här, skrivs inte"
+
+#: src/chatddx/portal/templates/library.html
+msgctxt "after a kind's word"
+msgid ", written in Review"
+msgstr ", skrivs i Granskning"
+
+#: src/chatddx/portal/templates/library.html
 msgid ""
 "Everything you work with, kept with every version, so that nothing is "
 "lost and every run can be traced to what it ran. Your own first."
@@ -2763,7 +2696,6 @@ msgid "under any schema"
 msgstr "under vilket schema som helst"
 
 #: src/chatddx/portal/templates/library.html
-#: src/chatddx/portal/templates/review.html
 #, python-format
 msgid "under %(schema)s"
 msgstr "under %(schema)s"
@@ -3046,33 +2978,29 @@ msgstr "%(status)s: %(why)s"
 
 #: frontend/src/lib/paging/Finding.svelte
 #: src/chatddx/portal/templates/macros.html
-#, 
 msgid "Find by what it says"
 msgstr "Sök på det som står"
 
 #: frontend/src/lib/paging/Pages.svelte
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/runs.html
-#, 
 msgctxt "of a list"
 msgid "Pages"
 msgstr "Sidor"
 
 #: frontend/src/lib/paging/Pages.svelte
 #: src/chatddx/portal/templates/macros.html
-#, 
 msgid "Previous"
 msgstr "Föregående"
 
 #: frontend/src/lib/paging/Pages.svelte
 #: src/chatddx/portal/templates/macros.html
-#, , python-format
+#, python-format
 msgid "page %(at)s of %(of)s"
 msgstr "sida %(at)s av %(of)s"
 
 #: frontend/src/lib/paging/Pages.svelte
 #: src/chatddx/portal/templates/macros.html
-#, 
 msgid "Next"
 msgstr "Nästa"
 
@@ -3258,6 +3186,7 @@ msgctxt "no items"
 msgid "none"
 msgstr "inga"
 
+#: frontend/src/lib/schema/SchemaField.svelte
 #: src/chatddx/portal/templates/review.html
 msgid "none expected"
 msgstr "inget förväntat"
@@ -3272,17 +3201,8 @@ msgid "No case to review."
 msgstr "Inget fall att granska."
 
 #: src/chatddx/portal/templates/review.html
-msgid "The case before"
-msgstr "Fallet före"
-
-#: src/chatddx/portal/templates/review.html
-#, python-format
-msgid "%(at)s of %(of)s"
-msgstr "%(at)s av %(of)s"
-
-#: src/chatddx/portal/templates/review.html
-msgid "The case after"
-msgstr "Fallet efter"
+msgid "Filters"
+msgstr "Filter"
 
 #: src/chatddx/portal/templates/review.html
 msgctxt "tags"
@@ -3290,54 +3210,50 @@ msgid "all"
 msgstr "alla"
 
 #: src/chatddx/portal/templates/review.html
-msgid "answered"
-msgstr "besvarat"
+#: src/chatddx/portal/templates/translations.html
+msgid "Languages"
+msgstr "Språk"
 
 #: src/chatddx/portal/templates/review.html
-msgid "expectations to choose from"
-msgstr "flera facit att välja mellan"
+msgid "Can't be checked"
+msgstr "Kan inte kontrolleras"
 
 #: src/chatddx/portal/templates/review.html
-msgid "expected"
-msgstr "facit finns"
+msgid "Needs repairing"
+msgstr "Behöver repareras"
 
 #: src/chatddx/portal/templates/review.html
-msgid "nothing expected of yours"
-msgstr "inget eget facit"
+msgid "In sync"
+msgstr "I synk"
+
+#: src/chatddx/portal/templates/review.html
+msgid "It has cases with appendices"
+msgstr "Har fall med bilagor"
 
 #: src/chatddx/portal/templates/review.html
 msgctxt "after what is expected"
-msgid ", answered"
-msgstr ", besvarat"
+msgid ", with appendices"
+msgstr ", med bilagor"
 
 #: src/chatddx/portal/templates/review.html
-msgid ""
-"<span class=\"inline-block size-2 rounded-full bg-success\"></span> yours"
-" expected, <span class=\"inline-block size-2 rounded-full border border-"
-"muted-foreground\"></span> not yet, <span class=\"inline-block size-2 "
-"rounded-full bg-warning\"></span> to choose from; answered in your runs."
-msgstr ""
-"<span class=\"inline-block size-2 rounded-full bg-success\"></span> ditt "
-"facit, <span class=\"inline-block size-2 rounded-full border border-"
-"muted-foreground\"></span> inte än, <span class=\"inline-block size-2 "
-"rounded-full bg-warning\"></span> att välja mellan; besvarat i dina "
-"körningar."
-
-#: src/chatddx/portal/templates/review.html
-msgid "<kbd>j</kbd> and <kbd>k</kbd> step through them."
-msgstr "<kbd>j</kbd> och <kbd>k</kbd> stegar genom dem."
+#, python-format
+msgctxt "after what is expected"
+msgid ", run %(num)s time"
+msgid_plural ", run %(num)s times"
+msgstr[0] ", kört %(num)s gång"
+msgstr[1] ", kört %(num)s gånger"
 
 #: frontend/src/islands/Home.svelte src/chatddx/portal/templates/review.html
 msgid "The case"
 msgstr "Fallet"
 
 #: src/chatddx/portal/templates/review.html
-msgid "in the Library"
-msgstr "i Biblioteket"
+msgid "Show in the Library"
+msgstr "Visa i Biblioteket"
 
 #: src/chatddx/portal/templates/review.html
-msgid "the vignette alone"
-msgstr "vinjetten ensam"
+msgid "without appendices"
+msgstr "utan bilagor"
 
 #: src/chatddx/portal/templates/review.html
 #, python-format
@@ -3354,28 +3270,26 @@ msgstr ""
 "href=\"/cases/%(family)s/vignette\">en egen sida</a>."
 
 #: src/chatddx/portal/templates/review.html
-msgid "Appendices, in order"
-msgstr "Bilagor, i ordning"
+#: src/chatddx/portal/templates/thread.html
+msgid "Change it"
+msgstr "Ändra"
 
 #: src/chatddx/portal/templates/review.html
-msgid "its page"
-msgstr "dess sida"
+msgid "Take it out of the case"
+msgstr "Ta bort den ur fallet"
 
 #: src/chatddx/portal/templates/review.html
-msgid "None in this case."
-msgstr "Inga i det här fallet."
-
-#: src/chatddx/portal/templates/review.html
-msgid "Add appendices"
-msgstr "Lägg till bilagor"
+msgid "Add an appendix"
+msgstr "Lägg till bilaga"
 
 #: src/chatddx/portal/templates/review.html
 msgid "Text, as it is added to the vignette"
 msgstr "Text, som den läggs till vinjetten"
 
+#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/Saving.svelte
 #: src/chatddx/portal/templates/review.html
-msgid "Write the appendix"
-msgstr "Skriv bilagan"
+msgid "Save"
+msgstr "Spara"
 
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/scoring.html
@@ -3385,20 +3299,6 @@ msgstr "Facit"
 #: src/chatddx/portal/templates/review.html
 msgid "Expectation schemas"
 msgstr "Facitscheman"
-
-#: src/chatddx/portal/templates/review.html
-#: src/chatddx/portal/templates/scoring.html
-msgid "Scorers"
-msgstr "Rättare"
-
-#: src/chatddx/portal/templates/review.html
-#: src/chatddx/portal/templates/scoring.html
-msgid "Read by"
-msgstr "Läses av"
-
-#: src/chatddx/portal/templates/review.html
-msgid "No scorer you see reads this schema."
-msgstr "Ingen rättare som du har tillgång till läser det här schemat."
 
 #: src/chatddx/portal/templates/review.html
 msgid "Shared with you to take:"
@@ -3433,11 +3333,6 @@ msgid "Yours, version of %(at)s."
 msgstr "Din, versionen från %(at)s."
 
 #: src/chatddx/portal/templates/review.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Change it"
-msgstr "Ändra"
-
-#: src/chatddx/portal/templates/review.html
 #, python-format
 msgid ""
 "None of your own. <a class=\"begin\" "
@@ -3445,36 +3340,6 @@ msgid ""
 msgstr ""
 "Ingen egen. <a class=\"begin\" href=\"/cases/%(family)s#holds\">Skriv "
 "din</a> i Biblioteket."
-
-#: src/chatddx/portal/templates/review.html
-#, python-format
-msgid ""
-"What %(name)s reads of it <a class=\"bench font-normal\" "
-"href=\"/scoring/%(id)s\">on Scoring</a>"
-msgstr ""
-"Vad %(name)s läser av det <a class=\"bench font-normal\" "
-"href=\"/scoring/%(id)s\">i Rättning</a>"
-
-#: frontend/src/lib/review/Expected.svelte
-#: src/chatddx/portal/templates/review.html
-#, python-format
-msgid "judge %(judge)s"
-msgstr "bedömare %(judge)s"
-
-#: frontend/src/lib/library/ViewsField.svelte
-#: frontend/src/lib/scorer/Composer.svelte
-#: src/chatddx/portal/templates/review.html
-#: src/chatddx/portal/templates/scoring.html
-msgid "the whole expectation"
-msgstr "hela facit"
-
-#: src/chatddx/portal/templates/review.html
-msgid "Nothing to read: no expectation of yours."
-msgstr "Inget att läsa: inget eget facit."
-
-#: src/chatddx/portal/templates/review.html
-msgid "Reads nothing of it."
-msgstr "Läser inget av den."
 
 #: src/chatddx/portal/templates/review.html
 msgid "Record"
@@ -3813,7 +3678,6 @@ msgstr[0] "Kör"
 msgstr[1] "Kör"
 
 #: src/chatddx/portal/templates/runs.html
-#, 
 msgid ""
 "Your runs, newest first, to follow what is under way and open what has "
 "finished."
@@ -3883,7 +3747,6 @@ msgid "All runs"
 msgstr "Alla körningar"
 
 #: src/chatddx/portal/templates/runs.html
-#, 
 msgid "Find by configuration, part, case or model"
 msgstr "Sök på konfiguration, del, fall eller modell"
 
@@ -3892,7 +3755,7 @@ msgid "Newer"
 msgstr "Nyare"
 
 #: frontend/src/lib/paging/Pages.svelte src/chatddx/portal/templates/runs.html
-#, , python-format
+#, python-format
 msgid "page %(at)s"
 msgstr "sida %(at)s"
 
@@ -3918,6 +3781,10 @@ msgstr ""
 #: src/chatddx/portal/templates/scoring.html
 msgid "Scorers and judges"
 msgstr "Rättare och bedömare"
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Scorers"
+msgstr "Rättare"
 
 #: src/chatddx/portal/templates/scoring.html
 #, python-format
@@ -4046,6 +3913,11 @@ msgstr "hela svaret"
 #, python-format
 msgid "split %(split)s"
 msgstr "delat %(split)s"
+
+#: frontend/src/lib/library/ViewsField.svelte
+#: src/chatddx/portal/templates/scoring.html
+msgid "the whole expectation"
+msgstr "hela facit"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "What it reads"
@@ -4192,6 +4064,10 @@ msgstr "Vad den frågas"
 #: src/chatddx/portal/templates/scoring.html
 msgid "Read with"
 msgstr "Läst med"
+
+#: src/chatddx/portal/templates/scoring.html
+msgid "Read by"
+msgstr "Läses av"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Of what is expected of"
@@ -4529,10 +4405,6 @@ msgid "Its leading or trailing whitespace isn't its source's."
 msgstr "Dess inledande eller avslutande blanksteg är inte källans."
 
 #: src/chatddx/portal/templates/translations.html
-msgid "Languages"
-msgstr "Språk"
-
-#: src/chatddx/portal/templates/translations.html
 msgctxt "languages"
 msgid "Into"
 msgstr "Till"
@@ -4602,7 +4474,6 @@ msgid "Updated"
 msgstr "Uppdaterat"
 
 #: src/chatddx/portal/templates/updated.html
-#, 
 msgid ""
 "What of yours was out of date, updated in this order so that it runs on "
 "the models served now."
@@ -4650,19 +4521,16 @@ msgid "%(name)s from %(provider)s"
 msgstr "%(name)s från %(provider)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no handle"
 msgid "none"
 msgstr "inget"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no endpoint"
 msgid "none"
 msgstr "ingen"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "its versions"
 msgstr "dess versioner"
 
@@ -4682,7 +4550,6 @@ msgid "as %(like)s"
 msgstr "som %(like)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "taken, adding nothing to the request"
 msgstr "godtagen, utan tillägg till förfrågan"
 
@@ -4697,12 +4564,10 @@ msgid "taken: %(note)s"
 msgstr "godtagen: %(note)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "taken"
 msgstr "godtagen"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "What the portal runs on that you don't write, so that every run can say "
 "what answered it and where its cases came from."
@@ -4732,12 +4597,10 @@ msgid "%(rig)s at %(revision)s"
 msgstr "%(rig)s vid %(revision)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Handles"
 msgstr "Alias"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "Names to pick a model by, which stay the same when ops put new weights "
 "under them."
@@ -4746,12 +4609,10 @@ msgstr ""
 "under dem."
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "no endpoint serves its weights, so it can't be picked"
 msgstr "ingen ändpunkt tillhandahåller dess vikter, så det kan inte väljas"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no engine"
 msgid "none"
 msgstr "ingen"
@@ -4761,24 +4622,20 @@ msgid "none: a remote engine"
 msgstr "ingen: en extern inferensserver"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no host"
 msgid "none"
 msgstr "ingen"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no facts"
 msgid "none"
 msgstr "inga"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Weights"
 msgstr "Vikter"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Endpoint"
 msgstr "Ändpunkt"
 
@@ -4787,17 +4644,14 @@ msgid "Host"
 msgstr "Värd"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Facts"
 msgstr "Fakta"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "History"
 msgstr "Historik"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "What is known about each model, so that a configuration asks it only for "
 "what it can do."
@@ -4811,12 +4665,10 @@ msgid "for %(handles)s"
 msgstr "för %(handles)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "no handle here holds it"
 msgstr "inget alias här pekar på den"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Family"
 msgstr "Modellfamilj"
 
@@ -4831,12 +4683,10 @@ msgid "%(total)s billion"
 msgstr "%(total)s miljarder"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Quantization"
 msgstr "Kvantisering"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Context"
 msgstr "Kontext"
 
@@ -4848,37 +4698,30 @@ msgstr[0] "%(num)s token"
 msgstr[1] "%(num)s token"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Licence"
 msgstr "Licens"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Reasoning"
 msgstr "Resonemang"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Level"
 msgstr "Nivå"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "What it does"
 msgstr "Vad den gör"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "thinking budget"
 msgstr "tankebudget"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "default"
 msgstr "standard"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Recommended sampling"
 msgstr "Rekommenderad sampling"
 
@@ -4888,22 +4731,18 @@ msgid "the model's %(config)s"
 msgstr "modellens %(config)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Output contracts"
 msgstr "Svarsformens kontrakt"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Contract"
 msgstr "Kontrakt"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Engines"
 msgstr "Inferensservrar"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "What answers requests, pinned by all that can change an answer, so that a"
 " run says exactly what answered it."
@@ -4917,12 +4756,10 @@ msgid "vLLM %(version)s on %(gpu)s"
 msgstr "vLLM %(version)s på %(gpu)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "a remote API's model"
 msgstr "en modell bakom ett externt API"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "no endpoint serves it"
 msgstr "ingen ändpunkt tillhandahåller den"
 
@@ -4932,13 +4769,11 @@ msgid "kept at <span class=\"font-mono text-xs\">%(path)s</span> on %(host)s"
 msgstr "sparad i <span class=\"font-mono text-xs\">%(path)s</span> på %(host)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no arguments"
 msgid "none"
 msgstr "inga"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgctxt "no variables"
 msgid "none"
 msgstr "inga"
@@ -4953,12 +4788,10 @@ msgstr ""
 "xs\">%(closure)s</span>"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Handle"
 msgstr "Alias"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Hardware"
 msgstr "Hårdvara"
 
@@ -4972,27 +4805,22 @@ msgstr ""
 "%(driver)s"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Runtime"
 msgstr "Körmiljö"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Chat template"
 msgstr "Chattmall"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Arguments"
 msgstr "Argument"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "Environment"
 msgstr "Miljövariabler"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "API"
 msgstr "API"
 
@@ -5001,7 +4829,6 @@ msgid "Endpoints"
 msgstr "Ändpunkter"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "Where each engine is reached, so that a run knows where to send, how much"
 " at once and which cases may go."
@@ -5079,7 +4906,6 @@ msgid "Hosts"
 msgstr "Värdar"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "The machines that run local engines, so that the files an engine pins can"
 " be found on them."
@@ -5101,7 +4927,6 @@ msgid "Chat templates"
 msgstr "Chattmallar"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid "pinned by"
 msgstr "fäst av"
 
@@ -5110,7 +4935,6 @@ msgid "Sources"
 msgstr "Källor"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "Where the vignettes come from, so that a sensitive one goes only where it"
 " is cleared; none is shown here."
@@ -5180,7 +5004,6 @@ msgid "Bindings"
 msgstr "Bindningar"
 
 #: src/chatddx/portal/templates/world.html
-#, 
 msgid ""
 "So that a data set's configurations and judges run on models this portal "
 "serves."
@@ -5248,10 +5071,6 @@ msgstr "%(message)s Kopiera och skicka detta till drift@chatddx.com: %(pass_on)s
 #: frontend/src/lib/api/client.ts
 msgid "the server didn't say why"
 msgstr "servern sa inte varför"
-
-#: frontend/src/lib/editors/writing.ts
-msgid "Nothing to save: it holds this already."
-msgstr "Inget att spara: den innehåller redan det här."
 
 #: frontend/src/lib/editors/writing.ts
 msgid "Saves a new version of it."
@@ -5397,6 +5216,41 @@ msgstr "körningens händelser slutade komma"
 #: frontend/src/lib/runs/progress.ts
 msgid "the run didn't finish"
 msgstr "körningen avslutades inte"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Final diagnosis"
+msgstr "Slutgiltig diagnos"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Possible warnings"
+msgstr "Eventuella varningar"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Must not be missed"
+msgstr "Får ej missas"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Disposition"
+msgstr "Disposition"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Statement"
+msgstr "Utlåtande"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Match"
+msgstr "Matchning"
+
+#: frontend/src/lib/schema/form.ts
+msgctxt "a field"
+msgid "Own note"
+msgstr "Egen anteckning"
 
 #: frontend/src/lib/scorer/judging.ts
 #, python-format
@@ -6063,10 +5917,6 @@ msgid_plural "You have %(n)s named so already; names needn't be unique."
 msgstr[0] "Du har redan en med det namnet; namn behöver inte vara unika."
 msgstr[1] "Du har redan %(n)s med det namnet; namn behöver inte vara unika."
 
-#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/Saving.svelte
-msgid "Save"
-msgstr "Spara"
-
 #: frontend/src/islands/Variation.svelte
 msgid "No runs of it."
 msgstr "Inga körningar av den."
@@ -6103,10 +5953,6 @@ msgstr[1] ""
 #: frontend/src/lib/editors/ExpectationEditor.svelte
 msgid "Write yours"
 msgstr "Skriv din"
-
-#: frontend/src/lib/editors/Findings.svelte
-msgid "Nothing to say of it."
-msgstr "Inget att säga om den."
 
 #: frontend/src/lib/editors/Saving.svelte
 #, python-format
@@ -6172,6 +6018,35 @@ msgstr "Empirisk behandling"
 msgid "Disposition"
 msgstr "Fortsatt omhändertagande"
 
+#: frontend/src/lib/review/About.svelte
+#, python-format
+msgid "Take away the tag %(tag)s"
+msgstr "Ta bort taggen %(tag)s"
+
+#: frontend/src/lib/review/About.svelte
+msgid "A new tag"
+msgstr "Ny tagg"
+
+#: frontend/src/lib/review/About.svelte
+msgid "a new tag…"
+msgstr "ny tagg…"
+
+#: frontend/src/lib/review/About.svelte
+msgid "Its language"
+msgstr "Dess språk"
+
+#: frontend/src/lib/review/About.svelte
+msgid "none"
+msgstr "inget"
+
+#: frontend/src/lib/review/About.svelte
+msgid "no language"
+msgstr "inget språk"
+
+#: frontend/src/lib/review/About.svelte
+msgid "Change its language"
+msgstr "Ändra språk"
+
 #: frontend/src/lib/review/Answer.svelte
 msgid "The answer…"
 msgstr "Svaret…"
@@ -6188,41 +6063,9 @@ msgid "On its run's page"
 msgstr "På dess körnings sida"
 
 #: frontend/src/lib/review/Expected.svelte
-msgid "reads nothing"
-msgstr "läser inget"
-
-#: frontend/src/lib/review/Expected.svelte
 #, python-format
-msgid "reads <span class=\"text-foreground\">%(read)s</span>"
-msgstr "läser <span class=\"text-foreground\">%(read)s</span>"
-
-#: frontend/src/lib/review/Expected.svelte
-#, python-format
-msgid "What reads %(field)s"
-msgstr "Vad som läser %(field)s"
-
-#: frontend/src/lib/review/Expected.svelte
-#, python-format
-msgid "Compose %(scorer)s"
-msgstr "Sätt ihop %(scorer)s"
-
-#: frontend/src/lib/review/Expected.svelte
-#, python-format
-msgid "Compose %(scorer)s as yours"
-msgstr "Sätt ihop %(scorer)s som din"
-
-#: frontend/src/lib/review/Expected.svelte
-msgid "Compose a scorer"
-msgstr "Sätt ihop en rättare"
-
-#: frontend/src/lib/review/Expected.svelte
-msgid "Read elsewhere, or of what isn't written"
-msgstr "Läst någon annanstans, eller av det som inte är skrivet"
-
-#: frontend/src/lib/review/Expected.svelte
-#, python-format
-msgid "Version %(n)s of %(of)s, %(at)s: what each changed"
-msgstr "Version %(n)s av %(of)s, %(at)s: vad var och en ändrade"
+msgid "Version %(n)s of %(of)s, %(at)s"
+msgstr "Version %(n)s av %(of)s, %(at)s"
 
 #: frontend/src/lib/review/Pending.svelte
 msgid "Show it"
@@ -6239,88 +6082,13 @@ msgstr "Vinjetten…"
 
 #: frontend/src/lib/schema/SchemaField.svelte
 #, python-format
-msgid ""
-"<span class=\"font-medium\" title=\"%(about)s\">%(field)s</span>: none "
-"expected"
-msgstr ""
-"<span class=\"font-medium\" title=\"%(about)s\">%(field)s</span>: inget "
-"förväntat"
+msgid "%(field)s by %(author)s"
+msgstr "%(field)s från %(author)s"
 
 #: frontend/src/lib/schema/SchemaField.svelte
 #, python-format
 msgid "Not JSON yet: %(error)s"
 msgstr "Inte JSON än: %(error)s"
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgctxt "a view's value"
-msgid "judged"
-msgstr "av bedömare"
-
-#: frontend/src/lib/scorer/Composer.svelte
-#, python-format
-msgid "replicate %(n)s"
-msgstr "replikat %(n)s"
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "Composing a scorer"
-msgstr "Sätter ihop en rättare"
-
-#: frontend/src/lib/scorer/Composer.svelte
-#, python-format
-msgid "Changing %(scorer)s"
-msgstr "Ändrar %(scorer)s"
-
-#: frontend/src/lib/scorer/Composer.svelte
-#, python-format
-msgid "Making %(scorer)s yours"
-msgstr "Gör %(scorer)s till din"
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "Start a new one"
-msgstr "Börja en ny"
-
-#: frontend/src/lib/scorer/Composer.svelte
-#, python-format
-msgid ""
-"Each view is tried on your run of this case as you change it or what you "
-"expect; nothing is kept until you save. A judged view is scored by its "
-"judge once the scorer is saved and the runs are scored again, in the "
-"record."
-msgid_plural ""
-"Each view is tried on your %(n)s runs of this case as you change it or "
-"what you expect; nothing is kept until you save. A judged view is scored "
-"by its judge once the scorer is saved and the runs are scored again, in "
-"the record."
-msgstr[0] ""
-"Varje vy provas på din körning av det här fallet medan du ändrar den "
-"eller ditt facit; inget sparas förrän du sparar. En vy med bedömare får "
-"sitt värde av sin bedömare när rättaren är sparad och körningarna rättas "
-"igen, i arkivet."
-msgstr[1] ""
-"Varje vy provas på dina %(n)s körningar av det här fallet medan du ändrar"
-" den eller ditt facit; inget sparas förrän du sparar. En vy med bedömare "
-"får sitt värde av sin bedömare när rättaren är sparad och körningarna "
-"rättas igen, i arkivet."
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "Run the case to try the views on its answers."
-msgstr "Kör fallet för att prova vyerna på dess svar."
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "Tried on your answers"
-msgstr "Provad på dina svar"
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "on your answers"
-msgstr "på dina svar"
-
-#: frontend/src/lib/scorer/Composer.svelte
-msgid "What it is asked is changed on Scoring"
-msgstr "Vad den frågas ändras i Rättning"
-
-#: frontend/src/lib/scorer/JudgeAsked.svelte
-msgid "What its judge is asked"
-msgstr "Vad dess bedömare frågas"
 
 #: frontend/src/lib/scorer/JudgeEditor.svelte
 msgid ""

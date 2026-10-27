@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Annotated, Any
 from urllib.parse import parse_qsl, urlencode
 from uuid import UUID
@@ -12,22 +13,21 @@ from chatddx.api import (
     runs as api_runs,
     schemas,
     threads as api,
-    world as api_world,
 )
 from chatddx.api.state import refused
-from chatddx.bench import Ambiguous, Bench, NotFound
-from chatddx.factors.base import Invalid, resolve
-from chatddx.factors.cases import Appendix
-from chatddx.factors.request import Purpose, Skeleton
+from chatddx.bench import Bench, NotFound
+from chatddx.factors.base import Fingerprint, Invalid, resolve
+from chatddx.factors.cases import Appendix, Case, Vignette
+from chatddx.factors.request import Purpose, Skeleton, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
-from chatddx.locale import tr
+from chatddx.locale import display_language, tr
 from chatddx.scorers.shipped import unit_of
+from chatddx.store import fetch_vignette
 
 from .cases import appended, built
 from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
-from .scoring import blank, code_of, scorer_choices, unshipped
 from .titles import display_case
 
 _ANSWERS = 50
@@ -39,10 +39,13 @@ type Tags = Annotated[list[str] | None, Query()]
 
 
 @router.get("/review")
-def reviewing(request: Request, bench: BenchDep, tag: Tags = None) -> Response:
-    listed = _listed(api_families.families(bench), tag)
+def reviewing(
+    request: Request, bench: BenchDep, tag: Tags = None, language: Tags = None
+) -> Response:
+    listed = _listed(api_families.families(bench), tag, language)
     if listed:
-        return RedirectResponse(f"/review/{listed[0].id}{_query(tag=tag)}", 303)
+        kept = _query(tag=tag, language=language)
+        return RedirectResponse(f"/review/{listed[0].id}{kept}", 303)
     return page(request, "review.html", person=bench.person, family=None, tag=tag)
 
 
@@ -55,13 +58,10 @@ def review(
     schema: str | None = None,
     scorer: int | None = None,
     tag: Tags = None,
+    language: Tags = None,
 ) -> Response:
     shown = api_families.family(bench, family)
-    picked = next((c for c in shown.cases if case in (None, c.case)), None)
-    if picked is None:
-        raise NotFound.of(
-            "no case %(case)s of %(family)s", case=str(case), family=shown.name
-        )
+    picked = _picked(shown, case)
     visible = sorted(
         api.threads(bench, "expectation_schema"), key=lambda t: t.name or t.title
     )
@@ -87,9 +87,8 @@ def review(
             "no scorer %(scorer)s reading that schema for you", scorer=scorer
         )
     every = api_families.families(bench)
-    listed = _listed(every, tag)
-    keep = {"tag": tag, "schema": schema, "scorer": scorer}
-    at = next((i for i, f in enumerate(listed) if f.id == family), None)
+    listed = _listed(every, tag, language)
+    keep = {"tag": tag, "language": language, "schema": schema, "scorer": scorer}
     left = _left(bench, ran, held)
     answers = _answers(bench, ran, picked.case, held, left)
     under_way = [r for r, _ in ran if r.job is not None and r.job.status in _OPEN]
@@ -104,15 +103,8 @@ def review(
         ]
     )
     appendices = _appendices(bench, picked.appendices)
-    views = [] if held is None else _views(bench, held, expected)
     query = request.url.query
     back = request.url.path + (f"?{query}" if query else "")
-    previous = None if not at else f"/review/{listed[at - 1].id}{_query(**keep)}"
-    following = (
-        None
-        if at is None or at + 1 == len(listed)
-        else f"/review/{listed[at + 1].id}{_query(**keep)}"
-    )
     props: dict[str, Any] = {
         "family": family,
         "case": picked.case,
@@ -128,14 +120,6 @@ def review(
             "editor": _editing(bench, shown, picked, under, expected, own),
             "digest": None if expected is None else expected.expectation,
             "history": [] if own is None else _history(bench, own),
-            "views": [
-                {
-                    k: v[k]
-                    for k in ("label", "metric", "measures", "judge", "expectation")
-                }
-                for v in views
-            ],
-            "composing": _composing(bench, held, under, ran, picked.case),
         },
         "appendices": [
             None if a["editor"] is None else {k: a[k] for k in ("editor", "digest")}
@@ -146,19 +130,27 @@ def review(
             {"run": str(r.id), "titled": r.titled.model_dump(mode="json")}
             for r in under_way
         ],
-        "previous": previous,
-        "next": following,
+        "about": {
+            "family": family,
+            "tags": shown.tags,
+            "language": shown.language,
+            "languages": _languages(bench, every, shown.language),
+            "editable": bench.person.login in [shown.owner, *shown.collaborators],
+        },
     }
     return page(
         request,
         "review.html",
         person=bench.person,
         family=shown,
-        listed=listed,
-        marks=_marks(bench, listed, under),
+        every=every,
+        listed={f.id for f in listed},
+        marks=_marks(bench, every),
         tags=sorted({t for f in every for t in f.tags}),
+        languages=sorted({f.language for f in every if f.language}),
         tag=tag,
         keep=keep,
+        toggled=_toggled,
         case=picked,
         cases=shown.cases,
         appendices=appendices,
@@ -168,9 +160,8 @@ def review(
         own=own,
         offered=offered,
         carried=_carried(bench, shown, picked, under, expected),
-        scorers=scorers,
         scorer=held,
-        views=views,
+        labels=[] if held is None else held[2],
         answers=answers,
         means=_means(answers, held),
         pending=pending,
@@ -178,9 +169,6 @@ def review(
         configurations=_configurations(bench),
         models=[h.name for h, at in bench.handles() if at is not None],
         most=settings.ITEMS_PER_RUN,
-        at=None if at is None else at + 1,
-        previous=previous,
-        following=following,
         back=back,
         props=props,
         query=_query,
@@ -197,18 +185,30 @@ def appending_in_review(
     case: Annotated[str | None, Form()] = None,
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
-    shown = api_families.family(bench, family)
-    picked = next((c for c in shown.cases if case in (None, c.case)), None)
-    if picked is None:
-        raise NotFound.of(
-            "no case %(case)s of %(family)s", case=str(case), family=shown.name
-        )
+    picked = _picked(api_families.family(bench, family), case)
     made = built(
         bench, family, [*picked.appendices, appended(bench, family, name, text)]
     )
-    path, _, query = within(back or f"/review/{family}").partition("?")
-    kept = [(k, v) for k, v in parse_qsl(query) if k != "case"]
-    return RedirectResponse(f"{path}?{urlencode([*kept, ('case', made)])}", 303)
+    return _moved(family, back, made)
+
+
+@router.post("/review/{family}/appendices/{at}/remove")
+def removing_in_review(
+    bench: BenchDep,
+    family: int,
+    at: int,
+    case: Annotated[str, Form()],
+    back: Annotated[str | None, Form()] = None,
+) -> Response:
+    picked = _picked(api_families.family(bench, family), case)
+    if not 0 <= at < len(picked.appendices):
+        raise NotFound.of(
+            "no appendix %(at)s in %(case)s", at=at, case=display_case(picked.titled)
+        )
+    kept = [a for i, a in enumerate(picked.appendices) if i != at]
+    with refused():
+        made = bench.case(family, kept)
+    return _moved(family, back, made)
 
 
 @router.post("/review/{family}/runs")
@@ -271,30 +271,74 @@ def _query(**given: _Given) -> str:
     return "?" + urlencode(pairs) if pairs else ""
 
 
-def _listed(every: list[schemas.Family], tag: list[str] | None) -> list[schemas.Family]:
-    picked = set(tag or ())
-    return [f for f in every if not picked or picked & set(f.tags)]
+def _picked(shown: schemas.FamilyDetail, case: str | None) -> schemas.FamilyCase:
+    picked = next((c for c in shown.cases if case in (None, c.case)), None)
+    if picked is None:
+        raise NotFound.of(
+            "no case %(case)s of %(family)s", case=str(case), family=shown.name
+        )
+    return picked
 
 
-def _marks(
-    bench: Bench, listed: list[schemas.Family], schema: str | None
-) -> dict[int, dict[str, bool]]:
-    answered = {
-        c for r in bench.runs() for c in resolve(bench.store.get, r.trial, Trial).cases
-    }
-    found: dict[int, dict[str, bool]] = {}
-    for f in listed:
-        try:
-            held = None if schema is None else bench.expectation(f.case, schema)
-            choosing = False
-        except Ambiguous:
-            held, choosing = None, True
+def _moved(family: int, back: str | None, case: str) -> RedirectResponse:
+    path, _, query = within(back or f"/review/{family}").partition("?")
+    kept = [(k, v) for k, v in parse_qsl(query) if k != "case"]
+    return RedirectResponse(f"{path}?{urlencode([*kept, ('case', case)])}", 303)
+
+
+def _listed(
+    every: list[schemas.Family], tag: list[str] | None, language: list[str] | None
+) -> list[schemas.Family]:
+    return [
+        f
+        for f in every
+        if set(tag or ()) <= set(f.tags) and (not language or f.language in language)
+    ]
+
+
+def _toggled(picked: list[str] | None, value: str) -> list[str]:
+    held = [p for p in picked or () if p != value]
+    return held if value in (picked or ()) else [*held, value]
+
+
+def _languages(
+    bench: Bench, every: list[schemas.Family], current: str | None
+) -> list[tuple[str, str]]:
+    found = {f.language for f in every if f.language}
+    found |= {t.language for t in api.threads(bench, "configuration") if t.language}
+    for t in api.threads(bench, "translations"):
+        found |= set(resolve(bench.store.get, t.head.digest, Translations).into)
+    found |= {current} if current else set()
+    return sorted(((t, display_language(t)) for t in found), key=lambda t: t[1])
+
+
+def _marks(bench: Bench, every: list[schemas.Family]) -> dict[int, dict[str, Any]]:
+    held = {f.id: f for f in bench.families()}
+    ran: Counter[str] = Counter()
+    for r in bench.runs():
+        trial = resolve(bench.store.get, r.trial, Trial)
+        for c in set(trial.cases):
+            ran[c] += len(trial.seeds)
+    found: dict[int, dict[str, Any]] = {}
+    for f in every:
+        family = held[f.id]
+        bare = Case(vignette=family.vignette).digest
         found[f.id] = {
-            "expected": held is not None,
-            "choosing": choosing,
-            "answered": f.case in answered,
+            "drifted": _drifted(bench, family.vignette),
+            "appended": any(c != bare for c in family.cases),
+            "ran": sum(ran[c] for c in family.cases),
         }
     return found
+
+
+def _drifted(bench: Bench, vignette: Vignette) -> bool | None:
+    if vignette.fingerprint.key_id is not None:
+        return None
+    try:
+        raw = fetch_vignette(bench.conn, bench.inventory, vignette)
+    except LookupError:
+        return True
+    return Fingerprint.of(raw) != vignette.fingerprint
 
 
 def _appendices(bench: Bench, digests: list[str]) -> list[dict[str, Any]]:
@@ -320,7 +364,6 @@ def _appendices(bench: Bench, digests: list[str]) -> list[dict[str, Any]]:
             {
                 "title": bench.title(d),
                 "text": held.text,
-                "thread": None if t is None else t.id,
                 "editor": editor,
                 "digest": d,
             }
@@ -347,6 +390,7 @@ def _editing(
         return None
     given: dict[str, Any] = {
         "kind": "expectation",
+        "me": bench.person.login,
         "case": picked.case,
         "schema": schema,
         "json_schema": resolve(bench.store.get, schema, ExpectationSchema).json_schema,
@@ -435,38 +479,6 @@ def _scorers(bench: Bench, schema: str | None) -> list[Held]:
     return sorted(found, key=lambda s: (s[0].owner != login, s[0].name or s[0].title))
 
 
-def _views(
-    bench: Bench, held: Held, expected: schemas.Expected | None
-) -> list[dict[str, Any]]:
-    _, scorer, labels = held
-    code = None if unshipped(scorer) else code_of(bench, scorer.entry_point)
-    measures = {} if code is None else {m.name: m.measures for m in code.metrics}
-    picks = (
-        []
-        if expected is None or expected.data is None
-        else api_world.picks(
-            bench,
-            schemas.Picking(
-                document=expected.data, selectors=[v.expectation for v in scorer.views]
-            ),
-        )
-    )
-    return [
-        {
-            "label": labels[i],
-            "metric": v.metric,
-            "measures": measures.get(v.metric),
-            "judge": None if v.judge is None else bench.title(v.judge),
-            "output": v.output,
-            "split": v.split,
-            "expectation": v.expectation,
-            "params": v.params,
-            "picked": picks[i] if picks else None,
-        }
-        for i, v in enumerate(scorer.views)
-    ]
-
-
 def _means(answers: list[dict[str, Any]], held: Held | None) -> list[dict[str, Any]]:
     if held is None:
         return []
@@ -488,39 +500,6 @@ def _means(answers: list[dict[str, Any]], held: Held | None) -> list[dict[str, A
             }
         )
     return found
-
-
-def _composing(
-    bench: Bench,
-    held: Held | None,
-    schema: str | None,
-    ran: list[tuple[schemas.Run, schemas.RunDetail]],
-    case: str,
-) -> dict[str, Any] | None:
-    if schema is None or (held is not None and unshipped(held[1])):
-        return None
-    code = code_of(bench, None if held is None else held[1].entry_point)
-    scorer = None
-    judged: tuple[str, ...] = ()
-    if held is not None:
-        thread, body, labels = held
-        scorer = {
-            "thread": thread.id,
-            "head": thread.head.id,
-            "digest": thread.head.digest,
-            "name": thread.name or thread.title,
-            "mode": "edit" if thread.owner == bench.person.login else "fork",
-            "body": body.model_dump(mode="json"),
-            "labels": labels,
-        }
-        judged = body.judges
-    return {
-        "scorer": scorer,
-        "blank": blank(code, schema),
-        **scorer_choices(bench, code, judged),
-        "case": case,
-        "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
-    }
 
 
 def _scorer(scorers: list[Held], picked: int | None, scored: set[str]) -> Held | None:

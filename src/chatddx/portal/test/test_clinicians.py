@@ -41,30 +41,27 @@ def body(signed: TestClient, digest: str) -> dict[str, Any]:
 
 
 @pytest.mark.slow
-def test_an_appendix_is_begun_of_a_case_s_vignette_and_a_case_built_of_it(
+def test_a_case_s_section_shows_its_appendices_and_begins_expectations_only(
     signed: TestClient,
 ) -> None:
     crlf = family(signed)
     path = f"/cases/{crlf['id']}"
-    action = begun(shown(signed, path), "appendix")
-    page = shown(signed, action)
-    assert 'name="f.vignette"' not in page
-    made = written(signed, action, name="ultrasound", **{"f.text": "Gallstones.\r\n"})
-    held = body(signed, made["head"]["digest"])
     [default] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    assert held["vignette"] == body(signed, default["case"])["vignette"]
-    assert held["text"] == "Gallstones.\n"
-
-    page = shown(signed, path)
-    digest = made["head"]["digest"]
-    assert f'<option value="{digest}">ultrasound</option>' in page
-    built = {"f.appendices": [digest, ""]}
-    got = signed.post(f"{path}/cases", data=built)
-    assert (got.status_code, got.headers["location"]) == (303, path)
+    got = signed.post(
+        f"/review/{crlf['id']}/appendices",
+        data={"name": "ultrasound", "text": "Gallstones.", "case": default["case"]},
+    )
+    assert got.status_code == 303
+    query = {"kind": "appendix", "owner": "alice", "name": "ultrasound"}
+    [made] = signed.get("/api/threads", params=query).json()
     cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    [case] = [c for c in cases if c["appendices"] == [digest]]
+    [case] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
     page = shown(signed, path)
-    assert f'href="/threads/{made["id"]}">ultrasound</a>' in page
+    assert (
+        "appendices: ultrasound" in page and f'href="/threads/{made["id"]}"' not in page
+    )
+    assert "/library/new?kind=appendix" not in page and f"{path}/cases" not in page
+    assert signed.post(f"{path}/cases", data={}).status_code == 404
 
     [expected] = default["expectations"]
     schema = expected["expectation_schema"]
@@ -76,12 +73,6 @@ def test_an_appendix_is_begun_of_a_case_s_vignette_and_a_case_built_of_it(
     held = body(signed, expecting["head"]["digest"])
     assert (held["case"], held["data"]) == (case["case"], expected["data"])
     assert f'href="/threads/{expecting["id"]}">yours</a>' in shown(signed, path)
-
-    got = signed.post(f"{path}/cases", data={"f.appendices": [""]})
-    assert got.status_code == 422 and "one appendix or more" in got.text
-    assert f'action="{path}/cases"' in got.text
-    got = signed.get("/library/new", params={"kind": "appendix", "f.vignettes": "{}"})
-    assert got.status_code == 422 and escape("no field 'vignettes'") in got.text
 
 
 @pytest.mark.slow
@@ -238,6 +229,6 @@ def test_expectations_shared_with_one_are_taken_for_the_picked_cases(
 @pytest.mark.slow
 def test_a_case_s_forms_from_another_site_write_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
-    for action in ("said", "delete", "restore", "leave", "cases", "replacement"):
+    for action in ("said", "delete", "restore", "leave", "replacement"):
         assert signed.post(f"/cases/1/{action}", headers=elsewhere).status_code == 403
     assert signed.post("/library/takes", headers=elsewhere).status_code == 403

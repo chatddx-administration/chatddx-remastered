@@ -177,11 +177,25 @@ def test_an_owner_corrects_a_case_s_language_and_deletes_it(bench: Bench) -> Non
         _ = bench.say(case, name="gone")
 
 
-def test_a_collaborator_leaves_a_case_and_says_nothing_of_it(bench: Bench) -> None:
+def test_a_collaborator_says_a_case_s_tags_and_language_alone_and_leaves_it(
+    bench: Bench,
+) -> None:
     shared = bench.family("crlf")
     assert shared.about.owner != bench.person.id
-    with pytest.raises(NotFound, match=f"no case {shared.id} of yours"):
-        _ = bench.say(Subject(family=shared.id), name="mine now")
+    subject = Subject(family=shared.id)
+    said = bench.say(subject, tags=[*shared.about.tags, "reviewed"], language="sv")
+    assert "reviewed" in said.tags and said.language == "sv"
+    assert said.owner == shared.about.owner
+    refused: list[Callable[[], About]] = [
+        lambda: bench.say(subject, name="mine now"),
+        lambda: bench.say(subject, description="Mine."),
+        lambda: bench.say(subject, collaborators=["bob"]),
+        lambda: bench.say(subject, deleted=True),
+        lambda: bench.say(subject, tags=["reviewed"], name="mine now"),
+    ]
+    for said_more in refused:
+        with pytest.raises(NotFound, match=f"no case {shared.id} of yours"):
+            _ = said_more()
     left = bench.leave(Subject(family=shared.id))
     assert not sees(bench.person.id, left)
     assert shared.id not in [f.id for f in bench.families()]

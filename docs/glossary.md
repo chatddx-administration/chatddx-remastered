@@ -487,8 +487,9 @@ it is started from. `src/chatddx/factors/engine.py:Runtime`
 settings, penalties, stop strings and a cap on output tokens; or it asks for the recommended sampling, with any value
 set beside it winning. Every recipe has one. `src/chatddx/factors/request.py:Sampling`
 
-:Saying — The owner writing what holds of a thread: its name, description, tags, collaborators and whether it is
-deleted. `src/chatddx/bench/saying.py:say`
+:Saying — The owner writing what holds of a thread or a family: its name, description, tags, collaborators and whether
+it is deleted, and a family's language; a family's tags and language are said by those it is shared with too.
+`src/chatddx/bench/saying.py:say`
 
 :Schema (database) — One namespace of the database's tables: factor, ledger, identity, catalog, source (typed vignettes)
 or worker (the queue). `src/chatddx/store/migrations/`

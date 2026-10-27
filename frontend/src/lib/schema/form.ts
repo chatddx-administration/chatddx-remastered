@@ -1,6 +1,8 @@
+import { tp } from "$lib/locale";
+
 export type Schema = Record<string, unknown>;
 
-type Widget =
+export type Widget =
   | { is: "object"; properties: { name: string; schema: Schema; required: boolean }[] }
   | { is: "text"; long: boolean }
   | { is: "number"; integer: boolean }
@@ -91,6 +93,13 @@ export function without(schema: Schema, key: string): Schema {
   return { ...schema, properties: Object.fromEntries(Object.entries(properties).filter(([k]) => k !== key)), required };
 }
 
+// Policy: a list of what people wrote, each item by its `author`, is one item a person.
+export function authored(shape: Widget, root: Schema): boolean {
+  if (shape.is !== "list") return false;
+  const item = widget(shape.items, root);
+  return item.is === "object" && item.properties.some((p) => p.name === "author");
+}
+
 export function blank(schema: Schema, root: Schema): unknown {
   const shape = widget(schema, root);
   switch (shape.is) {
@@ -136,4 +145,19 @@ export function kept(value: unknown, schema: Schema, root: Schema): unknown {
   if (shape.is === "or-none" && value !== false) return kept(value, shape.schema, root);
   if (shape.is === "union") return kept(value, chosen(shape, value).schema, root);
   return value;
+}
+
+// Policy: a field goes by its name, but for those the portal words for clinicians.
+const WORDED: Record<string, () => string> = {
+  diagnosis: () => tp("a field", "Final diagnosis"),
+  warning: () => tp("a field", "Possible warnings"),
+  dont_miss: () => tp("a field", "Must not be missed"),
+  disposition: () => tp("a field", "Disposition"),
+  notes: () => tp("a field", "Statement"),
+  pattern: () => tp("a field", "Match"),
+  text: () => tp("a field", "Own note"),
+};
+
+export function fieldName(name: string): string {
+  return WORDED[name]?.() ?? name.replaceAll("_", " ");
 }

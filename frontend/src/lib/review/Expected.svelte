@@ -1,146 +1,50 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { api, type Schemas, why } from "$lib/api/client";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import { Button } from "$lib/components/ui/button";
   import ExpectationEditor from "$lib/editors/ExpectationEditor.svelte";
-  import { t, th } from "$lib/locale";
+  import { saved } from "$lib/editors/writing";
+  import { t } from "$lib/locale";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
-  import Composer, { type ScorerView } from "$lib/scorer/Composer.svelte";
   import Changed from "$lib/thread/Changed.svelte";
-  import { type Expecting, fieldOf, type Read, shortly } from "./review";
+  import type { Expecting } from "./review";
 
   let { expected, editor, back }: { expected: Expecting; editor: ExpectationEditing; back: string } = $props();
   const given = untrack(() => expected);
-  const composing = given.composing;
-  const measured = new Map((composing?.metrics ?? []).map((m) => [m.name, m.measures]));
-
-  let reading = $state<Read[]>(given.views);
-  let open = $state(false);
-  const views = $derived(reading.map((view, at) => ({ view, at, field: fieldOf(view.expectation) })));
-
-  function composed(changed: ScorerView[], labels: string[], titles: Record<string, string>): void {
-    reading = changed.map((v, at) => ({
-      label: labels[at] || t("view %(n)s", { n: at }),
-      metric: v.metric,
-      measures: measured.get(v.metric) ?? null,
-      judge: v.judge ? (titles[v.judge] ?? null) : null,
-      expectation: v.expectation ?? "",
-    }));
-  }
-
-  let data = $state<unknown>(untrack(() => editor.data));
-  let picks = $state<Schemas["Picked"][] | null>(null);
-  let problem = $state<string | null>(null);
-  let asked = 0;
-
-  const written = $derived(
-    typeof data === "object" && data !== null && !Array.isArray(data) ? new Set(Object.keys(data)) : new Set<string>(),
-  );
-  const elsewhere = $derived(views.filter((v) => v.field === null || !written.has(v.field)));
 
   let shown = $state(given.history.length - 1);
   const version = $derived(given.history[shown]);
   const before = $derived(shown > 0 ? given.history[shown - 1] : undefined);
+  let busy = $state(false);
+  let problem = $state<string | null>(null);
 
-  $effect(() => {
-    const document = JSON.parse(JSON.stringify(data ?? null)) as unknown;
-    const selectors = views.map((v) => v.view.expectation);
-    if (selectors.length === 0) return;
-    const sent = ++asked;
-    const timer = setTimeout(async () => {
-      const got = await api.POST("/api/picks", {
-        body: { document: document as never, selectors },
-      });
-      if (sent !== asked) return;
-      if (got.data) {
-        picks = got.data;
-        problem = null;
-      } else problem = why(got.error);
-    }, 300);
-    return () => clearTimeout(timer);
-  });
+  async function restore(): Promise<void> {
+    if (!version) return;
+    busy = true;
+    problem = null;
+    const component = {
+      kind: "expectation",
+      case: editor.case,
+      expectation_schema: editor.schema,
+      data: version.data,
+    };
+    const got = await saved(editor, editor.name, component as never);
+    busy = false;
+    if ("to" in got) location.assign(back);
+    else problem = got.problem;
+  }
 
   function when(stamp: string): string {
     return stamp.slice(0, 16).replace("T", " ");
   }
 </script>
 
-{#snippet reads(view: Read, at: number)}
-  {@const picked = picks?.[at]}
-  <div class="flex flex-wrap items-baseline gap-x-1.5">
-    <span class="font-medium text-primary">{view.label}</span>
-    <span class="text-muted-foreground" title={view.measures ?? ""}
-      >{view.metric.replaceAll("_", " ")}{#if view.judge}{" · "}{t("judge %(judge)s", { judge: view.judge })}{/if}</span
-    >
-    {#if !picked}
-      <span class="text-muted-foreground">…</span>
-    {:else if picked.problem}
-      <span class="text-destructive">{picked.problem}</span>
-    {:else if !picked.items?.length}
-      <span class="text-warning">{t("reads nothing")}</span>
-    {:else}
-      <span class="min-w-0 text-muted-foreground"
-        >{@html th('reads <span class="text-foreground">%(read)s</span>', { read: shortly(picked.items) })}</span
-      >
-    {/if}
-  </div>
-{/snippet}
-
-{#snippet beside(field: string)}
-  {@const here = views.filter((v) => v.field === field)}
-  {#if here.length}
-    <ul
-      class="ml-2 space-y-0.5 border-l-2 border-primary/30 pl-2 text-xs"
-      aria-label={t("What reads %(field)s", { field: field.replaceAll("_", " ") })}
-    >
-      {#each here as v (v.at)}<li>{@render reads(v.view, v.at)}</li>{/each}
-    </ul>
-  {/if}
-{/snippet}
-
-{#if composing}
-  {#if open}
-    <Composer {composing} schema={editor.json_schema} {data} {back} changed={composed} />
-  {:else}
-    <div class="mb-3 flex flex-wrap gap-2 text-xs">
-      <button
-        type="button"
-        class="rounded-md border border-border px-2.5 py-1 font-medium hover:bg-muted"
-        onclick={() => (open = true)}
-      >
-        {composing.scorer
-          ? composing.scorer.mode === "edit"
-            ? t("Compose %(scorer)s", { scorer: composing.scorer.name })
-            : t("Compose %(scorer)s as yours", { scorer: composing.scorer.name })
-          : t("Compose a scorer")}
-      </button>
-    </div>
-  {/if}
-{/if}
-
-<ExpectationEditor
-  {editor}
-  digest={given.digest}
-  opened={true}
-  quiet
-  changed={(d) => (data = d)}
-  {beside}
-  to={() => back}
-/>
-
-{#if problem}<p class="mt-2 text-xs text-destructive">{problem}</p>{/if}
-{#if elsewhere.length}
-  <div class="mt-4 rounded-lg bg-muted/40 p-2.5">
-    <p class="mb-1 text-xs font-medium text-muted-foreground">{t("Read elsewhere, or of what isn't written")}</p>
-    <ul class="space-y-0.5 text-xs">
-      {#each elsewhere as v (v.at)}<li>{@render reads(v.view, v.at)}</li>{/each}
-    </ul>
-  </div>
-{/if}
+<ExpectationEditor {editor} digest={given.digest} opened={true} quiet to={() => back} />
 
 {#if version}
   <details class="mt-4 text-sm">
     <summary class="cursor-pointer text-xs text-muted-foreground">
-      {t("Version %(n)s of %(of)s, %(at)s: what each changed", {
+      {t("Version %(n)s of %(of)s, %(at)s", {
         n: given.history.length,
         of: given.history.length,
         at: when(given.history.at(-1)?.at ?? ""),
@@ -165,7 +69,14 @@
           onclick={() => (shown += 1)}>▶</button
         >
         <span class="text-muted-foreground">{when(version.at)}, {version.by}</span>
+        {#if shown !== given.history.length - 1}
+          <Button size="xs" variant="outline" class="ml-auto" disabled={busy} onclick={restore}>
+            {#if busy}<LoaderCircleIcon class="animate-spin" />{/if}
+            {t("Restore")}
+          </Button>
+        {/if}
       </nav>
+      {#if problem}<p class="mb-2 text-xs text-destructive">{problem}</p>{/if}
       {#if before}
         <Changed before={before.data} after={version.data} />
       {:else}

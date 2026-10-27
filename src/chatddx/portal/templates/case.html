@@ -1,11 +1,10 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, chip, refusal %}
+{% from "macros.html" import heading, section, facts, chip %}
 {% block title %}{{ case.name }} · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library?kind=case">← {{ "case" | kind }}</a></nav>
   {{ heading(case.name) }}
-  {{ refusal(typed, request) }}
 
   {% if case.deleted %}
   <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
@@ -61,7 +60,7 @@
     {% for c in cases %}
     <li class="rounded-lg border border-border/60 p-3">
       <div class="flex flex-wrap items-baseline gap-x-3"><span class="font-medium">{{ c.titled | case }}</span><span class="font-mono text-xs text-muted-foreground">{{ c.case | short }}</span></div>
-      {% set appended %}{% for a in c.appendices %}{% if held[a] %}<a href="/threads/{{ held[a] }}">{{ titles[a] }}</a>{% else %}{{ titles[a] }}{% endif %}{{ ", " if not loop.last }}{% else %}{{ pgettext("no appendices", "none") }}{% endfor %}{% endset %}
+      {% set appended %}{% for a in c.appendices %}{{ titles[a] }}{{ ", " if not loop.last }}{% else %}{{ pgettext("no appendices", "none") }}{% endfor %}{% endset %}
       <p class="mt-1 text-muted-foreground">{{ _("appendices: %(appendices)s", appendices=appended) }}</p>
       {% if latest %}
       {% set expected = c.expectations | map(attribute="expectation_schema") | list %}
@@ -89,23 +88,6 @@
     <li class="text-muted-foreground">{{ _("None stored.") }}</li>
     {% endfor %}
   </ul>
-
-  {% if latest and not case.deleted %}
-  <h3>{{ _("Begun of it") }}</h3>
-  {% if picked %}
-  <form method="post" action="/cases/{{ case.id }}/cases" class="mb-3 grid max-w-xl gap-1.5 text-sm" aria-label="{{ _('A case of its appendices') }}">
-    <span class="text-muted-foreground">{{ _("A case of its appendices, picked one a line, in order:") }}</span>
-    {% for slot in range(picked | length) %}
-    <select name="f.appendices" aria-label="{{ _('appendix %(n)s', n=loop.index) }}" class="h-9 rounded-md border border-input bg-transparent px-2.5">
-      <option value="">{{ pgettext("no appendix", "none") }}</option>
-      {% for digest, titled in picked %}<option value="{{ digest }}">{{ titled }}</option>{% endfor %}
-    </select>
-    {% endfor %}
-    <div><button class="primary">{{ _("Build it") }}</button></div>
-  </form>
-  {% endif %}
-  <p class="text-sm"><a class="begin" href="{{ appendix }}">{{ _("A new appendix of its vignette") }}</a></p>
-  {% endif %}
 
   <h3>{{ _("Its versions") }}</h3>
   <ol class="space-y-1 text-sm">

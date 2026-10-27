@@ -257,16 +257,18 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     assert page.request.patch(path, data=deleted).status == 200
     gone = missing()
     assert held < gone
+    _ = page.goto(f"/review/{crlf['id']}")
+    page.get_by_text("Add an appendix", exact=True).click()
+    adding = page.locator("form[data-appending]")
+    expect(adding.get_by_role("button", name="Save")).to_be_disabled()
+    adding.get_by_label("Name").fill("ultrasound")
+    text = adding.get_by_label("Text, as it is added to the vignette")
+    text.fill("Gallstones on ultrasound.")
+    adding.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"[?&]case=sha256"))
     _ = page.goto("/library?kind=case")
     page.get_by_role("link", name="crlf", exact=True).click()
-    page.get_by_role("link", name="A new appendix of its vignette").click()
-    page.get_by_label("name", exact=True).fill("ultrasound")
-    page.get_by_label("text", exact=True).fill("Gallstones on ultrasound.")
-    page.get_by_role("button", name="Write it").click()
-    page.wait_for_url(re.compile(r"/threads/\d+$"))
-    _ = page.goto(f"/cases/{crlf['id']}")
-    _ = page.get_by_label("appendix 1").select_option(label="ultrasound")
-    page.get_by_role("button", name="Build it").click()
+    expect(page.get_by_text("appendices: ultrasound")).to_be_visible()
     expect(page.get_by_role("link", name="write yours")).to_have_count(2)
 
     page.get_by_role("link", name="write yours").first.click()
@@ -282,7 +284,7 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     assert errors == []
 
 
-def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
+def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     page: Page,
 ) -> None:
     errors: list[str] = []
@@ -296,43 +298,165 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
     first = vignette["text"].strip().splitlines()[0]
     expect(page.locator("#review-vignette")).to_contain_text(first)
     page.set_viewport_size({"width": 1440, "height": 900})
-    for drawer in page.locator("details[data-drawer]").all():
-        drawer.locator("summary").first.click()
-    expect(page.locator("details[data-drawer][open]")).to_have_count(2)
+    page.locator('details[data-drawer="record"] summary').first.click()
+    expect(page.locator("details[data-drawer][open]")).to_have_count(1)
+    expect(page.get_by_role("region", name="Cases")).to_be_visible()
     assert page.evaluate("document.documentElement.scrollHeight") == 900
-    notes = page.get_by_role("list", name="What reads notes")
-    expect(notes).to_contain_text("Chock, troligen septisk.")
-    expect(page.get_by_text("Nothing to save: it holds this already.")).to_be_visible()
-    page.get_by_label("comment").first.fill("Septisk chock: odla, ge antibiotika.")
-    expect(notes).to_contain_text("Septisk chock: odla, ge antibiotika.")
-    diagnosis = page.get_by_role("list", name="What reads diagnosis")
-    page.get_by_label("pattern").first.fill("septic & shock")
-    expect(diagnosis).to_contain_text("pattern: septic & shock")
+    expected = page.locator("#review-expected")
+    carol = expected.locator("details").filter(has_text="Statement by carol")
+    expect(carol.get_by_text(re.compile(r"^Chock, troligen septisk\."))).to_be_hidden()
+    carol.locator("summary").click()
+    expect(carol.get_by_text(re.compile(r"^Chock, troligen septisk\."))).to_be_visible()
+    expect(carol.get_by_role("textbox")).to_have_count(0)
+    expect(expected.get_by_text("Statement 1")).to_have_count(0)
+    expect(expected.get_by_label("comment")).to_have_count(0)
+    expect(page.get_by_role("list", name="What reads notes")).to_have_count(0)
+    expect(page.get_by_role("button", name=re.compile(r"^Compose"))).to_have_count(0)
+    saving = expected.get_by_role("button", name="Save")
+    expect(saving).to_be_disabled()
+    expect(expected.get_by_text("Nothing to say of it.")).to_have_count(0)
+    expected.get_by_role("button", name="+ Statement").click()
+    mine = expected.get_by_role("group", name="Statement", exact=True)
+    expect(mine.get_by_label("author")).to_have_count(0)
+    mine.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    expect(expected.get_by_role("button", name="+ Statement")).to_have_count(0)
+    page.get_by_label("Match", exact=True).first.fill("septic & shock")
     expect(page.get_by_text("Saves a new version of it.")).to_be_visible()
-    page.get_by_role("button", name="Save").click()
+    page.get_by_role("button", name="+ Possible warnings").click()
+    warning = expected.get_by_role("group", name="Possible warnings", exact=True)
+    warning.get_by_label("none expected").check()
+    expect(warning.get_by_role("button", name="+ Own note")).to_have_count(0)
+    saving.click()
     expect(page.get_by_text(re.compile(r"^Version 2 of 2, "))).to_be_visible()
-    expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
+    expect(page.get_by_text("what each changed")).to_have_count(0)
+    expect(expected.get_by_role("button", name="+ Own note").first).to_be_visible()
 
-    page.get_by_text("Add appendices").click()
-    page.get_by_label("Name").fill("ultrasound")
-    page.get_by_label("Text, as it is added to the vignette").fill("Free fluid.")
-    page.get_by_role("button", name="Write the appendix").click()
+    page.get_by_text(re.compile(r"^Version 2 of 2, ")).click()
+    expect(expected.get_by_role("button", name="Restore")).to_have_count(0)
+    expected.get_by_role("button", name="The version before").click()
+    saved = page.url
+    expected.get_by_role("button", name="Restore").click()
+    page.wait_for_load_state()
+    expect(page.get_by_text(re.compile(r"^Version 3 of 3, "))).to_be_visible()
+    assert page.url == saved
+    expect(page.get_by_label("Match", exact=True).first).not_to_have_value(
+        "septic & shock"
+    )
+    expect(
+        expected.get_by_role("group", name="Possible warnings", exact=True)
+    ).to_have_count(0)
+    expected.get_by_role("button", name="+ Statement").click()
+    expected.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    page.get_by_label("Match", exact=True).first.fill("septic & shock")
+    saving.click()
+    expect(page.get_by_text(re.compile(r"^Version 4 of 4, "))).to_be_visible()
+    statement = expected.get_by_role("group", name="Statement", exact=True)
+    expect(statement.get_by_label("comment")).to_have_value(
+        "Septisk chock: odla, ge antibiotika."
+    )
+    expect(page.get_by_label("Match", exact=True).first).to_have_value("septic & shock")
+
+    page.get_by_text("Add an appendix", exact=True).click()
+    adding = page.locator("form[data-appending]")
+    expect(adding.get_by_role("button", name="Save")).to_be_disabled()
+    adding.get_by_label("Name").fill("ultrasound")
+    adding.get_by_label("Text, as it is added to the vignette").fill("Free fluid.")
+    adding.get_by_role("button", name="Save").click()
     page.wait_for_url(re.compile(r"[?&]case=sha256"))
     appendix = page.get_by_role("article").filter(has_text="ultrasound")
-    expect(appendix.get_by_label("Its text")).to_have_value("Free fluid.")
-    expect(page.get_by_text("a new thread of your own")).to_be_visible()
-    expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
+    expect(appendix).to_contain_text("Free fluid.")
+    expect(appendix.get_by_label("Its text")).to_have_count(0)
+    expect(page.get_by_text("a new thread of your own")).to_have_count(0)
+    expect(page.get_by_label("Match", exact=True).first).to_have_value("septic & shock")
 
     built = page.url
+    change = appendix.get_by_role("button", name="Change it")
+    change.click()
+    expect(change).to_have_attribute("aria-pressed", "true")
+    expect(appendix.get_by_label("Its text")).to_have_value("Free fluid.")
+    expect(appendix.get_by_role("button", name="Save")).to_be_disabled()
+    expect(appendix.get_by_text("Nothing to save")).to_have_count(0)
     appendix.get_by_label("Its text").fill("Free fluid in Morison's pouch.")
     appendix.get_by_role("button", name="Save").click()
     page.wait_for_url(lambda url: url != built)
-    expect(appendix.get_by_label("Its text")).to_have_value(
-        "Free fluid in Morison's pouch."
-    )
+    expect(appendix).to_contain_text("Free fluid in Morison's pouch.")
+    expect(appendix.get_by_label("Its text")).to_have_count(0)
 
+    edited = page.url
+    appendix.get_by_role("button", name="Take it out of the case").click()
+    page.wait_for_url(lambda url: url != edited)
+    expect(page.get_by_role("article")).to_have_count(0)
+
+    shown = page.url
     page.locator("body").press("j")
-    page.wait_for_url(lambda url: f"/review/{noted['id']}" not in url)
+    page.wait_for_timeout(300)
+    assert page.url == shown
+    assert errors == []
+
+
+def test_the_cases_are_filtered_in_place_by_tags_and_languages(page: Page) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    every = page.request.get("/api/families").json()
+    noted = next(f for f in every if f["name"] == "noted")
+    targets = [f for f in every if "targets" in f["tags"]]
+    both = [f for f in targets if "swedish" in f["tags"]]
+    spoken = [f for f in targets if f["language"] == "sv"]
+
+    _ = page.goto(f"/review/{noted['id']}")
+    _ = page.evaluate("window.stayed = true")
+    cases = page.get_by_role("region", name="Cases")
+    filters = cases.get_by_role("navigation", name="Filters")
+    shown = cases.locator("li[data-tags]:visible")
+    expect(shown).to_have_count(len(every))
+    expect(cases.locator('[title="In sync"]').first).to_be_attached()
+    filters.get_by_role("link", name="targets", exact=True).click()
+    expect(shown).to_have_count(len(targets))
+    filters.get_by_role("link", name="swedish", exact=True).click()
+    expect(shown).to_have_count(len(both))
+    assert "tag=targets" in page.url and "tag=swedish" in page.url
+    first = shown.first.locator("a")
+    expect(first).to_have_attribute("href", re.compile(r"tag=targets&tag=swedish$"))
+    filters.get_by_role("link", name="swedish", exact=True).click()
+    filters.get_by_role("link", name="Swedish", exact=True).click()
+    expect(shown).to_have_count(len(spoken))
+    filters.get_by_role("link", name="all", exact=True).click()
+    expect(shown).to_have_count(len(every))
+    assert page.evaluate("window.stayed") is True
+    assert "tag=" not in page.url and "language=" not in page.url
+    assert errors == []
+
+
+def test_a_case_s_tags_and_language_are_changed_beside_its_vignette(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    path = f"/api/families/{noted['id']}"
+
+    _ = page.goto(f"/review/{noted['id']}")
+    header = page.get_by_role("region", name="The case").locator("header")
+    expect(header.get_by_role("link", name="Show in the Library")).to_be_visible()
+    tag = header.get_by_label("A new tag")
+    tag.fill("reviewed")
+    with page.expect_response(lambda r: r.url.endswith(path)):
+        tag.press("Enter")
+    assert "reviewed" in page.request.get(path).json()["tags"]
+    removing = header.get_by_role("button", name="Take away the tag reviewed")
+    with page.expect_response(lambda r: r.url.endswith(path)):
+        removing.click()
+    assert "reviewed" not in page.request.get(path).json()["tags"]
+
+    header.get_by_role("button", name="Change its language").click()
+    with page.expect_response(lambda r: r.url.endswith(path)):
+        _ = header.get_by_label("Its language").select_option("sv")
+    expect(header).to_contain_text("Swedish")
+    assert page.request.get(path).json()["language"] == "sv"
+    _ = page.reload()
+    expect(
+        page.get_by_role("region", name="The case").locator("header")
+    ).to_contain_text("Swedish")
     assert errors == []
 
 
@@ -359,12 +483,15 @@ def test_a_case_with_none_of_one_s_own_shows_the_shared_one_and_waits_for_typing
     expect(page.get_by_role("button", name="Save")).to_be_enabled()
     pattern = expected["data"]["diagnosis"]["pattern"]
     expect(page.locator("[data-offered]")).to_contain_text(pattern)
-    expect(page.get_by_text("a new thread of your own")).to_be_visible()
+    expect(page.get_by_text("a new thread of your own")).to_have_count(0)
     expect(page.get_by_text("Nothing to say of it.")).to_have_count(0)
     expect(page.get_by_text("expectation.invalid")).to_have_count(0)
-    page.get_by_role("button", name="+ pattern").first.click()
-    page.get_by_label("pattern").first.fill(pattern)
-    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
+    page.get_by_role("button", name="+ Match").first.click()
+    with page.expect_response(lambda r: r.url.endswith("/api/components/check")):
+        page.get_by_label("Match", exact=True).first.fill(pattern)
+    expect(page.get_by_role("button", name="Save")).to_be_enabled()
+    expect(page.get_by_text("Nothing to say of it.")).to_have_count(0)
+    expect(page.get_by_text("expectation.invalid")).to_have_count(0)
     assert errors == []
 
 
@@ -409,67 +536,6 @@ def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
     assert errors == []
 
 
-def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
-    page: Page,
-    world: Inventory,
-    conn: Connection,
-) -> None:
-    errors: list[str] = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
-    query: dict[str, str | float | bool] = {
-        "kind": "configuration",
-        "name": LINES,
-        "owner": "alice",
-    }
-    lines = page.request.get("/api/threads", params=query).json()[0]
-    body = {"configuration": lines["id"], "families": [crlf["id"]]}
-    with faked(world, Store(conn).get):
-        started = page.request.post("/api/runs", data=body).json()
-        run = started["runs"][0]["run"]
-        _settled(page, run)
-    [item] = page.request.get(
-        f"/api/runs/{run}/items", params={"case": crlf["case"]}
-    ).json()
-    first = item["answer"]["value"].strip().splitlines()[0]
-    word = re.findall(r"[A-Za-z]{3,}", first)[0].lower()
-    query = {"kind": "scorer", "name": LINES}
-    scorer = page.request.get("/api/threads", params=query).json()[0]
-
-    _ = page.goto(f"/review/{crlf['id']}?scorer={scorer['id']}")
-    page.get_by_role("button", name=re.compile(rf"^Compose {LINES}")).click()
-    composer = page.get_by_role("region", name="Composing a scorer")
-    differential = composer.locator("li").nth(1)
-    expect(differential.get_by_label("Its label")).to_have_value("differential")
-    page.get_by_label("pattern").first.fill(word)
-    expect(differential.get_by_label("Tried on your answers")).to_contain_text("1.00")
-    page.get_by_label("pattern").first.fill("nothing & like & it")
-    expect(differential.get_by_label("Tried on your answers")).to_contain_text("0.00")
-
-    composer.get_by_role("button", name="Start a new one").click()
-    composer.get_by_label("Its label").fill("named")
-    _ = composer.get_by_label("Reads of what is expected").select_option(
-        label="diagnosis"
-    )
-    composer.get_by_label("line by line, as a list").check()
-    _ = composer.get_by_label("Compared by").select_option("mentions")
-    page.get_by_label("pattern").first.fill(word)
-    expect(composer.get_by_label("Tried on your answers")).to_contain_text("1.00")
-    expect(page.get_by_role("list", name="What reads diagnosis")).to_contain_text(
-        "named"
-    )
-    composer.get_by_label("Name").fill("mine")
-    composer.get_by_role("button", name="Save").click()
-    page.wait_for_url(lambda url: not url.endswith(f"scorer={scorer['id']}"))
-    mine = page.request.get("/api/threads", params={"kind": "scorer", "name": "mine"})
-    [made] = mine.json()
-    assert page.url.endswith(f"scorer={made['id']}")
-    edits = page.request.get(f"/api/threads/{made['id']}/edits").json()
-    assert edits[-1]["labels"]["views"] == ["named"]
-    expect(page.get_by_role("navigation", name="Scorers")).to_contain_text("mine")
-    assert errors == []
-
-
 def test_a_scorer_s_page_fits_a_phone(page: Page) -> None:
     query: dict[str, str | float | bool] = {"kind": "scorer", "name": LINES}
     lines = page.request.get("/api/threads", params=query).json()[0]
@@ -479,7 +545,7 @@ def test_a_scorer_s_page_fits_a_phone(page: Page) -> None:
     assert page.evaluate("document.documentElement.scrollWidth") == 390
 
 
-def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worker(
+def test_a_judged_view_is_written_with_a_new_judge_and_scored_through_the_worker(
     page: Page,
     world: Inventory,
     conn: Connection,
@@ -496,22 +562,21 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
     body = {"configuration": lines["id"], "families": [noted["id"]]}
     query = {"kind": "scorer", "name": LINES}
     scorer = page.request.get("/api/threads", params=query).json()[0]
+    forks = f"/api/threads/{scorer['id']}/forks"
+    mine = page.request.post(forks, data={"name": "noted-judged"}).json()
 
     with faked(world, Store(conn).get):
         run = page.request.post("/api/runs", data=body).json()["runs"][0]["run"]
         _settled(page, run)
-        _ = page.goto(f"/review/{noted['id']}?scorer={scorer['id']}")
-        page.get_by_role("button", name=re.compile(rf"^Compose {LINES}")).click()
-        composer = page.get_by_role("region", name="Composing a scorer")
-        composer.get_by_role("button", name="Start a new one").click()
-        composer.get_by_label("Its label").fill("met")
-        _ = composer.get_by_label("Reads of what is expected").select_option(
-            label="notes where author is carol › comment"
+        _ = page.goto(f"/threads/{mine['id']}")
+        page.get_by_role("button", name="+ a view").click()
+        view = page.locator("li").filter(has=page.get_by_label("Its label")).last
+        view.get_by_label("Its label").fill("met")
+        _ = view.get_by_label("Reads of what is expected").select_option(
+            label="each of notes › comment"
         )
-        _ = composer.get_by_role("combobox", name="Compared by").select_option(
-            "verdict"
-        )
-        judge = composer.get_by_role("combobox", name="Judge")
+        _ = view.get_by_role("combobox", name="Compared by").select_option("verdict")
+        judge = view.get_by_role("combobox", name="Judge")
         _ = judge.select_option("new")
         written = page.get_by_role("region", name="A new judge")
         written.get_by_label("Name").fill("strict")
@@ -520,18 +585,13 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
         written.get_by_role("button", name="Save").click()
         expect(written).to_have_count(0)
         expect(judge.locator("option:checked")).to_contain_text("strict")
-        expect(composer.get_by_role("combobox", name="Its verdict at")).to_have_value(
+        expect(view.get_by_role("combobox", name="Its verdict at")).to_have_value(
             "/meets"
         )
-        composer.get_by_text("What its judge is asked").click()
-        asked = composer.get_by_role("list", name="What its judge is asked")
-        expect(asked).to_contain_text("Chock, troligen septisk.")
-        expect(asked).to_contain_text("‹completion›")
-        expect(composer.get_by_label("Tried on your answers")).to_contain_text("judged")
-        composer.get_by_label("Name").fill("noted-judged")
-        composer.get_by_role("button", name="Save").click()
-        page.wait_for_url(lambda url: not url.endswith(f"scorer={scorer['id']}"))
+        page.get_by_role("button", name="Save it").click()
+        expect(page.get_by_text("Version 2 of 2")).to_be_visible()
 
+        _ = page.goto(f"/review/{noted['id']}?scorer={mine['id']}")
         record = page.locator('details[data-drawer="record"]')
         if record.get_attribute("open") is None:
             record.locator("summary").first.click()
@@ -545,12 +605,11 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
     assert errors == []
 
 
-def test_what_a_judge_is_asked_is_rewritten_on_its_page_and_picked_in_review(
+def test_what_a_judge_is_asked_is_rewritten_on_its_page_and_picked_in_the_library(
     page: Page,
 ) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
     query: dict[str, str | float | bool] = {"kind": "judge", "name": "verdict"}
     [archives] = page.request.get("/api/threads", params=query).json()
     query = {"kind": "scorer", "name": "judged"}
@@ -585,23 +644,17 @@ def test_what_a_judge_is_asked_is_rewritten_on_its_page_and_picked_in_review(
     [still] = page.request.get("/api/threads", params=query).json()
     assert still["head"]["digest"] == judged["head"]["digest"]
 
-    _ = page.goto(f"/review/{noted['id']}?scorer={judged['id']}")
-    page.get_by_role("button", name=re.compile(r"^Compose judged")).click()
-    composer = page.get_by_role("region", name="Composing a scorer")
-    expect(composer.get_by_text("Change what it is asked")).to_have_count(0)
-    picks = composer.get_by_role("combobox", name="Judge", exact=True)
+    forks = f"/api/threads/{judged['id']}/forks"
+    made = page.request.post(forks, data={"name": "judged-anew"}).json()
+    _ = page.goto(f"/threads/{made['id']}")
+    expect(page.get_by_text("Change what it is asked")).to_have_count(0)
+    picks = page.get_by_role("combobox", name="Judge", exact=True)
     for at in range(2):
         _ = picks.nth(at).select_option(verdict["head"]["digest"])
-    changing = composer.get_by_role(
-        "link", name="What it is asked is changed on Scoring"
-    )
-    expect(changing.first).to_have_attribute("href", f"/scoring/{verdict['id']}")
-    composer.get_by_label("Name").fill("judged-anew")
-    composer.get_by_role("button", name="Save").click()
-    page.wait_for_url(lambda url: not url.endswith(f"scorer={judged['id']}"))
+    page.get_by_role("button", name="Save it").click()
+    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
 
-    query = {"kind": "scorer", "name": "judged-anew"}
-    [made] = page.request.get("/api/threads", params=query).json()
+    made = page.request.get(f"/api/threads/{made['id']}").json()
     now = page.request.get(f"/api/components/{made['head']['digest']}").json()
     old = {v["judge"] for v in was["body"]["views"] if v["metric"] == "verdict"}
     assert len(old) == 1 and old.isdisjoint(v["judge"] for v in now["body"]["views"])
@@ -703,8 +756,8 @@ def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors
     expectation = mine("expectation")
     was = body(expectation)
     _ = page.goto(f"/threads/{expectation['id']}")
-    diagnosis = page.get_by_role("group", name="diagnosis", exact=True)
-    diagnosis.get_by_label("pattern", exact=True).fill("pneumonitis")
+    diagnosis = page.get_by_role("group", name="Final diagnosis", exact=True)
+    diagnosis.get_by_label("Match", exact=True).fill("pneumonitis")
     page.get_by_role("button", name="Save it").click()
     expect(page.get_by_text("Version 2 of 2")).to_be_visible()
     now = body(expectation)
@@ -717,11 +770,15 @@ def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors
     _ = page.goto("/library/new?kind=expectation")
     expect(page.get_by_text("Pick its expectation schema first")).to_be_visible()
     _ = page.get_by_label("expectation schema", exact=True).select_option(index=1)
-    expect(page.get_by_role("group", name="diagnosis", exact=True)).to_be_visible()
+    expect(
+        page.get_by_role("group", name="Final diagnosis", exact=True)
+    ).to_be_visible()
     page.get_by_role("button", name="Write it as JSON").click()
     expect(page.get_by_label("data", exact=True)).to_be_visible()
     page.get_by_role("button", name="Back to the form").click()
-    expect(page.get_by_role("group", name="diagnosis", exact=True)).to_be_visible()
+    expect(
+        page.get_by_role("group", name="Final diagnosis", exact=True)
+    ).to_be_visible()
 
     query: dict[str, str | float | bool] = {"kind": "scorer", "name": "lines"}
     [lines] = page.request.get("/api/threads", params=query).json()

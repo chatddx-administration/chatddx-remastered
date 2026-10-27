@@ -1,25 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { begun } from "$lib/runs/progress";
-import { doing, fieldOf, replaced, said, shortly, stepped, valued, viewed, withScorer } from "./review";
+import { added, doing, replaced, said, valued, viewed } from "./review";
 
-const STEPS = { previous: "/review/1", next: "/review/3" };
-
-function pressed(key: string, more: Record<string, unknown> = {}) {
-  return { key, altKey: false, ctrlKey: false, metaKey: false, target: null, ...more };
-}
-
-describe("stepped", () => {
-  it("goes to the next case on j and the one before on k", () => {
-    expect(stepped(pressed("j"), STEPS)).toBe("/review/3");
-    expect(stepped(pressed("k"), STEPS)).toBe("/review/1");
-    expect(stepped(pressed("j"), { previous: null, next: null })).toBeNull();
+describe("added", () => {
+  it("adds what is typed, comma by comma, once and sorted", () => {
+    expect(added(["copd", "swedish"], " akm, copd ,dutch,akm")).toEqual(["akm", "copd", "dutch", "swedish"]);
   });
 
-  it("leaves keys alone while something is typed or held", () => {
-    expect(stepped(pressed("j", { target: { tagName: "TEXTAREA" } }), STEPS)).toBeNull();
-    expect(stepped(pressed("j", { target: { tagName: "DIV", isContentEditable: true } }), STEPS)).toBeNull();
-    expect(stepped(pressed("j", { ctrlKey: true }), STEPS)).toBeNull();
-    expect(stepped(pressed("x"), STEPS)).toBeNull();
+  it("keeps the tags as they are when nothing new is typed", () => {
+    const tags = ["copd"];
+    expect(added(tags, " , copd")).toBe(tags);
   });
 });
 
@@ -55,31 +45,6 @@ describe("said", () => {
   });
 });
 
-describe("fieldOf", () => {
-  it("names the top-level field a selector starts in", () => {
-    expect(fieldOf("/diagnosis")).toBe("diagnosis");
-    expect(fieldOf("/dont_miss/pattern")).toBe("dont_miss");
-    expect(fieldOf("/a~1b")).toBe("a/b");
-    expect(fieldOf("$.notes[?@.author == 'carol'].comment")).toBe("notes");
-    expect(fieldOf("$['dont miss']")).toBe("dont miss");
-  });
-
-  it("names none for the whole expectation or a field it can't tell", () => {
-    expect(fieldOf("")).toBeNull();
-    expect(fieldOf("$[*]")).toBeNull();
-    expect(fieldOf("$..pattern")).toBeNull();
-  });
-});
-
-describe("shortly", () => {
-  it("says what was picked in a line, cut short", () => {
-    expect(shortly([{ pattern: "sepsis | septic & shock" }])).toBe("pattern: sepsis | septic & shock");
-    expect(shortly(["Chock,\n troligen  septisk.", "Uteslut UVI."])).toBe("Chock, troligen septisk. · Uteslut UVI.");
-    expect(shortly(["a".repeat(100)], 10)).toBe(`${"a".repeat(9)}…`);
-    expect(shortly([false])).toBe("false");
-  });
-});
-
 describe("replaced", () => {
   it("follows the case shown to the one that replaced it", () => {
     const back = "/review/3?case=old&tag=swedish";
@@ -108,12 +73,5 @@ describe("doing", () => {
     expect(doing(progress)).toBe("scoring: 2 scored, judges answered 3 of 4");
     progress.done = { halted: false } as never;
     expect(doing(progress)).toBe("done");
-  });
-});
-
-describe("withScorer", () => {
-  it("shows the scorer saved, keeping what else is picked", () => {
-    expect(withScorer("/review/3?case=c&scorer=1", 9)).toBe("/review/3?case=c&scorer=9");
-    expect(withScorer("/review/3", 9)).toBe("/review/3?scorer=9");
   });
 });

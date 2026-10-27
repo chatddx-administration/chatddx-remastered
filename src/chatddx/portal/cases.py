@@ -1,4 +1,3 @@
-import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Annotated
@@ -28,16 +27,6 @@ router = APIRouter()
 def case_page(
     request: Request, bench: BenchDep, family: int, version: int | None = None
 ) -> Response:
-    return _case_page(request, bench, family, version)
-
-
-def _case_page(
-    request: Request,
-    bench: Bench,
-    family: int,
-    version: int | None = None,
-    typed: Typed | None = None,
-) -> Response:
     shown = api.family(bench, family)
     bindings = bench.rows.bindings([family])
     at = len(bindings) if version is None else version
@@ -60,7 +49,6 @@ def _case_page(
             _earlier(bench, c) for c, _ in bench.rows.bound_to([bound.vignette], "case")
         ]
     )
-    written = written_for(bench, family) if latest and not shown.deleted else []
     appendices = {a for c in cases for a in c.appendices}
     expected = {
         e.expectation
@@ -72,9 +60,7 @@ def _case_page(
     return page(
         request,
         "case.html",
-        200 if typed is None else 422,
         person=bench.person,
-        typed=typed,
         case=shown,
         named=bench.family(family, deleted=True).about.name,
         mine=mine,
@@ -90,18 +76,13 @@ def _case_page(
         ),
         latest=latest,
         cases=cases,
-        held={a: _thread_of(bench, a) for a in appendices | expected},
+        held={e: _thread_of(bench, e) for e in expected},
         titles={a: bench.title(a) for a in appendices},
         own={t.head.digest for t in threads.threads(bench, "expectation", owner=login)},
         schemas=[
             (t.head.digest, t.name or t.title)
             for t in threads.threads(bench, "expectation_schema")
         ],
-        picked=[(t.head.digest, t.name or t.title) for t in written],
-        appendix=_begin(
-            "appendix",
-            vignette=json.dumps(bindings[-1].vignette.model_dump(mode="json")),
-        ),
         begin=_begin,
     )
 
@@ -197,22 +178,6 @@ def leaving(bench: BenchDep, family: int) -> Response:
     return RedirectResponse("/library?kind=case", 303)
 
 
-@router.post("/cases/{family}/cases")
-def building(
-    request: Request,
-    bench: BenchDep,
-    family: int,
-    appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None,
-) -> Response:
-    picked = [a for a in appendices or [] if a]
-    if not picked:
-        refusal = tr("a case is built of one appendix or more: pick one")
-        typed = Typed([refusal], kept=False)
-        return _case_page(request, bench, family, typed=typed)
-    _ = built(bench, family, picked)
-    return RedirectResponse(f"/cases/{family}", 303)
-
-
 @router.post("/cases/{family}/replacement")
 def replacing(
     bench: BenchDep,
@@ -260,15 +225,6 @@ def taking(
         back="/library?"
         + urlencode([("kind", "case"), *(("tag", t) for t in sorted(tag or ()))]),
     )
-
-
-def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
-    current = bench.family(family).vignette
-    return [
-        t
-        for t in threads.threads(bench, "appendix")
-        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
-    ]
 
 
 def appended(bench: Bench, family: int, name: str, text: str) -> str:

@@ -15,7 +15,6 @@ from chatddx.api.state import Refusing, refused
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, Titled, word_of
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read
 from chatddx.factors.base import Component, Invalid, language_tag, resolve
-from chatddx.factors.cases import Appendix
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import RECIPE_PARTS, Purpose, Recipe, Translations
 from chatddx.factors.scoring import Expectation, Scorer
@@ -29,10 +28,10 @@ from .editors import editors
 from .fields import Field, choices, fields, fresh, kept, listed, parsed, purpose
 from .pages import BenchDep, own_first, page, refusable, refusal_of, within
 from .scoring import checked, code_of, unshipped
-from .shelves import AUTHORED, IN_WORLD, SHELVES, display_kind, shelved
+from .shelves import AUTHORED, IN_REVIEW, IN_WORLD, SHELVES, display_kind, shelved
 from .translations import begun, posted, translating, written as translated
 
-_BEGUN = [w for w in KINDS if set(KINDS[w]) & AUTHORED]
+_BEGUN = [w for w in KINDS if set(KINDS[w]) & AUTHORED and w not in IN_REVIEW]
 
 _PURPOSES: dict[Purpose, str] = {
     "generation": pgettext_noop("purpose", "generation"),
@@ -224,10 +223,8 @@ def beginning(
     if model is Translations:
         return _beginning_translations(request, bench, configuration, into)
     with refused(NotFound):
-        given = _given(bench, request, model)
+        given = _given(bench, request)
         found = fresh(model, given)
-        if model is Appendix and "vignette" not in given:
-            return _picking_case(request, bench, kind)
         if model is Scorer and "entry_point" not in given:
             return _shipped(request, code_of(bench))
         found = _drawn(bench, model, found)
@@ -260,7 +257,7 @@ def writing(
             request, bench, configuration, into, refusals, 422, unnamed=not name
         )
     with refused(NotFound):
-        found = fresh(model, _given(bench, request, model))
+        found = fresh(model, _given(bench, request))
     language = str(form.get("language", "")).strip() or None
     labels = str(form.get("labels", "{}"))
     declined: ValueError | None = None
@@ -335,16 +332,6 @@ def _shipped(request: Request, code: schemas.ScorerCode) -> Response:
     return RedirectResponse(f"{request.url.path}?{query}", 303)
 
 
-def _picking_case(request: Request, bench: Bench, kind: str) -> Response:
-    return page(
-        request,
-        "begun.html",
-        person=bench.person,
-        word=kind,
-        cases=[(f.id, f.name) for f in families.families(bench)],
-    )
-
-
 def _beginning_translations(
     request: Request,
     bench: Bench,
@@ -384,9 +371,7 @@ def _beginning_translations(
     )
 
 
-def _given(
-    bench: Bench, request: Request, model: type[Component] | type[Recipe]
-) -> dict[str, str]:
+def _given(bench: Bench, request: Request) -> dict[str, str]:
     given = {
         k.removeprefix("f."): v
         for k, v in request.query_params.items()
@@ -394,10 +379,7 @@ def _given(
     }
     if families := request.query_params.getlist("family"):
         held = [bench.family(int(f)) for f in families]
-        if model is Appendix:
-            given["vignette"] = json.dumps(held[0].vignette.model_dump(mode="json"))
-        else:
-            given["cases"] = json.dumps(list(dict.fromkeys(f.case for f in held)))
+        given["cases"] = json.dumps(list(dict.fromkeys(f.case for f in held)))
     return given
 
 
@@ -454,6 +436,12 @@ def _thread_page(
 ) -> Response:
     shown = api.thread(bench, thread)
     word = word_of(shown.kind)
+    if word in IN_REVIEW:
+        raise NotFound.of(
+            "no page of %(kind)s %(thread)s: it is in Review, in the case it goes with",
+            kind=display_kind(word),
+            thread=thread,
+        )
     versions = api.edits(bench, thread)
     at = len(versions) if version is None else version
     if not 1 <= at <= len(versions):
