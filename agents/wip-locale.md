@@ -200,9 +200,10 @@ gettext holds as one plural message, leaving the other untranslatable.
 
 ### Checks
 
-- **`chatddx locale check`**, built: the `locale` stage of `check.sh`, when `src/chatddx/` or the frontend changed,
-  fails while a catalog is behind the code and flags what is left untranslated or fuzzy, a human's to settle as stamps
-  pending are. At the baseline, a catalog behind is flagged, and what is left to translate isn't.
+- **`chatddx locale check`** and **`chatddx locale pending`**, built: the `locale` and `fuzzy` stages of `check.sh`, the
+  first failing while a catalog is behind the code, the second while a message is left untranslated or fuzzy, to be
+  settled as stamps pending are. A turn's end writes the catalogs and has the agent translate what is left
+  untranslated, marked fuzzy.
 - **Tests**: the ones there were stay English, as no request of theirs asks for another language. Built: in
   `src/chatddx/locale/test/test_locale.py`, a request's language negotiated, boot failing on wrong placeholders, the
   islands' messages found, a finding's found where it is made, a finding said by its code, a catalog kept in step with

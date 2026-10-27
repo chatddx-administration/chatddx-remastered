@@ -19,10 +19,12 @@
     editor,
     digest = null,
     to,
+    quiet = false,
   }: {
     editor: AppendixEditing;
     digest?: string | null;
     to?: (saved: Extract<Saved, { to: string }>) => string;
+    quiet?: boolean;
   } = $props();
   const given = untrack(() => editor);
 
@@ -40,12 +42,14 @@
     {component}
     {digest}
     {to}
-    after={(n) =>
-      tn(
-        "The case that held it has a new one with this version; carry your expectations over where they still hold.",
-        "The %(n)s cases that held it have new ones with this version; carry your expectations over where they still hold.",
-        n,
-        { n },
-      )}
+    after={quiet
+      ? undefined
+      : (n) =>
+          tn(
+            "The case that held it has a new one with this version; carry your expectations over where they still hold.",
+            "The %(n)s cases that held it have new ones with this version; carry your expectations over where they still hold.",
+            n,
+            { n },
+          )}
   />
 </div>

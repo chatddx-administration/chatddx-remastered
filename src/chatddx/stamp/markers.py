@@ -7,7 +7,7 @@ _CLOSING = ">>>>>>> @" + "stamp"
 _CONFLICT = ("<<<<<<<", ">>>>>>>")
 PENDING = (
     f"- A stamp pending is a git conflict, from `{_OPENING}` to `{_DIVIDER}` as last "
-    + "stamped and on to the `>>>>>>>` closing it as written now: a human stamps it."
+    + "stamped and on to the `>>>>>>>` closing it as written now, till it is stamped."
 )
 
 

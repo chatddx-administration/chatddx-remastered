@@ -6,6 +6,7 @@
 !/agents/
 !/AGENTS.md
 !/README.md
+!/dev/
 
 # Compromise: chatddx stamp writes what changed as a git conflict, which prettier reads as markdown and reformats.
 /docs/comments/

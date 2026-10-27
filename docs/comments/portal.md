@@ -11,13 +11,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 ````
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
-- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
-
-## `src/chatddx/portal/cases.py:building`
-
-```
-# Policy: a page that builds a case is given it back as `case` in its address.
-```
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `src/chatddx/portal/editors.py:_FORMED`
 

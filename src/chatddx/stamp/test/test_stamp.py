@@ -975,47 +975,56 @@ def faked(
 PENDING = stamped("## e\na\n", "## e\nb\n")
 
 
-def test_check_flags_stamps_pending_and_fails_on_a_proof_behind_the_code(
+def test_check_fails_on_a_proof_behind_the_code_and_not_on_stamps_pending(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
-    stamp.check([], baseline=False)
+    stamp.check([])
     assert capsys.readouterr() == ("ok\n", "")
 
     faked(monkeypatch, tmp_path / "pending", ("a", PENDING, PENDING))
-    stamp.check([], baseline=False)
-    assert capsys.readouterr() == ("", "flag: docs/surfaces/a.md: 1 stamp pending\n")
+    stamp.check([])
+    assert capsys.readouterr() == ("ok\n", "")
 
-    faked(monkeypatch, tmp_path / "behind", ("a", PENDING, "## e\nc\n"))
-    with pytest.raises(
-        SystemExit, match="^stamp: docs/surfaces/a.md behind the code: "
-    ):
-        stamp.check([], baseline=False)
-
-
-def test_check_at_the_baseline_fails_on_stamps_pending_and_on_new_ones(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
     faked(
         monkeypatch,
-        tmp_path,
-        ("a", PENDING, PENDING),
-        ("b", "## e\na\n", "## e\nb\n"),
-        ("c", None, "## e\n"),
-        ("d", "## e\n", "## e\n"),
+        tmp_path / "behind",
+        ("a", PENDING, "## e\nc\n"),
+        ("b", None, "## e\n"),
     )
+    with pytest.raises(
+        SystemExit,
+        match="^stamp: docs/surfaces/a.md, docs/surfaces/b.md behind the code: ",
+    ):
+        stamp.check([])
+
+
+def test_pending_flags_each_doc_s_stamps_pending_and_fails_while_one_is(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    faked(monkeypatch, tmp_path, ("a", PENDING, PENDING), ("b", "## e\n", "## e\n"))
+    (tmp_path / "agents").mkdir()
+    _ = (tmp_path / "agents" / "wip-x.md").write_text(restamped("a\n", "b\n"))
     with pytest.raises(SystemExit) as e:
-        stamp.check([], baseline=True)
+        stamp.pending()
     assert e.value.code == 1
     assert capsys.readouterr().err.splitlines() == [
-        "flag: docs/surfaces/a.md: 1 stamp pending at the baseline: a human stamps "
-        + "them before work proceeds",
-        "flag: docs/surfaces/b.md: behind the code at the baseline: the code changed "
-        + "without chatddx stamp write, or a stamp was kept as signed; investigate "
-        + "before work proceeds",
-        "flag: docs/surfaces/c.md: not written at the baseline: the code changed "
-        + "without chatddx stamp write; investigate before work proceeds",
+        "flag: agents/wip-x.md: 1 stamp pending",
+        "flag: docs/surfaces/a.md: 1 stamp pending",
     ]
+
+    _ = (tmp_path / "agents" / "wip-x.md").write_text("b\n")
+    _ = (tmp_path / "docs" / "surfaces" / "a.md").write_text("## e\nb\n")
+    stamp.pending()
+    assert capsys.readouterr() == ("ok\n", "")
+
+    _ = (tmp_path / "AGENTS.md").write_text(
+        "<<<<<<< HEAD\na\n=======\nb\n>>>>>>> main\n"
+    )
+    with pytest.raises(
+        SystemExit, match="^stamp pending: AGENTS.md: line 1: a conflict marker that "
+    ):
+        stamp.pending()
 
 
 def test_check_flags_a_module_with_no_stage_a_proof_no_module_writes_and_a_broken_stamp(
@@ -1029,7 +1038,7 @@ def test_check_flags_a_module_with_no_stage_a_proof_no_module_writes_and_a_broke
     _ = (tmp_path / "docs" / "whoopses" / "gone.md").write_text("## e\n")
     _ = sourced(tmp_path, {"chatddx/loose.py": "", "chatddx/lost/__init__.py": ""})
     with pytest.raises(SystemExit) as e:
-        stamp.check([], baseline=False)
+        stamp.check([])
     assert e.value.code == 1
     assert capsys.readouterr().err.splitlines() == [
         "flag: src/chatddx/loose.py: no stage in settings.STAGES",
@@ -1044,34 +1053,26 @@ def test_check_flags_a_module_with_no_stage_a_proof_no_module_writes_and_a_broke
 
     monkeypatch.setattr(stamp, "proofs", broken)
     with pytest.raises(SystemExit):
-        stamp.check(["a"], baseline=False)
+        stamp.check(["a"])
     assert "flag: docs/surfaces/a.md: line 2: a stamp isn't closed" in (
         capsys.readouterr().err
     )
 
 
-def test_check_flags_a_doc_s_stamps_pending_and_refuses_a_conflict_in_one(
+def test_check_refuses_a_conflict_in_a_doc_that_isn_t_a_stamp(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     faked(monkeypatch, tmp_path, ("a", "## e\n", "## e\n"))
     (tmp_path / "agents").mkdir()
     _ = (tmp_path / "agents" / "wip-x.md").write_text(restamped("a\n", "b\n"))
-    stamp.check([], baseline=False)
-    assert capsys.readouterr() == ("", "flag: agents/wip-x.md: 1 stamp pending\n")
-
-    with pytest.raises(SystemExit) as e:
-        stamp.check([], baseline=True)
-    assert e.value.code == 1
-    assert capsys.readouterr().err == (
-        "flag: agents/wip-x.md: 1 stamp pending at the baseline: a human stamps them "
-        + "before work proceeds\n"
-    )
+    stamp.check([])
+    assert capsys.readouterr() == ("ok\n", "")
 
     _ = (tmp_path / "AGENTS.md").write_text(
         "<<<<<<< HEAD\na\n=======\nb\n>>>>>>> main\n"
     )
     with pytest.raises(SystemExit) as e:
-        stamp.check([], baseline=False)
+        stamp.check([])
     assert e.value.code == 1
     assert capsys.readouterr().err == (
         "flag: AGENTS.md: line 1: a conflict marker that isn't a stamp's\n"
@@ -1102,13 +1103,10 @@ def test_write_says_how_many_stamps_it_wrote_to_each_proof(
     assert capsys.readouterr().out == "nothing to write\n"
 
 
-ALICE = "--author=alice <alice@example.org>"
-
-
 @pytest.mark.slow
 @needs_git
 @pytest.mark.usefixtures("as_bob")
-def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
+def test_docs_stamps_each_change_to_a_doc_since_the_commit_it_is_given(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def wrote(files: dict[str, str]) -> None:
@@ -1128,8 +1126,9 @@ def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
     )
     _ = git(tmp_path, "init", "-q")
     _ = git(tmp_path, "add", "-A")
-    _ = git(tmp_path, "commit", "-qm", "base", ALICE)
-    base = git(tmp_path, "log", "-1", "--format=%h %s")
+    _ = git(tmp_path, "commit", "-qm", "base")
+    base = git(tmp_path, "rev-parse", "HEAD")
+    shown = git(tmp_path, "log", "-1", "--format=%h %s")
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
     for docs in ("surfaces", "comments", "whoopses"):
         monkeypatch.setattr(stamp, docs.upper(), tmp_path / "docs" / docs)
@@ -1139,9 +1138,9 @@ def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
     wrote({"AGENTS.md": "a\nB\n", "agents/wip-moved.md": moved + "more\n"})
     _ = git(tmp_path, "commit", "-qam", "session")
     wrote({"docs/new.md": "n\n", "docs/surfaces/s.md": "## t\n", "src/x.md": "y\n"})
-    stamp.docs()
+    stamp.docs(base)
     said = capsys.readouterr().out.splitlines()
-    assert said[0] == f"against {base}"
+    assert said[0] == f"against {shown}"
     assert sorted(said[1:]) == [
         "AGENTS.md: 1 stamp",
         "agents/wip-moved.md: 1 stamp",
@@ -1155,17 +1154,17 @@ def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
     assert (tmp_path / "docs" / "kept.md").read_text() == "k\n"
     assert (tmp_path / "docs" / "surfaces" / "s.md").read_text() == "## t\n"
     assert (tmp_path / "src" / "x.md").read_text() == "y\n"
-    stamp.docs()
-    assert capsys.readouterr().out == f"against {base}\nnothing to write\n"
+    stamp.docs(base)
+    assert capsys.readouterr().out == f"against {shown}\nnothing to write\n"
 
     stamped_docs = ("AGENTS.md", "agents/wip-moved.md", "docs/new.md")
     wrote({name: applied((tmp_path / name).read_text()) for name in stamped_docs})
     _ = git(tmp_path, "add", "-A")
-    _ = git(tmp_path, "commit", "-qm", "stamp", ALICE)
+    _ = git(tmp_path, "commit", "-qm", "stamp")
     signed_at = git(tmp_path, "log", "-1", "--format=%h %s")
     wrote({"AGENTS.md": "a\nB\nc\n"})
     _ = git(tmp_path, "commit", "-qam", "more")
-    stamp.docs()
+    stamp.docs("HEAD~1")
     assert capsys.readouterr().out.splitlines() == [
         f"against {signed_at}",
         "AGENTS.md: 1 stamp",
@@ -1175,16 +1174,14 @@ def test_docs_stamps_each_change_to_a_doc_since_the_latest_commit_a_human_made(
 
 @needs_git
 @pytest.mark.usefixtures("as_bob")
-def test_docs_refuses_where_no_commit_is_a_human_s(
+def test_docs_refuses_a_base_that_is_no_commit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _ = git(tmp_path, "init", "-q")
     _ = git(tmp_path, "commit", "-q", "--allow-empty", "-m", "session")
     monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
-    with pytest.raises(
-        SystemExit, match="^stamp docs: no commit on HEAD's first parents is by anyone "
-    ):
-        stamp.docs()
+    with pytest.raises(SystemExit, match="^stamp docs: git rev-parse: "):
+        stamp.docs("nowhere")
 
 
 @pytest.mark.slow

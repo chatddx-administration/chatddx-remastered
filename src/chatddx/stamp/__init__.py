@@ -22,6 +22,7 @@ __all__ = [
     "check",
     "docs",
     "documents",
+    "pending",
     "proofs",
     "write",
 ]
@@ -82,46 +83,46 @@ def documents() -> list[Path]:
     root, written = settings.PROJECT_ROOT, {SURFACES, COMMENTS, WHOOPSES}
     found = [p for p in (root / "docs").rglob("*.md") if not written & set(p.parents)]
     found += [*(root / "agents").glob("*.md"), root / "AGENTS.md", root / "README.md"]
+    found += [root / "dev" / "README.md"]
     return sorted(p for p in found if p.is_file())
 
 
-def check(packages: Sequence[str], baseline: bool) -> None:
+def check(packages: Sequence[str]) -> None:
     flags: list[str] = []
     try:
         found = proofs(packages or settings.STAGES)
-        held = [] if packages else _held(documents())
+        if not packages:
+            _ = _held(documents())
     except ValueError as e:
-        found, held, flags = [], [], [str(e)]
+        found, flags = [], [str(e)]
     else:
         if not packages:
             flags += _strays({s.path for s in found})
-    refused = bool(flags)
-    behind = [s for s in found if s.behind]
-    for s in [*found, *held]:
-        if baseline and s.behind:
-            why = "the code changed without chatddx stamp write"
-            if s.current is not None:
-                why += ", or a stamp was kept as signed"
-            flags.append(
-                f"{_shown(s.path)}: {_change(s)} at the baseline: {why}; investigate "
-                + "before work proceeds"
-            )
-        elif baseline and s.pending:
-            flags.append(
-                f"{_shown(s.path)}: {_stamps(s.pending)} pending at the baseline: a "
-                + "human stamps them before work proceeds"
-            )
-        elif s.pending and not behind:
-            flags.append(f"{_shown(s.path)}: {_stamps(s.pending)} pending")
     for flag in flags:
         print(f"flag: {flag}", file=sys.stderr)
-    if behind and not baseline:
+    behind = [s for s in found if s.behind]
+    if behind:
         shown = ", ".join(_shown(s.path) for s in behind)
         raise SystemExit(f"stamp: {shown} behind the code: run chatddx stamp write")
-    if refused or (baseline and flags):
+    if flags:
         raise SystemExit(1)
-    if not flags:
-        print("ok")
+    print("ok")
+
+
+def pending() -> None:
+    written = [p for docs in (SURFACES, COMMENTS, WHOOPSES) for p in docs.glob("*.md")]
+    try:
+        held = _held(sorted([*written, *documents()]))
+    except ValueError as e:
+        raise SystemExit(f"stamp pending: {e}") from None
+    flags = [
+        f"{_shown(s.path)}: {_stamps(s.pending)} pending" for s in held if s.pending
+    ]
+    for flag in flags:
+        print(f"flag: {flag}", file=sys.stderr)
+    if flags:
+        raise SystemExit(1)
+    print("ok")
 
 
 def write(packages: Sequence[str]) -> None:
@@ -141,9 +142,10 @@ def write(packages: Sequence[str]) -> None:
     print("\n".join(written) or "nothing to write")
 
 
-def docs() -> None:
+def docs(base: str) -> None:
     root = settings.PROJECT_ROOT
-    base, shown = _signed(root)
+    base = _git(root, "rev-parse", "--verify", f"{base}^{{commit}}").strip()
+    shown = _git(root, "log", "-1", "--format=%h %s", base).strip()
     ours = set(documents())
     print(f"against {shown}")
     written: list[str] = []
@@ -160,20 +162,6 @@ def docs() -> None:
             _ = path.write_text(s.written)
             written.append(f"{_shown(path)}: {_stamps(s.new)}")
     print("\n".join(written) or "nothing to write")
-
-
-def _signed(root: Path) -> tuple[str, str]:
-    mine = _git(root, "var", "GIT_AUTHOR_IDENT").rpartition("<")[2].partition(">")[0]
-    for line in _git(
-        root, "log", "--first-parent", "--format=%H %h %ae %s"
-    ).splitlines():
-        sha, short, author, subject = (line.split(" ", 3) + [""])[:4]
-        if author != mine:
-            return sha, f"{short} {subject}"
-    raise SystemExit(
-        f"stamp docs: no commit on HEAD's first parents is by anyone but {mine}, so "
-        + "nothing says what a human signed"
-    )
 
 
 def _held(paths: Iterable[Path]) -> list[Proof]:
@@ -237,11 +225,3 @@ def _shown(path: Path) -> str:
 
 def _stamps(count: int) -> str:
     return f"{count} stamp" if count == 1 else f"{count} stamps"
-
-
-def _change(proof: Proof) -> str:
-    if proof.current is None:
-        return "not written"
-    if proof.new:
-        return f"{proof.new} new {'stamp' if proof.new == 1 else 'stamps'}"
-    return "behind the code"

@@ -53,16 +53,14 @@ if (held) {
     mount(Expected, { target: expected, props: { expected: review.expected, editor, back: review.back } });
   }
 
-  for (const at of document.querySelectorAll<HTMLDetailsElement>("details[data-appendix]")) {
+  for (const at of document.querySelectorAll<HTMLElement>("[data-appendix]")) {
     const given = review.appendices[Number(at.dataset.appendix)];
-    const body = at.querySelector<HTMLElement>("[data-appendix-body]");
-    if (!given || !body) continue;
-    unfolded(at, body, () =>
-      mount(AppendixEditor, {
-        target: body,
-        props: { ...given, to: (saved) => replaced(review.back, review.case, saved.cases) },
-      }),
-    );
+    if (!given) continue;
+    at.replaceChildren();
+    mount(AppendixEditor, {
+      target: at,
+      props: { ...given, quiet: true, to: (saved) => replaced(review.back, review.case, saved.cases) },
+    });
   }
 
   for (const at of document.querySelectorAll<HTMLDetailsElement>("details[data-answer]")) {

@@ -1,22 +1,48 @@
 #!/usr/bin/env bash
-# Usage: ./check.sh [docs|package|frontend|locale|format|browser|baseline]..., from the repository's root
-# in the dev shell with its database up (dev-db start). Each stage checks what a kind of
-# change can break and writes nothing git tracks; with no stage named, the stages of what
-# changed since the branch left origin/main, or $CHECK_BASE. It fails if any stage does.
+# Usage: ./check.sh [stage]..., from the repository's root in the dev shell with its database
+# up (dev-db start). Each stage checks one thing and writes nothing git tracks; the stages
+# named, or all of them, run side by side, and it fails, saying which did, if any does.
 set -euo pipefail
 
-docs() {
-  chatddx refcheck
-}
+STAGES=(openapi stamps locale pending fuzzy format types frontend docs tests browser)
 
-package() {
+openapi() {
   chatddx openapi | cmp -s - frontend/openapi.json ||
     fail "frontend/openapi.json is behind the code: run chatddx openapi > frontend/openapi.json"
+}
+
+stamps() {
   chatddx stamp check
-  crosscheck
+}
+
+locale() {
+  chatddx locale check
+}
+
+pending() {
+  chatddx stamp pending
+}
+
+fuzzy() {
+  chatddx locale pending
+}
+
+format() {
+  ruff format --check
+  prettier --check
+}
+
+# Policy: prettier leaves a doc that holds stamps pending as it is, as it would read their
+# markers as markdown, till it is stamped.
+prettier() {
+  local held=()
+  mapfile -t held < <(git grep --untracked -l -e '^>>>>>>> @''stamp$' -- '*.md' | sed 's/^/!/')
+  frontend/node_modules/.bin/prettier "$@" . "${held[@]}"
+}
+
+types() {
   ruff check
   basedpyright
-  pytest -n 4 -p chatddx.test.budget
 }
 
 frontend() {
@@ -24,13 +50,12 @@ frontend() {
   pnpm --dir frontend test
 }
 
-locale() {
-  chatddx locale check
+docs() {
+  chatddx refcheck
 }
 
-format() {
-  ruff format --check
-  frontend/node_modules/.bin/prettier --check .
+tests() {
+  pytest -n 4 -p chatddx.test.budget
 }
 
 # Compromise: on their own, for the browser they start.
@@ -39,54 +64,9 @@ browser() {
   pytest -m browser
 }
 
-# Policy: on a fresh commit before work starts, what it flags is for a human to settle
-# before work proceeds, so it flags all of it at once and no change git sees runs it.
-baseline() {
-  local flagged=0
-  chatddx refcheck | sed 's/^/flag: /' >&2 || flagged=1
-  chatddx openapi | cmp -s - frontend/openapi.json || {
-    echo "flag: frontend/openapi.json: behind the code at the baseline: the code changed without" \
-      "chatddx openapi; investigate before work proceeds" >&2
-    flagged=1
-  }
-  chatddx stamp check --baseline || flagged=1
-  chatddx locale check --baseline || flagged=1
-  return "$flagged"
-}
-
-# Policy: the API's Python surface and its OpenAPI document change together, so one
-# changing alone is worth a look, not a failure.
-crosscheck() {
-  git rev-parse --git-dir >/dev/null 2>&1 || return 0
-  local openapi surface
-  openapi="$(git diff --name-only "$(base)" -- frontend/openapi.json)"
-  surface="$(git diff --name-only "$(base)" -- docs/surfaces/api.md)"
-  if [[ -n $openapi && -z $surface ]] || [[ -z $openapi && -n $surface ]]; then
-    echo "flag: one of frontend/openapi.json and docs/surfaces/api.md changed, the other didn't" >&2
-  fi
-}
-
 fail() {
   echo "$1" >&2
   exit 1
-}
-
-# Accommodating for commits between units of work, which squashing makes the branch's own.
-base() {
-  git merge-base HEAD "${CHECK_BASE:-origin/main}" 2>/dev/null || git rev-parse HEAD
-}
-
-# Accommodating for the docs referring to the code, which a change in the code can break.
-changed() {
-  local paths
-  paths="$(git diff --name-only "$(base)" && git ls-files --others --exclude-standard)"
-  grep -qE '^(docs/|agents/|AGENTS\.md|README\.md|src/)' <<<"$paths" && echo docs
-  grep -qE '^(src/|worlds/|pyproject\.toml|uv\.lock|frontend/openapi\.json)' <<<"$paths" && echo package
-  grep -qE '^(frontend/|worlds/(test|sample)/_data/schemas/)' <<<"$paths" && echo frontend
-  grep -qE '^(src/chatddx/|frontend/src/)' <<<"$paths" && echo locale
-  grep -qE '^(src/|frontend/|docs/|agents/|AGENTS\.md|README\.md|pyproject\.toml|\.prettier)' <<<"$paths" && echo format
-  grep -qE '^(frontend/|src/chatddx/portal/)' <<<"$paths" && echo browser
-  return 0
 }
 
 # Optimization: stages named together run side by side, and what each says is said in
@@ -105,17 +85,14 @@ lane() {
 }
 
 stages=("$@")
-if [[ ${#stages[@]} -eq 0 ]]; then
-  mapfile -t stages < <(changed)
-  [[ ${#stages[@]} -gt 0 ]] || echo "• nothing to check: no stage reads what the branch changed" >&2
-fi
+[[ ${#stages[@]} -gt 0 ]] || stages=("${STAGES[@]}")
 built=()
 others=()
 for stage in "${stages[@]}"; do
+  [[ " ${STAGES[*]} " == *" $stage "* ]] || fail "no stage $stage: ${STAGES[*]}"
   case "$stage" in
   frontend | browser) built+=("$stage") ;;
-  docs | package | locale | format | baseline) others+=("$stage") ;;
-  *) fail "no stage $stage: docs, package, frontend, locale, format, browser or baseline" ;;
+  *) others+=("$stage") ;;
   esac
 done
 if [[ ${#stages[@]} -eq 1 ]]; then

@@ -207,48 +207,45 @@ def test_what_is_shared_to_take_is_shown_with_its_take(signed: TestClient) -> No
 
 
 @pytest.mark.slow
-def test_an_appendix_is_written_and_a_case_built_of_it_without_leaving_review(
+def test_an_appendix_written_in_review_is_added_to_the_case_it_is_written_in(
     signed: TestClient,
 ) -> None:
     crlf = family(signed, "crlf")
     back = f"/review/{crlf['id']}?tag=targets"
-    got = signed.post(
-        f"/review/{crlf['id']}/appendices",
-        data={"name": "ultrasound", "text": "Gallstones on ultrasound.", "back": back},
-    )
-    assert (got.status_code, got.headers["location"]) == (303, back)
-    query = {"kind": "appendix", "owner": "alice", "name": "ultrasound"}
-    [made] = signed.get("/api/threads", params=query).json()
-    page = shown(signed, back)
-    assert f'name="f.appendices" value="{made["head"]["digest"]}"' in page
-    assert f'name="back" value="{back}"' in page
 
-    got = signed.post(
-        f"/cases/{crlf['id']}/cases",
-        data={"f.appendices": made["head"]["digest"], "back": back},
+    def written(name: str, text: str, case: str, at: str) -> tuple[str, str]:
+        got = signed.post(
+            f"/review/{crlf['id']}/appendices",
+            data={"name": name, "text": text, "case": case, "back": at},
+        )
+        assert got.status_code == 303
+        query = {"kind": "appendix", "owner": "alice", "name": name}
+        [made] = signed.get("/api/threads", params=query).json()
+        return made["head"]["digest"], got.headers["location"]
+
+    def built(*appendices: str) -> dict[str, Any]:
+        cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+        return next(c for c in cases if c["appendices"] == list(appendices))
+
+    default = built()
+    ultrasound, at = written(
+        "ultrasound", "Gallstones on ultrasound.", default["case"], back
     )
-    cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    [built] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
-    assert (got.status_code, got.headers["location"]) == (
-        303,
-        f"{back}&{urlencode({'case': built['case']})}",
-    )
-    page = shown(signed, got.headers["location"])
+    alone = built(ultrasound)
+    assert at == f"{back}&{urlencode({'case': alone['case']})}"
+    page = shown(signed, at)
     assert "Gallstones on ultrasound." in page
+    assert "f.appendices" not in page and "owned by" not in page
     given = props(page)
     [appendix] = given["appendices"]
-    assert appendix["digest"] == made["head"]["digest"]
-    assert (appendix["editor"]["mode"], appendix["editor"]["thread"]) == (
-        "edit",
-        made["id"],
-    )
-    [default] = [c for c in cases if c["default"]]
+    assert appendix["digest"] == ultrasound
+    assert appendix["editor"]["mode"] == "edit"
     editor = given["expected"]["editor"]
-    assert (editor["mode"], editor["case"]) == ("new", built["case"])
+    assert (editor["mode"], editor["case"]) == ("new", alone["case"])
     assert editor["data"] == default["expectations"][0]["data"]
 
-    refused = signed.post(f"/cases/{crlf['id']}/cases", data={"back": back})
-    assert refused.status_code == 422
+    labs, again = written("labs", "Bilirubin 40.", alone["case"], at)
+    assert again == f"{back}&{urlencode({'case': built(ultrasound, labs)['case']})}"
 
 
 @pytest.mark.slow

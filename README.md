@@ -73,20 +73,10 @@ it.
 
 ### The database
 
-`dev-db` runs PostgreSQL 16 from `~/.local/state/dev-db/`, on a socket only. The first start creates the cluster, the
-roles and the `chatddx` database:
+Start the database and apply the migrations:
 
 ```sh
 dev-db start
-dev-db status
-dev-db enter    # psql as chatddx
-dev-db stop     # it keeps running after you leave the shell until you stop it
-dev-db reset    # stop and delete everything; the next start begins empty
-```
-
-Then apply the migrations:
-
-```sh
 chatddx migrate
 ```
 
@@ -100,17 +90,9 @@ pytest -n 4             # everything on 4 workers (pytest-xdist)
 
 ### Stamping
 
-An agent's handover leaves what it changed as stamps pending, git conflicts to resolve as you see fit. The scripts in
-`scripts/` are on the dev shell's `PATH`, and pull and push through `as.sh` as `$CHATDDX_DEV`:
-
-```sh
-fetch.sh             # pull the handover and check its baseline, which flags the stamps pending
-stamp.sh             # check the baseline, commit as "stamp", push, print the revision
-stamp.sh "message"   # the same, committed as the message
-merge.sh             # squash the branch onto main, push main, delete the branch, print main's revision
-```
-
-Start the next session at the revision `stamp.sh` prints.
+Each turn of an agent's ends with what it changed in the docs as stamps pending, git conflicts to resolve as you see
+fit, and the messages it changed in the catalogs fuzzy, to review by clearing the mark. [dev/README.md](dev/README.md)
+says how to fetch a turn's end, stamp it and merge it.
 
 ### The sample world
 

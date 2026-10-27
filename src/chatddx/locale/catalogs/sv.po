@@ -3332,11 +3332,6 @@ msgid "The case"
 msgstr "Fallet"
 
 #: src/chatddx/portal/templates/review.html
-#, python-format
-msgid "owned by %(owner)s"
-msgstr "ägt av %(owner)s"
-
-#: src/chatddx/portal/templates/review.html
 msgid "in the Library"
 msgstr "i Biblioteket"
 
@@ -3367,25 +3362,12 @@ msgid "its page"
 msgstr "dess sida"
 
 #: src/chatddx/portal/templates/review.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Change it"
-msgstr "Ändra"
-
-#: src/chatddx/portal/templates/review.html
-msgid "Make it yours"
-msgstr "Gör den till din"
-
-#: src/chatddx/portal/templates/review.html
-msgid "On its page"
-msgstr "På dess sida"
-
-#: src/chatddx/portal/templates/review.html
 msgid "None in this case."
 msgstr "Inga i det här fallet."
 
 #: src/chatddx/portal/templates/review.html
-msgid "Add to it: an appendix, or a case of several"
-msgstr "Lägg till: en bilaga, eller ett fall av flera"
+msgid "Add appendices"
+msgstr "Lägg till bilagor"
 
 #: src/chatddx/portal/templates/review.html
 msgid "Text, as it is added to the vignette"
@@ -3394,14 +3376,6 @@ msgstr "Text, som den läggs till vinjetten"
 #: src/chatddx/portal/templates/review.html
 msgid "Write the appendix"
 msgstr "Skriv bilagan"
-
-#: src/chatddx/portal/templates/review.html
-msgid "A case of the vignette and these, in the order listed"
-msgstr "Ett fall av vinjetten och dessa, i den ordning de listas"
-
-#: src/chatddx/portal/templates/review.html
-msgid "Build the case"
-msgstr "Bygg fallet"
 
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/scoring.html
@@ -3457,6 +3431,11 @@ msgstr "Du har inte tillgång till något facitschema."
 #, python-format
 msgid "Yours, version of %(at)s."
 msgstr "Din, versionen från %(at)s."
+
+#: src/chatddx/portal/templates/review.html
+#: src/chatddx/portal/templates/thread.html
+msgid "Change it"
+msgstr "Ändra"
 
 #: src/chatddx/portal/templates/review.html
 #, python-format

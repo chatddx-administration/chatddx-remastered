@@ -387,9 +387,11 @@ def _stamp(args: argparse.Namespace) -> None:
     from chatddx import stamp
 
     if args.stamping == "check":
-        stamp.check(args.package, args.baseline)
+        stamp.check(args.package)
+    elif args.stamping == "pending":
+        stamp.pending()
     elif args.stamping == "docs":
-        stamp.docs()
+        stamp.docs(args.base)
     else:
         stamp.write(args.package)
 
@@ -409,7 +411,9 @@ def _refcheck(_: argparse.Namespace) -> None:
 
 def _locale(args: argparse.Namespace) -> None:
     if args.localing == "check":
-        locale.check(args.baseline)
+        locale.check()
+    elif args.localing == "pending":
+        locale.pending()
     else:
         locale.write(args.tag)
 
@@ -671,20 +675,20 @@ def main(argv: Sequence[str] | None = None) -> None:
         "stamp",
         help="the surfaces in docs/surfaces/, the comment indexes in docs/comments/ and "
         + "the whoopses and asserts in docs/whoopses/, written from the code, and the "
-        + "other docs as an agent wrote them, with what changed as a git conflict for a "
-        + "human to stamp",
+        + "other docs as an agent wrote them, with what changed as a git conflict to "
+        + "stamp",
     )
     stamp_commands = stamping.add_subparsers(required=True)
     stamp_check = stamp_commands.add_parser(
         "check",
-        help="write nothing; flag stamps pending, and fail while a surface or an index "
-        + "is behind the code or a doc holds a conflict that isn't a stamp",
+        help="write nothing; fail while a surface or an index is behind the code or a "
+        + "doc holds a conflict that isn't a stamp",
     )
-    _ = stamp_check.add_argument(
-        "--baseline",
-        action="store_true",
-        help="on a fresh commit before work starts: fail on stamps pending too",
+    stamp_pending = stamp_commands.add_parser(
+        "pending",
+        help="write nothing; flag each doc's stamps pending, and fail while one is",
     )
+    stamp_pending.set_defaults(run=_stamp, stamping="pending")
     stamp_write = stamp_commands.add_parser(
         "write",
         help="write the surfaces and indexes behind the code, and say how many stamps",
@@ -699,8 +703,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
     stamp_docs = stamp_commands.add_parser(
         "docs",
-        help="keep each change to a doc since the latest commit a human made as stamps "
-        + "pending, the last step of a handover, and say against what and how many",
+        help="keep each change to a doc since a commit as stamps pending, and say "
+        + "against what and how many",
+    )
+    _ = stamp_docs.add_argument(
+        "base",
+        help="the commit whose docs are as signed, such as the one a turn started at",
     )
     stamp_docs.set_defaults(run=_stamp, stamping="docs")
 
@@ -719,16 +727,15 @@ def main(argv: Sequence[str] | None = None) -> None:
     locale_commands = localing.add_subparsers(required=True)
     locale_check = locale_commands.add_parser(
         "check",
-        help="write nothing; flag the messages untranslated or fuzzy, and fail while a "
-        + "catalog is behind the code",
-    )
-    _ = locale_check.add_argument(
-        "--baseline",
-        action="store_true",
-        help="on a fresh commit before work starts: flag a catalog behind the code "
-        + "rather than fail, and leave translating to the work",
+        help="write nothing; fail while a catalog is behind the code",
     )
     locale_check.set_defaults(run=_locale, localing="check")
+    locale_pending = locale_commands.add_parser(
+        "pending",
+        help="write nothing; flag the messages untranslated or fuzzy, and fail while "
+        + "one is",
+    )
+    locale_pending.set_defaults(run=_locale, localing="pending")
     locale_write = locale_commands.add_parser(
         "write",
         help="write the catalogs behind the code, and say what is left to translate",

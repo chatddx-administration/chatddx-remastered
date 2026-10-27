@@ -19,7 +19,7 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
-- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `app`
 `src/chatddx/portal/app.py:app`
@@ -37,7 +37,7 @@ Finds:
 * `family: int`
 * `name: str`
 * `text: str`
-* ∟`None`
+* ∟`str`
 
 Raises:
 1. `Invalid`: `"an appendix is named"`
@@ -50,8 +50,12 @@ Raises:
 * `family: int`
 * `name: Annotated[str, Form()]`
 * `text: Annotated[str, Form()]`
+* `case: Annotated[str | None, Form()] = None`
 * `back: Annotated[str | None, Form()] = None`
 * ∟`Response`
+
+Raises:
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name`
 
 ## `AskedBy` `@dataclass(frozen=True)`
 `src/chatddx/portal/scoring.py:AskedBy`
@@ -150,7 +154,6 @@ Raises:
 * `bench: BenchDep`
 * `family: int`
 * `appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None`
-* `back: Annotated[str | None, Form()] = None`
 * ∟`Response`
 
 Raises:

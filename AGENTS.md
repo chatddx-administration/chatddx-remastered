@@ -1,43 +1,20 @@
 # Agent instructions
 
-This document contains project-wide instructions written by humans for agents.
+This document contains project-wide instructions for agents.
 
 ## Environment
 
-- `set -a; . ./.env-container; set +a`.
-- `chatddx.settings` is the project-wide source of truth.
-- `store` uses PostgreSQL 16:
-  - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
-  - pg_hba.conf: local all all peer map=chatddx
-  - Setup database and roles with `src/chatddx/store/setup.sql`
-
-- Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered.
-
+- Project-wide settings are in `chatddx.settings`.
 - Archeology is not allowed unless said otherwise, the commit given has all you need.
 
 ## Workflow
 
-The workflow spans over a session, starts from a human-reviewed commit and ends with a handover.
+Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`.
 
-### 1. Before work starts
+When asked to hand over, run `./dev/agent.sh hand-over`.
 
-Run `./check.sh baseline`: on non-zero exit, pause work and relay the flags.
-
-### 2. Between units of work
-
-No rules: use your own judgement and the tests and checks at your disposal (see "Tests and checks"). Commit and push as
-you see fit, a session's hooks may ask for both at a turn's end, but neither is a handover.
-
-### 3. Handing over
-
-When asked for a handover or pull request:
-
-1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" respectively (pre-existing included).
-2. Format, see "Formatting".
-3. Run `./check.sh`:
-   - relay flags
-   - flip what the budget suggests when it feels right
-4. Commit, run `chatddx stamp docs` and commit what it writes, then push.
+All `./dev/agent.sh` commands are silent on success or print instructions for you to act on. All `./dev/agent.sh` exits
+are 0 except `turn-end`, which exits 2 on failure.
 
 ## Handling errors and warnings
 
@@ -77,8 +54,8 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 ## Tests and checks
 
-Handover check tool is `./check.sh`, capture stdout for budget output and flags to relay. It takes ~250s when diff
-against `origin/main` hits all stages, which run side by side, mostly due to browser tests and the budget run.
+`./check.sh [stage]...` runs the stages named, or all of them, side by side, ~250s for all, mostly due to browser tests
+and the budget run.
 
 ### Python
 
@@ -88,8 +65,6 @@ against `origin/main` hits all stages, which run side by side, mostly due to bro
 - `pytest` runs every test but the browser tests ~220s.
 - `pytest -m 'not slow'`, excludes the slowest tests making up 7/8 of the total test time, ~60s.
 - `pytest -n 4` fast given absence of other loads, ~110s.
-- Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`.
 
 ### TypeScript
 
@@ -99,15 +74,15 @@ against `origin/main` hits all stages, which run side by side, mostly due to bro
 ### Formatting
 
 - `ruff format` formats the Python.
-- `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets through.
+- `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets
+  through.
 - `./check.sh format` checks both.
+- `./write.sh` runs both, and writes what else follows from the code: the OpenAPI document, the catalogs and the stamps.
 
 ### Browser
 
-- `CHATDDX_CHROMIUM=/opt/pw-browsers/chromium` is in your env and should be good.
-- `pnpm --dir frontend install --frozen-lockfile` if `frontend/node_modules` is missing.
-- `pnpm --dir frontend build` if not already built.
-- `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s
+- `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s, against the frontend as
+  `pnpm --dir frontend build` last built it.
 
 ### Nix
 
@@ -115,24 +90,13 @@ Agents aren't expected to run this, just know it exists.
 
 `nix flake check` runs:
 
-- `check.sh`'s docs, package, frontend and format stages
+- `check.sh`'s openapi, stamps, types, tests, frontend, docs and format stages
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 
 ### Docs
 
 - `chatddx refcheck` checks for broken references and commits off main.
-
-## Scripts and commands
-
-What reads or makes the project's own things, its code, docs, data or settings, is Python behind `chatddx`, a module
-with its stage and tests. What only runs other programs in order and goes by their exit codes is a shell script. A
-script may call `chatddx`; `chatddx` calls no script.
-
-- `check.sh`, at the root, is run by agents and humans both.
-- `scripts/` is the human's side of the workflow, which agents aren't meant to run but may read to see it:
-  `scripts/fetch.sh` pulls a handover and checks its baseline, `scripts/stamp.sh` commits what a human stamped and
-  prints the revision the next session starts at, and `scripts/merge.sh` squashes a branch onto main.
 
 ## Development stages
 
@@ -159,13 +123,11 @@ in two. A doc is moved in a commit of its own, and a move entails deduplication 
 
 ## Documentation
 
-The handover's `chatddx stamp docs` inserts git conflict markers between the latest commit a human made and now, a human
-needs to stamp these for next baseline to pass.
-
 - The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
   provide options.
 - Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
   collaborator-one, admin).
+- Destructive edits are allowed, all doc-edits are stamped with git conflict markers for a human to resolve.
 
 ## Comments
 
@@ -175,6 +137,8 @@ needs to stamp these for next baseline to pass.
 
 1. Prefix with the comment's nature
 2. Tell what's non-evident and only what the code doesn't already tell
+
+Before running `./dev/agent.sh hand-over`, remove every comment that doesn't pass, pre-existing included.
 
 ## Docstrings
 
@@ -188,3 +152,5 @@ of these.
 - A) Every line of docstring imposes a readability tax.
 - B) Callers can dodge reading the source if the docstring gives them the right idea.
 - ∟ When B outweighs A, a docstring by that amount is justified.
+
+Before running `./dev/agent.sh hand-over`, remove every docstring that doesn't pass, pre-existing included.

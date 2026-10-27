@@ -32,6 +32,7 @@ from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_ARTIFACT,
     LINES,
+    LINES_GUIDED,
     MISTRAL,
     MISTRAL_ARTIFACT,
     MISTRAL_MODEL,
@@ -805,3 +806,12 @@ def test_a_hand_written_configuration_on_another_model_than_its_skeleton_s_says_
 
     assert "trial.engine_unmatched" in codes(GPT_OSS)
     assert "trial.engine_unmatched" not in codes(QWEN_BARE)
+
+
+def test_a_finding_in_each_language_s_trial_is_said_once(bench: Bench) -> None:
+    near_greedy, _ = bench.thread("near-greedy", "sampling")
+    variation = bench.variation(LINES_GUIDED, {"sampling": near_greedy.digest})
+    carried = bench.languages(variation, [f.case for f in bench.families()])
+    assert [c.language for c in carried if c.skeleton is not None] == ["en", "sv"]
+    found = bench.findings(variation, bench.endpoint(QWEN).engine, 7, carried)
+    assert [f.code for f in found].count("vllm.temperature_clamped") == 1

@@ -11,7 +11,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 ````
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
-- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `src/chatddx/bench/components.py:_carried`
 
@@ -94,6 +94,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 ```
 # Policy: read when asked, so that facts corrected while a connection lasts are
 # used.
+```
+
+## `src/chatddx/bench/seen.py:Seen.findings`
+
+```
+# Policy: each language's trial is a subject of its own, but a finding that
+# is the same in two is said once.
 ```
 
 ## `src/chatddx/bench/seen.py:Seen.served`

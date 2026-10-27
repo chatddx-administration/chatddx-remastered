@@ -1,5 +1,5 @@
 from typing import Annotated, Any
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 from uuid import UUID
 
 from fastapi import APIRouter, Form, Query, Request, Response
@@ -24,7 +24,7 @@ from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.locale import tr
 from chatddx.scorers.shipped import unit_of
 
-from .cases import appended, written_for
+from .cases import appended, built
 from .pages import BenchDep, page, within
 from .runs import PLAN, pressed
 from .scoring import blank, code_of, scorer_choices, unshipped
@@ -162,7 +162,6 @@ def review(
         case=picked,
         cases=shown.cases,
         appendices=appendices,
-        written=written_for(bench, family),
         visible=visible,
         schema=under,
         expected=expected,
@@ -195,10 +194,21 @@ def appending_in_review(
     family: int,
     name: Annotated[str, Form()],
     text: Annotated[str, Form()],
+    case: Annotated[str | None, Form()] = None,
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
-    appended(bench, family, name, text)
-    return RedirectResponse(within(back or f"/review/{family}"), 303)
+    shown = api_families.family(bench, family)
+    picked = next((c for c in shown.cases if case in (None, c.case)), None)
+    if picked is None:
+        raise NotFound.of(
+            "no case %(case)s of %(family)s", case=str(case), family=shown.name
+        )
+    made = built(
+        bench, family, [*picked.appendices, appended(bench, family, name, text)]
+    )
+    path, _, query = within(back or f"/review/{family}").partition("?")
+    kept = [(k, v) for k, v in parse_qsl(query) if k != "case"]
+    return RedirectResponse(f"{path}?{urlencode([*kept, ('case', made)])}", 303)
 
 
 @router.post("/review/{family}/runs")

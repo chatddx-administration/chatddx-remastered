@@ -75,7 +75,6 @@
     <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       {% if family.language %}<span>{{ family.language | language }}</span>{% endif %}
       {% for t in family.tags %}{{ chip(t) }}{% endfor %}
-      {% if family.owner and family.owner != person.login %}<span>{{ _("owned by %(owner)s", owner=family.owner) }}</span>{% endif %}
       <a href="/cases/{{ family.id }}">{{ _("in the Library") }}</a>
     </p>
   </header>
@@ -94,37 +93,21 @@
   {% for a in appendices %}
   <article class="mb-2 rounded-lg border-l-2 border-primary/50 bg-primary/5 px-3 py-2 text-sm">
     <h3 class="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground"><span>{{ a.title }}</span>{% if a.thread %}<a href="/threads/{{ a.thread }}">{{ _("its page") }}</a>{% endif %}</h3>
-    <p class="whitespace-pre-wrap">{{ a.text }}</p>
-    {% if a.editor %}
-    <details data-appendix="{{ loop.index0 }}" class="mt-2">
-      <summary class="cursor-pointer text-xs text-primary hover:underline">{{ _("Change it") if a.editor.mode == "edit" else _("Make it yours") }}</summary>
-      <div data-appendix-body class="mt-2 text-xs"><a href="/threads/{{ a.thread }}#edit">{{ _("On its page") }}</a></div>
-    </details>
-    {% endif %}
+    <div{% if a.editor %} data-appendix="{{ loop.index0 }}"{% endif %}><p class="whitespace-pre-wrap">{{ a.text }}</p></div>
   </article>
   {% else %}
   <p class="text-sm text-muted-foreground">{{ _("None in this case.") }}</p>
   {% endfor %}
   <details class="mt-4 rounded-lg border border-dashed border-border p-3 text-sm">
-    <summary class="cursor-pointer font-medium">{{ _("Add to it: an appendix, or a case of several") }}</summary>
+    <summary class="cursor-pointer font-medium">{{ _("Add appendices") }}</summary>
     <form method="post" action="{{ here }}/appendices" class="mt-3 grid gap-2">
-      <input type="hidden" name="back" value="{{ back }}">
+      <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
       <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Name") }}</span>
         <input name="name" required class="h-9 {{ field }}"></label>
       <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Text, as it is added to the vignette") }}</span>
         <textarea name="text" required rows="3" class="py-1.5 {{ field }}"></textarea></label>
       <div><button>{{ _("Write the appendix") }}</button></div>
     </form>
-    {% if written %}
-    <form method="post" action="/cases/{{ family.id }}/cases" class="mt-4 border-t border-border/60 pt-3">
-      <input type="hidden" name="back" value="{{ here }}{{ query(**keep) }}">
-      <p class="mb-2 font-medium">{{ _("A case of the vignette and these, in the order listed") }}</p>
-      {% for t in written %}
-      <label class="flex items-center gap-2 py-0.5"><input type="checkbox" name="f.appendices" value="{{ t.head.digest }}"{% if t.head.digest in case.appendices %} checked{% endif %}> {{ t.name or t.title }}{% if t.owner and t.owner != person.login %} <span class="text-muted-foreground">({{ t.owner }})</span>{% endif %}</label>
-      {% endfor %}
-      <div class="mt-2"><button>{{ _("Build the case") }}</button></div>
-    </form>
-    {% endif %}
   </details>
   {% endcall %}
 

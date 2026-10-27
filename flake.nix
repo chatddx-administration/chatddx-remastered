@@ -126,19 +126,19 @@
             pkgs.postgresql_16
             pkgs.coreutils
           ];
-          text = builtins.readFile ./scripts/dev-db.sh;
+          text = builtins.readFile ./dev/dev-db.sh;
         };
 
       # Optimization: a stage of check.sh sees only the files it reads, so that nix runs
       # it again only when one of them changes.
       check =
-        system: stage: fileset: attrs:
+        system: label: stages: fileset: attrs:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
         pkgs.stdenvNoCC.mkDerivation (
           {
-            name = "${name}-check-${stage}";
+            name = "${name}-check-${label}";
             src = lib.fileset.toSource {
               root = ./.;
               fileset = lib.fileset.unions [
@@ -148,7 +148,7 @@
             };
             buildPhase = ''
               runHook preBuild
-              bash check.sh ${stage}
+              bash check.sh ${lib.concatStringsSep " " stages}
               runHook postBuild
             '';
             installPhase = "touch $out";
@@ -181,12 +181,13 @@
           };
 
           docs =
-            check system "docs"
+            check system "docs" [ "docs" ]
               (lib.fileset.unions [
                 ./docs
                 ./agents
                 ./AGENTS.md
                 ./README.md
+                ./dev/README.md
                 ./src
               ])
               {
@@ -200,16 +201,17 @@
           # Compromise: check.sh's browser stage isn't checked here, for the browser
           # it starts.
           package =
-            check system "package"
+            check system "package" [ "openapi" "stamps" "types" "tests" ]
               (lib.fileset.unions [
                 ./src
                 ./worlds
                 ./docs/comments
                 ./docs/surfaces
+                ./docs/whoopses
                 ./frontend/openapi.json
                 ./pyproject.toml
                 ./uv.lock
-                ./scripts/dev-db.sh
+                ./dev/dev-db.sh
                 ./.env-devshell
               ])
               {
@@ -230,7 +232,7 @@
               };
 
           format =
-            check system "format"
+            check system "format" [ "format" ]
               (lib.fileset.unions [
                 ./src
                 ./frontend
@@ -238,6 +240,7 @@
                 ./agents
                 ./AGENTS.md
                 ./README.md
+                ./dev/README.md
                 ./pyproject.toml
                 ./.prettierrc
                 ./.prettierignore
@@ -258,7 +261,7 @@
               };
 
           frontend =
-            check system "frontend"
+            check system "frontend" [ "frontend" ]
               (lib.fileset.unions [
                 ./frontend
                 ./src/chatddx/portal/templates
@@ -321,7 +324,6 @@
             shellHook = ''
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
-              export PATH="$REPO_ROOT/scripts:$PATH"
               export CHATDDX_STATE_HOME="$HOME/.local/state"
               set -a && source "$REPO_ROOT/.env" && set +a
               echo "• Flake version: ${version}"

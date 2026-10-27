@@ -4,12 +4,16 @@ from textwrap import dedent
 
 import pytest
 
+import chatddx.locale.locale as catalogs
 from chatddx.factors import Finding
 from chatddx.locale import (
     Locales,
+    Proof,
+    check,
     display_language,
     localized,
     localizing,
+    pending,
     proofs,
     refusal,
     tr,
@@ -403,3 +407,29 @@ def test_an_island_s_page_holds_what_the_islands_say_and_what_is_said_below_the_
         "case.drift\x04the vignette differs": "vinjetten skiljer sig",
         "refusal\x04no endpoint serves it": "ingen ändpunkt serverar den",
     }
+
+
+def test_check_fails_on_a_catalog_behind_the_code_and_pending_on_one_left_to_translate(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    sv = tmp_path / "sv.po"
+    held = [Proof(sv, "a", "a", 0, 0)]
+
+    def found() -> list[Proof]:
+        return held
+
+    monkeypatch.setattr(catalogs, "proofs", found)
+    check()
+    pending()
+    assert capsys.readouterr() == ("ok\nok\n", "")
+
+    held[:] = [Proof(sv, "a", "a", 2, 1)]
+    check()
+    with pytest.raises(SystemExit) as e:
+        pending()
+    assert e.value.code == 1
+    assert capsys.readouterr() == ("ok\n", f"flag: {sv}: 2 untranslated, 1 fuzzy\n")
+
+    held[:] = [Proof(sv, "a", "b", 0, 0)]
+    with pytest.raises(SystemExit, match=f"^locale: {sv} behind the code: run chatddx"):
+        check()

@@ -18,7 +18,7 @@ from chatddx.factors.cases import Appendix, Case
 from chatddx.locale import tr
 
 from .changes import changes
-from .pages import BenchDep, page, within
+from .pages import BenchDep, page
 from .threads import Typed, library_page
 
 router = APIRouter()
@@ -197,27 +197,20 @@ def leaving(bench: BenchDep, family: int) -> Response:
     return RedirectResponse("/library?kind=case", 303)
 
 
-# Policy: a page that builds a case is given it back as `case` in its address.
 @router.post("/cases/{family}/cases")
 def building(
     request: Request,
     bench: BenchDep,
     family: int,
     appendices: Annotated[list[str] | None, Form(alias="f.appendices")] = None,
-    back: Annotated[str | None, Form()] = None,
 ) -> Response:
     picked = [a for a in appendices or [] if a]
-    if not picked and back is None:
+    if not picked:
         refusal = tr("a case is built of one appendix or more: pick one")
         typed = Typed([refusal], kept=False)
         return _case_page(request, bench, family, typed=typed)
-    made = built(bench, family, picked)
-    if back is None:
-        return RedirectResponse(f"/cases/{family}", 303)
-    kept = within(back)
-    return RedirectResponse(
-        kept + ("&" if "?" in kept else "?") + urlencode({"case": made}), 303
-    )
+    _ = built(bench, family, picked)
+    return RedirectResponse(f"/cases/{family}", 303)
 
 
 @router.post("/cases/{family}/replacement")
@@ -278,14 +271,15 @@ def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
     ]
 
 
-def appended(bench: Bench, family: int, name: str, text: str) -> None:
+def appended(bench: Bench, family: int, name: str, text: str) -> str:
     if not name.strip():
         raise Invalid.of("an appendix is named")
     if not text:
         raise Invalid.of("an appendix holds a text")
     with refused():
         held = Appendix(vignette=bench.family(family).vignette, text=text)
-        _ = bench.new(held, name.strip())
+        written = bench.new(held, name.strip())
+    return written.edit.digest
 
 
 def built(bench: Bench, family: int, appendices: list[str] | None) -> str:

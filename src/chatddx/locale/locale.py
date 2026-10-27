@@ -36,6 +36,7 @@ __all__ = [
     "localizing",
     "ngettext",
     "npgettext",
+    "pending",
     "pgettext",
     "pgettext_noop",
     "proofs",
@@ -393,27 +394,23 @@ def proofs(
     return found
 
 
-def check(baseline: bool) -> None:
-    found = proofs()
-    behind = [p for p in found if p.behind]
-    flags: list[str] = []
-    for p in found:
-        if baseline and p.behind:
-            flags.append(
-                f"{_shown(p.path)}: behind the code at the baseline: the code changed "
-                + "without chatddx locale write; investigate before work proceeds"
-            )
-        elif not baseline and (p.untranslated or p.fuzzy):
-            flags.append(f"{_shown(p.path)}: {_left(p)}")
-    for flag in flags:
-        print(f"flag: {flag}", file=sys.stderr)
-    if behind and not baseline:
+def check() -> None:
+    behind = [p for p in proofs() if p.behind]
+    if behind:
         shown = ", ".join(_shown(p.path) for p in behind)
         raise SystemExit(f"locale: {shown} behind the code: run chatddx locale write")
-    if baseline and flags:
+    print("ok")
+
+
+def pending() -> None:
+    flags = [
+        f"{_shown(p.path)}: {_left(p)}" for p in proofs() if p.untranslated or p.fuzzy
+    ]
+    for flag in flags:
+        print(f"flag: {flag}", file=sys.stderr)
+    if flags:
         raise SystemExit(1)
-    if not flags:
-        print("ok")
+    print("ok")
 
 
 def write(tags: Iterable[str]) -> None:

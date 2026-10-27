@@ -512,6 +512,7 @@ class Seen:
             return found + missing(self, variation, ())
         known = self._languages_of([c for each in carried for c in each.cases])
         found: list[Finding] = []
+        said: set[Finding] = set()
         for each in carried:
             if each.skeleton is None:
                 continue
@@ -523,8 +524,13 @@ class Seen:
                 {**known, made.skeleton: each.language},
                 partial(language_of, self.rows),
             )
+            # Policy: each language's trial is a subject of its own, but a finding that
+            # is the same in two is said once.
             for finding in lints(registry, self.facts, [made.digest], languages):
-                if finding not in found:
+                if (
+                    unsubjected := finding.model_copy(update={"subject": None})
+                ) not in said:
+                    said.add(unsubjected)
                     found.append(finding)
         return found + missing(self, variation, carried)
 

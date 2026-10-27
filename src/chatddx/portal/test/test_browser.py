@@ -313,17 +313,23 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
     expect(page.get_by_text(re.compile(r"^Version 2 of 2, "))).to_be_visible()
     expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
 
-    page.get_by_text("Add to it: an appendix, or a case of several").click()
+    page.get_by_text("Add appendices").click()
     page.get_by_label("Name").fill("ultrasound")
     page.get_by_label("Text, as it is added to the vignette").fill("Free fluid.")
     page.get_by_role("button", name="Write the appendix").click()
-    page.get_by_text("Add to it: an appendix, or a case of several").click()
-    page.get_by_label("ultrasound").check()
-    page.get_by_role("button", name="Build the case").click()
     page.wait_for_url(re.compile(r"[?&]case=sha256"))
-    expect(page.get_by_text("Free fluid.")).to_be_visible()
+    appendix = page.get_by_role("article").filter(has_text="ultrasound")
+    expect(appendix.get_by_label("Its text")).to_have_value("Free fluid.")
     expect(page.get_by_text("a new thread of your own")).to_be_visible()
     expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
+
+    built = page.url
+    appendix.get_by_label("Its text").fill("Free fluid in Morison's pouch.")
+    appendix.get_by_role("button", name="Save").click()
+    page.wait_for_url(lambda url: url != built)
+    expect(appendix.get_by_label("Its text")).to_have_value(
+        "Free fluid in Morison's pouch."
+    )
 
     page.locator("body").press("j")
     page.wait_for_url(lambda url: f"/review/{noted['id']}" not in url)

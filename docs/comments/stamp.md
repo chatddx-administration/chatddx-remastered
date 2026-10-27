@@ -11,7 +11,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, sort
 ````
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
-- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `src/chatddx/stamp/code.py:Code._runtime`
 

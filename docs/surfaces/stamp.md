@@ -19,7 +19,7 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
-- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now: a human stamps it.
+- A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `applied`
 `src/chatddx/stamp/markers.py:applied`
@@ -45,7 +45,6 @@ Raises:
 `src/chatddx/stamp/__init__.py:check`
 
 * `packages: Sequence[str]`
-* `baseline: bool`
 * ∟`None`
 
 Raises:
@@ -169,12 +168,12 @@ Raises:
 ## `docs`
 `src/chatddx/stamp/__init__.py:docs`
 
+* `base: str`
 * ∟`None`
 
 Raises:
-1. `SystemExit`: `"stamp docs: git {args[0]}: {e.stderr.strip()}"` (from `subprocess.CalledProcessError`, through `_signed`)
-2. `SystemExit`: `"stamp docs: no commit on HEAD's first parents is by anyone but {mine}, so nothing says what a human signed"` (through `_signed`)
-3. `SystemExit`: `"stamp docs: {_shown(path)}: {e}"` (from `ValueError`)
+1. `SystemExit`: `"stamp docs: git {args[0]}: {e.stderr.strip()}"` (from `subprocess.CalledProcessError`, through `_git`)
+2. `SystemExit`: `"stamp docs: {_shown(path)}: {e}"` (from `ValueError`)
 
 ## `documents`
 `src/chatddx/stamp/__init__.py:documents`
@@ -244,6 +243,15 @@ Raises:
 `src/chatddx/stamp/markers.py:PENDING`
 
 `PENDING = …`
+
+## `pending`
+`src/chatddx/stamp/__init__.py:pending`
+
+* ∟`None`
+
+Raises:
+1. `SystemExit`: `"stamp pending: {e}"` (from `ValueError`)
+2. `SystemExit`: `1`
 
 ## `private`
 `src/chatddx/stamp/code.py:private`
