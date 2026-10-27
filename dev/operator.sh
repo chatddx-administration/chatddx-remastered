@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-die() {
-  printf 'error: %s\n' "$*" >&2
-  exit 1
-}
-
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 cd "$(git rev-parse --show-toplevel)"
 
 STAMPED=dev/stamped
+REFUSED_AT_STAMP=(openapi locale pending fuzzy)
+TOLD_AT_FETCH=(pending fuzzy)
+
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
 
 # Optimization: the commit stamp last found nothing pending in is held as stamped, so
 # that stamp and merge needn't look again while it is all there is.
@@ -22,12 +24,12 @@ fetch() {
   as.sh "$CHATDDX_DEV" git fetch --quiet origin
   git switch --quiet "$branch"
   git merge --ff-only --quiet "origin/$branch"
-  ./check.sh pending fuzzy || true
+  ./check.sh "${TOLD_AT_FETCH[@]}" || true
 }
 
 stamp() {
   if ! stamped; then
-    ./check.sh pending fuzzy >&2 || die "pending, as flagged above; nothing was committed"
+    ./check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
     git add -A
     git diff --cached --quiet || git commit --quiet -m "${1:-stamp}"
     git rev-parse HEAD >"$STAMPED"

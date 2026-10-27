@@ -5,8 +5,8 @@ cognitive reserves.
 
 ## Its pages
 
-- **Review**: where clinicians check their vignettes against appendices and expectations, run them and read how they
-  were scored.
+- **Review**: where clinicians check their vignettes against appendices and expectations, write them, and evaluate a
+  case under every configuration they see; how a configuration fares beyond one case is for the Lab, Scoring and Runs.
 - **Lab**: the evolution of configurations, and queueing trials and seeing how they fare against each other.
 - **Scoring**: managing judges and scorers.
 - **Runs**: everything run-related: what is under way and what is queued, its order, pausing and halting.
@@ -19,7 +19,7 @@ weighed where its consequences show.
 
 | Page    | For                     | Writes                                                          | Weighs                                                     | Picks                  |
 | ------- | ----------------------- | --------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------- |
-| Review  | clinicians              | appendices, expectations                                        | a case's answers under each view                           | configurations         |
+| Review  | clinicians              | appendices, expectations; a case's tags and language            | a case against its expectation under each configuration    | —                      |
 | Lab     | researchers             | configurations of either purpose, as variations; trials         | a lineage on a set of cases                                | parts, models          |
 | Scoring | researchers             | judges; a scorer's code, resources, parameters and labels       | what a scorer reads and how it scored; a judge's verdicts  | judges' configurations |
 | Runs    | whoever runs and scores | the queue: its order, pausing, halting, stopping; scoring again | what is under way, queued and left to score; runs compared | —                      |
@@ -84,6 +84,27 @@ Open:
 - The benches keep their own compact headings, as their `h1` is as large as a section's title.
 - Inputs, selects and text boxes are still styled by utilities in each template.
 - The islands' buttons and links are shadcn's or utilities, of none of these kinds yet.
+
+## Review
+
+Drafted: `/review/{family}` (`src/chatddx/portal/review.py`; `src/chatddx/portal/test/test_reviewing.py`), one page of a
+case and what is written of it, in `frontend/src/islands/review.ts`.
+
+- **The cases**: each family, with its cases of appendices as branches under it, a case under the one it adds an
+  appendix to, filtered in place by tags and languages.
+- **The case**: its vignette and its appendices, one of one's own changed with its pen, or one added, in the same form,
+  one at a time.
+- **The expectation**: its name, then a section for each of its schema's fields, every field shown.
+- **The bar** under both: the case's tags and language, Delete on a branch whose last appendix is one's own, Run,
+  Restore, and Save, which writes everything changed on the page (`frontend/src/lib/review/edited.svelte.ts`).
+- **The evaluation**, a screen below, which Run starts and `?evaluation=` holds, its first run's id: the case under each
+  live configuration of one's own that can run it, three times under seeds drawn and a fourth under the third's seed, a
+  run of its own as a trial's seeds are distinct, all one start; the others left out, each with why. A table of each
+  configuration's means by the expectation's fields, from the views of the schema's scorers reading each, then each item
+  as a row, its outcome and tokens, opened to what it answered (`frontend/src/lib/review/Evaluation.svelte`).
+- **Starting it**: every run is begun before any is queued, so that the worker sending the first doesn't slow beginning
+  the rest, and the evaluation reads its runs' start records rather than the API's runs: some 1 s to begin the test
+  World's 26 runs of alice's, and as much to show them, but where a worker sends them in the same process.
 
 ## The Library
 

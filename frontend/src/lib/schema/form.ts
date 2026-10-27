@@ -147,6 +147,35 @@ export function kept(value: unknown, schema: Schema, root: Schema): unknown {
   return value;
 }
 
+// Policy: where a form shows every field, what is left empty is left out, an authored item
+// holding nothing but its author included; a required field is kept, so that what it lacks is said.
+export function pruned(value: unknown, schema: Schema, root: Schema): unknown {
+  const shape = widget(schema, root);
+  if (typeof value === "string") return value === "" ? undefined : value;
+  if (shape.is === "list" && Array.isArray(value)) {
+    const left = value.map((v) => pruned(v, shape.items, root)).filter((v) => v !== undefined);
+    return left.length ? left : undefined;
+  }
+  if (shape.is === "or-none") return value === false ? false : pruned(value, shape.schema, root);
+  if (shape.is === "union") return pruned(value, chosen(shape, value).schema, root);
+  if (shape.is !== "object" || !held(value)) return value;
+  const left = Object.entries(value).map(([k, v]): [string, unknown, boolean] => {
+    const p = shape.properties.find((p) => p.name === k);
+    return [k, p ? pruned(v, p.schema, root) : v, p?.required ?? false];
+  });
+  if (left.every(([k, v]) => v === undefined || k === "author")) return undefined;
+  return Object.fromEntries(
+    left.flatMap(([k, v, required]) => (v !== undefined ? [[k, v]] : required ? [[k, value[k]]] : [])),
+  );
+}
+
+export function glimpse(value: unknown): string[] {
+  if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+  if (Array.isArray(value)) return value.flatMap(glimpse);
+  if (!held(value)) return [];
+  return Object.entries(value).flatMap(([k, v]) => (k === "author" ? [] : glimpse(v)));
+}
+
 // Policy: a field goes by its name, but for those the portal words for clinicians.
 const WORDED: Record<string, () => string> = {
   diagnosis: () => tp("a field", "Final diagnosis"),
@@ -156,6 +185,8 @@ const WORDED: Record<string, () => string> = {
   notes: () => tp("a field", "Statement"),
   pattern: () => tp("a field", "Match"),
   text: () => tp("a field", "Own note"),
+  comment: () => tp("a field", "comment"),
+  answer: () => tp("a field", "answer"),
 };
 
 export function fieldName(name: string): string {

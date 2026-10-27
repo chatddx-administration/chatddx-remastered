@@ -7,9 +7,9 @@ STARTED=dev/session-start
 TURN=dev/turn-start
 REFUSED=dev/refused
 CHECKED_AT_SESSION_START=(openapi stamps locale pending fuzzy format types frontend docs)
+CHECKED_AT_HAND_OVER=(format types frontend docs tests browser)
 REFUSED_AT_TURN_START=(openapi locale)
 TOLD_AT_TURN_START=(pending fuzzy format types frontend)
-HANDED_OVER=(format types frontend docs tests browser)
 
 remote() {
   [[ ${CLAUDE_CODE_REMOTE:-} == true ]]
@@ -315,7 +315,7 @@ hand-over() {
     printf '%s\n' "$stepped fails, as below: see to it, and commit and push the branch." "$said"
     return
   fi
-  checked "${HANDED_OVER[@]}"
+  checked "${CHECKED_AT_HAND_OVER[@]}"
   budget="$(grep -E '^(mark slow|unmark): ' <<<"$said")" || true
   if ((${#failed[@]})); then
     echo "Handed over with $(named "${failed[@]}"), as below: $again"

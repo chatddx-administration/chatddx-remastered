@@ -528,8 +528,9 @@ has no shelf of appendices and no page of one (src/chatddx/portal/shelves.py:IN_
 
 - **An appendix is a thread** (src/chatddx/bench/model.py:KINDS), with an owner, versions, sharing and deletion of its
   own, which nothing but its case needs, and the API still lists and writes it as one.
-- **Taking it out of a case** in Review moves to the case without it, and the case with it stays among its family's
-  cases, as a case is immutable.
+- **Deleting a case's branch** in Review deletes the thread of the appendix it ends in, and Review lists a case only
+  while each of its appendices heads a thread the person sees (src/chatddx/portal/review.py:_branches); the case stays
+  among its family's cases, as a case is immutable, and the API still lists it.
 - **A case's title names its appendices by their threads' names**, and `case_titled` looks them up by those names
   (src/chatddx/bench/seen.py:Seen.case_titled), so an appendix without a thread needs its name kept elsewhere.
 

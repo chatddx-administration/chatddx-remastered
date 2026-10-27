@@ -1,40 +1,14 @@
-import { mount, unmount } from "svelte";
-import { remembered } from "$lib/drawers";
-import AppendixEditor from "$lib/editors/AppendixEditor.svelte";
+import { mount } from "svelte";
+import { t } from "$lib/locale";
 import About from "$lib/review/About.svelte";
+import Appendices from "$lib/review/Appendices.svelte";
+import { Edited } from "$lib/review/edited.svelte";
+import Evaluation from "$lib/review/Evaluation.svelte";
 import { flipped, kept, type Picked, pickedIn, shown } from "$lib/review/filtering";
-import Answer from "$lib/review/Answer.svelte";
 import Expected from "$lib/review/Expected.svelte";
-import Pending from "$lib/review/Pending.svelte";
-import { replaced, type Review } from "$lib/review/review";
+import type { Review } from "$lib/review/review";
+import Save from "$lib/review/Save.svelte";
 import Vignette from "$lib/review/Vignette.svelte";
-
-function unfolded(at: HTMLDetailsElement, body: HTMLElement, show: () => void): void {
-  const opened = () => {
-    if (!at.open) return;
-    at.removeEventListener("toggle", opened);
-    body.replaceChildren();
-    show();
-  };
-  at.addEventListener("toggle", opened);
-}
-
-function changed(at: HTMLButtonElement, body: HTMLElement, show: () => ReturnType<typeof mount>): void {
-  const read = [...body.childNodes];
-  let shown: ReturnType<typeof mount> | null = null;
-  at.hidden = false;
-  at.addEventListener("click", () => {
-    if (shown) {
-      void unmount(shown);
-      shown = null;
-      body.replaceChildren(...read);
-    } else {
-      body.replaceChildren();
-      shown = show();
-    }
-    at.setAttribute("aria-pressed", String(shown !== null));
-  });
-}
 
 function filtering(list: HTMLElement, filters: HTMLElement): void {
   let picked: Picked = pickedIn(location.search);
@@ -84,24 +58,17 @@ const held = document.getElementById("review-props");
 if (held) {
   const review = JSON.parse(held.textContent ?? "null") as Review;
 
-  for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) {
-    remembered(drawer, "review");
-  }
   const list = document.querySelector<HTMLElement>("[data-cases]");
   const current = list?.querySelector<HTMLElement>('li a[aria-current="page"]');
   if (list && current) list.scrollTop = current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
   const filters = list?.querySelector<HTMLElement>("nav[data-filters]");
   if (list && filters) filtering(list, filters);
 
+  const edited = new Edited(review.case, (to) => location.assign(to));
   const about = document.getElementById("review-about");
   if (about) {
     about.replaceChildren();
-    mount(About, { target: about, props: { about: review.about } });
-  }
-  const record = document.querySelector<HTMLDetailsElement>('details[data-drawer="record"]');
-  if (record && location.hash === "#record") {
-    record.open = true;
-    history.replaceState(history.state, "", location.pathname + location.search);
+    mount(About, { target: about, props: { about: review.about, edited } });
   }
 
   const vignette = document.getElementById("review-vignette");
@@ -114,62 +81,34 @@ if (held) {
   const editor = review.expected.editor;
   if (expected && editor) {
     expected.replaceChildren();
-    mount(Expected, { target: expected, props: { expected: review.expected, editor, back: review.back } });
+    mount(Expected, { target: expected, props: { expected: review.expected, editor, back: review.back, edited } });
   }
 
-  for (const at of document.querySelectorAll<HTMLElement>("[data-appendix]")) {
-    const given = review.appendices[Number(at.dataset.appendix)];
-    const change = at.querySelector<HTMLButtonElement>("button[data-change]");
-    const body = at.querySelector<HTMLElement>("[data-appendix-body]");
-    if (!given || !change || !body) continue;
-    changed(change, body, () =>
-      mount(AppendixEditor, {
-        target: body,
-        props: { ...given, quiet: true, to: (saved) => replaced(review.back, review.case, saved.cases) },
-      }),
-    );
+  const appendices = document.getElementById("review-appendices");
+  if (appendices) {
+    appendices.replaceChildren();
+    mount(Appendices, {
+      target: appendices,
+      props: { appendices: review.appendices, family: review.family, case: review.case, edited },
+    });
   }
 
-  const appending = document.querySelector<HTMLFormElement>("form[data-appending]");
-  const save = appending?.querySelector("button");
-  if (appending && save) {
-    const typed = [...appending.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[required]")];
-    const check = () => {
-      save.disabled = typed.some((at) => !at.value.trim());
-    };
-    check();
-    appending.addEventListener("input", check);
+  const save = document.getElementById("review-save");
+  if (save) mount(Save, { target: save, props: { edited } });
+  const running = document.querySelector<HTMLFormElement>("form[data-running]");
+  running?.addEventListener("submit", (sent) => {
+    if (edited.pending && !confirm(t("What you changed isn't saved: run the case as it was last saved?"))) {
+      sent.preventDefault();
+    }
+  });
+  const evaluation = document.getElementById("review-evaluation");
+  if (evaluation && review.evaluation) {
+    evaluation.replaceChildren();
+    mount(Evaluation, { target: evaluation, props: { evaluation: review.evaluation } });
   }
-
-  for (const at of document.querySelectorAll<HTMLDetailsElement>("details[data-answer]")) {
-    const answer = review.answers[Number(at.dataset.answer)];
-    const body = at.querySelector<HTMLElement>("[data-answer-body]");
-    if (!answer || !body) continue;
-    unfolded(at, body, () =>
-      mount(Answer, {
-        target: body,
-        props: { answer, case: review.case, labels: review.labels, units: review.units },
-      }),
-    );
-  }
-
-  // Compromise: what someone has typed or picked outweighs showing a finished run at once; it then waits for "Show it".
-  let touched = false;
-  for (const name of ["input", "change"]) document.addEventListener(name, () => (touched = true), true);
-  let waiting = review.pending.length;
-  for (const at of document.querySelectorAll<HTMLElement>("[data-pending]")) {
-    const given = review.pending[Number(at.dataset.pending)];
-    if (!given) continue;
-    at.replaceChildren();
-    mount(Pending, {
-      target: at,
-      props: {
-        ...given,
-        done: () => {
-          waiting -= 1;
-          if (waiting === 0 && !touched) setTimeout(() => location.reload(), 800);
-        },
-      },
+  for (const at of document.querySelectorAll<HTMLFormElement>("form[data-confirm]")) {
+    at.addEventListener("submit", (sent) => {
+      if (!confirm(at.dataset.confirm ?? "")) sent.preventDefault();
     });
   }
 }

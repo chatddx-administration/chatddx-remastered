@@ -4,8 +4,10 @@ This document contains project-wide instructions for agents.
 
 ## Environment
 
+- Hooks should have set you up or told you why they didn't, report friction, poor messaging and surprises.
 - Project-wide settings are in `chatddx.settings`.
-- Archeology is not allowed unless said otherwise; the commit given has all you need.
+- Archeology is not allowed unless told otherwise, the environment given has all you need
+- That pkill -f pattern might match your own shell
 
 ## Session
 
@@ -13,9 +15,9 @@ Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`.
 
 When asked to hand over:
 
-1. Remove all comments and docstrings that don't pass "Comments" and "Docstrings" in the files the session has touched,
-   pre-existing included.
-2. Run `./dev/agent.sh hand-over`.
+1. In the files this session has touched, remove all comments and docstrings that don't pass "Comments" and
+   "Docstrings", pre-existing included.
+2. Run `./dev/agent.sh hand-over`. It commits, pushes and runs all checks.
 
 All `./dev/agent.sh` commands are silent on success or print instructions for you to act on. All `./dev/agent.sh` exits
 are 0 except `turn-end`, which exits 2 on failure.
@@ -58,8 +60,13 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 ## Tests and checks
 
-- `./check.sh` checks everything and takes ~250s, mostly due to browser tests and the budget run.
-- `./write.sh` writes the OpenAPI document, locale catalogs, stamps and formats the code.
+`./check.sh [stage]...` checks the stages named:
+
+- `openapi`, `stamps` and `locale`, each in step with the code
+- `pending` and `fuzzy`, what is left to stamp or review
+- `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
+
+`./write.sh [commit]` regenerates what follows from the code and the docs.
 
 ### Python
 
@@ -103,7 +110,7 @@ Agents aren't expected to run this, just know it exists.
 
 ## Development stages
 
-A thing under development is in one of the following stages:
+`settings.STAGES` tracks things under development stages once they are able to track, the stages are:
 
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
@@ -116,16 +123,23 @@ A thing under development is in one of the following stages:
 9. Cemented: TBD
 10. Protected: TBD
 
-Things can bounce around freely across these stages but are only in one stage at a time, a doc is moved in a commit of
-its own, and a move entails deduplication and updating references.
+Things can move around freely across these stages but are only in one stage at a time, so docs are gathered and moved
+rather than copied.
+
+A move entails:
+
+- gathering (project-wide deduplication)
+- updating references
+- its own commit
 
 ## Documentation
+
+Destructive edits are allowed: `turn-end` stamps all changes with git conflict markers for a human to resolve.
 
 - The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
   provide options.
 - Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
   collaborator-one, admin).
-- Destructive edits are allowed, all doc-edits are stamped with git conflict markers for a human to resolve.
 
 ## Comments
 

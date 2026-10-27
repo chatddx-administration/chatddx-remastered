@@ -13,6 +13,8 @@
     framed = true,
     me,
     hidden = [],
+    whole = false,
+    headed = true,
   }: {
     schema: Schema;
     root: Schema;
@@ -23,6 +25,8 @@
     framed?: boolean;
     me?: string;
     hidden?: string[];
+    whole?: boolean;
+    headed?: boolean;
   } = $props();
 
   const shape = $derived(widget(schema, root));
@@ -30,8 +34,9 @@
   const described = $derived(typeof about.description === "string" ? about.description : "");
   const said = $derived(quiet ? "" : described);
   const named = $derived(fieldName(label));
+  const legend = $derived(headed ? named : "");
   const frame = $derived(
-    !framed || (quiet && !named) ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3",
+    !framed || (quiet && !legend) ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3",
   );
   let typed = $state<string | null>(null);
   let broken = $state<string | null>(null);
@@ -72,10 +77,10 @@
 
 {#if shape.is === "object"}
   <fieldset class={frame}>
-    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
+    {#if legend}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{legend}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#each shape.properties as p (p.name)}
-      {#if hidden.includes(p.name)}{:else if p.required || p.name in fields() || byMe(p.schema)}
+      {#if hidden.includes(p.name)}{:else if whole || p.required || p.name in fields() || byMe(p.schema)}
         <div class="flex items-start gap-2">
           <div class="min-w-0 flex-1">
             <SchemaField
@@ -86,9 +91,10 @@
               label={p.name}
               {quiet}
               {me}
+              {whole}
             />
           </div>
-          {#if !p.required && !byMe(p.schema)}
+          {#if !whole && !p.required && !byMe(p.schema)}
             <button
               type="button"
               class="mt-6 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
@@ -110,7 +116,7 @@
   {@const at = chosen(shape, value)}
   {@const rest = leaving(at.schema, shape.key)}
   <fieldset class={frame}>
-    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
+    {#if legend}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{legend}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     <label class="grid gap-1 text-sm">
       <span class="font-medium">{shape.key.replaceAll("_", " ")}</span>
@@ -134,12 +140,13 @@
         set={(v) => set({ ...(v as Record<string, unknown>), [shape.key]: at.value })}
         {quiet}
         {me}
+        {whole}
       />
     {/if}
   </fieldset>
 {:else if shape.is === "or-none"}
   <fieldset class={frame}>
-    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
+    {#if legend}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{legend}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     <label class="flex items-center gap-2 text-sm">
       <input
@@ -150,13 +157,13 @@
       {t("none expected")}
     </label>
     {#if value !== false}
-      <SchemaField schema={shape.schema} {root} {value} {set} {quiet} {me} framed={false} />
+      <SchemaField schema={shape.schema} {root} {value} {set} {quiet} {me} {whole} framed={false} />
     {/if}
   </fieldset>
 {:else if shape.is === "list" && me !== undefined && authored(shape, root)}
   {@const mine = items().findIndex((x) => authorOf(x) === me)}
   <div class="space-y-2">
-    {#if mine === -1}
+    {#if mine === -1 && !whole}
       <button
         type="button"
         class="rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
@@ -169,23 +176,28 @@
           <SchemaField
             schema={shape.items}
             {root}
-            value={items()[mine]}
-            set={(v) => set(items().map((x, j) => (j === mine ? v : x)))}
-            label={named}
+            value={mine === -1
+              ? { ...(blank(shape.items, root) as Record<string, unknown>), author: me }
+              : items()[mine]}
+            set={(v) => set(mine === -1 ? [...items(), v] : items().map((x, j) => (j === mine ? v : x)))}
+            label={whole ? "" : named}
             {quiet}
             {me}
+            {whole}
             hidden={["author"]}
           />
         </div>
-        <button
-          type="button"
-          class="mt-2 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
-          aria-label={t("Leave out %(name)s", { name: named })}
-          onclick={() => {
-            const left = items().filter((_, j) => j !== mine);
-            set(left.length ? left : undefined);
-          }}>×</button
-        >
+        {#if !whole}
+          <button
+            type="button"
+            class="mt-2 rounded-md px-1.5 text-muted-foreground hover:bg-muted"
+            aria-label={t("Leave out %(name)s", { name: named })}
+            onclick={() => {
+              const left = items().filter((_, j) => j !== mine);
+              set(left.length ? left : undefined);
+            }}>×</button
+          >
+        {/if}
       </div>
     {/if}
     {#each items() as item, i (i)}
@@ -206,7 +218,7 @@
   </div>
 {:else if shape.is === "list"}
   <div class="space-y-2">
-    <p class="text-sm font-medium" title={quiet ? described : undefined}>{named}</p>
+    {#if legend}<p class="text-sm font-medium" title={quiet ? described : undefined}>{legend}</p>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#each items() as item, i (i)}
       <div class="flex items-start gap-2">

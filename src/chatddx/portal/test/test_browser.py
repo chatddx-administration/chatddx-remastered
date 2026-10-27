@@ -10,7 +10,16 @@ from typing import Any
 import pytest
 import uvicorn
 from fastapi import FastAPI
-from playwright.sync_api import Browser, Error, Page, Route, expect, sync_playwright
+from playwright.sync_api import (
+    Browser,
+    Dialog,
+    Error,
+    Locator,
+    Page,
+    Route,
+    expect,
+    sync_playwright,
+)
 
 from chatddx import settings
 from chatddx.identity import Person
@@ -258,13 +267,15 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     gone = missing()
     assert held < gone
     _ = page.goto(f"/review/{crlf['id']}")
-    page.get_by_text("Add an appendix", exact=True).click()
-    adding = page.locator("form[data-appending]")
-    expect(adding.get_by_role("button", name="Save")).to_be_disabled()
+    saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
+    page.get_by_role("button", name="Add an appendix").click()
+    adding = page.locator("#review-appendices")
+    expect(saving).to_be_disabled()
     adding.get_by_label("Name").fill("ultrasound")
+    expect(saving).to_be_disabled()
     text = adding.get_by_label("Text, as it is added to the vignette")
     text.fill("Gallstones on ultrasound.")
-    adding.get_by_role("button", name="Save").click()
+    saving.click()
     page.wait_for_url(re.compile(r"[?&]case=sha256"))
     _ = page.goto("/library?kind=case")
     page.get_by_role("link", name="crlf", exact=True).click()
@@ -290,46 +301,62 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
-    query: dict[str, str | float | bool] = {"kind": "scorer", "name": "judged"}
-    judged = page.request.get("/api/threads", params=query).json()[0]
     vignette = page.request.get(f"/api/families/{noted['id']}/vignette").json()
 
-    _ = page.goto(f"/review/{noted['id']}?scorer={judged['id']}")
+    _ = page.goto(f"/review/{noted['id']}")
     first = vignette["text"].strip().splitlines()[0]
     expect(page.locator("#review-vignette")).to_contain_text(first)
     page.set_viewport_size({"width": 1440, "height": 900})
-    page.locator('details[data-drawer="record"] summary').first.click()
-    expect(page.locator("details[data-drawer][open]")).to_have_count(1)
+    expect(page.locator("details[data-drawer]")).to_have_count(0)
     expect(page.get_by_role("region", name="Cases")).to_be_visible()
     assert page.evaluate("document.documentElement.scrollHeight") == 900
+    page.set_viewport_size({"width": 1440, "height": 360})
+    assert page.evaluate("document.documentElement.scrollHeight") == 360
+    page.set_viewport_size({"width": 1440, "height": 900})
     expected = page.locator("#review-expected")
-    carol = expected.locator("details").filter(has_text="Statement by carol")
+
+    def section(name: str) -> Locator:
+        return expected.locator("details").filter(
+            has=page.get_by_text(name, exact=True)
+        )
+
+    expect(page.get_by_role("region", name="Expectation")).to_be_visible()
+    expect(expected.locator("details[open]")).to_have_count(0)
+    expect(expected.get_by_label("Name")).to_have_value("expectation for noted")
+    expect(section("Final diagnosis").locator("summary")).to_contain_text(
+        "sepsis | septic & shock"
+    )
+    expect(expected.get_by_role("button", name=re.compile(r"^\+"))).to_have_count(0)
+    expect(
+        expected.get_by_role("button", name=re.compile(r"^Leave out"))
+    ).to_have_count(0)
+    statement = section("Statement")
+    statement.locator("summary").first.click()
+    carol = statement.locator("details").filter(has_text="Statement by carol")
     expect(carol.get_by_text(re.compile(r"^Chock, troligen septisk\."))).to_be_hidden()
     carol.locator("summary").click()
     expect(carol.get_by_text(re.compile(r"^Chock, troligen septisk\."))).to_be_visible()
     expect(carol.get_by_role("textbox")).to_have_count(0)
     expect(expected.get_by_text("Statement 1")).to_have_count(0)
-    expect(expected.get_by_label("comment")).to_have_count(0)
+    expect(statement.get_by_label("author")).to_have_count(0)
     expect(page.get_by_role("list", name="What reads notes")).to_have_count(0)
     expect(page.get_by_role("button", name=re.compile(r"^Compose"))).to_have_count(0)
-    saving = expected.get_by_role("button", name="Save")
+    saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
     expect(saving).to_be_disabled()
     expect(expected.get_by_text("Nothing to say of it.")).to_have_count(0)
-    expected.get_by_role("button", name="+ Statement").click()
-    mine = expected.get_by_role("group", name="Statement", exact=True)
-    expect(mine.get_by_label("author")).to_have_count(0)
-    mine.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
-    expect(expected.get_by_role("button", name="+ Statement")).to_have_count(0)
+    statement.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    section("Final diagnosis").locator("summary").click()
     page.get_by_label("Match", exact=True).first.fill("septic & shock")
     expect(page.get_by_text("Saves a new version of it.")).to_be_visible()
-    page.get_by_role("button", name="+ Possible warnings").click()
-    warning = expected.get_by_role("group", name="Possible warnings", exact=True)
+    warning = section("Possible warnings")
+    warning.locator("summary").click()
+    expect(warning.get_by_label("Match", exact=True)).to_be_visible()
     warning.get_by_label("none expected").check()
-    expect(warning.get_by_role("button", name="+ Own note")).to_have_count(0)
+    expect(warning.get_by_label("Match", exact=True)).to_have_count(0)
     saving.click()
     expect(page.get_by_text(re.compile(r"^Version 2 of 2, "))).to_be_visible()
     expect(page.get_by_text("what each changed")).to_have_count(0)
-    expect(expected.get_by_role("button", name="+ Own note").first).to_be_visible()
+    expect(warning.locator("summary")).to_contain_text("none expected")
 
     page.get_by_text(re.compile(r"^Version 2 of 2, ")).click()
     expect(expected.get_by_role("button", name="Restore")).to_have_count(0)
@@ -342,50 +369,92 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     expect(page.get_by_label("Match", exact=True).first).not_to_have_value(
         "septic & shock"
     )
-    expect(
-        expected.get_by_role("group", name="Possible warnings", exact=True)
-    ).to_have_count(0)
-    expected.get_by_role("button", name="+ Statement").click()
-    expected.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    expect(warning.get_by_label("none expected")).not_to_be_checked()
+    statement.locator("summary").first.click()
+    statement.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    section("Final diagnosis").locator("summary").click()
     page.get_by_label("Match", exact=True).first.fill("septic & shock")
+    expected.get_by_label("Name").fill("noted, as alice expects it")
     saving.click()
     expect(page.get_by_text(re.compile(r"^Version 4 of 4, "))).to_be_visible()
-    statement = expected.get_by_role("group", name="Statement", exact=True)
     expect(statement.get_by_label("comment")).to_have_value(
         "Septisk chock: odla, ge antibiotika."
     )
     expect(page.get_by_label("Match", exact=True).first).to_have_value("septic & shock")
+    expect(expected.get_by_label("Name")).to_have_value("noted, as alice expects it")
+    expected.get_by_label("Name").fill("expectation for noted")
+    with page.expect_navigation():
+        saving.click()
+    expect(page.get_by_text(re.compile(r"^Version 4 of 4, "))).to_be_visible()
+    expect(expected.get_by_label("Name")).to_have_value("expectation for noted")
 
-    page.get_by_text("Add an appendix", exact=True).click()
-    adding = page.locator("form[data-appending]")
-    expect(adding.get_by_role("button", name="Save")).to_be_disabled()
+    page.get_by_role("button", name="Add an appendix").click()
+    adding = page.locator("#review-appendices")
     adding.get_by_label("Name").fill("ultrasound")
     adding.get_by_label("Text, as it is added to the vignette").fill("Free fluid.")
-    adding.get_by_role("button", name="Save").click()
+    saving.click()
     page.wait_for_url(re.compile(r"[?&]case=sha256"))
-    appendix = page.get_by_role("article").filter(has_text="ultrasound")
+    appendices = page.locator("#review-appendices")
+    appendix = appendices.get_by_role("article").filter(has_text="ultrasound")
     expect(appendix).to_contain_text("Free fluid.")
-    expect(appendix.get_by_label("Its text")).to_have_count(0)
+    expect(appendices.get_by_role("textbox")).to_have_count(0)
     expect(page.get_by_text("a new thread of your own")).to_have_count(0)
     expect(page.get_by_label("Match", exact=True).first).to_have_value("septic & shock")
+    tree = page.get_by_role("navigation", name="Cases")
+    branch = tree.get_by_role("link", name="ultrasound")
+    expect(branch).to_have_attribute("aria-current", "page")
 
     built = page.url
-    change = appendix.get_by_role("button", name="Change it")
-    change.click()
-    expect(change).to_have_attribute("aria-pressed", "true")
-    expect(appendix.get_by_label("Its text")).to_have_value("Free fluid.")
-    expect(appendix.get_by_role("button", name="Save")).to_be_disabled()
-    expect(appendix.get_by_text("Nothing to save")).to_have_count(0)
-    appendix.get_by_label("Its text").fill("Free fluid in Morison's pouch.")
-    appendix.get_by_role("button", name="Save").click()
+    bar = page.get_by_role("group", name="Saving")
+    restoring = bar.get_by_role("button", name="Restore")
+    appendix.get_by_role("button", name="Change it").click()
+    expect(page.get_by_role("button", name="Add an appendix")).to_have_count(0)
+    expect(appendices.get_by_label("Name")).to_have_value("ultrasound")
+    text = appendices.get_by_label("Text, as it is added to the vignette")
+    expect(text).to_have_value("Free fluid.")
+    text.fill("Free fluid in Morison's pouch.")
+    page.once("dialog", lambda d: d.dismiss())
+    restoring.click()
+    expect(text).to_have_value("Free fluid in Morison's pouch.")
+    page.once("dialog", lambda d: d.accept())
+    with page.expect_navigation():
+        restoring.click()
+    assert page.url == built
+    expect(appendix).to_contain_text("Free fluid.")
+    expect(appendices.get_by_role("textbox")).to_have_count(0)
+
+    appendix.get_by_role("button", name="Change it").click()
+    appendices.get_by_label("Name").fill("FAST")
+    text.fill("Free fluid in Morison's pouch.")
+    saving.click()
     page.wait_for_url(lambda url: url != built)
+    appendix = appendices.get_by_role("article").filter(has_text="FAST")
     expect(appendix).to_contain_text("Free fluid in Morison's pouch.")
-    expect(appendix.get_by_label("Its text")).to_have_count(0)
+    branch = tree.get_by_role("link", name="FAST")
+    expect(branch).to_have_attribute("aria-current", "page")
+    expect(tree.get_by_role("link", name="ultrasound")).to_have_count(0)
 
     edited = page.url
-    appendix.get_by_role("button", name="Take it out of the case").click()
+    deleting = bar.get_by_role("button", name="Delete")
+    page.once("dialog", lambda d: d.dismiss())
+    deleting.click()
+    expect(branch).to_have_attribute("aria-current", "page")
+    assert page.url == edited
+    asked: list[str] = []
+
+    def accepted(dialog: Dialog) -> None:
+        asked.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", accepted)
+    deleting.click()
     page.wait_for_url(lambda url: url != edited)
+    assert asked == [
+        "Delete the appendix FAST? This case and those under it leave the list."
+    ]
     expect(page.get_by_role("article")).to_have_count(0)
+    expect(branch).to_have_count(0)
+    expect(page.get_by_role("button", name="Delete")).to_have_count(0)
 
     shown = page.url
     page.locator("body").press("j")
@@ -415,7 +484,7 @@ def test_the_cases_are_filtered_in_place_by_tags_and_languages(page: Page) -> No
     filters.get_by_role("link", name="swedish", exact=True).click()
     expect(shown).to_have_count(len(both))
     assert "tag=targets" in page.url and "tag=swedish" in page.url
-    first = shown.first.locator("a")
+    first = shown.first.locator("a").first
     expect(first).to_have_attribute("href", re.compile(r"tag=targets&tag=swedish$"))
     filters.get_by_role("link", name="swedish", exact=True).click()
     filters.get_by_role("link", name="Swedish", exact=True).click()
@@ -427,36 +496,47 @@ def test_the_cases_are_filtered_in_place_by_tags_and_languages(page: Page) -> No
     assert errors == []
 
 
-def test_a_case_s_tags_and_language_are_changed_beside_its_vignette(
-    page: Page,
-) -> None:
+def test_a_case_s_tags_and_language_are_saved_with_the_page(page: Page) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
     path = f"/api/families/{noted['id']}"
 
     _ = page.goto(f"/review/{noted['id']}")
-    header = page.get_by_role("region", name="The case").locator("header")
-    expect(header.get_by_role("link", name="Show in the Library")).to_be_visible()
-    tag = header.get_by_label("A new tag")
+    case = page.get_by_role("region", name="The case")
+    expect(case.get_by_role("link", name="Show in the Library")).to_be_visible()
+    bar = page.get_by_role("group", name="Saving")
+    saving = bar.get_by_role("button", name="Save")
+    restoring = bar.get_by_role("button", name="Restore")
+    expect(saving).to_be_disabled()
+    expect(restoring).to_be_disabled()
+    tag = bar.get_by_label("A new tag")
+    tag.fill("stray")
+    tag.press("Enter")
+    expect(bar.get_by_role("button", name="Take away the tag stray")).to_be_visible()
+    page.once("dialog", lambda d: d.accept())
+    with page.expect_navigation():
+        restoring.click()
+    expect(bar.get_by_role("button", name="Take away the tag stray")).to_have_count(0)
+    assert "stray" not in page.request.get(path).json()["tags"]
     tag.fill("reviewed")
-    with page.expect_response(lambda r: r.url.endswith(path)):
-        tag.press("Enter")
-    assert "reviewed" in page.request.get(path).json()["tags"]
-    removing = header.get_by_role("button", name="Take away the tag reviewed")
-    with page.expect_response(lambda r: r.url.endswith(path)):
-        removing.click()
-    assert "reviewed" not in page.request.get(path).json()["tags"]
+    tag.press("Enter")
+    bar.get_by_role("button", name="Change its language").click()
+    _ = bar.get_by_label("Its language").select_option("sv")
+    expect(bar).to_contain_text("Swedish")
+    held = page.request.get(path).json()
+    assert "reviewed" not in held["tags"] and held["language"] != "sv"
+    with page.expect_navigation():
+        saving.click()
+    held = page.request.get(path).json()
+    assert "reviewed" in held["tags"] and held["language"] == "sv"
+    expect(bar).to_contain_text("Swedish")
+    expect(saving).to_be_disabled()
 
-    header.get_by_role("button", name="Change its language").click()
-    with page.expect_response(lambda r: r.url.endswith(path)):
-        _ = header.get_by_label("Its language").select_option("sv")
-    expect(header).to_contain_text("Swedish")
-    assert page.request.get(path).json()["language"] == "sv"
-    _ = page.reload()
-    expect(
-        page.get_by_role("region", name="The case").locator("header")
-    ).to_contain_text("Swedish")
+    bar.get_by_role("button", name="Take away the tag reviewed").click()
+    with page.expect_navigation():
+        saving.click()
+    assert "reviewed" not in page.request.get(path).json()["tags"]
     assert errors == []
 
 
@@ -480,59 +560,19 @@ def test_a_case_with_none_of_one_s_own_shows_the_shared_one_and_waits_for_typing
 
     with page.expect_response(lambda r: r.url.endswith("/api/components/check")):
         _ = page.goto(f"/review/{crlf['id']}")
-    expect(page.get_by_role("button", name="Save")).to_be_enabled()
+    saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
+    expect(saving).to_be_disabled()
     pattern = expected["data"]["diagnosis"]["pattern"]
     expect(page.locator("[data-offered]")).to_contain_text(pattern)
     expect(page.get_by_text("a new thread of your own")).to_have_count(0)
     expect(page.get_by_text("Nothing to say of it.")).to_have_count(0)
     expect(page.get_by_text("expectation.invalid")).to_have_count(0)
-    page.get_by_role("button", name="+ Match").first.click()
+    page.locator("#review-expected summary").filter(has_text="Final diagnosis").click()
     with page.expect_response(lambda r: r.url.endswith("/api/components/check")):
         page.get_by_label("Match", exact=True).first.fill(pattern)
-    expect(page.get_by_role("button", name="Save")).to_be_enabled()
+    expect(saving).to_be_enabled()
     expect(page.get_by_text("Nothing to say of it.")).to_have_count(0)
     expect(page.get_by_text("expectation.invalid")).to_have_count(0)
-    assert errors == []
-
-
-def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
-    page: Page,
-    world: Inventory,
-    conn: Connection,
-) -> None:
-    errors: list[str] = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
-    query: dict[str, str | float | bool] = {
-        "kind": "configuration",
-        "name": LINES,
-        "owner": "alice",
-    }
-    lines = page.request.get("/api/threads", params=query).json()[0]
-
-    with faked(world, Store(conn).get, delay=0.05):
-        _ = page.goto(f"/review/{crlf['id']}")
-        record = page.locator('details[data-drawer="record"]')
-        expect(record).to_contain_text("Record")
-        record.locator("summary").first.click()
-        _ = page.get_by_label("Configuration").select_option(str(lines["id"]))
-        _ = page.get_by_label("Model").select_option(QWEN_ARTIFACT)
-        page.get_by_role("button", name="Run it").click()
-        expect(record).to_have_attribute("open", "")
-        page.wait_for_url(re.compile(rf"/review/{crlf['id']}$"))
-        assert page.evaluate("window.scrollY") == 0
-        pending = record.locator("[data-pending]")
-        expect(pending).to_contain_text(re.compile(r"queued|ended|scoring|done"))
-        answer = record.locator("details[data-answer] summary")
-        expect(answer).to_have_count(1, timeout=30_000)
-    expect(page.locator("[data-pending]")).to_have_count(0)
-    answer.click()
-    [run] = page.request.get("/api/runs", params={"reaching": crlf["case"]}).json()
-    [item] = page.request.get(
-        f"/api/runs/{run['id']}/items", params={"case": crlf["case"]}
-    ).json()
-    said = item["answer"]["value"].strip().splitlines()[0]
-    expect(record.locator("[data-answer-body]")).to_contain_text(said)
     assert errors == []
 
 
@@ -591,13 +631,15 @@ def test_a_judged_view_is_written_with_a_new_judge_and_scored_through_the_worker
         page.get_by_role("button", name="Save it").click()
         expect(page.get_by_text("Version 2 of 2")).to_be_visible()
 
-        _ = page.goto(f"/review/{noted['id']}?scorer={mine['id']}")
-        record = page.locator('details[data-drawer="record"]')
-        if record.get_attribute("open") is None:
-            record.locator("summary").first.click()
-        record.get_by_role("button", name="Score again").click()
-        expect(page.locator("[data-pending]")).to_have_count(0, timeout=30_000)
-    expect(record).not_to_contain_text("to score")
+        _ = page.goto(f"/runs/{run}")
+        page.get_by_role("button", name="Score again").click()
+        page.wait_for_url(re.compile(rf"/runs/{run}$"))
+        _settled(page, run)
+    _ = page.goto(f"/runs/{run}")
+    expect(page.get_by_text(re.compile(r"^Left to score by"))).to_have_count(0)
+    head = page.request.get(f"/api/threads/{mine['id']}").json()["head"]["digest"]
+    scores = page.request.get(f"/api/runs/{run}/scores").json()
+    assert head in {g["scorer"] for g in scores}
     query = {"kind": "judge", "name": "strict"}
     [strict] = page.request.get("/api/threads", params=query).json()
     held = page.request.get(f"/api/components/{strict['head']['digest']}").json()
@@ -1217,3 +1259,64 @@ def test_a_run_s_items_are_paged_and_found_in_as_they_come(
         expect(pages).to_be_hidden()
         page.get_by_role("button", name="Halt").click()
         expect(page.get_by_role("heading", name="Items")).to_be_visible()
+
+
+def test_a_case_is_evaluated_under_each_configuration_below_its_review(
+    page: Page, world: Inventory, conn: Connection
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    page.set_viewport_size({"width": 1440, "height": 900})
+    with faked(world, Store(conn).get):
+        _ = page.goto(f"/review/{noted['id']}")
+        bar = page.get_by_role("group", name="Saving")
+        bar.get_by_label("A new tag").fill("evaluated")
+        bar.get_by_label("A new tag").press("Enter")
+        asked: list[str] = []
+
+        def dismissed(dialog: Dialog) -> None:
+            asked.append(dialog.message)
+            dialog.dismiss()
+
+        page.once("dialog", dismissed)
+        bar.get_by_role("button", name="Run").click()
+        assert asked == [
+            "What you changed isn't saved: run the case as it was last saved?"
+        ]
+        assert "evaluation=" not in page.url
+        page.once("dialog", lambda d: d.accept())
+        bar.get_by_role("button", name="Run").click(no_wait_after=True)
+        page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
+        evaluating = page.get_by_role("region", name="Evaluating the case")
+        expect(evaluating).to_be_visible()
+        assert page.evaluate("document.documentElement.scrollHeight") >= 2 * 900
+        evaluation = page.locator("#review-evaluation")
+        rows = evaluation.locator("tbody tr")
+        configurations = rows.count()
+        assert configurations > 1
+        expect(evaluation.locator("details")).to_have_count(4 * configurations)
+        expect(evaluation.locator("th").filter(has_text="Statement")).to_have_count(1)
+        lines = rows.filter(has=page.get_by_role("rowheader", name="lines", exact=True))
+        expect(lines).to_contain_text("differential", timeout=60_000)
+        expect(rows.locator("svg.animate-spin")).to_have_count(0, timeout=60_000)
+    expect(evaluating.get_by_text("Left out:")).to_be_visible()
+    items = evaluation.locator("details").filter(has_text="lines")
+    fourth = items.nth(3)
+    expect(fourth.locator("summary")).to_contain_text("#4")
+    third_seed = (
+        items.nth(2).locator("summary").inner_text().split("seed ")[1].split()[0]
+    )
+    expect(fourth.locator("summary")).to_contain_text(f"seed {third_seed}")
+    expect(fourth.locator("summary")).to_contain_text(re.compile(r"\d+ \+ \d+ tokens"))
+    expect(fourth.locator("summary")).to_contain_text(
+        re.compile(r"valid|salvaged|broken")
+    )
+    fourth.locator("summary").click()
+    expect(fourth.locator("p, pre").first).not_to_be_empty()
+    native = evaluation.locator("details").filter(
+        has=page.locator("summary span", has_text=re.compile(r"^native$"))
+    )
+    native.first.locator("summary").click()
+    expect(native.first.locator("pre code")).to_contain_text('"diagnoses"')
+    assert errors == []

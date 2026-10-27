@@ -317,7 +317,8 @@ so is each one after a halt or an interrupt, as stopped.
 ## `Bench.start`
 `src/chatddx/bench/runs.py:start`
 
-Begins a run for each language the cases are sent in, and sends nothing.
+Begins a run for each language the cases are sent in, and sends nothing; given
+`joining`, the first run of an earlier start, its runs are listed as of that start.
 
 Compiles the variation into each language, and stores each run's trial, start record
 and entries, and the compilations of what it begins, in one transaction, which holds
@@ -332,6 +333,7 @@ Heads-up: the gate's `Refused` passes through.
 * `cleanup: Sequence[CleanupOp] | None = None`
 * `execution: Execution | None = None`
 * `canaries: str | None = None`
+* `joining: UUID | None = None`
 * ∟`Started`
 
 Raises:

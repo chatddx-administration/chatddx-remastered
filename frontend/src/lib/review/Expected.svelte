@@ -7,9 +7,15 @@
   import { t } from "$lib/locale";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
   import Changed from "$lib/thread/Changed.svelte";
+  import type { Edited } from "./edited.svelte";
   import type { Expecting } from "./review";
 
-  let { expected, editor, back }: { expected: Expecting; editor: ExpectationEditing; back: string } = $props();
+  let {
+    expected,
+    editor,
+    back,
+    edited,
+  }: { expected: Expecting; editor: ExpectationEditing; back: string; edited: Edited } = $props();
   const given = untrack(() => expected);
 
   let shown = $state(given.history.length - 1);
@@ -39,7 +45,7 @@
   }
 </script>
 
-<ExpectationEditor {editor} digest={given.digest} opened={true} quiet to={() => back} />
+<ExpectationEditor {editor} {edited} />
 
 {#if version}
   <details class="mt-4 text-sm">

@@ -681,11 +681,9 @@ def test_an_expectation_is_written_from_nothing_and_an_appendix_only_in_review(
         assert got.status_code == 404 and f"no {kind} is begun here" in got.text
     crlf = family(signed)
     given = {"name": "fluid", "text": "Free fluid."}
-    assert (
-        signed.post(f"/review/{crlf['id']}/appendices", data=given).status_code == 303
-    )
-    query = {"kind": "appendix", "owner": "alice", "name": "fluid"}
-    [fluid] = signed.get("/api/threads", params=query).json()
+    got = signed.post(f"/api/families/{crlf['id']}/appendices", json=given)
+    assert got.status_code == 201
+    fluid = got.json()
     got = signed.get(f"/threads/{fluid['id']}")
     assert got.status_code == 404 and "it is in Review" in got.text
 

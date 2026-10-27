@@ -13,9 +13,10 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import { api, why } from "$lib/api/client";
   import { t } from "$lib/locale";
+  import type { Edited, Wrote } from "./edited.svelte";
   import { added } from "./review";
 
-  let { about }: { about: Telling } = $props();
+  let { about, edited }: { about: Telling; edited: Edited } = $props();
   const given = untrack(() => about);
   const named = new Map(given.languages);
 
@@ -23,37 +24,40 @@
   let language = $state(given.language);
   let typed = $state("");
   let picking = $state(false);
-  let problem = $state<string | null>(null);
+  let saved = $state({ tags: [...given.tags], language: given.language });
 
-  async function said(body: { tags?: string[]; language?: string }): Promise<boolean> {
-    problem = null;
-    const got = await api.PATCH("/api/families/{family}", {
-      params: { path: { family: given.family } },
-      body,
+  const next = $derived(added(tags, typed));
+  const retagged = $derived(next.join("\n") !== saved.tags.join("\n"));
+  const respoken = $derived(language !== saved.language);
+
+  if (given.editable) {
+    untrack(() => edited).join({
+      rank: 0,
+      pending: () => retagged || respoken,
+      ready: () => true,
+      save: async (): Promise<Wrote> => {
+        const body = { tags: next, ...(respoken && language ? { language } : {}) };
+        const got = await api.PATCH("/api/families/{family}", {
+          params: { path: { family: given.family } },
+          body,
+        });
+        if (!got.data) return { problem: why(got.error) };
+        tags = [...got.data.tags];
+        typed = "";
+        saved = { tags: [...got.data.tags], language: got.data.language };
+        return {};
+      },
     });
-    if (got.data) return true;
-    problem = why(got.error);
-    return false;
   }
 
-  async function tagged(next: string[]): Promise<void> {
-    const before = tags;
+  function typedIn(): void {
     tags = next;
-    if (!(await said({ tags: next }))) tags = before;
-  }
-
-  async function typedIn(): Promise<void> {
-    const next = added(tags, typed);
     typed = "";
-    if (next !== tags) await tagged(next);
   }
 
-  async function spoken(next: string): Promise<void> {
+  function spoken(chosen: string): void {
     picking = false;
-    if (next === language) return;
-    const before = language;
-    language = next;
-    if (!(await said({ language: next }))) language = before;
+    if (chosen) language = chosen;
   }
 </script>
 
@@ -69,7 +73,7 @@
             type="button"
             class="rounded-full px-1 hover:bg-background hover:text-foreground"
             aria-label={t("Take away the tag %(tag)s", { tag })}
-            onclick={() => tagged(tags.filter((held) => held !== tag))}>×</button
+            onclick={() => (tags = tags.filter((held) => held !== tag))}>×</button
           >
         </span>
       {/each}
@@ -81,12 +85,12 @@
         onkeydown={(e) => {
           if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            void typedIn();
+            typedIn();
           } else if (e.key === "Backspace" && !typed && tags.length) {
-            void tagged(tags.slice(0, -1));
+            tags = tags.slice(0, -1);
           }
         }}
-        onblur={() => void typedIn()}
+        onblur={typedIn}
       />
     </div>
   {:else}
@@ -102,7 +106,7 @@
         class="h-7 rounded-md border border-input bg-transparent px-1.5"
         aria-label={t("Its language")}
         value={language ?? ""}
-        onchange={(e) => void spoken(e.currentTarget.value)}
+        onchange={(e) => spoken(e.currentTarget.value)}
         onblur={() => (picking = false)}
       >
         {#if !language}<option value="" disabled>{t("none")}</option>{/if}
@@ -122,4 +126,3 @@
     {/if}
   </div>
 </div>
-{#if problem}<p class="mt-1 text-xs text-destructive">{problem}</p>{/if}

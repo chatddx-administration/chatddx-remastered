@@ -35,8 +35,10 @@ def start(
     cleanup: Sequence[CleanupOp] | None = None,
     execution: Execution | None = None,
     canaries: str | None = None,
+    joining: UUID | None = None,
 ) -> Started:
-    """Begins a run for each language the cases are sent in, and sends nothing.
+    """Begins a run for each language the cases are sent in, and sends nothing; given
+    `joining`, the first run of an earlier start, its runs are listed as of that start.
 
     Compiles the variation into each language, and stores each run's trial, start record
     and entries, and the compilations of what it begins, in one transaction, which holds
@@ -80,7 +82,8 @@ def start(
     with seen.conn.transaction():
         for each in sent:
             assert each.skeleton is not None
-            with_first = [Entry.started_with(runs[0][1].run)] if runs else []
+            first = runs[0][1].run if runs else joining
+            with_first = [] if first is None else [Entry.started_with(first)]
             running = _begun(
                 seen,
                 each.skeleton,

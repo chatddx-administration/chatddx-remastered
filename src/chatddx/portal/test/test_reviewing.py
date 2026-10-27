@@ -49,7 +49,6 @@ def test_a_case_is_reviewed_with_what_is_expected_and_not_what_reads_it(
 
     scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
     judged = next(t for t in scorers if t["name"] == "judged")
-    page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
     held = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
     for v in held["views"]:
         assert escape(v["expectation"]) not in page
@@ -59,41 +58,35 @@ def test_a_case_is_reviewed_with_what_is_expected_and_not_what_reads_it(
 
 
 @pytest.mark.slow
-def test_the_answers_to_a_case_are_listed_with_each_view_s_value_and_nothing_sensitive(
+def test_review_shows_what_ran_the_case_only_in_an_evaluation(
     signed: TestClient,
 ) -> None:
     noted = family(signed, "noted")
-    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
-    judged = next(t for t in scorers if t["name"] == "judged")
-    page = shown(signed, f"/review/{noted['id']}")
-    assert "how judged scored it" in page
     runs = signed.get("/api/runs", params={"reaching": noted["case"]}).json()
     assert runs
-    ran = sum(
-        i["case"] == noted["case"]
-        for r in runs
-        for i in signed.get(f"/api/runs/{r['id']}/items").json()
+    page = shown(signed, f"/review/{noted['id']}")
+    assert (
+        "data-drawer" not in page and "/runs/" not in page and "evaluating" not in page
     )
-    listed = page.split(f'href="/review/{noted["id"]}"', 1)[1].split("</a>", 1)[0]
-    assert f">{ran}</span>" in listed and f"run {ran} time" in listed
-    given = props(page)
-    assert {a["run"] for a in given["answers"]} == {r["id"] for r in runs}
     for r in runs:
-        assert escape(run_title(r)) in page
-        [graded] = [
-            g
-            for g in signed.get(f"/api/runs/{r['id']}/scores").json()
-            if g["scorer"] == judged["head"]["digest"]
-        ]
-        [answer] = [a for a in given["answers"] if a["run"] == r["id"]]
-        assert answer["score"] == graded["score"]
-        for item in graded["items"]:
-            if item["case"] == noted["case"] and item["value"] is not None:
-                assert f">{item['value']:.2f}</span>" in page
-        for item in signed.get(f"/api/runs/{r['id']}/items").json():
-            if isinstance(item["answer"]["value"], str):
-                assert escape(item["answer"]["value"]) not in page
-    assert given["labels"] and all(escape(lbl) in page for lbl in given["labels"])
+        assert escape(run_title(r)) not in page
+    listed = page.split(f'href="/review/{noted["id"]}"', 1)[1].split("</a>", 1)[0]
+    assert "tabular-nums" not in listed and " time" not in listed
+    given = props(page)
+    assert set(given) == {
+        "family",
+        "case",
+        "expected",
+        "appendices",
+        "back",
+        "evaluation",
+        "about",
+    }
+    assert given["evaluation"] is None
+    assert f'action="/review/{noted["id"]}/runs"' in page
+    nothing = "00000000-0000-0000-0000-000000000000"
+    gone = signed.get(f"/review/{noted['id']}?evaluation={nothing}")
+    assert gone.status_code == 404
 
 
 @pytest.mark.slow
@@ -103,15 +96,24 @@ def test_a_family_s_other_case_shows_its_appendices(signed: TestClient) -> None:
     labs = next(c for c in cases if c["appendices"])
     page = shown(signed, f"/review/{whitespace['id']}")
     assert "<article" not in page and "Appendices, in order" not in page
-    assert ">without appendices</a>" in page
-    assert urlencode({"case": labs["case"]}) in page
+    branch = f'href="/review/{whitespace["id"]}?{urlencode({"case": labs["case"]})}"'
+    assert page.count(branch) == 1
+    listed = page.split(branch, 1)[1].split("</a>", 1)[0]
+    assert ">labs</span>" in listed and 'aria-current="page"' not in listed
     noted = family(signed, "noted")
-    for f, appended in ((whitespace, True), (noted, False)):
-        listed = page.split(f'href="/review/{f["id"]}"', 1)[1].split("</a>", 1)[0]
-        assert (", with appendices" in listed) == appended, f["name"]
+    under = page.split(f'href="/review/{noted["id"]}"', 1)[1].split("</li>", 1)[0]
+    assert "case=" not in under
     page = shown(signed, f"/review/{whitespace['id']}?case={labs['case']}")
     assert "CRP 180 mg/L, leukocytes 16." in page
+    tree = page.split('<nav aria-label="Cases">', 1)[1]
+    listed = tree.split(branch, 1)[1].split("</a>", 1)[0]
+    assert listed.startswith(' aria-current="page"')
     assert props(page)["case"] == labs["case"]
+    [appendix] = props(page)["appendices"]
+    assert appendix["thread"] is None
+    assert f'action="/review/{whitespace["id"]}/delete"' not in page
+    got = signed.post(f"/review/{whitespace['id']}/delete", data={"case": labs["case"]})
+    assert got.status_code == 404
 
 
 @pytest.mark.slow
@@ -161,7 +163,7 @@ def test_the_list_holds_each_tag_picked_and_any_language_picked(
 @pytest.mark.slow
 def test_what_review_can_t_find_is_not_found(signed: TestClient) -> None:
     noted = family(signed, "noted")
-    for query in ("case=sha256:nothing", "schema=sha256:nothing", "scorer=0"):
+    for query in ("case=sha256:nothing", "schema=sha256:nothing"):
         got = signed.get(f"/review/{noted['id']}?{query}")
         assert got.status_code == 404, query
         assert got.headers["content-type"].startswith("text/html")
@@ -173,9 +175,7 @@ def test_the_expectation_is_edited_in_place_with_its_versions_alone(
     signed: TestClient,
 ) -> None:
     noted = family(signed, "noted")
-    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
-    judged = next(t for t in scorers if t["name"] == "judged")
-    given = props(shown(signed, f"/review/{noted['id']}?scorer={judged['id']}"))
+    given = props(shown(signed, f"/review/{noted['id']}?tag=targets"))
     expected = given["expected"]
     editor = expected["editor"]
     [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
@@ -185,10 +185,9 @@ def test_the_expectation_is_edited_in_place_with_its_versions_alone(
         noted["case"],
         held["data"],
     )
-    assert expected["digest"] == held["expectation"]
     assert expected["history"][-1]["digest"] == held["expectation"]
-    assert set(expected) == {"editor", "digest", "history"}
-    assert given["back"] == f"/review/{noted['id']}?scorer={judged['id']}"
+    assert set(expected) == {"editor", "history"}
+    assert given["back"] == f"/review/{noted['id']}?tag=targets"
 
 
 @pytest.mark.slow
@@ -198,7 +197,8 @@ def test_an_island_is_given_its_json_in_the_order_it_is_stored(
     noted = family(signed, "noted")
     expected = props(shown(signed, f"/review/{noted['id']}"))["expected"]
     editor = expected["editor"]
-    expectation = signed.get(f"/api/components/{expected['digest']}").json()
+    digest = expected["history"][-1]["digest"]
+    expectation = signed.get(f"/api/components/{digest}").json()
     schema = signed.get(f"/api/components/{editor['schema']}").json()
     assert json.dumps(editor["data"]) == json.dumps(expectation["body"]["data"])
     assert json.dumps(editor["json_schema"]) == json.dumps(
@@ -233,80 +233,72 @@ def test_what_is_shared_to_take_is_shown_with_its_take(signed: TestClient) -> No
 
 
 @pytest.mark.slow
-def test_an_appendix_written_in_review_is_added_to_the_case_it_is_written_in(
+def test_a_case_branches_off_the_one_it_adds_an_appendix_to_and_goes_with_it(
     signed: TestClient,
 ) -> None:
     crlf = family(signed, "crlf")
     back = f"/review/{crlf['id']}?tag=targets"
 
-    def written(name: str, text: str, case: str, at: str) -> tuple[str, str]:
-        got = signed.post(
-            f"/review/{crlf['id']}/appendices",
-            data={"name": name, "text": text, "case": case, "back": at},
-        )
-        assert got.status_code == 303
-        query = {"kind": "appendix", "owner": "alice", "name": name}
-        [made] = signed.get("/api/threads", params=query).json()
-        return made["head"]["digest"], got.headers["location"]
-
     def built(*appendices: str) -> dict[str, Any]:
         cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
         return next(c for c in cases if c["appendices"] == list(appendices))
 
+    def written(name: str, text: str, *under: str) -> tuple[str, str]:
+        given = {"name": name, "text": text}
+        got = signed.post(f"/api/families/{crlf['id']}/appendices", json=given)
+        assert got.status_code == 201
+        made = got.json()["head"]["digest"]
+        appendices = {"appendices": [*under, made]}
+        got = signed.post(f"/api/families/{crlf['id']}/cases", json=appendices)
+        assert got.status_code == 201
+        return made, f"{back}&{urlencode({'case': got.json()['case']})}"
+
     default = built()
-    ultrasound, at = written(
-        "ultrasound", "Gallstones on ultrasound.", default["case"], back
-    )
+    ultrasound, at = written("ultrasound", "Gallstones on ultrasound.")
     alone = built(ultrasound)
-    assert at == f"{back}&{urlencode({'case': alone['case']})}"
     page = shown(signed, at)
     assert "Gallstones on ultrasound." in page
     assert "f.appendices" not in page and "owned by" not in page
-    held = page.split('id="review-vignette"', 1)[1].split("<details", 1)[0]
-    assert "<article" in held and "/threads/" not in held
-    assert f'action="/review/{crlf["id"]}/appendices/0/remove"' in page
+    held = page.split('id="review-appendices"', 1)[1].split("</section>", 1)[0]
+    assert "<article" in held and "/threads/" not in held and "<form" not in held
+    assert f'action="/review/{crlf["id"]}/delete"' in page
     given = props(page)
     [appendix] = given["appendices"]
-    assert appendix["digest"] == ultrasound
-    assert appendix["editor"]["mode"] == "edit"
+    assert appendix["digest"] == ultrasound and appendix["thread"] is not None
     editor = given["expected"]["editor"]
     assert (editor["mode"], editor["case"]) == ("new", alone["case"])
     assert editor["data"] == default["expectations"][0]["data"]
 
-    labs, again = written("labs", "Bilirubin 40.", alone["case"], at)
+    labs, again = written("labs", "Bilirubin 40.", ultrasound)
     both = built(ultrasound, labs)["case"]
     assert again == f"{back}&{urlencode({'case': both})}"
+    tree = shown(signed, again).split('<nav aria-label="Cases">', 1)[1]
+    branch = f'href="/review/{crlf["id"]}?{urlencode({"case": both})}'
+    listed = tree.split(branch, 1)[1].split("</a>", 1)[0]
+    assert ">labs</span>" in listed and "ultrasound" not in listed
 
-    def removed(position: int, case: str) -> str:
+    def deleted(case: str) -> str:
         got = signed.post(
-            f"/review/{crlf['id']}/appendices/{position}/remove",
-            data={"case": case, "back": again},
+            f"/review/{crlf['id']}/delete", data={"case": case, "back": again}
         )
         assert got.status_code == 303
         return got.headers["location"]
 
-    assert removed(1, both) == at
-    assert removed(0, both) == f"{back}&{urlencode({'case': built(labs)['case']})}"
-    bare = f"{back}&{urlencode({'case': default['case']})}"
-    assert removed(0, built(labs)["case"]) == bare
-    assert "<article" not in shown(signed, removed(0, alone["case"]))
-    got = signed.post(f"/review/{crlf['id']}/appendices/2/remove", data={"case": both})
+    assert deleted(both) == at
+    assert branch not in shown(signed, at)
+    query = {"kind": "appendix", "owner": "alice", "name": "labs"}
+    assert signed.get("/api/threads", params=query).json() == []
+    got = signed.post(f"/review/{crlf['id']}/delete", data={"case": both})
+    assert got.status_code == 404
+    got = signed.post(f"/review/{crlf['id']}/delete", data={"case": default["case"]})
     assert got.status_code == 404
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
-    got = signed.post(f"/review/{crlf['id']}/appendices/0/remove", headers=elsewhere)
+    got = signed.post(
+        f"/review/{crlf['id']}/delete", data={"case": alone["case"]}, headers=elsewhere
+    )
     assert got.status_code == 403
-
-
-@pytest.mark.slow
-def test_the_record_says_each_view_s_mean_over_the_answers(signed: TestClient) -> None:
-    noted = family(signed, "noted")
-    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
-    judged = next(t for t in scorers if t["name"] == "judged")
-    page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
-    assert 'data-drawer="record"' in page and 'data-drawer="cases"' not in page
-    for label in props(page)["labels"]:
-        assert f"<dt>{escape(label)}</dt>" in page
-    assert "mean of 1" in page
+    assert deleted(alone["case"]) == f"{back}&{urlencode({'case': default['case']})}"
+    assert urlencode({"case": alone["case"]}) not in shown(signed, back)
 
 
 @pytest.mark.slow
@@ -315,14 +307,14 @@ def test_a_refusal_s_page_leads_back_where_the_form_was_and_nowhere_else(
 ) -> None:
     crlf = family(signed, "crlf")
     back = f"/review/{crlf['id']}?tag=targets"
-    form = {"configuration": "0", "case": "sha256:" + "0" * 64}
+    form = {"case": "sha256:" + "0" * 64}
     here = {"Referer": f"https://testserver{back}"}
-    got = signed.post(f"/review/{crlf['id']}/runs", data=form, headers=here)
-    assert got.status_code == 422
+    got = signed.post(f"/review/{crlf['id']}/delete", data=form, headers=here)
+    assert got.status_code == 404
     assert f'href="{escape(back)}"' in got.text and "Back to where you were" in got.text
     elsewhere = {"Referer": f"https://elsewhere.example{back}"}
-    got = signed.post(f"/review/{crlf['id']}/runs", data=form, headers=elsewhere)
-    assert got.status_code == 422 and "Back to where you were" not in got.text
+    got = signed.post(f"/review/{crlf['id']}/delete", data=form, headers=elsewhere)
+    assert got.status_code == 404 and "Back to where you were" not in got.text
     gone = signed.get("/review/0")
     assert gone.status_code == 404 and "Back to where you were" not in gone.text
     assert ">Home</a>" not in gone.text

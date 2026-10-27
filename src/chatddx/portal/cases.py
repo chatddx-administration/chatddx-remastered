@@ -12,8 +12,8 @@ from chatddx.api.state import refused
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import Subject
 from chatddx.catalog.titles import CaseTitle
-from chatddx.factors.base import Invalid, resolve
-from chatddx.factors.cases import Appendix, Case
+from chatddx.factors.base import resolve
+from chatddx.factors.cases import Case
 from chatddx.locale import tr
 
 from .changes import changes
@@ -225,22 +225,3 @@ def taking(
         back="/library?"
         + urlencode([("kind", "case"), *(("tag", t) for t in sorted(tag or ()))]),
     )
-
-
-def appended(bench: Bench, family: int, name: str, text: str) -> str:
-    if not name.strip():
-        raise Invalid.of("an appendix is named")
-    if not text:
-        raise Invalid.of("an appendix holds a text")
-    with refused():
-        held = Appendix(vignette=bench.family(family).vignette, text=text)
-        written = bench.new(held, name.strip())
-    return written.edit.digest
-
-
-def built(bench: Bench, family: int, appendices: list[str] | None) -> str:
-    if not appendices:
-        raise Invalid.of("a case is built of one appendix or more")
-    with refused():
-        made = bench.case(family, appendices)
-    return made

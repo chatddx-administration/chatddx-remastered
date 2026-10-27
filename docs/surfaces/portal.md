@@ -30,33 +30,6 @@ Finds:
 * `worker: bool = False`
 * ∟`FastAPI`
 
-## `appended`
-`src/chatddx/portal/cases.py:appended`
-
-* `bench: Bench`
-* `family: int`
-* `name: str`
-* `text: str`
-* ∟`str`
-
-Raises:
-1. `Invalid`: `"an appendix is named"`
-2. `Invalid`: `"an appendix holds a text"`
-
-## `appending_in_review` `@router.post("/review/{family}/appendices")`
-`src/chatddx/portal/review.py:appending_in_review`
-
-* `bench: BenchDep`
-* `family: int`
-* `name: Annotated[str, Form()]`
-* `text: Annotated[str, Form()]`
-* `case: Annotated[str | None, Form()] = None`
-* `back: Annotated[str | None, Form()] = None`
-* ∟`Response`
-
-Raises:
-1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
-
 ## `AskedBy` `@dataclass(frozen=True)`
 `src/chatddx/portal/scoring.py:AskedBy`
 
@@ -139,17 +112,6 @@ Raises:
 `src/chatddx/portal/pages.py:BenchDep`
 
 `type BenchDep = Annotated[Bench, Depends(page_bench)]`
-
-## `built`
-`src/chatddx/portal/cases.py:built`
-
-* `bench: Bench`
-* `family: int`
-* `appendices: list[str] | None`
-* ∟`str`
-
-Raises:
-1. `Invalid`: `"a case is built of one appendix or more"`
 
 ## `carrying` `@router.post("/threads/{thread}/carry")`
 `src/chatddx/portal/threads.py:carrying`
@@ -272,6 +234,18 @@ Raises:
 * `bench: BenchDep`
 * `thread: int`
 * ∟`Response`
+
+## `deleting_in_review` `@router.post("/review/{family}/delete")`
+`src/chatddx/portal/review.py:deleting_in_review`
+
+* `bench: BenchDep`
+* `family: int`
+* `case: Annotated[str, Form()]`
+* `back: Annotated[str | None, Form()] = None`
+* ∟`Response`
+
+Raises:
+1. `NotFound`: `"no appendix to delete in case %(case)s of %(family)s", case=case, family=shown.name`
 
 ## `display_case`
 `src/chatddx/portal/titles.py:display_case`
@@ -442,11 +416,6 @@ Raises:
 * `bench: BenchDep`
 * `run: UUID`
 * ∟`Response`
-
-## `Held`
-`src/chatddx/portal/review.py:Held`
-
-`type Held = tuple[schemas.Thread, Scorer, list[str]]`
 
 ## `holding`
 `src/chatddx/portal/translations.py:holding`
@@ -675,20 +644,6 @@ Raises:
 * `e: Exception`
 * ∟`str`
 
-## `removing_in_review` `@router.post("/review/{family}/appendices/{at}/remove")`
-`src/chatddx/portal/review.py:removing_in_review`
-
-* `bench: BenchDep`
-* `family: int`
-* `at: int`
-* `case: Annotated[str, Form()]`
-* `back: Annotated[str | None, Form()] = None`
-* ∟`Response`
-
-Raises:
-1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
-2. `NotFound`: `"no appendix %(at)s in %(case)s", at=at, case=display_case(picked.titled)`
-
 ## `replacing` `@router.post("/cases/{family}/replacement")`
 `src/chatddx/portal/cases.py:replacing`
 
@@ -739,7 +694,7 @@ Raises:
 * `family: int`
 * `case: str | None = None`
 * `schema: str | None = None`
-* `scorer: int | None = None`
+* `evaluation: UUID | None = None`
 * `tag: Tags = None`
 * `language: Tags = None`
 * ∟`Response`
@@ -747,7 +702,7 @@ Raises:
 Raises:
 1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
 2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema`
-3. `NotFound`: `"no scorer %(scorer)s reading that schema for you", scorer=scorer`
+3. `NotFound`: `"no evaluation %(evaluation)s of %(case)s", evaluation=str(first), case=display_case(picked.titled)` (through `_evaluation`)
 
 ## `REVIEWED`
 `src/chatddx/portal/shelves.py:REVIEWED`
@@ -828,16 +783,13 @@ Raises:
 
 * `bench: BenchDep`
 * `family: int`
-* `configuration: Annotated[int, Form()]`
 * `case: Annotated[str, Form()]`
-* `model: Annotated[str, Form()] = ""`
-* `replicates: Annotated[int, Form(ge=1, le=settings.ITEMS_PER_RUN)] = 1`
-* `score: Annotated[bool, Form()] = False`
 * `back: Annotated[str | None, Form()] = None`
 * ∟`Response`
 
 Raises:
-1. `Invalid`: `"no case %(case)s of family %(family)s", case=case, family=family`
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
+2. `Invalid`: `"no configuration can run %(case)s now", case=display_case(picked.titled)`
 
 ## `runs` `@router.get("/runs")`
 `src/chatddx/portal/runs.py:runs`
@@ -905,16 +857,6 @@ Raises:
 Raises:
 1. `NotFound`: `"no scorer or judge %(thread)s for %(login)s", thread=thread, login=bench.person.login`
 2. `NotFound`: `"no view %(view)s asks this judge", view=view` (through `_judge`)
-
-## `scoring_in_review` `@router.post("/review/{family}/scores")`
-`src/chatddx/portal/review.py:scoring_in_review`
-
-* `bench: BenchDep`
-* `family: int`
-* `run: Annotated[list[UUID], Form()]`
-* `scorer: Annotated[str, Form()]`
-* `back: Annotated[str | None, Form()] = None`
-* ∟`Response`
 
 ## `scorings` `@router.get("/scoring")`
 `src/chatddx/portal/scoring.py:scorings`

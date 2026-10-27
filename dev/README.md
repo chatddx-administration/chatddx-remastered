@@ -2,7 +2,7 @@
 
 ## Check
 
-`./check.sh [stage]...` checks the stages named, or all of them:
+`./check.sh [stage]...` checks the stages named:
 
 - `openapi`, `stamps` and `locale`, each in step with the code
 - `pending` and `fuzzy`, what is left to stamp or review

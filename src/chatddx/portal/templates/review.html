@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import chip, drawer, mean, opened, outcome, pane, rail, run_title, upright %}
+{% from "macros.html" import chip, pane %}
 
 {% macro datum(value, key=None) %}
 {%- if value is mapping -%}
@@ -20,11 +20,19 @@
 {%- endif -%}
 {% endmacro %}
 
-{% macro pencil() %}<svg aria-hidden="true" viewBox="0 0 24 24" class="size-3.5 shrink-0 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>{% endmacro %}
-{% macro paperclip() %}<svg aria-hidden="true" viewBox="0 0 24 24" class="size-3.5 shrink-0 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>{% endmacro %}
-{% macro trash() %}<svg aria-hidden="true" viewBox="0 0 24 24" class="size-3.5 shrink-0 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>{% endmacro %}
-
-{% set field = "rounded-md border border-input bg-transparent px-2.5" %}
+{% macro branched(family, branches, keep) %}
+<ol class="ml-3.5 border-l border-border">
+  {% for b in branches %}
+  <li>
+    <a href="/review/{{ family }}{{ query(case=b.case, **keep) }}"{% if b.case == case.case %} aria-current="page"{% endif %}
+       class="flex items-center gap-2 py-1 pr-2 pl-3">
+      <span class="min-w-0 flex-1 truncate">{{ b.names | listed }}</span>
+    </a>
+    {% if b.branches %}{{ branched(family, b.branches, keep) }}{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}
 
 {% block title %}{{ _("Review") ~ " · " ~ family.name if family else _("Review") }} · ChatDDX{% endblock %}
 {% block main %}
@@ -34,106 +42,70 @@
 </div>
 {% else %}
 {% set here = "/review/" ~ family.id %}
-<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.1fr)] xl:grid-rows-[minmax(0,1fr)_auto]">
 
-  {% set filtered = query(case=case.case, schema=keep.schema, scorer=keep.scorer) %}
-  <section aria-label="{{ _('Cases') }}" data-cases class="pane min-h-0 overflow-y-auto rounded-2xl p-3 max-xl:max-h-[45dvh] xl:w-60">
+  {% set filtered = query(case=case.case, schema=keep.schema) %}
+  <section aria-label="{{ _('Cases') }}" data-cases class="pane relative min-h-0 overflow-y-auto rounded-2xl p-3 max-xl:max-h-[45dvh] xl:row-span-2 xl:w-60">
     {% if tags or languages %}
     <nav data-filters class="mb-3 space-y-1.5 text-xs" aria-label="{{ _('Filters') }}">
       <p class="flex flex-wrap gap-x-2.5 gap-y-1"><a href="{{ here }}{{ filtered }}" data-all{% if not keep.tag and not keep.language %} aria-current="true"{% endif %} class="view">{{ pgettext("tags", "all") }}</a></p>
       {% if tags %}
       <p class="flex flex-wrap gap-x-2.5 gap-y-1" aria-label="{{ _('Tags') }}">
         {% for t in tags %}
-        <a href="{{ here }}{{ query(case=case.case, tag=toggled(keep.tag, t), language=keep.language, schema=keep.schema, scorer=keep.scorer) }}" data-tag="{{ t }}"{% if keep.tag and t in keep.tag %} aria-current="true"{% endif %} class="view">{{ t }}</a>
+        <a href="{{ here }}{{ query(case=case.case, tag=toggled(keep.tag, t), language=keep.language, schema=keep.schema) }}" data-tag="{{ t }}"{% if keep.tag and t in keep.tag %} aria-current="true"{% endif %} class="view">{{ t }}</a>
         {% endfor %}
       </p>
       {% endif %}
       {% if languages %}
       <p class="flex flex-wrap gap-x-2.5 gap-y-1" aria-label="{{ _('Languages') }}">
         {% for l in languages %}
-        <a href="{{ here }}{{ query(case=case.case, tag=keep.tag, language=toggled(keep.language, l), schema=keep.schema, scorer=keep.scorer) }}" data-language="{{ l }}"{% if keep.language and l in keep.language %} aria-current="true"{% endif %} class="view">{{ l | language }}</a>
+        <a href="{{ here }}{{ query(case=case.case, tag=keep.tag, language=toggled(keep.language, l), schema=keep.schema) }}" data-language="{{ l }}"{% if keep.language and l in keep.language %} aria-current="true"{% endif %} class="view">{{ l | language }}</a>
         {% endfor %}
       </p>
       {% endif %}
     </nav>
     {% endif %}
+    <nav aria-label="{{ _('Cases') }}">
     <ol class="space-y-0.5 text-sm">
       {% for f in every %}
       {% set m = marks[f.id] %}
       {% set synced = _("Can't be checked") if m.drifted is none else (_("Needs repairing") if m.drifted else _("In sync")) %}
       <li data-tags='{{ f.tags | tojson }}' data-language="{{ f.language or '' }}"{% if f.id not in listed %} hidden{% endif %}>
-        <a href="/review/{{ f.id }}{{ query(**keep) }}"{% if f.id == family.id %} aria-current="page"{% endif %}
+        <a href="/review/{{ f.id }}{{ query(**keep) }}"{% if f.id == family.id and (case.case == f.case or case.case not in m.cases) %} aria-current="page"{% endif %}
            class="flex items-center gap-2 px-2 py-1">
           <span title="{{ synced }}" class="-m-1 grid size-4 shrink-0 place-items-center"><span aria-hidden="true" class="size-2 rounded-full {{ 'border border-muted-foreground' if m.drifted is none else ('bg-destructive' if m.drifted else 'bg-success') }}"></span></span>
           <span class="min-w-0 flex-1 truncate">{{ f.name }}</span>
-          {% if m.appended %}<span class="text-muted-foreground" title="{{ _('It has cases with appendices') }}">{{ paperclip() }}</span>{% endif %}
-          <span class="text-[0.7rem] tabular-nums text-muted-foreground" aria-hidden="true">{{ m.ran }}</span>
-          <span class="sr-only">{{ synced }}{{ pgettext("after what is expected", ", with appendices") if m.appended else "" }}{{ npgettext("after what is expected", ", run %(num)s time", ", run %(num)s times", m.ran) }}</span>
+          <span class="sr-only">{{ synced }}</span>
         </a>
+        {% if m.branches %}{{ branched(f.id, m.branches, keep) }}{% endif %}
       </li>
       {% endfor %}
       <li data-none class="text-muted-foreground"{% if listed %} hidden{% endif %}>{{ _("None.") }}</li>
     </ol>
+    </nav>
   </section>
 
   {% call pane(_("The case")) %}
-  <header class="mb-3 space-y-2">
-    <div class="flex flex-wrap items-baseline justify-between gap-x-2">
-      <h1 class="text-xl font-bold tracking-tight">{{ family.name }}</h1>
-      <a href="/cases/{{ family.id }}" class="text-xs">{{ _("Show in the Library") }}</a>
-    </div>
-    {% if cases | length > 1 %}
-    <nav class="flex flex-wrap gap-x-2.5 gap-y-1 text-xs" aria-label="{{ _('Its cases') }}">
-      {% for c in cases %}
-      <a href="{{ here }}{{ query(case=c.case, **keep) }}"{% if c.case == case.case %} aria-current="page"{% endif %}
-         class="view">{{ _("without appendices") if not c.appendices else _("with %(appendices)s", appendices=c.titled.appendices | listed) }}</a>
-      {% endfor %}
-    </nav>
-    {% endif %}
-    <div id="review-about" class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      {% for t in family.tags %}{{ chip(t) }}{% endfor %}
-      {% if family.language %}<span class="ml-auto">{{ family.language | language }}</span>{% endif %}
-    </div>
+  <header class="mb-3 flex flex-wrap items-baseline justify-between gap-x-2">
+    <h1 class="text-xl font-bold tracking-tight">{{ family.name }}</h1>
+    <a href="/cases/{{ family.id }}" class="text-xs">{{ _("Show in the Library") }}</a>
   </header>
   <div id="review-vignette" class="leading-relaxed">
     <p class="text-sm text-muted-foreground">{% trans family=family.id %}The vignette is shown with scripts, or on <a href="/cases/{{ family }}/vignette">a page of its own</a>.{% endtrans %}</p>
   </div>
-  {% set changing, removing = _("Change it"), _("Take it out of the case") %}
-  {% if appendices %}
-  <div class="mt-5 space-y-2">
-  {% for a in appendices %}
-  <article{% if a.editor %} data-appendix="{{ loop.index0 }}"{% endif %} class="rounded-lg border-l-2 border-primary/50 bg-primary/5 px-3 py-2 text-sm">
-    <header class="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-      <h3 class="min-w-0 break-words">{{ a.title }}</h3>
-      <div class="flex shrink-0 items-center gap-1">
-        {% if a.editor %}<button type="button" class="icon" data-change hidden aria-pressed="false" aria-label="{{ changing }}" title="{{ changing }}">{{ pencil() }}</button>{% endif %}
-        <form method="post" action="{{ here }}/appendices/{{ loop.index0 }}/remove">
-          <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
-          <button class="icon" aria-label="{{ removing }}" title="{{ removing }}">{{ trash() }}</button>
-        </form>
-      </div>
-    </header>
-    <div data-appendix-body><p class="whitespace-pre-wrap">{{ a.text }}</p></div>
-  </article>
-  {% endfor %}
+  <div id="review-appendices" class="mt-5 space-y-2">
+    {% for a in appendices %}
+    <article class="rounded-lg border-l-2 border-primary/50 bg-primary/5 px-3 py-2 text-sm">
+      <h3 class="mb-1 min-w-0 break-words text-xs font-medium text-muted-foreground">{{ a.title }}</h3>
+      <p class="whitespace-pre-wrap">{{ a.text }}</p>
+    </article>
+    {% endfor %}
   </div>
-  {% endif %}
-  <details class="mt-4 rounded-lg border border-dashed border-border p-3 text-sm">
-    <summary class="cursor-pointer font-medium">{{ _("Add an appendix") }}</summary>
-    <form method="post" action="{{ here }}/appendices" class="mt-3 grid gap-2" data-appending>
-      <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
-      <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Name") }}</span>
-        <input name="name" required class="h-9 {{ field }}"></label>
-      <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Text, as it is added to the vignette") }}</span>
-        <textarea name="text" required rows="3" class="py-1.5 {{ field }}"></textarea></label>
-      <div><button class="primary">{{ _("Save") }}</button></div>
-    </form>
-  </details>
   {% endcall %}
 
-  {% call pane(_("Expected")) %}
+  {% call pane(_("Expectation")) %}
   <header class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-    <h2 class="text-base font-semibold">{{ _("Expected") }}</h2>
+    <h2 class="text-base font-semibold">{{ _("Expectation") }}</h2>
     {% if visible | length > 1 %}
     <nav class="flex flex-wrap gap-x-2.5 gap-y-1 text-xs" aria-label="{{ _('Expectation schemas') }}">
       {% for t in visible %}
@@ -177,88 +149,47 @@
   </div>
   {% endcall %}
 
-  {% call drawer("record", _("Record")) %}
-  <summary class="{{ rail }}">
-    <span class="{{ upright }}">{{ _("Record") }} <span class="font-normal text-muted-foreground">{{ ngettext("%(num)s answer", "%(num)s answers", answers | length) }}{% if pending %} · {{ ngettext("%(num)s under way", "%(num)s under way", pending | length) }}{% endif %}{% if left %} · {{ ngettext("%(num)s to score", "%(num)s to score", left | length) }}{% endif %}</span></span>
-  </summary>
-  <div class="{{ opened }} xl:w-[26rem]">
-    <p class="mb-3 text-xs text-muted-foreground">{{ _("What your runs answered to this case, and how %(scorer)s scored it: a record, to read.", scorer=scorer[0].name or scorer[0].title) if scorer else _("What your runs answered to this case: a record, to read.") }}</p>
-
-    <details class="mb-3 rounded-lg border border-dashed border-border p-3 text-sm"{% if not answers and not pending %} open{% endif %}>
-      <summary class="cursor-pointer font-medium">{{ _("Run this case") }}</summary>
-      <form method="post" action="{{ here }}/runs" class="mt-3 grid gap-2">
+  <div aria-label="{{ _('Saving') }}" role="group" class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 xl:col-span-2">
+    <div id="review-about" class="flex min-w-0 grow basis-72 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      {% for t in family.tags %}{{ chip(t) }}{% endfor %}
+      {% if family.language %}<span class="ml-auto">{{ family.language | language }}</span>{% endif %}
+    </div>
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+      {% if deleting %}
+      <form method="post" action="{{ here }}/delete" data-confirm="{{ _('Delete the appendix %(appendix)s? This case and those under it leave the list.', appendix=deleting) }}">
         <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
-        <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Configuration") }}</span>
-          <select name="configuration" class="h-9 {{ field }}">
-            {% for t in configurations %}<option value="{{ t.id }}"{% if t.outdated %} disabled{% endif %}>{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}{% if t.outdated %} ({{ pgettext("a thread", "out of date") }}){% endif %}</option>{% endfor %}
-          </select></label>
-        <label class="grid gap-1"><span class="text-muted-foreground">{{ _("Model") }}</span>
-          <select name="model" class="h-9 {{ field }}">
-            <option value="">{{ pgettext("a configuration's model", "its own") }}</option>
-            {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
-          </select>
-          <span class="text-xs text-muted-foreground">{{ _("Another runs it with that model in place of its own.") }}</span></label>
-        <label class="flex items-center gap-2"><span class="text-muted-foreground">{{ _("Replicates") }}</span>
-          <input type="number" name="replicates" value="1" min="1" max="{{ most }}" class="h-9 w-20 {{ field }}"></label>
-        <label class="flex items-center gap-2"><input type="checkbox" name="score" value="true" checked> {{ _("Score it once it has finished") }}</label>
-        <div><button>{{ _("Run it") }}</button></div>
+        <button class="danger" title="{{ _('Deletes the appendix %(appendix)s: this case and those under it leave the list', appendix=deleting) }}">{{ _("Delete") }}</button>
       </form>
-    </details>
-
-    {% for p in pending %}
-    <div data-pending="{{ loop.index0 }}" class="mb-2 rounded-lg bg-primary/5 px-3 py-2 text-sm">
-      <a href="/runs/{{ p.run }}">{{ run_title(p.titled) }}</a> <span class="text-muted-foreground">{{ pgettext("after a run", "is under way; reload to see it once it is done.") }}</span>
+      {% endif %}
+      <form method="post" action="{{ here }}/runs" data-running title="{{ ngettext('Runs the case as it is saved under %(num)s configuration, four times', 'Runs the case as it is saved under each of %(num)s configurations, four times', runnable) }}">
+        <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
+        <button{% if not runnable %} disabled{% endif %}>{{ pgettext("a button", "Run") }}</button>
+      </form>
+      <div id="review-save" class="contents"></div>
     </div>
-    {% endfor %}
-
-    {% if left and scorer %}
-    <form method="post" action="{{ here }}/scores" class="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-warning/10 px-3 py-2 text-sm">
-      {% for r in left %}<input type="hidden" name="run" value="{{ r }}">{% endfor %}
-      <input type="hidden" name="scorer" value="{{ scorer[0].head.digest }}">
-      <input type="hidden" name="back" value="{{ back }}">
-      <span class="min-w-0 flex-1">{{ ngettext("%(num)s run left to score by %(scorer)s against what you expect now.", "%(num)s runs left to score by %(scorer)s against what you expect now.", left | length, scorer=scorer[0].name or scorer[0].title) }}</span>
-      <button>{{ _("Score again") }}</button>
-    </form>
-    {% endif %}
-
-    {% set columns = "minmax(0,1fr) auto" ~ (" repeat(" ~ labels | length ~ ", 3.25rem)" if scorer else "") %}
-    {% if means and answers %}
-    <dl class="mb-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-1 rounded-lg bg-muted/40 p-2.5 text-xs">
-      {% for m in means %}
-      <dt>{{ m.label }}</dt><dd class="text-right tabular-nums">{{ mean(m.mean, m.unit) }}</dd><dd class="text-muted-foreground">{{ ngettext("mean of %(num)s", "mean of %(num)s", m.of) }}</dd>
-      {% endfor %}
-    </dl>
-    {% endif %}
-    {% if answers %}
-    {% if scorer %}
-    <div class="grid gap-2 px-1 text-[0.7rem] uppercase tracking-wide text-muted-foreground" style="grid-template-columns: {{ columns }}">
-      <span>{{ _("Run") }}</span><span>{{ _("Outcome") }}</span>{% for label in labels %}<span class="truncate text-right" title="{{ label }}">{{ label }}</span>{% endfor %}
-    </div>
-    {% endif %}
-    {% for a in answers %}
-    <details data-answer="{{ loop.index0 }}" class="border-t border-border/60">
-      <summary class="grid cursor-pointer items-center gap-2 px-1 py-2 text-sm" style="grid-template-columns: {{ columns }}">
-        {% set titled = run_title(a.titled) %}<span class="min-w-0" title="{{ titled | striptags }}"><span class="block truncate">{{ titled }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
-        <span>{{ outcome(a.outcome) }}</span>
-        {% if scorer %}
-        {% if a["values"] is none %}
-        <span class="text-right text-xs text-muted-foreground" style="grid-column: span {{ labels | length }}">{{ _("left to score") if a.left else _("not scored by it") }}</span>
-        {% else %}
-        {% for value, unit in a["values"] %}<span class="text-right tabular-nums{{ ' italic text-muted-foreground' if a.left else '' }}"{% if a.left %} title="{{ _('scored against what was expected before') }}"{% endif %}>{{ mean(value, unit) }}</span>{% endfor %}
-        {% endif %}
-        {% endif %}
-      </summary>
-      <div data-answer-body class="px-1 pb-3 text-sm">
-        <a href="/runs/{{ a.run }}#item-{{ a.anchor }}">{{ _("The answer on its run's page") }}</a>
-      </div>
-    </details>
-    {% endfor %}
-    {% elif not pending %}
-    <p class="text-sm text-muted-foreground">{{ _("None of your runs has answered this case.") }}</p>
-    {% endif %}
   </div>
-  {% endcall %}
 </div>
+{% if evaluation %}
+<section id="evaluating" aria-label="{{ _('Evaluating the case') }}" class="min-h-dvh px-4 pb-6 sm:px-6">
+  <div class="pane rounded-2xl p-5 sm:p-6">
+    <header class="mb-4">
+      <h2>{{ _("Evaluating the case") }}</h2>
+      <p class="mt-1 text-sm text-muted-foreground">{{ _("%(case)s under each configuration of yours, three times under seeds drawn and a fourth under the third's seed, scored against what is expected.", case=case.titled | case) }} <a href="/runs/{{ evaluation }}">{{ _("Its runs") }}</a></p>
+    </header>
+    {% if left_out %}
+    <div class="mb-4 text-sm">
+      <p class="text-muted-foreground">{{ _("Left out:") }}</p>
+      <ul class="mt-1 list-disc space-y-0.5 pl-5">
+        {% for name, why in left_out %}<li><span class="font-medium">{{ name }}</span>: {{ why or _("not run in this evaluation") }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <div id="review-evaluation">
+      <p class="text-sm text-muted-foreground">{{ _("What it answered is shown with scripts, or on its runs' page.") }}</p>
+    </div>
+  </div>
+</section>
+{% endif %}
 <script type="application/json" id="review-props">{{ props | tojson }}</script>
 {% endif %}
 {% endblock %}

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { authored, blank, deref, fieldName, kept, type Schema, widget } from "./form";
+import { authored, blank, deref, fieldName, glimpse, kept, pruned, type Schema, widget } from "./form";
 
 const TARGETS = JSON.parse(
   readFileSync(new URL("../../../../worlds/test/_data/schemas/targets.json", import.meta.url), "utf8"),
@@ -38,6 +38,35 @@ describe("a form drawn from a JSON Schema", () => {
       warning: false,
       notes: [{ author: "alice", comment: "Ok." }],
     });
+  });
+
+  it("leaves out, where every field is shown, what was left empty and what holds nothing else", () => {
+    const shown = {
+      diagnosis: { pattern: "biliary & colic", text: "" },
+      warning: { text: "", pattern: "" },
+      disposition: {},
+      notes: [
+        { author: "carol", comment: "Chock." },
+        { author: "alice", comment: "", answer: "" },
+      ],
+    };
+    expect(pruned(shown, TARGETS, TARGETS)).toEqual({
+      diagnosis: { pattern: "biliary & colic" },
+      notes: [{ author: "carol", comment: "Chock." }],
+    });
+    const begun = { diagnosis: {}, warning: false, notes: [{ author: "alice", comment: "", answer: "Admit." }] };
+    expect(pruned(begun, TARGETS, TARGETS)).toEqual({
+      diagnosis: {},
+      warning: false,
+      notes: [{ author: "alice", comment: "", answer: "Admit." }],
+    });
+    expect(pruned({ diagnosis: { text: "" } }, TARGETS, TARGETS)).toBeUndefined();
+  });
+
+  it("glimpses what a field holds by its texts, but for who wrote them", () => {
+    expect(glimpse({ text: "Gallstones", pattern: "biliary & colic" })).toEqual(["Gallstones", "biliary & colic"]);
+    expect(glimpse([{ author: "carol", comment: " Chock. " }, { author: "alice" }])).toEqual(["Chock."]);
+    expect(glimpse(false)).toEqual([]);
   });
 
   it("falls back on JSON for what it can't draw", () => {
@@ -88,6 +117,7 @@ describe("a field's name", () => {
     expect(fieldName("author")).toBe("author");
     expect(fieldName("dont_miss")).toBe("Must not be missed");
     expect(fieldName("text")).toBe("Own note");
+    expect(fieldName("comment")).toBe("comment");
   });
 });
 

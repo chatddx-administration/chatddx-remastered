@@ -97,6 +97,20 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # their browser kept the session's cookie and says so if it didn't.
 ```
 
+## `src/chatddx/portal/review.py:_REPLICATES`
+
+```
+# Policy: an evaluation runs a case three times under seeds drawn, and a fourth under the
+# third's seed, which a trial can't hold twice, so as a run of its own.
+```
+
+## `src/chatddx/portal/review.py:running_in_review`
+
+```
+# Policy: queued once every run is begun, so that the worker sending the first
+# doesn't slow beginning the rest.
+```
+
 ## `src/chatddx/portal/runs.py:halting`
 
 ```

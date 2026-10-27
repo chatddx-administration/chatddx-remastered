@@ -47,15 +47,14 @@ def test_a_case_s_section_shows_its_appendices_and_begins_expectations_only(
     crlf = family(signed)
     path = f"/cases/{crlf['id']}"
     [default] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    got = signed.post(
-        f"/review/{crlf['id']}/appendices",
-        data={"name": "ultrasound", "text": "Gallstones.", "case": default["case"]},
-    )
-    assert got.status_code == 303
-    query = {"kind": "appendix", "owner": "alice", "name": "ultrasound"}
-    [made] = signed.get("/api/threads", params=query).json()
-    cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    [case] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
+    given = {"name": "ultrasound", "text": "Gallstones."}
+    got = signed.post(f"/api/families/{crlf['id']}/appendices", json=given)
+    assert got.status_code == 201
+    made = got.json()
+    appendices = {"appendices": [made["head"]["digest"]]}
+    got = signed.post(f"/api/families/{crlf['id']}/cases", json=appendices)
+    assert got.status_code == 201
+    case = got.json()
     page = shown(signed, path)
     assert (
         "appendices: ultrasound" in page and f'href="/threads/{made["id"]}"' not in page
