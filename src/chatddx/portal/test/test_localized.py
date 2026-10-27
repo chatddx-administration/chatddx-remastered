@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 from fastapi import FastAPI
@@ -10,6 +11,7 @@ from chatddx.api import schemas
 from chatddx.factors import Finding, Invalid
 from chatddx.locale import Locales, localizing
 from chatddx.locale.test.helpers import catalog
+from chatddx.markers import restamped
 from chatddx.portal.pages import refusal_of, templates
 from chatddx.portal.test.helpers import said
 
@@ -17,24 +19,19 @@ from chatddx.portal.test.helpers import said
 def test_a_message_is_said_in_the_locale_where_it_is_translated_and_reviewed(
     tmp_path: Path,
 ) -> None:
-    sv = Locales(
-        catalog(
-            tmp_path,
-            """
-            msgid "Library"
-            msgstr "Bibliotek"
+    reviewed = dedent(
+        """
+        msgid "Library"
+        msgstr "Bibliotek"
 
-            msgid "%(n)s run"
-            msgid_plural "%(n)s runs"
-            msgstr[0] "%(n)s körning"
-            msgstr[1] "%(n)s körningar"
-
-            #, fuzzy
-            msgid "Fork it"
-            msgstr "Forka"
-            """,
-        )
-    ).negotiate("sv")
+        msgid "%(n)s run"
+        msgid_plural "%(n)s runs"
+        msgstr[0] "%(n)s körning"
+        msgstr[1] "%(n)s körningar"
+        """
+    )
+    drafted = reviewed + '\nmsgid "Fork it"\nmsgstr "Forka"\n'
+    sv = Locales(catalog(tmp_path, restamped(reviewed, drafted))).negotiate("sv")
     shown = templates.env.overlay(
         loader=DictLoader(
             {

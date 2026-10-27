@@ -19,7 +19,8 @@ from babel.messages.pofile import PoFileError, read_po, write_po
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from chatddx import settings
+from chatddx import markers, settings
+from chatddx.markers import applied, signed
 
 __all__ = [
     "N_",
@@ -28,6 +29,7 @@ __all__ = [
     "Locales",
     "Localizing",
     "Proof",
+    "catalogs",
     "check",
     "display_language",
     "display_list",
@@ -41,6 +43,7 @@ __all__ = [
     "pgettext_noop",
     "proofs",
     "refusal",
+    "restamped",
     "tr",
     "whoops",
     "write",
@@ -359,11 +362,14 @@ class Proof:
     current: str | None
     written: str
     untranslated: int
-    fuzzy: int
 
     @property
     def behind(self) -> bool:
         return self.current != self.written
+
+
+def catalogs(where: Path = _CATALOGS) -> list[Path]:
+    return sorted(where.glob("*.po"))
 
 
 def proofs(
@@ -377,25 +383,53 @@ def proofs(
     found: list[Proof] = []
     for tag, path in sorted(paths.items()):
         current = path.read_text() if path.exists() else None
-        catalog = _begun(tag) if current is None else read_po(StringIO(current), tag)
-        # Accommodating for Babel, which reads the "#, " left where a message's only flag,
-        # fuzzy, is deleted by hand as a flag of its own, and writes it back.
-        for m in catalog:
-            m.flags.discard("")
-        # Accommodating for Babel, which matches a new message to an untranslated plural one as
-        # if it were translated: what holds no translation comes anew from the code.
-        for m in [m for m in catalog if m.id and not _translated(m)]:
-            catalog.delete(m.id, m.context)
-        catalog.update(template, update_creation_date=False)
-        written = BytesIO()
-        write_po(written, catalog, include_lineno=False, ignore_obsolete=True)
-        messages = [m for m in catalog if m.id]
-        untranslated = sum(not _translated(m) for m in messages)
-        fuzzy = sum(m.fuzzy for m in messages)
-        found.append(
-            Proof(path, current, written.getvalue().decode(), untranslated, fuzzy)
-        )
+        written, now = _restamped(tag, current, current, template)
+        untranslated = sum(not _translated(m) for m in now if m.id)
+        found.append(Proof(path, current, written, untranslated))
     return found
+
+
+def restamped(
+    tag: str, then: str | None, now: str, root: Path = settings.PROJECT_ROOT
+) -> str:
+    return _restamped(tag, then, now, _extracted(root))[0]
+
+
+# Policy: a catalog is written in step with the code on both sides of its stamps, the
+# side last stamped matched to the code by its messages alone and the side written now
+# also by Babel's guess at a changed message's closest translation, and in the order of
+# the messages, so that what is left to stamp is the translations alone.
+def _restamped(
+    tag: str, then: str | None, now: str | None, template: Catalog
+) -> tuple[str, Catalog]:
+    last = _updated(tag, None if then is None else signed(then), template, guess=False)
+    written = _updated(tag, None if now is None else applied(now), template, guess=True)
+    return markers.restamped(_po(last), _po(written)), written
+
+
+def _updated(
+    tag: str, lines: list[str] | None, template: Catalog, guess: bool
+) -> Catalog:
+    if lines is None:
+        catalog = _begun(tag)
+    else:
+        catalog = read_po(StringIO("\n".join(lines) + "\n"), tag)
+    # Accommodating for Babel, which matches a new message to an untranslated plural one as
+    # if it were translated: what holds no translation comes anew from the code.
+    for m in [m for m in catalog if m.id and not _translated(m)]:
+        catalog.delete(m.id, m.context)
+    catalog.update(template, no_fuzzy_matching=not guess, update_creation_date=False)
+    for m in catalog:
+        m.flags.discard("fuzzy")
+    return catalog
+
+
+def _po(catalog: Catalog) -> str:
+    written = BytesIO()
+    write_po(
+        written, catalog, include_lineno=False, ignore_obsolete=True, sort_output=True
+    )
+    return written.getvalue().decode()
 
 
 def check() -> None:
@@ -407,9 +441,7 @@ def check() -> None:
 
 
 def pending() -> None:
-    flags = [
-        f"{_shown(p.path)}: {_left(p)}" for p in proofs() if p.untranslated or p.fuzzy
-    ]
+    flags = [f"{_shown(p.path)}: {_left(p)}" for p in proofs() if p.untranslated]
     for flag in flags:
         print(f"flag: {flag}", file=sys.stderr)
     if flags:
@@ -430,24 +462,23 @@ def write(tags: Iterable[str]) -> None:
     print("\n".join(written) or "nothing to write")
 
 
+# Policy: a catalog is said as last stamped, so that a translation pending is said as it
+# was, or in English while it's new, till it is stamped.
 def _locale(path: Path) -> Locale:
     try:
-        with path.open("rb") as held:
-            catalog = read_po(held, path.stem, abort_invalid=True)
-    except PoFileError as e:
+        reviewed = "\n".join(signed(path.read_text(encoding="utf-8"))) + "\n"
+        catalog = read_po(StringIO(reviewed), path.stem, abort_invalid=True)
+    except (PoFileError, ValueError) as e:
         raise ValueError(f"{path}: {e}") from None
-    wrong = [
-        f"{m.id!r}: {e}" for m, errors in catalog.check() if not m.fuzzy for e in errors
-    ]
+    wrong = [f"{m.id!r}: {e}" for m, errors in catalog.check() for e in errors]
     if wrong:
         raise ValueError(f"{path}: {'; '.join(wrong)}")
     compiled = BytesIO()
-    write_mo(compiled, catalog)
+    # Policy: what isn't reviewed is a stamp pending, so a fuzzy flag is said as any other.
+    write_mo(compiled, catalog, use_fuzzy=True)
     _ = compiled.seek(0)
     islands = {
-        _keyed(m): _forms(m)
-        for m in catalog
-        if m.id and not m.fuzzy and _translated(m) and _shared(m)
+        _keyed(m): _forms(m) for m in catalog if m.id and _translated(m) and _shared(m)
     }
     return Locale(path.stem, GNUTranslations(compiled), islands)
 
@@ -511,7 +542,7 @@ def _translated(message: Message) -> bool:
 
 
 def _left(proof: Proof) -> str:
-    return f"{proof.untranslated} untranslated, {proof.fuzzy} fuzzy"
+    return f"{proof.untranslated} untranslated"
 
 
 def _shown(path: Path) -> str:

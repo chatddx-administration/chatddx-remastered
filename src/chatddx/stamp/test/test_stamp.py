@@ -3,12 +3,12 @@ from textwrap import dedent
 
 import pytest
 
-from chatddx import settings, stamp
+from chatddx import locale, markers, settings, stamp
+from chatddx.markers import restamped, signed, stamped, stamps
 from chatddx.settings import Stage
-from chatddx.stamp import Proof, markers, proofs
+from chatddx.stamp import Proof, proofs
 from chatddx.stamp.code import Code
 from chatddx.stamp.index import index, whoopses
-from chatddx.stamp.markers import restamped, signed, stamped
 from chatddx.stamp.page import page
 from chatddx.stamp.trace import Trace
 from chatddx.test.helpers import committing_as_bob, git, needs_git
@@ -1170,6 +1170,45 @@ def test_docs_stamps_each_change_to_a_doc_since_the_commit_it_is_given(
         "AGENTS.md: 1 stamp",
     ]
     assert (tmp_path / "AGENTS.md").read_text() == restamped("a\nB\n", "a\nB\nc\n")
+
+
+@pytest.mark.slow
+@needs_git
+@pytest.mark.usefixtures("as_bob")
+def test_docs_stamps_a_catalog_s_translations_since_the_commit_alone(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = tmp_path / "src/chatddx/portal/shelves.py"
+    code.parent.mkdir(parents=True)
+    _ = code.write_text('LIBRARY = N_("Library")\nCASES = N_("Cases")\n')
+    catalogs = tmp_path / "catalogs"
+    [begun] = locale.proofs(["sv"], tmp_path, catalogs)
+    catalogs.mkdir()
+    sv = begun.path
+    _ = sv.write_text(
+        begun.written.replace('"Library"\nmsgstr ""', '"Library"\nmsgstr "Bibliotek"')
+    )
+    _ = git(tmp_path, "init", "-q")
+    _ = git(tmp_path, "add", "-A")
+    _ = git(tmp_path, "commit", "-qm", "base")
+    base = git(tmp_path, "rev-parse", "HEAD")
+    monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(locale, "catalogs", lambda: [sv])
+    for docs in ("surfaces", "comments", "whoopses"):
+        monkeypatch.setattr(stamp, docs.upper(), tmp_path / "docs" / docs)
+
+    _ = code.write_text(code.read_text() + 'LAB = N_("Lab")\n')
+    [step] = locale.proofs([], tmp_path, catalogs)
+    _ = sv.write_text(
+        step.written.replace('"Cases"\nmsgstr ""', '"Cases"\nmsgstr "Fall"')
+    )
+    stamp.docs(base)
+    assert capsys.readouterr().out.splitlines()[1:] == ["catalogs/sv.po: 1 stamp"]
+    assert stamps(sv.read_text()) == [('msgstr ""', "=======", 'msgstr "Fall"')]
+    assert not locale.proofs([], tmp_path, catalogs)[0].behind
+    with pytest.raises(SystemExit):
+        stamp.pending()
+    assert "catalogs/sv.po: 1 stamp pending" in capsys.readouterr().err
 
 
 @needs_git

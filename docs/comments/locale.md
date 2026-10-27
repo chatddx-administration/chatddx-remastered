@@ -33,6 +33,17 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 # Policy: a parameter named so holds names separated by ", ", said as a list.
 ```
 
+## `src/chatddx/locale/locale.py:_locale`
+
+```
+# Policy: a catalog is said as last stamped, so that a translation pending is said as it
+# was, or in English while it's new, till it is stamped.
+```
+
+```
+# Policy: what isn't reviewed is a stamp pending, so a fuzzy flag is said as any other.
+```
+
 ## `src/chatddx/locale/locale.py:_LOCALIZING`
 
 ```
@@ -45,6 +56,15 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 ```
 # Policy: a refusal whose wording isn't written where it is raised is marked where it is
 # written, with pgettext_noop and the context refusal.
+```
+
+## `src/chatddx/locale/locale.py:_restamped`
+
+```
+# Policy: a catalog is written in step with the code on both sides of its stamps, the
+# side last stamped matched to the code by its messages alone and the side written now
+# also by Babel's guess at a changed message's closest translation, and in the order of
+# the messages, so that what is left to stamp is the translations alone.
 ```
 
 ## `src/chatddx/locale/locale.py:_shared`
@@ -61,12 +81,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 # what it has them pass on to developers and ops isn't.
 ```
 
-## `src/chatddx/locale/locale.py:proofs`
-
-```
-# Accommodating for Babel, which reads the "#, " left where a message's only flag,
-# fuzzy, is deleted by hand as a flag of its own, and writes it back.
-```
+## `src/chatddx/locale/locale.py:_updated`
 
 ```
 # Accommodating for Babel, which matches a new message to an untranslated plural one as

@@ -1,12 +1,19 @@
 # Dev tools
 
+## Stamp
+
+`chatddx stamp` inserts git conflict markers between a reference and the changes since: locale catalogs, prose,
+generated API surfaces, gathered comments and asserts. `./check.sh` targets them with `pending`.
+
 ## Check
 
 `./check.sh [stage]...` checks the stages named:
 
 - `openapi`, `stamps` and `locale`, each in step with the code
-- `pending` and `fuzzy`, what is left to stamp or review
+- `pending`, what is left to stamp or translate
 - `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
+
+A stage that passes is skipped till what it read changes, as `dev/<stage>-good` holds it: `rm` that to check it again.
 
 ## Write
 
@@ -15,8 +22,8 @@
 - formatting
 - OpenAPI document
 - translation files
-- surfaces, comments and whoopses with with git conflict markers
-- given a commit, git conflict markers in prose since it as stamps pending.
+- stamp surfaces, comments and whoopses
+- if a commit is provided, stamp prose
 
 ## The database
 
@@ -38,7 +45,8 @@ In `dev/`:
 - `turn-start`: the commit the turn started at, as in `./write.sh "$(cat dev/turn-start)"`.
 - `refused`: there while work is refused this turn.
 - `session-start`: what session-start hands the session's first turn.
-- `stamped`: the commit `stamp` last found nothing pending in.
+- `<stage>-good`: what `./check.sh` last passed the stage on: the tree a commit of the worktree would hold, and for
+  `docs` also `origin/main`.
 
 ## Operator
 

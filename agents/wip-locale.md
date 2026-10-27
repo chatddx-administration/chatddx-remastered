@@ -50,8 +50,8 @@ Some 600 to 800 messages, of which three habits of the templates make more work 
   (konfiguration, konfigurationen) and compounds it, so a word dropped in reads wrong more often than not.
 - **English plurals by hand**, `"" if n == 1 else "s"`, in 13 places.
 
-The rest holds already: dates are written `%Y-%m-%d %H:%M` (`src/chatddx/portal/pages.py:_display_time`), which Swedish reads as
-it is, and `src/chatddx/portal/templates/base.html` has a `lang` to set.
+The rest holds already: dates are written `%Y-%m-%d %H:%M` (`src/chatddx/portal/pages.py:_display_time`), which Swedish
+reads as it is, and `src/chatddx/portal/templates/base.html` has a `lang` to set.
 
 ## How it works
 
@@ -59,11 +59,12 @@ it is, and `src/chatddx/portal/templates/base.html` has a `lang` to set.
 
 Built: one `.po` file a locale in `src/chatddx/locale/catalogs/`, `sv.po` begun empty, packaged with `chatddx.locale`
 and read at boot (`src/chatddx/locale/locale.py:Locales`) with Babel's `read_po`, then turned into a gettext catalog in
-memory: no compiled file in git or in the build. A message whose translation is missing or fuzzy is said in English.
+memory: no compiled file in git or in the build. A catalog is read as last stamped (`src/chatddx/markers.py:signed`), so
+that a translation pending is said as it was, and a message whose translation is missing in English.
 
 Built: boot fails on a catalog that doesn't parse, or whose reviewed translations' `%(name)s` placeholders aren't their
-messages', which Babel's catalog checks find. A fuzzy translation is left out of that, as it isn't said; what is left to
-translate is a flag, not a failure (see "Checks"). A message with no translation is written anew from the code each
+messages', which Babel's catalog checks find. A translation pending is left out of that, as it isn't said; what is left
+to translate is a flag, not a failure (see "Checks"). A message with no translation is written anew from the code each
 time, so that Babel matches a changed message only to one translated.
 
 ### The server
@@ -90,9 +91,8 @@ time, so that Babel matches a changed message only to one translated.
     `pgettext_noop` marks, translated with `pgettext()` and the same context.
 - **A kind's word**, built: drawn by one filter, `{{ word | kind }}`, translated with `pgettext("kind", …)` from
   `src/chatddx/portal/shelves.py:_WORDS`, which a no-op `pgettext_noop` marks and boot holds to the kinds shelved and
-  shown in the World, so
-  that whether Swedish translates it is decided in the catalog (see "Open"). A list of kinds is sorted by its words as
-  said (`src/chatddx/portal/shelves.py:Shelved.display_kind`).
+  shown in the World, so that whether Swedish translates it is decided in the catalog (see "Open"). A list of kinds is
+  sorted by its words as said (`src/chatddx/portal/shelves.py:Shelved.display_kind`).
 - **How a message is written**, as every page's are:
   - a sentence whole, its alternatives each a message (`_("None you see of these.") if … else _("None you see.")`);
   - a sentence with links or markup in it a `{% trans %}` block, the markup in its message;
@@ -126,7 +126,8 @@ time, so that Babel matches a changed message only to one translated.
   - what the server says too is said with the server's message, context and placeholders, so that it is translated once:
     an outcome's word (`frontend/src/lib/runs/outcomes.ts`), a kind's (`frontend/src/lib/kinds.ts`), `view %(n)s`,
     `%(sent)s in, %(got)s out`;
-  - a list of words is put together by the page's locale (`display_list()`, the islands' `displayList()`, `Intl.ListFormat`);
+  - a list of words is put together by the page's locale (`display_list()`, the islands' `displayList()`,
+    `Intl.ListFormat`);
   - a table of words defined at a module's top is translated there, as an island's script runs once the page that holds
     its catalog is parsed.
 - **A whoops**, built, is `Whoops(message, pass_on)`: the API answers it with `detail`, its message, and `pass_on`, as
@@ -192,23 +193,24 @@ message not written out, or a `%` other than `%(name)s` and `%%`; what a refusal
 `raise X.of` raises it, in the context `refusal`, with `src/chatddx/locale/locale.py:_refusals`; the templates, with
 Jinja's `babel_extract`; and the islands' `t()`, `tn()`, `tp()`, `tnp()` and `th()` in `.svelte` and `.ts`, with
 `src/chatddx/locale/locale.py:_islands`, their tests, declarations and shadcn's components left out. It brings each
-catalog up to that, a changed message fuzzy with its closest translation, and begins a catalog of each tag it is given,
-such as `chatddx locale write sv`. A catalog keeps which file says each message but not the line, so that moving code
-leaves it as it is, and the file is how the islands' share is told: what they say, whoopses and what is said below the
-portal, which the API may answer them with. It fails on a message said both counted and not in the same context, which
-gettext holds as one plural message, leaving the other untranslatable.
+catalog up to that on both sides of its stamps, in the order of its messages, the side written now with a changed
+message's closest translation as a stamp, and begins a catalog of each tag it is given, such as
+`chatddx locale write sv`. A catalog keeps which file says each message but not the line, so that moving code leaves it
+as it is, and the file is how the islands' share is told: what they say, whoopses and what is said below the portal,
+which the API may answer them with. It fails on a message said both counted and not in the same context, which gettext
+holds as one plural message, leaving the other untranslatable.
 
 ### Checks
 
-- **`chatddx locale check`** and **`chatddx locale pending`**, built: the `locale` and `fuzzy` stages of `check.sh`, the
-  first failing while a catalog is behind the code, the second while a message is left untranslated or fuzzy, to be
-  settled as stamps pending are. A turn's end writes the catalogs and has the agent translate what is left
-  untranslated, marked fuzzy.
+- **`chatddx locale check`** and **`chatddx locale pending`**, built: in the `locale` and `pending` stages of
+  `check.sh`, the first failing while a catalog is behind the code, the second while a message is left untranslated. A
+  turn's end writes the catalogs, has the agent translate what is left untranslated, and stamps each translation that
+  changed since the turn's start (`chatddx stamp docs`), which `chatddx stamp pending` flags till it is stamped.
 - **Tests**: the ones there were stay English, as no request of theirs asks for another language. Built: in
   `src/chatddx/locale/test/test_locale.py`, a request's language negotiated, boot failing on wrong placeholders, the
   islands' messages found, a finding's found where it is made, a finding said by its code, a catalog kept in step with
   the code, and the islands' share of a catalog; in `src/chatddx/portal/test/test_localized.py`, a reviewed message said
-  in a macro imported without context and a fuzzy one not, a finding said by its code in `findings`, a page's `lang`,
+  in a macro imported without context and a pending one not, a finding said by its code in `findings`, a page's `lang`,
   the catalog only in an island's page, and the shelves, a 404's detail and a form's refusal said in the request's
   locale, the shelves sorted by their headings as said; a finish record reading back as written, its findings said or
   not (`src/chatddx/ledger/test/test_ledger.py`). `frontend/src/lib/locale.test.ts`: `t()` and its kin, in English and
@@ -255,8 +257,8 @@ Each step leaves the portal working in English, and Swedish appearing only where
      while it is over. The names a form asks for were required and the Composer paired a scorer's metrics and judges
      already. Take: not prevented, as it would take a script or refuse what the server takes: picking a trial or a run,
      the concurrency an endpoint takes, a collaborator's login and a label in the labels' JSON, which stay worded.
-7. **Swedish**: Take: an agent drafts each translation marked fuzzy, which gettext leaves unsaid, and a human reviews it
-   by clearing the mark.
+7. **Swedish**: Take: an agent drafts each translation, which a turn's end stamps, unsaid till a human reviews it by
+   stamping it.
    - **Drafted**: all 1099 messages, fuzzy, each placeholder, plural form and piece of markup as its English has them,
      which Babel's catalog checks and the boot check pass with every mark cleared; the portal says nothing in Swedish
      until a mark is cleared.
@@ -274,9 +276,9 @@ Each step leaves the portal working in English, and Swedish appearing only where
      next token; the outcomes _giltig_, _slutförd_, _räddad_, _ogiltig_, _med fel_, _oläsbar_ and _stoppad_, cut short
      _avkortat_, and halt _avbryta_; what you see _det du har tillgång till_.
    - **Decided: a language by its name**, in the reader's locale (`src/chatddx/locale/locale.py:display_language`, the
-     `language` filter and the islands' `displayLanguage()`), wherever a language is shown, and in a finding or a refusal
-     whose parameter is named `language`, `into` or `languages`, the last tags separated by `, `; a field a tag is typed
-     in takes a tag.
+     `language` filter and the islands' `displayLanguage()`), wherever a language is shown, and in a finding or a
+     refusal whose parameter is named `language`, `into` or `languages`, the last tags separated by `, `; a field a tag
+     is typed in takes a tag.
    - **Decided: a list as the reader's locale says one**, in a finding or a refusal whose parameter is named `slots`,
      `inserts` or `worked`, names separated by `, ` (`src/chatddx/locale/locale.py:_LISTED_PARAMS`), as `languages` is.
    - **Decided: a run is titled from its parts** (`src/chatddx/bench/seen.py:Seen.titled`), said by the portal's

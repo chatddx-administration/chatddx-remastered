@@ -5,8 +5,9 @@ from pathlib import Path
 
 import griffe
 
+from chatddx.markers import PENDING
+
 from .code import Code, Def, Node, decorated, private
-from .markers import PENDING
 from .trace import VALIDATORS, Found, Raised, Trace
 
 _LEGEND = [

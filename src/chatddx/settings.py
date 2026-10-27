@@ -24,7 +24,7 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
-ROWS_PER_PAGE = 25
+ROWS_PER_PAGE = 100
 
 
 class Stage(IntEnum):
@@ -56,6 +56,7 @@ STAGES = {
     "inventory": Stage.SOLIDIFIED,
     "ledger": Stage.SOLIDIFIED,
     "locale": Stage.SOLIDIFIED,
+    "markers": Stage.SOLIDIFIED,
     "portal": Stage.SOLIDIFIED,
     "refcheck": Stage.SOLIDIFIED,
     "repl": Stage.SOLIDIFIED,

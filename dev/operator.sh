@@ -4,19 +4,12 @@ set -euo pipefail
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 cd "$(git rev-parse --show-toplevel)"
 
-STAMPED=dev/stamped
-REFUSED_AT_STAMP=(openapi locale pending fuzzy)
-TOLD_AT_FETCH=(pending fuzzy)
+REFUSED_AT_STAMP=(openapi locale pending)
+TOLD_AT_FETCH=(pending)
 
 die() {
   printf 'error: %s\n' "$*" >&2
   exit 1
-}
-
-# Optimization: the commit stamp last found nothing pending in is held as stamped, so
-# that stamp and merge needn't look again while it is all there is.
-stamped() {
-  [[ -z $(git status --porcelain) && $(git rev-parse HEAD) == "$(cat "$STAMPED" 2>/dev/null)" ]]
 }
 
 fetch() {
@@ -28,12 +21,9 @@ fetch() {
 }
 
 stamp() {
-  if ! stamped; then
-    ./check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
-    git add -A
-    git diff --cached --quiet || git commit --quiet -m "${1:-stamp}"
-    git rev-parse HEAD >"$STAMPED"
-  fi
+  ./check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
+  git add -A
+  git diff --cached --quiet || git commit --quiet -m "${1:-stamp}"
   [[ $(git rev-parse HEAD) == "$(git rev-parse --verify -q '@{u}')" ]] ||
     as.sh "$CHATDDX_DEV" git push --quiet -u origin HEAD
   git rev-parse --short HEAD
@@ -74,7 +64,7 @@ merge() {
 
   orig=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
   git checkout -q "$branch"
-  stamped || ./check.sh pending fuzzy >&2 || {
+  ./check.sh pending >&2 || {
     git checkout -q "$orig"
     die "'$branch' has what is flagged above pending; nothing was merged"
   }

@@ -34,9 +34,3 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/stamp/`, sort
 # dollar quotes is read as SQL, as a function's body is, and an E'' string's \' throws
 # the reading off.
 ```
-
-## `src/chatddx/stamp/markers.py:_CLOSING`
-
-```
-# Policy: never spelled whole, so that a search for it finds the stamps pending alone.
-```

@@ -19,6 +19,7 @@ from chatddx.locale import (
     tr,
 )
 from chatddx.locale.test.helpers import catalog
+from chatddx.markers import applied, restamped, signed, stamps
 
 
 def tree(root: Path, files: dict[str, str]) -> Path:
@@ -61,12 +62,27 @@ def test_a_message_is_translated_and_filled_in_one_call(tmp_path: Path) -> None:
 def test_boot_fails_on_a_catalog_whose_placeholders_are_not_its_message_s(
     tmp_path: Path,
 ) -> None:
-    drafted = '#, fuzzy\nmsgid "%(n)s yours"\nmsgstr "%(antal)s dina"\n'
+    drafted = restamped(
+        'msgid "%(n)s yours"\nmsgstr ""\n',
+        'msgid "%(n)s yours"\nmsgstr "%(antal)s dina"\n',
+    )
     assert Locales(catalog(tmp_path, drafted)).negotiate("sv").tag == "sv"
     with pytest.raises(ValueError, match="unknown named placeholder 'antal'"):
         _ = Locales(catalog(tmp_path, 'msgid "%(n)s yours"\nmsgstr "%(antal)s dina"\n'))
     with pytest.raises(ValueError, match="sv.po"):
         _ = Locales(catalog(tmp_path, 'msgid "Library"\nmsgstr "Bibliotek"\nsaid\n'))
+
+
+def test_a_catalog_is_said_as_last_stamped(tmp_path: Path) -> None:
+    then = 'msgid "Library"\nmsgstr "Bibliotek"\n\nmsgid "Lab"\nmsgstr ""\n'
+    now = 'msgid "Library"\nmsgstr "Biblioteket"\n\nmsgid "Lab"\nmsgstr "Labbet"\n'
+    sv = Locales(catalog(tmp_path, restamped(then, now))).negotiate("sv")
+    with localizing(sv):
+        assert tr("Library") == "Bibliotek"
+        assert tr("Lab") == "Lab"
+    unclosed = '<<<<<<< signed\nmsgid "Lab"\nmsgstr "Labbet"\n'
+    with pytest.raises(ValueError, match="sv.po: line 1: a stamp isn't closed"):
+        _ = Locales(catalog(tmp_path, unclosed))
 
 
 def test_an_island_s_messages_are_found_in_its_calls_of_t_tn_tp_tnp_and_th(
@@ -89,19 +105,21 @@ def test_an_island_s_messages_are_found_in_its_calls_of_t_tn_tp_tnp_and_th(
     found = re.findall(
         r"^(?:msgctxt|msgid|msgid_plural) (.*)$", begun.written, re.MULTILINE
     )
-    assert found == [
-        '""',
-        '"Hello"',
-        '"it\'s %(name)s"',
-        '"%(n)s run"',
-        '"%(n)s runs"',
-        '"outcome"',
-        '"valid"',
-        '"outcome"',
-        '"%(num)s valid"',
-        '"%(num)s valid"',
-        '"<a href=\\"/runs/%(run)s\\">its run</a>"',
-    ]
+    assert sorted(found) == sorted(
+        [
+            '""',
+            '"Hello"',
+            '"it\'s %(name)s"',
+            '"%(n)s run"',
+            '"%(n)s runs"',
+            '"outcome"',
+            '"valid"',
+            '"outcome"',
+            '"%(num)s valid"',
+            '"%(num)s valid"',
+            '"<a href=\\"/runs/%(run)s\\">its run</a>"',
+        ]
+    )
 
 
 def test_a_finding_s_message_is_found_where_it_is_made_its_code_its_context(
@@ -313,7 +331,7 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
     catalogs = root / "locales"
     [begun] = proofs(["sv"], root, catalogs)
     assert begun.current is None and begun.behind
-    assert (begun.untranslated, begun.fuzzy) == (4, 0)
+    assert begun.untranslated == 4
     for entry in (
         '#: src/chatddx/portal/shelves.py\nmsgid "Cases"',
         f'#: {template}\nmsgid "Library"',
@@ -322,6 +340,10 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
     ):
         assert entry in begun.written, entry
     assert "Not this" not in begun.written
+    said = [
+        begun.written.index(f'msgid "{m}"') for m in ("%(n)s run", "Cases", "Hello")
+    ]
+    assert said == sorted(said)
     catalogs.mkdir()
     _ = begun.path.write_text(
         begun.written.replace(
@@ -329,7 +351,7 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
         )
     )
     [kept] = proofs([], root, catalogs)
-    assert not kept.behind and (kept.untranslated, kept.fuzzy) == (3, 0)
+    assert not kept.behind and kept.untranslated == 3
 
     _ = (root / "src/chatddx/portal/templates/other.html").write_text(
         "{{ ngettext('Library', 'Libraries', n) }}\n"
@@ -343,14 +365,20 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
         'SHELF = N_("%(n)s runs in all")\n'
     )
     [moved] = proofs([], root, catalogs)
-    assert moved.behind and (moved.untranslated, moved.fuzzy) == (2, 1)
-    assert '#, fuzzy\nmsgid "The Library"\nmsgstr "Bibliotek"' in moved.written
-    assert '"%(n)s run"' not in moved.written
+    assert moved.behind and moved.untranslated == 2
+    assert "fuzzy" not in moved.written and '"%(n)s run"' not in moved.written
+    assert stamps(moved.written) == [('msgstr ""', "=======", 'msgstr "Bibliotek"')]
+    guessed = f'#: {template}\nmsgid "The Library"\nmsgstr "Bibliotek"'
+    assert guessed not in "\n".join(signed(moved.written))
+    assert guessed in "\n".join(applied(moved.written))
 
-    _ = moved.path.write_text(moved.written.replace("#, fuzzy\n", "#, \n"))
+    _ = moved.path.write_text(moved.written)
+    [held] = proofs([], root, catalogs)
+    assert not held.behind
+
+    _ = moved.path.write_text("\n".join(applied(moved.written)) + "\n")
     [reviewed] = proofs([], root, catalogs)
-    assert reviewed.behind and reviewed.fuzzy == 0
-    assert f'#: {template}\nmsgid "The Library"\nmsgstr "Bibliotek"' in reviewed.written
+    assert not reviewed.behind and not stamps(reviewed.written)
 
 
 def test_an_island_s_page_holds_what_the_islands_say_and_what_is_said_below_the_portal(
@@ -397,11 +425,6 @@ def test_an_island_s_page_holds_what_the_islands_say_and_what_is_said_below_the_
             #: frontend/src/lib/Greeting.svelte
             msgid "Goodbye"
             msgstr ""
-
-            #, fuzzy
-            #: frontend/src/lib/Greeting.svelte
-            msgid "Fork it"
-            msgstr "Forka"
             """,
         )
     ).negotiate("sv")
@@ -418,7 +441,7 @@ def test_check_fails_on_a_catalog_behind_the_code_and_pending_on_one_left_to_tra
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     sv = tmp_path / "sv.po"
-    held = [Proof(sv, "a", "a", 0, 0)]
+    held = [Proof(sv, "a", "a", 0)]
 
     def found() -> list[Proof]:
         return held
@@ -428,13 +451,13 @@ def test_check_fails_on_a_catalog_behind_the_code_and_pending_on_one_left_to_tra
     pending()
     assert capsys.readouterr() == ("ok\nok\n", "")
 
-    held[:] = [Proof(sv, "a", "a", 2, 1)]
+    held[:] = [Proof(sv, "a", "a", 2)]
     check()
     with pytest.raises(SystemExit) as e:
         pending()
     assert e.value.code == 1
-    assert capsys.readouterr() == ("ok\n", f"flag: {sv}: 2 untranslated, 1 fuzzy\n")
+    assert capsys.readouterr() == ("ok\n", f"flag: {sv}: 2 untranslated\n")
 
-    held[:] = [Proof(sv, "a", "b", 0, 0)]
+    held[:] = [Proof(sv, "a", "b", 0)]
     with pytest.raises(SystemExit, match=f"^locale: {sv} behind the code: run chatddx"):
         check()

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from chatddx import refcheck, settings, stamp
-from chatddx.stamp.markers import restamped
+from chatddx.markers import restamped
 from chatddx.test.helpers import committing_as_bob, git, needs_git
 
 __all__ = ["committing_as_bob"]

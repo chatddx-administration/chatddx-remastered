@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
-from chatddx import settings
+from chatddx import locale, settings
+from chatddx.markers import restamped, signed, stamped, stamps
 
 from .code import Code
 from .index import index, whoopses
-from .markers import restamped, signed, stamped, stamps
 from .page import page
 from .trace import Trace
 
@@ -112,7 +112,7 @@ def check(packages: Sequence[str]) -> None:
 def pending() -> None:
     written = [p for docs in (SURFACES, COMMENTS, WHOOPSES) for p in docs.glob("*.md")]
     try:
-        held = _held(sorted([*written, *documents()]))
+        held = _held(sorted([*written, *documents(), *locale.catalogs()]))
     except ValueError as e:
         raise SystemExit(f"stamp pending: {e}") from None
     flags = [
@@ -146,16 +146,21 @@ def docs(base: str) -> None:
     root = settings.PROJECT_ROOT
     base = _git(root, "rev-parse", "--verify", f"{base}^{{commit}}").strip()
     shown = _git(root, "log", "-1", "--format=%h %s", base).strip()
-    ours = set(documents())
+    ours, catalogs = set(documents()), set(locale.catalogs())
     print(f"against {shown}")
     written: list[str] = []
     for path, was in _changed(root, base):
-        if path not in ours:
+        if path not in ours | catalogs:
             continue
         current = path.read_text()
         then = None if was is None else _git(root, "show", f"{base}:{was}")
         try:
-            s = Proof(path, current, restamped(then, current))
+            if path in catalogs:
+                s = Proof(
+                    path, current, locale.restamped(path.stem, then, current, root)
+                )
+            else:
+                s = Proof(path, current, restamped(then, current))
         except ValueError as e:
             raise SystemExit(f"stamp docs: {_shown(path)}: {e}") from None
         if s.behind:

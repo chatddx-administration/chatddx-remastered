@@ -26,7 +26,7 @@ are 0 except `turn-end`, which exits 2 on failure.
 
 How to handle a warning or error, in order of preference:
 
-### 0. Ignore
+### 0. Let them error
 
 Consider not handling an error or warning if:
 
@@ -50,8 +50,8 @@ If it needs the attention of developers or operations:
 ### 3. Tell the user
 
 If it needs the attention of the user, consider that users should not be able to cause errors, and so the possibility
-for error should be addressed rather than the error itself. If it's not a good time for that kind of investigation,
-raise `Whoops(message, pass_on)` and move on. Either way, tell the user, in `message`:
+for error should be addressed rather than the error itself. If it's not a good time for that kind of endeavor, raise
+`Whoops(message, pass_on)` and move on. Either way, tell the user, in `message`:
 
 - what's going on
 - what they can do now
@@ -63,7 +63,7 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 `./check.sh [stage]...` checks the stages named:
 
 - `openapi`, `stamps` and `locale`, each in step with the code
-- `pending` and `fuzzy`, what is left to stamp or review
+- `pending`, what is left to stamp or translate
 - `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
 
 `./write.sh [commit]` regenerates what follows from the code and the docs.
@@ -87,7 +87,6 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 - `ruff format` formats the Python.
 - `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets
   through.
-- `./check.sh format` checks both.
 
 ### Browser
 
@@ -110,7 +109,7 @@ Agents aren't expected to run this, just know it exists.
 
 ## Development stages
 
-`settings.STAGES` tracks things under development stages once they are able to track, the stages are:
+`settings.STAGES` tracks things under development stages once they exist in `src/chatddx/`, the stages are:
 
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
@@ -136,10 +135,8 @@ A move entails:
 
 Destructive edits are allowed: `turn-end` stamps all changes with git conflict markers for a human to resolve.
 
-- The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
-  provide options.
-- Placeholder usernames in docs and tests are alice, bob, carol..., or semantic names (archive, guest, nobody, other,
-  collaborator-one, admin).
+The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop, describe the landscape and
+provide options.
 
 ## Comments
 

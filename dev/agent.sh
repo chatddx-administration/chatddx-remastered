@@ -6,10 +6,13 @@ PGCONF=/etc/postgresql/16/main
 STARTED=dev/session-start
 TURN=dev/turn-start
 REFUSED=dev/refused
-CHECKED_AT_SESSION_START=(openapi stamps locale pending fuzzy format types frontend docs)
+CHECKED_AT_SESSION_START=(openapi stamps locale pending format types frontend docs)
 CHECKED_AT_HAND_OVER=(format types frontend docs tests browser)
 REFUSED_AT_TURN_START=(openapi locale)
-TOLD_AT_TURN_START=(pending fuzzy format types frontend)
+TOLD_AT_TURN_START=(pending format types frontend)
+
+# Heads-up: the hooks alone set it from stdin; nounset needs it set for field elsewhere.
+event=""
 
 remote() {
   [[ ${CLAUDE_CODE_REMOTE:-} == true ]]
@@ -24,9 +27,6 @@ if remote; then
   export VIRTUAL_ENV="$PWD/.venv" PATH="$PWD/.venv/bin:$PATH"
 fi
 
-event=""
-[[ -t 0 ]] || event="$(cat)"
-
 field() {
   [[ -n $event ]] || return 0
   python3 -c 'import json, sys; v = json.load(sys.stdin).get(sys.argv[1], ""); print(v if isinstance(v, str) else json.dumps(v))' \
@@ -34,6 +34,7 @@ field() {
 }
 
 session-start() {
+  [[ -t 0 ]] || event="$(cat)"
   local state=()
   case "$(field source)" in
   resume | clear | compact) ;;
@@ -113,6 +114,7 @@ database() {
 }
 
 turn-start() {
+  [[ -t 0 ]] || event="$(cat)"
   local state=() refused="" was rev
   if [[ -f $STARTED ]]; then
     read -ra state <"$STARTED"
@@ -172,12 +174,12 @@ moved() {
 
 # Policy: the branch follows what the operator pushes to it, by fast-forward only and only
 # with nothing of its own in the way, or else by the agent's merge; a fetch that fails is
-# tried again at the next turn's start.
+# tried again at the next turn's start, and a branch deleted on origin is followed no more.
 synced() {
   local branch upstream
   branch="$(git symbolic-ref --quiet --short HEAD)" || return 0
   upstream="origin/$branch"
-  git fetch --quiet origin 2>/dev/null || return 0
+  git fetch --quiet --prune origin 2>/dev/null || return 0
   if ! git rev-parse --verify --quiet "$upstream" >/dev/null || git merge-base --is-ancestor "$upstream" HEAD; then
     return 0
   fi
@@ -233,8 +235,7 @@ named() {
     openapi) names+=("openapi out of sync") ;;
     stamps) names+=("stamps out of sync") ;;
     locale) names+=("locale out of sync") ;;
-    pending) names+=("pending stamps") ;;
-    fuzzy) names+=("fuzzy or untranslated messages") ;;
+    pending) names+=("pending stamps or untranslated messages") ;;
     format) names+=("formatting errors") ;;
     types) names+=("lint or type errors") ;;
     frontend) names+=("frontend type or test errors") ;;
@@ -249,6 +250,7 @@ named() {
 # Policy: turn-end has the turn go on to set right what it found, but only once a turn,
 # lest the turn never end.
 turn-end() {
+  [[ -t 0 ]] || event="$(cat)"
   local start again="" before
   [[ $(field stop_hook_active) != true ]] || again=yes
   [[ ! -e $REFUSED ]] || return 0
@@ -259,7 +261,7 @@ turn-end() {
   step ./write.sh "$start" ||
     ended "$stepped fails, as below: fix it before you end the turn, or tell the user why you can't." "$said"
   untranslated || [[ -n $again ]] ||
-    ended "Translate the messages left untranslated, marking each fuzzy, before you end the turn:" "$said"
+    ended "Translate the messages left untranslated before you end the turn:" "$said"
   if [[ $(tree) != "$before" ]]; then
     step git add --all && step git commit --quiet -m turn-end ||
       ended "$stepped fails, as below: see to it, and commit and push what turn-end wrote." "$said"
@@ -307,7 +309,7 @@ hand-over() {
     return
   fi
   if ! untranslated; then
-    printf '%s\n' "Translate the messages left untranslated, marking each fuzzy, then run ./dev/agent.sh hand-over again:" "$said"
+    printf '%s\n' "Translate the messages left untranslated, then run ./dev/agent.sh hand-over again:" "$said"
     return
   fi
   if ! { step git add --all && { git diff --cached --quiet || step git commit --quiet -m hand-over; }; } ||

@@ -21,6 +21,12 @@ Finds:
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `catalogs`
+`src/chatddx/locale/locale.py:catalogs`
+
+* `where: Path = _CATALOGS`
+* ∟`list[Path]`
+
 ## `check`
 `src/chatddx/locale/locale.py:check`
 
@@ -88,7 +94,7 @@ Raises:
 * `catalogs: Path = _CATALOGS`
 
 Raises:
-1. `ValueError`: `"{path}: {e}"` (from `PoFileError`, through `_locale`)
+1. `ValueError`: `"{path}: {e}"` (from `(PoFileError, ValueError)`, through `_locale`)
 2. `ValueError`: `"{path}: {'; '.join(wrong)}"` (through `_locale`)
 
 ## `Locales.negotiate`
@@ -179,7 +185,6 @@ Raises:
 * `current: str | None`
 * `written: str`
 * `untranslated: int`
-* `fuzzy: int`
 
 ## `Proof.behind` `@property`
 `src/chatddx/locale/locale.py:Proof.behind`
@@ -203,6 +208,18 @@ Raises:
 * `wording: str | Sequence[str]`
 * `params: Mapping[str, object]`
 * ∟`str`
+
+## `restamped`
+`src/chatddx/locale/locale.py:restamped`
+
+* `tag: str`
+* `then: str | None`
+* `now: str`
+* `root: Path = settings.PROJECT_ROOT`
+* ∟`str`
+
+Raises:
+1. `ValueError`: `"{where}:{lineno}: {msgid!r} is said both counted and not, which gettext holds as one message: give one a context"` (through `_extracted`)
 
 ## `tr`
 `src/chatddx/locale/locale.py:tr`

@@ -4,7 +4,7 @@
 # named, or all of them, run side by side, and it fails, saying which did, if any does.
 set -euo pipefail
 
-STAGES=(openapi stamps locale pending fuzzy format types frontend docs tests browser)
+STAGES=(openapi stamps locale pending format types frontend docs tests browser)
 
 openapi() {
   chatddx openapi | cmp -s - frontend/openapi.json ||
@@ -21,9 +21,6 @@ locale() {
 
 pending() {
   chatddx stamp pending
-}
-
-fuzzy() {
   chatddx locale pending
 }
 
@@ -69,6 +66,22 @@ fail() {
   exit 1
 }
 
+# Optimization: a stage that passes holds what it read as good in dev/<stage>-good, and is
+# skipped till that changes: the tree a commit of the worktree would hold, and for docs
+# also origin/main, which refcheck checks the commits the docs name against. Outside a git
+# checkout, such as nix's, nothing is held.
+# Duplication: the tree as dev/agent.sh's tree makes it.
+inputs() {
+  local index
+  index="$(mktemp)"
+  if cp "$(git rev-parse --git-path index 2>/dev/null)" "$index" 2>/dev/null &&
+    GIT_INDEX_FILE="$index" git add --all 2>/dev/null; then
+    GIT_INDEX_FILE="$index" git write-tree
+    [[ $1 != docs ]] || git rev-parse --verify --quiet origin/main || true
+  fi
+  rm -f "$index"
+}
+
 # Optimization: stages named together run side by side, and what each says is said in
 # order once all have run.
 # Accommodating for bash, which ignores errexit wherever a status is tested: each stage
@@ -77,11 +90,23 @@ fail() {
 # frontend/src/lib/api/schema.d.ts (pnpm types), so they run one after the other.
 lane() {
   local stage rc
+  trap exit INT TERM
   for stage in "$@"; do
     rc=0
     bash "${BASH_SOURCE[0]}" "$stage" >"$said/$stage.out" 2>"$said/$stage.err" || rc=$?
     echo "$rc" >"$said/$stage.rc"
   done
+}
+
+# Accommodating for a terminal, which interrupts only its foreground process group, and for
+# bash, whose background commands ignore interrupts while job control is off: each lane
+# runs as a job, a process group of its own without the terminal's input, and relay hands
+# it what this gets, then waits for it to stop at the end of its stage.
+relay() {
+  kill -"$1" -- "${lanes[@]/#/-}" 2>/dev/null || true
+  wait
+  trap - "$1"
+  kill -"$1" $$
 }
 
 stages=("$@")
@@ -96,15 +121,33 @@ for stage in "${stages[@]}"; do
   esac
 done
 if [[ ${#stages[@]} -eq 1 ]]; then
-  echo "• ${stages[0]}" >&2
-  "${stages[0]}"
+  stage="${stages[0]}"
+  good="dev/$stage-good"
+  was="$(inputs "$stage")"
+  if [[ -n $was && $was == "$(cat "$good" 2>/dev/null)" ]]; then
+    echo "• $stage: unchanged since it passed ($good)" >&2
+    exit
+  fi
+  echo "• $stage" >&2
+  "$stage"
+  if [[ -n $was && $was == "$(inputs "$stage")" ]]; then
+    echo "$was" >"$good"
+  fi
   exit
 fi
 said="$(mktemp -d)"
 trap 'rm -rf "$said"' EXIT
-[[ ${#built[@]} -eq 0 ]] || lane "${built[@]}" &
+lanes=()
+trap 'relay INT' INT
+trap 'relay TERM' TERM
+set -m
+if [[ ${#built[@]} -gt 0 ]]; then
+  lane "${built[@]}" </dev/null &
+  lanes+=("$!")
+fi
 for stage in "${others[@]}"; do
-  lane "$stage" &
+  lane "$stage" </dev/null &
+  lanes+=("$!")
 done
 wait
 failed=()

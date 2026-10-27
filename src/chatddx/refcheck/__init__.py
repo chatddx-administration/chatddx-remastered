@@ -4,8 +4,8 @@ import subprocess
 from pathlib import Path
 
 from chatddx import settings
+from chatddx.markers import applied_lines
 from chatddx.stamp import documents
-from chatddx.stamp.markers import applied_lines
 
 __all__ = ["check"]
 

@@ -21,26 +21,6 @@ Finds:
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
-## `applied`
-`src/chatddx/stamp/markers.py:applied`
-
-* `text: str`
-* ∟`list[str]`
-
-Raises:
-1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
-2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
-
-## `applied_lines`
-`src/chatddx/stamp/markers.py:applied_lines`
-
-* `text: str`
-* ∟`list[tuple[int, str]]`
-
-Raises:
-1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
-2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
-
 ## `check`
 `src/chatddx/stamp/__init__.py:check`
 
@@ -239,11 +219,6 @@ Raises:
 * `repo: Path`
 * ∟`str`
 
-## `PENDING`
-`src/chatddx/stamp/markers.py:PENDING`
-
-`PENDING = …`
-
 ## `pending`
 `src/chatddx/stamp/__init__.py:pending`
 
@@ -300,40 +275,10 @@ Raises:
 * `validated: bool = False`
 * `origin: str | None = None`
 
-## `restamped`
-`src/chatddx/stamp/markers.py:restamped`
-
-* `base: str | None`
-* `current: str`
-* ∟`str`
-
-## `signed`
-`src/chatddx/stamp/markers.py:signed`
-
-* `text: str`
-* ∟`list[str]`
-
-Raises:
-1. `ValueError`: `"line {n}: a conflict marker that isn't a stamp's"` (through `_sides`)
-2. `ValueError`: `"line {opened}: a stamp isn't closed"` (through `_sides`)
-
 ## `Spanned`
 `src/chatddx/stamp/code.py:Spanned`
 
 `type Spanned = ast.expr | ast.stmt | ast.type_param`
-
-## `stamped`
-`src/chatddx/stamp/markers.py:stamped`
-
-* `current: str | None`
-* `written: str`
-* ∟`str`
-
-## `stamps`
-`src/chatddx/stamp/markers.py:stamps`
-
-* `text: str`
-* ∟`list[tuple[str, ...]]`
 
 ## `SURFACES`
 `src/chatddx/stamp/__init__.py:SURFACES`

@@ -732,8 +732,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     locale_check.set_defaults(run=_locale, localing="check")
     locale_pending = locale_commands.add_parser(
         "pending",
-        help="write nothing; flag the messages untranslated or fuzzy, and fail while "
-        + "one is",
+        help="write nothing; flag the messages untranslated, and fail while one is",
     )
     locale_pending.set_defaults(run=_locale, localing="pending")
     locale_write = locale_commands.add_parser(

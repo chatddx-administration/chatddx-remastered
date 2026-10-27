@@ -8,8 +8,9 @@ from textwrap import dedent
 
 import griffe
 
+from chatddx.markers import PENDING
+
 from .code import Code
-from .markers import PENDING
 
 # Compromise: what isn't Python is read by its strings and comments alone: a body in
 # dollar quotes is read as SQL, as a function's body is, and an E'' string's \' throws
