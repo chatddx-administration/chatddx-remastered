@@ -392,6 +392,8 @@ def _stamp(args: argparse.Namespace) -> None:
         stamp.pending()
     elif args.stamping == "docs":
         stamp.docs(args.base)
+    elif args.stamping == "reflow":
+        stamp.reflow(args.check)
     else:
         stamp.write(args.package)
 
@@ -711,6 +713,17 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="the commit whose docs are as signed, such as the one a turn started at",
     )
     stamp_docs.set_defaults(run=_stamp, stamping="docs")
+    stamp_reflow = stamp_commands.add_parser(
+        "reflow",
+        help="format the frontend and the docs with prettier, a doc holding stamps "
+        + "pending a side of its stamps at a time",
+    )
+    _ = stamp_reflow.add_argument(
+        "--check",
+        action="store_true",
+        help="write nothing; fail, saying which, while one is unformatted",
+    )
+    stamp_reflow.set_defaults(run=_stamp, stamping="reflow")
 
     refchecking = commands.add_parser(
         "refcheck",

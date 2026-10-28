@@ -256,7 +256,7 @@
                 ];
                 preBuild = ''
                   unset PYTHONPATH
-                  export HOME="$TMPDIR"
+                  export HOME="$TMPDIR" REPO_ROOT="$PWD"
                 '';
               };
 

@@ -85,8 +85,8 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 ### Formatting
 
 - `ruff format` formats the Python.
-- `frontend/node_modules/.bin/prettier --write .` formats the frontend and the docs, what `.prettierignore` lets
-  through.
+- `chatddx stamp reflow` formats the frontend and the docs, what `.prettierignore` lets through, with prettier. Prettier
+  on its own breaks the markers of a doc holding stamps pending.
 
 ### Browser
 

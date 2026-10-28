@@ -7,9 +7,7 @@
 set -euo pipefail
 
 ruff format --quiet
-# Dependency: check.sh's prettier, which leaves a doc holding stamps pending as it is.
-mapfile -t held < <(git grep --untracked -l -e '^>>>>>>> @''stamp$' -- '*.md' | sed 's/^/!/')
-frontend/node_modules/.bin/prettier --write --log-level warn . "${held[@]}"
+chatddx stamp reflow
 doc="$(mktemp)"
 trap 'rm -f "$doc"' EXIT
 chatddx openapi >"$doc"

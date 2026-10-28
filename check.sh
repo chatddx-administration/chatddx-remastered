@@ -26,15 +26,7 @@ pending() {
 
 format() {
   ruff format --check
-  prettier --check
-}
-
-# Policy: prettier leaves a doc that holds stamps pending as it is, as it would read their
-# markers as markdown, till it is stamped.
-prettier() {
-  local held=()
-  mapfile -t held < <(git grep --untracked -l -e '^>>>>>>> @''stamp$' -- '*.md' | sed 's/^/!/')
-  frontend/node_modules/.bin/prettier "$@" . "${held[@]}"
+  chatddx stamp reflow --check
 }
 
 types() {

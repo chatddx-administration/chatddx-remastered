@@ -7,7 +7,7 @@ from functools import partial
 from pathlib import Path
 
 from chatddx import locale, settings
-from chatddx.markers import restamped, signed, stamped, stamps
+from chatddx.markers import applied, restamped, signed, stamped, stamps
 
 from .code import Code
 from .index import index, whoopses
@@ -24,6 +24,7 @@ __all__ = [
     "documents",
     "pending",
     "proofs",
+    "reflow",
     "write",
 ]
 
@@ -32,6 +33,7 @@ COMMENTS = settings.PROJECT_ROOT / "docs" / "comments"
 WHOOPSES = settings.PROJECT_ROOT / "docs" / "whoopses"
 _FINDING = "chatddx.factors.base.Finding"
 _WHOOPS = "chatddx.whoops.Whoops"
+_PRETTIER = settings.PROJECT_ROOT / "frontend" / "node_modules" / ".bin" / "prettier"
 
 
 @dataclass(frozen=True)
@@ -167,6 +169,65 @@ def docs(base: str) -> None:
             _ = path.write_text(s.written)
             written.append(f"{_shown(path)}: {_stamps(s.new)}")
     print("\n".join(written) or "nothing to write")
+
+
+# Policy: prettier reads a stamp's markers as markdown, so a doc holding stamps pending is
+# reflowed a side at a time, the side last stamped and the side written now, each as a doc
+# of its own, and stamped again from the two.
+def reflow(check: bool) -> None:
+    root = settings.PROJECT_ROOT
+    try:
+        held = [s for s in _held(documents()) if s.pending]
+    except ValueError as e:
+        raise SystemExit(f"stamp reflow: {e}") from None
+    shown = [_shown(s.path) for s in held]
+    # Accommodating for prettier, which lists what differs at its log level, so that any
+    # quieter level lists nothing and passes.
+    mode = (
+        ["--list-different", "--log-level", "log"]
+        if check
+        else ["--write", "--log-level", "warn"]
+    )
+    done = subprocess.run(
+        [_PRETTIER, *mode, ".", *(f"!{name}" for name in shown)],
+        cwd=root,
+        stdout=subprocess.PIPE if check else None,
+        text=True,
+        check=False,
+    )
+    if done.returncode not in ((0, 1) if check else (0,)):
+        raise SystemExit(done.returncode)
+    unformatted = done.stdout.splitlines() if check else []
+    for s, name in zip(held, shown, strict=True):
+        text = s.current or ""
+        was = [signed(text), applied(text)]
+        now = [_prettier(root, name, side) for side in was]
+        if now == was:
+            continue
+        if check:
+            unformatted.append(name)
+        else:
+            last, written = ("\n".join(side) + "\n" for side in now)
+            _ = s.path.write_text(restamped(last, written))
+    if unformatted:
+        listed = ", ".join(sorted(unformatted))
+        raise SystemExit(
+            f"stamp reflow: {listed} unformatted: run chatddx stamp reflow"
+        )
+
+
+def _prettier(root: Path, name: str, lines: list[str]) -> list[str]:
+    done = subprocess.run(
+        [_PRETTIER, "--stdin-filepath", name],
+        cwd=root,
+        input="\n".join(lines) + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if done.returncode:
+        raise SystemExit(f"stamp reflow: {name}: {done.stderr.strip()}")
+    return done.stdout.splitlines()
 
 
 def _held(paths: Iterable[Path]) -> list[Proof]:

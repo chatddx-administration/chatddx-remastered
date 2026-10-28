@@ -54,6 +54,12 @@ def entry(page: str, heading: str) -> list[str]:
     return [line for line in lines[start + 1 : end] if line]
 
 
+needs_prettier = pytest.mark.skipif(
+    not (
+        settings.PROJECT_ROOT / "frontend" / "node_modules" / ".bin" / "prettier"
+    ).exists(),
+    reason="no prettier",
+)
 CLOSING = stamped("## e\n", "## e\na\n").splitlines()[-1]
 
 
@@ -1213,6 +1219,25 @@ def test_docs_stamps_a_catalog_s_translations_since_the_commit_alone(
 
 @needs_git
 @pytest.mark.usefixtures("as_bob")
+@pytest.mark.slow
+@needs_prettier
+def test_reflow_formats_each_side_of_a_doc_s_stamps_as_a_doc_of_its_own(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(settings, "PROJECT_ROOT", tmp_path)
+    (tmp_path / "docs").mkdir()
+    _ = (tmp_path / "docs" / "plain.md").write_text("*  a\n")
+    held = tmp_path / "docs" / "held.md"
+    _ = held.write_text(restamped("# t\n\n*  a\n", "# t\n\n*  b\n"))
+    with pytest.raises(SystemExit, match="^stamp reflow: docs/held.md, docs/plain.md "):
+        stamp.reflow(check=True)
+
+    stamp.reflow(check=False)
+    assert (tmp_path / "docs" / "plain.md").read_text() == "- a\n"
+    assert held.read_text() == restamped("# t\n\n- a\n", "# t\n\n- b\n")
+    stamp.reflow(check=True)
+
+
 def test_docs_refuses_a_base_that_is_no_commit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

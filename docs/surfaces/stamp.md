@@ -275,6 +275,18 @@ Raises:
 * `validated: bool = False`
 * `origin: str | None = None`
 
+## `reflow`
+`src/chatddx/stamp/__init__.py:reflow`
+
+* `check: bool`
+* ∟`None`
+
+Raises:
+1. `SystemExit`: `"stamp reflow: {e}"` (from `ValueError`)
+2. `SystemExit`: `done.returncode`
+3. `SystemExit`: `"stamp reflow: {name}: {done.stderr.strip()}"` (through `_prettier`)
+4. `SystemExit`: `"stamp reflow: {listed} unformatted: run chatddx stamp reflow"`
+
 ## `Spanned`
 `src/chatddx/stamp/code.py:Spanned`
 
