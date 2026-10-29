@@ -119,6 +119,21 @@ A :Trial pins one generation skeleton, one engine, its cases once each and in or
 run records it (`docs/backlog.md`, "Execution settings as a component"). `Execution.schedule` puts a trial's items in
 its order, and `Execution.overlaid` takes a start's concurrency and order over an endpoint's.
 
+## Gatherings
+
+A :Gathering binds runs about a :Center, a seed or a component of any kind but a gathering, to the groups it holds: each
+run by its id, the trial it ran and the :Seeding it takes in its group, once at most
+(`src/chatddx/factors/gathering.py:Gathering`). The seedings are data, each so many seeds, one of which may repeat a
+seeding before it on that one's last seeds; `REPLICATED` is a review's, three replicates and the third repeated. Its
+cross-check holds each run's trial to its seeding (`fits`), a repeat's to the trial it repeats on those seeds, by
+position when greedy. How a run is about the center is the source's to say, as a score reaches a scorer and no trial
+does. It pins its runs by id and what they ran by digest, and guarantees nothing of how the runs compare: when or where
+they ran, or that they ran at all. Nothing stores one yet.
+
+`gather` makes one of runs found, each by its group's key (`src/chatddx/factors/gatherer.py:gather`): each seeding in
+turn takes the first run of the group that fits it, so the order found is the preference, and the groups go by their
+trials, so the same runs gather alike.
+
 ## Scoring
 
 - An :Expectation is data for one case under an :Expectation schema. Building it doesn't check the data against the

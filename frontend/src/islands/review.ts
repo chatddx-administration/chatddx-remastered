@@ -102,9 +102,39 @@ if (held) {
     }
   });
   const evaluation = document.getElementById("review-evaluation");
-  if (evaluation && review.evaluation) {
+  const evaluating = document.getElementById("evaluating");
+  if (evaluation && evaluating && review.evaluation) {
+    const settled = (runs: string[]) => {
+      const button = running?.querySelector("button");
+      if (!button?.hasAttribute("data-busy") || !review.busy?.every((r) => runs.includes(r))) return;
+      button.removeAttribute("data-busy");
+      button.disabled = false;
+    };
     evaluation.replaceChildren();
-    mount(Evaluation, { target: evaluation, props: { evaluation: review.evaluation } });
+    const shown = mount(Evaluation, { target: evaluation, props: { evaluation: review.evaluation, settled } });
+    let at = location.search;
+    const stepped = async (to: string, pushed: boolean): Promise<void> => {
+      at = new URL(to).search;
+      const got = await fetch(to);
+      const page = new DOMParser().parseFromString(await got.text(), "text/html");
+      const next = JSON.parse(page.getElementById("review-props")?.textContent ?? "null") as Review | null;
+      if (!got.ok || !next?.evaluation) return location.assign(to);
+      for (const part of ["header", "[data-told]"]) {
+        const from = page.querySelector(`#evaluating ${part}`);
+        if (from) evaluating.querySelector(part)?.replaceWith(from);
+      }
+      shown.show(next.evaluation);
+      if (pushed) history.pushState({ stepped: true }, "", to);
+    };
+    evaluating.addEventListener("click", (clicked) => {
+      const at = (clicked.target as Element).closest<HTMLAnchorElement>("nav a[rel]");
+      if (!at || clicked.button || clicked.metaKey || clicked.ctrlKey || clicked.shiftKey || clicked.altKey) return;
+      clicked.preventDefault();
+      void stepped(at.href, true);
+    });
+    addEventListener("popstate", () => {
+      if (location.search !== at) void stepped(location.href, false);
+    });
   }
   for (const at of document.querySelectorAll<HTMLFormElement>("form[data-confirm]")) {
     at.addEventListener("submit", (sent) => {

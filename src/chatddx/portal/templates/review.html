@@ -163,7 +163,7 @@
       {% endif %}
       <form method="post" action="{{ here }}/runs" data-running title="{{ ngettext('Runs the case as it is saved under %(num)s configuration, four times', 'Runs the case as it is saved under each of %(num)s configurations, four times', runnable) }}">
         <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
-        <button{% if not runnable %} disabled{% endif %}>{{ pgettext("a button", "Run") }}</button>
+        <button class="run"{% if not runnable or busy %} disabled{% endif %}{% if busy and runnable %} data-busy{% endif %}>{{ pgettext("a button", "Run") }}</button>
       </form>
       <div id="review-save" class="contents"></div>
     </div>
@@ -174,16 +174,36 @@
   <div class="pane rounded-2xl p-5 sm:p-6">
     <header class="mb-4">
       <h2>{{ _("Evaluating the case") }}</h2>
-      <p class="mt-1 text-sm text-muted-foreground">{{ _("%(case)s under each configuration of yours, three times under seeds drawn and a fourth under the third's seed, scored against what is expected.", case=case.titled | case) }} <a href="/runs/{{ evaluation }}">{{ _("Its runs") }}</a></p>
+      <p class="mt-1 text-sm text-muted-foreground">{{ _("%(case)s under each configuration of yours, three times under seeds drawn and a fourth under the third's seed, scored against what is expected.", case=case.titled | case) }} {% if evaluation.first %}<a href="/runs/{{ evaluation.first }}">{{ _("Its runs") }}</a>{% else %}{{ _("Shown is the latest of each configuration's runs.") }}{% endif %}</p>
+      {% if earlier or later %}
+      <nav aria-label="{{ _('Evaluations of the case') }}" class="mt-2 flex flex-wrap items-center gap-x-4 text-sm">
+        {% if earlier %}<a rel="prev" href="{{ here }}{{ query(case=case.case, evaluation=earlier.first | string, **keep) }}#evaluating">← {{ earlier.at | when }}</a>{% endif %}
+        {% if later and later.first %}<a rel="next" class="ml-auto" href="{{ here }}{{ query(case=case.case, evaluation=later.first | string, **keep) }}#evaluating">{{ later.at | when }} →</a>
+        {% elif later %}<a rel="next" class="ml-auto" href="{{ here }}{{ query(case=case.case, **keep) }}#evaluating">{{ _("Latest") }} →</a>{% endif %}
+      </nav>
+      {% endif %}
     </header>
-    {% if left_out %}
-    <div class="mb-4 text-sm">
-      <p class="text-muted-foreground">{{ _("Left out:") }}</p>
-      <ul class="mt-1 list-disc space-y-0.5 pl-5">
-        {% for name, why in left_out %}<li><span class="font-medium">{{ name }}</span>: {{ why or _("not run in this evaluation") }}</li>{% endfor %}
-      </ul>
+    <div data-told>
+      {% if behind %}
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+        <div>
+          <p class="font-medium">{{ _("Not as things are now:") }}</p>
+          <ul class="mt-1 list-disc space-y-0.5 pl-5">
+            {% for name, why in behind %}<li><span class="font-medium">{{ name }}</span>: {{ why }}</li>{% endfor %}
+          </ul>
+        </div>
+        <button class="run" type="button" data-rework title="{{ _('Not yet: reworking runs only what these need') }}">{{ _("Rework") }}</button>
+      </div>
+      {% endif %}
+      {% if left_out %}
+      <div class="mb-4 text-sm">
+        <p class="text-muted-foreground">{{ _("Left out:") }}</p>
+        <ul class="mt-1 list-disc space-y-0.5 pl-5">
+          {% for name, why in left_out %}<li><span class="font-medium">{{ name }}</span>: {{ why or _("not run in this evaluation") }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
     <div id="review-evaluation">
       <p class="text-sm text-muted-foreground">{{ _("What it answered is shown with scripts, or on its runs' page.") }}</p>
     </div>

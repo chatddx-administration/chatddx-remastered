@@ -1,9 +1,14 @@
 import json
-from collections.abc import Callable
+import socket
+import threading
+import time
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from typing import Any
 
 import httpx2
 import pytest
+import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -23,6 +28,34 @@ type Told = list[tuple[int | None, str, dict[str, Any]]]
 # Policy: a fake this slow keeps a run's job under way while a stream asked for at once
 # joins it: one asked for after it has ended is told the ledger's rows alone.
 UNDER_WAY = 0.02
+
+
+# Dependency: served as src/chatddx/cli.py:_serve serves the portal.
+@contextmanager
+def listened(served: FastAPI) -> Generator[tuple[str, uvicorn.Server]]:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = int(s.getsockname()[1])
+    grace = int(settings.SERVE_GRACE.total_seconds())
+    server = uvicorn.Server(
+        uvicorn.Config(
+            served,
+            host="127.0.0.1",
+            port=port,
+            log_level="warning",
+            timeout_graceful_shutdown=grace,
+        )
+    )
+    running = threading.Thread(target=server.run, daemon=True)
+    running.start()
+    while not server.started:
+        time.sleep(0.01)
+    try:
+        yield f"http://127.0.0.1:{port}", server
+    finally:
+        server.should_exit = True
+        running.join(grace + 30)
+        assert not running.is_alive(), "the server didn't stop"
 
 
 def endpoint(client: TestClient, name: str) -> dict[str, Any]:

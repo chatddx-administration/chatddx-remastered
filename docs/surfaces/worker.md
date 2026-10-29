@@ -88,6 +88,14 @@ Finds:
 * `deadline: timedelta = settings.WORKER_DEADLINE`
 * `jobs: int = settings.WORKER_JOBS`
 
+## `Worker.cut`
+`src/chatddx/worker/worker.py:Worker.cut`
+
+Stops serving as `stopping` does with its deadline already past: what is under
+way is hung up at once and queued again.
+
+* ∟`None`
+
 ## `Worker.serve`
 `src/chatddx/worker/worker.py:Worker.serve`
 

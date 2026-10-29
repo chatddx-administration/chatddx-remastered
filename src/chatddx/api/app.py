@@ -119,7 +119,10 @@ def _lifespan(
         made_worker = Worker(held.conninfo, held.inventory)
         if worker:
             serving = threading.Thread(
-                target=made_worker.serve, args=(stopping,), name="chatddx-worker"
+                target=made_worker.serve,
+                args=(stopping,),
+                name="chatddx-worker",
+                daemon=True,
             )
             serving.start()
         try:

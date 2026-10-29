@@ -97,14 +97,27 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # their browser kept the session's cookie and says so if it didn't.
 ```
 
-## `src/chatddx/portal/review.py:_REPLICATES`
+## `src/chatddx/portal/review.py:_evaluations`
 
 ```
-# Policy: an evaluation runs a case three times under seeds drawn, and a fourth under the
-# third's seed, which a trial can't hold twice, so as a run of its own.
+# Policy: an evaluation is a start whose runs all gather about the case, each group
+# whole, as running_in_review starts one; no run records where it was started.
+```
+
+## `src/chatddx/portal/review.py:_latest`
+
+```
+# Policy: what the review shows unless asked for an evaluation: the latest of each
+# configuration's runs across the case's evaluations, among their runs alone, so that
+# no run of other cases mixes its items into the means.
 ```
 
 ## `src/chatddx/portal/review.py:running_in_review`
+
+```
+# Policy: as on the run page, a press made while an evaluation of the case is under
+# way counts as made: the page it leads back to shows that one.
+```
 
 ```
 # Policy: queued once every run is begun, so that the worker sending the first
@@ -191,6 +204,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 ```
 # Accommodating for Chromium, which runs no script on a page while a navigation from it is held:
 # the navigations a press starts are cancelled instead, which leaves the page as pressed.
+```
+
+## `src/chatddx/portal/test/test_library.py:test_a_shelf_is_found_in_by_what_is_said_and_its_cases_narrowed_by_tags`
+
+```
+# Accommodating for the test World's shelves, which are shorter than a page: a page
+# as long as the shelf gives it its search box.
 ```
 
 ## `src/chatddx/portal/threads.py:_drawn`

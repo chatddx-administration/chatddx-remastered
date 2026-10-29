@@ -32,3 +32,10 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/worker/`, sor
 # Policy: scorer by scorer, so that the job keeps those it finished: queued again, it
 # scores what is left.
 ```
+
+## `src/chatddx/worker/worker.py:Worker._take`
+
+```
+# Policy: daemons, so that a server forced to quit, which skips stopping its
+# worker, exits; the jobs it held are claimed again once lost.
+```

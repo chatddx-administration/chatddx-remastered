@@ -1127,7 +1127,7 @@ def test_kinds_and_fields_match_the_database(admin: Connection) -> None:
             for c in checks
             if all(f"'{n}'" in c for n in names) and c.count("'") == 2 * len(names)
         ]
-    assert THREAD_KINDS == BY_KIND.keys() - {"case", "compilation"}
+    assert THREAD_KINDS == BY_KIND.keys() - {"case", "compilation", "gathering"}
     [shape] = admin.execute(
         """
         SELECT pg_get_constraintdef(oid) FROM pg_constraint

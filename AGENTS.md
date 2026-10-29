@@ -19,6 +19,9 @@ When asked to hand over:
    "Docstrings", pre-existing included.
 2. Run `./dev/agent.sh hand-over`. It commits, pushes and runs all checks.
 
+When asked to rebase onto main, a push of the branch with `--force-with-lease` is implied, which `turn-end` and
+`hand-over` make when nothing but the branch's commits before the rebase is in the way; never merge those back in.
+
 All `./dev/agent.sh` commands are silent on success or print instructions for you to act on. All `./dev/agent.sh` exits
 are 0 except `turn-end`, which exits 2 on failure.
 
@@ -26,7 +29,7 @@ are 0 except `turn-end`, which exits 2 on failure.
 
 How to handle a warning or error, in order of preference:
 
-### 0. Let them error
+### 0. Let them error and warn
 
 Consider not handling an error or warning if:
 
@@ -77,7 +80,7 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 - `pytest -m 'not slow'`, excludes the slowest tests making up 7/8 of the total test time, ~60s.
 - `pytest -n 4` fast given absence of other loads, ~110s.
 
-### TypeScript
+### Frontend
 
 - `pnpm --dir frontend check` type checks frontend
 - `pnpm --dir frontend test` tests frontend takes less than 2s

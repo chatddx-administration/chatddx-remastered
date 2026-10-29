@@ -206,9 +206,9 @@
   box-shadow: 0 0 40px -10px color-mix(in oklab, var(--primary) 40%, transparent);
 }
 
-/* Policy: a button is styled by being one, so a template's buttons carry no utilities, only their kind: primary, danger, small, icon. */
+/* Policy: a button is styled by being one, so a template's buttons carry no utilities, only their kind: primary, run, danger, small, icon. */
 @layer components {
-  :is(button:not([class]), button.primary, button.danger, button.small, button.icon) {
+  :is(button:not([class]), button.primary, button.run, button.danger, button.small, button.icon) {
     @apply inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-1.5 text-sm leading-5 font-medium text-foreground shadow-xs transition-colors select-none;
     &:hover {
       @apply bg-muted;
@@ -223,10 +223,12 @@
     &:disabled {
       @apply cursor-not-allowed opacity-50;
     }
-    &[data-pressed] {
+    &[data-pressed],
+    &[data-busy] {
       @apply cursor-progress;
     }
-    &[data-pressed]::after {
+    &[data-pressed]::after,
+    &[data-busy]::after {
       @apply size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent content-[''];
     }
   }
@@ -238,6 +240,16 @@
     &:active,
     &[data-pressed] {
       @apply bg-[color-mix(in_oklab,var(--primary),var(--foreground)_30%)];
+    }
+  }
+  button.run {
+    @apply border-transparent bg-success text-success-foreground;
+    &:hover {
+      @apply bg-[color-mix(in_oklab,var(--success),var(--foreground)_15%)];
+    }
+    &:active,
+    &[data-pressed] {
+      @apply bg-[color-mix(in_oklab,var(--success),var(--foreground)_30%)];
     }
   }
   button.danger {

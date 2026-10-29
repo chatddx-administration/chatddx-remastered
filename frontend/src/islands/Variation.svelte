@@ -643,6 +643,7 @@
       {/if}
       <Button
         type="submit"
+        variant="run"
         disabled={look.model === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
       >
         {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}

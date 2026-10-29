@@ -139,6 +139,25 @@ Raises:
 
 `CaseRef = Annotated[Digest, RefTo("case")]`
 
+## `Center` `(Frozen)`
+`src/chatddx/factors/gathering.py:Center`
+
+* `component: CenterRef | None = None`
+* `seed: int | None = None`
+
+Raises:
+1. `ValueError`: `"a center is a component or a seed"` (through `Center._one`, in a `ValidationError`)
+
+## `CENTER_KINDS`
+`src/chatddx/factors/gathering.py:CENTER_KINDS`
+
+`CENTER_KINDS = (…)`
+
+## `CenterRef`
+`src/chatddx/factors/gathering.py:CenterRef`
+
+`CenterRef = Annotated[Digest, RefTo(*CENTER_KINDS)]`
+
 ## `check_chat_template`
 `src/chatddx/factors/engine.py:check_chat_template`
 
@@ -462,6 +481,19 @@ Raises:
 * `key: tuple[str, bytes] | None = None`
 * ∟`"Fingerprint"`
 
+## `fits`
+`src/chatddx/factors/gathering.py:fits`
+
+Why a run of the trial can't take the seeding in a group whose other seedings
+hold the trials in `bound`, or None when it can; resolves the trial, and a repeat
+the trial it repeats.
+
+* `seeding: Seeding`
+* `trial: str`
+* `bound: Mapping[str, str]`
+* `get: Resolver`
+* ∟`str | None`
+
 ## `flag_names`
 `src/chatddx/factors/engine.py:flag_names`
 
@@ -479,6 +511,53 @@ Raises:
 `src/chatddx/factors/base.py:Frozen`
 
 * `model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")`
+
+## `gather`
+`src/chatddx/factors/gatherer.py:gather`
+
+The gathering of the runs found, each given by its group's key, its id and its
+trial, or None when no run fits a seeding. In each group each seeding in turn takes
+the first run found that fits it, so the order found is the preference; each try
+resolves the run's trial.
+
+* `center: Center`
+* `seedings: tuple[Seeding, ...]`
+* `found: Iterable[tuple[Hashable, UUID, str]]`
+* `get: Resolver`
+* ∟`Gathering | None`
+
+## `Gathered` `(Frozen)`
+`src/chatddx/factors/gathering.py:Gathered`
+
+* `group: int = Field(ge=0)`
+* `seeding: SeedingName`
+* `run: UUID`
+* `trial: TrialRef`
+
+## `Gathering` `(Component)`
+`src/chatddx/factors/gathering.py:Gathering`
+
+* `kind: Literal["gathering"] = "gathering"`
+* `center: Center`
+* `seedings: Seedings`
+* `gathered: tuple[Gathered, ...] = Field(min_length=1)`
+
+Raises:
+1. `ValueError`: `"no seeding {g.seeding} to gather into"` (through `Gathering._gathered`, in a `ValidationError`)
+2. `ValueError`: `"runs go by group, then by seeding in its order, once"` (through `Gathering._gathered`, in a `ValidationError`)
+3. `ValueError`: `"groups are numbered from 0 without gaps"` (through `Gathering._gathered`, in a `ValidationError`)
+4. `ValueError`: `"a run is gathered once"` (through `Gathering._gathered`, in a `ValidationError`)
+
+## `Gathering.cross_check` `@override`
+`src/chatddx/factors/gathering.py:Gathering.cross_check`
+
+* `get: Resolver`
+* ∟`list[str]`
+
+## `Gathering.groups`
+`src/chatddx/factors/gathering.py:Gathering.groups`
+
+* ∟`list[dict[str, Gathered]]`
 
 ## `Hardware` `(Frozen)`
 `src/chatddx/factors/engine.py:Hardware`
@@ -1185,6 +1264,11 @@ Raises:
 
 `RemoteModelRef = Annotated[Digest, RefTo("model.remote")]`
 
+## `REPLICATED`
+`src/chatddx/factors/gathering.py:REPLICATED`
+
+`REPLICATED: tuple[Seeding, ...] = (…)`
+
 ## `replicates`
 `src/chatddx/factors/trial.py:replicates`
 
@@ -1319,6 +1403,23 @@ Raises:
 `src/chatddx/factors/scoring.py:ScoringRef`
 
 `ScoringRef = Annotated[Digest, RefTo("scoring")]`
+
+## `Seeding` `(Frozen)`
+`src/chatddx/factors/gathering.py:Seeding`
+
+* `name: SeedingName`
+* `seeds: int = Field(ge=1)`
+* `repeats: SeedingName | None = None`
+
+## `SeedingName`
+`src/chatddx/factors/gathering.py:SeedingName`
+
+`SeedingName = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$")]`
+
+## `Seedings`
+`src/chatddx/factors/gathering.py:Seedings`
+
+`Seedings = Annotated[…]`
 
 ## `Segment`
 `src/chatddx/factors/request.py:Segment`

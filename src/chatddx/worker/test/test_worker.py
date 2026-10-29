@@ -247,6 +247,51 @@ def test_a_stopped_worker_queues_its_run_again_for_the_next_to_resume(
     assert len(Store(conn).run(started).items) == 2
 
 
+def sending(conninfo: str, run: UUID) -> None:
+    deadline, assembler = time.monotonic() + 30, Assembler()
+    with psycopg.connect(conninfo, autocommit=True) as listener:
+        listen(listener, channel(run))
+        while time.monotonic() < deadline:
+            for n in listener.notifies(timeout=0.1):
+                m = assembler.message(n.channel, n.pid, n.payload)
+                if isinstance(m, Events) and "item.delta" in dict(m.said):
+                    return
+    raise AssertionError(f"run {run} sent nothing")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("cut", [False, True])
+def test_a_stopping_worker_past_its_deadline_hangs_up_the_items_under_way_for_the_next(
+    conn: Connection,
+    conninfo: str,
+    world: Inventory,
+    bench: Bench,
+    alice: Person,
+    cut: bool,
+) -> None:
+    queue = Queue(conn)
+    deadline = settings.WORKER_DEADLINE if cut else timedelta(milliseconds=100)
+    with faked(world, Store(conn).get, delay=1.0):
+        started = start(bench)
+        job = queue.put(alice.id, started, QWEN, 1, False)
+        with serving(conninfo, world, deadline=deadline) as worker:
+            sending(conninfo, started)
+            stopped = time.monotonic()
+            if cut:
+                worker.cut()
+                _ = until(queue, job, lambda j: j.status == "queued")
+        assert time.monotonic() - stopped < 5
+    left = latest(queue, job)
+    assert (left.status, left.why) == ("queued", LEFT)
+    assert Store(conn).run(started).items == ()
+    with faked(world, Store(conn).get), serving(conninfo, world):
+        done = until(queue, job, ended)
+
+    assert done.status == "finished"
+    run = Store(conn).run(started)
+    assert [i.call.error for i in run.items] == [None, None]
+
+
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_job_whose_worker_is_lost_is_claimed_and_its_run_resumed(

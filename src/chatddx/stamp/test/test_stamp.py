@@ -971,6 +971,8 @@ def faked(
     monkeypatch.setattr(stamp, "SURFACES", docs)
     monkeypatch.setattr(stamp, "COMMENTS", tmp_path / "docs" / "comments")
     monkeypatch.setattr(stamp, "WHOOPSES", tmp_path / "docs" / "whoopses")
+    catalogs = tmp_path / "src" / "chatddx" / "locale" / "catalogs"
+    monkeypatch.setattr(locale, "catalogs", lambda: locale.locale.catalogs(catalogs))
 
     def listed(_: object) -> list[Proof]:
         return held

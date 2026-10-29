@@ -1,17 +1,13 @@
-import socket
-import threading
-import time
 from collections.abc import Iterator
 
 import pytest
-import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.api.app import app
-from chatddx.api.test.helpers import bearer
+from chatddx.api.test.helpers import bearer, listened
 from chatddx.bench import Bench
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -38,19 +34,8 @@ def served(db: str) -> FastAPI:
 
 @pytest.fixture
 def listening(served: FastAPI) -> Iterator[str]:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    server = uvicorn.Server(
-        uvicorn.Config(served, host="127.0.0.1", port=port, log_level="warning")
-    )
-    running = threading.Thread(target=server.run, daemon=True)
-    running.start()
-    while not server.started:
-        time.sleep(0.01)
-    yield f"http://127.0.0.1:{port}"
-    server.should_exit = True
-    running.join(5)
+    with listened(served) as (url, _):
+        yield url
 
 
 @pytest.fixture

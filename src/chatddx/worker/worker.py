@@ -46,7 +46,9 @@ class _Held:
     def sending(self, running: Running) -> None:
         with self.guard:
             self.running = running
-            if self.left is not None:
+            if self.cut:
+                running.cut()
+            elif self.left is not None:
                 running.stop()
 
     def halt(self) -> None:
@@ -55,7 +57,11 @@ class _Held:
 
     def cut_short(self) -> None:
         with self.guard:
+            if self.cut:
+                return
             self.cut = True
+            if self.running is not None:
+                self.running.cut()
         self.scoring.set()
 
     def leave(self, why: str) -> None:
@@ -86,6 +92,7 @@ class Worker:
         self._guard: threading.Lock = threading.Lock()
         self._held: dict[int, _Held] = {}
         self._waking: socket.socket | None = None
+        self._cutting: threading.Event = threading.Event()
 
     def serve(self, stopping: threading.Event) -> None:
         capacity = {name: e.capacity for name, e in self._inventory.endpoints.items()}
@@ -109,11 +116,12 @@ class Worker:
                 listen(conn, WORKERS)
                 deadline: float | None = None
                 while True:
-                    leaving = stopping.is_set()
+                    cutting = self._cutting.is_set()
+                    leaving = cutting or stopping.is_set()
                     if leaving and deadline is None:
                         deadline = time.monotonic() + self._deadline
                     if deadline is not None:
-                        past = time.monotonic() >= deadline
+                        past = cutting or time.monotonic() >= deadline
                         for held in self._holding().values():
                             held.leave(LEFT)
                             if past:
@@ -135,6 +143,12 @@ class Worker:
             woken.close()
             waking.close()
 
+    def cut(self) -> None:
+        """Stops serving as `stopping` does with its deadline already past: what is under
+        way is hung up at once and queued again."""
+        self._cutting.set()
+        self.wake()
+
     def wake(self) -> None:
         with self._guard:
             if self._waking is None:
@@ -150,8 +164,8 @@ class Worker:
         if list(conn.notifies(timeout=0)):
             return
         timeout = self._beat_every
-        if deadline is not None:
-            timeout = max(min(timeout, deadline - time.monotonic()), 0.0)
+        if deadline is not None and (left := deadline - time.monotonic()) > 0:
+            timeout = min(timeout, left)
         ready, _, _ = select.select([conn.fileno(), woken], [], [], timeout)
         if woken in ready:
             _ = woken.recv(4096)
@@ -183,8 +197,10 @@ class Worker:
             held.halt()
         with self._guard:
             self._held[job.id] = held
+        # Policy: daemons, so that a server forced to quit, which skips stopping its
+        # worker, exits; the jobs it held are claimed again once lost.
         threading.Thread(
-            target=self._work, args=(held,), name=f"chatddx-job-{job.id}"
+            target=self._work, args=(held,), name=f"chatddx-job-{job.id}", daemon=True
         ).start()
 
     def _work(self, held: _Held) -> None:

@@ -250,6 +250,7 @@ class Running:
         self._canaries: list[CanaryCall] = list(canaries)
         self._findings: list[Finding] = list(findings)
         self._stopping: bool = False
+        self._cutting: bool = False
         self._halt: Halt = Halt()
         self._finished: bool = False
 
@@ -264,6 +265,12 @@ class Running:
     def stop(self) -> None:
         self._stopping = True
 
+    def cut(self) -> None:
+        """Hangs up the calls in flight and records none of them, so that a resume sends
+        them again."""
+        self._stopping = self._cutting = True
+        self._halt.set()
+
     def send(
         self,
         on_event: Callable[[RunEvent], None] | None = None,
@@ -273,6 +280,8 @@ class Running:
         # Policy: its own halt, so that a worker's failure halts this run's calls and
         # not the caller's.
         self._halt = Halt()
+        if self._cutting:
+            self._halt.set()
         watching: AbstractContextManager[None] = (
             nullcontext() if halt is None else halt.watching(self._halt.set)
         )
@@ -311,6 +320,8 @@ class Running:
                 )
             except Stopped as stopped:
                 self._stopping = True
+                if self._cutting:
+                    return
                 self._probed(phase, index, stopped.call, emit)
                 if self._halt.is_set():
                     return
@@ -456,6 +467,8 @@ class Running:
         exchange: Exchange,
         emit: Callable[[RunEvent], None],
     ) -> None:
+        if exchange.stopped and self._cutting:
+            return
         item = RunItem(
             run=self.run,
             key=key,

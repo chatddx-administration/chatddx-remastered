@@ -150,6 +150,22 @@ Raises:
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
+## `Bench.gathering`
+`src/chatddx/bench/gathering.py:gathering`
+
+The person's runs about the center gathered into the seedings, a group for each
+configuration they varied and the latest run first, kept to those started with
+`started_with` and among `among` when given. A component's runs are those whose
+trial or a score reaches it, a seed's those whose trial holds it. Reads the
+person's runs twice for a component and once for a seed, and each run's trial for
+a seed and its configuration's edit.
+
+* `center: Center`
+* `seedings: tuple[Seeding, ...]`
+* `started_with: UUID | None = None`
+* `among: Collection[UUID] | None = None`
+* ∟`Gathering | None`
+
 ## `Bench.leave`
 `src/chatddx/bench/saying.py:leave`
 

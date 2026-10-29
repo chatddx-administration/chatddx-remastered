@@ -33,9 +33,9 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
   | `chatddx migrate`      | the migrations, as the admin, up to a tier                                                                                                |
   | `chatddx fake-engines` | the World's fake engines, for development                                                                                                 |
 
-- **Stopping a worker**: its scorings go on for `settings.WORKER_DEADLINE` (60 s), which is to be "within the stop
-  timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop timeout is 90 s;
-  Kubernetes' default grace period is 30 s.
+- **Stopping a worker**: its items and scorings under way go on for `settings.WORKER_DEADLINE` (60 s), which is to be
+  "within the stop timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop
+  timeout is 90 s; Kubernetes' default grace period is 30 s.
 - **Several processes may serve one database**: workers take turns to claim, and a run's events reach every app through
   `LISTEN`/`NOTIFY` (`src/chatddx/api/listening.py`). Sessions are in the database.
 - **What a process reads from its environment**: `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_ADMIN` (`settings.database`);

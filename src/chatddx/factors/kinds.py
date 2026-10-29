@@ -5,6 +5,7 @@ from .base import Component, StructuralError
 from .cases import Appendix, Case
 from .engine import LocalEngine, LocalModel, RemoteEngine, RemoteModel
 from .facts import ModelFacts
+from .gathering import Gathering
 from .request import (
     Compilation,
     FewShot,
@@ -23,7 +24,8 @@ from .scoring import Expectation, ExpectationSchema, Judge, Scorer, Scoring
 from .trial import CanarySet, Trial
 
 # Dependency: the only kinds stored bytes are read as.
-# src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases and compilations.
+# src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases, compilations and
+# gatherings, and src/chatddx/factors/gathering.py:CENTER_KINDS holds all but gatherings.
 KINDS: tuple[type[Component], ...] = (
     LocalModel,
     RemoteModel,
@@ -51,6 +53,7 @@ KINDS: tuple[type[Component], ...] = (
     Judge,
     Scorer,
     Scoring,
+    Gathering,
 )
 
 

@@ -1,14 +1,24 @@
 include = ["endpoints.toml"]
-configurations = "qwen3-8b"
+configurations = "gpt-oss-20b"
 
 [source.sample]
 path = "../sample/vignettes"
 sensitive = true
-cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
+cleanup = [
+  "newlines.lf@1",
+  "unicode.nfc@1",
+  "strip@1",
+  "blank_lines.collapse@1"
+]
 
 [source.typed]
 kind = "database"
-cleanup = ["newlines.lf@1", "unicode.nfc@1", "strip@1", "blank_lines.collapse@1"]
+cleanup = [
+  "newlines.lf@1",
+  "unicode.nfc@1",
+  "strip@1",
+  "blank_lines.collapse@1"
+]
 
 [cleared]
 "qwen3-8b@pelle" = ["sample", "typed"]

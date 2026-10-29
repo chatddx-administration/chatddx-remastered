@@ -5,7 +5,8 @@ export type Viewing = { label: string; field: string | null; unit: string };
 export type Evaluated = { run: string; seeds: number[]; greedy: boolean };
 export type Configured = { configuration: number; name: string; runs: Evaluated[] };
 export type Evaluating = {
-  first: string;
+  key: string;
+  first: string | null;
   case: string;
   configurations: Configured[];
   fields: string[];

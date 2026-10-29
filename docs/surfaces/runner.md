@@ -439,6 +439,14 @@ Raises:
 * `canaries: Sequence[CanaryCall] = ()`
 * `findings: Sequence[Finding] = ()`
 
+## `Running.cut`
+`src/chatddx/runner/run.py:Running.cut`
+
+Hangs up the calls in flight and records none of them, so that a resume sends
+them again.
+
+* ∟`None`
+
 ## `Running.finish`
 `src/chatddx/runner/run.py:Running.finish`
 

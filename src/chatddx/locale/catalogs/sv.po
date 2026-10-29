@@ -1714,6 +1714,10 @@ msgstr "Miljövariabler"
 msgid "Evaluating the case"
 msgstr "Utvärdering av fallet"
 
+#: src/chatddx/portal/templates/review.html
+msgid "Evaluations of the case"
+msgstr "Utvärderingar av fallet"
+
 #: src/chatddx/portal/templates/lab.html
 msgid "Every case you see"
 msgstr "Varje fall du har tillgång till"
@@ -1874,6 +1878,7 @@ msgid ""
 "compared by numbers."
 msgstr "Rättar svar mot facit, så att konfigurationer kan jämföras med siffror."
 
+#: frontend/src/lib/review/Evaluation.svelte
 #: src/chatddx/portal/templates/run.html
 msgid "Halt"
 msgstr "Avbryt"
@@ -2266,6 +2271,10 @@ msgstr "Språk"
 #: src/chatddx/portal/templates/translations.html
 msgid "Languages"
 msgstr "Språk"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Latest"
+msgstr "Senaste"
 
 #: src/chatddx/portal/templates/library.html
 msgid "Latest version"
@@ -2668,6 +2677,10 @@ msgstr "Inte JSON än: %(error)s"
 msgid "Not allowed"
 msgstr "Inte tillåtet"
 
+#: src/chatddx/portal/templates/review.html
+msgid "Not as things are now:"
+msgstr "Inte som det är nu:"
+
 #: frontend/src/lib/api/client.ts src/chatddx/portal/templates/error.html
 msgid "Not found"
 msgstr "Hittades inte"
@@ -2713,6 +2726,10 @@ msgstr ""
 #: src/chatddx/portal/templates/updated.html
 msgid "Not updated"
 msgstr "Inte uppdaterat"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Not yet: reworking runs only what these need"
+msgstr "Inte än: en omarbetning kör bara det som dessa behöver"
 
 #: frontend/src/lib/scorer/JudgeTexts.svelte
 msgid "Nothing changed yet."
@@ -3015,6 +3032,10 @@ msgstr "Granskning"
 msgid "Review it"
 msgstr "Granska"
 
+#: src/chatddx/portal/templates/review.html
+msgid "Rework"
+msgstr "Omarbeta"
+
 #: src/chatddx/portal/templates/run.html
 msgid "Rig"
 msgstr "Rigg"
@@ -3299,6 +3320,10 @@ msgstr "Visa i Biblioteket"
 #: src/chatddx/portal/templates/begun.html
 msgid "Show its texts"
 msgstr "Visa dess texter"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Shown is the latest of each configuration's runs."
+msgstr "Här visas de senaste körningarna för varje konfiguration."
 
 #: frontend/src/lib/api/client.ts src/chatddx/portal/templates/error.html
 #: src/chatddx/portal/templates/sign-in.html
@@ -4722,17 +4747,33 @@ msgid "it doesn't translate into it yet"
 msgstr "den översätter inte till det än"
 
 #: src/chatddx/portal/review.py
+msgid "it has no runs yet"
+msgstr "den har inga körningar än"
+
+#: src/chatddx/portal/review.py
 #, python-format
 msgid "it has no translation into %(language)s"
 msgstr "den har ingen översättning till %(language)s"
 
 #: src/chatddx/portal/review.py
+msgid "it is no longer among your configurations"
+msgstr "den finns inte längre bland dina konfigurationer"
+
+#: src/chatddx/portal/review.py
 msgid "it is out of date: update it on its page"
 msgstr "den är inaktuell: uppdatera den på dess sida"
+
+#: src/chatddx/portal/review.py
+msgid "it isn't scored against the expectation as it is"
+msgstr "den är inte rättad mot facit som det ser ut nu"
 
 #: src/chatddx/portal/templates/translations.html
 msgid "it translates into it"
 msgstr "den översätter till det"
+
+#: src/chatddx/portal/review.py
+msgid "its configuration has changed since it ran"
+msgstr "dess konfiguration har ändrats sedan den kördes"
 
 #: frontend/src/lib/scorer/rewriting.ts
 #, python-format

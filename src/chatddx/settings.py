@@ -79,6 +79,9 @@ STAMPED_FROM = {
     "whoopses": Stage.DRAFTED,
 }
 
+# Policy: how long a server stopping waits on its open responses, a run's event stream
+# among them, which ends only with the run's job, before it cuts them off.
+SERVE_GRACE = timedelta(seconds=5)
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)
 # Policy: within the stop timeout of the service that runs the worker, TimeoutStopSec in

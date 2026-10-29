@@ -8,14 +8,9 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 
 from chatddx.api.test.helpers import family
-from chatddx.portal.test.helpers import ran_template, run_title, shown
+from chatddx.portal.test.helpers import props, ran_template, run_title, shown
 
 __all__ = ["ran_template"]
-
-
-def props(page: str) -> dict[str, Any]:
-    held = page.split('<script type="application/json" id="review-props">', 1)[1]
-    return json.loads(held.split("</script>", 1)[0])
 
 
 @pytest.mark.slow
@@ -80,6 +75,7 @@ def test_review_shows_what_ran_the_case_only_in_an_evaluation(
         "appendices",
         "back",
         "evaluation",
+        "busy",
         "about",
     }
     assert given["evaluation"] is None

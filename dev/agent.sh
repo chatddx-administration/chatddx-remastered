@@ -175,6 +175,7 @@ moved() {
 # Policy: the branch follows what the operator pushes to it, by fast-forward only and only
 # with nothing of its own in the way, or else by the agent's merge; a fetch that fails is
 # tried again at the next turn's start, and a branch deleted on origin is followed no more.
+# One rebased over what it pushed before isn't merged back into it: pushed pushes it over.
 synced() {
   local branch upstream
   branch="$(git symbolic-ref --quiet --short HEAD)" || return 0
@@ -185,10 +186,27 @@ synced() {
   fi
   if git merge-base --is-ancestor HEAD "$upstream" && [[ -z $(git status --porcelain) ]]; then
     git merge --ff-only --quiet "$upstream"
-  else
+  elif ! rebased "$upstream"; then
     echo "$upstream has commits $branch lacks, up to $(git log -1 --format='%h %s' "$upstream"):" \
       "commit what changed and merge $upstream before going on."
   fi
+}
+
+# Policy: told by patch, as git cherry tells it, so that a rebase that resolved a conflict
+# in a commit, or a commit the operator pushed meanwhile, counts as not rebased.
+rebased() {
+  ! git cherry HEAD "$1" | grep -q '^+'
+}
+
+# Policy: a branch rebased over what it pushed before is pushed over it, leased on the tip
+# just fetched, so that nothing pushed since is lost.
+pushed() {
+  local branch upstream
+  step git push --quiet -u origin HEAD && return 0
+  branch="$(git symbolic-ref --quiet --short HEAD)" || return 1
+  upstream="origin/$branch"
+  git fetch --quiet origin "$branch" 2>/dev/null && rebased "$upstream" || return 1
+  step git push --quiet --force-with-lease="$branch:$(git rev-parse "$upstream")" -u origin HEAD
 }
 
 turn-checked() {
@@ -266,7 +284,7 @@ turn-end() {
     step git add --all && step git commit --quiet -m turn-end ||
       ended "$stepped fails, as below: see to it, and commit and push what turn-end wrote." "$said"
   fi
-  step git push --quiet -u origin HEAD || ended "git push fails, as below: see to it, and push the branch." "$said"
+  pushed || ended "git push fails, as below: see to it, and push the branch." "$said"
 }
 
 ended() {
@@ -313,7 +331,7 @@ hand-over() {
     return
   fi
   if ! { step git add --all && { git diff --cached --quiet || step git commit --quiet -m hand-over; }; } ||
-    ! step git push --quiet -u origin HEAD; then
+    ! pushed; then
     printf '%s\n' "$stepped fails, as below: see to it, and commit and push the branch." "$said"
     return
   fi

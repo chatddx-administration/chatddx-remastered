@@ -102,7 +102,7 @@ def test_chatddx_run_watch_builds_the_frontend_while_it_serves(
     monkeypatch.setattr(subprocess, "run", run)
     monkeypatch.setattr(subprocess, "Popen", Watching)
 
-    def serve(served: object, host: str, port: int) -> None:
+    def serve(served: object, host: str, port: int, **_: object) -> None:
         ran.append([type(served).__name__, host, str(port)])
 
     monkeypatch.setattr(uvicorn, "run", serve)

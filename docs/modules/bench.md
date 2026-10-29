@@ -201,6 +201,9 @@ bench.expectation(family.case, schema).data["diagnosis"]
 - The bench begins and queues, and sends nothing itself. `queue` puts a run's `:Job` at its execution's concurrency, to
   be scored once finished if asked; `queue_scoring` puts a finished run's, to score again. The worker sends what
   `resume` gives it and scores with `score` (`src/chatddx/bench/runs.py:score`).
+- `gathering` gathers the person's runs about a `:Center` into seedings, those of one start if asked, a group for each
+  configuration they varied and the latest run first (`src/chatddx/bench/gathering.py:gathering`): a component's runs
+  are those `Seen.runs` finds reaching it or scored by what reaches it, a seed's those whose trial holds it.
 - `Seen.unscored` and `Seen.outstanding` say what is `:Left to score`, and `Seen.scores_of` gives a run's latest score
   under each scorer, or every score.
 

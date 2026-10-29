@@ -70,7 +70,7 @@ Drafted:
 - **A press**: the script in `src/chatddx/portal/templates/base.html` marks what was pressed and runs a bar along the
   top until the next page comes, and keeps a form from being sent twice meanwhile; Back, and Stop where the browser has
   the Navigation API, clear it.
-- **A long list**: a page holds `settings.ROWS_PER_PAGE` rows, 25. A list that may grow is wrapped in
+- **A long list**: a page holds `settings.ROWS_PER_PAGE` rows, 100. A list that may grow is wrapped in
   `src/chatddx/portal/templates/macros.html:paged`, which gives it a search box from as many rows and a pager past them;
   the script in `base.html` keeps the rows that say every word typed, shows a page of them at a time, and shows the page
   a row is on when it is jumped to or holds the current one. Without scripts every row shows. Runs are searched by their
@@ -101,7 +101,20 @@ case and what is written of it, in `frontend/src/islands/review.ts`.
   live configuration of one's own that can run it, three times under seeds drawn and a fourth under the third's seed, a
   run of its own as a trial's seeds are distinct, all one start; the others left out, each with why. A table of each
   configuration's means by the expectation's fields, from the views of the schema's scorers reading each, then each item
-  as a row, its outcome and tokens, opened to what it answered (`frontend/src/lib/review/Evaluation.svelte`).
+  as a row, its outcome and tokens, opened to what it answered and linked to its run
+  (`frontend/src/lib/review/Evaluation.svelte`). Halt, while any run is under way, halts every one; the island follows
+  four runs' streams at a time, as a browser holds six connections to a host over HTTP/1.1 and the evaluation's runs are
+  more. An evaluation is a start whose runs all gather whole about the case into `REPLICATED`, a group for each
+  configuration (`src/chatddx/portal/review.py:_evaluations`, `src/chatddx/bench/gathering.py:gathering`), and Run
+  starts one by its seedings; `?evaluation=` shows one, with links to the one before and after by when each started, the
+  last one's to the latest.
+- **The latest**, shown without `?evaluation=`: each configuration's latest runs across the case's evaluations, gathered
+  among their runs alone so that no run of other cases mixes in (`src/chatddx/portal/review.py:_latest`). What no longer
+  holds is listed with a Rework button that does nothing yet (`_behind`): a configuration since changed, as the trial it
+  would run on the same seeds differs, one gone or that can't run now, one with no runs yet, and runs not scored against
+  the expectation as it is, unless they're still under way.
+- **Run while one is open**: disabled and turning until the case's open evaluation has ended or is halted; a press
+  meanwhile, from a stale page, leads to that one and starts nothing.
 - **Starting it**: every run is begun before any is queued, so that the worker sending the first doesn't slow beginning
   the rest, and the evaluation reads its runs' start records rather than the API's runs: some 1 s to begin the test
   World's 26 runs of alice's, and as much to show them, but where a worker sends them in the same process.

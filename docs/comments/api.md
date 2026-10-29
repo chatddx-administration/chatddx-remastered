@@ -60,6 +60,12 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/api/`, sorted
 # then it listens.
 ```
 
+## `src/chatddx/api/test/helpers.py:listened`
+
+```
+# Dependency: served as src/chatddx/cli.py:_serve serves the portal.
+```
+
 ## `src/chatddx/api/test/helpers.py:UNDER_WAY`
 
 ```

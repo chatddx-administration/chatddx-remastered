@@ -32,6 +32,6 @@
     <label class="flex h-9 items-center gap-2"><input type="checkbox" name="score" value="true" checked> {{ _("Score it once it is done") }}</label>
   </div>
   <p class="text-xs text-muted-foreground">{{ _("Left empty, each endpoint's execution; a shuffled order's seed is drawn. The trials run as one start, queued as your job.") }}</p>
-  <div><button class="primary">{{ _("Run the picked") if optional else npgettext("trials", "Run it", "Run them", trials | length) }}</button></div>
+  <div><button class="run">{{ _("Run the picked") if optional else npgettext("trials", "Run it", "Run them", trials | length) }}</button></div>
 </form>
 {% endmacro %}

@@ -4,6 +4,7 @@ from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
 from .following import follow, follow_moved, lineage, moved, proposal
+from .gathering import gathering
 from .runs import again, queue, queue_scoring, resume, score, start, start_trials
 from .saying import leave, say
 from .seen import Seen
@@ -46,3 +47,5 @@ class Bench(Seen):
     queue = queue
     queue_scoring = queue_scoring
     score = score
+
+    gathering = gathering

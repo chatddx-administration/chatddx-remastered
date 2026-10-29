@@ -10,6 +10,7 @@ export type Review = {
   appendices: Appended[];
   back: string;
   evaluation: Evaluating | null;
+  busy: string[] | null;
   about: Telling;
 };
 

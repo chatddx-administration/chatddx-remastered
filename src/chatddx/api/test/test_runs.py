@@ -1,10 +1,12 @@
 import json
 import time
+from contextlib import suppress
 from typing import Any
 from uuid import UUID, uuid4
 
 import httpx2
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
@@ -20,6 +22,7 @@ from chatddx.api.test.helpers import (
     family,
     followed,
     joined,
+    listened,
     names,
     sent,
     thread,
@@ -466,6 +469,30 @@ def test_a_run_whose_listener_goes_away_goes_on(
         shown = finished(signed, run)
     [item] = shown["items"]
     assert item["outcome"] == "completed"
+
+
+@pytest.mark.slow
+def test_a_stopping_server_cuts_a_run_s_events_off_after_its_grace(
+    served: FastAPI,
+    signed: TestClient,
+    world: Inventory,
+    conn: Connection,
+    alice: Person,
+) -> None:
+    Queue(conn).pause(alice.id)
+    with faked(world, Store(conn).get):
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
+    bearer = {"Authorization": signed.headers["Authorization"]}
+    with listened(served) as (url, server), httpx2.Client(headers=bearer) as http:
+        with http.stream("GET", f"{url}/api/runs/{run}/events", timeout=30) as got:
+            lines = got.iter_lines()
+            assert next(lines) == "id: 1"
+            server.should_exit = True
+            stopped = time.monotonic()
+            with suppress(httpx2.RemoteProtocolError):
+                for _ in lines:
+                    pass
+        assert time.monotonic() - stopped < settings.SERVE_GRACE.total_seconds() + 2
 
 
 @pytest.mark.usefixtures("fake")

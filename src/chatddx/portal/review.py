@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Annotated, Any
 from urllib.parse import parse_qsl, urlencode
 from uuid import UUID
@@ -18,22 +19,20 @@ from chatddx.bench.seen import trial
 from chatddx.catalog import Subject, read
 from chatddx.factors.base import Fingerprint, Invalid, resolve
 from chatddx.factors.cases import Appendix, Case, Vignette
+from chatddx.factors.gathering import REPLICATED, Center, Gathering
 from chatddx.factors.request import Skeleton, Translations
-from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer, Scoring
 from chatddx.factors.select import Name, Token, parse_selector
 from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.ledger import RunStarted
 from chatddx.locale import display_language, tr
 from chatddx.runner import Refused, Running
 from chatddx.runner.gate import bar
 from chatddx.scorers.shipped import unit_of
-from chatddx.store import fetch_vignette
+from chatddx.store import Queue, fetch_vignette
 
 from .pages import BenchDep, page, refusal_of, within
 from .titles import display_case
-
-# Policy: an evaluation runs a case three times under seeds drawn, and a fourth under the
-# third's seed, which a trial can't hold twice, so as a run of its own.
-_REPLICATES = 3
 
 router = APIRouter()
 
@@ -93,10 +92,24 @@ def review(
     last = None if branch is None else seen[branch.appendices[-1]]
     live = _configurations(bench)
     named = {t.id: t.name or t.title for t in live}
-    evaluated = (
-        None
-        if evaluation is None
-        else _evaluation(bench, evaluation, picked, under, named)
+    evaluations = _evaluations(bench, picked.case)
+    busy = _busy(bench, evaluations)
+    latest = _latest(bench, picked.case, evaluations)
+    at = next((i for i, e in enumerate(evaluations) if e.first == evaluation), None)
+    if evaluation is not None and at is None:
+        raise NotFound.of(
+            "no evaluation %(evaluation)s of %(case)s",
+            evaluation=str(evaluation),
+            case=display_case(picked.titled),
+        )
+    held = latest if at is None else evaluations[at]
+    stepped = [*evaluations, *([] if latest is None else [latest])]
+    step = len(stepped) - 1 if at is None else at
+    evaluated = None if held is None else _evaluation(bench, held, under, named)
+    behind = (
+        []
+        if held is None or held is not latest
+        else _behind(bench, held, live, picked.case, under, expected, named)
     )
     query = request.url.query
     back = request.url.path + (f"?{query}" if query else "")
@@ -110,6 +123,9 @@ def review(
         "appendices": appendices,
         "back": back,
         "evaluation": evaluated,
+        "busy": None
+        if busy is None
+        else [str(r) for e in evaluations if e.first == busy for r in e.runs],
         "about": {
             "family": family,
             "tags": shown.tags,
@@ -143,13 +159,18 @@ def review(
         offered=offered,
         carried=_carried(bench, shown, picked, under, expected),
         runnable=sum(_placed(bench, t) is not None for t in live),
-        evaluation=evaluation,
+        busy=busy,
+        evaluation=held,
+        earlier=stepped[step - 1] if step > 0 else None,
+        later=stepped[step + 1] if step + 1 < len(stepped) else None,
+        behind=behind,
         left_out=[]
         if evaluated is None
         else [
-            (named[t.id], _unrunnable(bench, t, picked.case))
+            (named[t.id], why)
             for t in live
             if t.id not in {c["configuration"] for c in evaluated["configurations"]}
+            and ((why := _unrunnable(bench, t, picked.case)) or held is not latest)
         ],
         back=back,
         props=props,
@@ -166,14 +187,23 @@ def running_in_review(
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
     picked = _picked(api_families.family(bench, family), case)
-    first: UUID | None = None
+    # Policy: as on the run page, a press made while an evaluation of the case is under
+    # way counts as made: the page it leads back to shows that one.
+    first = _busy(bench, _evaluations(bench, picked.case))
+    if first is not None:
+        return _evaluating(family, back, picked.case, first)
     begun: list[Running] = []
     for t in _configurations(bench):
         if (placed := _placed(bench, t)) is None:
             continue
         variation, at = placed
-        seeds = suggest_seeds(_REPLICATES)
-        for each in (seeds, seeds[-1:]):
+        drawn: dict[str, tuple[int, ...]] = {}
+        for s in REPLICATED:
+            each = drawn[s.name] = (
+                suggest_seeds(s.seeds)
+                if s.repeats is None
+                else drawn[s.repeats][-s.seeds :]
+            )
             try:
                 started = bench.start(
                     variation, at.name, [picked.case], each, joining=first
@@ -191,10 +221,155 @@ def running_in_review(
         raise Invalid.of(
             "no configuration can run %(case)s now", case=display_case(picked.titled)
         )
+    return _evaluating(family, back, picked.case, first)
+
+
+def _evaluating(family: int, back: str | None, case: str, first: UUID) -> Response:
     path, _, query = within(back or f"/review/{family}").partition("?")
     kept = [(k, v) for k, v in parse_qsl(query) if k not in ("case", "evaluation")]
-    said = urlencode([*kept, ("case", picked.case), ("evaluation", str(first))])
+    said = urlencode([*kept, ("case", case), ("evaluation", str(first))])
     return RedirectResponse(f"{path}?{said}#evaluating", 303)
+
+
+@dataclass(frozen=True)
+class _Evaluated:
+    first: UUID | None
+    at: datetime
+    gathering: Gathering
+
+    @property
+    def runs(self) -> tuple[UUID, ...]:
+        return tuple(g.run for g in self.gathering.gathered)
+
+
+# Policy: an evaluation is a start whose runs all gather about the case, each group
+# whole, as running_in_review starts one; no run records where it was started.
+def _evaluations(bench: Bench, case: str) -> list[_Evaluated]:
+    runs = bench.runs(reaching=case)
+    abouts = read.abouts(bench.rows, [Subject(run=r.run) for r in runs])
+    started: dict[UUID, list[RunStarted]] = {}
+    for r in runs:
+        started.setdefault(abouts[Subject(run=r.run)].started_with or r.run, []).append(
+            r
+        )
+    found: list[_Evaluated] = []
+    for first, together in started.items():
+        head = next((r for r in together if r.run == first), None)
+        if head is None:
+            continue
+        held = bench.gathering(Center(component=case), REPLICATED, started_with=first)
+        if (
+            held is not None
+            and len(held.gathered) == len(together)
+            and all(len(g) == len(REPLICATED) for g in held.groups())
+        ):
+            found.append(_Evaluated(first, head.at, held))
+    return sorted(found, key=lambda e: e.at)
+
+
+# Policy: what the review shows unless asked for an evaluation: the latest of each
+# configuration's runs across the case's evaluations, among their runs alone, so that
+# no run of other cases mixes its items into the means.
+def _latest(
+    bench: Bench, case: str, evaluations: list[_Evaluated]
+) -> _Evaluated | None:
+    if not evaluations:
+        return None
+    runs = {r for e in evaluations for r in e.runs}
+    held = bench.gathering(Center(component=case), REPLICATED, among=runs)
+    return None if held is None else _Evaluated(None, evaluations[-1].at, held)
+
+
+def _behind(
+    bench: Bench,
+    latest: _Evaluated,
+    live: list[schemas.Thread],
+    case: str,
+    schema: str | None,
+    expected: schemas.Expected | None,
+    named: dict[int, str],
+) -> list[tuple[str, str]]:
+    by_id = {t.id: t for t in live}
+    runs = latest.runs
+    abouts = read.abouts(bench.rows, [Subject(run=r) for r in runs])
+    placed = Queue(bench.conn).placed(runs)
+    open_runs = {
+        r for r in runs if r in placed and placed[r].job.status in _OPEN_STATUSES
+    }
+    flagged: list[tuple[str, str]] = []
+    gathered: set[int] = set()
+    for group in latest.gathering.groups():
+        head = next(iter(group.values()))
+        about = abouts[Subject(run=head.run)]
+        varied = None if about.varied is None else bench.rows.edit(about.varied)
+        thread = 0 if varied is None else varied.thread
+        gathered.add(thread)
+        name = named.get(thread, about.name or str(head.run))
+        t = by_id.get(thread)
+        if t is None:
+            flagged.append((name, tr("it is no longer among your configurations")))
+            continue
+        if why := _unrunnable(bench, t, case):
+            flagged.append((name, why))
+            continue
+        seeds = resolve(bench.store.get, head.trial, Trial).seeds
+        if _trial_now(bench, t, case, seeds) != head.trial:
+            flagged.append((name, tr("its configuration has changed since it ran")))
+        mark = None if expected is None else expected.expectation
+        if mark is not None and not all(
+            g.run in open_runs or _scored_against(bench, g.run, schema, mark)
+            for g in group.values()
+        ):
+            flagged.append(
+                (name, tr("it isn't scored against the expectation as it is"))
+            )
+    flagged.extend(
+        (named[t.id], tr("it has no runs yet"))
+        for t in live
+        if t.id not in gathered and _unrunnable(bench, t, case) is None
+    )
+    return flagged
+
+
+def _trial_now(
+    bench: Bench, t: schemas.Thread, case: str, seeds: tuple[int, ...]
+) -> str | None:
+    variation = bench.variation(t.id, {}, None)
+    at = bench.at(variation)
+    for each in bench.languages(variation, [case]):
+        if each.skeleton is not None:
+            cleanup = bench.cleanup(each.cases)
+            _, made = trial(bench, each.skeleton, at.engine, each.cases, seeds, cleanup)
+            return made.digest
+    return None
+
+
+def _scored_against(
+    bench: Bench, run: UUID, schema: str | None, expectation: str
+) -> bool:
+    for started in bench.store.scores_of(run):
+        scoring = resolve(bench.store.get, started.scoring, Scoring)
+        scorer = resolve(bench.store.get, scoring.scorer, Scorer)
+        if scorer.expectation_schema == schema and expectation in scoring.expectations:
+            return True
+    return False
+
+
+_OPEN_STATUSES = ("queued", "under way")
+
+
+def _busy(bench: Bench, evaluations: list[_Evaluated]) -> UUID | None:
+    placed = Queue(bench.conn).placed([r for e in evaluations for r in e.runs])
+    return next(
+        (
+            e.first
+            for e in reversed(evaluations)
+            if any(
+                r in placed and placed[r].job.status in _OPEN_STATUSES for r in e.runs
+            )
+        ),
+        None,
+    )
 
 
 @router.post("/review/{family}/delete")
@@ -270,37 +445,31 @@ def _unrunnable(bench: Bench, t: schemas.Thread, case: str) -> str | None:
 
 def _evaluation(
     bench: Bench,
-    first: UUID,
-    picked: schemas.FamilyCase,
+    evaluated: _Evaluated,
     schema: str | None,
     named: dict[int, str],
 ) -> dict[str, Any]:
-    runs = bench.runs(started_with=first)
-    trials = {r.run: resolve(bench.store.get, r.trial, Trial) for r in runs}
-    if not runs or any(t.cases != (picked.case,) for t in trials.values()):
-        raise NotFound.of(
-            "no evaluation %(evaluation)s of %(case)s",
-            evaluation=str(first),
-            case=display_case(picked.titled),
-        )
-    abouts = read.abouts(bench.rows, [Subject(run=r.run) for r in runs])
-    configurations: dict[int, dict[str, Any]] = {}
-    for r in sorted(runs, key=lambda r: (r.at, len(trials[r.run].seeds) == 1)):
-        about = abouts[Subject(run=r.run)]
+    runs = evaluated.runs
+    abouts = read.abouts(bench.rows, [Subject(run=r) for r in runs])
+    configurations: list[dict[str, Any]] = []
+    for group in evaluated.gathering.groups():
+        head = next(iter(group.values())).run
+        about = abouts[Subject(run=head)]
         varied = None if about.varied is None else bench.rows.edit(about.varied)
         thread = 0 if varied is None else varied.thread
-        held = configurations.setdefault(
-            thread,
+        held: list[dict[str, Any]] = []
+        for g in group.values():
+            trial = resolve(bench.store.get, g.trial, Trial)
+            greedy = resolve(bench.store.get, trial.skeleton, Skeleton).greedy
+            held.append(
+                {"run": str(g.run), "seeds": list(trial.seeds), "greedy": greedy}
+            )
+        configurations.append(
             {
                 "configuration": thread,
-                "name": named.get(thread, about.name or str(r.run)),
-                "runs": [],
-            },
-        )
-        trial = trials[r.run]
-        greedy = resolve(bench.store.get, trial.skeleton, Skeleton).greedy
-        held["runs"].append(
-            {"run": str(r.run), "seeds": list(trial.seeds), "greedy": greedy}
+                "name": named.get(thread, about.name or str(head)),
+                "runs": held,
+            }
         )
     held_schema = (
         None if schema is None else resolve(bench.store.get, schema, ExpectationSchema)
@@ -309,9 +478,10 @@ def _evaluation(
         {} if held_schema is None else held_schema.json_schema.get("properties")
     )
     return {
-        "first": str(first),
-        "case": picked.case,
-        "configurations": list(configurations.values()),
+        "key": str(evaluated.first or evaluated.gathering.digest),
+        "first": None if evaluated.first is None else str(evaluated.first),
+        "case": evaluated.gathering.center.component,
+        "configurations": sorted(configurations, key=lambda c: c["name"]),
         "fields": list(properties) if isinstance(properties, dict) else [],
         "scorers": _views(bench, schema),
     }

@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chatddx import cli
+from chatddx import cli, settings
 from chatddx.api.people import COOKIE
 from chatddx.api.schemas import Me
 from chatddx.api.test.helpers import sign_in
@@ -206,7 +206,10 @@ def test_chatddx_api_serves_where_it_is_told(
     monkeypatch.setenv("DB_NAME", db)
     heard: list[tuple[object, str, int]] = []
 
-    def run(served: object, host: str, port: int) -> None:
+    def run(
+        served: object, host: str, port: int, timeout_graceful_shutdown: int
+    ) -> None:
+        assert timeout_graceful_shutdown == settings.SERVE_GRACE.total_seconds()
         heard.append((served, host, port))
 
     monkeypatch.setattr(uvicorn, "run", run)

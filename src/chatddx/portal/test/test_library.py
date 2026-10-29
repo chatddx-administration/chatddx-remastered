@@ -106,7 +106,7 @@ def test_what_ops_ship_is_shelved_last_and_what_the_world_shows_isn_t(
 
 @pytest.mark.slow
 def test_a_shelf_is_found_in_by_what_is_said_and_its_cases_narrowed_by_tags(
-    signed: TestClient,
+    signed: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     listed = [
         t
@@ -115,6 +115,9 @@ def test_a_shelf_is_found_in_by_what_is_said_and_its_cases_narrowed_by_tags(
             "/api/threads", params={"kind": "configuration", "purpose": purpose}
         ).json()
     ]
+    # Accommodating for the test World's shelves, which are shorter than a page: a page
+    # as long as the shelf gives it its search box.
+    monkeypatch.setattr(settings, "ROWS_PER_PAGE", len(listed))
     native = thread(signed, "configuration", NATIVE)
     detail = signed.get(f"/api/threads/{native['id']}").json()
     page = shown(signed, "/library?kind=configuration")

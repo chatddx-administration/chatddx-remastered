@@ -147,7 +147,7 @@ def test_chatddx_portal_and_run_serve_the_portal_and_the_api(
         workers.append(worker)
         return app(world, conninfo, worker=worker)
 
-    def run(served: object, host: str, port: int) -> None:
+    def run(served: object, host: str, port: int, **_: object) -> None:
         heard.append((served, host, port))
 
     monkeypatch.setattr(cli, "portal", portal)

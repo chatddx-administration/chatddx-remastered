@@ -521,6 +521,45 @@ def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     ]
 
 
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_a_cut_hangs_up_the_calls_in_flight_and_records_none_for_a_resume_to_send(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    concurrency: int,
+) -> None:
+    canaries = [Turn(content="Fine.")] * len(CANARIES.canaries)
+    held = [Turn(content="Chest pain has many causes.", hold=1)] * concurrency
+    deltas: list[Streamed] = []
+    runner = Runner(conn, inventory, alice)
+
+    def cutting(event: RunEvent) -> None:
+        if isinstance(event, Streamed):
+            deltas.append(event)
+            if len({d.key for d in deltas}) == concurrency:
+                elsewhere(running.cut)
+
+    with faked(inventory, plan.registry.get, script=Script([*canaries, *held])):
+        running = runner.start(
+            trial(plan),
+            plan.registry,
+            QWEN,
+            Execution(concurrency=concurrency),
+            canaries=CANARIES,
+        )
+        running.send(Heard(then=cutting))
+    assert Store(conn).run(running.run).items == ()
+
+    with faked(inventory, plan.registry.get):
+        resumed = runner.resume(running.run)
+        resumed.send()
+    _ = resumed.finish()
+    stored = Store(conn).run(running.run)
+    assert len(stored.items) == 4
+    assert all(i.call.error is None for i in stored.items)
+
+
 @pytest.mark.usefixtures("delayed")
 def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_beside_it(
     conn: Connection,

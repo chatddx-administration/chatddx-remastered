@@ -702,7 +702,7 @@ Raises:
 Raises:
 1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
 2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema`
-3. `NotFound`: `"no evaluation %(evaluation)s of %(case)s", evaluation=str(first), case=display_case(picked.titled)` (through `_evaluation`)
+3. `NotFound`: `"no evaluation %(evaluation)s of %(case)s", evaluation=str(evaluation), case=display_case(picked.titled)`
 
 ## `REVIEWED`
 `src/chatddx/portal/shelves.py:REVIEWED`

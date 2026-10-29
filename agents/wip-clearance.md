@@ -192,14 +192,9 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
      again has no quota, beyond one job per run at a time.
    - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
      (`agents/wip-deploy.md`, "Containers for Kubernetes").
-3. **Shutdown.** The worker resolved most of it: nothing in the app grows with each run, a stopping worker queues what
-   it holds again, and a killed one's jobs are claimed again once lost. Left:
-   - a stopping worker's sending has no deadline (`docs/backlog.md`, "Stopping: halts, deadlines and time limits");
-   - past its deadline, a stopping worker waits with a timeout of 0 (`src/chatddx/worker/worker.py:144-147`), so it
-     beats the queue, a transaction each time, as fast as it can until its last run stops;
-   - uvicorn waits for open responses before the app's lifespan ends, and a run's event stream ends only when its job
-     does (`src/chatddx/api/telling.py:174-185`), so under `chatddx portal` a watched run may hold a shutdown up until
-     it ends. Read, not tried.
+3. **Shutdown.** The worker resolved it: nothing in the app grows with each run, a stopping worker queues what it holds
+   again, cutting what is under way at its deadline, a killed one's jobs are claimed again once lost, and a stopping
+   server cuts its event streams off.
 4. **Typed cases** are kept for good.
    - `source.text` is insert-only (`src/chatddx/store/migrations/0016-t2-source.sql`), only the admin can delete a text,
      and no route or command erases a text or its family.

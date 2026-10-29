@@ -26,6 +26,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/cli.py`, sort
 # dependency, which a deployed chatddx goes without.
 ```
 
+## `src/chatddx/cli.py:_worker.stop`
+
+```
+# Policy: as the repl's Ctrl-C, the first press ends the runs after the items under
+# way, the second hangs those up at once and the third kills.
+```
+
 ## `src/chatddx/cli.py:DATA`
 
 ```

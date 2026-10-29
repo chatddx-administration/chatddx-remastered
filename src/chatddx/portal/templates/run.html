@@ -20,7 +20,7 @@
     <span class="text-muted-foreground">{{ pgettext("after the button Resume", "Unfinished: resuming sends what it lacks.") }}</span>
     {% endif %}
     {% if run.endpoint and not under_way %}
-    <form method="post" action="/runs/{{ run.id }}/again"><button>{{ _("Run again") }}</button></form>
+    <form method="post" action="/runs/{{ run.id }}/again"><button class="run">{{ _("Run again") }}</button></form>
     {% endif %}
   </div>
   {% endif %}

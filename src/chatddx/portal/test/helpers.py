@@ -34,6 +34,11 @@ def shown(client: TestClient, path: str) -> str:
     return got.text
 
 
+def props(page: str) -> dict[str, Any]:
+    held = page.split('<script type="application/json" id="review-props">', 1)[1]
+    return json.loads(held.split("</script>", 1)[0])
+
+
 def said(page: str) -> str:
     main = page.split("<main", 1)[1]
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", main))

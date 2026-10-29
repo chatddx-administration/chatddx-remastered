@@ -87,11 +87,32 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/factors/`, so
 # Dependency: facts are keyed by it, as by a remote model's.
 ```
 
+## `src/chatddx/factors/gatherer.py:gather`
+
+```
+# Policy: groups go by their trials, so that the same runs gather alike whatever
+# their groups' keys and the order they were found in.
+```
+
+## `src/chatddx/factors/gathering.py:CENTER_KINDS`
+
+```
+# Dependency: every kind but a gathering, src/chatddx/factors/kinds.py:KINDS.
+```
+
+## `src/chatddx/factors/gathering.py:REPLICATED`
+
+```
+# Policy: as a review evaluates a case, three replicates under seeds drawn and the third
+# seed repeated, which tells whether what it answered reproduces.
+```
+
 ## `src/chatddx/factors/kinds.py:KINDS`
 
 ```
 # Dependency: the only kinds stored bytes are read as.
-# src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases and compilations.
+# src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases, compilations and
+# gatherings, and src/chatddx/factors/gathering.py:CENTER_KINDS holds all but gatherings.
 ```
 
 ## `src/chatddx/factors/request.py:BYPASS_KEYS`

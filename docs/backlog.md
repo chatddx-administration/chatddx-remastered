@@ -235,11 +235,8 @@ can be done now; facts keyed by runtime wait for a second runtime.
 
 ### Stopping: halts, deadlines and time limits
 
-Everything under way can be ended in time: a call waiting for its response's headers, a running tool, a stopping
-worker's sending, and a halted run, which can resume.
-
-Decided: at the worker's deadline, and on a second press, the calls under way are halted and the run is left unfinished:
-the items under way are recorded stopped, an outcome like any other, and the next claim resumes the rest.
+Everything under way can be ended in time: a call waiting for its response's headers, a running tool, and a halted run,
+which can resume.
 
 - **A call still waiting for its engine to answer at all**, under an execution with no timeout, waits on after a halt;
   only a stream can be shut down. vLLM answers at once and streams after. A run takes its endpoint's execution, and no

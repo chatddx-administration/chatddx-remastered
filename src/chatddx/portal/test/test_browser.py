@@ -1300,6 +1300,7 @@ def test_a_case_is_evaluated_under_each_configuration_below_its_review(
         lines = rows.filter(has=page.get_by_role("rowheader", name="lines", exact=True))
         expect(lines).to_contain_text("differential", timeout=60_000)
         expect(rows.locator("svg.animate-spin")).to_have_count(0, timeout=60_000)
+    expect(evaluation.get_by_role("button", name="Halt")).to_have_count(0)
     expect(evaluating.get_by_text("Left out:")).to_be_visible()
     items = evaluation.locator("details").filter(has_text="lines")
     fourth = items.nth(3)
@@ -1314,9 +1315,90 @@ def test_a_case_is_evaluated_under_each_configuration_below_its_review(
     )
     fourth.locator("summary").click()
     expect(fourth.locator("p, pre").first).not_to_be_empty()
+    linked = fourth.get_by_role("link", name="Its run")
+    expect(linked).to_have_attribute("href", re.compile(r"^/runs/[0-9a-f-]{36}$"))
     native = evaluation.locator("details").filter(
         has=page.locator("summary span", has_text=re.compile(r"^native$"))
     )
     native.first.locator("summary").click()
     expect(native.first.locator("pre code")).to_contain_text('"diagnoses"')
+    assert errors == []
+
+
+def test_an_evaluation_under_way_is_halted_from_its_review(
+    page: Page, world: Inventory, conn: Connection
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    with faked(world, Store(conn).get, delay=0.3):
+        _ = page.goto(f"/review/{noted['id']}")
+        bar = page.get_by_role("group", name="Saving")
+        bar.get_by_role("button", name="Run").click(no_wait_after=True)
+        page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
+        evaluation = page.locator("#review-evaluation")
+        expect(evaluation.get_by_text("under way").first).to_be_visible()
+        run = bar.get_by_role("button", name="Run")
+        expect(run).to_be_disabled()
+        expect(run).to_have_attribute("data-busy", "")
+        evaluation.get_by_role("button", name="Halt").click()
+        expect(evaluation.get_by_role("button", name="Halt")).to_have_count(
+            0, timeout=60_000
+        )
+        expect(run).to_be_enabled()
+        expect(run).not_to_have_attribute("data-busy", "")
+        expect(evaluation.locator("tbody svg.animate-spin")).to_have_count(0)
+    expect(
+        evaluation.locator("summary").filter(has_text="stopped").first
+    ).to_be_visible()
+    first = re.findall(r"evaluation=([^&#]+)", page.url)[0]
+    every = page.request.get("/api/runs", params={"with": first}).json()
+    assert len(every) > 2
+    assert {r["job"]["status"] for r in every} == {"stopped"}
+    assert errors == []
+
+
+def test_stepping_between_a_case_s_evaluations_redraws_only_their_values(
+    page: Page, world: Inventory, conn: Connection
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    evaluation = page.locator("#review-evaluation")
+    spinning = evaluation.locator("tbody svg.animate-spin")
+    with faked(world, Store(conn).get):
+        _ = page.goto(f"/review/{noted['id']}")
+        run = page.get_by_role("group", name="Saving").get_by_role("button", name="Run")
+        firsts: list[str] = []
+        for _ in range(2):
+            run.click(no_wait_after=True)
+            page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
+            expect(spinning).to_have_count(0, timeout=60_000)
+            expect(run).to_be_enabled()
+            firsts.append(re.findall(r"evaluation=([^&#]+)", page.url)[0])
+    assert firsts[0] != firsts[1]
+    row = evaluation.locator("tbody tr").first
+    _ = row.evaluate("found => { found.dataset.kept = ''; window.stayed = true }")
+    stepping = page.get_by_role("navigation", name="Evaluations of the case")
+
+    stepping.get_by_role("link", name=re.compile("^← ")).click()
+    expect(page).to_have_url(re.compile(f"evaluation={firsts[0]}"))
+    expect(stepping.get_by_role("link", name=re.compile(" →$"))).to_be_visible()
+    expect(page.get_by_role("link", name="Its runs")).to_have_attribute(
+        "href", f"/runs/{firsts[0]}"
+    )
+    expect(evaluation.locator("summary").first).to_contain_text(
+        re.compile(r"\d+ \+ \d+ tokens")
+    )
+    linked = evaluation.locator("details a").first
+    runs = page.request.get(
+        "/api/runs", params={"with": firsts[0], "limit": 200}
+    ).json()
+    assert linked.get_attribute("href") in {f"/runs/{r['id']}" for r in runs}
+    _ = page.go_back()
+    expect(page).to_have_url(re.compile(f"evaluation={firsts[1]}"))
+    expect(page.get_by_role("link", name="Its runs")).to_have_attribute(
+        "href", f"/runs/{firsts[1]}"
+    )
+    assert row.evaluate("found => 'kept' in found.dataset && window.stayed") is True
     assert errors == []

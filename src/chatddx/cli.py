@@ -311,7 +311,12 @@ def _serve(
     with psycopg.connect(settings.database()) as conn:
         _held(command, world, conn)
     served = made(world, settings.database())
-    uvicorn.run(served, host=host.strip("[]"), port=int(port))
+    uvicorn.run(
+        served,
+        host=host.strip("[]"),
+        port=int(port),
+        timeout_graceful_shutdown=int(settings.SERVE_GRACE.total_seconds()),
+    )
 
 
 def _api(args: argparse.Namespace) -> None:
@@ -365,9 +370,22 @@ def _worker(args: argparse.Namespace) -> None:
     worker = Worker(settings.database(), world.inventory)
     stopping = threading.Event()
 
-    def stop(_signal: int, _frame: FrameType | None) -> None:
-        stopping.set()
-        worker.wake()
+    # Policy: as the repl's Ctrl-C, the first press ends the runs after the items under
+    # way, the second hangs those up at once and the third kills.
+    def stop(asked: int, _frame: FrameType | None) -> None:
+        if not stopping.is_set():
+            print(
+                f"worker {worker.id}: stopping after the items under way "
+                + "(Ctrl-C again hangs them up)"
+            )
+            stopping.set()
+            worker.wake()
+            return
+        print(
+            f"worker {worker.id}: hanging up the items under way (Ctrl-C again kills)"
+        )
+        worker.cut()
+        _ = signal.signal(asked, signal.SIG_DFL)
 
     for asked in (signal.SIGTERM, signal.SIGINT):
         _ = signal.signal(asked, stop)

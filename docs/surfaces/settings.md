@@ -67,6 +67,11 @@ Finds:
 
 `RUNS_PER_DAY = 100`
 
+## `SERVE_GRACE`
+`src/chatddx/settings.py:SERVE_GRACE`
+
+`SERVE_GRACE = timedelta(seconds=5)`
+
 ## `SESSION_TTL`
 `src/chatddx/settings.py:SESSION_TTL`
 

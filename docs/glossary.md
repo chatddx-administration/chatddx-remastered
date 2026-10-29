@@ -91,6 +91,9 @@ at the endpoint share it. `src/chatddx/inventory/inventory.py:EndpointSpec.capac
 
 :Case — A vignette plus the appendices sent with it, in order. `src/chatddx/factors/cases.py:Case`
 
+:Center — What a gathering's runs are about: a component their trial or a score reaches, or a seed their trial holds.
+`src/chatddx/factors/gathering.py:Center`
+
 :Chunk — A component that fills one of a recipe's nine chunk parts: instructions, few-shot, prompt, output, sampling,
 reasoning, passthrough, translations or toolset. Not to be confused with a slot.
 `src/chatddx/factors/request.py:CHUNK_PARTS`
@@ -148,7 +151,7 @@ vignettes' sources, and taking back all a person owns. `src/chatddx/curation/`
 :Data set — A directory of authored files: factors, texts and cases by language, and the files they load. Its engines
 are the World's. `src/chatddx/curation/plan.py:plan_factors`
 
-:Deadline — How long a stopping worker's scorings go on before they are cut short and queued again.
+:Deadline — How long a stopping worker's items and scorings under way go on before they are cut short and queued again.
 `src/chatddx/settings.py:WORKER_DEADLINE`
 
 :Default — The reasoning level a model uses when a request says nothing about reasoning. A reasoning chunk may ask for
@@ -230,6 +233,9 @@ for them; a view's own parameters override them. The shipped code takes none.
 :Gate — What refuses an endpoint or a judge before a run or a scoring uses it: another engine than the trial's, a
 sensitive source not cleared, tools on a sensitive source, a judge that reads the case, an unset secret, or a server not
 serving the model. `src/chatddx/runner/gate.py:bar`
+
+:Gathering — Runs about a center bound each to a seeding of a group, with the trial it ran.
+`src/chatddx/factors/gathering.py:Gathering`
 
 :Giftbag — A person's own forks of the chunks, tools, skeletons and expectations a loading gives the archive.
 `src/chatddx/curation/write.py:_Init.giftbag`
@@ -525,6 +531,9 @@ stored holds it. `src/chatddx/inventory/inventory.py:EndpointSpec.credential`
 :Seed — A number that fixes the sampler's randomness, not sent when sampling is greedy. Each seed of a trial is one
 replicate, and a greedy trial's seeds are its replicates' positions, from 0, since none is sent; a judge's seeds and an
 execution's shuffle seed are not. `src/chatddx/factors/trial.py:Trial.seeds`
+
+:Seeding — A run's part in a gathering's group: so many seeds, and maybe the last of another seeding's, repeated on its
+trial. `src/chatddx/factors/gathering.py:Seeding`
 
 :Sees — Owns or collaborates on; a run only when one owns it. `src/chatddx/identity/identity.py:sees`
 
