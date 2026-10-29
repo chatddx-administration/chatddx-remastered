@@ -6,7 +6,16 @@ from chatddx.factors.request import Skeleton, Slot, SlotName
 from chatddx.factors.scoring import Judge, View
 from chatddx.factors.select import select
 
-from .scorer import NO_ANSWER, NO_TARGET, Metric, Scored, Verdicts
+from .scorer import (
+    NO_ANSWER,
+    NO_TARGET,
+    Explained,
+    Metric,
+    Pick,
+    Scored,
+    Verdicts,
+    explaining,
+)
 
 _AT: dict[str, JsonValue] = {
     "type": "string",
@@ -16,17 +25,26 @@ _AT: dict[str, JsonValue] = {
 
 def _scored(
     verdicts: Verdicts | None, at: str, value: Callable[[JsonValue], float | None]
-) -> Scored:
+) -> Explained:
     assert verdicts is not None
     seeds: list[float | None] = []
+    picks: list[Pick | None] = []
     for verdict in verdicts:
         picked = None if verdict is None else select(verdict, at)
-        seeds.append(value(picked[0]) if picked else None)
+        counted = value(picked[0]) if picked else None
+        seeds.append(counted)
+        picks.append(
+            None
+            if verdict is None
+            else Pick(at, picked[0] if picked else None, counted)
+        )
     read = [v for v in seeds if v is not None]
     detail: dict[str, JsonValue] = {"seeds": list(seeds)}
     if not read:
-        return Scored(None, detail | {"reason": "no seed gave a verdict"})
-    return Scored(sum(read) / len(read), detail)
+        scored = Scored(None, detail | {"reason": "no seed gave a verdict"})
+    else:
+        scored = Scored(sum(read) / len(read), detail)
+    return Explained(scored, picks=tuple(picks))
 
 
 def _verdict(
@@ -34,7 +52,7 @@ def _verdict(
     _expected: list[JsonValue],
     params: Mapping[str, JsonValue],
     verdicts: Verdicts | None,
-) -> Scored:
+) -> Explained:
     def held(value: JsonValue) -> float | None:
         return float(value) if isinstance(value, bool) else None
 
@@ -46,7 +64,7 @@ def _points(
     _expected: list[JsonValue],
     params: Mapping[str, JsonValue],
     verdicts: Verdicts | None,
-) -> Scored:
+) -> Explained:
     top = params["max"]
     assert isinstance(top, int | float)
 
@@ -59,7 +77,7 @@ def _points(
 
 
 METRICS: dict[str, Metric] = {
-    "verdict": Metric(
+    "verdict": explaining(
         "the share of the judge's seeds whose verdict holds true at `at`",
         _verdict,
         {
@@ -70,7 +88,7 @@ METRICS: dict[str, Metric] = {
         },
         judged=True,
     ),
-    "points": Metric(
+    "points": explaining(
         "the mean over the judge's seeds of the number at `at`, over `max`",
         _points,
         {

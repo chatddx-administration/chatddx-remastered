@@ -144,6 +144,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # is read.
 ```
 
+## `src/chatddx/portal/scores.py:_repeats`
+
+```
+# Policy: the person's own runs only, newest first, and each repeat under the same scorer,
+# its own scoring's score first, so that a value apart from this one is the run's rather
+# than another expectation's unless it says so.
+```
+
 ## `src/chatddx/portal/shelves.py:AUTHORED`
 
 ```

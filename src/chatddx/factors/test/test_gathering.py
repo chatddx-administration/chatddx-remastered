@@ -141,6 +141,28 @@ def test_a_greedy_repeat_names_its_replicate_by_position(reg: Registry) -> None:
     assert gathered(reg, (three, one)).cross_check(reg.get) == []
 
 
+def test_a_repeat_s_item_is_alike_the_item_it_repeats(reg: Registry) -> None:
+    three, one = seeded(reg, 11, 12, 13), seeded(reg, 13)
+    assert gathered(reg, (three, one)).cross_check(reg.get) == []
+    made = resolve(reg.get, three, Trial)
+    skeleton = resolve(reg.get, made.skeleton, Skeleton)
+    case = made.cases[0]
+
+    def single(trial: str, replicate: int) -> str:
+        return resolve(reg.get, trial, Trial).single(skeleton, case, replicate).digest
+
+    assert single(one, 0) == single(three, 2)
+    assert single(one, 0) not in {single(three, 0), single(three, 1)}
+    assert single(seeded(reg, 13, cleanup=()), 0) != single(three, 2)
+
+    greedy = reg.add(
+        skeleton.model_copy(update={"body": {**skeleton.body, "temperature": 0}})
+    )
+    held = resolve(reg.get, seeded(reg, 0, 1, 2, skeleton=greedy), Trial)
+    shown = resolve(reg.get, greedy, Skeleton)
+    assert len({held.single(shown, case, r).digest for r in range(3)}) == 1
+
+
 def test_gather_fills_each_group_s_seedings_with_the_first_run_that_fits(
     reg: Registry,
 ) -> None:

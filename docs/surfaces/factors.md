@@ -1700,6 +1700,18 @@ Raises:
 
 * ∟`list[tuple[str, int]]`
 
+## `Trial.single`
+`src/chatddx/factors/trial.py:Trial.single`
+
+The trial of the one item at the case and replicate, validated anew: items of
+any trials whose single trials share a digest send the same request, and so
+repeat each other.
+
+* `skeleton: Skeleton`
+* `case: str`
+* `replicate: int`
+* ∟`"Trial"`
+
 ## `TrialRef`
 `src/chatddx/factors/trial.py:TrialRef`
 

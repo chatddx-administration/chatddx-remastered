@@ -10,32 +10,12 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.test.helpers import digest, thread
 from chatddx.inventory import Inventory
-from chatddx.portal.test.helpers import props, shown, world_served
+from chatddx.portal.test.helpers import props, settled, shown, started, world_served
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, OFF, faked
 
 __all__ = ["world_served"]
-
-
-def started(signed: TestClient, **more: Any) -> str:
-    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
-    [lines] = signed.get("/api/threads", params=query).json()
-    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
-    body = {"configuration": lines["id"], "families": [crlf["id"]]}
-    got = signed.post("/api/runs", json={**body, **more})
-    assert got.status_code == 202, got.json()
-    return got.json()["runs"][0]["run"]
-
-
-def settled(signed: TestClient, run: str) -> dict[str, Any]:
-    for _ in range(500):
-        if "under way" not in shown(signed, f"/runs/{run}"):
-            found = signed.get(f"/api/runs/{run}").json()
-            if found["finished"]:
-                return found
-        time.sleep(0.02)
-    raise AssertionError(f"run {run} is still under way")
 
 
 @pytest.mark.slow

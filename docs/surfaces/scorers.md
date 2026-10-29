@@ -43,6 +43,41 @@ Finds:
 * `expectation: JsonValue`
 * ∟`dict[SlotName, str] | Scored`
 
+## `explain_view`
+`src/chatddx/scorers/scorer.py:explain_view`
+
+* `scorer: Scorer`
+* `metrics: Metrics`
+* `index: int`
+* `answer: JsonValue | None`
+* `data: JsonValue`
+* `verdicts: Verdicts | None = None`
+* ∟`Replayed`
+
+## `Explained` `(NamedTuple)`
+`src/chatddx/scorers/scorer.py:Explained`
+
+* `scored: Scored`
+* `texts: list[str] | None = None`
+* `marks: tuple[Mark, ...] = ()`
+* `picks: tuple[Pick | None, ...] = ()`
+
+## `ExplainFunction`
+`src/chatddx/scorers/scorer.py:ExplainFunction`
+
+`ExplainFunction = Callable[…]`
+
+## `explaining`
+`src/chatddx/scorers/scorer.py:explaining`
+
+A metric whose score is its explain's, so that the two never disagree.
+
+* `measures: str`
+* `explain: ExplainFunction`
+* `*more: Any`
+* `**given: Any`
+* ∟`Metric`
+
 ## `first_mention`
 `src/chatddx/scorers/patterns.py:first_mention`
 
@@ -58,6 +93,13 @@ Finds:
 
 Raises:
 1. `LookupError`: `"; ".join(found)`
+
+## `Mark` `(NamedTuple)`
+`src/chatddx/scorers/scorer.py:Mark`
+
+* `item: int`
+* `start: int`
+* `end: int`
 
 ## `mean`
 `src/chatddx/scorers/aggregate.py:mean`
@@ -80,6 +122,7 @@ Raises:
 * `params: dict[str, JsonValue] = field(default_factory=_no_params)`
 * `judged: bool = False`
 * `unit: str | None = None`
+* `explain: ExplainFunction | None = None`
 
 ## `MetricFunction`
 `src/chatddx/scorers/scorer.py:MetricFunction`
@@ -122,6 +165,19 @@ Raises:
 * `version: int`
 * `metrics: Mapping[str, Metric]`
 * `params: dict[str, JsonValue] | None = None`
+
+## `Metrics.explained`
+`src/chatddx/scorers/scorer.py:Metrics.explained`
+
+* `metric: str`
+* `output: list[JsonValue] | None`
+* `expected: list[JsonValue]`
+* `params: Mapping[str, JsonValue]`
+* `verdicts: Verdicts | None = None`
+* ∟`Explained`
+
+Raises:
+1. `ValueError`: `"no metric {metric!r}, only {sorted(self.metrics)}"`
 
 ## `Metrics.names` `@property`
 `src/chatddx/scorers/scorer.py:Metrics.names`
@@ -172,6 +228,19 @@ Raises:
 * `text: str`
 * ∟`int | None`
 
+## `Pattern.spans`
+`src/chatddx/scorers/patterns.py:Pattern.spans`
+
+* `text: str`
+* ∟`list[tuple[int, int]] | None`
+
+## `Pick` `(NamedTuple)`
+`src/chatddx/scorers/scorer.py:Pick`
+
+* `at: str`
+* `value: JsonValue | None`
+* `counted: float | None`
+
 ## `problems`
 `src/chatddx/scorers/shipped.py:problems`
 
@@ -191,6 +260,14 @@ Raises:
 * `items: list[str] | None`
 * `target: str`
 * ∟`Scored`
+
+## `Replayed` `(NamedTuple)`
+`src/chatddx/scorers/scorer.py:Replayed`
+
+* `output: list[JsonValue] | None`
+* `expected: list[JsonValue]`
+* `params: dict[str, JsonValue]`
+* `explained: Explained`
 
 ## `metrics.score`
 `src/chatddx/scorers/metrics.py:score`

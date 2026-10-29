@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from dataclasses import replace
 from html.parser import HTMLParser
 from pathlib import Path
@@ -16,7 +17,7 @@ from chatddx.inventory import Inventory, World
 from chatddx.locale import display_language
 from chatddx.portal.app import app
 from chatddx.test.helpers import PASSWORD
-from chatddx.test.world import TEST
+from chatddx.test.world import LINES, TEST
 
 
 def signing_in(
@@ -160,3 +161,23 @@ def world_served(db: str, built: Path, world: Inventory) -> FastAPI:
         built,
         worker=True,
     )
+
+
+def started(signed: TestClient, **more: Any) -> str:
+    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+    [lines] = signed.get("/api/threads", params=query).json()
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    body = {"configuration": lines["id"], "families": [crlf["id"]]}
+    got = signed.post("/api/runs", json={**body, **more})
+    assert got.status_code == 202, got.json()
+    return got.json()["runs"][0]["run"]
+
+
+def settled(signed: TestClient, run: str) -> dict[str, Any]:
+    for _ in range(500):
+        if "under way" not in shown(signed, f"/runs/{run}"):
+            found = signed.get(f"/api/runs/{run}").json()
+            if found["finished"]:
+                return found
+        time.sleep(0.02)
+    raise AssertionError(f"run {run} is still under way")

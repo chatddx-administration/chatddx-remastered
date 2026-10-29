@@ -102,7 +102,7 @@
           {% for case, at, values in rows %}
           <tr class="border-t border-border/60">
             <td class="py-2 pr-4 align-top">{{ titles.get(case, case | short) }}{% if at %} #{{ at }}{% endif %}</td>
-            {% for value in values %}<td class="py-2 pr-4 align-top tabular-nums">{{ mean(value, units[loop.index0]) }}</td>{% endfor %}
+            {% for value in values %}<td class="py-2 pr-4 align-top tabular-nums">{% if graded.score %}<a href="/scores/{{ graded.score }}/{{ case }}/{{ at }}/{{ loop.index0 }}">{{ mean(value, units[loop.index0]) }}</a>{% else %}{{ mean(value, units[loop.index0]) }}{% endif %}</td>{% endfor %}
           </tr>
           {% endfor %}
         </tbody>

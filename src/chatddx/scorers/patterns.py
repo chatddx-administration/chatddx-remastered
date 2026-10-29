@@ -7,7 +7,17 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Invalid
 
-from .scorer import NO_ANSWER, NO_TARGET, Metric, MetricFunction, Scored, Verdicts
+from .scorer import (
+    NO_ANSWER,
+    NO_TARGET,
+    Explained,
+    ExplainFunction,
+    Mark,
+    Metric,
+    Scored,
+    Verdicts,
+    explaining,
+)
 
 _TOKEN = re.compile(r"\(|\)|&|\||[^\s&|()]+")
 _WORD = re.compile(r"\w+")
@@ -27,11 +37,11 @@ class _Term:
 class _Phrase:
     terms: tuple[_Term, ...]
 
-    def find(self, words: list[str]) -> int | None:
+    def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
         span = len(self.terms)
         for at in range(len(words) - span + 1):
             if all(term.fits(words[at + i]) for i, term in enumerate(self.terms)):
-                return at
+                return [(at, at + span)]
         return None
 
 
@@ -39,18 +49,23 @@ class _Phrase:
 class _All:
     parts: tuple["_Phrase | _All | _Any", ...]
 
-    def find(self, words: list[str]) -> int | None:
-        found = [part.find(words) for part in self.parts]
-        return None if None in found else min(i for i in found if i is not None)
+    def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
+        found: list[tuple[int, int]] = []
+        for part in self.parts:
+            spans = part.spans(words)
+            if spans is None:
+                return None
+            found += spans
+        return sorted(found)
 
 
 @dataclass(frozen=True)
 class _Any:
     parts: tuple["_Phrase | _All | _Any", ...]
 
-    def find(self, words: list[str]) -> int | None:
-        found = [i for part in self.parts if (i := part.find(words)) is not None]
-        return min(found) if found else None
+    def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
+        found = [s for part in self.parts for s in part.spans(words) or ()]
+        return sorted(found) if found else None
 
 
 class Pattern:
@@ -69,9 +84,15 @@ class Pattern:
             )
 
     def find(self, text: str) -> int | None:
-        spans = list(_WORD.finditer(text))
-        at = self._root.find([span.group().casefold() for span in spans])
-        return None if at is None else spans[at].start()
+        found = self.spans(text)
+        return None if found is None else found[0][0]
+
+    def spans(self, text: str) -> list[tuple[int, int]] | None:
+        words = list(_WORD.finditer(text))
+        found = self._root.spans([word.group().casefold() for word in words])
+        if found is None:
+            return None
+        return [(words[at].start(), words[end - 1].end()) for at, end in found]
 
     def _peek(self) -> str | None:
         return self._tokens[self._at] if self._at < len(self._tokens) else None
@@ -130,39 +151,57 @@ def _units(text: str) -> Iterator[tuple[int, str]]:
 
 
 def reciprocal_rank(items: list[str] | None, target: str) -> Scored:
-    if items is None:
-        return Scored(None, NO_ANSWER)
-    pattern = Pattern(target)
-    for rank, item in enumerate(items, 1):
-        if pattern.find(item) is not None:
-            return Scored(1 / rank, {"answer": f"{rank}. {item}"})
-    return Scored(0.0, {"reason": "not listed"})
+    return _ranked(items, target).scored
 
 
 def first_mention(items: list[str] | None, target: str) -> Scored:
-    if items is None:
-        return Scored(None, NO_ANSWER)
-    pattern = Pattern(target)
-    for item in items:
-        for start, unit in _units(item):
-            at = pattern.find(unit)
-            if at is not None:
-                return Scored(float(start + at), {"answer": unit.strip()})
-    return Scored(None, {"reason": "never named"})
+    return _first(items, target).scored
 
 
 def mentions(items: list[str] | None, target: str | None) -> Scored:
+    return _mentioned(items, target).scored
+
+
+def _marked(item: int, spans: list[tuple[int, int]], by: int = 0) -> tuple[Mark, ...]:
+    return tuple(Mark(item, by + start, by + end) for start, end in spans)
+
+
+def _ranked(items: list[str] | None, target: str) -> Explained:
     if items is None:
-        return Scored(None, NO_ANSWER)
+        return Explained(Scored(None, NO_ANSWER))
+    pattern = Pattern(target)
+    for rank, item in enumerate(items, 1):
+        if (spans := pattern.spans(item)) is not None:
+            scored = Scored(1 / rank, {"answer": f"{rank}. {item}"})
+            return Explained(scored, items, _marked(rank - 1, spans))
+    return Explained(Scored(0.0, {"reason": "not listed"}), items)
+
+
+def _first(items: list[str] | None, target: str) -> Explained:
+    if items is None:
+        return Explained(Scored(None, NO_ANSWER))
+    pattern = Pattern(target)
+    for i, item in enumerate(items):
+        for start, unit in _units(item):
+            if (spans := pattern.spans(unit)) is not None:
+                scored = Scored(float(start + spans[0][0]), {"answer": unit.strip()})
+                return Explained(scored, items, _marked(i, spans, start))
+    return Explained(Scored(None, {"reason": "never named"}), items)
+
+
+def _mentioned(items: list[str] | None, target: str | None) -> Explained:
+    if items is None:
+        return Explained(Scored(None, NO_ANSWER))
     if target is None:
         if items:
-            return Scored(0.0, {"answer": items[0], "reason": "none expected"})
-        return Scored(1.0, {"reason": "none named, as expected"})
+            scored = Scored(0.0, {"answer": items[0], "reason": "none expected"})
+            return Explained(scored, items, (Mark(0, 0, len(items[0])),))
+        return Explained(Scored(1.0, {"reason": "none named, as expected"}), items)
     pattern = Pattern(target)
-    for item in items:
-        if pattern.find(item) is not None:
-            return Scored(1.0, {"answer": item})
-    return Scored(0.0, {"reason": "not named"})
+    for i, item in enumerate(items):
+        if (spans := pattern.spans(item)) is not None:
+            return Explained(Scored(1.0, {"answer": item}), items, _marked(i, spans))
+    return Explained(Scored(0.0, {"reason": "not named"}), items)
 
 
 def _texts(output: list[JsonValue] | None) -> list[str] | None:
@@ -200,18 +239,20 @@ def _target(expected: list[JsonValue]) -> str | None | Scored:
     return text
 
 
-def _by_pattern(find: Callable[[list[str] | None, str], Scored]) -> MetricFunction:
+def _by_pattern(find: Callable[[list[str] | None, str], Explained]) -> ExplainFunction:
     def metric(
         output: list[JsonValue] | None,
         expected: list[JsonValue],
         _params: Mapping[str, JsonValue],
         _verdicts: Verdicts | None,
-    ) -> Scored:
+    ) -> Explained:
         target = _target(expected)
         if isinstance(target, Scored):
-            return target
+            return Explained(target)
         if target is None:
-            return Scored(None, {"reason": "nothing is expected to be found"})
+            return Explained(
+                Scored(None, {"reason": "nothing is expected to be found"})
+            )
         return find(_texts(output), target)
 
     return metric
@@ -222,26 +263,26 @@ def _mentions(
     expected: list[JsonValue],
     _params: Mapping[str, JsonValue],
     _verdicts: Verdicts | None,
-) -> Scored:
+) -> Explained:
     target = _target(expected)
     if isinstance(target, Scored):
-        return target
-    return mentions(_texts(output), target)
+        return Explained(target)
+    return _mentioned(_texts(output), target)
 
 
 METRICS: dict[str, Metric] = {
-    "reciprocal_rank": Metric(
+    "reciprocal_rank": explaining(
         "1 over the rank of the first item that matches the target's pattern; 0 "
         + "when none does, and none without an answer",
-        _by_pattern(reciprocal_rank),
+        _by_pattern(_ranked),
     ),
-    "first_mention": Metric(
+    "first_mention": explaining(
         "where in the text the target's pattern is first matched, in characters; "
         + "none when it never is",
-        _by_pattern(first_mention),
+        _by_pattern(_first),
         unit="@",
     ),
-    "mentions": Metric(
+    "mentions": explaining(
         "1 when an item matches the target's pattern, or when nothing is named "
         + "and nothing is expected; else 0, and none without an answer",
         _mentions,

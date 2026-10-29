@@ -934,6 +934,11 @@ msgctxt "refusal"
 msgid "%(value)s is not a language tag such as 'sv' or 'pt-BR'"
 msgstr "%(value)s är ingen språktagg som 'sv' eller 'pt-BR'"
 
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "%(view)s for %(case)s"
+msgstr "%(view)s till %(case)s"
+
 #: frontend/src/islands/Variation.svelte
 #, python-format
 msgid "%(where)s, %(cases)s"
@@ -964,6 +969,7 @@ msgstr ""
 "Labbet</a>)"
 
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/score.html
 msgid "(cut short)"
 msgstr "(avkortat)"
 
@@ -1346,6 +1352,11 @@ msgstr "Alla körningar"
 msgid "Analyze"
 msgstr "Analysera"
 
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "And %(count)s older."
+msgstr "Och %(count)s tidigare."
+
 #: src/chatddx/portal/templates/translations.html
 msgid "Another language"
 msgstr "Ett annat språk"
@@ -1394,6 +1405,11 @@ msgstr "Frågad under"
 msgid "Asked under the model"
 msgstr "Frågad under modellen"
 
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "At %(at)s: %(value)s"
+msgstr "Vid %(at)s: %(value)s"
+
 #: frontend/src/islands/library.ts
 msgid "Back to the form"
 msgstr "Tillbaka till formuläret"
@@ -1418,6 +1434,7 @@ msgstr "Blodgas"
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/compare.html
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/score.html
 #: src/chatddx/portal/templates/starting.html
 #: src/chatddx/portal/templates/taken.html
 #: src/chatddx/portal/templates/thread.html
@@ -1425,6 +1442,16 @@ msgstr "Blodgas"
 #: src/chatddx/portal/templates/vignette.html
 msgid "Breadcrumb"
 msgstr "Brödsmulor"
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "By %(judge)s, as its request is rebuilt from what it pins."
+msgstr "Av %(judge)s, med förfrågan återskapad ur det som pinnats."
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "By %(scorer)s, replicate %(replicate)s."
+msgstr "Av %(scorer)s, replikat %(replicate)s."
 
 #: src/chatddx/portal/templates/compare.html
 #, python-format
@@ -1607,6 +1634,10 @@ msgstr ""
 #: src/chatddx/portal/templates/thread.html
 msgid "Description"
 msgstr "Beskrivning"
+
+#: src/chatddx/portal/templates/score.html
+msgid "Detail"
+msgstr "Info"
 
 #: frontend/src/lib/plan/ManagementPlan.svelte
 msgid "Differential diagnoses"
@@ -1864,6 +1895,14 @@ msgstr "Förgrena oförändrat"
 msgid "Forked from"
 msgstr "Förgrenad från"
 
+#: src/chatddx/portal/templates/score.html
+msgid "From the answer"
+msgstr "Ur svaret"
+
+#: src/chatddx/portal/templates/score.html
+msgid "From the expectation"
+msgstr "Ur facit"
+
 #: frontend/src/islands/Variation.svelte frontend/src/lib/editors/writing.ts
 msgid "Give it a name to save it."
 msgstr "Ge den ett namn för att spara den."
@@ -1941,6 +1980,10 @@ msgstr "Hur den rättade"
 msgid "How much the model thinks before it answers, which can change the answer."
 msgstr "Hur mycket modellen tänker innan den svarar, vilket kan ändra svaret."
 
+#: src/chatddx/portal/templates/score.html
+msgid "How the judge decided"
+msgstr "Hur bedömaren avgjorde"
+
 #: src/chatddx/portal/templates/compare.html
 #: src/chatddx/portal/templates/lab.html
 msgid "How they fare"
@@ -1966,6 +2009,11 @@ msgid ""
 msgstr ""
 "Den frågar en ouppdaterad bedömare, så den kan inte rätta förrän den "
 "uppdateras."
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "It can't be scored again to show it: %(why)s"
+msgstr "Den kan inte rättas igen för att visas: %(why)s"
 
 #: frontend/src/islands/Variation.svelte
 msgid "It can't run until its model can."
@@ -2032,6 +2080,10 @@ msgid ""
 msgstr ""
 "Den kompilerades mot fakta om %(model)s som har rättats sedan dess, där "
 "de ändrar vad den skickar."
+
+#: src/chatddx/portal/templates/score.html
+msgid "It wasn't asked."
+msgstr "Den tillfrågades inte."
 
 #: src/chatddx/portal/templates/run.html
 msgid "Items"
@@ -2164,6 +2216,7 @@ msgid "Its request, a judge configuration"
 msgstr "Förfrågan, en bedömarkonfiguration"
 
 #: frontend/src/lib/review/Evaluation.svelte
+#: src/chatddx/portal/templates/score.html
 msgid "Its run"
 msgstr "Dess körning"
 
@@ -2172,6 +2225,10 @@ msgstr "Dess körning"
 #: src/chatddx/portal/templates/thread.html
 msgid "Its runs"
 msgstr "Körningar"
+
+#: src/chatddx/portal/templates/score.html
+msgid "Its scoring holds no expectation for this case."
+msgstr "Rättningen har inget facit för det här fallet."
 
 #: src/chatddx/portal/templates/world.html
 msgid "Its secret's variable"
@@ -2414,6 +2471,7 @@ msgctxt "probability"
 msgid "Medium"
 msgstr "Medel"
 
+#: src/chatddx/portal/templates/score.html
 #: src/chatddx/portal/templates/scoring.html
 msgid "Metric"
 msgstr "Mått"
@@ -2564,6 +2622,10 @@ msgstr ""
 msgid "No scorer reads it."
 msgstr "Ingen rättare läser den."
 
+#: src/chatddx/portal/templates/score.html
+msgid "No seed was asked."
+msgstr "Ingen seed tillfrågades."
+
 #: src/chatddx/portal/templates/starting.html
 msgid ""
 "No trial is given: pick them on the <a href=\"/library?kind=trial\">trial"
@@ -2625,6 +2687,10 @@ msgstr "Inga valda: varje fall du har tillgång till."
 #: src/chatddx/portal/templates/case.html
 msgid "None stored."
 msgstr "Ingen lagrad."
+
+#: src/chatddx/portal/templates/score.html
+msgid "None yet."
+msgstr "Inga än."
 
 #: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/library.html
@@ -2742,6 +2808,10 @@ msgstr "Inget kunde läsas."
 #: frontend/src/lib/review/Evaluation.svelte
 msgid "Nothing has come back yet."
 msgstr "Inget har kommit tillbaka än."
+
+#: src/chatddx/portal/templates/score.html
+msgid "Nothing is picked."
+msgstr "Inget plockas ut."
 
 #: src/chatddx/portal/templates/macros.html
 msgid "Nothing is saved yet"
@@ -2890,6 +2960,10 @@ msgstr "Sidor"
 msgid "Parameters"
 msgstr "Parametrar"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Params"
+msgstr "Parametrar"
+
 #: frontend/src/islands/Variation.svelte
 msgid "Part"
 msgstr "Del"
@@ -2946,6 +3020,14 @@ msgstr "Välj inga"
 msgid "Picked"
 msgstr "Valda"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Picked from the answer"
+msgstr "Utplockat ur svaret"
+
+#: src/chatddx/portal/templates/score.html
+msgid "Picked from the expectation"
+msgstr "Utplockat ur facit"
+
 #: frontend/src/lib/schema/form.ts
 msgctxt "a field"
 msgid "Possible warnings"
@@ -2992,6 +3074,14 @@ msgstr "Läser ur facit"
 msgid "Reasoning"
 msgstr "Resonemang"
 
+#: src/chatddx/portal/templates/score.html
+msgid ""
+"Rebuilt now, this isn't the request that was sent: what it pins, or the "
+"code, has changed since."
+msgstr ""
+"Återskapad, det här är inte förfrågan som skickades: det den pinnar har "
+"ändrats sedan dess."
+
 #: src/chatddx/portal/templates/world.html
 msgid "Recommended sampling"
 msgstr "Rekommenderad sampling"
@@ -3004,11 +3094,17 @@ msgstr "Avvisad"
 msgid "Renal function"
 msgstr "Njurfunktion"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Repeats"
+msgstr "Upprepningar"
+
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/score.html
 msgid "Replicate"
 msgstr "Replikat"
 
 #: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/score.html
 msgid "Replicates"
 msgstr "Replikat"
 
@@ -3043,6 +3139,7 @@ msgstr "Rigg"
 #: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/score.html
 #: src/chatddx/portal/templates/scoring.html
 msgid "Run"
 msgstr "Körning"
@@ -3177,6 +3274,10 @@ msgstr "Sparar"
 msgid "Saving it"
 msgstr "Sparande"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Score"
+msgstr "Rättning"
+
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/run.html
 msgid "Score again"
@@ -3189,6 +3290,19 @@ msgstr "Rätta när körningen är klar"
 #: frontend/src/islands/Variation.svelte
 msgid "Score it when it's done"
 msgstr "Rätta när körningen är klar"
+
+#: src/chatddx/portal/templates/score.html
+msgid "Scored"
+msgstr "Rättad"
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid ""
+"Scored again now, this comes to %(value)s: the code scores it otherwise "
+"than when it was scored."
+msgstr ""
+"Rättad igen nu blir det %(value)s: koden rättar den annorlunda än när den"
+" rättades."
 
 #: frontend/src/islands/Variation.svelte
 msgid "Scorer"
@@ -3222,8 +3336,14 @@ msgid "Scoring"
 msgstr "Rättar"
 
 #: frontend/src/islands/Variation.svelte
+#: src/chatddx/portal/templates/score.html
 msgid "Seed"
 msgstr "Seed"
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "Seed %(seed)s"
+msgstr "Seed %(seed)s"
 
 #: src/chatddx/portal/templates/run.html
 msgid "Seeds"
@@ -3395,6 +3515,10 @@ msgstr "Något gick fel"
 msgid "Sources"
 msgstr "Källor"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Split"
+msgstr "Uppdelning"
+
 #: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/run.html
@@ -3498,6 +3622,7 @@ msgid "The World"
 msgstr "Miljön"
 
 #: src/chatddx/portal/templates/run.html
+#: src/chatddx/portal/templates/score.html
 msgid "The answer"
 msgstr "Svaret"
 
@@ -3509,6 +3634,10 @@ msgstr "Svaret bryter mot sitt schema"
 msgid "The answer was cut short"
 msgstr "Svaret avkortades"
 
+#: src/chatddx/portal/templates/score.html
+msgid "The answer, as it was given"
+msgstr "Svaret, så som det gavs"
+
 #: frontend/src/islands/Home.svelte src/chatddx/portal/templates/review.html
 msgid "The case"
 msgstr "Fallet"
@@ -3516,6 +3645,14 @@ msgstr "Fallet"
 #: src/chatddx/portal/templates/lab.html
 msgid "The configuration"
 msgstr "Konfigurationen"
+
+#: src/chatddx/portal/templates/score.html
+msgid "The expectation"
+msgstr "Facit"
+
+#: src/chatddx/portal/templates/score.html
+msgid "The expectation, as it was given"
+msgstr "Facit, så som det gavs"
 
 #: src/chatddx/portal/templates/lab.html
 #: src/chatddx/portal/templates/thread.html
@@ -3583,6 +3720,18 @@ msgstr "Svaret, del för del"
 #: src/chatddx/portal/templates/run.html
 msgid "The run"
 msgstr "Körningen"
+
+#: src/chatddx/portal/templates/score.html
+msgid ""
+"The same request in other runs of yours: the same skeleton, engine, "
+"cleanup and case, under the same seed."
+msgstr ""
+"Samma förfrågan i andra körningar: samma skelett, inferensserver, "
+"rensning och fall, med samma seed."
+
+#: src/chatddx/portal/templates/score.html
+msgid "The score"
+msgstr "Rättningen"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "The scorer"
@@ -3656,6 +3805,15 @@ msgstr "Vinjetten…"
 #: src/chatddx/portal/templates/scoring.html
 msgid "The whole request"
 msgstr "Hela förfrågan"
+
+#: src/chatddx/portal/templates/score.html
+#, python-format
+msgid "The whole request, %(count)s messages"
+msgstr "Hela förfrågan, %(count)s meddelanden"
+
+#: src/chatddx/portal/templates/score.html
+msgid "There is no answer to read."
+msgstr "Det finns inget svar att läsa."
 
 #: frontend/src/islands/RunLive.svelte
 msgid "Thinking"
@@ -3794,6 +3952,10 @@ msgstr "Uppdatera alla"
 msgid "Updated"
 msgstr "Uppdaterat"
 
+#: src/chatddx/portal/templates/score.html
+msgid "Value"
+msgstr "Värde"
+
 #: frontend/src/lib/review/Expected.svelte
 #: src/chatddx/portal/templates/case.html src/chatddx/portal/templates/lab.html
 #: src/chatddx/portal/templates/thread.html
@@ -3915,6 +4077,10 @@ msgstr "Det den ombeds svara"
 msgid "What it makes"
 msgstr "Vad den gör"
 
+#: src/chatddx/portal/templates/score.html
+msgid "What it read"
+msgstr "Vad den läste"
+
 #: src/chatddx/portal/templates/scoring.html
 msgid "What it reads"
 msgstr "Vad den läser"
@@ -3957,6 +4123,10 @@ msgstr ""
 #: frontend/src/islands/Variation.svelte
 msgid "What scorers can read"
 msgstr "Vad rättare kan läsa"
+
+#: src/chatddx/portal/templates/score.html
+msgid "What the judge was asked"
+msgstr "Vad bedömaren tillfrågades"
 
 #: frontend/src/islands/Variation.svelte
 msgid "What the lints say"
@@ -5228,6 +5398,10 @@ msgstr "inget av körningens fall har något facit"
 msgid "none shared with you"
 msgstr "ingen delad med dig"
 
+#: src/chatddx/portal/templates/score.html
+msgid "none, it is greedy"
+msgstr "inget, den har temparatur=0"
+
 #: src/chatddx/portal/templates/world.html
 msgid "none: a remote engine"
 msgstr "ingen: en extern inferensserver"
@@ -5251,6 +5425,10 @@ msgstr "inte körd"
 #: src/chatddx/portal/templates/review.html
 msgid "not run in this evaluation"
 msgstr "inte körd i den här utvärderingen"
+
+#: src/chatddx/portal/templates/score.html
+msgid "not scored by this scorer"
+msgstr "inte rättad av den här rättaren"
 
 #: src/chatddx/portal/templates/world.html
 msgid "not sensitive"
@@ -5999,6 +6177,10 @@ msgstr "under %(model)s"
 #, python-format
 msgid "under %(schema)s"
 msgstr "under %(schema)s"
+
+#: src/chatddx/portal/templates/score.html
+msgid "under another scoring"
+msgstr "under en annan rättning"
 
 #: src/chatddx/portal/templates/library.html
 msgid "under any schema"

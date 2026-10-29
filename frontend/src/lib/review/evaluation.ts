@@ -15,6 +15,7 @@ export type Evaluating = {
 
 export type Ended = Pick<Schemas["ItemEndedData"], "outcome" | "prompt_tokens" | "completion_tokens" | "why">;
 export type Scored = Record<string, Record<string, number | null>>;
+export type Scores = Record<string, Record<string, string>>;
 
 export type Replicate = { key: string; run: string; replicate: number; n: number; seed: number | null };
 
@@ -35,17 +36,25 @@ export function replicates(configured: Configured): Replicate[] {
   );
 }
 
-export type Cell = { scorer: string; view: number; label: string; mean: number | null; unit: string };
+export type Cell = {
+  scorer: string;
+  view: number;
+  label: string;
+  mean: number | null;
+  unit: string;
+  href?: string;
+};
 
 export function cells(
   configured: Configured,
   field: string,
   scored: Scored,
   scorers: Record<string, Viewing[]>,
+  scores: Scores = {},
+  onCase = "",
 ): Cell[] {
-  const keys = replicates(configured).map((r) => r.key);
   const found = new Map<string, Cell & { values: number[] }>();
-  for (const key of keys) {
+  for (const { key, run, replicate } of replicates(configured)) {
     for (const [at, value] of Object.entries(scored[key] ?? {})) {
       const [scorer = "", view] = at.split("#");
       const viewing = scorers[scorer]?.[Number(view)];
@@ -58,6 +67,10 @@ export function cells(
         unit: viewing.unit,
         values: [],
       };
+      const score = scores[run]?.[scorer];
+      if (cell.href === undefined && score !== undefined) {
+        cell.href = `/scores/${score}/${onCase}/${replicate}/${view}`;
+      }
       if (value !== null) cell.values.push(value);
       found.set(at, cell);
     }

@@ -46,6 +46,14 @@ describe("cells", () => {
     expect(cells(configured, "notes", scored, scorers)).toEqual([]);
     expect(cells(configured, "diagnosis", { "a:0": { "unknown#0": 1 } }, scorers)).toEqual([]);
   });
+
+  it("links each view to the score page of its first item scored", () => {
+    const scored: Scored = { [keyed("a", 1)]: { "s#0": 0 }, [keyed("b", 0)]: { "s#0": 1 } };
+    const [cell] = cells(configured, "diagnosis", scored, scorers, { a: { s: "x" }, b: { s: "y" } }, "c");
+    expect(cell?.href).toBe("/scores/x/c/1/0");
+    const [later] = cells(configured, "diagnosis", scored, scorers, { b: { s: "y" } }, "c");
+    expect(later?.href).toBe("/scores/y/c/0/0");
+  });
 });
 
 describe("what an item gave", () => {

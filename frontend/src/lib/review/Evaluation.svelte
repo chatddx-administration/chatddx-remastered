@@ -13,6 +13,7 @@
     replicates,
     said,
     type Scored,
+    type Scores,
     shown,
     valued,
     worded,
@@ -28,6 +29,7 @@
     scored: Scored;
     named: Record<string, string>;
     scorers: Record<string, string>;
+    scores: Scores;
     done: Record<string, true>;
     lost: Record<string, string>;
     read: Record<string, Schemas["ItemDetail"][] | string>;
@@ -35,7 +37,19 @@
 
   function fresh(given: Evaluating): Seen {
     const runs = given.configurations.flatMap((c) => c.runs.map((r) => r.run));
-    return { given, runs, ended: {}, begun: {}, scored: {}, named: {}, scorers: {}, done: {}, lost: {}, read: {} };
+    return {
+      given,
+      runs,
+      ended: {},
+      begun: {},
+      scored: {},
+      named: {},
+      scorers: {},
+      scores: {},
+      done: {},
+      lost: {},
+      read: {},
+    };
   }
 
   const first = untrack(() => evaluation.key);
@@ -66,6 +80,7 @@
       const at = data as Schemas["ScoreStartedData"];
       into.scorers[at.score] = at.scorer;
       into.named[at.scorer] = at.name;
+      into.scores[run] = { ...into.scores[run], [at.scorer]: at.score };
     } else if (name === "score.item") {
       const at = data as Schemas["ScoreItemData"];
       const scorer = into.scorers[at.score];
@@ -174,7 +189,7 @@
             {#if !finished}<LoaderCircleIcon class="ml-1 inline size-3.5 animate-spin text-muted-foreground" />{/if}
           </th>
           {#each s.given.fields as field (field)}
-            {@const found = cells(c, field, s.scored, s.given.scorers)}
+            {@const found = cells(c, field, s.scored, s.given.scorers, s.scores, s.given.case)}
             <td class="px-3 py-2">
               {#each found as cell (`${cell.scorer}#${cell.view}`)}
                 {@const twice = found.filter((other) => other.label === cell.label).length > 1}
@@ -182,7 +197,11 @@
                   <span class="text-muted-foreground"
                     >{twice && s.named[cell.scorer] ? `${s.named[cell.scorer]} › ${cell.label}` : cell.label}</span
                   >
-                  <span class="tabular-nums">{valued(cell.mean, cell.unit)}</span>
+                  {#if cell.href}
+                    <a class="tabular-nums" href={cell.href}>{valued(cell.mean, cell.unit)}</a>
+                  {:else}
+                    <span class="tabular-nums">{valued(cell.mean, cell.unit)}</span>
+                  {/if}
                 </div>
               {:else}
                 <span class="text-muted-foreground">{finished ? "—" : "…"}</span>

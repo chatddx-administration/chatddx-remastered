@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, json, mean %}
+{% block title %}{{ _("Score") }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-4xl px-4 py-8">
+  <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/runs/{{ run }}">← {{ _("Its run") }}</a></nav>
+  {{ heading(_("%(view)s for %(case)s", view=label, case=title), _("By %(scorer)s, replicate %(replicate)s.", scorer=scorer, replicate=replicate)) }}
+
+  {% if siblings | length > 1 %}
+  <nav aria-label="{{ _('Replicates') }}" class="-mt-4 mb-6 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+    {% for other in siblings %}
+    <a href="/scores/{{ score.score }}/{{ case }}/{{ other }}/{{ at }}"{% if other == replicate %} aria-current="page"{% endif %} class="px-2 py-1">#{{ other }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  {% if replayed and not agrees %}
+  <p role="alert" class="mb-6 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">{{ _("Scored again now, this comes to %(value)s: the code scores it otherwise than when it was scored.", value=mean(replayed.explained.scored.value, unit)) }}</p>
+  {% endif %}
+
+  {% call section(_("The score")) %}
+  {{ facts([
+    (_("Value"), mean(item.value, unit)),
+    (_("Seed"), seed if seed is not none else _("none, it is greedy")),
+    (_("Metric"), view.metric),
+    (_("Picked from the answer"), view.output or "—"),
+    (_("Split"), view.split or "—"),
+    (_("Picked from the expectation"), view.expectation or "—"),
+    (_("Scored"), score.at | when),
+  ]) }}
+  {% endcall %}
+
+  {% call section(_("Repeats"), about=_("The same request in other runs of yours: the same skeleton, engine, cleanup and case, under the same seed.")) %}
+  {% if repeats %}
+  <table class="w-full text-sm">
+    <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+      <tr><th class="pb-2 pr-4 font-medium">{{ _("Run") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Replicate") }}</th><th class="pb-2 pr-4 font-medium">{{ _("Value") }}</th></tr>
+    </thead>
+    <tbody>
+      {% for r in repeats %}
+      <tr class="border-t border-border/60">
+        <td class="py-2 pr-4"><a href="/runs/{{ r.run }}">{{ r.at | when }}</a></td>
+        <td class="py-2 pr-4 tabular-nums">{{ r.replicate }}</td>
+        <td class="py-2 pr-4 tabular-nums">{% if r.href %}<a href="{{ r.href }}">{{ mean(r.value, unit) }}</a>{% if r.elsewhere %} <span class="text-muted-foreground">{{ _("under another scoring") }}</span>{% endif %}{% else %}<span class="text-muted-foreground">{{ _("not scored by this scorer") }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if unshown %}<p class="mt-2 text-sm text-muted-foreground">{{ _("And %(count)s older.", count=unshown) }}</p>{% endif %}
+  {% else %}
+  <p class="text-sm text-muted-foreground">{{ _("None yet.") }}</p>
+  {% endif %}
+  {% endcall %}
+
+{% if judging %}
+  {% call section(_("What the judge was asked"), about=_("By %(judge)s, as its request is rebuilt from what it pins.", judge=judging.judge)) %}
+  {% if judging.fills is none %}
+  <p class="text-sm text-muted-foreground">{{ _("It wasn't asked.") }}</p>
+  {{ json(judging.unasked) }}
+  {% else %}
+  {% for slot, heading in [("completion", _("The answer, as it was given")), ("expectation", _("The expectation, as it was given"))] if slot in judging.fills %}
+  <h3>{{ heading }}</h3>
+  <div class="mb-4 whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-sm">{{ judging.fills[slot] }}</div>
+  {% endfor %}
+  {% if judging.messages %}
+  <details class="text-sm">
+    <summary class="cursor-pointer text-muted-foreground">{{ _("The whole request, %(count)s messages", count=judging.messages | length) }}</summary>
+    {% for role, content in judging.messages %}
+    <h3 class="mt-3">{{ role }}</h3>
+    <div class="whitespace-pre-wrap">{{ content }}</div>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% endif %}
+  {% endcall %}
+
+  {% call section(_("How the judge decided")) %}
+  {% if unreplayed and unreplayed != "unasked" %}
+  <p class="mb-3 text-sm text-muted-foreground">{{ _("It can't be scored again to show it: %(why)s", why=unreplayed) }}</p>
+  {% endif %}
+  {% for seeded in judging.seeds %}
+  <div class="mb-6 last:mb-0 border-t border-border/60 pt-4 first:border-0 first:pt-0">
+    <h3>{{ _("Seed %(seed)s", seed=seeded.seed) }}{% if seeded.pick and seeded.pick.counted is not none %} <span class="font-normal tabular-nums text-muted-foreground">· {{ mean(seeded.pick.counted) }}</span>{% endif %}</h3>
+    {% if not seeded.rebuilt %}
+    <p role="alert" class="mb-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">{{ _("Rebuilt now, this isn't the request that was sent: what it pins, or the code, has changed since.") }}</p>
+    {% endif %}
+    {% if seeded.error %}<p class="mb-2 text-sm text-destructive">{{ seeded.error }}</p>{% endif %}
+    {% for kind, part, text in seeded.parts %}
+    {% if kind == "reasoning" %}
+    <details class="mb-2 text-sm" open>
+      <summary class="cursor-pointer text-muted-foreground">{{ part }}</summary>
+      <div class="whitespace-pre-wrap">{{ text }}</div>
+    </details>
+    {% endif %}
+    {% endfor %}
+    {% if seeded.problem %}<p class="mb-2 text-sm text-warning">{{ seeded.problem }}</p>{% endif %}
+    {% if seeded.fields is not none %}
+    <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">
+      {% for field in seeded.fields %}
+      <dt class="text-muted-foreground"{% if field.about %} title="{{ field.about }}"{% endif %}>{{ field.name }}{% if field.about %}<span class="block text-xs">{{ field.about }}</span>{% endif %}</dt>
+      <dd class="min-w-0 break-words">{% if field.picked %}<mark class="rounded-sm bg-success/20 px-0.5 text-foreground">{{ field.value | tojson }}</mark>{% elif field.value is string %}{{ field.value }}{% else %}{{ field.value | tojson }}{% endif %}</dd>
+      {% endfor %}
+    </dl>
+    {% elif seeded.verdict is not none %}
+    {{ json(seeded.verdict) }}
+    {% else %}
+    {% for kind, part, text in seeded.parts %}{% if kind != "reasoning" %}<div class="whitespace-pre-wrap text-sm">{{ text }}</div>{% endif %}{% endfor %}
+    {% endif %}
+    {% if seeded.pick and not (seeded.fields and seeded.fields | selectattr("picked") | list) %}
+    <p class="mt-2 text-sm text-muted-foreground">{{ _("At %(at)s: %(value)s", at=seeded.pick.at, value=seeded.pick.value | tojson) }}</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="text-sm text-muted-foreground">{{ _("No seed was asked.") }}</p>
+  {% endfor %}
+  <h3>{{ _("Detail") }}</h3>
+  {{ json(item.detail) }}
+  {% endcall %}
+
+{% else %}
+  {% call section(_("What it read")) %}
+  {% if unreplayed == "unexpected" %}
+  <p class="text-sm text-muted-foreground">{{ _("Its scoring holds no expectation for this case.") }}</p>
+  {% elif unreplayed %}
+  <p class="text-sm text-muted-foreground">{{ _("It can't be scored again to show it: %(why)s", why=unreplayed) }}</p>
+  {% elif replayed.output is none %}
+  <p class="text-sm text-muted-foreground">{{ _("There is no answer to read.") }}</p>
+  {% else %}
+  <h3>{{ _("From the answer") }}</h3>
+  {% if segments is not none %}
+  <ol class="mb-4 list-decimal space-y-1 pl-6 text-sm">
+    {% for item_segments in segments %}
+    <li class="whitespace-pre-wrap">{% for segment in item_segments %}{% if segment.marked %}<mark class="rounded-sm bg-success/20 px-0.5 text-foreground">{{ segment.text }}</mark>{% else %}{{ segment.text }}{% endif %}{% endfor %}</li>
+    {% else %}
+    <li class="list-none text-muted-foreground">{{ _("Nothing is picked.") }}</li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  {{ json(replayed.output) }}
+  {% endif %}
+  <h3>{{ _("From the expectation") }}</h3>
+  {{ json(replayed.expected) }}
+  {% if replayed.params %}
+  <h3>{{ _("Params") }}</h3>
+  {{ json(replayed.params) }}
+  {% endif %}
+  {% endif %}
+  <h3>{{ _("Detail") }}</h3>
+  {{ json(item.detail) }}
+  {% endcall %}
+
+{% endif %}
+  {% call section(_("The answer")) %}
+  {% if answer.problem %}<p class="mb-2 text-sm text-warning">{{ answer.problem }}{% if answer.salvaged %} {{ _("(cut short)") }}{% endif %}</p>{% endif %}
+  {% if answer.value is string %}
+  <div class="whitespace-pre-wrap text-sm">{{ answer.value }}</div>
+  {% else %}
+  {{ json(answer.value) }}
+  {% endif %}
+  {% endcall %}
+
+  {% call section(_("The expectation")) %}
+  {{ json(data) }}
+  {% endcall %}
+</div>
+{% endblock %}

@@ -308,6 +308,10 @@ def _said(call: JsonValue) -> list[tuple[str, str, str]]:
             pass
         case _:
             return []
+    return worded_parts(response)
+
+
+def worded_parts(response: dict[str, JsonValue]) -> list[tuple[str, str, str]]:
     return [(part.kind, _part(part), part.text) for part in parts(response)]
 
 

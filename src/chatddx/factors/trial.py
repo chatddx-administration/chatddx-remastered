@@ -39,6 +39,15 @@ class Trial(Component):
     def item_keys(self) -> list[tuple[str, int]]:
         return [(c, r) for c in self.cases for r in range(len(self.seeds))]
 
+    def single(self, skeleton: Skeleton, case: str, replicate: int) -> "Trial":
+        """The trial of the one item at the case and replicate, validated anew: items of
+        any trials whose single trials share a digest send the same request, and so
+        repeat each other."""
+        seed = (self.seeds[replicate],)
+        return self.model_copy(
+            update={"cases": (case,), "seeds": replicates(skeleton, seed)}
+        )
+
     @override
     def cross_check(self, get: Resolver) -> list[str]:
         skeleton = resolve(get, self.skeleton, Skeleton)

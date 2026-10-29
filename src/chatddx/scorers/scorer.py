@@ -1,6 +1,6 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol
 
 from jsonschema import validators
 from jsonschema.exceptions import relevance
@@ -39,6 +39,31 @@ MetricFunction = Callable[
     Scored,
 ]
 
+
+class Mark(NamedTuple):
+    item: int
+    start: int
+    end: int
+
+
+class Pick(NamedTuple):
+    at: str
+    value: JsonValue | None
+    counted: float | None
+
+
+class Explained(NamedTuple):
+    scored: Scored
+    texts: list[str] | None = None
+    marks: tuple[Mark, ...] = ()
+    picks: tuple[Pick | None, ...] = ()
+
+
+ExplainFunction = Callable[
+    [list[JsonValue] | None, list[JsonValue], Mapping[str, JsonValue], Verdicts | None],
+    Explained,
+]
+
 NO_PARAMS: dict[str, JsonValue] = {"type": "object", "additionalProperties": False}
 
 
@@ -53,6 +78,23 @@ class Metric:
     params: dict[str, JsonValue] = field(default_factory=_no_params)
     judged: bool = False
     unit: str | None = None
+    explain: ExplainFunction | None = None
+
+
+def explaining(
+    measures: str, explain: ExplainFunction, *more: Any, **given: Any
+) -> Metric:
+    """A metric whose score is its explain's, so that the two never disagree."""
+
+    def score(
+        output: list[JsonValue] | None,
+        expected: list[JsonValue],
+        params: Mapping[str, JsonValue],
+        verdicts: Verdicts | None,
+    ) -> Scored:
+        return explain(output, expected, params, verdicts).scored
+
+    return Metric(measures, score, *more, explain=explain, **given)
 
 
 class Metrics:
@@ -82,6 +124,21 @@ class Metrics:
         if found is None:
             raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
         return found.score(output, expected, params, verdicts)
+
+    def explained(
+        self,
+        metric: str,
+        output: list[JsonValue] | None,
+        expected: list[JsonValue],
+        params: Mapping[str, JsonValue],
+        verdicts: Verdicts | None = None,
+    ) -> Explained:
+        found = self.metrics.get(metric)
+        if found is None:
+            raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
+        if found.explain is None:
+            return Explained(found.score(output, expected, params, verdicts))
+        return found.explain(output, expected, params, verdicts)
 
     def problems(self, scorer: Scorer) -> list[str]:
         found: list[str] = []
@@ -154,4 +211,31 @@ def score_view(
         view.expectation_items(data),
         scorer.params | view.params,
         verdicts,
+    )
+
+
+class Replayed(NamedTuple):
+    output: list[JsonValue] | None
+    expected: list[JsonValue]
+    params: dict[str, JsonValue]
+    explained: Explained
+
+
+def explain_view(
+    scorer: Scorer,
+    metrics: Metrics,
+    index: int,
+    answer: JsonValue | None,
+    data: JsonValue,
+    verdicts: Verdicts | None = None,
+) -> Replayed:
+    view = scorer.views[index]
+    output = None if answer is None else view.output_items(answer)
+    expected = view.expectation_items(data)
+    params = scorer.params | view.params
+    return Replayed(
+        output,
+        expected,
+        params,
+        metrics.explained(view.metric, output, expected, params, verdicts),
     )

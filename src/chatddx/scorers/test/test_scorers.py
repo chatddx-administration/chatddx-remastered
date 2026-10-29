@@ -22,7 +22,16 @@ from chatddx.scorers.patterns import (
     mentions,
     reciprocal_rank,
 )
-from chatddx.scorers.scorer import Metric, Metrics, Scored, score
+from chatddx.scorers.scorer import (
+    Explained,
+    Mark,
+    Metric,
+    Metrics,
+    Pick,
+    Scored,
+    explain_view,
+    score,
+)
 from chatddx.scorers.shipped import SCORERS, function, problems
 from chatddx.scorers.verdicts import asked
 from chatddx.test.helpers import SHIPPED
@@ -215,6 +224,59 @@ def test_a_scorer_scores_each_of_its_views_through_its_entry_point() -> None:
     assert [s.value for s in score(scorer, run, None, TARGETS)] == [None, None, None]
 
 
+@pytest.mark.parametrize(
+    "pattern, text, spans",
+    [
+        ("pneumonia", "Likely pneumonia", [(7, 16)]),
+        ("acute coronary syndrome", "Acute coronary syndrome (ACS)", [(0, 23)]),
+        ("liver & failure", "Failure of the liver", [(0, 7), (15, 20)]),
+        ("copd | exacerbation", "COPD exacerbation", [(0, 4), (5, 17)]),
+        ("stone*", "Kidney stones", [(7, 13)]),
+        ("liver & failure", "Heart failure", None),
+    ],
+)
+def test_a_pattern_tells_the_spans_it_matched(
+    pattern: str, text: str, spans: list[tuple[int, int]] | None
+) -> None:
+    assert Pattern(pattern).spans(text) == spans
+
+
+def test_an_explained_view_marks_what_its_metric_matched() -> None:
+    scorer = plan_scorer()
+    first, warning, disposition = (
+        explain_view(scorer, function(scorer), i, ANSWER, TARGETS) for i in range(3)
+    )
+    assert first.output == ["Pulmonary embolism", "Pneumonia"]
+    assert first.expected == [{"pattern": "pneumonia"}]
+    assert first.explained == Explained(
+        Scored(0.5, {"answer": "2. Pneumonia"}),
+        ["Pulmonary embolism", "Pneumonia"],
+        (Mark(1, 0, 9),),
+    )
+    assert warning.explained == Explained(Scored(0.0, {"reason": "not named"}), [])
+    assert disposition.explained.marks == (Mark(0, 0, 5),)
+
+
+def test_a_first_mention_marks_within_its_item_not_its_sentence() -> None:
+    scorer = plan_scorer(
+        views=(View(expectation="/diagnosis", metric="first_mention"),)
+    )
+    text = "Cough and fever. Pneumonia is likely."
+    replayed = explain_view(scorer, function(scorer), 0, text, TARGETS)
+    assert replayed.explained.marks == (Mark(0, 17, 26),)
+    assert replayed.explained.scored.value == 17.0
+
+
+def test_a_metric_without_an_explain_explains_by_its_score() -> None:
+    def scored(*_: Any) -> Scored:
+        return Scored(1.0, {"said": "so"})
+
+    metrics = Metrics(1, {"plain": Metric("anything", scored)})
+    assert metrics.explained("plain", [], [], {}) == Explained(
+        Scored(1.0, {"said": "so"})
+    )
+
+
 def test_a_view_without_a_target_or_a_readable_one_isn_t_scored() -> None:
     scorer = plan_scorer()
     targets: JsonValue = {"diagnosis": {"pattern": "pneumonia &"}, "warning": False}
@@ -338,6 +400,29 @@ def test_a_judged_view_is_scored_from_its_judge_s_verdicts() -> None:
         Scored(None, {"seeds": [None], "reason": "no seed gave a verdict"}),
         Scored(None, {"seeds": [None], "reason": "no seed gave a verdict"}),
     ]
+
+
+def test_a_judged_view_explains_what_it_picked_from_each_seed_s_verdict() -> None:
+    scorer = plan_scorer(views=(MEETS, POINTS))
+    run = function(scorer)
+    meets: list[JsonValue | None] = [
+        {"meets": True},
+        None,
+        {"meets": "yes"},
+        {"why": "no meets"},
+    ]
+    replayed = explain_view(scorer, run, 0, ANSWER, TARGETS, meets)
+    assert replayed.explained == Explained(
+        Scored(1.0, {"seeds": [1.0, None, None, None]}),
+        picks=(
+            Pick("/meets", True, 1.0),
+            None,
+            Pick("/meets", "yes", None),
+            Pick("/meets", None, None),
+        ),
+    )
+    graded = explain_view(scorer, run, 1, ANSWER, TARGETS, [{"points": 1}])
+    assert graded.explained.picks == (Pick("/points", 1, 0.5),)
 
 
 def test_a_judge_is_asked_only_when_it_has_what_it_reads() -> None:

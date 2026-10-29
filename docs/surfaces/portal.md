@@ -326,7 +326,7 @@ Raises:
 * `titled: Titled`
 * `means: list[float | None]`
 
-## `Field` `@dataclass(frozen=True)`
+## `fields.Field` `@dataclass(frozen=True)`
 `src/chatddx/portal/fields.py:Field`
 
 * `name: str`
@@ -341,6 +341,14 @@ Raises:
 * `minimum: int | float | None = None`
 * `typed: str | None = None`
 * `refused: str | None = None`
+
+## `judged.Field` `(NamedTuple)`
+`src/chatddx/portal/judged.py:Field`
+
+* `name: str`
+* `about: str | None`
+* `value: JsonValue`
+* `picked: bool`
 
 ## `fields`
 `src/chatddx/portal/fields.py:fields`
@@ -447,6 +455,28 @@ Raises:
 * `scripts: list[str]`
 * `styles: list[str]`
 * `preloads: list[str]`
+
+## `Judged` `(NamedTuple)`
+`src/chatddx/portal/judged.py:Judged`
+
+* `judge: str`
+* `fills: dict[SlotName, str] | None`
+* `unasked: JsonValue`
+* `messages: list[tuple[str, str]]`
+* `seeds: list[Seeded]`
+
+## `judged`
+`src/chatddx/portal/judged.py:judged`
+
+* `bench: Bench`
+* `scoring: Scoring`
+* `view: View`
+* `by: str`
+* `calls: tuple[JudgeCall, ...]`
+* `answer: JsonValue | None`
+* `data: JsonValue | None`
+* `picks: tuple[Pick | None, ...]`
+* ∟`Judged`
 
 ## `kept`
 `src/chatddx/portal/fields.py:kept`
@@ -644,6 +674,16 @@ Raises:
 * `e: Exception`
 * ∟`str`
 
+## `Repeat` `(NamedTuple)`
+`src/chatddx/portal/scores.py:Repeat`
+
+* `run: UUID`
+* `at: datetime`
+* `replicate: int`
+* `href: str | None`
+* `value: float | None`
+* `elsewhere: bool`
+
 ## `replacing` `@router.post("/cases/{family}/replacement")`
 `src/chatddx/portal/cases.py:replacing`
 
@@ -748,6 +788,11 @@ Raises:
 
 `router = APIRouter()`
 
+## `scores.router`
+`src/chatddx/portal/scores.py:router`
+
+`router = APIRouter()`
+
 ## `scoring.router`
 `src/chatddx/portal/scoring.py:router`
 
@@ -829,6 +874,21 @@ Raises:
 1. `NotFound`: `"no page of %(kind)s %(thread)s: it is in Review, in the case it goes with", kind=display_kind(word), thread=thread` (through `_thread_page`)
 2. `NotFound`: `"no version %(at)s of %(kind)s %(thread)s: it has %(versions)s", at=at, kind=display_kind(word), thread=thread, versions=len(versions)` (through `_thread_page`)
 
+## `scored` `@router.get("/scores/{score}/{case}/{replicate}/{view}")`
+`src/chatddx/portal/scores.py:scored`
+
+* `request: Request`
+* `bench: BenchDep`
+* `score: UUID`
+* `case: str`
+* `replicate: int`
+* `view: int`
+* ∟`Response`
+
+Raises:
+1. `NotFound`: `"no score {score} of yours"`
+2. `NotFound`: `"score {score} has no item for case {case}, replicate {replicate}, view {view}"`
+
 ## `scorer_choices`
 `src/chatddx/portal/scoring.py:scorer_choices`
 
@@ -864,6 +924,26 @@ Raises:
 * `request: Request`
 * `bench: BenchDep`
 * ∟`Response`
+
+## `Seeded` `(NamedTuple)`
+`src/chatddx/portal/judged.py:Seeded`
+
+* `at: int`
+* `seed: int`
+* `rebuilt: bool`
+* `status: int | None`
+* `error: str | None`
+* `parts: list[tuple[str, str, str]]`
+* `verdict: JsonValue | None`
+* `problem: str | None`
+* `fields: list[Field] | None`
+* `pick: Pick | None`
+
+## `Segment` `(NamedTuple)`
+`src/chatddx/portal/scores.py:Segment`
+
+* `text: str`
+* `marked: bool`
 
 ## `Served` `@dataclass(frozen=True)`
 `src/chatddx/portal/world.py:Served`
@@ -1101,6 +1181,14 @@ Raises:
 * `bench: BenchDep`
 * ∟`Response`
 
+## `verdicts_of`
+`src/chatddx/portal/judged.py:verdicts_of`
+
+* `bench: Bench`
+* `judge: str`
+* `calls: tuple[JudgeCall, ...]`
+* ∟`Verdicts`
+
 ## `viewed`
 `src/chatddx/portal/lab.py:viewed`
 
@@ -1127,6 +1215,12 @@ Raises:
 
 * `next: str | None`
 * ∟`str`
+
+## `worded_parts`
+`src/chatddx/portal/runs.py:worded_parts`
+
+* `response: dict[str, JsonValue]`
+* ∟`list[tuple[str, str, str]]`
 
 ## `world` `@router.get("/world")`
 `src/chatddx/portal/world.py:world`
