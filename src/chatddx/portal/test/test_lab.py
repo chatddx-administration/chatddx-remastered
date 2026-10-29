@@ -255,7 +255,7 @@ def test_a_fork_links_the_configuration_it_was_forked_from(signed: TestClient) -
 
 
 @pytest.mark.slow
-def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
+def test_a_fork_is_updated_from_its_origin_on_its_page(signed: TestClient) -> None:
     mine = thread(signed, "configuration", LINES)
     off = thread(signed, "reasoning", OFF)
     forks = f"/api/threads/{mine['id']}/forks"
@@ -263,7 +263,7 @@ def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
         forks, json={"name": "terse", "parts": {"reasoning": off["head"]["digest"]}}
     ).json()
     path = f"/lab/{fork['id']}"
-    assert "Its origin has moved on" not in shown(signed, path)
+    assert "Its origin has a newer version." not in shown(signed, path)
 
     greedy = thread(signed, "sampling", "greedy")["head"]["digest"]
     edits = f"/api/threads/{mine['id']}/edits"
@@ -272,27 +272,27 @@ def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
     )
     assert got.status_code == 201
     page = shown(signed, path)
-    assert "Its origin has moved on" in page
+    assert "Its origin has a newer version." in page
     assert f"reasoning</span>: yours keeps {OFF} over —" in page
-    assert "Its origin has moved on" not in shown(signed, f"/lab/{mine['id']}")
+    assert "Its origin has a newer version." not in shown(signed, f"/lab/{mine['id']}")
 
     head = signed.get(f"/api/threads/{fork['id']}").json()["head"]
     got = signed.post(
-        f"/threads/{fork['id']}/follow", data={"head": head["id"], "next": path}
+        f"/threads/{fork['id']}/update", data={"head": head["id"], "next": path}
     )
     assert (got.status_code, got.headers["location"]) == (303, path)
-    assert "Its origin has moved on" not in shown(signed, path)
+    assert "Its origin has a newer version." not in shown(signed, path)
     followed = signed.get(f"/api/threads/{fork['id']}/variation").json()
     assert {p["part"]: p["digest"] for p in followed["parts"]}["sampling"] == greedy
 
 
 @pytest.mark.slow
-def test_a_configuration_follows_its_corrected_facts_from_its_pages(
+def test_a_configuration_is_updated_to_its_corrected_facts_from_its_pages(
     signed: TestClient, conn: Connection, alice: Person
 ) -> None:
     mine = thread(signed, "configuration", LINES)
     path = f"/lab/{mine['id']}"
-    corrected = "What it was compiled for has moved on"
+    corrected = "were corrected where they change what it sends"
     assert corrected not in shown(signed, path)
 
     bench = Bench(conn, alice, Inventory.load(TEST / "inventory.toml"))
@@ -301,10 +301,10 @@ def test_a_configuration_follows_its_corrected_facts_from_its_pages(
     page = shown(signed, path)
     assert corrected in page and ">Update<" in page
     page = shown(signed, f"/threads/{mine['id']}")
-    assert corrected in page and f'action="/threads/{mine["id"]}/moved/follow"' in page
+    assert corrected in page and f'action="/threads/{mine["id"]}/update"' in page
 
     got = signed.post(
-        f"/threads/{mine['id']}/moved/follow",
+        f"/threads/{mine['id']}/update",
         data={"head": mine["head"]["id"], "next": path},
     )
     assert (got.status_code, got.headers["location"]) == (303, path)

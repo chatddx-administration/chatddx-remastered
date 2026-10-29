@@ -72,6 +72,13 @@ def library(
     return library_page(request, bench, kind, tag, q=q, pick=pick, schema=schema)
 
 
+def _behind(bench: Bench) -> tuple[int, int]:
+    found = bench.behind_own()
+    heads = catalog.read.heads_of(bench.rows, found)
+    kinds = {t: catalog.threads.thread(bench.rows, t).kind for t in found}
+    return len(found), sum(bench.outdated(heads[t], kinds[t]) for t in found)
+
+
 def library_page(
     request: Request,
     bench: Bench,
@@ -84,10 +91,15 @@ def library_page(
 ) -> Response:
     words = [w for s in SHELVES for w in s.kinds]
     shelves = shelved(bench)
-    stale = len(bench.outdated_own())
+    behind, stale = _behind(bench)
     if kind is None:
         return page(
-            request, "library.html", person=bench.person, shelves=shelves, stale=stale
+            request,
+            "library.html",
+            person=bench.person,
+            shelves=shelves,
+            stale=stale,
+            behind=behind,
         )
     if kind not in words:
         raise NotFound.of(
@@ -134,6 +146,7 @@ def library_page(
         typed=typed,
         shelves=shelves,
         stale=stale,
+        behind=behind,
         about=next(s.kinds[kind] for s in SHELVES if kind in s.kinds),
         word=kind,
         listing=listing,
@@ -463,7 +476,7 @@ def _thread_page(
         except NotFound:
             origin = None
     mine = shown.owner == bench.person.login
-    follows = api.follows(bench, thread) if mine and not shown.deleted else None
+    proposal = api.proposal(bench, thread) if mine and not shown.deleted else None
     latest = at == len(versions)
     gone = unshipped(held) if isinstance(held, Scorer) else None
     editable = mine and latest and not shown.deleted and gone is None
@@ -546,8 +559,12 @@ def _thread_page(
         authored=shown.kind in AUTHORED,
         origin=origin,
         mine=mine,
-        proposal=None if follows is None else follows.origin,
-        moved=None if follows is None else follows.moved,
+        proposal=proposal,
+        changes=[]
+        if proposal is None
+        else [
+            (v.path, json.dumps(v.base), json.dumps(v.fork)) for v in proposal.varies
+        ],
         unshipped=gone if latest and not shown.deleted else None,
         ran=_ran(bench, versions) if shown.kind == "trial" else None,
         **_edited(bench, type(held), found),
@@ -759,30 +776,6 @@ def forking(bench: BenchDep, thread: int, name: Annotated[str, Form()]) -> Respo
     return RedirectResponse(f"/threads/{made.edit.thread}", 303)
 
 
-@router.post("/threads/{thread}/follow")
-def following(
-    bench: BenchDep,
-    thread: int,
-    head: Annotated[int, Form()],
-    next: Annotated[str | None, Form()] = None,
-) -> Response:
-    with refused():
-        _ = bench.follow(thread, head)
-    return _back(thread, next)
-
-
-@router.post("/threads/{thread}/moved/follow")
-def following_moved(
-    bench: BenchDep,
-    thread: int,
-    head: Annotated[int, Form()],
-    next: Annotated[str | None, Form()] = None,
-) -> Response:
-    with refused():
-        _ = bench.follow_moved(thread, head)
-    return _back(thread, next)
-
-
 @router.post("/threads/{thread}/update")
 def updating(
     bench: BenchDep,
@@ -803,7 +796,9 @@ def updating_all(request: Request, bench: BenchDep) -> Response:
         request,
         "updated.html",
         person=bench.person,
-        updated=[shown[u.thread] for u in done if u.written is not None],
+        updated=[
+            (shown[u.thread], u.remodelled) for u in done if u.written is not None
+        ],
         refused=[
             (shown[u.thread], refusal_of(u.refused))
             for u in done

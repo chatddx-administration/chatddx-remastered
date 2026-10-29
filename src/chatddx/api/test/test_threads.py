@@ -167,7 +167,7 @@ def test_a_lineage_runs_from_the_first_origin_through_every_fork_one_sees(
     )
     assert "/recipe/few_shot" in {v["path"] for v in archives["varies"]}
     assert mine["varies"] == [] and mine["base"]["id"] == archives["head"]["id"]
-    assert not any(k["moved_on"] or k["deleted"] for k in found)
+    assert not any(k["behind"] or k["deleted"] for k in found)
     assert signed.get(f"/api/threads/{instructed['id']}/lineage").json() == found
 
     forked = signed.post(
@@ -182,7 +182,7 @@ def test_a_lineage_runs_from_the_first_origin_through_every_fork_one_sees(
     ).is_success
     now = signed.get(f"/api/threads/{guided['id']}/lineage").json()
     [terse] = [k for k in now if k["id"] == forked["id"]]
-    assert (terse["origin"], terse["moved_on"], terse["deleted"]) == (
+    assert (terse["origin"], terse["behind"], terse["deleted"]) == (
         instructed["id"],
         True,
         True,

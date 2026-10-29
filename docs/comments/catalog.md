@@ -67,7 +67,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/catalog/`, so
 
 ```
 # Policy: facts corrected where a configuration doesn't reach leave it as it is:
-# following them would write nothing (holds).
+# updating to them would write nothing (holds).
 ```
 
 ## `src/chatddx/catalog/threads.py:check_note`

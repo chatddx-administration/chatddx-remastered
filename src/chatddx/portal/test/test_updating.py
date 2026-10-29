@@ -4,9 +4,17 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.helpers import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import move_model
+from chatddx.catalog import threads
 from chatddx.portal.test.helpers import said, shown, submitted
+from chatddx.store import People
 from chatddx.test.helpers import alices_bench
-from chatddx.test.world import LINES, QWEN_ARTIFACT
+from chatddx.test.world import (
+    GPT_OSS_ARTIFACT,
+    GPT_OSS_MODEL,
+    LINES,
+    QWEN_ARTIFACT,
+    QWEN_MODEL,
+)
 
 __all__ = ["alices_bench"]
 
@@ -28,11 +36,10 @@ def test_what_is_out_of_date_is_tagged_and_updated_one_by_one_or_all(
     library = said(shown(signed, "/library?kind=configuration"))
     assert "Out of date" in library and "Update all" in library
     lab = said(shown(signed, f"/lab/{configuration['id']}"))
-    assert "Its model has new weights, so it can't run until it is updated." in lab
+    assert f"Its model, {QWEN_MODEL}, has a new version." in lab
+    assert "It can't be used until it is updated." in lab
     scoring = said(shown(signed, f"/scoring/{mine}"))
-    assert (
-        "Its model has new weights, so it can't judge until it is updated." in scoring
-    )
+    assert f"Its model, {QWEN_MODEL}, has a new version." in scoring
     read_only = shown(signed, f"/threads/{theirs['id']}")
     assert "Out of date" in said(read_only)
     assert f"/threads/{theirs['id']}/update" not in read_only
@@ -52,4 +59,36 @@ def test_what_is_out_of_date_is_tagged_and_updated_one_by_one_or_all(
     assert LINES in updated and "my-verdict" not in updated
     assert "Not updated" not in updated
     assert not thread(signed, "configuration", LINES)["outdated"]
+    assert "Update all" not in said(shown(signed, "/library"))
+
+
+@pytest.mark.slow
+def test_a_world_s_switch_of_model_is_named_and_updated_all_at_once(
+    signed: TestClient, bench: Bench
+) -> None:
+    archive = People(bench.conn).find("archive")
+    assert archive is not None
+    theirs = Bench(bench.conn, archive, bench.inventory)
+    origin = theirs.thread(LINES, "configuration")[0].thread
+    mine = thread(signed, "configuration", LINES)
+    assert "Update all" not in said(shown(signed, "/library"))
+
+    gpt_oss = bench.handle_named(GPT_OSS_ARTIFACT).weights
+    switched = theirs.variation(origin, {"model": gpt_oss})
+    _ = theirs.edit(origin, threads.head(bench.rows, origin).id, switched)
+    bench.conn.commit()
+    assert "Update all" in said(shown(signed, "/library"))
+    named = (
+        f"Its origin is now made for {GPT_OSS_MODEL}, where yours is made for "
+        + f"{QWEN_MODEL}: updating moves yours to {GPT_OSS_MODEL}."
+    )
+    assert named in said(shown(signed, f"/threads/{mine['id']}"))
+    assert named in said(shown(signed, f"/lab/{mine['id']}"))
+
+    done = signed.post("/library/update")
+    assert done.status_code == 200, done.text[:500]
+    followed = said(done.text)
+    assert LINES in followed
+    assert f"now made for {GPT_OSS_MODEL}, was {QWEN_MODEL}" in followed
+    assert "Not updated" not in followed
     assert "Update all" not in said(shown(signed, "/library"))

@@ -50,10 +50,10 @@
 
     <div class="min-w-0">
       {{ refusal(typed, request) }}
-      {% if stale %}
-      <div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
-        {{ outdated() }}
-        <span>{{ ngettext("%(num)s of yours can't be used until it is updated.", "%(num)s of yours can't be used until they are updated.", stale) }}</span>
+      {% if behind %}
+      <div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg {{ 'bg-warning/10' if stale else 'bg-muted' }} p-3 text-sm">
+        {% if stale %}{{ outdated() }}{% endif %}
+        <span>{{ ngettext("%(num)s of yours is behind what it was made from.", "%(num)s of yours are behind what they were made from.", behind) }}{% if stale %} {{ ngettext("%(num)s of yours can't be used until it is updated.", "%(num)s of yours can't be used until they are updated.", stale) }}{% endif %}</span>
         <form method="post" action="/library/update"><button class="primary">{{ _("Update all") }}</button></form>
       </div>
       {% endif %}

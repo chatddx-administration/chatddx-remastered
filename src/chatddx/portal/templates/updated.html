@@ -4,12 +4,12 @@
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <nav aria-label="{{ _('Breadcrumb') }}" class="text-sm"><a href="/library">← {{ _("Library") }}</a></nav>
-  {{ heading(_("Updated"), _("What of yours was out of date, updated in this order so that it runs on the models served now.")) }}
+  {{ heading(_("Updated"), _("What of yours was behind what it was made from, updated in this order so that what is read is updated before what reads it.")) }}
   {% call section(_("A new version of each")) %}
   {% if updated %}
   {% call paged(updated | length) %}
   <ul class="space-y-1.5 text-sm" data-paged>
-    {% for t in updated %}<li><a href="/threads/{{ t.id }}">{{ named(t) }}</a> <span class="text-muted-foreground">{{ t.word | kind }}</span></li>{% endfor %}
+    {% for t, remodelled in updated %}<li><a href="/threads/{{ t.id }}">{{ named(t) }}</a> <span class="text-muted-foreground">{{ t.word | kind }}</span>{% if remodelled %}: {{ _("now made for %(now)s, was %(was)s", now=remodelled[1], was=remodelled[0]) }}{% endif %}</li>{% endfor %}
   </ul>
   {% endcall %}
   {% else %}

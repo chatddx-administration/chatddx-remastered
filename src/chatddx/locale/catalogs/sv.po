@@ -249,14 +249,6 @@ msgstr "%(judge)s: %(configuration)s under %(model)s, %(seeds)s"
 msgid "%(judge)s: %(configuration)s, %(seeds)s"
 msgstr "%(judge)s: %(configuration)s, %(seeds)s"
 
-#: src/chatddx/bench/following.py
-#, python-format
-msgctxt "refusal"
-msgid "%(kind)s %(thread)s's changes don't fit its origin's head: %(refused)s"
-msgstr ""
-"ändringarna i %(kind)s %(thread)s passar inte ursprungets senaste "
-"version: %(refused)s"
-
 #: src/chatddx/factors/request.py
 #, python-format
 msgctxt "refusal"
@@ -605,6 +597,13 @@ msgid "%(num)s of yours can't be used until it is updated."
 msgid_plural "%(num)s of yours can't be used until they are updated."
 msgstr[0] "%(num)s av dina kan inte användas förrän den uppdateras."
 msgstr[1] "%(num)s av dina kan inte användas förrän de uppdateras."
+
+#: src/chatddx/portal/templates/library.html
+#, python-format
+msgid "%(num)s of yours is behind what it was made from."
+msgid_plural "%(num)s of yours are behind what they were made from."
+msgstr[0] "%(num)s av dina ligger efter det den gjordes av."
+msgstr[1] "%(num)s av dina ligger efter det de gjordes av."
 
 #: src/chatddx/portal/templates/runs.html
 #, python-format
@@ -1057,7 +1056,7 @@ msgstr ""
 "<span class=\"font-medium\">%(label)s</span><span class=\"text-muted-"
 "foreground\">, på version %(n)s</span>"
 
-#: src/chatddx/portal/templates/lab.html
+#: src/chatddx/portal/templates/macros.html
 #, python-format
 msgid ""
 "<span class=\"font-medium\">%(part)s</span>: yours keeps %(fork)s over "
@@ -1074,17 +1073,6 @@ msgid ""
 msgstr ""
 "<span class=\"font-mono text-xs\">%(path)s</span>, en vinjett per <span "
 "class=\"font-mono text-xs\">%(suffix)s</span>-fil"
-
-#: src/chatddx/portal/templates/thread.html
-#, python-format
-msgid ""
-"<span class=\"font-mono text-xs\">%(path)s</span>: yours keeps <span "
-"class=\"font-mono text-xs\">%(fork)s</span> over <span class=\"font-mono "
-"text-xs\">%(base)s</span>"
-msgstr ""
-"<span class=\"font-mono text-xs\">%(path)s</span>: din behåller <span "
-"class=\"font-mono text-xs\">%(fork)s</span> framför <span class=\"font-"
-"mono text-xs\">%(base)s</span>"
 
 #: frontend/src/islands/Home.svelte
 msgid ""
@@ -1840,43 +1828,6 @@ msgstr ""
 "Fasta prober som skickas med en körning, för att fånga en inferensserver "
 "som ändrats mellan körningar."
 
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Follow its origin"
-msgstr "Uppdatera från ursprunget"
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid ""
-"Following it keeps the origin's latest version with what yours changes of"
-" it, which is what yours holds already."
-msgstr ""
-"Att uppdatera behåller ursprungets senaste version med dina ändringar av "
-"den, vilket är vad din redan innehåller."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid ""
-"Following it keeps the origin's latest version with what yours changes of"
-" it."
-msgstr ""
-"Att uppdatera behåller ursprungets senaste version med dina ändringar av "
-"den."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Following keeps its recipe compiled against the current facts."
-msgstr "Att uppdatera behåller dess recept kompilerat mot de nuvarande fakta."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid ""
-"Following keeps its recipe, with the model's new version, compiled "
-"against the current facts."
-msgstr ""
-"Att uppdatera behåller dess recept, med modellens nya version, kompilerat"
-" mot de nuvarande fakta."
-
 #: src/chatddx/portal/shelves.py
 msgid "For request options no other part covers, sent as written."
 msgstr ""
@@ -2003,17 +1954,22 @@ msgid "Into"
 msgstr "Till"
 
 #: src/chatddx/portal/templates/macros.html
-msgid ""
-"It asks a judge that is out of date, so it can't score until it is "
-"updated."
-msgstr ""
-"Den frågar en ouppdaterad bedömare, så den kan inte rätta förrän den "
-"uppdateras."
+msgid "It asks a judge that is behind."
+msgstr "Den frågar en bedömare som ligger efter."
 
 #: src/chatddx/portal/templates/score.html
 #, python-format
 msgid "It can't be scored again to show it: %(why)s"
 msgstr "Den kan inte rättas igen för att visas: %(why)s"
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "It can't be updated as things are: %(refused)s"
+msgstr "Den kan inte uppdateras som det är nu: %(refused)s"
+
+#: src/chatddx/portal/templates/macros.html
+msgid "It can't be used until it is updated."
+msgstr "Den kan inte användas förrän den uppdateras."
 
 #: frontend/src/islands/Variation.svelte
 msgid "It can't run until its model can."
@@ -2070,16 +2026,6 @@ msgid ""
 msgstr ""
 "Det finns kvar i de körningar som använde det, och du kan återställa det "
 "från Biblioteket."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-#, python-format
-msgid ""
-"It was compiled against facts about %(model)s that have been corrected "
-"since, where they change what it sends."
-msgstr ""
-"Den kompilerades mot fakta om %(model)s som har rättats sedan dess, där "
-"de ändrar vad den skickar."
 
 #: src/chatddx/portal/templates/score.html
 msgid "It wasn't asked."
@@ -2153,33 +2099,22 @@ msgid "Its leading or trailing whitespace isn't its source's."
 msgstr "Dess inledande eller avslutande blanksteg är inte källans."
 
 #: src/chatddx/portal/templates/macros.html
-msgid "Its model has new weights, so it can't judge until it is updated."
-msgstr "Modellen har nya vikter, så den kan inte bedöma förrän den uppdateras."
-
-#: src/chatddx/portal/templates/macros.html
-msgid "Its model has new weights, so it can't run until it is updated."
-msgstr "Modellen har nya vikter, så den kan inte köras förrän den uppdateras."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-#, python-format
-msgid ""
-"Its model, %(model)s, has a new version, and the facts about it were "
-"corrected since it was compiled, where they change what it sends."
-msgstr ""
-"Dess modell, %(model)s, har en ny version, och fakta om den har rättats "
-"sedan den kompilerades, där de ändrar vad den skickar."
-
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
 #, python-format
 msgid "Its model, %(model)s, has a new version."
 msgstr "Dess modell, %(model)s, har en ny version."
 
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Its origin has moved on"
-msgstr "Ursprunget har gått vidare"
+#: src/chatddx/portal/templates/macros.html
+msgid "Its origin has a newer version."
+msgstr "Dess ursprung har en nyare version."
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid ""
+"Its origin is now made for %(now)s, where yours is made for %(was)s: "
+"updating moves yours to %(now)s."
+msgstr ""
+"Dess ursprung görs nu för %(now)s, där din görs för %(was)s: att "
+"uppdatera flyttar din till %(now)s."
 
 #: frontend/src/lib/scorer/JudgeTexts.svelte
 msgid "Its prompt"
@@ -2564,10 +2499,8 @@ msgstr ""
 "ingen text att översätta."
 
 #: src/chatddx/portal/templates/macros.html
-msgid "No endpoint here serves its engine, so it can't run until it is updated."
-msgstr ""
-"Ingen ändpunkt här når dess inferensserver, så det kan inte köras förrän "
-"det uppdateras."
+msgid "No endpoint here serves its engine."
+msgstr "Ingen ändpunkt här tillhandahåller dess inferensserver."
 
 #: src/chatddx/portal/templates/scoring.html
 #, python-format
@@ -3654,15 +3587,10 @@ msgstr "Facit"
 msgid "The expectation, as it was given"
 msgstr "Facit, så som det gavs"
 
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
+#: src/chatddx/portal/templates/macros.html
 #, python-format
-msgid ""
-"The facts now refuse what it asks: %(refused)s. Set another chunk in its "
-"place to follow them."
-msgstr ""
-"Fakta vägrar nu det den frågar efter: %(refused)s. Sätt ett annat block i"
-" dess ställe för att uppdatera."
+msgid "The facts about %(model)s were corrected where they change what it sends."
+msgstr "Fakta om %(model)s har rättats där de ändrar vad den skickar."
 
 #: src/chatddx/portal/shelves.py
 msgid "The first message, telling the model its role and its task."
@@ -3938,9 +3866,7 @@ msgctxt "after the button Resume"
 msgid "Unfinished: resuming sends what it lacks."
 msgstr "Oavslutad: att återuppta skickar det som saknas."
 
-#: src/chatddx/portal/templates/lab.html
 #: src/chatddx/portal/templates/macros.html
-#: src/chatddx/portal/templates/thread.html
 msgid "Update"
 msgstr "Uppdatera"
 
@@ -4089,10 +4015,9 @@ msgstr "Vad den läser"
 msgid "What it sends: the request compiled from its recipe"
 msgstr "Vad den skickar: förfrågan kompilerad från dess recept"
 
-#: src/chatddx/portal/templates/lab.html
-#: src/chatddx/portal/templates/thread.html
-msgid "What it was compiled for has moved on"
-msgstr "Det den kompilerades för har gått vidare"
+#: src/chatddx/portal/templates/macros.html
+msgid "What it was made from has moved on"
+msgstr "Det den gjordes av har gått vidare"
 
 #: frontend/src/lib/scorer/JudgeTexts.svelte
 msgid "What its judge is asked, as you write it"
@@ -4114,11 +4039,11 @@ msgstr ""
 
 #: src/chatddx/portal/templates/updated.html
 msgid ""
-"What of yours was out of date, updated in this order so that it runs on "
-"the models served now."
+"What of yours was behind what it was made from, updated in this order so "
+"that what is read is updated before what reads it."
 msgstr ""
-"Det av ditt som var ouppdaterat, uppdaterat i den här ordningen så att "
-"det körs på de modeller som tillhandahålls nu."
+"Det av ditt som låg efter det det gjordes av, uppdaterat i den här "
+"ordningen så att det som läses uppdateras före det som läser det."
 
 #: frontend/src/islands/Variation.svelte
 msgid "What scorers can read"
@@ -4323,6 +4248,13 @@ msgid ""
 msgstr ""
 "Dina körningar, nyaste först, för att följa det som pågår och öppna det "
 "som är klart."
+
+#: src/chatddx/portal/templates/macros.html
+#, python-format
+msgid "Yours and its origin both change %(paths)s: updating keeps yours there."
+msgstr ""
+"Både din och dess ursprung ändrar %(paths)s: att uppdatera behåller din "
+"där."
 
 #: src/chatddx/portal/templates/review.html
 #, python-format
@@ -4548,6 +4480,11 @@ msgstr "vid"
 msgid "at %(endpoint)s: %(concurrency)s at once, %(order)s"
 msgstr "på %(endpoint)s: %(concurrency)s i taget, %(order)s"
 
+#: src/chatddx/portal/templates/lab.html
+msgctxt "a thread"
+msgid "behind"
+msgstr "ligger efter"
+
 #: frontend/src/lib/review/evaluation.ts
 msgctxt "outcome"
 msgid "broken"
@@ -4609,16 +4546,6 @@ msgstr "samtidighet"
 msgctxt "kind"
 msgid "configuration"
 msgstr "konfiguration"
-
-#: src/chatddx/bench/following.py
-#, python-format
-msgctxt "refusal"
-msgid ""
-"configuration %(thread)s can't be updated to %(what)s %(about)s: "
-"%(refused)s"
-msgstr ""
-"konfigurationen %(thread)s kan inte uppdateras till %(what)s %(about)s: "
-"%(refused)s"
 
 #: src/chatddx/portal/threads.py
 #, python-format
@@ -4971,10 +4898,6 @@ msgstr "dess senaste version"
 #, python-format
 msgid "its nearest: %(reason)s"
 msgstr "dess närmaste: %(reason)s"
-
-#: src/chatddx/portal/templates/lab.html
-msgid "its origin moved on"
-msgstr "dess ursprung har gått vidare"
 
 #: src/chatddx/portal/templates/lab.html
 #: src/chatddx/portal/templates/scoring.html
@@ -5448,6 +5371,11 @@ msgstr "inget är känt om en tankebudget"
 msgctxt "refusal"
 msgid "nothing is known about reasoning %(level)s"
 msgstr "inget är känt om resonemang %(level)s"
+
+#: src/chatddx/portal/templates/updated.html
+#, python-format
+msgid "now made for %(now)s, was %(was)s"
+msgstr "görs nu för %(now)s, gjordes för %(was)s"
 
 #: frontend/src/islands/Variation.svelte
 #, python-format

@@ -950,13 +950,13 @@
         }
       }
     },
-    "/api/threads/{thread}/follows": {
+    "/api/threads/{thread}/proposal": {
       "get": {
         "tags": [
           "threads"
         ],
-        "summary": "Follows",
-        "operationId": "follows_api_threads__thread__follows_get",
+        "summary": "Proposal",
+        "operationId": "proposal_api_threads__thread__proposal_get",
         "security": [
           {
             "HTTPBearer": []
@@ -982,7 +982,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Follows"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Proposal"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Proposal Api Threads  Thread  Proposal Get"
                 }
               }
             }
@@ -998,13 +1006,15 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/threads/{thread}/update": {
       "post": {
         "tags": [
           "threads"
         ],
-        "summary": "Follow",
-        "operationId": "follow_api_threads__thread__follows_post",
+        "summary": "Update",
+        "operationId": "update_api_threads__thread__update_post",
         "security": [
           {
             "HTTPBearer": []
@@ -1029,7 +1039,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewFollow"
+                "$ref": "#/components/schemas/NewUpdate"
               }
             }
           }
@@ -4012,39 +4022,6 @@
         "title": "Finding",
         "type": "object"
       },
-      "Follows": {
-        "properties": {
-          "origin": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Proposal"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "a fork's whose origin has moved on: what following it would keep"
-          },
-          "moved": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Moved"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "a configuration's whose facts or model have moved on: what following them would keep"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "origin",
-          "moved"
-        ],
-        "title": "Follows"
-      },
       "Graded": {
         "additionalProperties": false,
         "properties": {
@@ -4419,10 +4396,10 @@
             "title": "Varies",
             "description": "a fork's: what its head changes"
           },
-          "moved_on": {
+          "behind": {
             "type": "boolean",
-            "title": "Moved On",
-            "description": "a fork's: its origin has moved on since its base, so following it is proposed"
+            "title": "Behind",
+            "description": "it is behind what it was made from, so updating it is proposed"
           },
           "deleted": {
             "type": "boolean",
@@ -4446,7 +4423,7 @@
           "origin",
           "base",
           "varies",
-          "moved_on",
+          "behind",
           "deleted"
         ],
         "title": "Kin"
@@ -4885,109 +4862,6 @@
         ],
         "description": "a model's digest, which can't be taken out"
       },
-      "Moved": {
-        "properties": {
-          "about": {
-            "type": "string",
-            "title": "About",
-            "description": "the model it is compiled for, by name"
-          },
-          "facts": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Edit"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "the head of the facts about it, which correct the ones its head was compiled against where they change what it sends"
-          },
-          "compiled": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Compiled",
-            "description": "the facts its head was compiled against"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Edit"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "its model's head, a new version of the one its recipe names"
-          },
-          "held": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Held",
-            "description": "the model its recipe names"
-          },
-          "digest": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Digest",
-            "description": "the skeleton following comes to"
-          },
-          "compilation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Compilation"
-          },
-          "refused": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Refused",
-            "description": "why following is refused: the facts refuse what its recipe asks"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "about",
-          "facts",
-          "compiled",
-          "model",
-          "held",
-          "digest",
-          "compilation",
-          "refused"
-        ],
-        "title": "Moved"
-      },
       "NewAgain": {
         "properties": {
           "seeds": {
@@ -5129,34 +5003,6 @@
           "head"
         ],
         "title": "NewEdit"
-      },
-      "NewFollow": {
-        "properties": {
-          "head": {
-            "type": "integer",
-            "title": "Head",
-            "description": "the edit the change was made on: the head seen"
-          },
-          "follow": {
-            "type": "string",
-            "enum": [
-              "origin",
-              "moved"
-            ],
-            "title": "Follow",
-            "description": "its origin, or the facts and model that moved on",
-            "default": "origin"
-          },
-          "language": {
-            "$ref": "#/components/schemas/Language"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "head"
-        ],
-        "title": "NewFollow"
       },
       "NewFork": {
         "properties": {
@@ -5641,6 +5487,24 @@
         ],
         "title": "NewTyped"
       },
+      "NewUpdate": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on: the head seen"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head"
+        ],
+        "title": "NewUpdate"
+      },
       "Outcome": {
         "enum": [
           "stopped",
@@ -5842,18 +5706,80 @@
       },
       "Proposal": {
         "properties": {
+          "reasons": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "origin",
+                "facts",
+                "model",
+                "judge",
+                "engine"
+              ]
+            },
+            "type": "array",
+            "title": "Reasons",
+            "description": "why it is behind what it was made from: its origin moved on, the facts about its model were corrected where they change what it sends, its model has a new version, a judge it asks is behind, or no endpoint here serves its engine; the last three leave it unusable until it is updated"
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About",
+            "description": "for a configuration or a judge, the model its head is made for, by name"
+          },
           "base": {
-            "$ref": "#/components/schemas/Edit"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "when its origin moved on, the version of its origin it is compared with"
           },
           "origin_head": {
-            "$ref": "#/components/schemas/Edit"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "varies": {
             "items": {
               "$ref": "#/components/schemas/Varied"
             },
             "type": "array",
-            "title": "Varies"
+            "title": "Varies",
+            "description": "what its head changes of its base"
+          },
+          "clashes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Clashes",
+            "description": "the paths it and its origin both change, each its own way: updating keeps its own"
+          },
+          "remodelled": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Remodelled"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "when its origin moved to another model, which updating moves it to"
           },
           "recipe": {
             "$ref": "#/components/schemas/JsonValue",
@@ -5864,8 +5790,16 @@
             "description": "for another kind, its body"
           },
           "digest": {
-            "type": "string",
-            "title": "Digest"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest",
+            "description": "what updating comes to"
           },
           "compilation": {
             "anyOf": [
@@ -5877,18 +5811,35 @@
               }
             ],
             "title": "Compilation"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why updating is refused"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "reasons",
+          "about",
           "base",
           "origin_head",
           "varies",
+          "clashes",
+          "remodelled",
           "recipe",
           "component",
           "digest",
-          "compilation"
+          "compilation",
+          "refused"
         ],
         "title": "Proposal"
       },
@@ -6014,6 +5965,27 @@
           "choosing"
         ],
         "title": "Reach"
+      },
+      "Remodelled": {
+        "properties": {
+          "was": {
+            "type": "string",
+            "title": "Was",
+            "description": "the model its base is made for, by name"
+          },
+          "now": {
+            "type": "string",
+            "title": "Now",
+            "description": "the model its origin's head is made for, by name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "was",
+          "now"
+        ],
+        "title": "Remodelled"
       },
       "RenderedAgain": {
         "properties": {

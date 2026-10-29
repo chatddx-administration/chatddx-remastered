@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chatddx.catalog import About, Behind, Divergence, Edit, Part
+from chatddx.catalog import About, Divergence, Edit, Part
 from chatddx.catalog.titles import CaseTitle
 from chatddx.factors.base import Component, Finding
 from chatddx.factors.cases import Vignette
@@ -142,12 +142,21 @@ class Graded:
         return self.labels.get(view, f"view {view}")
 
 
+# Policy: a thread is behind what it was made from for these reasons, the last three of
+# which leave it unusable until it is updated.
+Reason = Literal["origin", "facts", "model", "judge", "engine"]
+
+
 @dataclass(frozen=True)
 class Proposed:
-    divergence: Divergence
-    proposal: Recipe | Component
-    digest: str
+    reasons: tuple[Reason, ...]
+    about: str | None
+    divergence: Divergence | None
+    remodelled: tuple[str, str] | None
+    proposal: Recipe | Component | None
+    digest: str | None
     compilation: str | None
+    refused: ValueError | None
 
 
 @dataclass(frozen=True)
@@ -156,17 +165,7 @@ class Kin:
     about: About
     origin: int | None
     divergence: Divergence | None
-    moved_on: bool
-
-
-@dataclass(frozen=True)
-class Moved:
-    facts: Behind | None
-    model: Behind | None
-    about: str
-    digest: str | None
-    compilation: str | None
-    refused: str | None
+    behind: bool
 
 
 @dataclass(frozen=True)

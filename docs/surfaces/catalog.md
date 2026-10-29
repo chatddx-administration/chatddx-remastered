@@ -198,6 +198,7 @@ Raises:
 * `base: Edit`
 * `origin_head: Edit`
 * `varies: dict[str, tuple[JsonValue, JsonValue]]`
+* `moves: dict[str, tuple[JsonValue, JsonValue]]`
 
 ## `divergence`
 `src/chatddx/catalog/threads.py:divergence`
@@ -208,6 +209,11 @@ Raises:
 
 Raises:
 1. `LookupError`: `"no edit with id {id}"` (through `_edit`)
+
+## `Divergence.clashes` `@property`
+`src/chatddx/catalog/model.py:Divergence.clashes`
+
+* ∟`list[str]`
 
 ## `Divergence.moved` `@property`
 `src/chatddx/catalog/model.py:Divergence.moved`

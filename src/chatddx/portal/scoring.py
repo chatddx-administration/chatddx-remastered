@@ -335,11 +335,13 @@ def scoring(
     judge = (
         _judge(bench, shown, held, view, family) if isinstance(held, Judge) else None
     )
+    mine = shown.owner == bench.person.login and not shown.deleted
     return page(
         request,
         "scoring.html",
         person=bench.person,
         shown=shown,
+        proposal=api.proposal(bench, thread) if mine else None,
         scorers=scorers,
         judges=judges,
         scorer=_scorer(bench, held, gone) if isinstance(held, Scorer) else None,

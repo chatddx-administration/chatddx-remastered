@@ -112,10 +112,19 @@ class Divergence(_Frozen):
     base: Edit
     origin_head: Edit
     varies: dict[str, tuple[JsonValue, JsonValue]]
+    moves: dict[str, tuple[JsonValue, JsonValue]]
 
     @property
     def moved(self) -> bool:
         return self.origin_head.id != self.base.id
+
+    @property
+    def clashes(self) -> list[str]:
+        return [
+            path
+            for path, (_, fork) in self.varies.items()
+            if path in self.moves and self.moves[path][1] != fork
+        ]
 
 
 class Binding(_Frozen):

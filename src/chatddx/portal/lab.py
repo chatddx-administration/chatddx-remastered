@@ -25,6 +25,7 @@ from chatddx.locale import pgettext, tr
 
 from .pages import BenchDep, own_first, page, refusal_of
 from .scoring import unit_in
+from .shelves import display_kind
 from .titles import display_case
 
 router = APIRouter()
@@ -129,8 +130,7 @@ def lab(
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
     mine = shown.owner == bench.person.login
-    follows = api.follows(bench, thread) if mine and not shown.deleted else None
-    proposal = None if follows is None else follows.origin
+    proposal = api.proposal(bench, thread) if mine and not shown.deleted else None
     lineage = api.lineage(bench, thread)
     families = api_families.families(bench)
     runs = api_runs.runs(
@@ -215,13 +215,12 @@ def lab(
         proposal=proposal,
         changes=[
             (
-                v.path.removeprefix("/recipe/"),
+                display_kind(v.path.removeprefix("/recipe/")),
                 _held(bench, v.base),
                 _held(bench, v.fork),
             )
             for v in ([] if proposal is None else proposal.varies)
         ],
-        moved=None if follows is None else follows.moved,
         lineage=[(k, depth) for k, depth in ordered if not k.deleted],
         gone=[k for k, _ in ordered if k.deleted],
         me=next(k for k in lineage if k.id == thread),

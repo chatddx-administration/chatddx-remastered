@@ -58,6 +58,11 @@ Raises:
 5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_begun`)
 6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_begun`)
 
+## `Bench.behind_own`
+`src/chatddx/bench/updating.py:behind_own`
+
+* ∟`list[int]`
+
 ## `Bench.case`
 `src/chatddx/bench/cases.py:case`
 
@@ -101,33 +106,6 @@ Raises:
 7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
 8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
-
-## `Bench.follow`
-`src/chatddx/bench/following.py:follow`
-
-* `thread: int`
-* `head: int`
-* `language: str | None = None`
-* ∟`Written`
-
-Raises:
-1. `NotFound`: `"no {word} {thread} of yours"`
-2. `Invalid`: `"%(kind)s %(thread)s's changes don't fit its origin's head: %(refused)s", kind=word, thread=thread, refused=str(e)` (from `ValueError`, through `_proposed`)
-3. `ValueError`: `"{word} {thread} has nothing to follow"`
-4. `ValueError`: `"a compiled configuration's language comes from its recipe"`
-5. `ValueError`: `"{kind} components have no language of their own"`
-
-## `Bench.follow_moved`
-`src/chatddx/bench/following.py:follow_moved`
-
-* `thread: int`
-* `head: int`
-* ∟`Written`
-
-Raises:
-1. `NotFound`: `"no configuration {thread} of yours"`
-2. `ValueError`: `"configuration {thread} was compiled for nothing that has moved on"`
-3. `Invalid`: `"configuration %(thread)s can't be updated to %(what)s %(about)s: %(refused)s", thread=thread, what=_what(made), about=str(made.about), refused=str(made.refused)`
 
 ## `Bench.fork`
 `src/chatddx/bench/components.py:fork`
@@ -181,16 +159,10 @@ Raises:
 1. `NotFound`: `"no {_what(seen, subject)} shared with {seen.person.login}"`
 
 ## `Bench.lineage`
-`src/chatddx/bench/following.py:lineage`
+`src/chatddx/bench/updating.py:lineage`
 
 * `thread: int`
 * ∟`list[Kin]`
-
-## `Bench.moved`
-`src/chatddx/bench/following.py:moved`
-
-* `thread: int`
-* ∟`Moved | None`
 
 ## `Bench.new`
 `src/chatddx/bench/components.py:new`
@@ -219,19 +191,11 @@ Raises:
 * `kind: str`
 * ∟`bool`
 
-## `Bench.outdated_own`
-`src/chatddx/bench/updating.py:outdated_own`
-
-* ∟`list[int]`
-
 ## `Bench.proposal`
-`src/chatddx/bench/following.py:proposal`
+`src/chatddx/bench/updating.py:proposal`
 
 * `thread: int`
 * ∟`Proposed | None`
-
-Raises:
-1. `Invalid`: `"%(kind)s %(thread)s's changes don't fit its origin's head: %(refused)s", kind=word, thread=thread, refused=str(e)` (from `ValueError`, through `_proposed`)
 
 ## `Bench.queue`
 `src/chatddx/bench/runs.py:queue`
@@ -432,12 +396,14 @@ Raises:
 
 * `thread: int`
 * `head: int`
-* ∟`Written | None`
+* `language: str | None = None`
+* ∟`Written`
 
 Raises:
 1. `NotFound`: `"no {word} {thread} of yours"`
-2. `Invalid`: `"%(name)s can't be updated until %(judge)s is", name=name, judge=seen.title(judge)` (through `_scorer`)
-3. `Invalid`: `"%(name)s can't be updated: %(refused)s", name=name, refused=str(e)` (from `ValueError`, through `_judge`)
+2. `ValueError`: `"{word} {thread} has nothing to update"`
+3. `ValueError`: `"a compiled configuration's language comes from its recipe"` (through `_kept`)
+4. `ValueError`: `"{kind} components have no language of their own"` (through `_kept`)
 
 ## `Bench.update_all`
 `src/chatddx/bench/updating.py:update_all`
@@ -641,7 +607,7 @@ Raises:
 * `about: About`
 * `origin: int | None`
 * `divergence: Divergence | None`
-* `moved_on: bool`
+* `behind: bool`
 
 ## `KINDS`
 `src/chatddx/bench/model.py:KINDS`
@@ -683,16 +649,6 @@ Finds:
 
 `MODEL = "‹model›"`
 
-## `Moved` `@dataclass(frozen=True)`
-`src/chatddx/bench/model.py:Moved`
-
-* `facts: Behind | None`
-* `model: Behind | None`
-* `about: str`
-* `digest: str | None`
-* `compilation: str | None`
-* `refused: str | None`
-
 ## `NONE`
 `src/chatddx/bench/seen.py:NONE`
 
@@ -724,10 +680,14 @@ Raises:
 ## `Proposed` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Proposed`
 
-* `divergence: Divergence`
-* `proposal: Recipe | Component`
-* `digest: str`
+* `reasons: tuple[Reason, ...]`
+* `about: str | None`
+* `divergence: Divergence | None`
+* `remodelled: tuple[str, str] | None`
+* `proposal: Recipe | Component | None`
+* `digest: str | None`
 * `compilation: str | None`
+* `refused: ValueError | None`
 
 ## `Reach` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Reach`
@@ -745,6 +705,11 @@ Raises:
 `src/chatddx/bench/model.py:Reach.have`
 
 * ∟`int`
+
+## `Reason`
+`src/chatddx/bench/model.py:Reason`
+
+`Reason = Literal["origin", "facts", "model", "judge", "engine"]`
 
 ## `REFUSALS`
 `src/chatddx/bench/runs.py:REFUSALS`
@@ -1208,17 +1173,13 @@ Raises:
 
 * ∟`Recipe | None`
 
-## `UPDATED`
-`src/chatddx/bench/updating.py:UPDATED`
-
-`UPDATED = ("skeleton", "judge", "scorer", "trial")`
-
 ## `Updated` `@dataclass(frozen=True)`
 `src/chatddx/bench/updating.py:Updated`
 
 * `thread: int`
 * `written: Written | None`
 * `refused: ValueError | None`
+* `remodelled: tuple[str, str] | None`
 
 ## `WITH`
 `src/chatddx/bench/seen.py:WITH`

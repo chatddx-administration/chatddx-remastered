@@ -15,7 +15,7 @@
     <form method="post" action="/threads/{{ thread.id }}/restore"><button class="primary">{{ _("Restore") }}</button></form>
   </div>
   {% endif %}
-  {{ updating(thread) }}
+  {{ updating(thread, proposal, changes) }}
 
   {% call section(_("About it")) %}
   {% set origin_link %}{% if origin %}<a href="/threads/{{ origin.id }}">{{ named(origin) }}</a>{% elif thread.forked_from is not none %}{{ _("one you don't see") }}{% else %}—{% endif %}{% endset %}
@@ -32,40 +32,6 @@
   {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/{{ thread }}">Try it in the Lab</a>, where it is varied, run and saved{% endtrans %}</p>{% endif %}
   {% if thread.kind in ("scorer", "judge") and not thread.deleted %}<p class="mt-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/scoring/{{ thread }}">Weigh it on Scoring</a>, beside the scorers and judges it works with and how they scored{% endtrans %}</p>{% endif %}
   {% endcall %}
-
-  {% if proposal %}
-  {% call section(_("Its origin has moved on")) %}
-  <p class="mb-3 text-sm">{{ _("Following it keeps the origin's latest version with what yours changes of it, which is what yours holds already.") if proposal.digest == thread.head.digest else _("Following it keeps the origin's latest version with what yours changes of it.") }}</p>
-  {% if proposal.varies %}
-  <ul class="mb-4 space-y-1 text-sm">
-    {% for v in proposal.varies %}<li>{% trans path=v.path, fork=v.fork | tojson, base=v.base | tojson %}<span class="font-mono text-xs">{{ path }}</span>: yours keeps <span class="font-mono text-xs">{{ fork }}</span> over <span class="font-mono text-xs">{{ base }}</span>{% endtrans %}</li>{% endfor %}
-  </ul>
-  {% endif %}
-  <form method="post" action="/threads/{{ thread.id }}/follow">
-    <input type="hidden" name="head" value="{{ thread.head.id }}">
-    <button class="primary">{{ _("Follow its origin") }}</button>
-  </form>
-  {% endcall %}
-  {% endif %}
-
-  {% if moved and not thread.outdated %}
-  {% call section(_("What it was compiled for has moved on")) %}
-  <p class="mb-3 text-sm">
-    {%- if moved.model and moved.facts %}{{ _("Its model, %(model)s, has a new version, and the facts about it were corrected since it was compiled, where they change what it sends.", model=moved.about) }}
-    {%- elif moved.model %}{{ _("Its model, %(model)s, has a new version.", model=moved.about) }}
-    {%- else %}{{ _("It was compiled against facts about %(model)s that have been corrected since, where they change what it sends.", model=moved.about) }}{% endif %}
-    {%- if moved.refused %} {{ _("The facts now refuse what it asks: %(refused)s. Set another chunk in its place to follow them.", refused=moved.refused) }}
-    {%- elif moved.model %} {{ _("Following keeps its recipe, with the model's new version, compiled against the current facts.") }}
-    {%- else %} {{ _("Following keeps its recipe compiled against the current facts.") }}{% endif -%}
-  </p>
-  {% if not moved.refused %}
-  <form method="post" action="/threads/{{ thread.id }}/moved/follow">
-    <input type="hidden" name="head" value="{{ thread.head.id }}">
-    <button class="primary">{{ _("Update") }}</button>
-  </form>
-  {% endif %}
-  {% endcall %}
-  {% endif %}
 
   {% set last = versions | length %}
   {% set shown = versions[at - 1] %}

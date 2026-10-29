@@ -5,7 +5,6 @@ from pydantic import JsonValue
 
 from chatddx.bench import Bench, NotFound
 from chatddx.bench.test.helpers import correct_facts, move_model, trial
-from chatddx.bench.updating import UPDATED
 from chatddx.catalog import Edit, threads, titles
 from chatddx.curation import Plan, init
 from chatddx.factors.base import resolve
@@ -60,7 +59,8 @@ def test_what_its_model_s_new_weights_leave_behind_is_outdated_and_updated(
     tried = Catalog(bench.conn).create(made.digest, bench.person.id, name="mine").thread
     kinds = {mine: "skeleton", verdict: "judge", scorer: "scorer", tried: "trial"}
     assert not any(bench.outdated(_head(bench, t), k) for t, k in kinds.items())
-    assert bench.update(verdict, _head(bench, verdict).id) is None
+    with pytest.raises(ValueError, match=f"judge {verdict} has nothing to update"):
+        _ = bench.update(verdict, _head(bench, verdict).id)
 
     weights, inventory = _moved(bench)
     later = Bench(bench.conn, bench.person, inventory)
@@ -101,7 +101,7 @@ def test_what_its_model_s_new_weights_leave_behind_is_outdated_and_updated(
     assert later.update_all() == []
 
 
-def test_corrected_facts_alone_leave_it_usable(bench: Bench) -> None:
+def test_corrected_facts_alone_leave_it_usable_and_behind(bench: Bench) -> None:
     mine = bench.thread(LINES, "configuration")[0].thread
     recommended = bench.facts.models[QWEN_MODEL].sampling.recommended
     sampled: dict[str, JsonValue] = {
@@ -109,9 +109,12 @@ def test_corrected_facts_alone_leave_it_usable(bench: Bench) -> None:
     }
     sampled |= {"off": {"temperature": 0.1}, "on": {"temperature": 0.2}}
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": sampled})
-    assert bench.moved(mine) is not None
+    proposed = bench.proposal(mine)
+    assert proposed is not None and proposed.reasons == ("facts",)
     assert not bench.outdated(_head(bench, mine), "skeleton")
-    assert bench.update(mine, _head(bench, mine).id) is None
+    assert mine in bench.behind_own()
+    _ = bench.update(mine, _head(bench, mine).id)
+    assert mine not in bench.behind_own()
 
 
 def test_only_its_owner_updates_it(bench: Bench) -> None:
@@ -146,7 +149,7 @@ def test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date(
     assert archive is not None
     held = [
         (k, e)
-        for k in UPDATED
+        for k in ("skeleton", "judge", "scorer", "trial")
         for e, a in threads.heads(later.rows, k)
         if a.owner == archive.id
     ]
@@ -156,4 +159,4 @@ def test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date(
         for k, e in held
         if later.outdated(e, k)
     ] == []
-    assert later.outdated_own()
+    assert later.behind_own()

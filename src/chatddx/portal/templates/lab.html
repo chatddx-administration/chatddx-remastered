@@ -29,10 +29,11 @@
         <a href="/lab/{{ k.id }}{{ kept }}"{% if k.id == configuration.id %} aria-current="page"{% endif %}
            class="block px-2 py-1">
           <span class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate">{{ named(k) }}</span>{% if k.outdated %}{{ outdated() }}{% endif %}{% if fared %}<span class="font-mono text-xs text-muted-foreground">{{ mean(fared.mean_of.get(k.id)) }}</span>{% endif %}</span>
-          {% if k.varies or k.moved_on %}
+          {% set lagging = k.behind and not k.outdated %}
+          {% if k.varies or lagging %}
           <span class="block text-xs text-muted-foreground">
             {%- if k.varies %}{{ _("varies %(parts)s", parts=varies(k)) }}{% endif %}
-            {%- if k.moved_on %}{{ " · " if k.varies }}{{ _("its origin moved on") }}{% endif %}
+            {%- if lagging %}{{ " · " if k.varies }}{{ pgettext("a thread", "behind") }}{% endif %}
           </span>
           {% endif %}
         </a>
@@ -75,45 +76,7 @@
     <p class="mt-2 rounded-lg bg-warning/10 p-3 text-sm">{{ _("A newer version is saved: version %(n)s, %(at)s by %(by)s.", n=versions | length, at=versions[last].at | when, by=versions[last].by) }} <a class="view" href="{{ links[last] }}" data-head="{{ versions[last].id }}">{{ _("Open the latest") }}</a></p>
     {% endif %}
   </header>
-  {{ updating(configuration, here) }}
-
-  {% if proposal %}
-  <section class="mb-6 border-t border-border/60 pt-4">
-    <h2 class="mb-2 text-base font-semibold">{{ _("Its origin has moved on") }}</h2>
-    <p class="mb-3 text-sm">{{ _("Following it keeps the origin's latest version with what yours changes of it, which is what yours holds already.") if proposal.digest == configuration.head.digest else _("Following it keeps the origin's latest version with what yours changes of it.") }}</p>
-    {% if changes %}
-    <ul class="mb-4 space-y-1 text-sm">
-      {% for part, base, fork in changes %}<li>{% trans part=part | kind, fork=fork, base=base %}<span class="font-medium">{{ part }}</span>: yours keeps {{ fork }} over {{ base }}{% endtrans %}</li>{% endfor %}
-    </ul>
-    {% endif %}
-    <form method="post" action="/threads/{{ configuration.id }}/follow">
-      <input type="hidden" name="head" value="{{ configuration.head.id }}">
-      <input type="hidden" name="next" value="{{ here }}">
-      <button class="primary">{{ _("Follow its origin") }}</button>
-    </form>
-  </section>
-  {% endif %}
-
-  {% if moved and not configuration.outdated %}
-  <section class="mb-6 border-t border-border/60 pt-4">
-    <h2 class="mb-2 text-base font-semibold">{{ _("What it was compiled for has moved on") }}</h2>
-    <p class="mb-3 text-sm">
-      {%- if moved.model and moved.facts %}{{ _("Its model, %(model)s, has a new version, and the facts about it were corrected since it was compiled, where they change what it sends.", model=moved.about) }}
-      {%- elif moved.model %}{{ _("Its model, %(model)s, has a new version.", model=moved.about) }}
-      {%- else %}{{ _("It was compiled against facts about %(model)s that have been corrected since, where they change what it sends.", model=moved.about) }}{% endif %}
-      {%- if moved.refused %} {{ _("The facts now refuse what it asks: %(refused)s. Set another chunk in its place to follow them.", refused=moved.refused) }}
-      {%- elif moved.model %} {{ _("Following keeps its recipe, with the model's new version, compiled against the current facts.") }}
-      {%- else %} {{ _("Following keeps its recipe compiled against the current facts.") }}{% endif -%}
-    </p>
-    {% if not moved.refused %}
-    <form method="post" action="/threads/{{ configuration.id }}/moved/follow">
-      <input type="hidden" name="head" value="{{ configuration.head.id }}">
-      <input type="hidden" name="next" value="{{ here }}">
-      <button class="primary">{{ _("Update") }}</button>
-    </form>
-    {% endif %}
-  </section>
-  {% endif %}
+  {{ updating(configuration, proposal, changes, here) }}
 
   <div id="variation">
     <p class="mb-6 border-t border-border/60 pt-4 text-sm text-muted-foreground">{{ _("Trying it, running it and saving it take scripts.") }}</p>

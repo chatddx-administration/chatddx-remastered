@@ -3,13 +3,19 @@ from typing import final
 from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
-from .following import follow, follow_moved, lineage, moved, proposal
 from .gathering import gathering
 from .runs import again, queue, queue_scoring, resume, score, start, start_trials
 from .saying import leave, say
 from .seen import Seen
 from .taking import take, take_from
-from .updating import outdated, outdated_own, update, update_all
+from .updating import (
+    behind_own,
+    lineage,
+    outdated,
+    proposal,
+    update,
+    update_all,
+)
 
 
 @final
@@ -30,15 +36,12 @@ class Bench(Seen):
     say = say
     leave = leave
 
-    proposal = proposal
     lineage = lineage
-    follow = follow
-    moved = moved
-    follow_moved = follow_moved
     outdated = outdated
-    outdated_own = outdated_own
+    proposal = proposal
     update = update
     update_all = update_all
+    behind_own = behind_own
 
     start = start
     start_trials = start_trials

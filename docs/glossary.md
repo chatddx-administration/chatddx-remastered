@@ -217,12 +217,6 @@ versioned; the only one, `text@1`, writes a string as it is, strings one per lin
 token ids. It names its algorithm: `sha256`, or `hmac-sha256` with the key's id.
 `src/chatddx/factors/base.py:Fingerprint`
 
-:Following — Keeping the proposal as an edit of the person's own fork, based on its origin's head.
-`src/chatddx/bench/following.py:follow`
-
-:Following its facts — Keeping a configuration's recipe, with its model's head, compiled against the facts as they are
-now, as a new version of the person's own. `src/chatddx/bench/following.py:follow_moved`
-
 :Fork — A thread started from a version of another thread of the same kind, its origin. Forking makes one of one's own
 from any thread one sees. `src/chatddx/catalog/model.py:Thread.forked_from`
 
@@ -635,6 +629,10 @@ text-cleanup steps and seeds. `src/chatddx/factors/trial.py:Trial`
 
 :Typed case — A case whose vignette is a text the person typed, kept in a database source, with a family of their own in
 the language they say. `src/chatddx/bench/cases.py:type_case`
+
+:Updating — Keeping, as a new version of a person's own thread that is behind what it was made from, its origin's head
+with its own changes on top, its model's head, the facts as they are now, its judges' latest versions and an engine
+served here, each where it applies. `src/chatddx/bench/updating.py:update`
 
 :Variation — A version of a configuration with recipe parts replaced over it, or none, as it is tried before anyone
 keeps it as a fork or a new version. `src/chatddx/bench/variation.py:TriedVariation`

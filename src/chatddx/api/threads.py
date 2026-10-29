@@ -11,7 +11,6 @@ from chatddx.bench import (
     Bench,
     Carried,
     Endpoint,
-    Moved,
     NotFound,
     Proposed,
     Reach,
@@ -456,35 +455,38 @@ def lineage(bench: BenchDep, thread: int) -> list[schemas.Kin]:
             origin=k.origin,
             base=None if k.divergence is None else _edit_of(bench, k.divergence.base),
             varies=[] if k.divergence is None else _varied(k.divergence),
-            moved_on=k.moved_on,
+            behind=k.behind,
             deleted=k.about.deleted,
         )
         for k in found
     ]
 
 
-@router.get("/threads/{thread}/follows")
-def follows(bench: BenchDep, thread: int) -> schemas.Follows:
+@router.get("/threads/{thread}/proposal")
+def proposal(bench: BenchDep, thread: int) -> schemas.Proposal | None:
     with refused():
         proposed = bench.proposal(thread)
-        moved = bench.moved(thread) if _configures(bench, thread) else None
-    return schemas.Follows(
-        origin=None if proposed is None else _proposal_of(bench, proposed),
-        moved=None if moved is None else _moved_of(bench, moved),
-    )
+    return None if proposed is None else _proposal_of(bench, proposed)
 
 
 def _proposal_of(bench: Bench, proposed: Proposed) -> schemas.Proposal:
     diverged, held = proposed.divergence, proposed.proposal
     recipe = isinstance(held, Recipe)
     return schemas.Proposal(
-        base=_edit_of(bench, diverged.base),
-        origin_head=_edit_of(bench, diverged.origin_head),
-        varies=_varied(diverged),
+        reasons=list(proposed.reasons),
+        about=proposed.about,
+        base=None if diverged is None else _edit_of(bench, diverged.base),
+        origin_head=None if diverged is None else _edit_of(bench, diverged.origin_head),
+        varies=[] if diverged is None else _varied(diverged),
+        clashes=[] if diverged is None else diverged.clashes,
+        remodelled=None
+        if proposed.remodelled is None
+        else schemas.Remodelled(was=proposed.remodelled[0], now=proposed.remodelled[1]),
         recipe=held.model_dump(mode="json") if recipe else None,
-        component=None if recipe else held.model_dump(mode="json"),
+        component=None if recipe or held is None else held.model_dump(mode="json"),
         digest=proposed.digest,
         compilation=proposed.compilation,
+        refused=None if proposed.refused is None else str(proposed.refused),
     )
 
 
@@ -495,37 +497,14 @@ def _varied(diverged: catalog.Divergence) -> list[schemas.Varied]:
     ]
 
 
-def _moved_of(bench: Bench, moved: Moved) -> schemas.Moved:
-    facts, model = moved.facts, moved.model
-    return schemas.Moved(
-        about=moved.about,
-        facts=None
-        if facts is None or facts.head is None
-        else _edit_of(bench, facts.head, "facts"),
-        compiled=None if facts is None else facts.digest,
-        model=None
-        if model is None or model.head is None
-        else _edit_of(bench, model.head, "model"),
-        held=None if model is None else model.digest,
-        digest=moved.digest,
-        compilation=moved.compilation,
-        refused=moved.refused,
-    )
-
-
 @router.post(
-    "/threads/{thread}/follows",
+    "/threads/{thread}/update",
     status_code=201,
     responses={
         409: {"description": "The thread has moved on since the head the edit names"}
     },
 )
-def follow(bench: BenchDep, thread: int, given: schemas.NewFollow) -> schemas.MadeEdit:
+def update(bench: BenchDep, thread: int, given: schemas.NewUpdate) -> schemas.MadeEdit:
     with refused():
-        if given.follow == "origin":
-            written = bench.follow(thread, given.head, given.language)
-        elif given.language is not None:
-            raise ValueError("following what moved on takes no language")
-        else:
-            written = bench.follow_moved(thread, given.head)
+        written = bench.update(thread, given.head, given.language)
     return _made_edit(bench, written)

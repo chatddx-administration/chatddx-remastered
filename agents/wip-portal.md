@@ -143,10 +143,10 @@ varied, run and compared with its lineage, and `/lab` leads to the person's firs
 variation's query (`schemas.Varying`, its parts, `head`, `under`, `tag`) and its own: `handle`, `family` and `by`.
 
 - **Lineage**, a drawer: its first origin and every fork below it, each with its mean on the set, the higher first.
-- **The configuration**: its name, language, origin and translations; its versions by link; **Follow** its origin or its
-  corrected facts; the variation's island (`frontend/src/islands/lab.ts`), which tries parts in place of its own, says
-  what it makes, runs it and saves it as a version or a fork; and **Its trials**, run through the runner, whose page for
-  trials picked in the Library is `/lab/run`.
+- **The configuration**: its name, language, origin and translations; its versions by link; **Update** it where it is
+  behind what it was made from; the variation's island (`frontend/src/islands/lab.ts`), which tries parts in place of
+  its own, says what it makes, runs it and saves it as a version or a fork; and **Its trials**, run through the runner,
+  whose page for trials picked in the Library is `/lab/run`.
 - **How they fare**: each configuration of the lineage as a column on a set of cases, under each its own model or one
   handle, by its latest run, sorted by a view.
 

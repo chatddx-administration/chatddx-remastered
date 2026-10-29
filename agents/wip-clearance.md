@@ -224,7 +224,8 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
    - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:Seen.variation`), so
      `/threads/{id}/variation` shows another person's unshared chunk, and `POST /runs` with `parts` runs one
      (`src/chatddx/api/runs.py:_new`). Untracked.
-   - `/threads/{id}/follows` returns appendix text without no-store, as `origin` (`src/chatddx/api/threads.py:follows`).
+   - `/threads/{id}/proposal` returns appendix text without no-store, as `component`
+     (`src/chatddx/api/threads.py:proposal`).
 8. **Sessions** and people.
    - A password change leaves sessions open (`src/chatddx/store/people.py:87-94`), and so does signing in again.
    - Expired sessions are deleted only when a session opens (`People.open_session`).

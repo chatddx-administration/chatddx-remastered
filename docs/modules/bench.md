@@ -13,7 +13,7 @@ The examples run in order on the sample World, loaded for alice (`chatddx init-d
 
 `Seen` holds the reads (`src/chatddx/bench/seen.py:Seen`), and `Bench` binds each write onto them from a module by what
 it writes: components (`components.py`), configurations (`configurations.py`), cases (`cases.py`), `:Taking`
-(`taking.py`), `:Saying` (`saying.py`), `:Following` (`following.py`) and runs (`runs.py`).
+(`taking.py`), `:Saying` (`saying.py`), `:Updating` (`updating.py`) and runs (`runs.py`).
 
 - **The connection** is in autocommit mode, as the runner needs (`src/chatddx/runner/run.py:Runner`): a read sees what
   is committed as it reads, and a write holds what it writes in transactions of its own.

@@ -112,18 +112,29 @@
 
 {% macro outdated() %}<span class="inline-flex rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">{{ pgettext("a thread", "Out of date") }}</span>{% endmacro %}
 
-{% macro updating(thread, next=none) %}
-{% if thread.outdated and not thread.deleted %}
-<div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
-  {{ outdated() }}
-  <span>
-    {%- if thread.kind == "judge" %}{{ _("Its model has new weights, so it can't judge until it is updated.") }}
-    {%- elif thread.kind == "scorer" %}{{ _("It asks a judge that is out of date, so it can't score until it is updated.") }}
-    {%- elif thread.kind == "trial" %}{{ _("No endpoint here serves its engine, so it can't run until it is updated.") }}
-    {%- else %}{{ _("Its model has new weights, so it can't run until it is updated.") }}{% endif -%}
-  </span>
-  {% if thread.owner == person.login %}
-  <form method="post" action="/threads/{{ thread.id }}/update">
+{% macro updating(thread, proposal=none, changes=[], next=none) %}
+{% if (thread.outdated or proposal) and not thread.deleted %}
+<div class="mb-6 rounded-lg {{ 'bg-warning/10' if thread.outdated else 'bg-muted' }} p-3 text-sm">
+  <p class="flex flex-wrap items-center gap-2 font-medium">{% if thread.outdated %}{{ outdated() }}{% endif %}<span>{{ _("What it was made from has moved on") }}</span></p>
+  {% if proposal %}
+  <ul class="mt-2 space-y-1">
+    {% for r in proposal.reasons %}<li>
+      {%- if r == "origin" %}{{ _("Its origin has a newer version.") }}
+      {%- elif r == "facts" %}{{ _("The facts about %(model)s were corrected where they change what it sends.", model=proposal.about) }}
+      {%- elif r == "model" %}{{ _("Its model, %(model)s, has a new version.", model=proposal.about) }}
+      {%- elif r == "judge" %}{{ _("It asks a judge that is behind.") }}
+      {%- else %}{{ _("No endpoint here serves its engine.") }}{% endif -%}
+    </li>{% endfor %}
+    {% if proposal.remodelled %}<li>{{ _("Its origin is now made for %(now)s, where yours is made for %(was)s: updating moves yours to %(now)s.", now=proposal.remodelled.now, was=proposal.remodelled.was) }}</li>{% endif %}
+    {% for part, base, fork in changes %}<li>{% trans part=part, fork=fork, base=base %}<span class="font-medium">{{ part }}</span>: yours keeps {{ fork }} over {{ base }}{% endtrans %}</li>{% endfor %}
+    {% if proposal.clashes %}<li>{{ _("Yours and its origin both change %(paths)s: updating keeps yours there.", paths=proposal.clashes | map("replace", "/recipe/", "") | join(", ")) }}</li>{% endif %}
+  </ul>
+  {% endif %}
+  {% if thread.outdated %}<p class="mt-2">{{ _("It can't be used until it is updated.") }}</p>{% endif %}
+  {% if proposal and proposal.refused %}
+  <p class="mt-2 text-warning">{{ _("It can't be updated as things are: %(refused)s", refused=proposal.refused) }}</p>
+  {% elif proposal %}
+  <form class="mt-3" method="post" action="/threads/{{ thread.id }}/update">
     <input type="hidden" name="head" value="{{ thread.head.id }}">
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <button class="primary">{{ _("Update") }}</button>

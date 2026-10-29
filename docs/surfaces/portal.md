@@ -358,7 +358,7 @@ Raises:
 * `editable: Collection[str]`
 * ∟`list[Field]`
 
-## `scoring.following` `@router.post("/scoring/{thread}/follow")`
+## `following` `@router.post("/scoring/{thread}/follow")`
 `src/chatddx/portal/scoring.py:following`
 
 * `bench: BenchDep`
@@ -370,24 +370,6 @@ Raises:
 Raises:
 1. `NotFound`: `"no judge %(thread)s for %(login)s", thread=thread, login=bench.person.login`
 2. `MovedOn`: `"scorer %(scorer)s has a newer version: look at it again", scorer=scorer`
-
-## `threads.following` `@router.post("/threads/{thread}/follow")`
-`src/chatddx/portal/threads.py:following`
-
-* `bench: BenchDep`
-* `thread: int`
-* `head: Annotated[int, Form()]`
-* `next: Annotated[str | None, Form()] = None`
-* ∟`Response`
-
-## `following_moved` `@router.post("/threads/{thread}/moved/follow")`
-`src/chatddx/portal/threads.py:following_moved`
-
-* `bench: BenchDep`
-* `thread: int`
-* `head: Annotated[int, Form()]`
-* `next: Annotated[str | None, Form()] = None`
-* ∟`Response`
 
 ## `forking` `@router.post("/threads/{thread}/fork")`
 `src/chatddx/portal/threads.py:forking`

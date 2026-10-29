@@ -341,42 +341,40 @@ class Varied(_Schema):
     fork: JsonValue
 
 
+class Remodelled(_Schema):
+    was: str = Field(description="the model its base is made for, by name")
+    now: str = Field(description="the model its origin's head is made for, by name")
+
+
 class Proposal(_Schema):
-    base: Edit
-    origin_head: Edit
-    varies: list[Varied]
+    reasons: list[Literal["origin", "facts", "model", "judge", "engine"]] = Field(
+        description="why it is behind what it was made from: its origin moved on, the "
+        + "facts about its model were corrected where they change what it sends, its "
+        + "model has a new version, a judge it asks is behind, or no endpoint here "
+        + "serves its engine; the last three leave it unusable until it is updated"
+    )
+    about: str | None = Field(
+        description="for a configuration or a judge, the model its head is made for, "
+        + "by name"
+    )
+    base: Edit | None = Field(
+        description="when its origin moved on, the version of its origin it is "
+        + "compared with"
+    )
+    origin_head: Edit | None
+    varies: list[Varied] = Field(description="what its head changes of its base")
+    clashes: list[str] = Field(
+        description="the paths it and its origin both change, each its own way: "
+        + "updating keeps its own"
+    )
+    remodelled: Remodelled | None = Field(
+        description="when its origin moved to another model, which updating moves it to"
+    )
     recipe: JsonValue = Field(description="for a configuration, what it compiles from")
     component: JsonValue = Field(description="for another kind, its body")
-    digest: str
+    digest: str | None = Field(description="what updating comes to")
     compilation: str | None
-
-
-class Moved(_Schema):
-    about: str = Field(description="the model it is compiled for, by name")
-    facts: Edit | None = Field(
-        description="the head of the facts about it, which correct the ones its head "
-        + "was compiled against where they change what it sends"
-    )
-    compiled: str | None = Field(description="the facts its head was compiled against")
-    model: Edit | None = Field(
-        description="its model's head, a new version of the one its recipe names"
-    )
-    held: str | None = Field(description="the model its recipe names")
-    digest: str | None = Field(description="the skeleton following comes to")
-    compilation: str | None
-    refused: str | None = Field(
-        description="why following is refused: the facts refuse what its recipe asks"
-    )
-
-
-class Follows(_Schema):
-    origin: Proposal | None = Field(
-        description="a fork's whose origin has moved on: what following it would keep"
-    )
-    moved: Moved | None = Field(
-        description="a configuration's whose facts or model have moved on: what "
-        + "following them would keep"
-    )
+    refused: str | None = Field(description="why updating is refused")
 
 
 class Kin(Thread):
@@ -387,18 +385,14 @@ class Kin(Thread):
         description="a fork's: the version of its origin it is compared with"
     )
     varies: list[Varied] = Field(description="a fork's: what its head changes")
-    moved_on: bool = Field(
-        description="a fork's: its origin has moved on since its base, so following it "
-        + "is proposed"
+    behind: bool = Field(
+        description="it is behind what it was made from, so updating it is proposed"
     )
     deleted: bool
 
 
-class NewFollow(_Schema):
+class NewUpdate(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
-    follow: Literal["origin", "moved"] = Field(
-        "origin", description="its origin, or the facts and model that moved on"
-    )
     language: Language = None
 
 

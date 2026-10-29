@@ -838,7 +838,9 @@ def test_a_collaborator_leaves_a_thread_shared_with_them(signed: TestClient) -> 
 
 
 @pytest.mark.slow
-def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> None:
+def test_a_fork_is_updated_from_its_origin_once_that_moves_on(
+    signed: TestClient,
+) -> None:
     off = thread(signed, "reasoning", OFF)
     got = signed.post(f"/threads/{off['id']}/fork", data={"name": "mine too"})
     assert got.status_code == 303
@@ -848,7 +850,7 @@ def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> Non
     listed = said(shown(signed, "/library?kind=reasoning"))
     assert f"mine too forked from {OFF} alice" in listed
     assert f"{OFF} forked from archive/{OFF} alice" in listed
-    assert "Its origin has moved on" not in page
+    assert "Its origin has a newer version." not in page
 
     body = signed.get(f"/api/components/{off['head']['digest']}").json()["body"]
     edits = f"/api/threads/{off['id']}/edits"
@@ -856,13 +858,13 @@ def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> Non
     got = signed.post(edits, json={"head": off["head"]["id"], "component": moved})
     assert got.status_code == 201
     page = shown(signed, f"/threads/{fork}")
-    assert "Its origin has moved on" in page
+    assert "Its origin has a newer version." in page
     head = signed.get(f"/api/threads/{fork}").json()["head"]
     assert (
-        signed.post(f"/threads/{fork}/follow", data={"head": head["id"]}).status_code
+        signed.post(f"/threads/{fork}/update", data={"head": head["id"]}).status_code
         == 303
     )
-    assert "Its origin has moved on" not in shown(signed, f"/threads/{fork}")
+    assert "Its origin has a newer version." not in shown(signed, f"/threads/{fork}")
     assert "Version 2 of 2" in shown(signed, f"/threads/{fork}")
 
 
@@ -964,7 +966,7 @@ def test_a_scorer_s_earlier_version_is_made_the_latest_with_its_labels(
 def test_a_thread_s_forms_from_another_site_write_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     actions = ("said", "edit", "delete", "restore", "leave", "revert", "fork")
-    actions = (*actions, "follow", "moved/follow", "update", "take")
+    actions = (*actions, "update", "take")
     for action in (*actions, "carry"):
         assert signed.post(f"/threads/1/{action}", headers=elsewhere).status_code == 403
     assert signed.post("/library/update", headers=elsewhere).status_code == 403

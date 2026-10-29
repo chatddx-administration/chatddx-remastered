@@ -430,30 +430,6 @@ Raises:
 * `finding: factors.Finding`
 * ∟`Self`
 
-## `follow` `@router.post("/threads/{thread}/follows", …)`
-`src/chatddx/api/threads.py:follow`
-
-* `bench: BenchDep`
-* `thread: int`
-* `given: schemas.NewFollow`
-* ∟`schemas.MadeEdit`
-
-Raises:
-1. `ValueError`: `"following what moved on takes no language"`
-
-## `Follows` `(_Schema)`
-`src/chatddx/api/schemas.py:Follows`
-
-* `origin: Proposal | None = Field(…)`
-* `moved: Moved | None = Field(…)`
-
-## `follows` `@router.get("/threads/{thread}/follows")`
-`src/chatddx/api/threads.py:follows`
-
-* `bench: BenchDep`
-* `thread: int`
-* ∟`schemas.Follows`
-
 ## `fork` `@router.post("/threads/{thread}/forks", status_code=201)`
 `src/chatddx/api/threads.py:fork`
 
@@ -688,7 +664,7 @@ Raises:
 * `origin: int | None = Field(…)`
 * `base: Edit | None = Field(…)`
 * `varies: list[Varied] = Field(description="a fork's: what its head changes")`
-* `moved_on: bool = Field(…)`
+* `behind: bool = Field(…)`
 * `deleted: bool`
 
 ## `Kind` `(_Schema)`
@@ -844,18 +820,6 @@ Raises:
 
 `ModelDigest`
 
-## `Moved` `(_Schema)`
-`src/chatddx/api/schemas.py:Moved`
-
-* `about: str = Field(description="the model it is compiled for, by name")`
-* `facts: Edit | None = Field(…)`
-* `compiled: str | None = Field(description="the facts its head was compiled against")`
-* `model: Edit | None = Field(…)`
-* `held: str | None = Field(description="the model its recipe names")`
-* `digest: str | None = Field(description="the skeleton following comes to")`
-* `compilation: str | None`
-* `refused: str | None = Field(…)`
-
 ## `Named`
 `src/chatddx/api/events.py:Named`
 
@@ -898,13 +862,6 @@ Raises:
 * `component: ComponentBody | None = None`
 * `language: Language = None`
 * `labels: Labels | None = Field(…)`
-
-## `NewFollow` `(_Schema)`
-`src/chatddx/api/schemas.py:NewFollow`
-
-* `head: int = Field(description="the edit the change was made on: the head seen")`
-* `follow: Literal['origin', 'moved'] = Field(…)`
-* `language: Language = None`
 
 ## `NewFork` `(_Schema)`
 `src/chatddx/api/schemas.py:NewFork`
@@ -989,6 +946,12 @@ Raises:
 * `language: str = Field(description="the language it is typed in, such as 'sv'")`
 * `source: str | None = Field(…)`
 
+## `NewUpdate` `(_Schema)`
+`src/chatddx/api/schemas.py:NewUpdate`
+
+* `head: int = Field(description="the edit the change was made on: the head seen")`
+* `language: Language = None`
+
 ## `NO_STORE`
 `src/chatddx/api/state.py:NO_STORE`
 
@@ -1064,13 +1027,25 @@ Raises:
 ## `Proposal` `(_Schema)`
 `src/chatddx/api/schemas.py:Proposal`
 
-* `base: Edit`
-* `origin_head: Edit`
-* `varies: list[Varied]`
+* `reasons: list[Literal['origin', 'facts', 'model', 'judge', 'engine']] = Field(…)`
+* `about: str | None = Field(…)`
+* `base: Edit | None = Field(…)`
+* `origin_head: Edit | None`
+* `varies: list[Varied] = Field(description="what its head changes of its base")`
+* `clashes: list[str] = Field(…)`
+* `remodelled: Remodelled | None = Field(…)`
 * `recipe: JsonValue = Field(description="for a configuration, what it compiles from")`
 * `component: JsonValue = Field(description="for another kind, its body")`
-* `digest: str`
+* `digest: str | None = Field(description="what updating comes to")`
 * `compilation: str | None`
+* `refused: str | None = Field(description="why updating is refused")`
+
+## `proposal` `@router.get("/threads/{thread}/proposal")`
+`src/chatddx/api/threads.py:proposal`
+
+* `bench: BenchDep`
+* `thread: int`
+* ∟`schemas.Proposal | None`
 
 ## `Queue` `(_Schema)`
 `src/chatddx/api/schemas.py:Queue`
@@ -1127,6 +1102,12 @@ Raises:
 
 Raises:
 1. `Refusing`: `422, e` (from `(ValueError, *named)`)
+
+## `Remodelled` `(_Schema)`
+`src/chatddx/api/schemas.py:Remodelled`
+
+* `was: str = Field(description="the model its base is made for, by name")`
+* `now: str = Field(description="the model its origin's head is made for, by name")`
 
 ## `rendered_again` `@router.get("/runs/{run}/rendered-again")`
 `src/chatddx/api/runs.py:rendered_again`
@@ -1783,6 +1764,14 @@ Raises:
 
 * `scorer: str`
 * `name: str`
+
+## `update` `@router.post("/threads/{thread}/update", …)`
+`src/chatddx/api/threads.py:update`
+
+* `bench: BenchDep`
+* `thread: int`
+* `given: schemas.NewUpdate`
+* ∟`schemas.MadeEdit`
 
 ## `Variation` `(_Schema)`
 `src/chatddx/api/schemas.py:Variation`

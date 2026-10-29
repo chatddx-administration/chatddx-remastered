@@ -34,3 +34,15 @@ raise Whoops(
     + "RuntimeErrors",
 )
 ```
+
+## `src/chatddx/bench/updating.py:_kept`
+
+```
+assert proposed.digest is not None and proposed.proposal is not None
+```
+
+## `src/chatddx/bench/updating.py:_remodelled`
+
+```
+assert isinstance(was, str) and isinstance(now, str)
+```

@@ -298,7 +298,7 @@ def behind(rows: Reader, thread: int) -> list[Behind]:
 
 
 # Policy: facts corrected where a configuration doesn't reach leave it as it is:
-# following them would write nothing (holds).
+# updating to them would write nothing (holds).
 def _sends_else(rows: Reader, made: Compilation, facts: Edit) -> bool:
     newer = resolve(rows.get, facts.digest, ModelFacts)
     try:
@@ -317,15 +317,24 @@ def divergence(rows: Reader, id: int) -> Divergence | None:
     fork = edits[-1]
     by_recipe = base.compilation is not None and fork.compilation is not None
     before, after = _shape(rows, base, by_recipe), _shape(rows, fork, by_recipe)
+    origin = head(rows, base.thread)
+    shaped = origin.id != base.id and (not by_recipe or origin.compilation is not None)
     return Divergence(
         base=base,
-        origin_head=head(rows, base.thread),
-        varies={
-            path: (before.get(path), after.get(path))
-            for path in sorted(before.keys() | after.keys())
-            if before.get(path) != after.get(path)
-        },
+        origin_head=origin,
+        varies=_changes(before, after),
+        moves=_changes(before, _shape(rows, origin, by_recipe)) if shaped else {},
     )
+
+
+def _changes(
+    before: Mapping[str, JsonValue], after: Mapping[str, JsonValue]
+) -> dict[str, tuple[JsonValue, JsonValue]]:
+    return {
+        path: (before.get(path), after.get(path))
+        for path in sorted(before.keys() | after.keys())
+        if before.get(path) != after.get(path)
+    }
 
 
 def proposal(rows: Reader, id: int) -> Recipe | Component | None:

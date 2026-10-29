@@ -57,7 +57,7 @@
     </p>
     {% if shown.description %}<p class="mt-2 text-sm">{{ shown.description }}</p>{% endif %}
   </header>
-  {{ updating(shown, "/scoring/" ~ shown.id) }}
+  {{ updating(shown, proposal, next="/scoring/" ~ shown.id) }}
 
   {% if scorer %}
   {% if scorer.unshipped %}<p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">{{ scorer.unshipped }}</p>{% endif %}

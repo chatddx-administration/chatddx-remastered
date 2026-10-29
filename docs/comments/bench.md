@@ -27,6 +27,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # a process starts and before init-data commits.
 ```
 
+## `src/chatddx/bench/model.py:Reason`
+
+```
+# Policy: a thread is behind what it was made from for these reasons, the last three of
+# which leave it unusable until it is updated.
+```
+
 ## `src/chatddx/bench/runs.py:start`
 
 ```
@@ -131,11 +138,11 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # engines serving them at the endpoints, loaded with init-data.
 ```
 
-## `src/chatddx/bench/updating.py:_behind`
+## `src/chatddx/bench/updating.py:_LATER`
 
 ```
-# Policy: weights no model thread holds, or several do, aren't out of date, as
-# src/chatddx/bench/seen.py:Seen.handle says what is wrong where they are tried.
+# Policy: what is read is updated before what reads it: a scorer's update reads its
+# judges', and a fork's its origin's, which a fork's greater id says.
 ```
 
 ## `src/chatddx/bench/updating.py:_latest`
@@ -145,17 +152,23 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # first, as a fork's first version holds the judge it was forked from.
 ```
 
+## `src/chatddx/bench/updating.py:_newer`
+
+```
+# Policy: weights no model thread holds, or several do, aren't out of date, as
+# src/chatddx/bench/seen.py:Seen.handle says what is wrong where they are tried.
+```
+
+## `src/chatddx/bench/updating.py:_remodelled`
+
+```
+# Policy: a fork's own model is the one updating keeps, so only a model the fork took
+# from its origin is said to move.
+```
+
 ## `src/chatddx/bench/updating.py:_skeleton`
 
 ```
 # Policy: a skeleton compiled from a recipe is compiled again for the weights, against
 # the current facts and into the language it was; one written by hand is kept as it is.
-```
-
-## `src/chatddx/bench/updating.py:UPDATED`
-
-```
-# Policy: what can't be used until it is updated, in the order it is updated, as a
-# scorer's update reads its judges': what holds weights its model's handle no longer
-# holds, a scorer asking such a judge, and a trial whose engine no endpoint here serves.
 ```

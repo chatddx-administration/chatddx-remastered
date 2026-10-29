@@ -157,7 +157,7 @@ def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 
-def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
+def test_updating_from_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:
     origin, doc = _archive_s(bench, "list")
@@ -166,15 +166,15 @@ def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     narrow = bench.fork(origin, "narrow", one, labels={("view", 0): "mine"})
     _renamed(conn, origin, {("view", 0): "ddx", ("view", 1): "dont-miss"})
 
-    followed = bench.follow(as_is.edit.thread, as_is.edit.id)
-    assert followed.edit.digest == as_is.edit.digest
-    assert view_labels(bench, followed.edit) == {0: "ddx", 1: "dont-miss"}
-    kept = bench.follow(narrow.edit.thread, narrow.edit.id)
+    updated = bench.update(as_is.edit.thread, as_is.edit.id)
+    assert updated.edit.digest == as_is.edit.digest
+    assert view_labels(bench, updated.edit) == {0: "ddx", 1: "dont-miss"}
+    kept = bench.update(narrow.edit.thread, narrow.edit.id)
     assert kept.edit.digest == one.digest
     assert view_labels(bench, kept.edit) == {0: "mine"}
 
 
-def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
+def test_a_scorer_moves_on_to_a_raised_version_by_updating_from_its_origin(
     conn: Connection,
     alice: Person,
     bench: Bench,
@@ -197,6 +197,6 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     assert graded.refused is not None
     assert f"metrics:score is at version {RAISED} in chatddx" in graded.refused
 
-    followed = bench.follow(fork.edit.thread, fork.edit.id)
-    assert resolve(bench.store.get, followed.edit.digest, Scorer).version == RAISED
-    assert view_labels(bench, followed.edit) == {0: "whole"}
+    updated = bench.update(fork.edit.thread, fork.edit.id)
+    assert resolve(bench.store.get, updated.edit.digest, Scorer).version == RAISED
+    assert view_labels(bench, updated.edit) == {0: "whole"}
