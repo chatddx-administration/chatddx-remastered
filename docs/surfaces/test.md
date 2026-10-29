@@ -115,6 +115,14 @@ Finds:
 
 `CLINICIAN = "clinician"`
 
+## `command`
+`src/chatddx/test/costs.py:command`
+
+The command pytest ran as, its plugins named by -p and its verbosity left out.
+
+* `args: Sequence[str]`
+* ∟`str`
+
 ## `committing_as_bob` `@pytest.fixture(name="as_bob")`
 `src/chatddx/test/helpers.py:committing_as_bob`
 
@@ -171,6 +179,60 @@ Finds:
 
 * `template: str`
 * ∟`str`
+
+## `Cost` `@dataclass(frozen=True)`
+`src/chatddx/test/costs.py:Cost`
+
+* `when: str`
+* `machine: str`
+* `seconds: float`
+* `status: int`
+* `beside: int`
+* `commit: str`
+* `command: str`
+
+## `cost`
+`src/chatddx/test/test_costs.py:cost`
+
+* `command: str`
+* `seconds: float`
+* `status: int = 0`
+* `beside: int = 0`
+* ∟`Cost`
+
+## `Cost.read` `@classmethod`
+`src/chatddx/test/costs.py:Cost.read`
+
+* `line: str`
+* ∟`"Cost"`
+
+## `Cost.written`
+`src/chatddx/test/costs.py:Cost.written`
+
+* ∟`str`
+
+## `Costs`
+`src/chatddx/test/costs.py:Costs`
+
+* `command: str`
+* `began: float`
+* `status: int | None`
+
+## `Costs.__init__`
+`src/chatddx/test/costs.py:Costs.__init__`
+
+* `args: Sequence[str]`
+
+## `Costs.pytest_sessionfinish`
+`src/chatddx/test/costs.py:Costs.pytest_sessionfinish`
+
+* `exitstatus: int`
+* ∟`None`
+
+## `Costs.pytest_unconfigure`
+`src/chatddx/test/costs.py:Costs.pytest_unconfigure`
+
+* ∟`None`
 
 ## `create_database`
 `src/chatddx/test/helpers.py:create_database`
@@ -354,6 +416,21 @@ Finds:
 * `name: str`
 * `said: list[str]`
 
+## `LOG`
+`src/chatddx/test/costs.py:LOG`
+
+`LOG = settings.PROJECT_ROOT / "dev" / "costs.tsv"`
+
+## `logged`
+`src/chatddx/test/costs.py:logged`
+
+Appends a line to the spool, if in a checkout, as told by the log being there.
+
+* `cost: Cost`
+* `spool: Path = SPOOL`
+* `log: Path = LOG`
+* ∟`None`
+
 ## `made`
 `src/chatddx/test/test_budget.py:made`
 
@@ -363,10 +440,24 @@ Finds:
 * `duration: float`
 * ∟`pytest.TestReport`
 
-## `MARGIN`
+## `budget.MARGIN`
 `src/chatddx/test/budget.py:MARGIN`
 
 `MARGIN = 3.0`
+
+## `costs.MARGIN`
+`src/chatddx/test/costs.py:MARGIN`
+
+`MARGIN = 1.5`
+
+## `medians`
+`src/chatddx/test/costs.py:medians`
+
+Each command's median over its RECENT latest passes on the machine, run alone.
+
+* `costs: Iterable[Cost]`
+* `machine: str`
+* ∟`dict[str, float]`
 
 ## `MISTRAL`
 `src/chatddx/test/world.py:MISTRAL`
@@ -435,8 +526,14 @@ Finds:
 
 `PASSWORD = "correct horse battery staple"`
 
-## `pytest_configure`
+## `budget.pytest_configure`
 `src/chatddx/test/budget.py:pytest_configure`
+
+* `config: pytest.Config`
+* ∟`None`
+
+## `costs.pytest_configure`
+`src/chatddx/test/costs.py:pytest_configure`
 
 * `config: pytest.Config`
 * ∟`None`
@@ -445,6 +542,23 @@ Finds:
 `src/chatddx/test/budget.py:QUICK`
 
 `QUICK = 1 / 8`
+
+## `quoted`
+`src/chatddx/test/costs.py:quoted`
+
+The text, its figures that are off by more than MARGIN made the median.
+
+A figure is a ~<n>s in a list item whose first code span is the command, and only
+what a stamp pending holds as written now is read.
+
+* `text: str`
+* `took: dict[str, float]`
+* ∟`str`
+
+## `QUOTED_IN`
+`src/chatddx/test/costs.py:QUOTED_IN`
+
+`QUOTED_IN = (settings.PROJECT_ROOT / "AGENTS.md",)`
 
 ## `QWEN`
 `src/chatddx/test/world.py:QWEN`
@@ -470,6 +584,17 @@ Finds:
 `src/chatddx/test/world.py:QWEN_MODEL`
 
 `QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"`
+
+## `read`
+`src/chatddx/test/costs.py:read`
+
+* `*paths: Path`
+* ∟`list[Cost]`
+
+## `RECENT`
+`src/chatddx/test/costs.py:RECENT`
+
+`RECENT = 5`
 
 ## `registry` `@pytest.fixture(name="reg")`
 `src/chatddx/test/helpers.py:registry`
@@ -507,6 +632,15 @@ Finds:
 
 `SHIPPED = "chatddx.scorers.metrics:score"`
 
+## `show`
+`src/chatddx/test/costs.py:show`
+
+Prints each command's median per machine, as write would quote it.
+
+* `spool: Path = SPOOL`
+* `log: Path = LOG`
+* ∟`None`
+
 ## `skeleton`
 `src/chatddx/test/helpers.py:skeleton`
 
@@ -518,6 +652,11 @@ Finds:
 `src/chatddx/test/test_the_test_world.py:SKIPPED`
 
 `SKIPPED = […]`
+
+## `SPOOL`
+`src/chatddx/test/costs.py:SPOOL`
+
+`SPOOL = settings.PROJECT_ROOT / "dev" / "costs-spool.tsv"`
 
 ## `SRC`
 `src/chatddx/test/test_tests.py:SRC`
@@ -550,6 +689,31 @@ Finds:
 
 ## `test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
 `src/chatddx/test/test_sample.py:test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
+
+* ∟`None`
+
+## `test_a_command_is_as_typed_its_plugins_left_out`
+`src/chatddx/test/test_costs.py:test_a_command_is_as_typed_its_plugins_left_out`
+
+* ∟`None`
+
+## `test_a_command_is_as_typed_its_verbosity_left_out`
+`src/chatddx/test/test_costs.py:test_a_command_is_as_typed_its_verbosity_left_out`
+
+* ∟`None`
+
+## `test_a_cost_reads_as_it_is_written`
+`src/chatddx/test/test_costs.py:test_a_cost_reads_as_it_is_written`
+
+* ∟`None`
+
+## `test_a_figure_a_stamp_pending_holds_is_rewritten_as_written_now`
+`src/chatddx/test/test_costs.py:test_a_figure_a_stamp_pending_holds_is_rewritten_as_written_now`
+
+* ∟`None`
+
+## `test_a_figure_is_rewritten_only_once_far_enough_off`
+`src/chatddx/test/test_costs.py:test_a_figure_is_rewritten_only_once_far_enough_off`
 
 * ∟`None`
 
@@ -616,6 +780,11 @@ Finds:
 
 ## `test_kompismoln_s_sources_are_the_sample_s`
 `src/chatddx/test/test_sample.py:test_kompismoln_s_sources_are_the_sample_s`
+
+* ∟`None`
+
+## `test_medians_weigh_recent_passes_run_alone_on_the_machine`
+`src/chatddx/test/test_costs.py:test_medians_weigh_recent_passes_run_alone_on_the_machine`
 
 * ∟`None`
 
@@ -701,6 +870,13 @@ Finds:
 * `path: Path`
 * ∟`None`
 
+## `test_write_folds_the_spool_and_rewrites_the_figures`
+`src/chatddx/test/test_costs.py:test_write_folds_the_spool_and_rewrites_the_figures`
+
+* `tmp_path: Path`
+* `capsys: pytest.CaptureFixture[str]`
+* ∟`None`
+
 ## `TOOL_ANSWER`
 `src/chatddx/test/world.py:TOOL_ANSWER`
 
@@ -753,6 +929,18 @@ Finds:
 `src/chatddx/test/world.py:WORLDS`
 
 `WORLDS = settings.PROJECT_ROOT / "worlds"`
+
+## `write`
+`src/chatddx/test/costs.py:write`
+
+Folds the spool into the log, and rewrites the figures quoted off the log.
+
+The figures are those of settings.COSTS_QUOTED's machine; it says what it wrote.
+
+* `spool: Path = SPOOL`
+* `log: Path = LOG`
+* `quoted_in: Sequence[Path] = QUOTED_IN`
+* ∟`None`
 
 ## `ZERO`
 `src/chatddx/test/helpers.py:ZERO`

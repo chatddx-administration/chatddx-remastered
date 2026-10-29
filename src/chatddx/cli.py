@@ -429,6 +429,16 @@ def _refcheck(_: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
+def _costs(args: argparse.Namespace) -> None:
+    # Compromise: as in _stamp, for pytest, which chatddx.test.costs is a plugin of.
+    from chatddx.test import costs
+
+    if args.costing == "write":
+        costs.write()
+    else:
+        costs.show()
+
+
 def _locale(args: argparse.Namespace) -> None:
     if args.localing == "check":
         locale.check()
@@ -749,6 +759,24 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "glossary's terms and commits on main",
     )
     refchecking.set_defaults(run=_refcheck)
+
+    costing = commands.add_parser(
+        "costs",
+        help="what check.sh's stages, its frontend tests and pytest's runs took, as "
+        + "dev/costs.tsv logs it, and the figures AGENTS.md quotes off it",
+    )
+    cost_commands = costing.add_subparsers(required=True)
+    cost_show = cost_commands.add_parser(
+        "show",
+        help="write nothing; print each command's median per machine class",
+    )
+    cost_show.set_defaults(run=_costs, costing="show")
+    cost_write = cost_commands.add_parser(
+        "write",
+        help="fold what was timed since into dev/costs.tsv, and rewrite the figures "
+        + f"AGENTS.md quotes for the {settings.COSTS_QUOTED} machine class that are off",
+    )
+    cost_write.set_defaults(run=_costs, costing="write")
 
     localing = commands.add_parser(
         "locale",

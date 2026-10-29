@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
 # Usage: ./write.sh [commit], from the repository's root in the dev shell. Writes what
-# follows from the code and the docs: the format, the OpenAPI document, the catalogs, and
-# the surfaces and indexes, with what changed in them as stamps pending; given a commit,
-# also each change to a doc in prose since it as stamps pending. It says what it wrote,
-# and stops at the first that fails.
+# follows from the code and the docs: the cost log and the figures quoted off it, the
+# check logs, the format, the OpenAPI document, the catalogs, and the surfaces and indexes,
+# with what changed in them as stamps pending; given a commit, also each change to a doc in
+# prose since it as stamps pending. It says what it wrote, and stops at the first that
+# fails.
 set -euo pipefail
+
+chatddx costs write
+
+# Duplication: dev/agent.sh:moved_logs.
+shopt -s nullglob
+logs=(dev/logs/*.log)
+if ((${#logs[@]})); then
+  mkdir -p logs
+  mv "${logs[@]}" logs/
+  echo "logs: moved"
+fi
 
 ruff format --quiet
 chatddx stamp reflow

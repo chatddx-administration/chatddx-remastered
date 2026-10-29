@@ -21,10 +21,22 @@ Finds:
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `beside`
+`src/chatddx/settings.py:beside`
+
+How many of check.sh's other stages run beside this one, as it says.
+
+* ∟`int`
+
 ## `chromium`
 `src/chatddx/settings.py:chromium`
 
 * ∟`Path | None`
+
+## `COSTS_QUOTED`
+`src/chatddx/settings.py:COSTS_QUOTED`
+
+`COSTS_QUOTED = "container"`
 
 ## `database`
 `src/chatddx/settings.py:database`
@@ -41,6 +53,11 @@ Finds:
 `src/chatddx/settings.py:ITEMS_PER_RUN`
 
 `ITEMS_PER_RUN = 1000`
+
+## `machine_class`
+`src/chatddx/settings.py:machine_class`
+
+* ∟`str | None`
 
 ## `portal_assets`
 `src/chatddx/settings.py:portal_assets`

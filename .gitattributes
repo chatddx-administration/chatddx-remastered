@@ -2,3 +2,5 @@
 # fingerprinted over their raw bytes.
 /worlds/sample/vignettes/** -text
 /worlds/test/vignettes/** -text
+# Accommodating for branches that each append to the cost log: a merge keeps both sides' lines.
+/dev/costs.tsv merge=union

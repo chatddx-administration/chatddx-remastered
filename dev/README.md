@@ -45,6 +45,12 @@ In `dev/`:
 - `turn-start`: the commit the turn started at, as in `./write.sh "$(cat dev/turn-start)"`.
 - `refused`: there while work is refused this turn.
 - `session-start`: what session-start hands the session's first turn.
+- `costs.tsv`, in git: what each `./check.sh` stage, `pnpm --dir frontend test` and each pytest run took, a line each,
+  as `chatddx costs write` folds it in, with tab-separated columns: when, `$MACHINE_CLASS`, seconds, exit status, how
+  many stages ran beside it, the commit and the command. Lines are only written with `$MACHINE_CLASS` set.
+- `costs-spool.tsv`: what was timed since the last fold.
+- `logs/<stage>.log`: what `./check.sh` last said for the stage, as `./write.sh` and `hand-over` move it to `logs/` in
+  git.
 - `<stage>-good`: what `./check.sh` last passed the stage on: the tree a commit of the worktree would hold, and for
   `docs` also `origin/main`.
 

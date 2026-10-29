@@ -7,7 +7,10 @@ STARTED=dev/session-start
 TURN=dev/turn-start
 REFUSED=dev/refused
 CHECKED_AT_SESSION_START=(openapi stamps locale pending format types frontend docs)
-CHECKED_AT_HAND_OVER=(format types frontend docs tests browser)
+CHECKED_AT_HAND_OVER=(format types frontend docs)
+# Policy: checked after the others, each alone, so that what they take counts towards
+# AGENTS.md's figures (src/chatddx/test/costs.py:medians).
+TIMED_AT_HAND_OVER=(tests browser)
 REFUSED_AT_TURN_START=(openapi locale)
 TOLD_AT_TURN_START=(pending format types frontend)
 
@@ -314,7 +317,7 @@ tree() {
 }
 
 hand-over() {
-  local start again="fix it and run ./dev/agent.sh hand-over again." budget
+  local start again="fix it and run ./dev/agent.sh hand-over again." budget stage all told
   if [[ -e $REFUSED ]]; then
     echo "Work is refused this turn, so nothing is handed over: tell the user so."
     return
@@ -336,12 +339,38 @@ hand-over() {
     return
   fi
   checked "${CHECKED_AT_HAND_OVER[@]}"
+  all=("${failed[@]}") told="$said"
+  for stage in "${TIMED_AT_HAND_OVER[@]}"; do
+    checked "$stage"
+    all+=("${failed[@]}") told+=$'\n'"$said"
+  done
+  failed=("${all[@]}") said="$told"
   budget="$(grep -E '^(mark slow|unmark): ' <<<"$said")" || true
-  if ((${#failed[@]})); then
-    echo "Handed over with $(named "${failed[@]}"), as below: $again"
-    sections
+  moved_logs
+  if ! { step git add logs && { git diff --cached --quiet || step git commit --quiet -m "hand-over: logs"; }; } ||
+    ! pushed; then
+    printf '%s\n' "$stepped fails, as below: see to it, and commit and push logs/." "$said"
+    return
   fi
-  [[ -z $budget ]] || printf '%s\n' "Flip what the budget suggests, should it feel right:" "$budget"
+  if ((${#failed[@]})); then
+    echo "Handed over with $(named "${failed[@]}"), logged in logs/ and pushed:"
+    for stage in "${failed[@]}"; do
+      echo "logs/$stage.log:"
+      grep -E '^(FAILED|ERROR) ' "logs/$stage.log" || tail -n 5 "logs/$stage.log"
+    done
+    echo "If it's in what this session changed and fails again alone (./check.sh <stage>), fix it and run" \
+      "./dev/agent.sh hand-over again; else, or once fixing it keeps growing, tell the user so and wait for what they say."
+  # Policy: the budget is told only once all pass, lest it be read as part of a failure.
+  elif [[ -n $budget ]]; then
+    printf '%s\n' "Flip what the budget suggests, should it feel right:" "$budget"
+  fi
+}
+
+# Duplication: write.sh's move of the check logs.
+moved_logs() {
+  compgen -G 'dev/logs/*.log' >/dev/null || return 0
+  mkdir -p logs
+  mv dev/logs/*.log logs/
 }
 
 # Accommodating for Claude Code, which adds what a hook says to the session only if it

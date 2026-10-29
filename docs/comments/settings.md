@@ -13,6 +13,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/settings.py`,
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `src/chatddx/settings.py:COSTS_QUOTED`
+
+```
+# Policy: the machine class, as MACHINE_CLASS names it, whose costs AGENTS.md quotes
+# (src/chatddx/test/costs.py:write).
+```
+
 ## `src/chatddx/settings.py:SERVE_GRACE`
 
 ```

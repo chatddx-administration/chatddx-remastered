@@ -17,7 +17,12 @@ When asked to hand over:
 
 1. In the files this session has touched, remove all comments and docstrings that don't pass "Comments" and
    "Docstrings", pre-existing included.
-2. Run `./dev/agent.sh hand-over`. It commits, pushes and runs all checks.
+2. Run `./dev/agent.sh hand-over` to:
+   - commit and push
+   - run all checks
+   - commit and push logs in `logs/`
+3. Should a check fail for something this session didn't change, or that doesn't fail again alone, push logs and await
+   further instructions; likewise once fixing it keeps growing.
 
 When asked to rebase onto main, a push of the branch with `--force-with-lease` is implied, which `turn-end` and
 `hand-over` make when nothing but the branch's commits before the rebase is in the way; never merge those back in.
@@ -71,6 +76,9 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 `./write.sh [commit]` regenerates what follows from the code and the docs.
 
+A `~<n>s` after a command is what it takes in the cloud container: `./write.sh` rewrites it from `dev/costs.tsv` once it
+is 1.5 times off, and `chatddx costs show` has what every command took, on every machine class.
+
 ### Python
 
 - `basedpyright` for typecheck
@@ -83,18 +91,18 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 ### Frontend
 
 - `pnpm --dir frontend check` type checks frontend
-- `pnpm --dir frontend test` tests frontend takes less than 2s
+- `pnpm --dir frontend test` tests frontend takes ~3.1s
 
 ### Formatting
 
-- `ruff format` formats the Python.
+- `ruff format` formats the Python ~0.0s.
 - `chatddx stamp reflow` formats the frontend and the docs, what `.prettierignore` lets through, with prettier. Prettier
   on its own breaks the markers of a doc holding stamps pending.
 
 ### Browser
 
 - run `pnpm --dir frontend build` first if the frontend changed
-- `pytest -m browser` runs the browser tests that `pytest` skips, in ~75s
+- `pytest -m browser` runs the browser tests that `pytest` skips, in ~140s
 
 ### Nix
 

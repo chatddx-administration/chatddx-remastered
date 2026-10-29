@@ -91,6 +91,10 @@ WORKER_DEADLINE = timedelta(seconds=60)
 # (src/chatddx/worker/worker.py:Worker._work).
 WORKER_JOBS = 8
 
+# Policy: the machine class, as MACHINE_CLASS names it, whose costs AGENTS.md quotes
+# (src/chatddx/test/costs.py:write).
+COSTS_QUOTED = "container"
+
 
 def host() -> str:
     return os.environ.get("HOST", "localhost:8000")
@@ -113,3 +117,12 @@ def portal_assets() -> Path:
 def chromium() -> Path | None:
     value = os.environ.get("CHATDDX_CHROMIUM")
     return Path(value) if value else None
+
+
+def machine_class() -> str | None:
+    return os.environ.get("MACHINE_CLASS") or None
+
+
+def beside() -> int:
+    """How many of check.sh's other stages run beside this one, as it says."""
+    return int(os.environ.get("CHATDDX_BESIDE") or 0)

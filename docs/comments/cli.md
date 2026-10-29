@@ -13,6 +13,12 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/cli.py`, sort
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `src/chatddx/cli.py:_costs`
+
+```
+# Compromise: as in _stamp, for pytest, which chatddx.test.costs is a plugin of.
+```
+
 ## `src/chatddx/cli.py:_refcheck`
 
 ```
