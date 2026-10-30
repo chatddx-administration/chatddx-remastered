@@ -79,6 +79,12 @@ class Metric:
     judged: bool = False
     unit: str | None = None
     explain: ExplainFunction | None = None
+    # Policy: what of the expected items the score depends on, all of them unless given;
+    # a judged metric's are all its judge is asked.
+    reads: Callable[[list[JsonValue]], object] | None = None
+    # Policy: why an expected item can't be what it reads, such as an unreadable pattern,
+    # so that what can't ever be scored isn't written.
+    refuses: Callable[[list[JsonValue]], Exception | None] | None = None
 
 
 def explaining(
@@ -139,6 +145,18 @@ class Metrics:
         if found.explain is None:
             return Explained(found.score(output, expected, params, verdicts))
         return found.explain(output, expected, params, verdicts)
+
+    def reads(self, metric: str, expected: list[JsonValue]) -> object:
+        found = self.metrics.get(metric)
+        if found is None:
+            raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
+        return expected if found.reads is None else found.reads(expected)
+
+    def refusal(self, metric: str, expected: list[JsonValue]) -> Exception | None:
+        found = self.metrics.get(metric)
+        return (
+            None if found is None or found.refuses is None else found.refuses(expected)
+        )
 
     def problems(self, scorer: Scorer) -> list[str]:
         found: list[str] = []
@@ -239,3 +257,21 @@ def explain_view(
         params,
         metrics.explained(view.metric, output, expected, params, verdicts),
     )
+
+
+def reading(scorer: Scorer, metrics: Metrics, data: JsonValue) -> list[object]:
+    """What each of the scorer's views reads of the expectation's data: two that read
+    alike score alike."""
+    return [metrics.reads(v.metric, v.expectation_items(data)) for v in scorer.views]
+
+
+def refusals(
+    scorer: Scorer, metrics: Metrics, data: JsonValue
+) -> list[tuple[str, Exception]]:
+    """Why each of the scorer's views that can't read the expectation's data can't, by
+    the view's selector into it."""
+    return [
+        (v.expectation, e)
+        for v in scorer.views
+        if (e := metrics.refusal(v.metric, v.expectation_items(data))) is not None
+    ]

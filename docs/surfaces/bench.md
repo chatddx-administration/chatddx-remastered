@@ -54,9 +54,6 @@ Raises:
 1. `ValueError`: `"run {run.run} was sent to no endpoint, so it can't run again"`
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
 3. `Invalid`: `"run %(run)s is out of date: run its configuration instead, once that is updated", run=str(run.run)`
-4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_begun`)
-5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_begun`)
-6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_begun`)
 
 ## `Bench.behind_own`
 `src/chatddx/bench/updating.py:behind_own`
@@ -85,6 +82,23 @@ Raises:
 3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_carried`)
 4. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_carried`)
 5. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_carried`)
+
+Finds:
+1. `expectation.unreadable`: `str(e)` (through `_unreadable`)
+
+## `Bench.check_quota`
+`src/chatddx/bench/runs.py:check_quota`
+
+Refuses with `OverQuota` runs of these many items each that the person's quota
+doesn't hold; reads how many runs they started in the last day.
+
+* `runs: Sequence[int]`
+* ∟`None`
+
+Raises:
+1. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items`
+2. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started`
+3. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)`
 
 ## `Bench.edit`
 `src/chatddx/bench/components.py:edit`
@@ -168,21 +182,22 @@ Raises:
 `src/chatddx/bench/components.py:new`
 
 * `component: Component | Recipe`
-* `name: str`
+* `name: str | None`
 * `language: str | None = None`
 * `labels: Labels | None = None`
 * ∟`Written`
 
 Raises:
-1. `ValueError`: `"a compiled configuration's language comes from its recipe"` (through `_configured`)
-2. `ValueError`: `"only a scorer's views and resources have labels"` (through `_configured`)
-3. `ValueError`: `"{digest} isn't a stored {what}"` (through `_stored_parts`)
-4. `ValueError`: `"a person doesn't write {kind} components"` (through `_written`)
-5. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
-6. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
-7. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
-8. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
-9. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
+1. `ValueError`: `"only an expectation goes unnamed: the case it is for says which it is"`
+2. `ValueError`: `"a compiled configuration's language comes from its recipe"` (through `_configured`)
+3. `ValueError`: `"only a scorer's views and resources have labels"` (through `_configured`)
+4. `ValueError`: `"{digest} isn't a stored {what}"` (through `_stored_parts`)
+5. `ValueError`: `"a person doesn't write {kind} components"` (through `_written`)
+6. `ValueError`: `"{kind} components have no language of their own"` (through `_written`)
+7. `ValueError`: `"{new.case} isn't a case of the family {old.case} is of"` (through `_written`)
+8. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
+9. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
+10. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
 
 ## `Bench.outdated`
 `src/chatddx/bench/updating.py:outdated`
@@ -321,9 +336,6 @@ Raises:
 2. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
 3. `Invalid`: `"%(configuration)s has no translations into %(languages)s, which its cases are in", configuration=variation.label, languages=", ".join(str(c.language) for c in left_out)`
 4. `Invalid`: `"no case can be sent: %(refused)s", refused="; ".join(c.refused or "" for c in left_out)`
-5. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
-6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
-7. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
 
 ## `Bench.start_trials`
 `src/chatddx/bench/runs.py:start_trials`
@@ -345,10 +357,7 @@ Raises:
 1. `NotFound`: `"no trial version {id} for {seen.person.login}"`
 2. `ValueError`: `"a start runs one trial or more"`
 3. `NotFound`: `"no case {missing[0]} for {seen.person.login}"`
-4. `OverQuota`: `"a run holds at most %(num)s item, not %(given)s" / "a run holds at most %(num)s items, not %(given)s", num=settings.ITEMS_PER_RUN, given=items` (through `_check_quota`)
-5. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started` (through `_check_quota`)
-6. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)` (through `_check_quota`)
-7. `Invalid`: `"%(trial)s is out of date: update it on its page", trial=name`
+4. `Invalid`: `"%(trial)s is out of date: update it on its page", trial=name`
 
 ## `Bench.take`
 `src/chatddx/bench/taking.py:take`

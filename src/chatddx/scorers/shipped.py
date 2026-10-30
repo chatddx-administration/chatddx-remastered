@@ -1,8 +1,10 @@
+from pydantic import JsonValue
+
 from chatddx.factors.scoring import Scorer
 from chatddx.rig import entry
 
 from . import metrics
-from .scorer import Metrics
+from .scorer import Metrics, reading, refusals
 
 SCORERS: dict[str, Metrics] = {"chatddx.scorers.metrics:score": metrics.score}
 
@@ -25,3 +27,12 @@ def function(scorer: Scorer) -> Metrics:
     if found := problems(scorer):
         raise LookupError("; ".join(found))
     return SCORERS[scorer.entry_point]
+
+
+def read_by(scorer: Scorer, data: JsonValue) -> list[object]:
+    return reading(scorer, function(scorer), data)
+
+
+def refused(scorer: Scorer, data: JsonValue) -> list[tuple[str, Exception]]:
+    code = SCORERS.get(scorer.entry_point)
+    return [] if code is None else refusals(scorer, code, data)

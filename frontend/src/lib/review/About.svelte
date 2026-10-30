@@ -47,6 +47,12 @@
         saved = { tags: [...got.data.tags], language: got.data.language };
         return {};
       },
+      restore: () => {
+        tags = [...saved.tags];
+        language = saved.language;
+        typed = "";
+        picking = false;
+      },
     });
   }
 

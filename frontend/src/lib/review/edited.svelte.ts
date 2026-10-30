@@ -8,6 +8,7 @@ export type Part = {
   opened?: () => boolean;
   ready: () => boolean;
   save: () => Promise<Wrote>;
+  restore: () => void;
 };
 
 // Policy: the page's Save writes each part that holds something unsaved, by rank, and stops at
@@ -40,6 +41,11 @@ export class Edited {
 
   get ready(): boolean {
     return this.#parts.every((part) => !part.pending() || part.ready());
+  }
+
+  restore(): void {
+    for (const part of this.#parts) part.restore();
+    this.problem = null;
   }
 
   async save(back: string): Promise<void> {

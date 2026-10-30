@@ -13,6 +13,9 @@ function part(rank: number, said: Wrote[], wrote: number[], ready = true): Part 
       if (!("problem" in got)) made.left.shift();
       return got;
     },
+    restore: () => {
+      made.left = [];
+    },
   };
   return made;
 }
@@ -73,5 +76,15 @@ describe("Edited", () => {
     expect([edited.pending, edited.ready]).toEqual([false, true]);
     edited.join(part(1, [{}], [], false));
     expect([edited.pending, edited.ready]).toEqual([true, false]);
+  });
+
+  it("restores every part and forgets what was refused", async () => {
+    const edited = new Edited("c1", () => undefined);
+    edited.join(part(0, [{ problem: "no" }], []));
+    edited.join(part(1, [{}], []));
+    await edited.save("/review/1");
+    expect([edited.pending, edited.problem]).toEqual([true, "no"]);
+    edited.restore();
+    expect([edited.pending, edited.problem]).toEqual([false, null]);
   });
 });

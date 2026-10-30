@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping
 from contextlib import ExitStack, contextmanager
 
 from chatddx.bench import Bench, Carried, TriedVariation
@@ -6,6 +6,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Judge
 from chatddx.factors.trial import Trial, replicates
 from chatddx.fake_vllm.script import Script
+from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import RunStarted
 from chatddx.runner import Halt, RunEvent, Streamed
@@ -69,7 +70,7 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
         return running.started
     _ = running.finish()
     if scripted.scored:
-        with _judging(bench, running.started):
+        with judging(bench, running.started):
             _ = bench.score(running.started)
     return running.started
 
@@ -84,7 +85,9 @@ def _halting(halt: Halt, after: int | None) -> Callable[[RunEvent], None]:
 
 
 @contextmanager
-def _judging(bench: Bench, run: RunStarted) -> Generator[None]:
+def judging(
+    bench: Bench, run: RunStarted, fakes: Mapping[str, Served] | None = None
+) -> Generator[None]:
     at = {
         bench.judged(resolve(bench.store.get, judge, Judge)).name
         for _, _, scorer in bench.scorers(run)
@@ -92,6 +95,7 @@ def _judging(bench: Bench, run: RunStarted) -> Generator[None]:
     }
     with ExitStack() as stack:
         for name in sorted(at):
-            fake = fake_at(bench.inventory, bench.store.get, name)
+            held = None if fakes is None else fakes.get(name)
+            fake = held or fake_at(bench.inventory, bench.store.get, name)
             _ = stack.enter_context(serving([fake]))
         yield

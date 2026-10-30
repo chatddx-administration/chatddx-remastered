@@ -97,6 +97,19 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # their browser kept the session's cookie and says so if it didn't.
 ```
 
+## `src/chatddx/portal/review.py:_entries`
+
+```
+# Policy: an entry is the case as it stood once an evaluation was started: the latest of
+# each configuration's runs across the evaluations up to it, among their runs alone, so
+# that no run of other cases mixes its items into the means, and a rework that starts
+# only some configurations' runs still makes a whole one.
+```
+
+```
+# Duplication: src/chatddx/bench/gathering.py:gathering keys its groups alike.
+```
+
 ## `src/chatddx/portal/review.py:_evaluations`
 
 ```
@@ -104,12 +117,41 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 # whole, as running_in_review starts one; no run records where it was started.
 ```
 
-## `src/chatddx/portal/review.py:_latest`
+## `src/chatddx/portal/review.py:_queueing`
 
 ```
-# Policy: what the review shows unless asked for an evaluation: the latest of each
-# configuration's runs across the case's evaluations, among their runs alone, so that
-# no run of other cases mixes its items into the means.
+# Policy: queued once every run is begun, so that the worker sending the first doesn't
+# slow beginning the rest, and queued too when beginning one fails, so that none is left
+# begun with nothing to send it.
+```
+
+## `src/chatddx/portal/review.py:_scored_with`
+
+```
+# Policy: the expectation the entry's newest scores under the schema were scored against,
+# or None when its scores were scored against expectations that read differently.
+```
+
+## `src/chatddx/portal/review.py:_Verdicts`
+
+```
+# Policy: what no longer holds of each entry, or None while its runs are under way, with
+# what each configuration and run says worked out once, as the same recur in the
+# entries after the one they first gather in.
+```
+
+## `src/chatddx/portal/review.py:review`
+
+```
+# Policy: one that matches is offered before a rework, so that what is there already
+# isn't run again.
+```
+
+## `src/chatddx/portal/review.py:reworking_in_review`
+
+```
+# Policy: as with Run, a press made while an evaluation of the case is under way
+# counts as made.
 ```
 
 ## `src/chatddx/portal/review.py:running_in_review`
@@ -117,11 +159,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 ```
 # Policy: as on the run page, a press made while an evaluation of the case is under
 # way counts as made: the page it leads back to shows that one.
-```
-
-```
-# Policy: queued once every run is begun, so that the worker sending the first
-# doesn't slow beginning the rest.
 ```
 
 ## `src/chatddx/portal/runs.py:halting`

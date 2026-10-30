@@ -2,15 +2,17 @@ from functools import partial
 
 from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, families, read, threads
 from chatddx.catalog.language import language_of, languages_of, recipe_language
-from chatddx.factors.base import Component, Invalid, resolve
+from chatddx.factors.base import Component, Finding, Invalid, Param, Worded, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.facts import ModelFacts
 from chatddx.factors.request import RECIPE_PARTS, Recipe, Skeleton, translated
 from chatddx.factors.scoring import Expectation, Judge, Scorer
+from chatddx.factors.select import field
 from chatddx.factors.trial import Trial, replicates
 from chatddx.facts import lints
 from chatddx.identity import owns, sees
+from chatddx.scorers.shipped import refused
 
 from .configurations import kept
 from .errors import NotFound
@@ -33,6 +35,7 @@ _UNLABELLED = "only a scorer's views and resources have labels"
 
 def check(seen: Seen, component: Component | Recipe) -> Checked:
     engines: dict[str, str] = {}
+    unreadable: list[Finding] = []
     match component:
         case Recipe():
             _stored_parts(seen, component)
@@ -45,6 +48,9 @@ def check(seen: Seen, component: Component | Recipe) -> Checked:
             registry, digest = _registered(seen, component)
         case Appendix():
             registry, digest = _registered(seen, bound(seen, component))
+        case Expectation():
+            registry, digest = _registered(seen, component)
+            unreadable = _unreadable(seen, component)
         case Judge():
             registry, digest = _registered(seen, component)
             add_compilations(seen, registry, component.skeleton)
@@ -57,7 +63,39 @@ def check(seen: Seen, component: Component | Recipe) -> Checked:
             registry, digest = _registered(seen, component)
     languages = partial(language_of, seen.rows)
     findings = lints(registry, seen.facts, [digest], languages, engines)
-    return Checked(digest, findings)
+    return Checked(digest, [*unreadable, *findings])
+
+
+# Policy: an expectation is refused when a scorer under its schema can't read it, as what
+# a scorer reads, such as a pattern, is the scorer's to say and not the schema's; checked,
+# it is a finding by the field the view reads, so that it can be shown by it.
+def _unreadable(seen: Seen, expectation: Expectation) -> list[Finding]:
+    found: dict[tuple[str | None, str], Finding] = {}
+    for _, _, scorer in seen.scorers():
+        if scorer.expectation_schema != expectation.expectation_schema:
+            continue
+        for selector, e in refused(scorer, expectation.data):
+            at = field(selector)
+            params: dict[str, Param] = dict(e.params) if isinstance(e, Worded) else {}
+            if at is not None:
+                params["field"] = at
+            made = Finding(
+                code="expectation.unreadable",
+                message=str(e),
+                subject=expectation.digest,
+                wording=e.wording if isinstance(e, Worded) else None,
+                params=params,
+            )
+            _ = found.setdefault((at, made.message), made)
+    return list(found.values())
+
+
+def _readable(seen: Seen, expectation: Expectation) -> None:
+    for _, _, scorer in seen.scorers():
+        if scorer.expectation_schema != expectation.expectation_schema:
+            continue
+        for _, e in refused(scorer, expectation.data):
+            raise e
 
 
 def _registered(seen: Seen, component: Component) -> tuple[Registry, str]:
@@ -70,10 +108,14 @@ def _registered(seen: Seen, component: Component) -> tuple[Registry, str]:
 def new(
     seen: Seen,
     component: Component | Recipe,
-    name: str,
+    name: str | None,
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
+    if name is None and not isinstance(component, Expectation):
+        raise ValueError(
+            "only an expectation goes unnamed: the case it is for says which it is"
+        )
     match component:
         case Recipe():
             _configured(language, labels)
@@ -185,6 +227,7 @@ def _written(
         check_scorer(component)
     old = None if thread is None else threads.head(seen.rows, thread).digest
     if isinstance(component, Expectation):
+        _readable(seen, component)
         if old is not None:
             _check_family(seen, resolve(seen.store.get, old, Expectation), component)
         check_expecting(seen, component, thread)

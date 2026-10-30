@@ -87,37 +87,38 @@ Open:
 
 ## Review
 
-Drafted: `/review/{family}` (`src/chatddx/portal/review.py`; `src/chatddx/portal/test/test_reviewing.py`), one page of a
-case and what is written of it, in `frontend/src/islands/review.ts`.
+Drafted: `/review/{family}` (`src/chatddx/portal/review.py`; `src/chatddx/portal/test/test_reviewing.py`).
 
-- **The cases**: each family, with its cases of appendices as branches under it, a case under the one it adds an
-  appendix to, filtered in place by tags and languages.
-- **The case**: its vignette and its appendices, one of one's own changed with its pen, or one added, in the same form,
-  one at a time.
-- **The expectation**: its name, then a section for each of its schema's fields, every field shown.
-- **The bar** under both: the case's tags and language, Delete on a branch whose last appendix is one's own, Run,
-  Restore, and Save, which writes everything changed on the page (`frontend/src/lib/review/edited.svelte.ts`).
-- **The evaluation**, a screen below, which Run starts and `?evaluation=` holds, its first run's id: the case under each
-  live configuration of one's own that can run it, three times under seeds drawn and a fourth under the third's seed, a
-  run of its own as a trial's seeds are distinct, all one start; the others left out, each with why. A table of each
-  configuration's means by the expectation's fields, from the views of the schema's scorers reading each, then each item
-  as a row, its outcome and tokens, opened to what it answered and linked to its run
-  (`frontend/src/lib/review/Evaluation.svelte`). Halt, while any run is under way, halts every one; the island follows
-  four runs' streams at a time, as a browser holds six connections to a host over HTTP/1.1 and the evaluation's runs are
-  more. An evaluation is a start whose runs all gather whole about the case into `REPLICATED`, a group for each
-  configuration (`src/chatddx/portal/review.py:_evaluations`, `src/chatddx/bench/gathering.py:gathering`), and Run
-  starts one by its seedings; `?evaluation=` shows one, with links to the one before and after by when each started, the
-  last one's to the latest.
-- **The latest**, shown without `?evaluation=`: each configuration's latest runs across the case's evaluations, gathered
-  among their runs alone so that no run of other cases mixes in (`src/chatddx/portal/review.py:_latest`). What no longer
-  holds is listed with a Rework button that does nothing yet (`_behind`): a configuration since changed, as the trial it
-  would run on the same seeds differs, one gone or that can't run now, one with no runs yet, and runs not scored against
-  the expectation as it is, unless they're still under way.
-- **Run while one is open**: disabled and turning until the case's open evaluation has ended or is halted; a press
-  meanwhile, from a stale page, leads to that one and starts nothing.
-- **Starting it**: every run is begun before any is queued, so that the worker sending the first doesn't slow beginning
-  the rest, and the evaluation reads its runs' start records rather than the API's runs: some 1 s to begin the test
-  World's 26 runs of alice's, and as much to show them, but where a worker sends them in the same process.
+Review is a family (vignette), appendices, expectations and Gatherings centered on case. Its purpose is to provide the
+means for a the clinician to assess whether the expectation's intention and application align. The page consists of
+three columns filling the viewport: Tree, Vignette and Expectations.
+
+The Tree lists each family, with its cases of appendices as branches under it filtered in place by tags and languages.
+
+Vignette shows the vignette and managages appendices.
+
+Expectations manages the notes and patterns associated with each view: Differential diagnoses, warnings (red flags),
+disposition, must not be missed and a medical statement from a clinician. It has a shallow version shifter that prefills
+the fields on change with confirmation. What a scorer can't read, like a pattern that doesn't parse, is told below its
+field, marked in a collapsed field's header, and can't be saved.
+
+A restore button restores all fields to their stored values. Saves save it all. If appendices have changed this is now
+another case. Fields for tags and languages visually scuffed but exist.
+
+If the case chosen is with an appendix that the user owns it can be deleted and shows a delete button.
+
+A run button that queues a case centered gathering with 3 replicates and 1 repeat.
+
+### Gatherings
+
+The result listed in a table where each score has a link to a page that shows a breakdown of a run's scores. As soon as
+a at least one gathering has started for the case, a presentation of its score and a list of each response is shown.
+
+An ongoing run should be possible to stop, it's not possible to start a second run before the first is halted or done.
+
+Gatherings are navigated by a timeline that links to each run started on the case, or filtered to only those that match
+the current case. If the shown gathering is incomplete, a notification should point to the latest complete, if no such
+exist a rework should be offered. Moving between them shows a spinner until the next one is loaded.
 
 ## The Library
 

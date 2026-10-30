@@ -26,6 +26,7 @@ export type Saved = (Extract<Written, { digest: string }> & { to: string }) | Ex
 
 export type Labelled = (string | null)[];
 
+// Policy: an empty name goes unnamed, which only an expectation may.
 type Target = { thread: number | null; head?: number; mine?: boolean; name: string };
 export type Written =
   | { digest: string; thread: number; head: number; cases: Record<string, string> }
@@ -47,7 +48,7 @@ export async function written(at: Target, body: Record<string, unknown>): Promis
   }
   const got =
     at.thread === null
-      ? await api.POST("/api/threads", { body: { name: at.name, ...body } })
+      ? await api.POST("/api/threads", { body: { name: at.name || null, ...body } })
       : await api.POST("/api/threads/{thread}/forks", {
           params: { path: { thread: at.thread } },
           body: { name: at.name, ...body },

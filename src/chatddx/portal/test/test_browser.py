@@ -322,7 +322,7 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
 
     expect(page.get_by_role("region", name="Expectation")).to_be_visible()
     expect(expected.locator("details[open]")).to_have_count(0)
-    expect(expected.get_by_label("Name")).to_have_value("expectation for noted")
+    expect(expected.get_by_label("Name")).to_have_count(0)
     expect(section("Final diagnosis").locator("summary")).to_contain_text(
         "sepsis | septic & shock"
     )
@@ -343,28 +343,60 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     expect(page.get_by_role("button", name=re.compile(r"^Compose"))).to_have_count(0)
     saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
     expect(saving).to_be_disabled()
+    expect(expected.get_by_role("navigation", name="Versions")).to_have_count(0)
     expect(expected.get_by_text("Nothing to say of it.")).to_have_count(0)
     statement.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
     section("Final diagnosis").locator("summary").click()
+    page.get_by_label("Match", exact=True).first.fill("septic & (shock")
+    diagnosis = section("Final diagnosis")
+    expect(diagnosis.get_by_text("is never closed")).to_be_visible()
+    expect(saving).to_be_disabled()
+    unread = diagnosis.get_by_role("img", name="Not as a scorer reads it")
+    expect(unread).to_be_hidden()
+    diagnosis.locator("summary").click()
+    expect(unread).to_be_visible()
+    diagnosis.locator("summary").click()
     page.get_by_label("Match", exact=True).first.fill("septic & shock")
-    expect(page.get_by_text("Saves a new version of it.")).to_be_visible()
+    expect(expected.get_by_text("is never closed")).to_have_count(0)
+    expect(unread).to_have_count(0)
     warning = section("Possible warnings")
     warning.locator("summary").click()
     expect(warning.get_by_label("Match", exact=True)).to_be_visible()
     warning.get_by_label("none expected").check()
     expect(warning.get_by_label("Match", exact=True)).to_have_count(0)
     saving.click()
-    expect(page.get_by_text(re.compile(r"^Version 2 of 2, "))).to_be_visible()
+    expect(expected.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     expect(page.get_by_text("what each changed")).to_have_count(0)
     expect(warning.locator("summary")).to_contain_text("none expected")
 
-    page.get_by_text(re.compile(r"^Version 2 of 2, ")).click()
     expect(expected.get_by_role("button", name="Restore")).to_have_count(0)
+    expect(saving).to_be_disabled()
     expected.get_by_role("button", name="The version before").click()
+    expect(page.get_by_text("Save makes it the latest.")).to_be_visible()
+    expect(warning.get_by_label("none expected")).not_to_be_checked()
+    expect(saving).to_be_enabled()
+    warning.locator("summary").click()
+    warning.get_by_label("none expected").check()
+    replacing: list[str] = []
+
+    def answered(dialog: Dialog, accept: bool) -> None:
+        replacing.append(dialog.message)
+        _ = dialog.accept() if accept else dialog.dismiss()
+
+    page.once("dialog", lambda d: answered(d, False))
+    expected.get_by_role("button", name="The version after").click()
+    expect(expected.get_by_text("Version 1 of 2", exact=True)).to_be_visible()
+    expect(warning.get_by_label("none expected")).to_be_checked()
+    page.once("dialog", lambda d: answered(d, True))
+    expected.get_by_role("button", name="The version after").click()
+    expect(expected.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
+    assert replacing == ["Replace what you changed with version 2?"] * 2
+    expected.get_by_role("button", name="The version before").click()
+    expect(expected.get_by_text("Version 1 of 2", exact=True)).to_be_visible()
+    assert len(replacing) == 2
     saved = page.url
-    expected.get_by_role("button", name="Restore").click()
-    page.wait_for_load_state()
-    expect(page.get_by_text(re.compile(r"^Version 3 of 3, "))).to_be_visible()
+    saving.click()
+    expect(expected.get_by_text("Version 3 of 3", exact=True)).to_be_visible()
     assert page.url == saved
     expect(page.get_by_label("Match", exact=True).first).not_to_have_value(
         "septic & shock"
@@ -374,19 +406,26 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     statement.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
     section("Final diagnosis").locator("summary").click()
     page.get_by_label("Match", exact=True).first.fill("septic & shock")
-    expected.get_by_label("Name").fill("noted, as alice expects it")
     saving.click()
-    expect(page.get_by_text(re.compile(r"^Version 4 of 4, "))).to_be_visible()
+    expect(expected.get_by_text("Version 4 of 4", exact=True)).to_be_visible()
     expect(statement.get_by_label("comment")).to_have_value(
         "Septisk chock: odla, ge antibiotika."
     )
     expect(page.get_by_label("Match", exact=True).first).to_have_value("septic & shock")
-    expect(expected.get_by_label("Name")).to_have_value("noted, as alice expects it")
-    expected.get_by_label("Name").fill("expectation for noted")
-    with page.expect_navigation():
-        saving.click()
-    expect(page.get_by_text(re.compile(r"^Version 4 of 4, "))).to_be_visible()
-    expect(expected.get_by_label("Name")).to_have_value("expectation for noted")
+    statement.locator("summary").first.click()
+    statement.get_by_label("comment").fill("Odla.")
+    leaving: list[str] = []
+
+    def stayed(dialog: Dialog) -> None:
+        leaving.append(dialog.type)
+        dialog.dismiss()
+
+    page.once("dialog", stayed)
+    _ = page.evaluate("location.reload()")
+    expect(statement.get_by_label("comment")).to_have_value("Odla.")
+    assert leaving == ["beforeunload"]
+    statement.get_by_label("comment").fill("Septisk chock: odla, ge antibiotika.")
+    expect(saving).to_be_disabled()
 
     page.get_by_role("button", name="Add an appendix").click()
     adding = page.locator("#review-appendices")
@@ -416,12 +455,18 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     page.once("dialog", lambda d: d.dismiss())
     restoring.click()
     expect(text).to_have_value("Free fluid in Morison's pouch.")
-    page.once("dialog", lambda d: d.accept())
-    with page.expect_navigation():
-        restoring.click()
-    assert page.url == built
+    confirmed: list[str] = []
+
+    def restored(dialog: Dialog) -> None:
+        confirmed.append(dialog.type)
+        dialog.accept()
+
+    page.on("dialog", restored)
+    restoring.click()
     expect(appendix).to_contain_text("Free fluid.")
     expect(appendices.get_by_role("textbox")).to_have_count(0)
+    assert (page.url, confirmed) == (built, ["confirm"])
+    page.remove_listener("dialog", restored)
 
     appendix.get_by_role("button", name="Change it").click()
     appendices.get_by_label("Name").fill("FAST")
@@ -514,10 +559,18 @@ def test_a_case_s_tags_and_language_are_saved_with_the_page(page: Page) -> None:
     tag.fill("stray")
     tag.press("Enter")
     expect(bar.get_by_role("button", name="Take away the tag stray")).to_be_visible()
-    page.once("dialog", lambda d: d.accept())
-    with page.expect_navigation():
-        restoring.click()
+    agreed_to: list[str] = []
+
+    def agreed(dialog: Dialog) -> None:
+        agreed_to.append(dialog.type)
+        dialog.accept()
+
+    page.on("dialog", agreed)
+    restoring.click()
     expect(bar.get_by_role("button", name="Take away the tag stray")).to_have_count(0)
+    expect(restoring).to_be_disabled()
+    assert agreed_to == ["confirm"]
+    page.remove_listener("dialog", agreed)
     assert "stray" not in page.request.get(path).json()["tags"]
     tag.fill("reviewed")
     tag.press("Enter")
@@ -629,7 +682,7 @@ def test_a_judged_view_is_written_with_a_new_judge_and_scored_through_the_worker
             "/meets"
         )
         page.get_by_role("button", name="Save it").click()
-        expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+        expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
 
         _ = page.goto(f"/runs/{run}")
         page.get_by_role("button", name="Score again").click()
@@ -694,7 +747,7 @@ def test_what_a_judge_is_asked_is_rewritten_on_its_page_and_picked_in_the_librar
     for at in range(2):
         _ = picks.nth(at).select_option(verdict["head"]["digest"])
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
 
     made = page.request.get(f"/api/threads/{made['id']}").json()
     now = page.request.get(f"/api/components/{made['head']['digest']}").json()
@@ -791,7 +844,7 @@ def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors
     expect(page.get_by_text("‹what it is told to answer›")).to_be_visible()
     page.get_by_label("text, text 1").fill("Be brief.")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     [text, insert] = body(clinician)["text"]
     assert (text, insert["insert"]) == ("Be brief.", "output_guidance")
 
@@ -801,7 +854,7 @@ def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors
     diagnosis = page.get_by_role("group", name="Final diagnosis", exact=True)
     diagnosis.get_by_label("Match", exact=True).fill("pneumonitis")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     now = body(expectation)
     assert now["data"]["diagnosis"]["pattern"] == "pneumonitis"
     assert (now["case"], now["expectation_schema"]) == (
@@ -833,7 +886,7 @@ def test_a_text_an_expectation_and_a_scorer_s_views_are_written_in_their_editors
     assert len(page.request.get(edits).json()) == 1
     page.get_by_label("Its label").first.fill("first")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     assert page.request.get(edits).json()[-1]["labels"]["views"][0] == "first"
     assert body(scorer)["views"] == body(lines)["views"]
     assert errors == []
@@ -862,7 +915,7 @@ def test_few_shot_messages_and_a_contract_are_written_in_forms_and_json_checked_
     _ = added.get_by_label("role", exact=True).select_option(label="user")
     added.get_by_label("content", exact=True).fill("And now?")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     assert body(worked)["messages"] == [*was, {"role": "user", "content": "And now?"}]
 
     native = mine("output", "native")
@@ -870,7 +923,7 @@ def test_few_shot_messages_and_a_contract_are_written_in_forms_and_json_checked_
     _ = page.get_by_label("kind", exact=True).select_option("tool")
     page.get_by_label("name", exact=True).fill("final_result")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     assert body(native)["contract"]["kind"] == "tool"
     assert body(native)["contract"]["name"] == "final_result"
 
@@ -886,7 +939,7 @@ def test_few_shot_messages_and_a_contract_are_written_in_forms_and_json_checked_
     expect(page.get_by_text("It isn't JSON yet")).to_be_hidden()
     _ = page.get_by_label("level", exact=True).select_option(label="none")
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     assert body(off)["chat_template_kwargs"] == {"enable_thinking": False}
     assert errors == []
 
@@ -908,7 +961,7 @@ def test_a_researcher_s_chunks_are_written_in_their_forms_and_made_into_a_config
     page.get_by_role("button", name="Write it as JSON").click()
     page.get_by_label("segments", exact=True).fill(json.dumps(segments))
     page.get_by_role("button", name="Save it").click()
-    expect(page.get_by_text("Version 2 of 2")).to_be_visible()
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
     prompt = mine("prompt", "case")["head"]["digest"]
     held = page.request.get(f"/api/components/{prompt}").json()["body"]
     assert held["segments"] == [
@@ -1380,11 +1433,17 @@ def test_stepping_between_a_case_s_evaluations_redraws_only_their_values(
     row = evaluation.locator("tbody tr").first
     _ = row.evaluate("found => { found.dataset.kept = ''; window.stayed = true }")
     stepping = page.get_by_role("navigation", name="Evaluations of the case")
+    chips = stepping.locator("a[data-entry]")
+    expect(chips).to_have_count(2)
+    expect(chips.nth(1)).to_have_attribute("aria-current", "page")
+    expect(chips.nth(0)).to_have_accessible_name(re.compile(r", as things are now$"))
+    stepping.get_by_label("Only as things are now").check()
+    expect(chips.nth(0)).to_be_visible()
 
-    stepping.get_by_role("link", name=re.compile("^← ")).click()
+    chips.nth(0).click()
     expect(page).to_have_url(re.compile(f"evaluation={firsts[0]}"))
-    expect(stepping.get_by_role("link", name=re.compile(" →$"))).to_be_visible()
-    expect(page.get_by_role("link", name="Its runs")).to_have_attribute(
+    expect(chips.nth(0)).to_have_attribute("aria-current", "page")
+    expect(page.get_by_role("link", name="Runs started then")).to_have_attribute(
         "href", f"/runs/{firsts[0]}"
     )
     expect(evaluation.locator("summary").first).to_contain_text(
@@ -1397,8 +1456,36 @@ def test_stepping_between_a_case_s_evaluations_redraws_only_their_values(
     assert linked.get_attribute("href") in {f"/runs/{r['id']}" for r in runs}
     _ = page.go_back()
     expect(page).to_have_url(re.compile(f"evaluation={firsts[1]}"))
-    expect(page.get_by_role("link", name="Its runs")).to_have_attribute(
+    expect(page.get_by_role("link", name="Runs started then")).to_have_attribute(
         "href", f"/runs/{firsts[1]}"
     )
     assert row.evaluate("found => 'kept' in found.dataset && window.stayed") is True
+
+    [expected] = page.request.get(f"/api/families/{noted['id']}").json()["cases"][0][
+        "expectations"
+    ]
+    query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
+    mine = next(
+        t
+        for t in page.request.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    )
+    held = page.request.get(f"/api/components/{mine['head']['digest']}").json()["body"]
+    diagnosis = {**held["data"]["diagnosis"], "pattern": "pneumonia"}
+    changed = {**held, "data": {**held["data"], "diagnosis": diagnosis}}
+    got = page.request.post(
+        f"/api/threads/{mine['id']}/edits",
+        data={"head": mine["head"]["id"], "component": changed},
+    )
+    assert got.status == 201
+    _ = page.reload()
+    told = page.locator("[data-told]")
+    expect(told).to_contain_text("isn't scored against the expectation as it is")
+    expect(told.get_by_role("button", name="Rework")).to_be_visible()
+    told.get_by_role("button", name="Edit from this expectation").click()
+    expect(page.get_by_text("Save to make it the latest.").first).to_be_visible()
+    expected_box = page.locator("#review-expected")
+    expect(expected_box.get_by_text("Version 1 of 2", exact=True)).to_be_visible()
+    saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
+    expect(saving).to_be_enabled()
     assert errors == []

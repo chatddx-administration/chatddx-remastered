@@ -71,7 +71,7 @@ def start(
         )
     at = seen.at(variation, endpoint)
     canaries = canaries or at.spec.canaries
-    _check_quota(seen, [len(c.cases) * len(seeds) for c in sent])
+    check_quota(seen, [len(c.cases) * len(seeds) for c in sent])
     said = _varying(
         variation.configuration.id,
         {p: variation.parts[p][0] for p in RECIPE_PARTS if p in variation.parts},
@@ -222,7 +222,7 @@ def _ran(
     canaries: CanarySet | None,
     verify_at: tuple[Phase, ...] = PHASES,
 ) -> Running:
-    _check_quota(seen, [len(made.cases) * len(made.seeds)])
+    check_quota(seen, [len(made.cases) * len(made.seeds)])
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(made, registry, endpoint, execution, canaries, verify_at)
     with seen.conn.transaction():
@@ -259,7 +259,7 @@ def start_trials(
     for made, _ in found:
         if missing := [c for c in made.cases if c not in seen_cases]:
             raise NotFound(f"no case {missing[0]} for {seen.person.login}")
-    _check_quota(seen, [len(t.cases) * len(t.seeds) for t, _ in found])
+    check_quota(seen, [len(t.cases) * len(t.seeds) for t, _ in found])
     runs: list[Running] = []
     # Policy: one transaction, so that a run the gate refuses leaves none of the start's
     # begun.
@@ -291,7 +291,9 @@ def start_trials(
     return runs
 
 
-def _check_quota(seen: Seen, runs: Sequence[int]) -> None:
+def check_quota(seen: Seen, runs: Sequence[int]) -> None:
+    """Refuses with `OverQuota` runs of these many items each that the person's quota
+    doesn't hold; reads how many runs they started in the last day."""
     for items in runs:
         if items > settings.ITEMS_PER_RUN:
             raise OverQuota.of(

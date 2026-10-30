@@ -42,7 +42,7 @@ from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, RunStarted, ScoreStarted
 from chatddx.rig import rig
 from chatddx.runner import STOPPED, Refused, judge_at
-from chatddx.scorers.shipped import problems
+from chatddx.scorers.shipped import problems, read_by
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.whoops import Whoops
@@ -873,13 +873,35 @@ class Seen:
                 continue
             if built is None:
                 continue
-            under = [s for s in given if s.scoring == built.digest]
+            under = [s for s in given if self._scored_alike(s.scoring, built, scorer)]
             if under and keys is None:
                 keys = {i.key for i in self.store.run(run.run).items}
             views = len(scorer.views)
             if not any(self._whole(s, keys or set(), views) for s in under):
                 found.append(edit.digest)
         return found
+
+    # Policy: a score under another scoring of the same scorer and judges' engines holds
+    # when each of its views reads the expectations as they are alike, so that a change
+    # to what no view reads leaves nothing to score.
+    def _scored_alike(self, held: str, built: Scoring, scorer: Scorer) -> bool:
+        if held == built.digest:
+            return True
+        then = resolve(self.store.get, held, Scoring)
+        if (then.scorer, then.engines) != (built.scorer, built.engines):
+            return False
+        before = self._by_case(then.expectations)
+        now = self._by_case(built.expectations)
+        try:
+            return before.keys() == now.keys() and all(
+                read_by(scorer, before[c]) == read_by(scorer, now[c]) for c in now
+            )
+        except LookupError:
+            return False
+
+    def _by_case(self, expectations: Iterable[str]) -> dict[str, JsonValue]:
+        held = (resolve(self.store.get, e, Expectation) for e in expectations)
+        return {e.case: e.data for e in held}
 
     def _whole(self, started: ScoreStarted, keys: set[ItemKey], views: int) -> bool:
         score = self.store.score(started.score)

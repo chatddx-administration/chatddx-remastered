@@ -37,6 +37,9 @@ class _Term:
 class _Phrase:
     terms: tuple[_Term, ...]
 
+    def example(self, _: Callable[[int], int]) -> list[str]:
+        return [term.word for term in self.terms]
+
     def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
         span = len(self.terms)
         for at in range(len(words) - span + 1):
@@ -48,6 +51,9 @@ class _Phrase:
 @dataclass(frozen=True)
 class _All:
     parts: tuple["_Phrase | _All | _Any", ...]
+
+    def example(self, pick: Callable[[int], int]) -> list[str]:
+        return [word for part in self.parts for word in part.example(pick)]
 
     def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
         found: list[tuple[int, int]] = []
@@ -62,6 +68,9 @@ class _All:
 @dataclass(frozen=True)
 class _Any:
     parts: tuple["_Phrase | _All | _Any", ...]
+
+    def example(self, pick: Callable[[int], int]) -> list[str]:
+        return self.parts[pick(len(self.parts))].example(pick)
 
     def spans(self, words: list[str]) -> list[tuple[int, int]] | None:
         found = [s for part in self.parts for s in part.spans(words) or ()]
@@ -82,6 +91,10 @@ class Pattern:
                 token=repr(self._peek()),
                 text=repr(text),
             )
+
+    def example(self, pick: Callable[[int], int]) -> str:
+        """A text the pattern finds, with `pick(n)` choosing among n alternatives."""
+        return " ".join(self._root.example(pick))
 
     def find(self, text: str) -> int | None:
         found = self.spans(text)
@@ -215,6 +228,26 @@ def _texts(output: list[JsonValue] | None) -> list[str] | None:
 
 
 def _target(expected: list[JsonValue]) -> str | None | Scored:
+    found = _written(expected)
+    if isinstance(found, str) and (refused := _unreadable(found)) is not None:
+        return Scored(None, {"reason": f"the pattern doesn't read: {refused}"})
+    return found
+
+
+def _refused(expected: list[JsonValue]) -> Invalid | None:
+    found = _written(expected)
+    return _unreadable(found) if isinstance(found, str) else None
+
+
+def _unreadable(text: str) -> Invalid | None:
+    try:
+        _ = Pattern(text)
+    except Invalid as e:
+        return e
+    return None
+
+
+def _written(expected: list[JsonValue]) -> str | None | Scored:
     if not expected:
         return Scored(None, NO_TARGET)
     if len(expected) > 1:
@@ -232,10 +265,6 @@ def _target(expected: list[JsonValue]) -> str | None | Scored:
             )
         case _:
             return Scored(None, {"reason": "the target has no pattern"})
-    try:
-        _ = Pattern(text)
-    except ValueError as e:
-        return Scored(None, {"reason": f"the pattern doesn't read: {e}"})
     return text
 
 
@@ -275,16 +304,22 @@ METRICS: dict[str, Metric] = {
         "1 over the rank of the first item that matches the target's pattern; 0 "
         + "when none does, and none without an answer",
         _by_pattern(_ranked),
+        reads=_target,
+        refuses=_refused,
     ),
     "first_mention": explaining(
         "where in the text the target's pattern is first matched, in characters; "
         + "none when it never is",
         _by_pattern(_first),
         unit="@",
+        reads=_target,
+        refuses=_refused,
     ),
     "mentions": explaining(
         "1 when an item matches the target's pattern, or when nothing is named "
         + "and nothing is expected; else 0, and none without an answer",
         _mentions,
+        reads=_target,
+        refuses=_refused,
     ),
 }

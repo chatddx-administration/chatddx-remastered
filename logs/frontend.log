@@ -1,4 +1,4 @@
-2026-10-29T16:42:51Z c4247b4 ./check.sh frontend
+2026-10-30T00:49:24Z 0cd6c57 ./check.sh frontend
 • frontend
 
 > chatddx-portal@0.0.0 check /home/user/chatddx-remastered/frontend
@@ -9,9 +9,9 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [474.5ms]
-1793292182489 START "/home/user/chatddx-remastered/frontend"
-1793292182493 COMPLETED 872 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
+🚀 openapi.json → src/lib/api/schema.d.ts [319.5ms]
+1793321374653 START "/home/user/chatddx-remastered/frontend"
+1793321374657 COMPLETED 872 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
 
 > chatddx-portal@0.0.0 test /home/user/chatddx-remastered/frontend
 > vitest run
@@ -21,10 +21,10 @@
 
 
  Test Files  19 passed (19)
-      Tests  87 passed (87)
-   Start at  16:43:03
-   Duration  2.04s (transform 65%, import 20%, tests 11%, worker 4%)
+      Tests  88 passed (88)
+   Start at  00:49:35
+   Duration  1.81s (transform 63%, import 23%, tests 10%, worker 4%)
 
-    Isolate  19 workers spawned · ~118ms startup each (spawn + environment, per file)
-             at least ~630ms faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  19 workers spawned · ~134ms startup each (spawn + environment, per file)
+             at least ~715ms faster with isolate: false — reuses workers across files instead of one per file
 

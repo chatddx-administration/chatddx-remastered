@@ -1,3 +1,5 @@
+from collections.abc import Generator, Hashable, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any
@@ -19,19 +21,21 @@ from chatddx.bench.seen import trial
 from chatddx.catalog import Subject, read
 from chatddx.factors.base import Fingerprint, Invalid, resolve
 from chatddx.factors.cases import Appendix, Case, Vignette
+from chatddx.factors.gatherer import gather
 from chatddx.factors.gathering import REPLICATED, Center, Gathering
 from chatddx.factors.request import Skeleton, Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer, Scoring
-from chatddx.factors.select import Name, Token, parse_selector
+from chatddx.factors.select import field
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.ledger import RunStarted
 from chatddx.locale import display_language, tr
 from chatddx.runner import Refused, Running
 from chatddx.runner.gate import bar
-from chatddx.scorers.shipped import unit_of
+from chatddx.scorers.shipped import read_by, unit_of
 from chatddx.store import Queue, fetch_vignette
 
 from .pages import BenchDep, page, refusal_of, within
+from .runs import pressed
 from .titles import display_case
 
 router = APIRouter()
@@ -63,14 +67,8 @@ def review(
 ) -> Response:
     shown = api_families.family(bench, family)
     picked = _picked(shown, case)
-    visible = sorted(
-        api.threads(bench, "expectation_schema"), key=lambda t: t.name or t.title
-    )
-    under = next(
-        (t.head.digest for t in visible if schema in (None, t.head.digest)), None
-    )
-    if schema is not None and under is None:
-        raise NotFound.of("no expectation schema %(schema)s for you", schema=schema)
+    visible = _schemas(bench)
+    under = _under(visible, schema)
     expected = next(
         (e for e in picked.expectations if e.expectation_schema == under), None
     )
@@ -94,22 +92,34 @@ def review(
     named = {t.id: t.name or t.title for t in live}
     evaluations = _evaluations(bench, picked.case)
     busy = _busy(bench, evaluations)
-    latest = _latest(bench, picked.case, evaluations)
-    at = next((i for i, e in enumerate(evaluations) if e.first == evaluation), None)
+    entries = _entries(bench, picked.case, evaluations)
+    at = next((i for i, e in enumerate(entries) if e.first == evaluation), None)
     if evaluation is not None and at is None:
         raise NotFound.of(
             "no evaluation %(evaluation)s of %(case)s",
             evaluation=str(evaluation),
             case=display_case(picked.titled),
         )
-    held = latest if at is None else evaluations[at]
-    stepped = [*evaluations, *([] if latest is None else [latest])]
-    step = len(stepped) - 1 if at is None else at
+    if at is None and entries:
+        at = len(entries) - 1
+    held = None if at is None else entries[at]
+    verdicts = _Verdicts(bench, entries, live, picked.case, under, expected, named)
+    told = [verdicts.of(e) for e in entries]
     evaluated = None if held is None else _evaluation(bench, held, under, named)
-    behind = (
-        []
-        if held is None or held is not latest
-        else _behind(bench, held, live, picked.case, under, expected, named)
+    behind = [] if at is None else told[at] or []
+    # Policy: one that matches is offered before a rework, so that what is there already
+    # isn't run again.
+    matched = next((e for e, v in zip(entries[::-1], told[::-1]) if v == []), None)
+    editor = _editing(bench, shown, picked, under, expected, own)
+    used = (
+        None
+        if held is None or editor is None or not any(b.rescore for b in behind)
+        else _scored_with(bench, held, under, picked.case)
+    )
+    edit_from = (
+        None
+        if used is None or expected is None or used == expected.expectation
+        else resolve(bench.store.get, used, Expectation).data
     )
     query = request.url.query
     back = request.url.path + (f"?{query}" if query else "")
@@ -117,12 +127,13 @@ def review(
         "family": family,
         "case": picked.case,
         "expected": {
-            "editor": _editing(bench, shown, picked, under, expected, own),
+            "editor": editor,
             "history": [] if own is None else _history(bench, own),
         },
         "appendices": appendices,
         "back": back,
         "evaluation": evaluated,
+        "from": edit_from,
         "busy": None
         if busy is None
         else [str(r) for e in evaluations if e.first == busy for r in e.runs],
@@ -161,16 +172,18 @@ def review(
         runnable=sum(_placed(bench, t) is not None for t in live),
         busy=busy,
         evaluation=held,
-        earlier=stepped[step - 1] if step > 0 else None,
-        later=stepped[step + 1] if step + 1 < len(stepped) else None,
+        entries=list(zip(entries, told, strict=True)),
+        newest=entries[-1] if entries else None,
         behind=behind,
+        matched=matched,
+        edit_from=edit_from is not None,
         left_out=[]
         if evaluated is None
         else [
             (named[t.id], why)
             for t in live
             if t.id not in {c["configuration"] for c in evaluated["configurations"]}
-            and ((why := _unrunnable(bench, t, picked.case)) or held is not latest)
+            and (why := verdicts.unrunnable(t))
         ],
         back=back,
         props=props,
@@ -192,36 +205,116 @@ def running_in_review(
     first = _busy(bench, _evaluations(bench, picked.case))
     if first is not None:
         return _evaluating(family, back, picked.case, first)
+    chosen = [t for t in _configurations(bench) if _placed(bench, t) is not None]
+    bench.check_quota([s.seeds for _ in chosen for s in REPLICATED])
     begun: list[Running] = []
-    for t in _configurations(bench):
-        if (placed := _placed(bench, t)) is None:
-            continue
-        variation, at = placed
-        drawn: dict[str, tuple[int, ...]] = {}
-        for s in REPLICATED:
-            each = drawn[s.name] = (
-                suggest_seeds(s.seeds)
-                if s.repeats is None
-                else drawn[s.repeats][-s.seeds :]
-            )
-            try:
-                started = bench.start(
-                    variation, at.name, [picked.case], each, joining=first
-                )
-            except (Invalid, Refused):
-                break
-            begun += [running for _, running in started.runs]
-            first = first or begun[0].started.run
-    # Policy: queued once every run is begun, so that the worker sending the first
-    # doesn't slow beginning the rest.
-    with bench.conn.transaction():
-        for running in begun:
-            _ = bench.queue(running, True)
+    with _queueing(bench, begun):
+        for t in chosen:
+            begun += _begin(bench, t, picked.case, first)
+            first = first or (begun[0].started.run if begun else None)
     if first is None:
         raise Invalid.of(
             "no configuration can run %(case)s now", case=display_case(picked.titled)
         )
     return _evaluating(family, back, picked.case, first)
+
+
+@router.post("/review/{family}/rework")
+def reworking_in_review(
+    bench: BenchDep,
+    family: int,
+    case: Annotated[str, Form()],
+    under: Annotated[str | None, Form()] = None,
+    back: Annotated[str | None, Form()] = None,
+) -> Response:
+    picked = _picked(api_families.family(bench, family), case)
+    schema = _under(_schemas(bench), under)
+    evaluations = _evaluations(bench, picked.case)
+    # Policy: as with Run, a press made while an evaluation of the case is under way
+    # counts as made.
+    if (busy := _busy(bench, evaluations)) is not None:
+        return _evaluating(family, back, picked.case, busy)
+    entries = _entries(bench, picked.case, evaluations)
+    expected = next(
+        (e for e in picked.expectations if e.expectation_schema == schema), None
+    )
+    live = _configurations(bench)
+    named = {t.id: t.name or t.title for t in live}
+    verdicts = _Verdicts(bench, entries, live, picked.case, schema, expected, named)
+    behind = (verdicts.of(entries[-1]) if entries else None) or []
+    rerun = [b for b in behind if b.rerun is not None]
+    bench.check_quota([s.seeds for _ in rerun for s in REPLICATED])
+    first: UUID | None = None
+    begun: list[Running] = []
+    with _queueing(bench, begun):
+        for b in behind:
+            if b.rerun is not None:
+                begun += _begin(bench, b.rerun, picked.case, first, b.seeds)
+                first = first or (begun[0].started.run if begun else None)
+            for run in b.resume:
+                with pressed():
+                    _ = bench.queue(bench.resume(bench.run(run)))
+            for run in b.rescore:
+                if left := _stale(bench, run, schema):
+                    with pressed():
+                        _ = bench.queue_scoring(bench.run(run), left)
+    return _moved(family, back, picked.case, "evaluating")
+
+
+def _schemas(bench: Bench) -> list[schemas.Thread]:
+    found = api.threads(bench, "expectation_schema")
+    return sorted(found, key=lambda t: t.name or t.title)
+
+
+def _under(visible: list[schemas.Thread], schema: str | None) -> str | None:
+    under = next(
+        (t.head.digest for t in visible if schema in (None, t.head.digest)), None
+    )
+    if schema is not None and under is None:
+        raise NotFound.of("no expectation schema %(schema)s for you", schema=schema)
+    return under
+
+
+def _begin(
+    bench: Bench,
+    t: schemas.Thread,
+    case: str,
+    first: UUID | None,
+    seeds: Mapping[str, tuple[int, ...]] | None = None,
+) -> list[Running]:
+    if (placed := _placed(bench, t)) is None:
+        return []
+    variation, at = placed
+    drawn: dict[str, tuple[int, ...]] = {}
+    begun: list[Running] = []
+    for s in REPLICATED:
+        each = drawn[s.name] = (
+            seeds[s.name]
+            if seeds is not None and s.name in seeds
+            else suggest_seeds(s.seeds)
+            if s.repeats is None
+            else drawn[s.repeats][-s.seeds :]
+        )
+        joining = first or (begun[0].started.run if begun else None)
+        try:
+            started = bench.start(variation, at.name, [case], each, joining=joining)
+        except (Invalid, Refused):
+            break
+        begun += [running for _, running in started.runs]
+    return begun
+
+
+# Policy: queued once every run is begun, so that the worker sending the first doesn't
+# slow beginning the rest, and queued too when beginning one fails, so that none is left
+# begun with nothing to send it.
+@contextmanager
+def _queueing(bench: Bench, begun: list[Running]) -> Generator[None]:
+    try:
+        yield
+    finally:
+        with bench.conn.transaction():
+            for running in begun:
+                _ = bench.queue(running, True)
 
 
 def _evaluating(family: int, back: str | None, case: str, first: UUID) -> Response:
@@ -233,7 +326,7 @@ def _evaluating(family: int, back: str | None, case: str, first: UUID) -> Respon
 
 @dataclass(frozen=True)
 class _Evaluated:
-    first: UUID | None
+    first: UUID
     at: datetime
     gathering: Gathering
 
@@ -267,68 +360,198 @@ def _evaluations(bench: Bench, case: str) -> list[_Evaluated]:
     return sorted(found, key=lambda e: e.at)
 
 
-# Policy: what the review shows unless asked for an evaluation: the latest of each
-# configuration's runs across the case's evaluations, among their runs alone, so that
-# no run of other cases mixes its items into the means.
-def _latest(
+# Policy: an entry is the case as it stood once an evaluation was started: the latest of
+# each configuration's runs across the evaluations up to it, among their runs alone, so
+# that no run of other cases mixes its items into the means, and a rework that starts
+# only some configurations' runs still makes a whole one.
+def _entries(
     bench: Bench, case: str, evaluations: list[_Evaluated]
-) -> _Evaluated | None:
+) -> list[_Evaluated]:
     if not evaluations:
+        return []
+    started = {r.run: r for r in bench.runs(reaching=case)}
+    ids = [r for e in evaluations for r in e.runs]
+    abouts = read.abouts(bench.rows, [Subject(run=r) for r in ids])
+    keys: dict[UUID, Hashable] = {}
+    for r in ids:
+        about = abouts[Subject(run=r)]
+        edit = None if about.varied is None else bench.rows.edit(about.varied)
+        # Duplication: src/chatddx/bench/gathering.py:gathering keys its groups alike.
+        keys[r] = started[r].trial if edit is None else edit.thread
+    found: list[UUID] = []
+    entries: list[_Evaluated] = []
+    for e in evaluations:
+        found += e.runs
+        ordered = sorted(found, key=lambda r: started[r].at, reverse=True)
+        held = gather(
+            Center(component=case),
+            REPLICATED,
+            [(keys[r], r, started[r].trial) for r in ordered],
+            bench.store.get,
+        )
+        if held is not None:
+            entries.append(_Evaluated(e.first, e.at, held))
+    return entries
+
+
+@dataclass(frozen=True)
+class _Behind:
+    name: str
+    why: str
+    rerun: schemas.Thread | None = None
+    seeds: Mapping[str, tuple[int, ...]] | None = None
+    rescore: tuple[UUID, ...] = ()
+    resume: tuple[UUID, ...] = ()
+
+    @property
+    def reworked(self) -> bool:
+        return self.rerun is not None or bool(self.rescore or self.resume)
+
+
+# Policy: what no longer holds of each entry, or None while its runs are under way, with
+# what each configuration and run says worked out once, as the same recur in the
+# entries after the one they first gather in.
+class _Verdicts:
+    def __init__(
+        self,
+        bench: Bench,
+        entries: list[_Evaluated],
+        live: list[schemas.Thread],
+        case: str,
+        schema: str | None,
+        expected: schemas.Expected | None,
+        named: dict[int, str],
+    ) -> None:
+        self._bench: Bench = bench
+        self._live: list[schemas.Thread] = live
+        self._case: str = case
+        self._schema: str | None = schema
+        self._marked: bool = expected is not None and expected.expectation is not None
+        self._named: dict[int, str] = named
+        runs = list({r for e in entries for r in e.runs})
+        self._abouts: dict[Subject, Any] = read.abouts(
+            bench.rows, [Subject(run=r) for r in runs]
+        )
+        self._placed: dict[UUID, Any] = Queue(bench.conn).placed(runs)
+        self._finished: set[UUID] = bench.store.finished(runs)
+        self._unrunnable: dict[int, str | None] = {}
+        self._trials: dict[tuple[int, tuple[int, ...]], str | None] = {}
+        self._stale: dict[UUID, bool] = {}
+
+    def status(self, run: UUID) -> str | None:
+        held = self._placed.get(run)
+        return None if held is None else held.job.status
+
+    def unrunnable(self, t: schemas.Thread) -> str | None:
+        if t.id not in self._unrunnable:
+            self._unrunnable[t.id] = _unrunnable(self._bench, t, self._case)
+        return self._unrunnable[t.id]
+
+    def of(self, entry: _Evaluated) -> list[_Behind] | None:
+        if any(self.status(r) in _OPEN_STATUSES for r in entry.runs):
+            return None
+        by_id = {t.id: t for t in self._live}
+        flagged: list[_Behind] = []
+        gathered: set[int] = set()
+        for group in entry.gathering.groups():
+            head = next(iter(group.values()))
+            about = self._abouts[Subject(run=head.run)]
+            rows = self._bench.rows
+            varied = None if about.varied is None else rows.edit(about.varied)
+            thread = 0 if varied is None else varied.thread
+            gathered.add(thread)
+            name = self._named.get(thread, about.name or str(head.run))
+            t = by_id.get(thread)
+            if t is None:
+                flagged.append(
+                    _Behind(name, tr("it is no longer among your configurations"))
+                )
+                continue
+            if why := self.unrunnable(t):
+                flagged.append(_Behind(name, why))
+                continue
+            seeds = {
+                s: resolve(self._bench.store.get, g.trial, Trial).seeds
+                for s, g in group.items()
+            }
+            changed = self._trial(t, seeds[head.seeding]) != head.trial
+            halted = any(self.status(g.run) == "stopped" for g in group.values())
+            if changed or halted:
+                why = (
+                    tr("its configuration has changed since it ran")
+                    if changed
+                    else tr("it was halted before it finished")
+                )
+                flagged.append(_Behind(name, why, rerun=t, seeds=seeds))
+                continue
+            if unsent := tuple(
+                g.run for g in group.values() if g.run not in self._finished
+            ):
+                flagged.append(
+                    _Behind(name, tr("it stopped before it finished"), resume=unsent)
+                )
+            if self._marked and (
+                unscored := tuple(
+                    g.run for g in group.values() if self._stale_run(g.run)
+                )
+            ):
+                flagged.append(
+                    _Behind(
+                        name,
+                        tr("it isn't scored against the expectation as it is"),
+                        rescore=unscored,
+                    )
+                )
+        flagged.extend(
+            _Behind(self._named[t.id], tr("it has no runs yet"), rerun=t)
+            for t in self._live
+            if t.id not in gathered and self.unrunnable(t) is None
+        )
+        return flagged
+
+    def _trial(self, t: schemas.Thread, seeds: tuple[int, ...]) -> str | None:
+        if (t.id, seeds) not in self._trials:
+            self._trials[t.id, seeds] = _trial_now(self._bench, t, self._case, seeds)
+        return self._trials[t.id, seeds]
+
+    def _stale_run(self, run: UUID) -> bool:
+        if run not in self._stale:
+            self._stale[run] = bool(_stale(self._bench, run, self._schema))
+        return self._stale[run]
+
+
+# Policy: the expectation the entry's newest scores under the schema were scored against,
+# or None when its scores were scored against expectations that read differently.
+def _scored_with(
+    bench: Bench, entry: _Evaluated, schema: str | None, case: str
+) -> str | None:
+    used: list[tuple[datetime, str]] = []
+    scorers: dict[str, Scorer] = {}
+    for run in entry.runs:
+        for started in bench.store.scores_of(run):
+            scoring = resolve(bench.store.get, started.scoring, Scoring)
+            scorer = resolve(bench.store.get, scoring.scorer, Scorer)
+            if scorer.expectation_schema != schema:
+                continue
+            scorers[scoring.scorer] = scorer
+            used += [
+                (started.at, e)
+                for e in scoring.expectations
+                if resolve(bench.store.get, e, Expectation).case == case
+            ]
+    if not used:
         return None
-    runs = {r for e in evaluations for r in e.runs}
-    held = bench.gathering(Center(component=case), REPLICATED, among=runs)
-    return None if held is None else _Evaluated(None, evaluations[-1].at, held)
-
-
-def _behind(
-    bench: Bench,
-    latest: _Evaluated,
-    live: list[schemas.Thread],
-    case: str,
-    schema: str | None,
-    expected: schemas.Expected | None,
-    named: dict[int, str],
-) -> list[tuple[str, str]]:
-    by_id = {t.id: t for t in live}
-    runs = latest.runs
-    abouts = read.abouts(bench.rows, [Subject(run=r) for r in runs])
-    placed = Queue(bench.conn).placed(runs)
-    open_runs = {
-        r for r in runs if r in placed and placed[r].job.status in _OPEN_STATUSES
-    }
-    flagged: list[tuple[str, str]] = []
-    gathered: set[int] = set()
-    for group in latest.gathering.groups():
-        head = next(iter(group.values()))
-        about = abouts[Subject(run=head.run)]
-        varied = None if about.varied is None else bench.rows.edit(about.varied)
-        thread = 0 if varied is None else varied.thread
-        gathered.add(thread)
-        name = named.get(thread, about.name or str(head.run))
-        t = by_id.get(thread)
-        if t is None:
-            flagged.append((name, tr("it is no longer among your configurations")))
-            continue
-        if why := _unrunnable(bench, t, case):
-            flagged.append((name, why))
-            continue
-        seeds = resolve(bench.store.get, head.trial, Trial).seeds
-        if _trial_now(bench, t, case, seeds) != head.trial:
-            flagged.append((name, tr("its configuration has changed since it ran")))
-        mark = None if expected is None else expected.expectation
-        if mark is not None and not all(
-            g.run in open_runs or _scored_against(bench, g.run, schema, mark)
-            for g in group.values()
-        ):
-            flagged.append(
-                (name, tr("it isn't scored against the expectation as it is"))
-            )
-    flagged.extend(
-        (named[t.id], tr("it has no runs yet"))
-        for t in live
-        if t.id not in gathered and _unrunnable(bench, t, case) is None
-    )
-    return flagged
+    newest = max(used)[1]
+    data = {e: resolve(bench.store.get, e, Expectation).data for _, e in used}
+    try:
+        alike = all(
+            read_by(s, data[e]) == read_by(s, data[newest])
+            for s in scorers.values()
+            for e in data
+        )
+    except LookupError:
+        return None
+    return newest if alike else None
 
 
 def _trial_now(
@@ -344,15 +567,15 @@ def _trial_now(
     return None
 
 
-def _scored_against(
-    bench: Bench, run: UUID, schema: str | None, expectation: str
-) -> bool:
-    for started in bench.store.scores_of(run):
-        scoring = resolve(bench.store.get, started.scoring, Scoring)
-        scorer = resolve(bench.store.get, scoring.scorer, Scorer)
-        if scorer.expectation_schema == schema and expectation in scoring.expectations:
-            return True
-    return False
+def _stale(bench: Bench, run: UUID, schema: str | None) -> list[str]:
+    started = bench.run(run)
+    if run not in bench.store.finished([run]):
+        return []
+    return [
+        s
+        for s in bench.unscored(started)
+        if resolve(bench.store.get, s, Scorer).expectation_schema == schema
+    ]
 
 
 _OPEN_STATUSES = ("queued", "under way")
@@ -478,8 +701,8 @@ def _evaluation(
         {} if held_schema is None else held_schema.json_schema.get("properties")
     )
     return {
-        "key": str(evaluated.first or evaluated.gathering.digest),
-        "first": None if evaluated.first is None else str(evaluated.first),
+        "key": str(evaluated.first),
+        "first": str(evaluated.first),
         "case": evaluated.gathering.center.component,
         "configurations": sorted(configurations, key=lambda c: c["name"]),
         "fields": list(properties) if isinstance(properties, dict) else [],
@@ -497,22 +720,12 @@ def _views(bench: Bench, schema: str | None) -> dict[str, list[dict[str, Any]]]:
         found[t.head.digest] = [
             {
                 "label": labels.get(i, tr("view %(n)s", n=i)),
-                "field": _field(v.expectation),
+                "field": field(v.expectation),
                 "unit": unit_of(held, i),
             }
             for i, v in enumerate(held.views)
         ]
     return found
-
-
-def _field(selector: str) -> str | None:
-    match parse_selector(selector)[:1]:
-        case (Name(name=name),):
-            return name
-        case (Token(token=token),):
-            return token
-        case _:
-            return None
 
 
 def _picked(shown: schemas.FamilyDetail, case: str | None) -> schemas.FamilyCase:
@@ -524,10 +737,14 @@ def _picked(shown: schemas.FamilyDetail, case: str | None) -> schemas.FamilyCase
     return picked
 
 
-def _moved(family: int, back: str | None, case: str) -> RedirectResponse:
+def _moved(
+    family: int, back: str | None, case: str, at: str | None = None
+) -> RedirectResponse:
     path, _, query = within(back or f"/review/{family}").partition("?")
-    kept = [(k, v) for k, v in parse_qsl(query) if k != "case"]
-    return RedirectResponse(f"{path}?{urlencode([*kept, ('case', case)])}", 303)
+    dropped = ("case",) if at is None else ("case", "evaluation")
+    kept = [(k, v) for k, v in parse_qsl(query) if k not in dropped]
+    said = urlencode([*kept, ("case", case)])
+    return RedirectResponse(f"{path}?{said}{'' if at is None else '#' + at}", 303)
 
 
 def _listed(
@@ -685,13 +902,11 @@ def _editing(
             "mode": "edit",
             "thread": own.id,
             "head": own.head.id,
-            "name": own.name or own.title,
             "data": expected.data,
         }
     return {
         **given,
         "mode": "new",
-        "name": tr("expectation for %(case)s", case=display_case(picked.titled)),
         "data": _started(shown, picked, schema),
     }
 

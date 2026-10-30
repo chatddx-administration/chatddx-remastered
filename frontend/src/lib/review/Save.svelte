@@ -6,7 +6,7 @@
 
   function restore(): void {
     if (!edited.pending || confirm(t("Undo everything you changed on this page since it was last saved?"))) {
-      location.reload();
+      edited.restore();
     }
   }
 </script>

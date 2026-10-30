@@ -32,7 +32,7 @@ from chatddx.scorers.scorer import (
     explain_view,
     score,
 )
-from chatddx.scorers.shipped import SCORERS, function, problems
+from chatddx.scorers.shipped import SCORERS, function, problems, read_by, refused
 from chatddx.scorers.verdicts import asked
 from chatddx.test.helpers import SHIPPED
 from chatddx.test.world import DATA, world_plan
@@ -222,6 +222,38 @@ def test_a_scorer_scores_each_of_its_views_through_its_entry_point() -> None:
         Scored(1.0, {"answer": "Admit to the medical ward"}),
     ]
     assert [s.value for s in score(scorer, run, None, TARGETS)] == [None, None, None]
+
+
+def test_a_pattern_view_refuses_a_target_whose_pattern_doesn_t_read() -> None:
+    scorer = plan_scorer()
+    broken: JsonValue = {"diagnosis": {"pattern": "copd | (asthma"}}
+    worded: JsonValue = {"diagnosis": {"text": "Asthma, or COPD."}}
+    assert [(at, str(e)) for at, e in refused(scorer, broken)] == [
+        ("/diagnosis", "a '(' in 'copd | (asthma' is never closed")
+    ]
+    assert refused(scorer, worded) == []
+    assert refused(scorer, TARGETS) == []
+
+
+def test_a_pattern_view_reads_its_target_s_pattern_and_a_judged_one_all_of_it() -> None:
+    scorer = plan_scorer()
+    targets: dict[str, JsonValue] = {"diagnosis": {"pattern": "pneumonia"}}
+    worded: JsonValue = {"diagnosis": {"pattern": "pneumonia", "text": "Pneumonia."}}
+    moved: JsonValue = {"diagnosis": {"pattern": "pneumonia*"}}
+    assert read_by(scorer, worded) == read_by(scorer, targets)
+    assert read_by(scorer, moved) != read_by(scorer, targets)
+    judged = plan_scorer(
+        views=(
+            View(
+                output="$.diagnoses[*].diagnosis",
+                expectation="/diagnosis",
+                metric="verdict",
+                judge=JUDGE,
+                params={"at": "/meets"},
+            ),
+        )
+    )
+    assert read_by(judged, worded) != read_by(judged, targets)
 
 
 @pytest.mark.parametrize(

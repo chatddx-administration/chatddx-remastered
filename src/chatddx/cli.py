@@ -48,6 +48,7 @@ from chatddx.scripted import (
     RUNS,
     fake_at,
     ran_before,
+    review as review_scripted,
     run as run_scripted,
     scripted_runs,
 )
@@ -284,6 +285,44 @@ def _scripted_runs(args: argparse.Namespace) -> None:
                 f"[scripted run {scripted.name}] {_ran(bench, started)}, {said} run "
                 + str(started.run)[:8]
             )
+
+
+def _scripted_review(args: argparse.Namespace) -> None:
+    world = _world("scripted-review", args.world)
+    with psycopg.connect(settings.database(), autocommit=True) as conn:
+        _held("scripted-review", world, conn)
+        person = People(conn).find(args.login)
+        if person is None:
+            raise SystemExit(
+                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+            )
+        bench = Bench(conn, person, world.inventory)
+        try:
+            case = bench.case_titled(args.case)[1]
+            schema = bench.thread(args.schema, "expectation_schema")[0].digest
+            made = review_scripted(
+                bench,
+                case,
+                schema,
+                gatherings=args.gatherings,
+                versions=args.versions,
+                seed=args.seed,
+                days=args.days,
+            )
+        except OSError as e:
+            raise SystemExit(
+                f"scripted-review: {e}; scripted runs serve their own fakes, so "
+                + "chatddx fake-engines must not be running"
+            ) from None
+        except (LookupError, ValueError, Refused) as e:
+            raise SystemExit(f"scripted-review: {e}") from None
+        print(
+            f"[scripted review {args.case}] {made.gatherings} gatherings against "
+            + f"{made.versions} versions of {args.login}'s expectation, "
+            + f"{made.broken} broken and {made.unfinished} left unfinished"
+        )
+        for name, why in made.skipped.items():
+            print(f"[scripted review {args.case}] left out {name}: {why}")
 
 
 def _ran(bench: Bench, started: RunStarted) -> str:
@@ -653,6 +692,32 @@ def main(argv: Sequence[str] | None = None) -> None:
         "name", nargs="*", help="the scripted runs to run, by name (every one)"
     )
     scripted.set_defaults(run=_scripted_runs)
+
+    reviewed = commands.add_parser(
+        "scripted-review",
+        help="write a review's worth of a case for a person: their expectation of it in "
+        + "many versions and dozens of evaluations of it over the last weeks, each "
+        + "answered by the fake vLLM as well as a quality drawn for its version has it",
+    )
+    _ = reviewed.add_argument("login", help="whose review it is")
+    _ = reviewed.add_argument("case", help="the case, by its title")
+    _ = reviewed.add_argument(
+        "--world", type=Path, help="the World it is written in (CHATDDX_WORLD)"
+    )
+    _ = reviewed.add_argument(
+        "--schema", default="targets", help="the expectation schema (targets)"
+    )
+    _ = reviewed.add_argument(
+        "--gatherings", type=int, default=40, help="how many evaluations (40)"
+    )
+    _ = reviewed.add_argument(
+        "--versions", type=int, default=12, help="how many expectations (12)"
+    )
+    _ = reviewed.add_argument(
+        "--days", type=int, default=42, help="over how many days past (42)"
+    )
+    _ = reviewed.add_argument("--seed", type=int, default=1, help="the draw's seed (1)")
+    reviewed.set_defaults(run=_scripted_review)
 
     api = commands.add_parser(
         "api",

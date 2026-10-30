@@ -79,9 +79,10 @@ if (held) {
 
   const expected = document.getElementById("review-expected");
   const editor = review.expected.editor;
+  let filling: ((data: unknown) => void) | undefined;
   if (expected && editor) {
     expected.replaceChildren();
-    mount(Expected, { target: expected, props: { expected: review.expected, editor, back: review.back, edited } });
+    filling = mount(Expected, { target: expected, props: { expected: review.expected, editor, edited } }).fill;
   }
 
   const appendices = document.getElementById("review-appendices");
@@ -96,10 +97,14 @@ if (held) {
   const save = document.getElementById("review-save");
   if (save) mount(Save, { target: save, props: { edited } });
   const running = document.querySelector<HTMLFormElement>("form[data-running]");
+  let leaving = false;
   running?.addEventListener("submit", (sent) => {
     if (edited.pending && !confirm(t("What you changed isn't saved: run the case as it was last saved?"))) {
       sent.preventDefault();
-    }
+    } else leaving = true;
+  });
+  addEventListener("beforeunload", (left) => {
+    if (edited.pending && !leaving) left.preventDefault();
   });
   const evaluation = document.getElementById("review-evaluation");
   const evaluating = document.getElementById("evaluating");
@@ -112,11 +117,36 @@ if (held) {
     };
     evaluation.replaceChildren();
     const shown = mount(Evaluation, { target: evaluation, props: { evaluation: review.evaluation, settled } });
+    let from = review.from;
+    let only = false;
+    const stripped = () => {
+      const strip = evaluating.querySelector<HTMLElement>("[data-strip]");
+      if (!strip) return;
+      for (const unmatched of strip.querySelectorAll<HTMLElement>("li[data-unmatched]")) {
+        unmatched.hidden = only && !unmatched.querySelector('[aria-current="page"]');
+      }
+      const box = evaluating.querySelector<HTMLInputElement>("[data-only-matching]");
+      if (box) box.checked = only;
+      const current = strip.querySelector<HTMLElement>('[aria-current="page"]');
+      if (current) strip.scrollLeft = current.offsetLeft - (strip.clientWidth - current.offsetWidth) / 2;
+    };
+    stripped();
     let at = location.search;
+    const loading = evaluating.querySelector<HTMLElement>("[data-loading]");
     const stepped = async (to: string, pushed: boolean): Promise<void> => {
       at = new URL(to).search;
-      const got = await fetch(to);
-      const page = new DOMParser().parseFromString(await got.text(), "text/html");
+      if (loading) loading.hidden = false;
+      evaluation.classList.add("opacity-50");
+      let got: Response;
+      let said: string;
+      try {
+        got = await fetch(to);
+        said = await got.text();
+      } finally {
+        if (loading) loading.hidden = true;
+        evaluation.classList.remove("opacity-50");
+      }
+      const page = new DOMParser().parseFromString(said, "text/html");
       const next = JSON.parse(page.getElementById("review-props")?.textContent ?? "null") as Review | null;
       if (!got.ok || !next?.evaluation) return location.assign(to);
       for (const part of ["header", "[data-told]"]) {
@@ -124,10 +154,29 @@ if (held) {
         if (from) evaluating.querySelector(part)?.replaceWith(from);
       }
       shown.show(next.evaluation);
+      from = next.from;
+      stripped();
       if (pushed) history.pushState({ stepped: true }, "", to);
     };
+    evaluating.addEventListener("change", (changed) => {
+      const box = (changed.target as Element).closest<HTMLInputElement>("[data-only-matching]");
+      if (!box) return;
+      only = box.checked;
+      stripped();
+    });
     evaluating.addEventListener("click", (clicked) => {
-      const at = (clicked.target as Element).closest<HTMLAnchorElement>("nav a[rel]");
+      const target = clicked.target as Element;
+      const scroll = target.closest<HTMLButtonElement>("[data-scroll]");
+      const strip = evaluating.querySelector<HTMLElement>("[data-strip]");
+      if (scroll && strip) {
+        strip.scrollBy({ left: Number(scroll.dataset.scroll) * strip.clientWidth * 0.8 });
+        return;
+      }
+      if (target.closest("[data-edit-from]")) {
+        if (from !== null) filling?.(from);
+        return;
+      }
+      const at = target.closest<HTMLAnchorElement>("a[data-entry]");
       if (!at || clicked.button || clicked.metaKey || clicked.ctrlKey || clicked.shiftKey || clicked.altKey) return;
       clicked.preventDefault();
       void stepped(at.href, true);

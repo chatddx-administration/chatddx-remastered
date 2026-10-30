@@ -220,6 +220,17 @@ def parse_selector(text: str) -> tuple[Step, ...]:
     return tuple(steps)
 
 
+def field(selector: str) -> str | None:
+    """The top-level field the selector starts from, or None when it starts otherwise."""
+    match parse_selector(selector)[:1]:
+        case (Name(name=name),):
+            return name
+        case (Token(token=token),):
+            return token
+        case _:
+            return None
+
+
 def check_selector(text: str) -> str:
     _ = parse_selector(text)
     return text

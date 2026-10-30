@@ -68,16 +68,16 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 ## Tests and checks
 
-`./check.sh [stage]...` checks the stages named:
+`./check.sh [stage]...` checks the stages named and write their output to `dev/state/logs/<stage>.log`
 
 - `openapi`, `stamps` and `locale`, each in step with the code
 - `pending`, what is left to stamp or translate
 - `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
 
-`./write.sh [commit]` regenerates what follows from the code and the docs.
+`./write.sh [commit]` regenerates what follows from the code and moves logs in `dev/state/logs/` to `logs/`.
 
-A `~<n>s` after a command is what it takes in the cloud container: `./write.sh` rewrites it from `dev/costs.tsv` once it
-is 1.5 times off, and `chatddx costs show` has what every command took, on every machine class.
+The `~<n>s` after a command tells what time it takes in the cloud container. `./write.sh` rewrites it from
+`dev/costs.tsv` once it is 1.5 times off, and `chatddx costs show` has what every command took, on every machine class.
 
 ### Python
 
@@ -95,7 +95,7 @@ is 1.5 times off, and `chatddx costs show` has what every command took, on every
 
 ### Formatting
 
-- `ruff format` formats the Python ~0.0s.
+- `ruff format` formats the Python.
 - `chatddx stamp reflow` formats the frontend and the docs, what `.prettierignore` lets through, with prettier. Prettier
   on its own breaks the markers of a doc holding stamps pending.
 

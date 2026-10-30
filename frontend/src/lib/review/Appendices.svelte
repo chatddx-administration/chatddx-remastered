@@ -93,6 +93,12 @@
       }
       return { case: at };
     },
+    restore: () => {
+      drafts = saved.map((s) => ({ ...s }));
+      open = null;
+      name = "";
+      text = "";
+    },
   });
 </script>
 

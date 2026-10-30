@@ -40,10 +40,12 @@ msgstr "%(case)s på %(language)s"
 #, python-format
 msgid ""
 "%(case)s under each configuration of yours, three times under seeds drawn"
-" and a fourth under the third's seed, scored against what is expected."
+" and a fourth under the third's seed, scored against what is expected: "
+"each configuration's latest runs as of %(at)s."
 msgstr ""
 "%(case)s under varje konfiguration av dina, tre gånger med dragna seeds "
-"och en fjärde med den tredjes seed, rättat mot facit."
+"och en fjärde med den tredjes seed, rättat mot facit: varje "
+"konfigurations senaste körningar per %(at)s."
 
 #: frontend/src/lib/runs/titles.ts src/chatddx/portal/titles.py
 #, python-format
@@ -1700,6 +1702,14 @@ msgstr ""
 msgid "Each trial's version at the endpoint serving its engine."
 msgstr "Varje försöks version på ändpunkten för dess inferensserver."
 
+#: src/chatddx/portal/templates/review.html
+msgid "Earlier"
+msgstr "Tidigare"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Edit from this expectation"
+msgstr "Utgå från detta facit"
+
 #: frontend/src/lib/plan/labs.ts
 msgid "Electrolytes"
 msgstr "Elektrolyter"
@@ -1776,6 +1786,14 @@ msgstr "Fakta"
 #: src/chatddx/portal/templates/world.html
 msgid "Family"
 msgstr "Modellfamilj"
+
+#: src/chatddx/portal/templates/review.html
+msgid ""
+"Fills the expectation with the one these were scored against, for Save to"
+" make it the latest"
+msgstr ""
+"Fyller facit med det som de rättades mot, så att Spara gör det till det "
+"senaste"
 
 #: src/chatddx/portal/templates/review.html
 msgid "Filters"
@@ -2156,7 +2174,6 @@ msgid "Its run"
 msgstr "Dess körning"
 
 #: frontend/src/islands/Variation.svelte
-#: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/thread.html
 msgid "Its runs"
 msgstr "Körningar"
@@ -2265,8 +2282,8 @@ msgid "Languages"
 msgstr "Språk"
 
 #: src/chatddx/portal/templates/review.html
-msgid "Latest"
-msgstr "Senaste"
+msgid "Later"
+msgstr "Senare"
 
 #: src/chatddx/portal/templates/library.html
 msgid "Latest version"
@@ -2366,6 +2383,10 @@ msgstr "Leverfunktion"
 msgid "Loaded with data sets: read here, not written"
 msgstr "Laddat med datamängder: läses här, skrivs inte"
 
+#: src/chatddx/portal/templates/review.html
+msgid "Loading the evaluation…"
+msgstr "Läser in utvärderingen…"
+
 #: src/chatddx/portal/templates/sign-in.html
 msgid "Login"
 msgstr "Inloggningsnamn"
@@ -2438,9 +2459,7 @@ msgctxt "a field"
 msgid "Must not be missed"
 msgstr "Får ej missas"
 
-#: frontend/src/islands/Variation.svelte
-#: frontend/src/lib/editors/ExpectationEditor.svelte
-#: frontend/src/lib/editors/Saving.svelte
+#: frontend/src/islands/Variation.svelte frontend/src/lib/editors/Saving.svelte
 #: frontend/src/lib/review/AppendixForm.svelte
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/library.html
@@ -2676,6 +2695,10 @@ msgstr "Inte JSON än: %(error)s"
 msgid "Not allowed"
 msgstr "Inte tillåtet"
 
+#: frontend/src/lib/editors/ExpectationEditor.svelte
+msgid "Not as a scorer reads it"
+msgstr "Inte som en rättare läser den"
+
 #: src/chatddx/portal/templates/review.html
 msgid "Not as things are now:"
 msgstr "Inte som det är nu:"
@@ -2725,10 +2748,6 @@ msgstr ""
 #: src/chatddx/portal/templates/updated.html
 msgid "Not updated"
 msgstr "Inte uppdaterat"
-
-#: src/chatddx/portal/templates/review.html
-msgid "Not yet: reworking runs only what these need"
-msgstr "Inte än: en omarbetning kör bara det som dessa behöver"
 
 #: frontend/src/lib/scorer/JudgeTexts.svelte
 msgid "Nothing changed yet."
@@ -2802,6 +2821,10 @@ msgstr "En per rad, i ordning; inget tar bort en, och den sista lägger till en.
 #: src/chatddx/portal/templates/fields.html
 msgid "One a line; an empty line is none."
 msgstr "En per rad; en tom rad är inget."
+
+#: src/chatddx/portal/templates/review.html
+msgid "Only as things are now"
+msgstr "Bara som det är nu"
 
 #: src/chatddx/portal/templates/lab.html
 #, python-format
@@ -3031,6 +3054,15 @@ msgstr "Njurfunktion"
 msgid "Repeats"
 msgstr "Upprepningar"
 
+#: frontend/src/lib/review/Expected.svelte
+msgid "Replace what you changed with the expectation these were scored against?"
+msgstr "Ersätta det du ändrat med facit som de rättades mot?"
+
+#: frontend/src/lib/review/Expected.svelte
+#, python-format
+msgid "Replace what you changed with version %(n)s?"
+msgstr "Ersätta det du ändrat med version %(n)s?"
+
 #: src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/score.html
 msgid "Replicate"
@@ -3041,8 +3073,7 @@ msgstr "Replikat"
 msgid "Replicates"
 msgstr "Replikat"
 
-#: frontend/src/lib/review/Expected.svelte frontend/src/lib/review/Save.svelte
-#: src/chatddx/portal/templates/case.html
+#: frontend/src/lib/review/Save.svelte src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/library.html
 #: src/chatddx/portal/templates/thread.html
 msgid "Restore"
@@ -3064,6 +3095,10 @@ msgstr "Granska"
 #: src/chatddx/portal/templates/review.html
 msgid "Rework"
 msgstr "Omarbeta"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Rework from the latest"
+msgstr "Omarbeta från den senaste"
 
 #: src/chatddx/portal/templates/run.html
 msgid "Rig"
@@ -3116,9 +3151,22 @@ msgstr "Körning"
 msgid "Runs"
 msgstr "Körningar"
 
+#: src/chatddx/portal/templates/review.html
+msgid ""
+"Runs again on the same seeds what has changed, runs what has no runs yet,"
+" goes on with what stopped before it finished, and scores again what "
+"isn't scored against the expectation as it is"
+msgstr ""
+"Kör det som ändrats med samma seed igen och fortsätter det som stannade "
+"innan det blev klart"
+
 #: src/chatddx/portal/templates/world.html
 msgid "Runs by default"
 msgstr "Körs som standard"
+
+#: src/chatddx/portal/templates/review.html
+msgid "Runs started then"
+msgstr "Körningar startade då"
 
 #: src/chatddx/portal/templates/review.html
 #, python-format
@@ -3374,10 +3422,6 @@ msgstr "Visa i Biblioteket"
 msgid "Show its texts"
 msgstr "Visa dess texter"
 
-#: src/chatddx/portal/templates/review.html
-msgid "Shown is the latest of each configuration's runs."
-msgstr "Här visas de senaste körningarna för varje konfiguration."
-
 #: frontend/src/lib/api/client.ts src/chatddx/portal/templates/error.html
 #: src/chatddx/portal/templates/sign-in.html
 msgid "Sign in"
@@ -3592,6 +3636,18 @@ msgstr "Facit, så som det gavs"
 msgid "The facts about %(model)s were corrected where they change what it sends."
 msgstr "Fakta om %(model)s har rättats där de ändrar vad den skickar."
 
+#: frontend/src/lib/review/Expected.svelte
+msgid ""
+"The fields hold the expectation the runs were scored against: Save to "
+"make it the latest."
+msgstr ""
+"Fälten håller facit som körningarna rättades mot: Spara gör det till det "
+"senaste."
+
+#: frontend/src/lib/review/Expected.svelte
+msgid "The fields hold this version: Save makes it the latest."
+msgstr "Fälten håller den här versionen: Spara gör den till den senaste."
+
 #: src/chatddx/portal/shelves.py
 msgid "The first message, telling the model its role and its task."
 msgstr "Det första meddelandet, som ger modellen dess roll och dess uppgift."
@@ -3619,6 +3675,11 @@ msgid "The last message, which puts the case to the model and asks for an answer
 msgstr ""
 "Det sista meddelandet, som lägger fram fallet för modellen och ber om ett"
 " svar."
+
+#: src/chatddx/portal/templates/review.html
+#, python-format
+msgid "The latest as things are now: %(at)s"
+msgstr "Den senaste som det är nu: %(at)s"
 
 #: src/chatddx/portal/templates/world.html
 msgid ""
@@ -3894,11 +3955,6 @@ msgstr "Version %(at)s av %(last)s"
 #, python-format
 msgid "Version %(n)s"
 msgstr "Version %(n)s"
-
-#: frontend/src/lib/review/Expected.svelte
-#, python-format
-msgid "Version %(n)s of %(of)s, %(at)s"
-msgstr "Version %(n)s av %(of)s, %(at)s"
 
 #: src/chatddx/portal/templates/runner.html
 #, python-format
@@ -4470,6 +4526,10 @@ msgstr "så många som skrivits"
 msgid "as text"
 msgstr "som text"
 
+#: src/chatddx/portal/templates/review.html
+msgid "as things are now"
+msgstr "som det är nu"
+
 #: frontend/src/lib/scorer/ScorerViews.svelte
 msgctxt "a verdict"
 msgid "at"
@@ -4695,7 +4755,7 @@ msgctxt "kind"
 msgid "expectation"
 msgstr "facit"
 
-#: src/chatddx/portal/review.py src/chatddx/portal/titles.py
+#: src/chatddx/portal/titles.py
 #, python-format
 msgid "expectation for %(case)s"
 msgstr "facit för %(case)s"
@@ -4864,9 +4924,17 @@ msgstr "den är inaktuell: uppdatera den på dess sida"
 msgid "it isn't scored against the expectation as it is"
 msgstr "den är inte rättad mot facit som det ser ut nu"
 
+#: src/chatddx/portal/review.py
+msgid "it stopped before it finished"
+msgstr "den stannade innan den blev klar"
+
 #: src/chatddx/portal/templates/translations.html
 msgid "it translates into it"
 msgstr "den översätter till det"
+
+#: src/chatddx/portal/review.py
+msgid "it was halted before it finished"
+msgstr "den avbröts innan den blev klar"
 
 #: src/chatddx/portal/review.py
 msgid "its configuration has changed since it ran"
@@ -5344,10 +5412,6 @@ msgstr "erbjuds inte"
 #: src/chatddx/portal/templates/lab.html
 msgid "not run"
 msgstr "inte körd"
-
-#: src/chatddx/portal/templates/review.html
-msgid "not run in this evaluation"
-msgstr "inte körd i den här utvärderingen"
 
 #: src/chatddx/portal/templates/score.html
 msgid "not scored by this scorer"
@@ -6116,6 +6180,7 @@ msgstr "under vilket schema som helst"
 
 #: frontend/src/lib/review/Evaluation.svelte
 #: src/chatddx/portal/templates/macros.html
+#: src/chatddx/portal/templates/review.html
 msgid "under way"
 msgstr "pågår"
 

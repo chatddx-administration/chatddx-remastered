@@ -107,3 +107,256 @@
 2026-10-29T15:11:40Z	devshell	2.2	0	2	ae47012	./check.sh locale
 2026-10-29T15:11:41Z	devshell	3.1	0	2	ae47012	./check.sh pending
 2026-10-29T16:51:10Z	devshell	1.1	1	0	b61c614	./check.sh pending
+2026-10-29T17:17:39Z	container	3.5	0	7	8849f76	./check.sh openapi
+2026-10-29T17:17:40Z	container	4.1	0	7	8849f76	./check.sh docs
+2026-10-29T17:17:42Z	container	6.4	0	7	8849f76	./check.sh pending
+2026-10-29T17:17:42Z	container	6.7	0	7	8849f76	./check.sh locale
+2026-10-29T17:17:44Z	container	8.3	0	7	8849f76	./check.sh stamps
+2026-10-29T17:17:52Z	container	17.1	0	7	8849f76	./check.sh format
+2026-10-29T17:17:58Z	container	3.7	0	7	8849f76	pnpm --dir frontend test
+2026-10-29T17:17:58Z	container	22.9	0	7	8849f76	./check.sh frontend
+2026-10-29T17:18:18Z	container	42.2	0	7	8849f76	./check.sh types
+2026-10-29T17:21:28Z	container	75.9	1	0	8849f76	pytest src/chatddx/portal/test/test_running.py -k 'latest or evaluated'
+2026-10-29T17:22:50Z	container	67.2	0	0	8849f76	pytest src/chatddx/portal/test/test_running.py -k latest
+2026-10-29T17:23:24Z	container	1.3	1	0	8849f76	./check.sh pending
+2026-10-29T17:23:50Z	container	1.6	1	3	8849f76	./check.sh pending
+2026-10-29T17:23:51Z	container	3.1	0	3	8849f76	./check.sh locale
+2026-10-29T17:23:56Z	container	7.6	0	3	8849f76	./check.sh format
+2026-10-29T17:24:16Z	container	27.8	0	3	8849f76	./check.sh types
+2026-10-29T17:36:26Z	container	2.8	0	5	9ead0e5	./check.sh openapi
+2026-10-29T17:36:27Z	container	4.7	0	5	9ead0e5	./check.sh locale
+2026-10-29T17:36:30Z	container	6.9	0	5	9ead0e5	./check.sh pending
+2026-10-29T17:36:35Z	container	11.8	0	5	9ead0e5	./check.sh format
+2026-10-29T17:36:41Z	container	3.5	0	5	9ead0e5	pnpm --dir frontend test
+2026-10-29T17:36:41Z	container	17.9	0	5	9ead0e5	./check.sh frontend
+2026-10-29T17:36:55Z	container	32.3	0	5	9ead0e5	./check.sh types
+2026-10-29T17:41:21Z	container	41.5	1	0	9ead0e5	pytest -m browser src/chatddx/portal/test/test_browser.py -k clinician_reviews_a_case
+2026-10-29T17:41:42Z	container	14.4	0	0	9ead0e5	pytest -m browser src/chatddx/portal/test/test_browser.py -k clinician_reviews_a_case
+2026-10-29T17:42:28Z	container	3.6	0	3	9ead0e5	./check.sh locale
+2026-10-29T17:42:35Z	container	10.1	0	3	9ead0e5	./check.sh format
+2026-10-29T17:42:41Z	container	3.6	0	3	9ead0e5	pnpm --dir frontend test
+2026-10-29T17:42:41Z	container	17.0	0	3	9ead0e5	./check.sh frontend
+2026-10-29T17:42:56Z	container	31.6	1	3	9ead0e5	./check.sh types
+2026-10-29T17:43:24Z	container	24.7	1	0	9ead0e5	./check.sh types
+2026-10-29T17:43:52Z	container	23.1	0	0	9ead0e5	./check.sh types
+2026-10-29T17:44:06Z	container	13.5	0	0	9ead0e5	pytest -m browser src/chatddx/portal/test/test_browser.py -k clinician_reviews_a_case
+2026-10-29T17:52:38Z	container	1.9	0	5	3ba1dd4	./check.sh openapi
+2026-10-29T17:52:40Z	container	4.0	0	5	3ba1dd4	./check.sh locale
+2026-10-29T17:52:41Z	container	5.2	0	5	3ba1dd4	./check.sh pending
+2026-10-29T17:52:44Z	container	8.2	0	5	3ba1dd4	./check.sh format
+2026-10-29T17:52:49Z	container	3.0	0	5	3ba1dd4	pnpm --dir frontend test
+2026-10-29T17:52:49Z	container	13.0	0	5	3ba1dd4	./check.sh frontend
+2026-10-29T17:54:13Z	container	23.9	1	0	3ba1dd4	./check.sh types
+2026-10-29T17:56:20Z	container	29.0	1	0	3ba1dd4	./check.sh types
+2026-10-29T17:56:48Z	container	147.7	1	0	3ba1dd4	pytest -m browser src/chatddx/portal/test/test_browser.py
+2026-10-29T17:56:54Z	container	27.2	1	0	3ba1dd4	./check.sh types
+2026-10-29T17:57:21Z	container	23.0	0	0	3ba1dd4	./check.sh types
+2026-10-29T17:57:49Z	container	22.2	0	0	3ba1dd4	./check.sh types
+2026-10-29T17:59:04Z	container	73.3	0	0	3ba1dd4	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T17:59:29Z	container	3.0	0	2	3ba1dd4	./check.sh locale
+2026-10-29T17:59:33Z	container	6.9	0	2	3ba1dd4	./check.sh format
+2026-10-29T17:59:38Z	container	3.1	0	2	3ba1dd4	pnpm --dir frontend test
+2026-10-29T17:59:38Z	container	12.3	0	2	3ba1dd4	./check.sh frontend
+2026-10-29T18:06:39Z	container	1.8	0	5	ff54f4a	./check.sh openapi
+2026-10-29T18:06:42Z	container	4.4	0	5	ff54f4a	./check.sh pending
+2026-10-29T18:07:07Z	container	29.7	0	5	ff54f4a	./check.sh types
+2026-10-29T18:09:51Z	container	3.1	0	1	ff54f4a	pnpm --dir frontend test
+2026-10-29T18:09:51Z	container	13.8	0	1	ff54f4a	./check.sh frontend
+2026-10-29T18:10:04Z	container	27.3	0	1	ff54f4a	./check.sh types
+2026-10-29T18:10:21Z	container	2.6	0	0	ff54f4a	pytest src/chatddx/api/test/test_writes.py -k unnamed
+2026-10-29T18:10:47Z	container	6.7	0	1	ff54f4a	./check.sh format
+2026-10-29T18:11:06Z	container	26.2	0	1	ff54f4a	./check.sh types
+2026-10-29T18:12:33Z	container	77.8	0	0	ff54f4a	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T18:14:50Z	container	135.6	0	0	ff54f4a	pytest -n 4 src/chatddx/api src/chatddx/portal src/chatddx/bench
+2026-10-29T18:15:16Z	container	1.8	0	2	ff54f4a	./check.sh openapi
+2026-10-29T18:15:17Z	container	2.8	0	2	ff54f4a	./check.sh locale
+2026-10-29T18:15:20Z	container	5.8	0	2	ff54f4a	./check.sh format
+2026-10-29T18:24:14Z	container	2.7	0	5	fa5ba4d	./check.sh openapi
+2026-10-29T18:24:16Z	container	4.5	0	5	fa5ba4d	./check.sh locale
+2026-10-29T18:24:19Z	container	7.1	0	5	fa5ba4d	./check.sh pending
+2026-10-29T18:24:23Z	container	11.2	0	5	fa5ba4d	./check.sh format
+2026-10-29T18:24:29Z	container	3.4	0	5	fa5ba4d	pnpm --dir frontend test
+2026-10-29T18:24:29Z	container	17.6	0	5	fa5ba4d	./check.sh frontend
+2026-10-29T18:24:44Z	container	32.0	0	5	fa5ba4d	./check.sh types
+2026-10-29T18:28:12Z	container	0.0	1	0	fa5ba4d	./check.sh types
+2026-10-29T18:28:39Z	container	24.4	1	0	fa5ba4d	./check.sh types
+2026-10-29T18:29:10Z	container	26.0	0	0	fa5ba4d	./check.sh types
+2026-10-29T18:29:27Z	container	0.4	0	0	fa5ba4d	pytest src/chatddx/scorers
+2026-10-29T18:30:32Z	container	51.7	0	0	fa5ba4d	pytest -n 4 src/chatddx/portal/test/test_running.py
+2026-10-29T18:33:38Z	container	182.1	1	0	fa5ba4d	pytest -n 4
+2026-10-29T18:34:06Z	container	4.5	0	0	fa5ba4d	pytest src/chatddx/stamp/test/test_stamp.py -k each_surface
+2026-10-29T18:34:09Z	container	2.0	0	3	fa5ba4d	./check.sh openapi
+2026-10-29T18:34:10Z	container	3.5	0	3	fa5ba4d	./check.sh locale
+2026-10-29T18:34:14Z	container	7.4	0	3	fa5ba4d	./check.sh format
+2026-10-29T18:34:34Z	container	26.7	1	3	fa5ba4d	./check.sh types
+2026-10-29T18:34:59Z	container	24.0	1	0	fa5ba4d	./check.sh types
+2026-10-29T18:35:30Z	container	25.2	0	0	fa5ba4d	./check.sh types
+2026-10-29T18:35:31Z	container	0.3	0	0	fa5ba4d	pytest src/chatddx/scorers
+2026-10-29T18:36:04Z	container	7.2	0	1	fa5ba4d	./check.sh format
+2026-10-29T18:36:22Z	container	24.5	0	1	fa5ba4d	./check.sh types
+2026-10-29T19:17:22Z	container	3.8	0	5	ab3136f	./check.sh openapi
+2026-10-29T19:17:23Z	container	4.8	0	5	ab3136f	./check.sh locale
+2026-10-29T19:17:25Z	container	6.9	0	5	ab3136f	./check.sh pending
+2026-10-29T19:17:30Z	container	11.8	0	5	ab3136f	./check.sh format
+2026-10-29T19:17:36Z	container	3.5	0	5	ab3136f	pnpm --dir frontend test
+2026-10-29T19:17:36Z	container	18.6	0	5	ab3136f	./check.sh frontend
+2026-10-29T19:17:51Z	container	33.7	0	5	ab3136f	./check.sh types
+2026-10-29T19:22:49Z	container	32.7	0	0	ab3136f	./check.sh types
+2026-10-29T19:23:18Z	container	22.0	0	0	ab3136f	./check.sh types
+2026-10-29T19:23:45Z	container	5.0	1	0	ab3136f	pytest src/chatddx/portal/test/test_running.py -k quota
+2026-10-29T19:24:41Z	container	0.0	1	0	ab3136f	./check.sh types
+2026-10-29T19:24:47Z	container	4.4	1	0	ab3136f	pytest src/chatddx/portal/test/test_running.py -k quota
+2026-10-29T19:25:23Z	container	25.6	0	0	ab3136f	./check.sh types
+2026-10-29T19:25:44Z	container	19.4	0	0	ab3136f	pytest src/chatddx/portal/test/test_running.py -k quota
+2026-10-29T19:27:11Z	container	23.2	1	0	ab3136f	./check.sh types
+2026-10-29T19:27:41Z	container	23.2	0	0	ab3136f	./check.sh types
+2026-10-29T19:28:30Z	container	0.2	0	0	ab3136f	pytest src/chatddx/factors/test/test_factors.py -k linted_against
+2026-10-29T19:31:38Z	container	177.7	1	0	ab3136f	pytest -n 4
+2026-10-29T19:32:55Z	container	75.6	0	0	ab3136f	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T19:33:24Z	container	2.1	0	4	ab3136f	./check.sh openapi
+2026-10-29T19:33:25Z	container	3.3	0	4	ab3136f	./check.sh locale
+2026-10-29T19:33:30Z	container	8.1	0	4	ab3136f	./check.sh format
+2026-10-29T19:33:35Z	container	2.8	0	4	ab3136f	pnpm --dir frontend test
+2026-10-29T19:33:35Z	container	13.2	0	4	ab3136f	./check.sh frontend
+2026-10-29T19:33:46Z	container	24.6	0	4	ab3136f	./check.sh types
+2026-10-29T19:33:50Z	container	3.4	0	0	ab3136f	pytest src/chatddx/stamp/test/test_stamp.py -k each_surface
+2026-10-29T19:34:14Z	container	2.8	1	0	ab3136f	./check.sh locale
+2026-10-29T19:52:49Z	container	2.5	0	5	1b5399c	./check.sh openapi
+2026-10-29T19:52:51Z	container	3.8	0	5	1b5399c	./check.sh locale
+2026-10-29T19:52:52Z	container	5.0	0	5	1b5399c	./check.sh pending
+2026-10-29T19:52:56Z	container	9.4	0	5	1b5399c	./check.sh format
+2026-10-29T19:53:03Z	container	3.2	0	5	1b5399c	pnpm --dir frontend test
+2026-10-29T19:53:03Z	container	15.7	0	5	1b5399c	./check.sh frontend
+2026-10-29T19:53:15Z	container	28.1	0	5	1b5399c	./check.sh types
+2026-10-29T19:55:01Z	container	22.5	0	0	1b5399c	./check.sh types
+2026-10-29T19:55:34Z	container	21.4	0	0	1b5399c	./check.sh types
+2026-10-29T19:55:39Z	container	3.9	0	0	1b5399c	pytest src/chatddx/scorers src/chatddx/api/test/test_writes.py
+2026-10-29T19:58:39Z	container	157.0	0	0	1b5399c	pytest -n 4
+2026-10-29T19:59:51Z	container	70.7	0	0	1b5399c	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T19:59:59Z	container	2.0	0	4	1b5399c	./check.sh openapi
+2026-10-29T20:00:00Z	container	2.9	0	4	1b5399c	./check.sh locale
+2026-10-29T20:00:05Z	container	8.3	0	4	1b5399c	./check.sh format
+2026-10-29T20:00:10Z	container	3.0	0	4	1b5399c	pnpm --dir frontend test
+2026-10-29T20:00:10Z	container	13.4	0	4	1b5399c	./check.sh frontend
+2026-10-29T20:00:22Z	container	24.7	0	4	1b5399c	./check.sh types
+2026-10-29T20:07:02Z	container	2.1	0	5	dfe10e4	./check.sh openapi
+2026-10-29T20:07:04Z	container	3.9	0	5	dfe10e4	./check.sh locale
+2026-10-29T20:07:05Z	container	4.9	0	5	dfe10e4	./check.sh pending
+2026-10-29T20:07:10Z	container	9.9	0	5	dfe10e4	./check.sh format
+2026-10-29T20:07:15Z	container	2.9	0	5	dfe10e4	pnpm --dir frontend test
+2026-10-29T20:07:15Z	container	15.1	0	5	dfe10e4	./check.sh frontend
+2026-10-29T20:07:29Z	container	28.4	0	5	dfe10e4	./check.sh types
+2026-10-29T20:16:19Z	container	28.6	1	0	dfe10e4	./check.sh types
+2026-10-29T20:16:51Z	container	24.2	0	0	dfe10e4	./check.sh types
+2026-10-29T20:18:32Z	container	19.5	1	0	dfe10e4	pytest -n 4 src/chatddx/portal/test/test_running.py
+2026-10-29T20:19:00Z	container	22.8	1	0	dfe10e4	pytest -n 4 src/chatddx/portal/test/test_running.py
+2026-10-29T20:19:52Z	container	22.0	0	0	dfe10e4	./check.sh types
+2026-10-29T20:20:36Z	container	42.7	0	0	dfe10e4	pytest -n 4 src/chatddx/portal/test/test_running.py
+2026-10-29T20:21:21Z	container	22.2	0	0	dfe10e4	./check.sh types
+2026-10-29T20:21:54Z	container	32.0	0	0	dfe10e4	pytest -m browser src/chatddx/portal/test/test_browser.py -k stepping
+2026-10-29T20:24:47Z	container	167.9	1	0	dfe10e4	pytest -n 4
+2026-10-29T20:25:59Z	container	71.1	0	0	dfe10e4	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T20:28:30Z	container	147.5	1	0	dfe10e4	pytest -n 4
+2026-10-29T20:28:38Z	container	3.6	1	0	dfe10e4	pytest src/chatddx/portal/test/test_reviewing.py -k only_in_an_evaluation
+2026-10-29T20:28:54Z	container	11.2	0	0	dfe10e4	pytest src/chatddx/portal/test/test_reviewing.py
+2026-10-29T20:29:54Z	container	1.1	1	1	dfe10e4	./check.sh pending
+2026-10-29T20:29:55Z	container	2.4	0	1	dfe10e4	./check.sh locale
+2026-10-29T20:30:18Z	container	1.7	0	4	dfe10e4	./check.sh openapi
+2026-10-29T20:30:23Z	container	7.6	0	4	dfe10e4	./check.sh format
+2026-10-29T20:30:28Z	container	2.6	0	4	dfe10e4	pnpm --dir frontend test
+2026-10-29T20:30:28Z	container	11.8	0	4	dfe10e4	./check.sh frontend
+2026-10-29T20:30:40Z	container	23.9	0	4	dfe10e4	./check.sh types
+2026-10-29T20:30:58Z	container	17.1	0	0	dfe10e4	pytest src/chatddx/stamp src/chatddx/portal/test/test_reviewing.py src/chatddx/locale
+2026-10-29T23:11:21Z	container	2.2	0	5	0c73586	./check.sh openapi
+2026-10-29T23:11:23Z	container	3.8	0	5	0c73586	./check.sh locale
+2026-10-29T23:11:24Z	container	5.2	0	5	0c73586	./check.sh pending
+2026-10-29T23:11:28Z	container	8.8	0	5	0c73586	./check.sh format
+2026-10-29T23:11:34Z	container	3.1	0	5	0c73586	pnpm --dir frontend test
+2026-10-29T23:11:34Z	container	15.4	0	5	0c73586	./check.sh frontend
+2026-10-29T23:11:48Z	container	28.8	0	5	0c73586	./check.sh types
+2026-10-29T23:14:39Z	container	22.0	1	0	0c73586	./check.sh types
+2026-10-29T23:15:09Z	container	21.0	0	0	0c73586	./check.sh types
+2026-10-29T23:15:34Z	container	19.7	0	0	0c73586	./check.sh types
+2026-10-29T23:16:35Z	container	21.2	0	0	0c73586	./check.sh types
+2026-10-29T23:16:51Z	container	3.3	1	0	0c73586	pytest src/chatddx/api/test/test_writes.py src/chatddx/scorers
+2026-10-29T23:16:58Z	container	3.9	1	0	0c73586	pytest src/chatddx/api/test/test_writes.py src/chatddx/scorers
+2026-10-29T23:19:54Z	container	167.0	1	0	0c73586	pytest -n 4
+2026-10-29T23:21:10Z	container	75.0	1	0	0c73586	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T23:21:40Z	container	20.9	1	0	0c73586	./check.sh types
+2026-10-29T23:22:09Z	container	20.3	1	0	0c73586	./check.sh types
+2026-10-29T23:23:17Z	container	66.9	1	0	0c73586	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T23:24:31Z	container	69.7	1	0	0c73586	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T23:25:16Z	container	20.7	1	0	0c73586	./check.sh types
+2026-10-29T23:25:45Z	container	21.2	0	0	0c73586	./check.sh types
+2026-10-29T23:26:54Z	container	68.2	0	0	0c73586	pytest -m browser -n 4 src/chatddx/portal/test/test_browser.py
+2026-10-29T23:27:26Z	container	2.0	0	4	0c73586	./check.sh openapi
+2026-10-29T23:27:27Z	container	3.3	0	4	0c73586	./check.sh locale
+2026-10-29T23:27:32Z	container	8.1	0	4	0c73586	./check.sh format
+2026-10-29T23:27:37Z	container	3.0	0	4	0c73586	pnpm --dir frontend test
+2026-10-29T23:27:37Z	container	12.9	0	4	0c73586	./check.sh frontend
+2026-10-29T23:27:49Z	container	24.6	0	4	0c73586	./check.sh types
+2026-10-29T23:27:53Z	container	3.5	0	0	0c73586	pytest src/chatddx/stamp -k each_surface
+2026-10-29T23:52:25Z	container	0.0	1	0	410bc23	./check.sh types
+2026-10-29T23:52:57Z	container	27.1	1	0	410bc23	./check.sh types
+2026-10-29T23:53:34Z	container	24.9	1	0	410bc23	./check.sh types
+2026-10-29T23:54:05Z	container	21.7	1	0	410bc23	./check.sh types
+2026-10-29T23:54:29Z	container	21.0	0	0	410bc23	./check.sh types
+2026-10-29T23:55:05Z	container	21.7	0	0	410bc23	./check.sh types
+2026-10-29T23:55:45Z	container	22.8	1	0	410bc23	pytest src/chatddx/scripted/test/test_scripted_review.py
+2026-10-29T23:56:13Z	container	23.8	0	0	410bc23	pytest src/chatddx/scripted/test/test_scripted_review.py
+2026-10-29T23:59:53Z	container	2.0	1	4	410bc23	./check.sh docs
+2026-10-29T23:59:53Z	container	2.3	0	4	410bc23	./check.sh openapi
+2026-10-29T23:59:54Z	container	3.2	0	4	410bc23	./check.sh locale
+2026-10-29T23:59:58Z	container	7.2	0	4	410bc23	./check.sh format
+2026-10-30T00:00:16Z	container	24.9	0	4	410bc23	./check.sh types
+2026-10-30T00:02:50Z	container	153.6	0	0	410bc23	pytest -n 4
+2026-10-30T00:02:53Z	container	1.3	1	0	410bc23	./check.sh docs
+2026-10-30T00:03:00Z	container	1.2	1	0	410bc23	./check.sh docs
+2026-10-30T00:22:07Z	container	2.1	0	5	4660e4a	./check.sh openapi
+2026-10-30T00:22:08Z	container	3.6	0	5	4660e4a	./check.sh locale
+2026-10-30T00:22:10Z	container	5.2	0	5	4660e4a	./check.sh pending
+2026-10-30T00:22:13Z	container	8.6	0	5	4660e4a	./check.sh format
+2026-10-30T00:22:18Z	container	2.5	0	5	4660e4a	pnpm --dir frontend test
+2026-10-30T00:22:18Z	container	13.9	0	5	4660e4a	./check.sh frontend
+2026-10-30T00:22:31Z	container	26.1	0	5	4660e4a	./check.sh types
+2026-10-30T00:25:01Z	container	21.8	0	0	4660e4a	./check.sh types
+2026-10-30T00:25:29Z	container	21.8	0	0	4660e4a	./check.sh types
+2026-10-30T00:26:02Z	container	32.1	0	0	4660e4a	pytest src/chatddx/scripted
+2026-10-30T00:28:40Z	container	5.2	0	1	4660e4a	./check.sh format
+2026-10-30T00:28:57Z	container	22.2	0	1	4660e4a	./check.sh types
+2026-10-30T00:31:27Z	container	149.8	0	0	4660e4a	pytest -n 4
+2026-10-30T00:39:02Z	container	1.8	0	5	d9791f4	./check.sh openapi
+2026-10-30T00:39:08Z	container	7.6	0	5	d9791f4	./check.sh locale
+2026-10-30T00:39:08Z	container	8.1	0	5	d9791f4	./check.sh pending
+2026-10-30T00:39:13Z	container	13.2	0	5	d9791f4	./check.sh format
+2026-10-30T00:39:17Z	container	2.8	0	5	d9791f4	pnpm --dir frontend test
+2026-10-30T00:39:17Z	container	17.0	0	5	d9791f4	./check.sh frontend
+2026-10-30T00:39:31Z	container	31.0	0	5	d9791f4	./check.sh types
+2026-10-30T00:40:23Z	container	1.5	1	3	32e39a1	./check.sh docs
+2026-10-30T00:40:29Z	container	7.6	0	3	32e39a1	./check.sh format
+2026-10-30T00:40:34Z	container	2.8	0	3	32e39a1	pnpm --dir frontend test
+2026-10-30T00:40:34Z	container	12.3	0	3	32e39a1	./check.sh frontend
+2026-10-30T00:40:44Z	container	22.6	0	3	32e39a1	./check.sh types
+2026-10-30T00:43:38Z	container	173.7	0	0	32e39a1	pytest -n 4
+2026-10-30T00:43:38Z	container	174.2	0	0	32e39a1	./check.sh tests
+2026-10-30T00:46:06Z	container	143.0	0	0	32e39a1	pytest -m browser
+2026-10-30T00:46:06Z	container	148.1	0	0	32e39a1	./check.sh browser
+2026-10-30T00:49:02Z	container	1.7	0	0	b918865	./check.sh docs
+2026-10-30T00:49:26Z	container	1.7	0	3	0cd6c57	./check.sh docs
+2026-10-30T00:49:32Z	container	8.3	0	3	0cd6c57	./check.sh format
+2026-10-30T00:49:37Z	container	2.8	0	3	0cd6c57	pnpm --dir frontend test
+2026-10-30T00:49:37Z	container	13.2	0	3	0cd6c57	./check.sh frontend
+2026-10-30T00:49:50Z	container	26.1	0	3	0cd6c57	./check.sh types
+2026-10-30T00:52:26Z	container	155.5	0	0	0cd6c57	pytest -n 4
+2026-10-30T00:52:26Z	container	156.0	0	0	0cd6c57	./check.sh tests
+2026-10-30T00:54:49Z	container	137.8	0	0	0cd6c57	pytest -m browser
+2026-10-30T00:54:49Z	container	143.3	0	0	0cd6c57	./check.sh browser
+2026-10-30T00:11:58Z	devshell	1.5	1	0	24b8e41	./check.sh pending
+2026-10-30T00:16:30Z	devshell	1.4	0	2	24b8e41	./check.sh openapi
+2026-10-30T00:16:30Z	devshell	2.2	0	2	24b8e41	./check.sh locale
+2026-10-30T00:16:31Z	devshell	3.2	0	2	24b8e41	./check.sh pending
+2026-10-30T00:34:48Z	devshell	1.0	1	0	617d38d	./check.sh pending
+2026-10-30T00:35:43Z	devshell	1.3	0	2	617d38d	./check.sh openapi
+2026-10-30T00:35:44Z	devshell	2.2	0	2	617d38d	./check.sh locale
+2026-10-30T00:35:45Z	devshell	3.2	0	2	617d38d	./check.sh pending
+2026-10-30T00:59:00Z	devshell	1.3	1	0	c081c50	./check.sh pending

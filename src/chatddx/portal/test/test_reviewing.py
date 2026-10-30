@@ -75,10 +75,11 @@ def test_review_shows_what_ran_the_case_only_in_an_evaluation(
         "appendices",
         "back",
         "evaluation",
+        "from",
         "busy",
         "about",
     }
-    assert given["evaluation"] is None
+    assert (given["evaluation"], given["from"]) == (None, None)
     assert f'action="/review/{noted["id"]}/runs"' in page
     nothing = "00000000-0000-0000-0000-000000000000"
     gone = signed.get(f"/review/{noted['id']}?evaluation={nothing}")

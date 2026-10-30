@@ -82,7 +82,7 @@ How many of check.sh's other stages run beside this one, as it says.
 ## `RUNS_PER_DAY`
 `src/chatddx/settings.py:RUNS_PER_DAY`
 
-`RUNS_PER_DAY = 100`
+`RUNS_PER_DAY = 1000`
 
 ## `SERVE_GRACE`
 `src/chatddx/settings.py:SERVE_GRACE`

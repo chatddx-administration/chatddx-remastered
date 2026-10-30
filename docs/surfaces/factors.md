@@ -412,6 +412,14 @@ Raises:
 * `kind: Literal["chunk.few_shot"] = "chunk.few_shot"`
 * `messages: tuple[Example, ...] = Field(min_length=1)`
 
+## `field`
+`src/chatddx/factors/select.py:field`
+
+The top-level field the selector starts from, or None when it starts otherwise.
+
+* `selector: str`
+* ∟`str | None`
+
 ## `FileDigest` `(Frozen)`
 `src/chatddx/factors/engine.py:FileDigest`
 

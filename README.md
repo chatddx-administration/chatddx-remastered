@@ -137,6 +137,13 @@ runs
 replay
 ```
 
+For a case to review as it would look after weeks of work, with its expectation in a dozen versions and some 40
+evaluations scored against them, some faring better than others and a few broken (~80s):
+
+```sh
+chatddx scripted-review alice dutch-10   # --gatherings, --versions, --days and --seed shape it
+```
+
 ### The portal
 
 The portal is served with the API, and builds its frontend in `frontend/` with pnpm, which the shell has. With the

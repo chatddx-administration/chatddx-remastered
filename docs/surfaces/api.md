@@ -923,7 +923,7 @@ Raises:
 
 * `component: ComponentBody | None = None`
 * `recipe: dict[str, JsonValue] | None = Field(…)`
-* `name: str = Field(min_length=1)`
+* `name: str | None = Field(…)`
 * `language: Language = None`
 * `labels: Labels | None = Field(None, description="for a scorer")`
 

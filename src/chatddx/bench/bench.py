@@ -4,7 +4,16 @@ from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
 from .gathering import gathering
-from .runs import again, queue, queue_scoring, resume, score, start, start_trials
+from .runs import (
+    again,
+    check_quota,
+    queue,
+    queue_scoring,
+    resume,
+    score,
+    start,
+    start_trials,
+)
 from .saying import leave, say
 from .seen import Seen
 from .taking import take, take_from
@@ -45,6 +54,7 @@ class Bench(Seen):
 
     start = start
     start_trials = start_trials
+    check_quota = check_quota
     again = again
     resume = resume
     queue = queue

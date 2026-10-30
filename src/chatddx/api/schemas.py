@@ -261,7 +261,11 @@ class NewThread(_Schema):
         description="for a new configuration: the recipe's parts by digest, its "
         + "purpose and its appendix layout, as a configuration's recipe reads",
     )
-    name: str = Field(min_length=1)
+    name: str | None = Field(
+        None,
+        min_length=1,
+        description="none for an expectation alone, said by the case it is for",
+    )
     language: Language = None
     labels: Labels | None = Field(None, description="for a scorer")
 

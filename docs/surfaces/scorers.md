@@ -123,6 +123,8 @@ Raises:
 * `judged: bool = False`
 * `unit: str | None = None`
 * `explain: ExplainFunction | None = None`
+* `reads: Callable[[list[JsonValue]], object] | None = None`
+* `refuses: Callable[[list[JsonValue]], Exception | None] | None = None`
 
 ## `MetricFunction`
 `src/chatddx/scorers/scorer.py:MetricFunction`
@@ -190,6 +192,23 @@ Raises:
 * `scorer: Scorer`
 * ∟`list[str]`
 
+## `Metrics.reads`
+`src/chatddx/scorers/scorer.py:Metrics.reads`
+
+* `metric: str`
+* `expected: list[JsonValue]`
+* ∟`object`
+
+Raises:
+1. `ValueError`: `"no metric {metric!r}, only {sorted(self.metrics)}"`
+
+## `Metrics.refusal`
+`src/chatddx/scorers/scorer.py:Metrics.refusal`
+
+* `metric: str`
+* `expected: list[JsonValue]`
+* ∟`Exception | None`
+
 ## `NO_ANSWER`
 `src/chatddx/scorers/scorer.py:NO_ANSWER`
 
@@ -221,6 +240,14 @@ Raises:
 3. `Invalid`: `"%(token)s names no word", token=repr(token)` (through `Pattern._any`)
 4. `Invalid`: `"a word is missing in %(text)s", text=repr(self.text)` (through `Pattern._any`)
 5. `Invalid`: `"unexpected %(token)s in %(text)s", token=repr(self._peek()), text=repr(text)`
+
+## `Pattern.example`
+`src/chatddx/scorers/patterns.py:Pattern.example`
+
+A text the pattern finds, with `pick(n)` choosing among n alternatives.
+
+* `pick: Callable[[int], int]`
+* ∟`str`
 
 ## `Pattern.find`
 `src/chatddx/scorers/patterns.py:Pattern.find`
@@ -254,12 +281,48 @@ Raises:
 * `response: Mapping[str, JsonValue] | None`
 * ∟`Answer`
 
+## `read_by`
+`src/chatddx/scorers/shipped.py:read_by`
+
+* `scorer: Scorer`
+* `data: JsonValue`
+* ∟`list[object]`
+
+## `reading`
+`src/chatddx/scorers/scorer.py:reading`
+
+What each of the scorer's views reads of the expectation's data: two that read
+alike score alike.
+
+* `scorer: Scorer`
+* `metrics: Metrics`
+* `data: JsonValue`
+* ∟`list[object]`
+
 ## `reciprocal_rank`
 `src/chatddx/scorers/patterns.py:reciprocal_rank`
 
 * `items: list[str] | None`
 * `target: str`
 * ∟`Scored`
+
+## `refusals`
+`src/chatddx/scorers/scorer.py:refusals`
+
+Why each of the scorer's views that can't read the expectation's data can't, by
+the view's selector into it.
+
+* `scorer: Scorer`
+* `metrics: Metrics`
+* `data: JsonValue`
+* ∟`list[tuple[str, Exception]]`
+
+## `refused`
+`src/chatddx/scorers/shipped.py:refused`
+
+* `scorer: Scorer`
+* `data: JsonValue`
+* ∟`list[tuple[str, Exception]]`
 
 ## `Replayed` `(NamedTuple)`
 `src/chatddx/scorers/scorer.py:Replayed`

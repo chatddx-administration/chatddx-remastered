@@ -188,7 +188,7 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
      counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as are queued.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
-     (`src/chatddx/bench/cases.py:type_case`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:_check_quota`). Scoring
+     (`src/chatddx/bench/cases.py:type_case`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:check_quota`). Scoring
      again has no quota, beyond one job per run at a time.
    - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
      (`agents/wip-deploy.md`, "Containers for Kubernetes").

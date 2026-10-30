@@ -6,7 +6,7 @@ export type Evaluated = { run: string; seeds: number[]; greedy: boolean };
 export type Configured = { configuration: number; name: string; runs: Evaluated[] };
 export type Evaluating = {
   key: string;
-  first: string | null;
+  first: string;
   case: string;
   configurations: Configured[];
   fields: string[];

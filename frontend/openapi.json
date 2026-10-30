@@ -5362,9 +5362,17 @@
             "description": "for a new configuration: the recipe's parts by digest, its purpose and its appendix layout, as a configuration's recipe reads"
           },
           "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name"
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "none for an expectation alone, said by the case it is for"
           },
           "language": {
             "$ref": "#/components/schemas/Language"
@@ -5383,9 +5391,6 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
         "title": "NewThread"
       },
       "NewTrialRuns": {

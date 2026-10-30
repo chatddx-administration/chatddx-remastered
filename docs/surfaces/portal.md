@@ -723,7 +723,7 @@ Raises:
 
 Raises:
 1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
-2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema`
+2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema` (through `_under`)
 3. `NotFound`: `"no evaluation %(evaluation)s of %(case)s", evaluation=str(evaluation), case=display_case(picked.titled)`
 
 ## `REVIEWED`
@@ -739,6 +739,20 @@ Raises:
 * `tag: Tags = None`
 * `language: Tags = None`
 * ∟`Response`
+
+## `reworking_in_review` `@router.post("/review/{family}/rework")`
+`src/chatddx/portal/review.py:reworking_in_review`
+
+* `bench: BenchDep`
+* `family: int`
+* `case: Annotated[str, Form()]`
+* `under: Annotated[str | None, Form()] = None`
+* `back: Annotated[str | None, Form()] = None`
+* ∟`Response`
+
+Raises:
+1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
+2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema` (through `_under`)
 
 ## `ROUTE`
 `src/chatddx/portal/assets.py:ROUTE`

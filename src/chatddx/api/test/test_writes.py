@@ -137,6 +137,57 @@ def test_an_expectation_s_edit_says_what_the_lints_say(signed: TestClient) -> No
     assert got.status_code == 422
     assert f"in thread {mine['id']}: edit that one" in got.json()["detail"]
 
+    data = held["data"]
+    broken = {**data, "diagnosis": {**data["diagnosis"], "pattern": "copd | (asthma"}}
+    component = {**held, "data": broken}
+    got = signed.post("/api/components/check", json=component)
+    assert got.status_code == 200
+    [found] = [
+        f for f in got.json()["findings"] if f["code"] == "expectation.unreadable"
+    ]
+    assert (found["message"], found["params"]["field"]) == (
+        "a '(' in 'copd | (asthma' is never closed",
+        "diagnosis",
+    )
+    got = signed.post(
+        f"/api/threads/{mine['id']}/edits",
+        json={"head": got_head(signed, mine), "component": component},
+    )
+    assert (got.status_code, got.json()["detail"]) == (
+        422,
+        "a '(' in 'copd | (asthma' is never closed",
+    )
+
+
+def got_head(signed: TestClient, thread: dict[str, Any]) -> int:
+    return signed.get(f"/api/threads/{thread['id']}").json()["head"]["id"]
+
+
+@pytest.mark.slow
+def test_an_expectation_alone_goes_unnamed(signed: TestClient) -> None:
+    [family] = signed.get("/api/families", params={"name": "crlf"}).json()
+    [expected] = signed.get(f"/api/families/{family['id']}").json()["cases"][0][
+        "expectations"
+    ]
+    threads = signed.get(
+        "/api/threads", params={"kind": "expectation", "owner": "alice"}
+    )
+    [mine] = [
+        t for t in threads.json() if t["head"]["digest"] == expected["expectation"]
+    ]
+    held = body(signed, mine)
+    gone = signed.patch(f"/api/threads/{mine['id']}", json={"deleted": True})
+    assert gone.status_code == 200
+    got = signed.post("/api/threads", json={"component": held})
+    assert got.status_code == 201, got.json()
+    made = signed.get(f"/api/threads/{got.json()['id']}").json()
+    assert made["name"] is None and made["expecting"] is not None
+
+    instructions = body(signed, thread(signed, "instructions", CLINICIAN, "archive"))
+    got = signed.post("/api/threads", json={"component": instructions})
+    assert got.status_code == 422
+    assert "only an expectation goes unnamed" in got.json()["detail"]
+
 
 @pytest.mark.slow
 def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> None:

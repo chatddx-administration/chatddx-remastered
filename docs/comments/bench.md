@@ -20,6 +20,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 # written into a language its translations don't go into.
 ```
 
+## `src/chatddx/bench/components.py:_unreadable`
+
+```
+# Policy: an expectation is refused when a scorer under its schema can't read it, as what
+# a scorer reads, such as a pattern, is the scorer's to say and not the schema's; checked,
+# it is a finding by the field the view reads, so that it can be shown by it.
+```
+
 ## `src/chatddx/bench/handles.py:broken`
 
 ```
@@ -80,6 +88,14 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sort
 
 ```
 # Optimization: Reusing families' language reduces query-load.
+```
+
+## `src/chatddx/bench/seen.py:Seen._scored_alike`
+
+```
+# Policy: a score under another scoring of the same scorer and judges' engines holds
+# when each of its views reads the expectations as they are alike, so that a change
+# to what no view reads leaves nothing to score.
 ```
 
 ## `src/chatddx/bench/seen.py:Seen.answers`
