@@ -11,9 +11,10 @@ generated API surfaces, gathered comments and asserts. `./check.sh` targets them
 
 - `openapi`, `stamps` and `locale`, each in step with the code
 - `pending`, what is left to stamp or translate
-- `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
+- `format`, `types`, `frontend`, `docs`, `dev`, `tests` and `browser`.
 
-A stage that passes is skipped till what it read changes, as `dev/<stage>-good` holds it: `rm` that to check it again.
+A stage that passes is skipped till what it reads changes, as `check.inputs` names it, which `flake.nix` checks it on
+alone, and `dev/state/<stage>-good` holds it: `rm` that to check it again.
 
 ## Write
 
@@ -40,14 +41,15 @@ dev-db reset    # stop and delete everything; the next start begins empty
 
 ## State
 
-In `dev/`:
+In `dev/`, `costs.tsv`, in git: what each `./check.sh` stage, `pnpm --dir frontend test` and each pytest run took, a
+line each, as `chatddx costs write` folds it in, with tab-separated columns: when, `$MACHINE_CLASS`, seconds, exit
+status, how many stages ran beside it, the commit and the command. Lines are only written with `$MACHINE_CLASS` set.
 
-- `turn-start`: the commit the turn started at, as in `./write.sh "$(cat dev/turn-start)"`.
+In `dev/state/`, out of git:
+
+- `turn-start`: the commit the turn started at, as in `./write.sh "$(cat dev/state/turn-start)"`.
 - `refused`: there while work is refused this turn.
 - `session-start`: what session-start hands the session's first turn.
-- `costs.tsv`, in git: what each `./check.sh` stage, `pnpm --dir frontend test` and each pytest run took, a line each,
-  as `chatddx costs write` folds it in, with tab-separated columns: when, `$MACHINE_CLASS`, seconds, exit status, how
-  many stages ran beside it, the commit and the command. Lines are only written with `$MACHINE_CLASS` set.
 - `costs-spool.tsv`: what was timed since the last fold.
 - `logs/<stage>.log`: what `./check.sh` last said for the stage, as `./write.sh` and `hand-over` move it to `logs/` in
   git.
@@ -60,12 +62,14 @@ In the dev shell, pulling and pushing through `as.sh` as `$CHATDDX_DEV`:
 
 ```sh
 ./dev/operator.sh fetch [branch]    # switch to the branch, bring it up to its tip on origin, say what is pending
-./dev/operator.sh stamp [message]   # once nothing is pending: commit as "stamp", or the message, push, print the revision
-./dev/operator.sh merge [branch]    # once nothing is pending: squash the branch onto main, push it, print its revision
+./dev/operator.sh stamp [message]   # on a branch, once nothing is pending: commit as "stamp", or the message, push, print the revision
+./dev/operator.sh merge [branch]    # once the branch is off the tip of main, switch to it and stamp it, then squash it onto main, push it, print its revision
 ```
 
 `stamp` prints at once when nothing changed since it last stamped, as in `./dev/operator.sh stamp | osc copy`. Start the
 next session at the revision it prints, with a first prompt that begins `At <revision>`.
+
+`./check.sh dev` tests these, as it does `dev/agent.sh` and `dev/dev-db.sh`, with the bats tests in `dev/test/`.
 
 ## Agent
 

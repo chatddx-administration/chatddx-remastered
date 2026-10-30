@@ -45,7 +45,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorte
 ## `src/chatddx/test/costs.py:Cost`
 
 ```
-# Duplication: check.sh:logged writes these columns too, in this order.
+# Duplication: check.sh:spooled writes these columns too, in this order.
 ```
 
 ## `src/chatddx/test/costs.py:Costs`

@@ -3,11 +3,12 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 PGCONF=/etc/postgresql/16/main
-STARTED=dev/session-start
-TURN=dev/turn-start
-REFUSED=dev/refused
+STATE=dev/state
+STARTED=$STATE/session-start
+TURN=$STATE/turn-start
+REFUSED=$STATE/refused
 CHECKED_AT_SESSION_START=(openapi stamps locale pending format types frontend docs)
-CHECKED_AT_HAND_OVER=(format types frontend docs)
+CHECKED_AT_HAND_OVER=(format types frontend docs dev)
 # Policy: checked after the others, each alone, so that what they take counts towards
 # AGENTS.md's figures (src/chatddx/test/costs.py:medians).
 TIMED_AT_HAND_OVER=(tests browser)
@@ -38,6 +39,8 @@ field() {
 
 session-start() {
   [[ -t 0 ]] || event="$(cat)"
+  mkdir -p "$STATE"
+  left_over
   local state=()
   case "$(field source)" in
   resume | clear | compact) ;;
@@ -49,6 +52,15 @@ session-start() {
     state+=(refused)
   fi
   echo "${state[*]}" >"$STARTED"
+}
+
+# Migration: what dev/ held before dev/state/; drop once no checkout holds it.
+left_over() {
+  if [[ -f dev/costs-spool.tsv ]]; then
+    cat dev/costs-spool.tsv >>"$STATE/costs-spool.tsv"
+    rm dev/costs-spool.tsv
+  fi
+  rm -rf dev/logs dev/session-start dev/turn-start dev/refused dev/stamped dev/*-good
 }
 
 session-checked() {
@@ -73,6 +85,7 @@ provision() {
   database
   pnpm --dir frontend install --frozen-lockfile
   pnpm --dir frontend build
+  command -v bats >/dev/null || npm install --global --silent bats@1.13.0
   [[ -z ${CLAUDE_ENV_FILE:-} ]] || cat >>"$CLAUDE_ENV_FILE" <<ENV
 set -a
 . "$PWD/.env-container"
@@ -145,6 +158,7 @@ turn-start() {
       provisioned && turn-checked || refused=refused
     fi
   fi
+  mkdir -p "$STATE"
   git rev-parse HEAD >"$TURN"
   if [[ -n $refused ]]; then
     : >"$REFUSED"
@@ -261,6 +275,7 @@ named() {
     types) names+=("lint or type errors") ;;
     frontend) names+=("frontend type or test errors") ;;
     docs) names+=("broken references") ;;
+    dev) names+=("failing tests of dev/") ;;
     tests) names+=("failing tests") ;;
     browser) names+=("failing browser tests") ;;
     esac
@@ -277,6 +292,7 @@ turn-end() {
   [[ ! -e $REFUSED ]] || return 0
   start="$(cat "$TURN" 2>/dev/null)" ||
     ended "turn-end has no commit the turn started at to stamp against: run ./dev/agent.sh turn-start first."
+  start="$(carried "$start")"
   [[ $(git rev-parse HEAD) != "$start" || -n $(git status --porcelain) ]] || return 0
   before="$(tree)"
   step ./write.sh "$start" ||
@@ -288,6 +304,29 @@ turn-end() {
       ended "$stepped fails, as below: see to it, and commit and push what turn-end wrote." "$said"
   fi
   pushed || ended "git push fails, as below: see to it, and push the branch." "$said"
+}
+
+# Policy: a rebase in the turn carries the commit the turn started at along to what the
+# rebase made of it, as the branch's reflog tells, so that what the rebase brought in, such
+# as main's stamps already signed, isn't stamped again as the turn's.
+carried() {
+  local start branch next
+  start="$(git rev-parse --verify --quiet "$1^{commit}")" || {
+    echo "$1"
+    return
+  }
+  branch="$(git symbolic-ref --quiet --short HEAD)" || {
+    echo "$start"
+    return
+  }
+  while ! git merge-base --is-ancestor "$start" HEAD 2>/dev/null; do
+    next="$(git reflog show --format='%H %gs' "refs/heads/$branch" -- 2>/dev/null |
+      awk -v start="$start" 'finished && $1 == start { print made; exit }
+        { finished = $2 == "rebase" && $3 == "(finish):"; made = $1 }')"
+    [[ -n $next ]] || break
+    start=$next
+  done
+  echo "$start"
 }
 
 ended() {
@@ -325,6 +364,7 @@ hand-over() {
     echo "hand-over has no commit the turn started at to stamp against: run ./dev/agent.sh turn-start first."
     return
   fi
+  start="$(carried "$start")"
   if ! step ./write.sh "$start"; then
     printf '%s\n' "$stepped fails, as below: $again" "$said"
     return
@@ -367,10 +407,15 @@ hand-over() {
 }
 
 # Duplication: write.sh's move of the check logs.
+# Accommodating for nixpkgs' non-interactive bash, which lacks compgen.
 moved_logs() {
-  compgen -G 'dev/logs/*.log' >/dev/null || return 0
+  local logs
+  shopt -s nullglob
+  logs=(dev/state/logs/*.log)
+  shopt -u nullglob
+  ((${#logs[@]})) || return 0
   mkdir -p logs
-  mv dev/logs/*.log logs/
+  mv "${logs[@]}" logs/
 }
 
 # Accommodating for Claude Code, which adds what a hook says to the session only if it

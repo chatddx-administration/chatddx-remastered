@@ -72,7 +72,7 @@ and, if `Whoops`, put in `pass_on` what they are to pass on to developers and op
 
 - `openapi`, `stamps` and `locale`, each in step with the code
 - `pending`, what is left to stamp or translate
-- `format`, `types`, `frontend`, `docs`, `tests` and `browser`.
+- `format`, `types`, `frontend`, `docs`, `dev`, `tests` and `browser`.
 
 `./write.sh [commit]` regenerates what follows from the code and moves logs in `dev/state/logs/` to `logs/`.
 
@@ -93,6 +93,10 @@ The `~<n>s` after a command tells what time it takes in the cloud container. `./
 - `pnpm --dir frontend check` type checks frontend
 - `pnpm --dir frontend test` tests frontend takes ~3.1s
 
+### Dev
+
+- `bats dev/test`, the tests of `dev/`'s scripts ~8s.
+
 ### Formatting
 
 - `ruff format` formats the Python.
@@ -110,7 +114,7 @@ Agents aren't expected to run this, just know it exists.
 
 `nix flake check` runs:
 
-- `check.sh`'s openapi, stamps, types, tests, frontend, docs and format stages
+- `check.sh`'s openapi, stamps, types, tests, frontend, docs, dev and format stages
 - `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
 - `nix/module-eval.nix`
 

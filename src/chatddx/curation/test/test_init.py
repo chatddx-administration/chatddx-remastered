@@ -320,7 +320,6 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
 
 # Scope: what it loads is read in
 # test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
-@pytest.mark.slow
 def test_init_data_command(
     db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

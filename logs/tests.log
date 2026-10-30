@@ -1,4 +1,4 @@
-2026-10-30T00:49:50Z 0cd6c57 ./check.sh tests
+2026-10-30T01:07:45Z 3279ebd ./check.sh tests
 • tests
 ============================= test session starts ==============================
 platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
@@ -13,8 +13,8 @@ created: 4/4 workers
 ........................................................................ [ 12%]
 ........................................................................ [ 18%]
 ........................................................................ [ 25%]
-.......................sss........................ssssssssssssssssssssss [ 31%]
-sss..................................................................... [ 37%]
+..........ssssssssssssssssssssssssssss.................................. [ 31%]
+........................................................................ [ 37%]
 ........................................................................ [ 43%]
 ........................................................................ [ 50%]
 ........................................................................ [ 56%]
@@ -26,11 +26,11 @@ sss..................................................................... [ 37%]
 ........................................................................ [ 94%]
 ....................................................................     [100%]
 ================================= slow budget ==================================
-433.0 s in 1120 tests; slow from 0.414 s on
-the quick run takes 30.8 s of it, 7%
-set up once for many tests: cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 1.0 s, loaded 0.8 s, plan 0.9 s, curated 5.4 s, described 1.3 s, tmp_path_factory 0.0 s, ran 5.8 s, sampled 9.2 s, pytestconfig 0.0 s, parsed 2.1 s, each 0.2 s
-waited for, made ahead: db 47.1 s
-unmark: src/chatddx/api/test/test_world.py::test_endpoints_say_what_they_serve_and_what_they_re_cleared_for (0.129 s)
-unmark: src/chatddx/stamp/test/test_stamp.py::test_docs_stamps_a_catalog_s_translations_since_the_commit_alone (0.131 s)
-unmark: src/chatddx/store/test/test_catalog.py::test_languages_are_kept_on_digests (0.134 s)
-================= 1120 passed, 28 skipped in 155.43s (0:02:35) =================
+323.0 s in 1120 tests; slow from 0.293 s on
+the quick run takes 25.3 s of it, 8%
+set up once for many tests: cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 0.9 s, loaded 0.5 s, plan 0.6 s, curated 3.8 s, described 0.8 s, tmp_path_factory 0.0 s, ran 3.8 s, sampled 6.7 s, pytestconfig 0.0 s, parsed 1.5 s, each 0.1 s
+waited for, made ahead: db 40.9 s
+unmark: src/chatddx/api/test/test_typed.py::test_a_typed_case_is_a_family_of_one_s_own_with_its_vignette (0.095 s)
+unmark: src/chatddx/curation/test/test_init.py::test_init_data_command (0.084 s)
+unmark: src/chatddx/repl/test/test_running.py::test_a_structured_answer_is_checked_and_its_views_read (0.096 s)
+================= 1120 passed, 28 skipped in 137.37s (0:02:17) =================

@@ -11,7 +11,7 @@ chatddx costs write
 
 # Duplication: dev/agent.sh:moved_logs.
 shopt -s nullglob
-logs=(dev/logs/*.log)
+logs=(dev/state/logs/*.log)
 if ((${#logs[@]})); then
   mkdir -p logs
   mv "${logs[@]}" logs/

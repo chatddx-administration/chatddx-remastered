@@ -1,6 +1,0 @@
-# Policy: what agent.sh keeps of a session and check.sh of what passed stays out of git.
-/*
-!/.gitignore
-!/*.sh
-!/README.md
-!/costs.tsv

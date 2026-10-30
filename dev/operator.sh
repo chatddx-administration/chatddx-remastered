@@ -1,73 +1,70 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
-cd "$(git rev-parse --show-toplevel)"
-
-REFUSED_AT_STAMP=(openapi locale pending)
-TOLD_AT_FETCH=(pending)
-
 die() {
   printf 'error: %s\n' "$*" >&2
   exit 1
 }
 
+git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
+cd "$(git rev-parse --show-toplevel)"
+
+MAIN=${MAIN:-main}
+REFUSED_AT_STAMP=(openapi locale pending)
+TOLD_AT_FETCH=(pending)
+
+unmerged() {
+  die "stamped but didn't merge: $*"
+}
+
 fetch() {
   local branch=${1:-$(git branch --show-current)}
-  as.sh "$CHATDDX_DEV" git fetch --quiet origin
-  git switch --quiet "$branch"
-  git merge --ff-only --quiet "origin/$branch"
+  as.sh "$CHATDDX_DEV" git fetch -q origin
+  git switch -q "$branch"
+  git merge --ff-only -q "origin/$branch"
   ./check.sh "${TOLD_AT_FETCH[@]}" || true
 }
 
 stamp() {
+  local branch
+  branch=$(git branch --show-current)
+  [[ -n ${CHATDDX_DEV:-} ]] || die "CHATDDX_DEV is unset, so as.sh has no one to push as"
+  command -v as.sh >/dev/null || die "no as.sh on PATH to push with"
+  [[ ! -d "$(git rev-parse --git-path rebase-merge)" && ! -d "$(git rev-parse --git-path rebase-apply)" ]] ||
+    die "a rebase is in progress"
+  [[ -n $branch ]] || die "HEAD is detached; switch to a branch"
+  [[ $branch != "$MAIN" ]] || die "on $MAIN; switch to a branch"
+
   ./check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
   git add -A
-  git diff --cached --quiet || git commit --quiet -m "${1:-stamp}"
+  git diff --cached --quiet || git commit -q -m "${1:-stamp}"
   [[ $(git rev-parse HEAD) == "$(git rev-parse --verify -q '@{u}')" ]] ||
-    as.sh "$CHATDDX_DEV" git push --quiet -u origin HEAD
+    as.sh "$CHATDDX_DEV" git push -q -u origin HEAD
   git rev-parse --short HEAD
 }
 
 merge() {
-  local main branch main_sha branch_sha count here wt ref orig msgfile new
-  main=${MAIN:-main}
+  local branch main_sha branch_sha here wt ref msgfile new
   branch=${1:-$(git branch --show-current)}
-
-  [[ -n ${CHATDDX_DEV:-} ]] || die "CHATDDX_DEV is unset, so as.sh has no one to push as"
-  command -v as.sh >/dev/null || die "no as.sh on PATH to push with"
-  [[ $branch != "$main" ]] || die "branch must differ from $main"
-  [[ ! -d "$(git rev-parse --git-path rebase-merge)" && ! -d "$(git rev-parse --git-path rebase-apply)" ]] ||
-    die "a rebase is in progress"
-
-  if [[ -n $(git status --porcelain) ]]; then
-    [[ $(git branch --show-current) == "$branch" ]] || die "uncommitted changes; commit or stash first"
-    git add -A
-    git commit --quiet -m merge
-  fi
-
-  main_sha=$(git rev-parse --verify -q "refs/heads/$main^{commit}") || die "no local branch '$main'"
-  branch_sha=$(git rev-parse --verify -q "refs/heads/$branch^{commit}") || die "no local branch '$branch'"
-
-  git merge-base --is-ancestor "$main_sha" "$branch_sha" ||
-    die "'$branch' is not based on the tip of '$main' (rebase it onto $main first)"
-
-  count=$(git rev-list --count "$main_sha..$branch_sha")
-  ((count >= 1)) || die "'$branch' has no commits beyond '$main'"
 
   here=$(git rev-parse --show-toplevel)
   while read -r wt ref; do
     [[ $wt == "$here" ]] && continue
-    [[ $ref == "refs/heads/$main" || $ref == "refs/heads/$branch" ]] &&
+    [[ $ref == "refs/heads/$MAIN" || $ref == "refs/heads/$branch" ]] &&
       die "'${ref#refs/heads/}' is checked out in worktree $wt"
   done < <(git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{print w, $2}')
+  main_sha=$(git rev-parse --verify -q "refs/heads/$MAIN^{commit}") || die "no local branch '$MAIN'"
+  git merge-base --is-ancestor "$main_sha" "refs/heads/$branch" ||
+    die "'$branch' is not based on the tip of '$MAIN' (rebase it onto $MAIN first)"
 
-  orig=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
-  git checkout -q "$branch"
-  ./check.sh pending >&2 || {
-    git checkout -q "$orig"
-    die "'$branch' has what is flagged above pending; nothing was merged"
-  }
+  if [[ $(git branch --show-current) != "$branch" ]]; then
+    [[ -z $(git status --porcelain) ]] || die "uncommitted changes; commit or stash first"
+    git switch -q "$branch"
+  fi
+  stamp >/dev/null
+
+  branch_sha=$(git rev-parse HEAD)
+  [[ $main_sha != "$branch_sha" ]] || unmerged "'$branch' has no commits beyond '$MAIN'"
 
   msgfile=$(mktemp)
   trap "rm -f -- '$msgfile'" EXIT
@@ -76,28 +73,28 @@ merge() {
   git checkout -q --detach "$branch_sha"
   git reset -q --soft "$main_sha"
 
-  if ! git commit -e -F "$msgfile" >&2; then
+  if ! git commit -q -e -F "$msgfile" >&2; then
     git reset -q --soft "$branch_sha"
-    git checkout -q "$orig"
-    die "commit aborted; nothing was changed"
+    git checkout -q "$branch"
+    unmerged "commit aborted"
   fi
 
   new=$(git rev-parse HEAD)
   [[ $(git rev-parse "$new^{tree}") == $(git rev-parse "$branch_sha^{tree}") ]] ||
     {
       git reset -q --soft "$branch_sha"
-      git checkout -q "$orig"
-      die "squash tree differs from '$branch' (hook modified files?); aborted"
+      git checkout -q "$branch"
+      unmerged "squash tree differs from '$branch' (hook modified files?)"
     }
 
-  git update-ref -m "squash-to-main: $branch" "refs/heads/$main" "$new" "$main_sha"
-  git checkout -q "$main"
-  as.sh "$CHATDDX_DEV" git push --quiet origin "$main"
+  git update-ref -m "squash-to-main: $branch" "refs/heads/$MAIN" "$new" "$main_sha"
+  git checkout -q "$MAIN"
+  as.sh "$CHATDDX_DEV" git push -q origin "$MAIN"
   git branch -q -D "$branch"
   if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
-    as.sh "$CHATDDX_DEV" git push --quiet origin --delete "$branch"
+    as.sh "$CHATDDX_DEV" git push -q origin --delete "$branch"
   fi
-  git rev-parse --short "$main"
+  git rev-parse --short "$MAIN"
 }
 
 case "${1:-}" in

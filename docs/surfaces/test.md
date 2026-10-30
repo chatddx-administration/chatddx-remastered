@@ -656,7 +656,7 @@ Prints each command's median per machine, as write would quote it.
 ## `SPOOL`
 `src/chatddx/test/costs.py:SPOOL`
 
-`SPOOL = settings.PROJECT_ROOT / "dev" / "costs-spool.tsv"`
+`SPOOL = settings.PROJECT_ROOT / "dev" / "state" / "costs-spool.tsv"`
 
 ## `SRC`
 `src/chatddx/test/test_tests.py:SRC`

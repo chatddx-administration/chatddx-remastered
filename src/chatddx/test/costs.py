@@ -18,7 +18,7 @@ from chatddx.markers import applied_lines
 LOG = settings.PROJECT_ROOT / "dev" / "costs.tsv"
 # Policy: what is timed between commits waits here, out of git, so that a check run between
 # turns leaves the worktree clean; write folds it into LOG.
-SPOOL = settings.PROJECT_ROOT / "dev" / "costs-spool.tsv"
+SPOOL = settings.PROJECT_ROOT / "dev" / "state" / "costs-spool.tsv"
 QUOTED_IN = (settings.PROJECT_ROOT / "AGENTS.md",)
 RECENT = 5
 # Policy: a whole run varies less than a test does (src/chatddx/test/budget.py:MARGIN), but
@@ -30,7 +30,7 @@ _SPAN = re.compile(r"`([^`]+)`")
 _VERBOSITY = re.compile(r"-q+|-v+|--quiet|--verbose")
 
 
-# Duplication: check.sh:logged writes these columns too, in this order.
+# Duplication: check.sh:spooled writes these columns too, in this order.
 @dataclass(frozen=True)
 class Cost:
     when: str
@@ -73,6 +73,7 @@ def command(args: Sequence[str]) -> str:
 def logged(cost: Cost, spool: Path = SPOOL, log: Path = LOG) -> None:
     """Appends a line to the spool, if in a checkout, as told by the log being there."""
     if log.exists():
+        spool.parent.mkdir(exist_ok=True)
         with spool.open("a") as f:
             _ = f.write(cost.written())
 

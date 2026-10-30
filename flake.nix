@@ -129,10 +129,20 @@
           text = builtins.readFile ./dev/dev-db.sh;
         };
 
-      # Optimization: a stage of check.sh sees only the files it reads, so that nix runs
-      # it again only when one of them changes.
+      # Duplication: check.sh's inputs reads check.inputs likewise.
+      inputs =
+        let
+          lines = lib.filter (line: line != "" && !lib.hasPrefix "#" line) (
+            lib.splitString "\n" (builtins.readFile ./check.inputs)
+          );
+          words = map (line: lib.filter (word: word != "") (lib.splitString " " line)) lines;
+        in
+        stage: map (path: ./. + "/${path}") (lib.concatMap lib.tail (lib.filter (ws: lib.head ws == stage) words));
+
+      # Optimization: a stage of check.sh sees only the files check.inputs names for it, so that
+      # nix runs it again only when one of them changes.
       check =
-        system: label: stages: fileset: attrs:
+        system: label: stages: attrs:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
@@ -141,10 +151,7 @@
             name = "${name}-check-${label}";
             src = lib.fileset.toSource {
               root = ./.;
-              fileset = lib.fileset.unions [
-                fileset
-                ./check.sh
-              ];
+              fileset = lib.fileset.unions ([ ./check.sh ] ++ lib.concatMap inputs stages);
             };
             buildPhase = ''
               runHook preBuild
@@ -182,14 +189,6 @@
 
           docs =
             check system "docs" [ "docs" ]
-              (lib.fileset.unions [
-                ./docs
-                ./agents
-                ./AGENTS.md
-                ./README.md
-                ./dev/README.md
-                ./src
-              ])
               {
                 nativeBuildInputs = [ (devEnv system) ];
                 preBuild = ''
@@ -202,18 +201,6 @@
           # it starts.
           package =
             check system "package" [ "openapi" "stamps" "types" "tests" ]
-              (lib.fileset.unions [
-                ./src
-                ./worlds
-                ./docs/comments
-                ./docs/surfaces
-                ./docs/whoopses
-                ./frontend/openapi.json
-                ./pyproject.toml
-                ./uv.lock
-                ./dev/dev-db.sh
-                ./.env-devshell
-              ])
               {
                 nativeBuildInputs = [
                   (devEnv system)
@@ -233,18 +220,6 @@
 
           format =
             check system "format" [ "format" ]
-              (lib.fileset.unions [
-                ./src
-                ./frontend
-                ./docs
-                ./agents
-                ./AGENTS.md
-                ./README.md
-                ./dev/README.md
-                ./pyproject.toml
-                ./.prettierrc
-                ./.prettierignore
-              ])
               {
                 pnpmRoot = "frontend";
                 inherit (frontend system) pnpmDeps;
@@ -260,14 +235,20 @@
                 '';
               };
 
+          dev =
+            check system "dev" [ "dev" ]
+              {
+                nativeBuildInputs = [
+                  pkgs.bats
+                  pkgs.git
+                  pkgs.python3
+                ];
+                # Accommodating for the sandbox, which has no /usr/bin/env for the scripts' shebangs.
+                preBuild = "patchShebangs dev";
+              };
+
           frontend =
             check system "frontend" [ "frontend" ]
-              (lib.fileset.unions [
-                ./frontend
-                ./src/chatddx/portal/templates
-                ./worlds/test/_data/schemas
-                ./worlds/sample/_data/schemas
-              ])
               {
                 pnpmRoot = "frontend";
                 inherit (frontend system) pnpmDeps;
@@ -311,6 +292,7 @@
               pkgs.uv
               pkgs.nodejs_22
               pkgs.pnpm
+              pkgs.bats
             ];
 
             env = {

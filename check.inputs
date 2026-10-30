@@ -1,0 +1,18 @@
+# Usage: <stage> <path>..., what a stage of check.sh reads besides check.sh and this, on as many lines as it takes.
+# check.sh skips a stage that passed till one of them changes, and flake.nix checks the stage on them alone, so that
+# a path missing here fails there. A stage that nix doesn't check reads all, as told by ".".
+openapi src worlds docs/comments docs/surfaces docs/whoopses frontend/openapi.json pyproject.toml uv.lock
+openapi dev/dev-db.sh .env-devshell
+stamps src worlds docs/comments docs/surfaces docs/whoopses frontend/openapi.json pyproject.toml uv.lock
+stamps dev/dev-db.sh .env-devshell
+types src worlds docs/comments docs/surfaces docs/whoopses frontend/openapi.json pyproject.toml uv.lock
+types dev/dev-db.sh .env-devshell
+tests src worlds docs/comments docs/surfaces docs/whoopses frontend/openapi.json pyproject.toml uv.lock
+tests dev/dev-db.sh .env-devshell
+format src frontend docs agents AGENTS.md README.md dev/README.md pyproject.toml .prettierrc .prettierignore
+docs docs agents AGENTS.md README.md dev/README.md src
+dev dev/agent.sh dev/operator.sh dev/dev-db.sh dev/test
+frontend frontend src/chatddx/portal/templates worlds/test/_data/schemas worlds/sample/_data/schemas
+locale .
+pending .
+browser .

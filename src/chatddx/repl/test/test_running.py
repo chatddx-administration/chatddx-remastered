@@ -118,7 +118,6 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
     written = say(f"use {NATIVE}", "run crlf")
 

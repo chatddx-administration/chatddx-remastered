@@ -5,7 +5,6 @@ from chatddx import settings
 from chatddx.test.helpers import TYPED
 
 
-@pytest.mark.slow
 def test_a_typed_case_is_a_family_of_one_s_own_with_its_vignette(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

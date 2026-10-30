@@ -2,6 +2,5 @@
 .env
 __pycache__
 .coverage
-/dev-db
 /result
-notes.txt
+/dev/state/
