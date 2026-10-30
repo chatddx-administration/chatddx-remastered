@@ -1,6 +1,6 @@
-# Comments in `chatddx.locale`
+# Comments in `locale`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.locale]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`
@@ -12,6 +12,34 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/locale/`, sor
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
+
+## `frontend/src/lib/locale.ts:LANGUAGE_PARAMS`
+
+```
+// Policy: a parameter named so holds a language's tag, and one named languages tags
+// separated by ", ", each said by its name, as the server says them.
+```
+
+## `frontend/src/lib/locale.ts:LISTED_PARAMS`
+
+```
+// Policy: a parameter named so holds names separated by ", ", said as a list, as the server says it.
+```
+
+## `frontend/src/lib/locale.ts:th`
+
+```
+// Policy: a message holding markup is markup, as a translation is trusted as the server's are;
+// what is put into it is escaped, as a {% trans %} block's variables are.
+```
+
+## `frontend/src/lib/locale.ts:worded`
+
+```
+// Accommodating for JavaScript, which writes some numbers other than Python does: what the
+// page's catalog doesn't hold is said as the server wrote it, but for the languages it
+// names and the lists it holds, which the server writes by their tags and joined by ", ".
+```
 
 ## `src/chatddx/locale/locale.py:_extracted`
 

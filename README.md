@@ -91,8 +91,7 @@ pytest -n 4             # everything on 4 workers (pytest-xdist)
 ### Stamping
 
 Each turn of an agent's ends with what it changed in the docs and the translations in the catalogs as stamps pending,
-git conflicts to resolve as you see fit. [dev/README.md](dev/README.md) says how to fetch a turn's end, stamp it and
-merge it.
+git conflicts to resolve. [docs/parts/dev.md](docs/parts/dev.md) says how to fetch a turn's end, stamp it and merge it.
 
 ### The sample world
 

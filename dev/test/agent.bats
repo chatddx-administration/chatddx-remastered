@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   cd "$BATS_TEST_TMPDIR"
   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
@@ -18,24 +20,25 @@ setup() {
   git clone -q origin.git repo 2>/dev/null
   cd repo
   mkdir dev
-  cp "$BATS_TEST_DIRNAME/../agent.sh" dev/agent.sh
+  cp "$BATS_TEST_DIRNAME/../agent.sh" "$BATS_TEST_DIRNAME/../settings.sh" dev/
+  cp "$BATS_TEST_DIRNAME/../../settings.toml" .
   {
     echo "#!$BASH"
     cat <<'EOF'
 echo "check $*" >>"$CALLS"
 failed=()
 mkdir -p dev/state/logs
-for stage in "$@"; do
-  echo "$stage said" >"dev/state/logs/$stage.log"
-  if [[ " ${FAIL:-} " == *" $stage "* ]]; then
-    echo "• $stage"
-    echo "FAILED $stage broke" | tee -a "dev/state/logs/$stage.log"
-    failed+=("$stage")
+for check in "$@"; do
+  echo "$check said" >"dev/state/logs/$check.log"
+  if [[ " ${FAIL:-} " == *" $check "* ]]; then
+    echo "• $check"
+    echo "FAILED $check broke" | tee -a "dev/state/logs/$check.log"
+    failed+=("$check")
   fi
 done
 ((${#failed[@]} == 0)) || { echo "• failed: ${failed[*]}"; exit 1; }
 EOF
-  } >check.sh
+  } >dev/check.sh
   {
     echo "#!$BASH"
     cat <<'EOF'
@@ -44,8 +47,8 @@ echo "write $*" >>"$CALLS"
 echo "write said"
 exit "${WRITE_EXIT:-0}"
 EOF
-  } >write.sh
-  chmod +x check.sh write.sh
+  } >dev/write.sh
+  chmod +x dev/check.sh dev/write.sh
   echo /dev/state/ >.gitignore
   : >.env-container
   git add -A
@@ -80,7 +83,7 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   [ "$status" -eq 0 ]
   [ -z "$output" ]
   [ "$(cat dev/state/session-start)" = fresh ]
-  grep -qx "check openapi stamps locale pending format types frontend docs" "$CALLS"
+  grep -qx "check openapi index stamps locale pending format python-lint frontend docs" "$CALLS"
 }
 
 @test "session-start refuses work for what fails, with what it said" {
@@ -172,6 +175,26 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   [ "$(subject)" = pushed ]
 }
 
+@test "turn-start fetches what the operator stamped, and lets go of what it no longer holds" {
+  export CLAUDE_CODE_REMOTE=true
+  git update-ref refs/stamped/gone HEAD
+  git push -q origin HEAD:refs/stamped/feat refs/stamped/gone
+  git update-ref -d refs/stamped/feat
+  git push -q origin --delete refs/stamped/gone
+  hook turn-start
+  [ "$status" -eq 0 ]
+  [ "$(git rev-parse refs/stamped/feat)" = "$(git rev-parse HEAD)" ]
+  run ! git rev-parse --verify -q refs/stamped/gone
+}
+
+@test "session-start fetches what the operator stamped before it checks" {
+  export CLAUDE_CODE_REMOTE=true
+  git push -q origin HEAD:refs/stamped/feat
+  hook session-start '{"source":"startup"}'
+  [ "$status" -eq 0 ]
+  [ "$(git rev-parse refs/stamped/feat)" = "$(git rev-parse HEAD)" ]
+}
+
 @test "turn-start tells what was pushed to a branch that went its own way" {
   export CLAUDE_CODE_REMOTE=true
   git clone -q ../origin.git ../other 2>/dev/null
@@ -196,7 +219,7 @@ wrote() { grep -c "^write" "$CALLS" || true; }
 @test "turn-end has the turn go on without the commit the turn started at" {
   hook turn-end
   [ "$status" -eq 2 ]
-  [[ $output == "turn-end has no commit the turn started at to stamp against"* ]]
+  [[ $output == "turn-end has no commit the turn started at:"* ]]
 }
 
 @test "turn-end does nothing when nothing changed" {
@@ -206,30 +229,14 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   [ "$(wrote)" -eq 0 ]
 }
 
-@test "turn-end writes against the commit the turn started at, and pushes" {
+@test "turn-end writes and pushes" {
   hook turn-start
-  start=$(git rev-parse HEAD)
   committed work
   hook turn-end
   [ "$status" -eq 0 ]
-  grep -qx "write $start" "$CALLS"
+  grep -qx "write " "$CALLS"
   [ "$(subject)" = work ]
   [ "$(git rev-parse origin/feat)" = "$(git rev-parse HEAD)" ]
-}
-
-@test "turn-end writes against what a rebase in the turn made of the commit it started at" {
-  git switch -q main
-  committed signed
-  git push -q origin main
-  git switch -q feat
-  committed before
-  hook turn-start
-  git rebase -q main
-  rebased=$(git rev-parse HEAD)
-  committed after
-  hook turn-end
-  [ "$status" -eq 0 ]
-  grep -qx "write $rebased" "$CALLS"
 }
 
 @test "turn-end commits what it wrote as turn-end" {
@@ -247,7 +254,7 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   committed work
   WRITE_EXIT=1 hook turn-end
   [ "$status" -eq 2 ]
-  [[ ${lines[0]} == "./write.sh $(git rev-parse HEAD~1) fails, as below:"* ]]
+  [[ ${lines[0]} == "./dev/write.sh fails, as below:"* ]]
   [ "${lines[1]}" = "write said" ]
 }
 
@@ -306,17 +313,17 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   [ "$(subject HEAD~1)" = hand-over ]
   [ "$(subject)" = "hand-over: logs" ]
   [ "$(git rev-parse origin/feat)" = "$(git rev-parse HEAD)" ]
-  [ "$(cat logs/tests.log)" = "tests said" ]
-  [ "$(sed -n 2,4p "$CALLS" | tr '\n' ' ')" = "check format types frontend docs dev check tests check browser " ]
+  [ "$(cat logs/python-tests.log)" = "python-tests said" ]
+  [ "$(sed -n 2,4p "$CALLS" | tr '\n' ' ')" = "check format python-lint frontend docs dev check python-tests check browser " ]
 }
 
 @test "hand-over tells what failed, from its log" {
   hook turn-start
   echo work >work
-  FAIL=tests run ./dev/agent.sh hand-over </dev/null
+  FAIL=python-tests run ./dev/agent.sh hand-over </dev/null
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "Handed over with failing tests, logged in logs/ and pushed:" ]
-  [ "${lines[1]}" = "logs/tests.log:" ]
-  [ "${lines[2]}" = "FAILED tests broke" ]
+  [ "${lines[0]}" = "Handed over with failing Python tests, logged in logs/ and pushed:" ]
+  [ "${lines[1]}" = "logs/python-tests.log:" ]
+  [ "${lines[2]}" = "FAILED python-tests broke" ]
   [ "$(subject)" = "hand-over: logs" ]
 }

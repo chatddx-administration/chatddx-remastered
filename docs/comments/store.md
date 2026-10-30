@@ -1,6 +1,6 @@
-# Comments in `chatddx.store`
+# Comments in `store`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/store/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.store]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

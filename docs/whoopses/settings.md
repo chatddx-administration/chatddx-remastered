@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.settings`
+# Whoopses and asserts in `settings`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/settings.py`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.settings]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

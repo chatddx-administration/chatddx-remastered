@@ -1,0 +1,16 @@
+[project]
+name = "chatddx-dev"
+version = "0.0.0+dev"
+description = "The project's tooling around chatddx: its stamps, its references and what its checks cost"
+requires-python = ">=3.13"
+dependencies = ["chatddx", "griffelib>=2.3.2", "pytest>=9.1.1"]
+
+[project.scripts]
+chatddx-dev = "chatddx_dev.main:main"
+
+[tool.uv.sources]
+chatddx = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"

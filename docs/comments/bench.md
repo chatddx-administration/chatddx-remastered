@@ -1,6 +1,6 @@
-# Comments in `chatddx.bench`
+# Comments in `bench`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/bench/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

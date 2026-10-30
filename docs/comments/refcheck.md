@@ -1,6 +1,6 @@
-# Comments in `chatddx.refcheck`
+# Comments in `refcheck`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/refcheck/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.refcheck]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`
@@ -13,7 +13,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/refcheck/`, s
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
-## `src/chatddx/refcheck/__init__.py:_ELSEWHERE_BEFORE`
+## `dev/src/chatddx_dev/refcheck/__init__.py:_ELSEWHERE_BEFORE`
 
 ```
 # Accommodating for references the docs make on purpose to what isn't here: another
@@ -21,7 +21,7 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/refcheck/`, s
 # planned or gone.
 ```
 
-## `src/chatddx/refcheck/__init__.py:_off_main`
+## `dev/src/chatddx_dev/refcheck/__init__.py:_off_main`
 
 ```
 # Accommodating for a checkout without git or main, such as nix's, where commits go

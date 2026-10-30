@@ -1,6 +1,6 @@
-# Comments in `chatddx.curation`
+# Comments in `curation`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/curation/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

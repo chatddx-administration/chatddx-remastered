@@ -6,6 +6,12 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[manifest]
+members = [
+    "chatddx",
+    "chatddx-dev",
+]
+
 [[package]]
 name = "annotated-doc"
 version = "0.0.5"
@@ -216,16 +222,13 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
-    { name = "griffelib" },
+    { name = "chatddx-dev" },
     { name = "httpx2" },
     { name = "playwright" },
     { name = "pytest" },
     { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "types-jsonschema" },
-]
-docs = [
-    { name = "griffelib" },
 ]
 lint = [
     { name = "ruff" },
@@ -235,6 +238,9 @@ test = [
     { name = "playwright" },
     { name = "pytest" },
     { name = "pytest-xdist" },
+]
+tooling = [
+    { name = "chatddx-dev" },
 ]
 typing = [
     { name = "basedpyright" },
@@ -259,7 +265,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.40.1" },
-    { name = "griffelib", specifier = ">=2.3.2" },
+    { name = "chatddx-dev", editable = "dev" },
     { name = "httpx2", specifier = ">=2.13.1" },
     { name = "playwright", specifier = "~=1.61.0" },
     { name = "pytest", specifier = ">=9.1.1" },
@@ -267,7 +273,6 @@ dev = [
     { name = "ruff", specifier = ">=0.16.9" },
     { name = "types-jsonschema", specifier = ">=4.26.0.20260518" },
 ]
-docs = [{ name = "griffelib", specifier = ">=2.3.2" }]
 lint = [{ name = "ruff", specifier = ">=0.16.9" }]
 test = [
     { name = "httpx2", specifier = ">=2.13.1" },
@@ -275,9 +280,27 @@ test = [
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
 ]
+tooling = [{ name = "chatddx-dev", editable = "dev" }]
 typing = [
     { name = "basedpyright", specifier = ">=1.40.1" },
     { name = "types-jsonschema", specifier = ">=4.26.0.20260518" },
+]
+
+[[package]]
+name = "chatddx-dev"
+version = "0.0.0+dev"
+source = { editable = "dev" }
+dependencies = [
+    { name = "chatddx" },
+    { name = "griffelib" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "chatddx", editable = "." },
+    { name = "griffelib", specifier = ">=2.3.2" },
+    { name = "pytest", specifier = ">=9.1.1" },
 ]
 
 [[package]]

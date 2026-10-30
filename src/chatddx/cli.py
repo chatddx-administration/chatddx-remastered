@@ -438,46 +438,6 @@ def _openapi(_: argparse.Namespace) -> None:
     print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
-def _stamp(args: argparse.Namespace) -> None:
-    # Compromise: griffe, which chatddx.stamp reads the code with, is a development
-    # dependency, which a deployed chatddx goes without.
-    from chatddx import stamp
-
-    if args.stamping == "check":
-        stamp.check(args.package)
-    elif args.stamping == "pending":
-        stamp.pending()
-    elif args.stamping == "docs":
-        stamp.docs(args.base)
-    elif args.stamping == "reflow":
-        stamp.reflow(args.check)
-    else:
-        stamp.write(args.package)
-
-
-def _refcheck(_: argparse.Namespace) -> None:
-    # Compromise: as in _stamp, for chatddx.stamp, which it reads the docs with.
-    from chatddx import refcheck
-
-    try:
-        found = refcheck.check()
-    except ValueError as e:
-        raise SystemExit(f"refcheck: {e}") from None
-    if found:
-        print("\n".join(found))
-        raise SystemExit(1)
-
-
-def _costs(args: argparse.Namespace) -> None:
-    # Compromise: as in _stamp, for pytest, which chatddx.test.costs is a plugin of.
-    from chatddx.test import costs
-
-    if args.costing == "write":
-        costs.write()
-    else:
-        costs.show()
-
-
 def _locale(args: argparse.Namespace) -> None:
     if args.localing == "check":
         locale.check()
@@ -765,83 +725,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="print the API's OpenAPI document, as frontend/openapi.json keeps it",
     )
     openapi.set_defaults(run=_openapi)
-
-    stamping = commands.add_parser(
-        "stamp",
-        help="the surfaces in docs/surfaces/, the comment indexes in docs/comments/ and "
-        + "the whoopses and asserts in docs/whoopses/, written from the code, and the "
-        + "other docs as an agent wrote them, with what changed as a git conflict to "
-        + "stamp",
-    )
-    stamp_commands = stamping.add_subparsers(required=True)
-    stamp_check = stamp_commands.add_parser(
-        "check",
-        help="write nothing; fail while a surface or an index is behind the code or a "
-        + "doc holds a conflict that isn't a stamp",
-    )
-    stamp_pending = stamp_commands.add_parser(
-        "pending",
-        help="write nothing; flag each doc's stamps pending, and fail while one is",
-    )
-    stamp_pending.set_defaults(run=_stamp, stamping="pending")
-    stamp_write = stamp_commands.add_parser(
-        "write",
-        help="write the surfaces and indexes behind the code, and say how many stamps",
-    )
-    for stamping_with, stamping_as in ((stamp_check, "check"), (stamp_write, "write")):
-        _ = stamping_with.add_argument(
-            "package",
-            nargs="*",
-            choices=settings.STAGES,
-            help="the modules, such as bench or cli (settings.STAGES)",
-        )
-        stamping_with.set_defaults(run=_stamp, stamping=stamping_as)
-    stamp_docs = stamp_commands.add_parser(
-        "docs",
-        help="keep each change to a doc since a commit as stamps pending, and say "
-        + "against what and how many",
-    )
-    _ = stamp_docs.add_argument(
-        "base",
-        help="the commit whose docs are as signed, such as the one a turn started at",
-    )
-    stamp_docs.set_defaults(run=_stamp, stamping="docs")
-    stamp_reflow = stamp_commands.add_parser(
-        "reflow",
-        help="format the frontend and the docs with prettier, a doc holding stamps "
-        + "pending a side of its stamps at a time",
-    )
-    _ = stamp_reflow.add_argument(
-        "--check",
-        action="store_true",
-        help="write nothing; fail, saying which, while one is unformatted",
-    )
-    stamp_reflow.set_defaults(run=_stamp, stamping="reflow")
-
-    refchecking = commands.add_parser(
-        "refcheck",
-        help="check what the docs refer to: files, their sections, code, the "
-        + "glossary's terms and commits on main",
-    )
-    refchecking.set_defaults(run=_refcheck)
-
-    costing = commands.add_parser(
-        "costs",
-        help="what check.sh's stages, its frontend tests and pytest's runs took, as "
-        + "dev/costs.tsv logs it, and the figures AGENTS.md quotes off it",
-    )
-    cost_commands = costing.add_subparsers(required=True)
-    cost_show = cost_commands.add_parser(
-        "show",
-        help="write nothing; print each command's median per machine class",
-    )
-    cost_show.set_defaults(run=_costs, costing="show")
-    cost_write = cost_commands.add_parser(
-        "write",
-        help="fold what was timed since into dev/costs.tsv, and rewrite the figures "
-        + f"AGENTS.md quotes for the {settings.COSTS_QUOTED} machine class that are off",
-    )
-    cost_write.set_defaults(run=_costs, costing="write")
 
     localing = commands.add_parser(
         "locale",

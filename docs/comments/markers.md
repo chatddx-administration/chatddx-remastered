@@ -1,6 +1,6 @@
-# Comments in `chatddx.markers`
+# Comments in `markers`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/markers.py`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.markers]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

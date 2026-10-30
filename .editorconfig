@@ -1,0 +1,4 @@
+# Policy: what shfmt formats with.
+[*.{sh,bats}]
+indent_style = space
+indent_size = 2

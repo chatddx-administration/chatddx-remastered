@@ -1,6 +1,6 @@
-# Comments in `chatddx.importers`
+# Comments in `importers`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/importers/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.importers]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

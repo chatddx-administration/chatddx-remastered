@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.importers`
+# Whoopses and asserts in `importers`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/importers/`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.importers]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

@@ -21,7 +21,7 @@ hash of its canonical form, that refers to other components by theirs (`src/chat
 or a score names what it ran under by digest, along with the rig's own build (`src/chatddx/rig.py:rig`), so that its
 cage can be rebuilt from them, and a :Bundle carries a set of components and everything they reference, to be checked
 offline. The ledger keeps whole what can't be made again, the responses, the tools' results, the times and the values,
-and a vignette or a request only as a :Fingerprint (docs/modules/ledger.md).
+and a vignette or a request only as a :Fingerprint (docs/parts/ledger.md).
 
 ## Requirements
 
@@ -55,8 +55,8 @@ What a configuration and a variation are, and how a variation is kept, is the ca
 
 ## The parts
 
-The rig's modules, from the World a deployment is described in to a run's score. A module's docs, if it has any, are in
-docs/modules/, and its public surface is in docs/surfaces/.
+The rig's modules, from the World a deployment is described in to a run's score. A part's doc, if it has one, is in
+docs/parts/, and a module's public surface is in docs/surfaces/.
 
 1. `inventory`: a :World, the directory one deployment is described in, with its :Inventory of vignette sources,
    endpoints and hosts. `importers` writes a World's engines from o11n's reports, and `facts` holds the :Facts about
@@ -88,24 +88,24 @@ queued; `chatddx run` serves both with a worker in the same process, for develop
 the :Writer, migrated by `chatddx migrate` as the :Admin (database). Engines are local vLLM servers on the inventory's
 hosts or remote OpenAI-compatible APIs, each served at an :Endpoint, and `chatddx fake-engines` stands in for a World's
 on one machine. A host runs the rig from the NixOS module (`nix/module.nix`); containers for a Kubernetes cluster are in
-agents/wip-deploy.md.
+docs/parts/deploy.md.
 
 ## People and their edges
 
 Clinicians, researchers, ops and developers each author some kinds of component (docs/glossary.md, "People"), and reach
-the rig through an :Edge. Clinicians and researchers work in the portal, whose pages are in agents/wip-portal.md ("Its
+the rig through an :Edge. Clinicians and researchers work in the portal, whose pages are in docs/parts/portal.md ("Its
 pages"); ops and developers write a World's files and run the `chatddx` command; scripts use the API, documented at
 `/api/docs`; and `chatddx repl` is a shell over a World for one person.
 
 ## Release
 
-The project is ready to be released when agents/wip-deploy.md ("the last wip") is done.
+The project is ready to be released when docs/parts/deploy.md ("the last wip") is done.
 
 ## Vignettes and anything made from them are sensitive
 
 The vignette and content produced from it: fills, requests and responses, tool arguments and results, judge requests and
 responses, an engine's error that echoes a request; are all sensitive. Every part in the system that touches this data
-must mention "sensitive" in the docs in preparation for the clearance pipeline (agents/wip-clearance.md). Typed cases
+must mention "sensitive" in the docs in preparation for the clearance pipeline (docs/parts/clearance.md). Typed cases
 included. Clearance and sensitivity are considered a moving target until release: own store as cleared by definition,
 and errors as an exception until the clearance pipeline exists.
 
@@ -124,11 +124,11 @@ docs/surfaces/*. All findings are listed in docs/glossary.md, "Findings".
 
 - This document: what the rig is for, and what holds across it.
 - docs/glossary.md: every term, one line each (`grep '^:Term' docs/glossary.md`).
-- docs/modules/: a module's docs, beside its surface in docs/surfaces/ and the indexes of its comments in docs/comments/
-  and of its whoopses and asserts in docs/whoopses/, which `chatddx stamp` writes from the code.
-- docs/modules/bench.md: the bench, which every edge goes through.
+- docs/parts/: a part's doc, at whatever stage it is (AGENTS.md, "Development stages"), beside a module's surface in
+  docs/surfaces/ and the indexes of its comments in docs/comments/ and of its whoopses and asserts in docs/whoopses/,
+  which `chatddx-dev stamp` writes from the code.
+- docs/parts/bench.md: the bench, which every edge goes through.
 - docs/backlog.md: open work, a section for each pull request.
-- agents/: a thing planned or drafted, as `plan-<name>.md` and `wip-<name>.md` (AGENTS.md, "Development stages").
 - docs/migrations.md: the database's migrations, by schema and tier.
 - docs/vllm.md: vLLM, and what the fake pins of it.
 - docs/reduce.md: continuous surface reduction, when asked to `reduce <thing>`.

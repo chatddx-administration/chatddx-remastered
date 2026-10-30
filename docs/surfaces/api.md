@@ -1,6 +1,8 @@
-# `chatddx.api`
+# `api`
 
-Written by `chatddx stamp write` from `src/chatddx/api/`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it:
+Written by `chatddx-dev index` from `[parts.api]`'s code in `settings.toml`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it, a language's after another's:
+
+Python:
 
 ```
 ## `<name>` `@<decorator>` `[<type parameters>]` `(<bases>)`
@@ -19,6 +21,23 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
+
+TypeScript and Svelte:
+
+```
+## `<name>` `async` `<<type parameters>>` `<extends or implements>` `<props' type>`
+`<file>:<qualified name>`
+
+<its JSDoc>
+
+* `<parameter, field or prop>: <type> = <default>`
+* ∟`<return type>`
+```
+
+- A module's entries are what it exports, a class's public members among them; a component's is named after its file, its props its bullets, followed by what its module script exports, and its heading gives its props' type only when the props don't spell it out.
+- A type, an interface, an enum or a one-line constant is its declaration instead of bullets, fenced as TypeScript once it takes more than a line; a longer constant is its name, type and value.
+- A value that takes more than a line or 60 characters is cut to `…`, a call to its callee's `(…)`.
+
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `again` `@router.post("/runs/{run}/again", …)`
@@ -1833,3 +1852,19 @@ Raises:
 
 Raises:
 1. `NotFound`: `str(e)` (from `LookupError`)
+
+## `api`
+`frontend/src/lib/api/client.ts:api`
+
+`const api = createClient<paths>();`
+
+## `Schemas`
+`frontend/src/lib/api/client.ts:Schemas`
+
+`type Schemas = components["schemas"];`
+
+## `why`
+`frontend/src/lib/api/client.ts:why`
+
+* `error: unknown`
+* ∟`string`

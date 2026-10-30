@@ -1,6 +1,6 @@
-# Comments in `chatddx.test`
+# Comments in `test`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.test]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`
@@ -40,39 +40,6 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/test/`, sorte
 ```
 # Dependency: src/chatddx/conftest.py:db takes a copy made ahead on Copies' threads, so
 # waiting for it weighs the copying, which falls behind beside other workers, not the test.
-```
-
-## `src/chatddx/test/costs.py:Cost`
-
-```
-# Duplication: check.sh:spooled writes these columns too, in this order.
-```
-
-## `src/chatddx/test/costs.py:Costs`
-
-```
-# Compromise: timed from when pytest loads its plugins, its own start left out.
-```
-
-## `src/chatddx/test/costs.py:MARGIN`
-
-```
-# Policy: a whole run varies less than a test does (src/chatddx/test/budget.py:MARGIN), but
-# a figure is rewritten only once this far off, lest every turn stamp a new one.
-```
-
-## `src/chatddx/test/costs.py:pytest_configure`
-
-```
-# Accommodating for pytest-xdist, whose workers each run pytest too: the controller alone
-# times the run. A run of pytest in a test is rooted elsewhere, and isn't timed either.
-```
-
-## `src/chatddx/test/costs.py:SPOOL`
-
-```
-# Policy: what is timed between commits waits here, out of git, so that a check run between
-# turns leaves the worktree clean; write folds it into LOG.
 ```
 
 ## `src/chatddx/test/helpers.py:_settled`

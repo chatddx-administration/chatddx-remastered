@@ -1,6 +1,6 @@
-# Comments in `chatddx.api`
+# Comments in `api`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/api/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`
@@ -12,6 +12,13 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/api/`, sorted
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
+
+## `frontend/src/lib/api/client.ts:why`
+
+```
+// Policy: what a person can cause is worded, and what isn't worded they couldn't have
+// caused, so it is passed on as it is.
+```
 
 ## `src/chatddx/api/app.py:_raw`
 

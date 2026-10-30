@@ -1,7 +1,7 @@
 # Testing the NixOS module from a cloud session
 
 How the NixOS module (`nix/module.nix`) is tested when a claude.ai cloud session changes it, so that the next session
-can do it again. `agents/wip-deploy.md` ("The NixOS module") says what the module and its tests are; this file says who
+can do it again. `docs/parts/deploy.md` ("The NixOS module") says what the module and its tests are; this file says who
 runs what, how, and what got in the way.
 
 Decided: a cloud session has no KVM, and its VM test by emulation is too slow and too fragile to rely on (see "Runs").
@@ -293,7 +293,7 @@ About 20 minutes up to the end of subtest 2. With KVM it is a few minutes.
 - **The guest's shell by emulation**: the driver waits 300 s for it (ten times 30 s, not configurable); boots took
   longer twice.
 - **PostgreSQL's version**: the VM's default for its `stateVersion` is neither 16 nor 17, which the module warns about,
-  so the test pins `postgresql_17`, the version Kompismoln's hosts serve (`agents/wip-deploy.md`, "On Kompismoln").
+  so the test pins `postgresql_17`, the version Kompismoln's hosts serve (`docs/parts/deploy.md`, "On Kompismoln").
 - **A typed case's language**: `POST /api/families` requires `language`; the test sent none and got 422. The host flow
   found it in minutes.
 - **`pkill -f chatddx`** from the Bash tool matches the tool's own shell, whose command line holds the pattern, and

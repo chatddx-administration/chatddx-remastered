@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.rig`
+# Whoopses and asserts in `rig`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/rig.py`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.rig]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

@@ -1,0 +1,442 @@
+# Project-wide settings: the package ships this as chatddx/settings.toml, and src/chatddx/settings.py reads it, as it
+# holds the app's own.
+
+# What each check of dev/check.sh reads besides dev/check.sh: it skips a check that passed till one of these changes,
+# and flake.nix runs the check on these alone, so that a path missing here fails there. A check that nix doesn't run
+# reads all, as told by ".".
+[checks.inputs]
+openapi = [
+  "settings.toml",
+  "src",
+  "worlds",
+  "docs/comments",
+  "docs/surfaces",
+  "docs/whoopses",
+  "frontend/openapi.json",
+  "pyproject.toml",
+  "uv.lock",
+  "dev/dev-db.sh",
+  ".env-devshell",
+  "dev/pyproject.toml",
+  "dev/src",
+]
+index = [
+  "settings.toml",
+  "src",
+  "worlds",
+  "docs",
+  "AGENTS.md",
+  "README.md",
+  "frontend/openapi.json",
+  "frontend",
+  "nix",
+  "dev",
+  "pyproject.toml",
+  "uv.lock",
+  ".env-devshell",
+]
+stamps = [
+  "settings.toml",
+  "src",
+  "docs",
+  "AGENTS.md",
+  "README.md",
+  "pyproject.toml",
+  "uv.lock",
+  "dev/pyproject.toml",
+  "dev/src",
+  "dev/stamped.sh",
+]
+python-lint = [
+  "settings.toml",
+  "src",
+  "worlds",
+  "docs/comments",
+  "docs/surfaces",
+  "docs/whoopses",
+  "frontend/openapi.json",
+  "pyproject.toml",
+  "uv.lock",
+  "dev/dev-db.sh",
+  ".env-devshell",
+  "dev/pyproject.toml",
+  "dev/src",
+]
+python-tests = [
+  "settings.toml",
+  "src",
+  "worlds",
+  "docs/comments",
+  "docs/surfaces",
+  "docs/whoopses",
+  "frontend/openapi.json",
+  "pyproject.toml",
+  "uv.lock",
+  "dev/dev-db.sh",
+  ".env-devshell",
+  "dev/pyproject.toml",
+  "dev/src",
+]
+format = [
+  "settings.toml",
+  "src",
+  "frontend",
+  "docs",
+  "AGENTS.md",
+  "README.md",
+  "dev",
+  "pyproject.toml",
+  ".claude/settings.json",
+  ".prettierrc",
+  ".prettierignore",
+  ".editorconfig",
+  ".taplo.toml",
+]
+docs = [
+  "settings.toml",
+  "docs",
+  "AGENTS.md",
+  "README.md",
+  "src",
+  "dev/pyproject.toml",
+  "dev/src",
+]
+dev = [
+  "dev/agent.sh",
+  "dev/operator.sh",
+  "dev/dev-db.sh",
+  "dev/write.sh",
+  "dev/stamped.sh",
+  "dev/test",
+  ".shellcheckrc",
+  "settings.toml",
+]
+frontend = [
+  "frontend",
+  "src/chatddx/portal/templates",
+  "worlds/test/_data/schemas",
+  "worlds/sample/_data/schemas",
+]
+locale = ["."]
+pending = ["."]
+browser = ["."]
+
+# What dev/agent.sh checks when.
+[agent]
+checked_at_session_start = [
+  "openapi",
+  "index",
+  "stamps",
+  "locale",
+  "pending",
+  "format",
+  "python-lint",
+  "frontend",
+  "docs",
+]
+checked_at_hand_over = ["format", "python-lint", "frontend", "docs", "dev"]
+# Policy: checked after the others, each alone, so that what they take counts towards the figures the docs quote
+# (dev/src/chatddx_dev/costs/__init__.py:medians).
+timed_at_hand_over = ["python-tests", "browser"]
+refused_at_turn_start = ["openapi", "locale"]
+told_at_turn_start = ["pending", "format", "python-lint", "frontend"]
+
+# What dev/operator.sh checks when.
+[operator]
+refused_at_stamp = ["openapi", "locale", "pending"]
+told_at_fetch = ["pending"]
+
+# What chatddx.settings.PARTS holds: each part of the project at its stage, as AGENTS.md's "Development stages" names
+# them; its class, the vocabulary it speaks: datamodel, the glossary's terms, ux, what people see and do, or machinery,
+# what makes it run; its doc, if it has one; and the code that makes it, which no other part's code holds.
+[parts.api]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/api.md"
+code = ["src/chatddx/api", "frontend/src/lib/api"]
+
+[parts.bench]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/bench.md"
+code = ["src/chatddx/bench"]
+
+[parts.catalog]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/catalog.md"
+code = ["src/chatddx/catalog"]
+
+[parts.clearance]
+stage = "drafted"
+class = "datamodel"
+doc = "docs/parts/clearance.md"
+code = []
+
+[parts.cli]
+stage = "solidified"
+class = "ux"
+code = ["src/chatddx/cli.py"]
+
+[parts.conftest]
+stage = "solidified"
+class = "machinery"
+code = ["src/chatddx/conftest.py"]
+
+[parts.costs]
+stage = "solidified"
+class = "machinery"
+code = ["dev/src/chatddx_dev/costs"]
+
+[parts.curation]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/curation.md"
+code = ["src/chatddx/curation"]
+
+[parts.deploy]
+stage = "drafted"
+class = "machinery"
+doc = "docs/parts/deploy.md"
+code = ["nix"]
+
+[parts.dev]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/dev.md"
+code = [
+  "dev/agent.sh",
+  "dev/check.sh",
+  "dev/dev-db.sh",
+  "dev/operator.sh",
+  "dev/settings.sh",
+  "dev/stamped.sh",
+  "dev/write.sh",
+  "dev/test",
+  "dev/costs.tsv",
+  "dev/pyproject.toml",
+  "dev/src/chatddx_dev/main.py",
+  "dev/src/chatddx_dev/project.py",
+]
+
+[parts.editors]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/editors.md"
+code = ["frontend/src/lib/editors"]
+
+[parts.factors]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/factors.md"
+code = ["src/chatddx/factors"]
+
+[parts.facts]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/facts.md"
+code = ["src/chatddx/facts"]
+
+[parts.fake_vllm]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/fake_vllm.md"
+code = ["src/chatddx/fake_vllm"]
+
+[parts.identity]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/identity.md"
+code = ["src/chatddx/identity"]
+
+[parts.importers]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/importers.md"
+code = ["src/chatddx/importers"]
+
+[parts.index]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/index.md"
+code = ["dev/src/chatddx_dev/index", "frontend/scripts/facts.mjs"]
+
+[parts.inventory]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/inventory.md"
+code = ["src/chatddx/inventory"]
+
+[parts.ledger]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/ledger.md"
+code = ["src/chatddx/ledger"]
+
+[parts.library]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/library.md"
+code = ["frontend/src/lib/library", "frontend/src/islands/library.ts"]
+
+[parts.locale]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/locale.md"
+code = [
+  "src/chatddx/locale",
+  "frontend/src/lib/locale.ts",
+  "frontend/src/lib/locale.test.ts",
+]
+
+[parts.markers]
+stage = "solidified"
+class = "machinery"
+code = ["src/chatddx/markers.py"]
+
+[parts.paging]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/paging.md"
+code = ["frontend/src/lib/paging"]
+
+[parts.plan]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/plan.md"
+code = ["frontend/src/lib/plan"]
+
+[parts.portal]
+stage = "solidified"
+class = "ux"
+doc = "docs/parts/portal.md"
+code = [
+  "src/chatddx/portal",
+  "frontend/src/lib/components",
+  "frontend/src/lib/scorer",
+  "frontend/src/lib/thread",
+  "frontend/src/lib/drawers.ts",
+  "frontend/src/lib/kinds.ts",
+  "frontend/src/lib/utils.ts",
+  "frontend/src/islands/Home.svelte",
+  "frontend/src/islands/home.ts",
+  "frontend/src/islands/lab.ts",
+  "frontend/src/islands/scoring.ts",
+  "frontend/src/portal.css",
+]
+
+[parts.refcheck]
+stage = "solidified"
+class = "machinery"
+code = ["dev/src/chatddx_dev/refcheck"]
+
+[parts.repl]
+stage = "solidified"
+class = "ux"
+doc = "docs/parts/repl.md"
+code = ["src/chatddx/repl"]
+
+[parts.review]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/review.md"
+code = ["frontend/src/lib/review", "frontend/src/islands/review.ts"]
+
+[parts.rig]
+stage = "solidified"
+class = "datamodel"
+code = ["src/chatddx/rig.py"]
+
+[parts.runner]
+stage = "solidified"
+class = "datamodel"
+code = ["src/chatddx/runner"]
+
+[parts.runs]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/runs.md"
+code = [
+  "frontend/src/lib/runs",
+  "frontend/src/islands/run.ts",
+  "frontend/src/islands/RunLive.svelte",
+]
+
+[parts.schema]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/schema.md"
+code = ["frontend/src/lib/schema"]
+
+[parts.scorers]
+stage = "solidified"
+class = "datamodel"
+code = ["src/chatddx/scorers"]
+
+[parts.scripted]
+stage = "solidified"
+class = "machinery"
+code = ["src/chatddx/scripted"]
+
+[parts.settings]
+stage = "solidified"
+class = "machinery"
+code = ["src/chatddx/settings.py"]
+
+[parts.stamp]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/stamp.md"
+code = ["dev/src/chatddx_dev/stamp"]
+
+[parts.store]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/store.md"
+code = ["src/chatddx/store"]
+
+[parts.test]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/test.md"
+code = ["src/chatddx/test"]
+
+[parts.tools]
+stage = "solidified"
+class = "datamodel"
+doc = "docs/parts/tools.md"
+code = ["src/chatddx/tools"]
+
+[parts.variation]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/variation.md"
+code = ["frontend/src/lib/variation", "frontend/src/islands/Variation.svelte"]
+
+[parts.whoops]
+stage = "solidified"
+class = "machinery"
+code = ["src/chatddx/whoops.py"]
+
+[parts.worker]
+stage = "solidified"
+class = "machinery"
+doc = "docs/parts/worker.md"
+code = ["src/chatddx/worker"]
+
+# What chatddx.settings.STAMPED_FROM holds: the stage from which a thing has its docs/<kind>/<thing>.md stamped.
+[stamped_from]
+comments = "drafted"
+surfaces = "solidified"
+whoopses = "drafted"
+
+[index]
+# Policy: what the indexes leave out of a part's code: code copied in as its makers write it, whose comments aren't the
+# project's.
+left_out = ["frontend/src/lib/components/ui"]
+
+[costs]
+# Policy: the machine class, as MACHINE_CLASS names it, whose costs the docs quote
+# (dev/src/chatddx_dev/costs/__init__.py:write).
+quoted = "container"
+quoted_in = ["AGENTS.md", "docs/parts/dev.md"]

@@ -1,6 +1,5 @@
 import os
 from datetime import timedelta
-from enum import IntEnum
 from pathlib import Path
 
 from psycopg.conninfo import make_conninfo
@@ -27,58 +26,6 @@ ITEMS_PER_RUN = 1000
 ROWS_PER_PAGE = 100
 
 
-class Stage(IntEnum):
-    FELT = 1
-    IMPLIED = 2
-    MENTIONED = 3
-    NAMED = 4
-    ITEMIZED = 5
-    PLANNED = 6
-    DRAFTED = 7
-    SOLIDIFIED = 8
-    CEMENTED = 9
-    PROTECTED = 10
-
-
-STAGES = {
-    "api": Stage.SOLIDIFIED,
-    "bench": Stage.SOLIDIFIED,
-    "catalog": Stage.SOLIDIFIED,
-    "clearance": Stage.DRAFTED,
-    "cli": Stage.SOLIDIFIED,
-    "conftest": Stage.SOLIDIFIED,
-    "curation": Stage.SOLIDIFIED,
-    "factors": Stage.SOLIDIFIED,
-    "facts": Stage.SOLIDIFIED,
-    "fake_vllm": Stage.SOLIDIFIED,
-    "identity": Stage.SOLIDIFIED,
-    "importers": Stage.SOLIDIFIED,
-    "inventory": Stage.SOLIDIFIED,
-    "ledger": Stage.SOLIDIFIED,
-    "locale": Stage.SOLIDIFIED,
-    "markers": Stage.SOLIDIFIED,
-    "portal": Stage.SOLIDIFIED,
-    "refcheck": Stage.SOLIDIFIED,
-    "repl": Stage.SOLIDIFIED,
-    "rig": Stage.SOLIDIFIED,
-    "runner": Stage.SOLIDIFIED,
-    "scorers": Stage.SOLIDIFIED,
-    "scripted": Stage.SOLIDIFIED,
-    "settings": Stage.SOLIDIFIED,
-    "stamp": Stage.SOLIDIFIED,
-    "store": Stage.SOLIDIFIED,
-    "test": Stage.SOLIDIFIED,
-    "tools": Stage.SOLIDIFIED,
-    "whoops": Stage.SOLIDIFIED,
-    "worker": Stage.SOLIDIFIED,
-}
-
-STAMPED_FROM = {
-    "comments": Stage.DRAFTED,
-    "surfaces": Stage.SOLIDIFIED,
-    "whoopses": Stage.DRAFTED,
-}
-
 # Policy: how long a server stopping waits on its open responses, a run's event stream
 # among them, which ends only with the run's job, before it cuts them off.
 SERVE_GRACE = timedelta(seconds=5)
@@ -90,10 +37,6 @@ WORKER_DEADLINE = timedelta(seconds=60)
 # Policy: bounds a worker's threads, and its connections at 1 + 2 per job
 # (src/chatddx/worker/worker.py:Worker._work).
 WORKER_JOBS = 8
-
-# Policy: the machine class, as MACHINE_CLASS names it, whose costs AGENTS.md quotes
-# (src/chatddx/test/costs.py:write).
-COSTS_QUOTED = "container"
 
 
 def host() -> str:
@@ -117,12 +60,3 @@ def portal_assets() -> Path:
 def chromium() -> Path | None:
     value = os.environ.get("CHATDDX_CHROMIUM")
     return Path(value) if value else None
-
-
-def machine_class() -> str | None:
-    return os.environ.get("MACHINE_CLASS") or None
-
-
-def beside() -> int:
-    """How many of check.sh's other stages run beside this one, as it says."""
-    return int(os.environ.get("CHATDDX_BESIDE") or 0)

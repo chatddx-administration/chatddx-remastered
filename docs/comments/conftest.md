@@ -1,6 +1,6 @@
-# Comments in `chatddx.conftest`
+# Comments in `conftest`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/conftest.py`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.conftest]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

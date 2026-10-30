@@ -4,8 +4,8 @@ Open work, each section what would fit in one PR. A section says its fix, what i
 what for; its items say what holds today. "Decided" means the user said so. "Take" is the agent's recommendation and
 still open.
 
-"Ready" can start now, "Waiting" waits for what it names, and "Olof's work" is a clinician's, not a PR. Work a wip plan
-in agents/ tracks is that plan's, not this document's.
+"Ready" can start now, "Waiting" waits for what it names, and "Olof's work" is a clinician's, not a PR. Work a part's
+doc in docs/parts/ tracks is that doc's, not this document's.
 
 ## Contents
 
@@ -415,11 +415,11 @@ Decided: each applied file's sha256 is kept beside its name, and migrating refus
 file differs; a database migrated before that records its checksums on its first run after.
 
 - **Migrations edited in place and stores reloaded** (O2) is open while no store holds data worth keeping. The deploy
-  (`agents/wip-deploy.md`) closes it.
+  (`docs/parts/deploy.md`) closes it.
 
 ### Administering people
 
-A command that changes a person, and a new password that ends the person's sessions. Three of agents/wip-clearance.md's
+A command that changes a person, and a new password that ends the person's sessions. Three of docs/parts/clearance.md's
 ("Before real patient data", 8) would ride along: signing in again, a deactivated person's queued jobs, and
 `People.set_password`'s empty password.
 
@@ -619,7 +619,7 @@ The slots and turns wait for endpoints that are shared and busy; the lost endpoi
 ### Garbage collection
 
 Decided: it waits until storage cost or an erasure calls for it; until then the store keeps everything, as its tiers
-mean it to. Erasing a typed text is agents/wip-clearance.md's ("Before real patient data", 4).
+mean it to. Erasing a typed text is docs/parts/clearance.md's ("Before real patient data", 4).
 
 - Garbage collector for true deletions of non-referenced items.
 

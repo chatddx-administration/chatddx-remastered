@@ -1,6 +1,6 @@
-# Comments in `chatddx.ledger`
+# Comments in `ledger`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/ledger/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.ledger]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

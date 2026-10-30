@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.refcheck`
+# Whoopses and asserts in `refcheck`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/refcheck/`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.refcheck]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

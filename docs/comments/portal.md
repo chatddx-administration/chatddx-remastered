@@ -1,6 +1,6 @@
-# Comments in `chatddx.portal`
+# Comments in `portal`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`
@@ -12,6 +12,65 @@ Written by `chatddx stamp write` from the comments in `src/chatddx/portal/`, sor
 
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
+
+## `frontend/src/islands/Home.svelte`
+
+```
+// Policy: what is out of date isn't offered, as only a researcher can update it.
+```
+
+## `frontend/src/islands/Home.svelte:characters`
+
+```
+// Accommodating for Python, which counts a text's code points where JavaScript counts its
+// UTF-16 units.
+```
+
+## `frontend/src/lib/drawers.ts:remembered`
+
+```
+// Convenience: kept per viewer, and the page works the same when storage is refused.
+```
+
+## `frontend/src/lib/scorer/judging.ts:startingParams`
+
+```
+// Policy: starting params for a judged view: its verdict at the judge's first field that isn't text, and, when the
+// metric takes a most, that field's maximum.
+```
+
+## `frontend/src/lib/scorer/selectors.ts:same`
+
+```
+// Policy: a simple dotted path and the JSON Pointer to the same place pick the same, so either finds its choice.
+```
+
+## `frontend/src/lib/scorer/texts.ts:asked`
+
+```
+// Duplication: As src/chatddx/factors/request.py:compile_request places it, guidance goes where it's inserted, or
+// else after the instructions.
+```
+
+## `frontend/src/lib/scorer/texts.ts:fillText`
+
+```
+// Duplication: src/chatddx/factors/scoring.py:fill_text's "text@1": one text as it is, texts a line each, anything
+// else as JSON.
+```
+
+## `frontend/src/lib/scorer/texts.ts:textOf`
+
+```
+// Duplication: As src/chatddx/factors/request.py:_text keeps a Text, so that a text left as it was compares equal to
+// the one stored.
+```
+
+## `frontend/src/lib/utils.ts:WithoutChildren`
+
+```
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+```
 
 ## `src/chatddx/portal/editors.py:_FORMED`
 

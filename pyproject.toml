@@ -23,12 +23,11 @@ chatddx = "chatddx.cli:main"
 
 [dependency-groups]
 dev = [
-  { include-group = "docs" },
   { include-group = "lint" },
   { include-group = "test" },
+  { include-group = "tooling" },
   { include-group = "typing" },
 ]
-docs = ["griffelib>=2.3.2"]
 lint = ["ruff>=0.16.9"]
 test = [
   "httpx2>=2.13.1",
@@ -36,6 +35,7 @@ test = [
   "pytest>=9.1.1",
   "pytest-xdist>=3.8.0",
 ]
+tooling = ["chatddx-dev"]
 typing = [
   "basedpyright>=1.40.1",
   "types-jsonschema>=4.26.0.20260518",
@@ -46,21 +46,29 @@ requires = ["uv_build>=0.12.20,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.basedpyright]
-include = ["src"]
+include = ["src", "dev/src"]
+extraPaths = ["src", "dev/src"]
+failOnWarnings = true
 reportAny = false
 reportExplicitAny = false
 
 [tool.pytest]
+addopts = ["-p", "chatddx_dev.costs"]
 markers = [
-  "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
   "browser: drive a browser through the portal, skipped unless asked for: pytest -m browser",
+  "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
 ]
 strict_markers = true
-addopts = ["-p", "chatddx.test.costs"]
-testpaths = ["src"]
+testpaths = ["dev/src", "src"]
 
 [tool.ruff.lint]
 extend-select = ["I"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
+
+[tool.uv.workspace]
+members = ["dev"]
+
+[tool.uv.sources]
+chatddx-dev = { workspace = true }

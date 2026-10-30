@@ -1,6 +1,8 @@
-# `chatddx.test`
+# `test`
 
-Written by `chatddx stamp write` from `src/chatddx/test/`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it:
+Written by `chatddx-dev index` from `[parts.test]`'s code in `settings.toml`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it, a language's after another's:
+
+Python:
 
 ```
 ## `<name>` `@<decorator>` `[<type parameters>]` `(<bases>)`
@@ -19,6 +21,7 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
+
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `added_alice` `@pytest.fixture(name="alice")`
@@ -115,14 +118,6 @@ Finds:
 
 `CLINICIAN = "clinician"`
 
-## `command`
-`src/chatddx/test/costs.py:command`
-
-The command pytest ran as, its plugins named by -p and its verbosity left out.
-
-* `args: Sequence[str]`
-* ∟`str`
-
 ## `committing_as_bob` `@pytest.fixture(name="as_bob")`
 `src/chatddx/test/helpers.py:committing_as_bob`
 
@@ -179,60 +174,6 @@ The command pytest ran as, its plugins named by -p and its verbosity left out.
 
 * `template: str`
 * ∟`str`
-
-## `Cost` `@dataclass(frozen=True)`
-`src/chatddx/test/costs.py:Cost`
-
-* `when: str`
-* `machine: str`
-* `seconds: float`
-* `status: int`
-* `beside: int`
-* `commit: str`
-* `command: str`
-
-## `cost`
-`src/chatddx/test/test_costs.py:cost`
-
-* `command: str`
-* `seconds: float`
-* `status: int = 0`
-* `beside: int = 0`
-* ∟`Cost`
-
-## `Cost.read` `@classmethod`
-`src/chatddx/test/costs.py:Cost.read`
-
-* `line: str`
-* ∟`"Cost"`
-
-## `Cost.written`
-`src/chatddx/test/costs.py:Cost.written`
-
-* ∟`str`
-
-## `Costs`
-`src/chatddx/test/costs.py:Costs`
-
-* `command: str`
-* `began: float`
-* `status: int | None`
-
-## `Costs.__init__`
-`src/chatddx/test/costs.py:Costs.__init__`
-
-* `args: Sequence[str]`
-
-## `Costs.pytest_sessionfinish`
-`src/chatddx/test/costs.py:Costs.pytest_sessionfinish`
-
-* `exitstatus: int`
-* ∟`None`
-
-## `Costs.pytest_unconfigure`
-`src/chatddx/test/costs.py:Costs.pytest_unconfigure`
-
-* ∟`None`
 
 ## `create_database`
 `src/chatddx/test/helpers.py:create_database`
@@ -416,21 +357,6 @@ The command pytest ran as, its plugins named by -p and its verbosity left out.
 * `name: str`
 * `said: list[str]`
 
-## `LOG`
-`src/chatddx/test/costs.py:LOG`
-
-`LOG = settings.PROJECT_ROOT / "dev" / "costs.tsv"`
-
-## `logged`
-`src/chatddx/test/costs.py:logged`
-
-Appends a line to the spool, if in a checkout, as told by the log being there.
-
-* `cost: Cost`
-* `spool: Path = SPOOL`
-* `log: Path = LOG`
-* ∟`None`
-
 ## `made`
 `src/chatddx/test/test_budget.py:made`
 
@@ -440,24 +366,10 @@ Appends a line to the spool, if in a checkout, as told by the log being there.
 * `duration: float`
 * ∟`pytest.TestReport`
 
-## `budget.MARGIN`
+## `MARGIN`
 `src/chatddx/test/budget.py:MARGIN`
 
 `MARGIN = 3.0`
-
-## `costs.MARGIN`
-`src/chatddx/test/costs.py:MARGIN`
-
-`MARGIN = 1.5`
-
-## `medians`
-`src/chatddx/test/costs.py:medians`
-
-Each command's median over its RECENT latest passes on the machine, run alone.
-
-* `costs: Iterable[Cost]`
-* `machine: str`
-* ∟`dict[str, float]`
 
 ## `MISTRAL`
 `src/chatddx/test/world.py:MISTRAL`
@@ -526,14 +438,8 @@ Each command's median over its RECENT latest passes on the machine, run alone.
 
 `PASSWORD = "correct horse battery staple"`
 
-## `budget.pytest_configure`
+## `pytest_configure`
 `src/chatddx/test/budget.py:pytest_configure`
-
-* `config: pytest.Config`
-* ∟`None`
-
-## `costs.pytest_configure`
-`src/chatddx/test/costs.py:pytest_configure`
 
 * `config: pytest.Config`
 * ∟`None`
@@ -542,23 +448,6 @@ Each command's median over its RECENT latest passes on the machine, run alone.
 `src/chatddx/test/budget.py:QUICK`
 
 `QUICK = 1 / 8`
-
-## `quoted`
-`src/chatddx/test/costs.py:quoted`
-
-The text, its figures that are off by more than MARGIN made the median.
-
-A figure is a ~<n>s in a list item whose first code span is the command, and only
-what a stamp pending holds as written now is read.
-
-* `text: str`
-* `took: dict[str, float]`
-* ∟`str`
-
-## `QUOTED_IN`
-`src/chatddx/test/costs.py:QUOTED_IN`
-
-`QUOTED_IN = (settings.PROJECT_ROOT / "AGENTS.md",)`
 
 ## `QWEN`
 `src/chatddx/test/world.py:QWEN`
@@ -584,17 +473,6 @@ what a stamp pending holds as written now is read.
 `src/chatddx/test/world.py:QWEN_MODEL`
 
 `QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"`
-
-## `read`
-`src/chatddx/test/costs.py:read`
-
-* `*paths: Path`
-* ∟`list[Cost]`
-
-## `RECENT`
-`src/chatddx/test/costs.py:RECENT`
-
-`RECENT = 5`
 
 ## `registry` `@pytest.fixture(name="reg")`
 `src/chatddx/test/helpers.py:registry`
@@ -632,15 +510,6 @@ what a stamp pending holds as written now is read.
 
 `SHIPPED = "chatddx.scorers.metrics:score"`
 
-## `show`
-`src/chatddx/test/costs.py:show`
-
-Prints each command's median per machine, as write would quote it.
-
-* `spool: Path = SPOOL`
-* `log: Path = LOG`
-* ∟`None`
-
 ## `skeleton`
 `src/chatddx/test/helpers.py:skeleton`
 
@@ -652,11 +521,6 @@ Prints each command's median per machine, as write would quote it.
 `src/chatddx/test/test_the_test_world.py:SKIPPED`
 
 `SKIPPED = […]`
-
-## `SPOOL`
-`src/chatddx/test/costs.py:SPOOL`
-
-`SPOOL = settings.PROJECT_ROOT / "dev" / "state" / "costs-spool.tsv"`
 
 ## `SRC`
 `src/chatddx/test/test_tests.py:SRC`
@@ -689,31 +553,6 @@ Prints each command's median per machine, as write would quote it.
 
 ## `test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
 `src/chatddx/test/test_sample.py:test_a_case_s_notes_keep_their_author_comment_and_answer_not_a_language`
-
-* ∟`None`
-
-## `test_a_command_is_as_typed_its_plugins_left_out`
-`src/chatddx/test/test_costs.py:test_a_command_is_as_typed_its_plugins_left_out`
-
-* ∟`None`
-
-## `test_a_command_is_as_typed_its_verbosity_left_out`
-`src/chatddx/test/test_costs.py:test_a_command_is_as_typed_its_verbosity_left_out`
-
-* ∟`None`
-
-## `test_a_cost_reads_as_it_is_written`
-`src/chatddx/test/test_costs.py:test_a_cost_reads_as_it_is_written`
-
-* ∟`None`
-
-## `test_a_figure_a_stamp_pending_holds_is_rewritten_as_written_now`
-`src/chatddx/test/test_costs.py:test_a_figure_a_stamp_pending_holds_is_rewritten_as_written_now`
-
-* ∟`None`
-
-## `test_a_figure_is_rewritten_only_once_far_enough_off`
-`src/chatddx/test/test_costs.py:test_a_figure_is_rewritten_only_once_far_enough_off`
 
 * ∟`None`
 
@@ -780,11 +619,6 @@ Prints each command's median per machine, as write would quote it.
 
 ## `test_kompismoln_s_sources_are_the_sample_s`
 `src/chatddx/test/test_sample.py:test_kompismoln_s_sources_are_the_sample_s`
-
-* ∟`None`
-
-## `test_medians_weigh_recent_passes_run_alone_on_the_machine`
-`src/chatddx/test/test_costs.py:test_medians_weigh_recent_passes_run_alone_on_the_machine`
 
 * ∟`None`
 
@@ -870,13 +704,6 @@ Prints each command's median per machine, as write would quote it.
 * `path: Path`
 * ∟`None`
 
-## `test_write_folds_the_spool_and_rewrites_the_figures`
-`src/chatddx/test/test_costs.py:test_write_folds_the_spool_and_rewrites_the_figures`
-
-* `tmp_path: Path`
-* `capsys: pytest.CaptureFixture[str]`
-* ∟`None`
-
 ## `TOOL_ANSWER`
 `src/chatddx/test/world.py:TOOL_ANSWER`
 
@@ -929,18 +756,6 @@ Prints each command's median per machine, as write would quote it.
 `src/chatddx/test/world.py:WORLDS`
 
 `WORLDS = settings.PROJECT_ROOT / "worlds"`
-
-## `write`
-`src/chatddx/test/costs.py:write`
-
-Folds the spool into the log, and rewrites the figures quoted off the log.
-
-The figures are those of settings.COSTS_QUOTED's machine; it says what it wrote.
-
-* `spool: Path = SPOOL`
-* `log: Path = LOG`
-* `quoted_in: Sequence[Path] = QUOTED_IN`
-* ∟`None`
 
 ## `ZERO`
 `src/chatddx/test/helpers.py:ZERO`

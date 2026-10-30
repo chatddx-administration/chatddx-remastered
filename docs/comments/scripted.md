@@ -1,6 +1,6 @@
-# Comments in `chatddx.scripted`
+# Comments in `scripted`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/scripted/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.scripted]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

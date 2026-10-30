@@ -1,6 +1,6 @@
-# Comments in `chatddx.fake_vllm`
+# Comments in `fake_vllm`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/fake_vllm/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.fake_vllm]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

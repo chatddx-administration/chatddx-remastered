@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   OPERATOR="$BATS_TEST_DIRNAME/../operator.sh"
   cd "$BATS_TEST_TMPDIR"
@@ -16,9 +18,11 @@ setup() {
   git init -q --bare -b main origin.git
   git clone -q origin.git repo 2>/dev/null
   cd repo
-  printf '#!/bin/sh\necho "$@" >>"$CHECKED"\nexit "${CHECK_EXIT:-0}"\n' >check.sh
-  chmod +x check.sh
-  git add check.sh
+  mkdir dev
+  printf '#!/bin/sh\necho "$@" >>"$CHECKED"\nexit "${CHECK_EXIT:-0}"\n' >dev/check.sh
+  chmod +x dev/check.sh
+  cp "$BATS_TEST_DIRNAME/../../settings.toml" .
+  git add dev/check.sh settings.toml
   git commit -q -m init
   git push -q origin main
   git switch -q -c feat
@@ -42,6 +46,8 @@ committed() {
   [ "$(subject)" = stamp ]
   [ "$output" = "$(git rev-parse --short HEAD)" ]
   [ "$(git rev-parse origin/feat)" = "$(git rev-parse HEAD)" ]
+  [ "$(git rev-parse refs/stamped/feat)" = "$(git rev-parse HEAD)" ]
+  [ "$(git ls-remote origin refs/stamped/feat | cut -f1)" = "$(git rev-parse HEAD)" ]
   [ -z "$(git status --porcelain)" ]
   [ "$(cat "$CHECKED")" = "openapi locale pending" ]
 }
@@ -58,6 +64,23 @@ committed() {
   [ "$status" -eq 0 ]
   [ "$(subject)" = work ]
   [ "$(git rev-parse origin/feat)" = "$(git rev-parse HEAD)" ]
+  [ "$(git ls-remote origin refs/stamped/feat | cut -f1)" = "$(git rev-parse HEAD)" ]
+}
+
+@test "stamp moves what is stamped along" {
+  "$OPERATOR" stamp >/dev/null
+  committed more
+  run "$OPERATOR" stamp
+  [ "$status" -eq 0 ]
+  [ "$(git ls-remote origin refs/stamped/feat | cut -f1)" = "$(git rev-parse HEAD)" ]
+}
+
+@test "fetch fetches what is stamped" {
+  "$OPERATOR" stamp >/dev/null
+  git update-ref -d refs/stamped/feat
+  run "$OPERATOR" fetch
+  [ "$status" -eq 0 ]
+  [ "$(git rev-parse refs/stamped/feat)" = "$(git rev-parse HEAD)" ]
 }
 
 @test "stamp commits nothing when a check fails" {
@@ -129,7 +152,9 @@ committed() {
   [ -e b ]
   [ "$(git rev-parse origin/main)" = "$(git rev-parse main)" ]
   [ -z "$(git ls-remote origin feat)" ]
-  ! git rev-parse --verify -q refs/heads/feat
+  [ -z "$(git ls-remote origin refs/stamped/feat)" ]
+  run ! git rev-parse --verify -q refs/heads/feat
+  run ! git rev-parse --verify -q refs/stamped/feat
 }
 
 @test "merge switches to the branch named" {

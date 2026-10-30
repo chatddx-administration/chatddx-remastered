@@ -10,8 +10,10 @@ git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 cd "$(git rev-parse --show-toplevel)"
 
 MAIN=${MAIN:-main}
-REFUSED_AT_STAMP=(openapi locale pending)
-TOLD_AT_FETCH=(pending)
+# shellcheck source=dev/settings.sh
+. "$(dirname "${BASH_SOURCE[0]}")/settings.sh"
+setting REFUSED_AT_STAMP operator.refused_at_stamp
+setting TOLD_AT_FETCH operator.told_at_fetch
 
 unmerged() {
   die "stamped but didn't merge: $*"
@@ -19,14 +21,15 @@ unmerged() {
 
 fetch() {
   local branch=${1:-$(git branch --show-current)}
-  as.sh "$CHATDDX_DEV" git fetch -q origin
+  as.sh "$CHATDDX_DEV" git fetch -q --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/stamped/*:refs/stamped/*'
   git switch -q "$branch"
   git merge --ff-only -q "origin/$branch"
-  ./check.sh "${TOLD_AT_FETCH[@]}" || true
+  ./dev/check.sh "${TOLD_AT_FETCH[@]}" || true
 }
 
+# Policy: refs/stamped/<branch> marks what was stamped, for dev/stamped.sh to stamp against.
 stamp() {
-  local branch
+  local branch was
   branch=$(git branch --show-current)
   [[ -n ${CHATDDX_DEV:-} ]] || die "CHATDDX_DEV is unset, so as.sh has no one to push as"
   command -v as.sh >/dev/null || die "no as.sh on PATH to push with"
@@ -35,16 +38,18 @@ stamp() {
   [[ -n $branch ]] || die "HEAD is detached; switch to a branch"
   [[ $branch != "$MAIN" ]] || die "on $MAIN; switch to a branch"
 
-  ./check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
+  ./dev/check.sh "${REFUSED_AT_STAMP[@]}" >&2 || die "nothing was committed"
   git add -A
   git diff --cached --quiet || git commit -q -m "${1:-stamp}"
-  [[ $(git rev-parse HEAD) == "$(git rev-parse --verify -q '@{u}')" ]] ||
-    as.sh "$CHATDDX_DEV" git push -q -u origin HEAD
+  was=$(git rev-parse --verify -q "refs/stamped/$branch") || true
+  git update-ref "refs/stamped/$branch" HEAD
+  [[ $(git rev-parse HEAD) == "$(git rev-parse --verify -q '@{u}')" && $was == "$(git rev-parse HEAD)" ]] ||
+    as.sh "$CHATDDX_DEV" git push -q -u origin HEAD "+refs/stamped/$branch"
   git rev-parse --short HEAD
 }
 
 merge() {
-  local branch main_sha branch_sha here wt ref msgfile new
+  local branch main_sha branch_sha here wt ref msgfile new gone=()
   branch=${1:-$(git branch --show-current)}
 
   here=$(git rev-parse --show-toplevel)
@@ -67,6 +72,7 @@ merge() {
   [[ $main_sha != "$branch_sha" ]] || unmerged "'$branch' has no commits beyond '$MAIN'"
 
   msgfile=$(mktemp)
+  # shellcheck disable=SC2064
   trap "rm -f -- '$msgfile'" EXIT
   git log --reverse --format='%B' "$main_sha..$branch_sha" >"$msgfile"
 
@@ -91,9 +97,12 @@ merge() {
   git checkout -q "$MAIN"
   as.sh "$CHATDDX_DEV" git push -q origin "$MAIN"
   git branch -q -D "$branch"
+  git update-ref -d "refs/stamped/$branch"
+  gone=("refs/stamped/$branch")
   if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
-    as.sh "$CHATDDX_DEV" git push -q origin --delete "$branch"
+    gone+=("$branch")
   fi
+  as.sh "$CHATDDX_DEV" git push -q origin --delete "${gone[@]}"
   git rev-parse --short "$MAIN"
 }
 

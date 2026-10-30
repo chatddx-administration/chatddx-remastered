@@ -1,0 +1,43 @@
+2026-10-30T19:01:57Z 59b2b8a ./dev/check.sh python-tests
+• python-tests
+============================= test session starts ==============================
+platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/chatddx-remastered
+configfile: pyproject.toml
+testpaths: dev/src, src
+plugins: xdist-3.8.0, anyio-4.15.1
+created: 4/4 workers
+4 workers [1160 items]
+
+........................................................................ [  6%]
+........................................................................ [ 12%]
+........................................................................ [ 18%]
+........................................................................ [ 24%]
+........................................................................ [ 31%]
+.......................................................sssssssssssssssss [ 37%]
+sssssssssss............................................................. [ 43%]
+........................................................................ [ 49%]
+........................................................................ [ 55%]
+........................................................................ [ 62%]
+........................................................................ [ 68%]
+........................................................................ [ 74%]
+........................................................................ [ 80%]
+........................................................................ [ 86%]
+........................................................................ [ 93%]
+........................................................................ [ 99%]
+........                                                                 [100%]
+================================= slow budget ==================================
+564.0 s in 1132 tests; slow from 0.508 s on
+the quick run takes 51.3 s of it, 9%
+set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 2.1 s, curated 7.7 s, plan 1.1 s, described 1.5 s, loaded 1.8 s, ran 9.2 s, sampled 10.1 s, pytestconfig 0.0 s, parsed 1.9 s, each 0.3 s
+waited for, made ahead: db 115.6 s
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_facts_are_its_script_s_and_its_markup_s_at_their_own_lines (2.829 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_facts_are_its_top_level_names_its_class_s_members_and_comments (2.873 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (2.117 s)
+unmark: src/chatddx/bench/test/test_writes.py::test_a_person_writes_expectations_and_hears_what_the_lints_say (0.096 s)
+unmark: src/chatddx/repl/test/test_choosing.py::test_save_keeps_the_variation_as_a_configuration_of_one_s_own (0.142 s)
+unmark: src/chatddx/repl/test/test_inspecting.py::test_show_says_what_is_set_and_what_the_configuration_has (0.137 s)
+unmark: src/chatddx/repl/test/test_scoring.py::test_take_names_the_cases_shared_by_several_owners (0.090 s)
+unmark: src/chatddx/runner/test/test_run.py::test_rounds_run_on_the_workers_above_concurrency_1 (0.156 s)
+unmark: src/chatddx/store/test/test_catalog.py::test_languages_are_kept_on_digests (0.154 s)
+================= 1132 passed, 28 skipped in 228.06s (0:03:48) =================

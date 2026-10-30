@@ -129,20 +129,14 @@
           text = builtins.readFile ./dev/dev-db.sh;
         };
 
-      # Duplication: check.sh's inputs reads check.inputs likewise.
       inputs =
-        let
-          lines = lib.filter (line: line != "" && !lib.hasPrefix "#" line) (
-            lib.splitString "\n" (builtins.readFile ./check.inputs)
-          );
-          words = map (line: lib.filter (word: word != "") (lib.splitString " " line)) lines;
-        in
-        stage: map (path: ./. + "/${path}") (lib.concatMap lib.tail (lib.filter (ws: lib.head ws == stage) words));
+        named:
+        map (path: ./. + "/${path}") (builtins.fromTOML (builtins.readFile ./settings.toml)).checks.inputs.${named};
 
-      # Optimization: a stage of check.sh sees only the files check.inputs names for it, so that
+      # Optimization: a check of dev/check.sh sees only the files settings.toml names for it, so that
       # nix runs it again only when one of them changes.
       check =
-        system: label: stages: attrs:
+        system: label: names: attrs:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
@@ -151,11 +145,18 @@
             name = "${name}-check-${label}";
             src = lib.fileset.toSource {
               root = ./.;
-              fileset = lib.fileset.unions ([ ./check.sh ] ++ lib.concatMap inputs stages);
+              fileset = lib.fileset.unions (
+                [
+                  ./dev/check.sh
+                  ./dev/settings.sh
+                  ./dev/stamped.sh
+                ]
+                ++ lib.concatMap inputs names
+              );
             };
             buildPhase = ''
               runHook preBuild
-              bash check.sh ${lib.concatStringsSep " " stages}
+              bash dev/check.sh ${lib.concatStringsSep " " names}
               runHook postBuild
             '';
             installPhase = "touch $out";
@@ -167,7 +168,8 @@
     {
 
       packages = forAllSystems (system: {
-        default = pythonSets.${system}.mkVirtualEnv "chatddx-env" workspace.deps.default;
+        # Policy: chatddx alone, as a host runs it; chatddx-dev is the project's tooling.
+        default = pythonSets.${system}.mkVirtualEnv "chatddx-env" { chatddx = [ ]; };
         frontend = frontend system;
       });
 
@@ -197,14 +199,22 @@
                 '';
               };
 
-          # Compromise: check.sh's browser stage isn't checked here, for the browser
+          # Compromise: dev/check.sh's browser check isn't run here, for the browser
           # it starts.
           package =
-            check system "package" [ "openapi" "stamps" "types" "tests" ]
+            check system "package" [ "openapi" "index" "stamps" "python-lint" "python-tests" ]
               {
+                # Dependency: index reads the frontend's code with frontend/scripts/facts.mjs, which
+                # takes TypeScript's and Svelte's parsers from frontend/node_modules.
+                pnpmRoot = "frontend";
+                inherit (frontend system) pnpmDeps;
                 nativeBuildInputs = [
                   (devEnv system)
                   (dev-db system)
+                  pkgs.shfmt
+                  pkgs.nodejs_22
+                  pkgs.pnpm
+                  pkgs.pnpmConfigHook
                 ];
                 # Accommodating for stdenv's SSL_CERT_FILE, a file that isn't there, which httpx2
                 # loads for plain HTTP too.
@@ -228,6 +238,8 @@
                   pkgs.nodejs_22
                   pkgs.pnpm
                   pkgs.pnpmConfigHook
+                  pkgs.shfmt
+                  pkgs.taplo
                 ];
                 preBuild = ''
                   unset PYTHONPATH
@@ -240,6 +252,7 @@
               {
                 nativeBuildInputs = [
                   pkgs.bats
+                  pkgs.shellcheck
                   pkgs.git
                   pkgs.python3
                 ];
@@ -293,6 +306,9 @@
               pkgs.nodejs_22
               pkgs.pnpm
               pkgs.bats
+              pkgs.shellcheck
+              pkgs.shfmt
+              pkgs.taplo
             ];
 
             env = {

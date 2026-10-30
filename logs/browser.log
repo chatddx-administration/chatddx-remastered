@@ -1,4 +1,4 @@
-2026-10-30T01:10:03Z 3279ebd ./check.sh browser
+2026-10-30T19:02:30Z 59b2b8a ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,7 +9,7 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [152.1ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [407.3ms]
 vite v8.3.4 building client environment for production...
 transforming...
 ✓ 817 modules transformed.
@@ -45,15 +45,15 @@ dist/assets/review-VzMWQ8FN.js                                       43.06 kB �
 dist/assets/locale-vZUH9oIN.js                                       56.49 kB │ gzip: 21.75 kB
 dist/assets/dist-q5UgEd9p.js                                         67.43 kB │ gzip: 21.03 kB
 
-✓ built in 2.50s
+✓ built in 5.75s
 ============================= test session starts ==============================
 platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
-testpaths: src
+testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
-collected 1148 items / 1120 deselected / 28 selected
+collected 1160 items / 1132 deselected / 28 selected
 
 src/chatddx/portal/test/test_browser.py ............................     [100%]
 
-=============== 28 passed, 1120 deselected in 121.66s (0:02:01) ================
+=============== 28 passed, 1132 deselected in 183.56s (0:03:03) ================

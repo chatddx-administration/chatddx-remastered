@@ -1,0 +1,3 @@
+# Accommodating for bats: a test runs in a subshell of its own, with errexit, and its stubs are
+# written with what they expand when they run.
+disable=SC2030,SC2031,SC2164,SC2016

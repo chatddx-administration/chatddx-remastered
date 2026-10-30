@@ -1,6 +1,8 @@
-# `chatddx.locale`
+# `locale`
 
-Written by `chatddx stamp write` from `src/chatddx/locale/`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it:
+Written by `chatddx-dev index` from `[parts.locale]`'s code in `settings.toml`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it, a language's after another's:
+
+Python:
 
 ```
 ## `<name>` `@<decorator>` `[<type parameters>]` `(<bases>)`
@@ -19,6 +21,23 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
+
+TypeScript and Svelte:
+
+```
+## `<name>` `async` `<<type parameters>>` `<extends or implements>` `<props' type>`
+`<file>:<qualified name>`
+
+<its JSDoc>
+
+* `<parameter, field or prop>: <type> = <default>`
+* ∟`<return type>`
+```
+
+- A module's entries are what it exports, a class's public members among them; a component's is named after its file, its props its bullets, followed by what its module script exports, and its heading gives its props' type only when the props don't spell it out.
+- A type, an interface, an enum or a one-line constant is its declaration instead of bullets, fenced as TypeScript once it takes more than a line; a longer constant is its name, type and value.
+- A value that takes more than a line or 60 characters is cut to `…`, a call to its callee's `(…)`.
+
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
 ## `catalogs`
@@ -240,3 +259,88 @@ Raises:
 
 * `tags: Iterable[str]`
 * ∟`None`
+
+## `Catalog`
+`frontend/src/lib/locale.ts:Catalog`
+
+`type Catalog = { tag: string; messages: Record<string, string | string[]> };`
+
+## `displayLanguage`
+`frontend/src/lib/locale.ts:displayLanguage`
+
+* `tag: string`
+* ∟`string`
+
+## `displayList`
+`frontend/src/lib/locale.ts:displayList`
+
+* `items: string[]`
+* `type: "conjunction" | "disjunction" = "conjunction"`
+* ∟`string`
+
+## `localized`
+`frontend/src/lib/locale.ts:localized`
+
+* `coded: Coded`
+* ∟`string`
+
+## `refusal`
+`frontend/src/lib/locale.ts:refusal`
+
+* `detail: string`
+* `wording: string | string[]`
+* `params: Given`
+* ∟`string`
+
+## `speaking`
+`frontend/src/lib/locale.ts:speaking`
+
+* `given: Catalog`
+* ∟`void`
+
+## `t`
+`frontend/src/lib/locale.ts:t`
+
+* `message: string`
+* `given: Given = {}`
+* ∟`string`
+
+## `th`
+`frontend/src/lib/locale.ts:th`
+
+* `message: string`
+* `given: Given = {}`
+* ∟`string`
+
+## `tn`
+`frontend/src/lib/locale.ts:tn`
+
+* `singular: string`
+* `plural: string`
+* `n: number`
+* `given: Given = {}`
+* ∟`string`
+
+## `tnp`
+`frontend/src/lib/locale.ts:tnp`
+
+* `context: string`
+* `singular: string`
+* `plural: string`
+* `n: number`
+* `given: Given = {}`
+* ∟`string`
+
+## `tp`
+`frontend/src/lib/locale.ts:tp`
+
+* `context: string`
+* `message: string`
+* `given: Given = {}`
+* ∟`string`
+
+## `whoops`
+`frontend/src/lib/locale.ts:whoops`
+
+* `message: string`
+* ∟`string`

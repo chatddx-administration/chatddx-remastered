@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.bench`
+# Whoopses and asserts in `bench`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/bench/`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.bench]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

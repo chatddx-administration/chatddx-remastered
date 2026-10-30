@@ -7,13 +7,12 @@ STATE=dev/state
 STARTED=$STATE/session-start
 TURN=$STATE/turn-start
 REFUSED=$STATE/refused
-CHECKED_AT_SESSION_START=(openapi stamps locale pending format types frontend docs)
-CHECKED_AT_HAND_OVER=(format types frontend docs dev)
-# Policy: checked after the others, each alone, so that what they take counts towards
-# AGENTS.md's figures (src/chatddx/test/costs.py:medians).
-TIMED_AT_HAND_OVER=(tests browser)
-REFUSED_AT_TURN_START=(openapi locale)
-TOLD_AT_TURN_START=(pending format types frontend)
+. dev/settings.sh
+setting CHECKED_AT_SESSION_START agent.checked_at_session_start
+setting CHECKED_AT_HAND_OVER agent.checked_at_hand_over
+setting TIMED_AT_HAND_OVER agent.timed_at_hand_over
+setting REFUSED_AT_TURN_START agent.refused_at_turn_start
+setting TOLD_AT_TURN_START agent.told_at_turn_start
 
 # Heads-up: the hooks alone set it from stdin; nounset needs it set for field elsewhere.
 event=""
@@ -46,6 +45,7 @@ session-start() {
   resume | clear | compact) ;;
   *) state+=(fresh) ;;
   esac
+  ! remote || fetched || true
   if remote && ! provisioned; then
     state+=(unprovisioned refused)
   elif [[ ${state[*]} == fresh ]] && ! session-checked; then
@@ -86,6 +86,9 @@ provision() {
   pnpm --dir frontend install --frozen-lockfile
   pnpm --dir frontend build
   command -v bats >/dev/null || npm install --global --silent bats@1.13.0
+  command -v shellcheck >/dev/null || uv tool install --quiet shellcheck-py==0.10.0.1
+  command -v shfmt >/dev/null || uv tool install --quiet shfmt-py==4.2.0
+  command -v taplo >/dev/null || uv tool install --quiet taplo==0.9.3
   [[ -z ${CLAUDE_ENV_FILE:-} ]] || cat >>"$CLAUDE_ENV_FILE" <<ENV
 set -a
 . "$PWD/.env-container"
@@ -174,9 +177,15 @@ supplied() {
   echo "${BASH_REMATCH[1]}"
 }
 
+# Policy: refs/stamped/* comes along, as ./dev/operator.sh stamp pushes it, for what dev/stamped.sh
+# tells is stamped.
+fetched() {
+  git fetch --quiet --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/stamped/*:refs/stamped/*' 2>/dev/null
+}
+
 moved() {
   local sha branch
-  git fetch --quiet origin 2>/dev/null || true
+  fetched || true
   sha="$(git rev-parse --verify --quiet "$1^{commit}")" || {
     refuse "$1, the commit the prompt starts at, which isn't to be found"
     return 1
@@ -197,7 +206,7 @@ synced() {
   local branch upstream
   branch="$(git symbolic-ref --quiet --short HEAD)" || return 0
   upstream="origin/$branch"
-  git fetch --quiet --prune origin 2>/dev/null || return 0
+  fetched || return 0
   if ! git rev-parse --verify --quiet "$upstream" >/dev/null || git merge-base --is-ancestor "$upstream" HEAD; then
     return 0
   fi
@@ -227,14 +236,14 @@ pushed() {
 }
 
 turn-checked() {
-  local refusing=() telling=() stage
+  local refusing=() telling=() check
   checked "${REFUSED_AT_TURN_START[@]}" "${TOLD_AT_TURN_START[@]}"
   ((${#failed[@]})) || return 0
-  for stage in "${failed[@]}"; do
-    if [[ " ${REFUSED_AT_TURN_START[*]} " == *" $stage "* ]]; then
-      refusing+=("$stage")
+  for check in "${failed[@]}"; do
+    if [[ " ${REFUSED_AT_TURN_START[*]} " == *" $check "* ]]; then
+      refusing+=("$check")
     else
-      telling+=("$stage")
+      telling+=("$check")
     fi
   done
   ((${#refusing[@]} == 0)) || refuse "$(named "${refusing[@]}")" details
@@ -250,7 +259,7 @@ refuse() {
 checked() {
   local line
   failed=()
-  said="$(./check.sh "$@" 2>&1)" && return
+  said="$(./dev/check.sh "$@" 2>&1)" && return
   line="$(grep '^• failed: ' <<<"$said" | tail -n 1)" || true
   if [[ -n $line ]]; then
     read -ra failed <<<"${line#• failed: }"
@@ -264,19 +273,20 @@ sections() {
 }
 
 named() {
-  local stage names=()
-  for stage in "$@"; do
-    case $stage in
+  local check names=()
+  for check in "$@"; do
+    case $check in
     openapi) names+=("openapi out of sync") ;;
+    index) names+=("indexes behind the code") ;;
     stamps) names+=("stamps out of sync") ;;
     locale) names+=("locale out of sync") ;;
     pending) names+=("pending stamps or untranslated messages") ;;
     format) names+=("formatting errors") ;;
-    types) names+=("lint or type errors") ;;
+    python-lint) names+=("Python lint or type errors") ;;
     frontend) names+=("frontend type or test errors") ;;
     docs) names+=("broken references") ;;
-    dev) names+=("failing tests of dev/") ;;
-    tests) names+=("failing tests") ;;
+    dev) names+=("shell lint errors or failing tests of dev/") ;;
+    python-tests) names+=("failing Python tests") ;;
     browser) names+=("failing browser tests") ;;
     esac
   done
@@ -291,42 +301,18 @@ turn-end() {
   [[ $(field stop_hook_active) != true ]] || again=yes
   [[ ! -e $REFUSED ]] || return 0
   start="$(cat "$TURN" 2>/dev/null)" ||
-    ended "turn-end has no commit the turn started at to stamp against: run ./dev/agent.sh turn-start first."
-  start="$(carried "$start")"
+    ended "turn-end has no commit the turn started at: run ./dev/agent.sh turn-start first."
   [[ $(git rev-parse HEAD) != "$start" || -n $(git status --porcelain) ]] || return 0
   before="$(tree)"
-  step ./write.sh "$start" ||
+  step ./dev/write.sh ||
     ended "$stepped fails, as below: fix it before you end the turn, or tell the user why you can't." "$said"
   untranslated || [[ -n $again ]] ||
     ended "Translate the messages left untranslated before you end the turn:" "$said"
   if [[ $(tree) != "$before" ]]; then
-    step git add --all && step git commit --quiet -m turn-end ||
+    { step git add --all && step git commit --quiet -m turn-end; } ||
       ended "$stepped fails, as below: see to it, and commit and push what turn-end wrote." "$said"
   fi
   pushed || ended "git push fails, as below: see to it, and push the branch." "$said"
-}
-
-# Policy: a rebase in the turn carries the commit the turn started at along to what the
-# rebase made of it, as the branch's reflog tells, so that what the rebase brought in, such
-# as main's stamps already signed, isn't stamped again as the turn's.
-carried() {
-  local start branch next
-  start="$(git rev-parse --verify --quiet "$1^{commit}")" || {
-    echo "$1"
-    return
-  }
-  branch="$(git symbolic-ref --quiet --short HEAD)" || {
-    echo "$start"
-    return
-  }
-  while ! git merge-base --is-ancestor "$start" HEAD 2>/dev/null; do
-    next="$(git reflog show --format='%H %gs' "refs/heads/$branch" -- 2>/dev/null |
-      awk -v start="$start" 'finished && $1 == start { print made; exit }
-        { finished = $2 == "rebase" && $3 == "(finish):"; made = $1 }')"
-    [[ -n $next ]] || break
-    start=$next
-  done
-  echo "$start"
 }
 
 ended() {
@@ -356,16 +342,12 @@ tree() {
 }
 
 hand-over() {
-  local start again="fix it and run ./dev/agent.sh hand-over again." budget stage all told
+  local again="fix it and run ./dev/agent.sh hand-over again." budget check all told
   if [[ -e $REFUSED ]]; then
     echo "Work is refused this turn, so nothing is handed over: tell the user so."
     return
-  elif ! start="$(cat "$TURN" 2>/dev/null)"; then
-    echo "hand-over has no commit the turn started at to stamp against: run ./dev/agent.sh turn-start first."
-    return
   fi
-  start="$(carried "$start")"
-  if ! step ./write.sh "$start"; then
+  if ! step ./dev/write.sh; then
     printf '%s\n' "$stepped fails, as below: $again" "$said"
     return
   fi
@@ -380,8 +362,8 @@ hand-over() {
   fi
   checked "${CHECKED_AT_HAND_OVER[@]}"
   all=("${failed[@]}") told="$said"
-  for stage in "${TIMED_AT_HAND_OVER[@]}"; do
-    checked "$stage"
+  for check in "${TIMED_AT_HAND_OVER[@]}"; do
+    checked "$check"
     all+=("${failed[@]}") told+=$'\n'"$said"
   done
   failed=("${all[@]}") said="$told"
@@ -394,11 +376,11 @@ hand-over() {
   fi
   if ((${#failed[@]})); then
     echo "Handed over with $(named "${failed[@]}"), logged in logs/ and pushed:"
-    for stage in "${failed[@]}"; do
-      echo "logs/$stage.log:"
-      grep -E '^(FAILED|ERROR) ' "logs/$stage.log" || tail -n 5 "logs/$stage.log"
+    for check in "${failed[@]}"; do
+      echo "logs/$check.log:"
+      grep -E '^(FAILED|ERROR) ' "logs/$check.log" || tail -n 5 "logs/$check.log"
     done
-    echo "If it's in what this session changed and fails again alone (./check.sh <stage>), fix it and run" \
+    echo "If it's in what this session changed and fails again alone (./dev/check.sh <check>), fix it and run" \
       "./dev/agent.sh hand-over again; else, or once fixing it keeps growing, tell the user so and wait for what they say."
   # Policy: the budget is told only once all pass, lest it be read as part of a failure.
   elif [[ -n $budget ]]; then
@@ -406,7 +388,7 @@ hand-over() {
   fi
 }
 
-# Duplication: write.sh's move of the check logs.
+# Duplication: dev/write.sh's move of the check logs.
 # Accommodating for nixpkgs' non-interactive bash, which lacks compgen.
 moved_logs() {
   local logs

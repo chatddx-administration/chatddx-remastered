@@ -1,6 +1,6 @@
-# Comments in `chatddx.factors`
+# Comments in `factors`
 
-Written by `chatddx stamp write` from the comments in `src/chatddx/factors/`, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the comments in `[parts.factors]`'s code in `settings.toml`, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in or right above>`

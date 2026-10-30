@@ -1,6 +1,6 @@
-# Whoopses and asserts in `chatddx.factors`
+# Whoopses and asserts in `factors`
 
-Written by `chatddx stamp write` from the `raise Whoops` and `assert` statements in `src/chatddx/factors/`, its tests left out, sorted by file and then by name whatever its case:
+Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements in `[parts.factors]`'s code in `settings.toml`, its tests left out, sorted by file and then by name whatever its case:
 
 ````
 ## `<file>:<the name it is in>`

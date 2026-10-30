@@ -1,150 +1,73 @@
 # Agent instructions
 
-This document contains project-wide instructions for agents.
-
 ## Environment
 
-- Hooks should have set you up or told you why they didn't, report friction, poor messaging and surprises.
-- Project-wide settings are in `chatddx.settings`.
-- Archeology is not allowed unless told otherwise, the environment given has all you need
-- That pkill -f pattern might match your own shell
+- Hooks set you up or tell you why they didn't: report friction, poor messaging and surprises.
+- `docs/parts/dev.md` breaks down every check, what writes what and the hooks; `settings.toml` holds the project-wide
+  settings.
+- Archeology is not allowed unless told otherwise: the environment given has all you need.
+- A `pkill -f` pattern might match your own shell.
+
+## Checks
+
+- `./dev/check.sh [check]...` runs the checks named, or all of them, and logs each to `dev/state/logs/<check>.log`.
+- `./dev/write.sh [write]...` writes what follows from the code, as the check of its name checks it; `turn-end` runs all
+  of them for you.
+- `pytest -m 'not slow'` is the quick run ~43s.
+- `pnpm --dir frontend build` before `pytest -m browser`, if the frontend changed.
+
+A `~<n>s` is what time a command takes in the cloud container.
 
 ## Session
 
-Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`.
+Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`. It says nothing on success, or what for
+you to do, and exits 0 but for `turn-end`, which exits 2 on failure.
 
 When asked to hand over:
 
 1. In the files this session has touched, remove all comments and docstrings that don't pass "Comments" and
    "Docstrings", pre-existing included.
-2. Run `./dev/agent.sh hand-over` to:
-   - commit and push
-   - run all checks
-   - commit and push logs in `logs/`
+2. Run `./dev/agent.sh hand-over`, which commits and pushes, runs the checks, and commits and pushes their logs.
 3. Should a check fail for something this session didn't change, or that doesn't fail again alone, push logs and await
    further instructions; likewise once fixing it keeps growing.
 
 When asked to rebase onto main, a push of the branch with `--force-with-lease` is implied, which `turn-end` and
 `hand-over` make when nothing but the branch's commits before the rebase is in the way; never merge those back in.
 
-All `./dev/agent.sh` commands are silent on success or print instructions for you to act on. All `./dev/agent.sh` exits
-are 0 except `turn-end`, which exits 2 on failure.
-
 ## Handling errors and warnings
 
-How to handle a warning or error, in order of preference:
+In order of preference:
 
-### 0. Let them error and warn
-
-Consider not handling an error or warning if:
-
-- it's out of scope of the current task
-- its timing, fallout and message are already about right
-
-### 1. Crash at boot
-
-If it's a runtime error that could have been known at boot:
-
-1. write a check that crashes it at boot
-2. attach a "fix boot-check <boot-check>" message, should it occur at runtime
-
-### 2. Raw writes to stderr
-
-If it needs the attention of developers or operations:
-
-- minimize tampering with the message
-- maximize simplicity in handling
-
-### 3. Tell the user
-
-If it needs the attention of the user, consider that users should not be able to cause errors, and so the possibility
-for error should be addressed rather than the error itself. If it's not a good time for that kind of endeavor, raise
-`Whoops(message, pass_on)` and move on. Either way, tell the user, in `message`:
-
-- what's going on
-- what they can do now
-
-and, if `Whoops`, put in `pass_on` what they are to pass on to developers and ops, as it is.
-
-## Tests and checks
-
-`./check.sh [stage]...` checks the stages named and write their output to `dev/state/logs/<stage>.log`
-
-- `openapi`, `stamps` and `locale`, each in step with the code
-- `pending`, what is left to stamp or translate
-- `format`, `types`, `frontend`, `docs`, `dev`, `tests` and `browser`.
-
-`./write.sh [commit]` regenerates what follows from the code and moves logs in `dev/state/logs/` to `logs/`.
-
-The `~<n>s` after a command tells what time it takes in the cloud container. `./write.sh` rewrites it from
-`dev/costs.tsv` once it is 1.5 times off, and `chatddx costs show` has what every command took, on every machine class.
-
-### Python
-
-- `basedpyright` for typecheck
-- `ruff check` for lint
-
-- `pytest` runs every test but the browser tests ~220s.
-- `pytest -m 'not slow'`, excludes the slowest tests making up 7/8 of the total test time, ~60s.
-- `pytest -n 4` fast given absence of other loads, ~110s.
-
-### Frontend
-
-- `pnpm --dir frontend check` type checks frontend
-- `pnpm --dir frontend test` tests frontend takes ~3.1s
-
-### Dev
-
-- `bats dev/test`, the tests of `dev/`'s scripts ~8s.
-
-### Formatting
-
-- `ruff format` formats the Python.
-- `chatddx stamp reflow` formats the frontend and the docs, what `.prettierignore` lets through, with prettier. Prettier
-  on its own breaks the markers of a doc holding stamps pending.
-
-### Browser
-
-- run `pnpm --dir frontend build` first if the frontend changed
-- `pytest -m browser` runs the browser tests that `pytest` skips, in ~140s
-
-### Nix
-
-Agents aren't expected to run this, just know it exists.
-
-`nix flake check` runs:
-
-- `check.sh`'s openapi, stamps, types, tests, frontend, docs, dev and format stages
-- `nix/test.nix` boots the NixOS module in a VM for its test, takes ~7 minutes
-- `nix/module-eval.nix`
-
-### Docs
-
-- `chatddx refcheck` checks for broken references including commits not in main.
+0. Let it error or warn, if it's out of scope, or its timing, fallout and message are already about right.
+1. Crash at boot, if it could have been known at boot: write a check that crashes it at boot, and attach a "fix
+   boot-check <boot-check>" message, should it occur at runtime.
+2. Write it raw to stderr, if it needs the attention of developers or operations: minimize tampering with the message,
+   maximize simplicity in handling.
+3. Tell the user, if it needs their attention. Users should not be able to cause errors, so address the possibility of
+   the error rather than the error. If it's not a good time for that, raise `Whoops(message, pass_on)` and move on.
+   Either way, tell the user in `message` what's going on and what they can do now, and, if `Whoops`, put in `pass_on`
+   what they are to pass on to developers and ops, as it is.
 
 ## Development stages
 
-`settings.STAGES` tracks things under development stages once they exist in `src/chatddx/`, the stages are:
+`settings.toml`'s `[parts.<part>]` declares each part of the project: its class, its doc, the code that makes it, and
+its stage:
 
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
 4. Named - Greppable and referred to as `<name>`
 5. Itemized - Has one or more items in `docs/backlog.md`
-6. Planned - Has a concept of a plan in `agents/plan-<name>.md`
-7. Drafted - Exists as a moving target in `src/chatddx/<name>*` and `agents/wip-<name>.md`
-8. Solidified - Its surface stamped, and its docs, if any, in `docs/modules/<name>.md`
+6. Planned - Its doc holds a concept of a plan
+7. Drafted - Exists as a moving target in the code, its doc holding what's in progress
+8. Solidified - Its surface stamped, its doc describing it as it is
 9. Cemented: TBD
 10. Protected: TBD
 
-Things can move around freely across these stages but are only in one stage at a time, so docs are gathered and moved
-rather than copied.
-
-A move entails:
-
-- gathering (project-wide deduplication)
-- updating references
-- its own commit
+A part's class is the vocabulary it speaks, which the others' don't bleed into: datamodel, the glossary's terms; ux,
+what people see and do; or machinery, what makes it run. Its code, in the backend, the frontend or both, is no other
+part's. It has one doc, in `docs/parts/`, from stage 6 on, and one stage at a time. A move rewrites the doc for its
+stage, gathers (project-wide deduplication), updates references and is a commit of its own.
 
 ## Documentation
 

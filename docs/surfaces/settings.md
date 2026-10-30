@@ -1,6 +1,8 @@
-# `chatddx.settings`
+# `settings`
 
-Written by `chatddx stamp write` from `src/chatddx/settings.py`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it:
+Written by `chatddx-dev index` from `[parts.settings]`'s code in `settings.toml`, an entry for each public name, sorted alphabetically whatever its case, so that a class's members follow it, a language's after another's:
+
+Python:
 
 ```
 ## `<name>` `@<decorator>` `[<type parameters>]` `(<bases>)`
@@ -19,24 +21,13 @@ Finds:
 - A constant or a type alias is its definition instead of bullets; a class and its `__init__` leave out ∟, and a method its instance; `*`: the parameters after it are keyword-only, `/`: those before it positional-only.
 - Raises and Finds are the function's own and its private helpers', in the order the code reaches them, each once, a `Whoops` left out; what a public function it calls raises is in that function's entry.
 - Text is quoted, a value in it as `{<expression>}`, and an argument that isn't text is as written; a finding is a warning unless it gives its level.
+
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
-
-## `beside`
-`src/chatddx/settings.py:beside`
-
-How many of check.sh's other stages run beside this one, as it says.
-
-* ∟`int`
 
 ## `chromium`
 `src/chatddx/settings.py:chromium`
 
 * ∟`Path | None`
-
-## `COSTS_QUOTED`
-`src/chatddx/settings.py:COSTS_QUOTED`
-
-`COSTS_QUOTED = "container"`
 
 ## `database`
 `src/chatddx/settings.py:database`
@@ -53,11 +44,6 @@ How many of check.sh's other stages run beside this one, as it says.
 `src/chatddx/settings.py:ITEMS_PER_RUN`
 
 `ITEMS_PER_RUN = 1000`
-
-## `machine_class`
-`src/chatddx/settings.py:machine_class`
-
-* ∟`str | None`
 
 ## `portal_assets`
 `src/chatddx/settings.py:portal_assets`
@@ -93,30 +79,6 @@ How many of check.sh's other stages run beside this one, as it says.
 `src/chatddx/settings.py:SESSION_TTL`
 
 `SESSION_TTL = timedelta(hours=12)`
-
-## `Stage` `(IntEnum)`
-`src/chatddx/settings.py:Stage`
-
-* `FELT = 1`
-* `IMPLIED = 2`
-* `MENTIONED = 3`
-* `NAMED = 4`
-* `ITEMIZED = 5`
-* `PLANNED = 6`
-* `DRAFTED = 7`
-* `SOLIDIFIED = 8`
-* `CEMENTED = 9`
-* `PROTECTED = 10`
-
-## `STAGES`
-`src/chatddx/settings.py:STAGES`
-
-`STAGES = {…}`
-
-## `STAMPED_FROM`
-`src/chatddx/settings.py:STAMPED_FROM`
-
-`STAMPED_FROM = {…}`
 
 ## `TYPED_PER_DAY`
 `src/chatddx/settings.py:TYPED_PER_DAY`

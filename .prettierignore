@@ -3,17 +3,16 @@
 /*
 !/frontend/
 !/docs/
-!/agents/
 !/AGENTS.md
 !/README.md
-!/dev/
+!/.claude/
 
-# Compromise: chatddx stamp writes what changed as a git conflict, which prettier reads as markdown and reformats.
+# Compromise: chatddx-dev index writes what changed as a git conflict, which prettier reads as markdown and reformats.
 /docs/comments/
 /docs/surfaces/
 /docs/whoopses/
 
-# Accommodating for what tools write: chatddx openapi, compared byte for byte by check.sh, pnpm, openapi-typescript and
+# Accommodating for what tools write: chatddx openapi, compared byte for byte by dev/check.sh, pnpm, openapi-typescript and
 # vite.
 /frontend/openapi.json
 /frontend/pnpm-lock.yaml

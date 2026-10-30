@@ -1,0 +1,5 @@
+# Accommodating for the scripts' dispatch by name, as in "$@", which shellcheck doesn't follow:
+# it takes their functions for unreachable and their arguments for never passed.
+disable=SC2317,SC2119,SC2120
+# Accommodating for agent.sh's .env-container, which is sourced from the repository's root.
+disable=SC1091
