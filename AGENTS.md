@@ -2,26 +2,20 @@
 
 ## Environment
 
-- Hooks set you up or tell you why they didn't: report friction, poor messaging and surprises.
-- `docs/parts/dev.md` breaks down every check, what writes what and the hooks; `settings.toml` holds the project-wide
-  settings.
+- Hooks set you up or tell you why they didn't, `docs/parts/dev.md` breaks down every check, write and hook. Report
+  friction, poor messaging and surprises.
 - Archeology is not allowed unless told otherwise: the environment given has all you need.
-- A `pkill -f` pattern might match your own shell.
+- That `pkill -f` pattern might match your own shell.
 
-## Checks
+## Checks and writes
 
 - `./dev/check.sh [check]...` runs the checks named, or all of them, and logs each to `dev/state/logs/<check>.log`.
-- `./dev/write.sh [write]...` writes what follows from the code, as the check of its name checks it; `turn-end` runs all
-  of them for you.
-- `pytest -m 'not slow'` is the quick run ~43s.
-- `pnpm --dir frontend build` before `pytest -m browser`, if the frontend changed.
-
-A `~<n>s` is what time a command takes in the cloud container.
+- `./dev/write.sh [write]...` writes what follows from the code, `turn-end` runs all of them for you.
 
 ## Session
 
-Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`. It says nothing on success, or what for
-you to do, and exits 0 but for `turn-end`, which exits 2 on failure.
+Hooks run `./dev/agent.sh` with `session-start`, `turn-start` and `turn-end`. All silent on success, or providing
+instructions for you to act on. All exit 0 except `turn-end`, which exits 2 on failure.
 
 When asked to hand over:
 
@@ -31,8 +25,7 @@ When asked to hand over:
 3. Should a check fail for something this session didn't change, or that doesn't fail again alone, push logs and await
    further instructions; likewise once fixing it keeps growing.
 
-When asked to rebase onto main, a push of the branch with `--force-with-lease` is implied, which `turn-end` and
-`hand-over` make when nothing but the branch's commits before the rebase is in the way; never merge those back in.
+When asked to rebase onto main, a push with `--force-with-lease` is permitted and expected.
 
 ## Handling errors and warnings
 
@@ -56,18 +49,16 @@ its stage:
 1. Felt - Not really anywhere but still present somehow
 2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
-4. Named - Greppable and referred to as `<name>`
+4. Named - Greppable and referred to as `<part>`
 5. Itemized - Has one or more items in `docs/backlog.md`
-6. Planned - Its doc holds a concept of a plan
+6. Planned - It has a doc in `docs/parts/<part>.md` that holds a concept of a plan
 7. Drafted - Exists as a moving target in the code, its doc holding what's in progress
 8. Solidified - Its surface stamped, its doc describing it as it is
 9. Cemented: TBD
 10. Protected: TBD
 
-A part's class is the vocabulary it speaks, which the others' don't bleed into: datamodel, the glossary's terms; ux,
-what people see and do; or machinery, what makes it run. Its code, in the backend, the frontend or both, is no other
-part's. It has one doc, in `docs/parts/`, from stage 6 on, and one stage at a time. A move rewrites the doc for its
-stage, gathers (project-wide deduplication), updates references and is a commit of its own.
+A move to a stage rewrites the doc for its stage, gathers (project-wide deduplication), updates references and is a
+commit of its own.
 
 ## Documentation
 

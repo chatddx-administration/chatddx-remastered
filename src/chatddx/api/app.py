@@ -20,7 +20,7 @@ from chatddx.store import UnderWay
 from chatddx.whoops import Whoops
 from chatddx.worker import Worker
 
-from . import families, people, queue, runs, scores, threads, world
+from . import families, faring, measuring, people, queue, runs, scores, threads, world
 from .listening import Listener
 from .schemas import EVENTS, Code, Error
 from .state import AppState, Refusing
@@ -137,7 +137,12 @@ def _lifespan(
     return lifespan
 
 
-def app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
+def app(
+    inventory: Inventory,
+    conninfo: str,
+    worker: bool = False,
+    synthetic: int | None = None,
+) -> FastAPI:
     made = FastAPI(
         title="chatddx",
         version=metadata.version("chatddx"),
@@ -146,8 +151,18 @@ def app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
         redoc_url=None,
         lifespan=_lifespan(worker),
     )
-    made.state.chatddx = AppState(conninfo, inventory, Listener(conninfo))
-    for module in (people, threads, families, world, runs, scores, queue):
+    made.state.chatddx = AppState(conninfo, inventory, Listener(conninfo), synthetic)
+    for module in (
+        people,
+        threads,
+        families,
+        faring,
+        world,
+        runs,
+        scores,
+        measuring,
+        queue,
+    ):
         made.include_router(module.router, prefix="/api")
     for error, (status, code) in STATUSES.items():
         made.add_exception_handler(error, _status(status, code))

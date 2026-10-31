@@ -1,14 +1,4 @@
-2026-10-30T19:01:57Z 59b2b8a ./dev/check.sh pending
+2026-10-31T01:19:25Z 20ef19c ./dev/check.sh pending
 • pending
-flag: docs/comments/index.md: 1 stamp pending
-flag: docs/comments/stamp.md: 2 stamps pending
-flag: docs/parts/dev.md: 4 stamps pending
-flag: docs/parts/index.md: 1 stamp pending
-flag: docs/parts/stamp.md: 1 stamp pending
-flag: docs/surfaces/dev.md: 1 stamp pending
-flag: docs/surfaces/index.md: 1 stamp pending
-flag: docs/surfaces/locale.md: 1 stamp pending
-flag: docs/surfaces/portal.md: 1 stamp pending
-flag: docs/surfaces/stamp.md: 5 stamps pending
-flag: docs/whoopses/index.md: 1 stamp pending
-flag: docs/whoopses/stamp.md: 1 stamp pending
+ok
+ok

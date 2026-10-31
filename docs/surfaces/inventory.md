@@ -213,6 +213,7 @@ Raises:
 * `inventory: Inventory`
 * `engines: tuple[Path, ...] = ()`
 * `facts: tuple[Path, ...] = ()`
+* `synthetic: int | None = None`
 
 ## `World.load` `@classmethod`
 `src/chatddx/inventory/world.py:World.load`
@@ -222,3 +223,5 @@ Raises:
 
 Raises:
 1. `LookupError`: `"{path} is no World: it holds no inventory.toml"`
+2. `LookupError`: `"{path}: a World draws scores only while its endpoints are on this machine, and {', '.join(away)} isn't"` (through `_synthetic`)
+3. `LookupError`: `"{path}: seed is to be a whole number"` (through `_synthetic`)

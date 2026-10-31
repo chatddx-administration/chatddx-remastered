@@ -1,0 +1,3 @@
+# Policy: scores drawn for every case and configuration none ran, so that how a case fares among the
+# others shows before thousands of runs are made; the review page marks them drawn.
+seed = 1

@@ -13,6 +13,14 @@ Written by `chatddx-dev index` from the comments in `[parts.store]`'s code in `s
 - A comment in or above no name is under its file alone, and comments on lines one after another are one.
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `src/chatddx/store/cache.py:Cache`
+
+```
+# Policy: what is held is held per process and database, and only once read outside a
+# transaction, so that what a transaction that rolls back wrote isn't held; the least
+# recently used go past the size given.
+```
+
 ## `src/chatddx/store/catalog.py:Catalog._bind`
 
 ```
@@ -280,6 +288,20 @@ Written by `chatddx-dev index` from the comments in `[parts.store]`'s code in `s
 -- description could be taken away: NOT VALID leaves the rows already written unchecked.
 ```
 
+## `src/chatddx/store/migrations/0028-t0-catalog-version.sql`
+
+```
+-- Policy: one counter for the whole catalog, bumped by each transaction that writes to
+-- it as it commits, so that what is held of the catalog is held while the counter
+-- stands (src/chatddx/store/cache.py:catalogued). Bumped once per transaction and as
+-- late as can be, so that writers wait on each other only as they commit.
+```
+
+```
+-- Accommodating for the writer, which may not update catalog.version itself: bumped as
+-- the admin that made it.
+```
+
 ## `src/chatddx/store/notify.py:LIMIT`
 
 ```
@@ -292,4 +314,27 @@ Written by `chatddx-dev index` from the comments in `[parts.store]`'s code in `s
 ```
 # Policy: a queued job's place is the jobs at its endpoint under way, or queued before
 # it and to be claimed; none while its owner has paused.
+```
+
+## `src/chatddx/store/store.py:_PARSED`
+
+```
+# Policy: so many components held parsed and no more: factor.component is insert-only
+# and a digest names what it holds, so one is held without a version.
+```
+
+## `src/chatddx/store/store.py:_RUNS`
+
+```
+# Policy: so many finished runs and scores held and no more: the ledger is insert-only
+# and a finished record seals what was written before it, so one is held without a
+# version; one not finished is read anew each time.
+```
+
+## `src/chatddx/store/test/test_catalog.py:test_a_store_holding_an_empty_description_still_migrates`
+
+```
+# Accommodating for catalog.version's deferred triggers, which a table can't be
+# altered with pending: the store's rows are committed before it migrates, as
+# `chatddx migrate` finds them.
 ```

@@ -39,7 +39,7 @@ Each area's lint, then its tests:
 - `./dev/check.sh python-tests` ~160s, `pytest -n 4`, with `src/chatddx/test/budget.py`'s budget for the slow tests.
 - `./dev/check.sh frontend` ~11s, `pnpm --dir frontend check` (`svelte-check`, after `pnpm types` writes
   `frontend/src/lib/api/schema.d.ts`) and `pnpm --dir frontend test` (`vitest`).
-- `./dev/check.sh dev` ~10s, `shellcheck`, `.shellcheckrc` holding what it leaves out, and `bats dev/test`.
+- `./dev/check.sh dev` ~22s, `shellcheck`, `.shellcheckrc` holding what it leaves out, and `bats dev/test`.
 - `./dev/check.sh docs` ~1.7s, `chatddx-dev refcheck`: broken references, commits not in main among them.
 
 The built app in a browser:

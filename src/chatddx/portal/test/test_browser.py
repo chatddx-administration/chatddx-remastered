@@ -309,9 +309,12 @@ def test_a_clinician_reviews_a_case_writing_what_is_expected_and_its_appendices(
     page.set_viewport_size({"width": 1440, "height": 900})
     expect(page.locator("details[data-drawer]")).to_have_count(0)
     expect(page.get_by_role("region", name="Cases")).to_be_visible()
-    assert page.evaluate("document.documentElement.scrollHeight") == 900
+    below = (
+        "document.querySelector('#review-faring > .pane').getBoundingClientRect().top"
+    )
+    assert page.evaluate(below) == 900
     page.set_viewport_size({"width": 1440, "height": 360})
-    assert page.evaluate("document.documentElement.scrollHeight") == 360
+    assert page.evaluate(below) == 360
     page.set_viewport_size({"width": 1440, "height": 900})
     expected = page.locator("#review-expected")
 
@@ -1314,14 +1317,13 @@ def test_a_run_s_items_are_paged_and_found_in_as_they_come(
         expect(page.get_by_role("heading", name="Items")).to_be_visible()
 
 
-def test_a_case_is_evaluated_under_each_configuration_below_its_review(
+def test_a_case_is_run_from_its_review_once_what_changed_is_saved_or_let_go(
     page: Page, world: Inventory, conn: Connection
 ) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
-    page.set_viewport_size({"width": 1440, "height": 900})
-    with faked(world, Store(conn).get):
+    with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/review/{noted['id']}")
         bar = page.get_by_role("group", name="Saving")
         bar.get_by_label("A new tag").fill("evaluated")
@@ -1333,159 +1335,104 @@ def test_a_case_is_evaluated_under_each_configuration_below_its_review(
             dialog.dismiss()
 
         page.once("dialog", dismissed)
-        bar.get_by_role("button", name="Run").click()
+        run = bar.get_by_role("button", name="Run")
+        run.click()
         assert asked == [
             "What you changed isn't saved: run the case as it was last saved?"
         ]
-        assert "evaluation=" not in page.url
-        page.once("dialog", lambda d: d.accept())
-        bar.get_by_role("button", name="Run").click(no_wait_after=True)
-        page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
-        evaluating = page.get_by_role("region", name="Evaluating the case")
-        expect(evaluating).to_be_visible()
-        assert page.evaluate("document.documentElement.scrollHeight") >= 2 * 900
-        evaluation = page.locator("#review-evaluation")
-        rows = evaluation.locator("tbody tr")
-        configurations = rows.count()
-        assert configurations > 1
-        expect(evaluation.locator("details")).to_have_count(4 * configurations)
-        expect(evaluation.locator("th").filter(has_text="Statement")).to_have_count(1)
-        lines = rows.filter(has=page.get_by_role("rowheader", name="lines", exact=True))
-        expect(lines).to_contain_text("differential", timeout=60_000)
-        expect(rows.locator("svg.animate-spin")).to_have_count(0, timeout=60_000)
-    expect(evaluation.get_by_role("button", name="Halt")).to_have_count(0)
-    expect(evaluating.get_by_text("Left out:")).to_be_visible()
-    items = evaluation.locator("details").filter(has_text="lines")
-    fourth = items.nth(3)
-    expect(fourth.locator("summary")).to_contain_text("#4")
-    third_seed = (
-        items.nth(2).locator("summary").inner_text().split("seed ")[1].split()[0]
-    )
-    expect(fourth.locator("summary")).to_contain_text(f"seed {third_seed}")
-    expect(fourth.locator("summary")).to_contain_text(re.compile(r"\d+ \+ \d+ tokens"))
-    expect(fourth.locator("summary")).to_contain_text(
-        re.compile(r"valid|salvaged|broken")
-    )
-    fourth.locator("summary").click()
-    expect(fourth.locator("p, pre").first).not_to_be_empty()
-    linked = fourth.get_by_role("link", name="Its run")
-    expect(linked).to_have_attribute("href", re.compile(r"^/runs/[0-9a-f-]{36}$"))
-    native = evaluation.locator("details").filter(
-        has=page.locator("summary span", has_text=re.compile(r"^native$"))
-    )
-    native.first.locator("summary").click()
-    expect(native.first.locator("pre code")).to_contain_text('"diagnoses"')
-    assert errors == []
-
-
-def test_an_evaluation_under_way_is_halted_from_its_review(
-    page: Page, world: Inventory, conn: Connection
-) -> None:
-    errors: list[str] = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
-    with faked(world, Store(conn).get, delay=0.3):
-        _ = page.goto(f"/review/{noted['id']}")
-        bar = page.get_by_role("group", name="Saving")
-        bar.get_by_role("button", name="Run").click(no_wait_after=True)
-        page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
-        evaluation = page.locator("#review-evaluation")
-        expect(evaluation.get_by_text("under way").first).to_be_visible()
-        run = bar.get_by_role("button", name="Run")
-        expect(run).to_be_disabled()
-        expect(run).to_have_attribute("data-busy", "")
-        evaluation.get_by_role("button", name="Halt").click()
-        expect(evaluation.get_by_role("button", name="Halt")).to_have_count(
-            0, timeout=60_000
+        assert (
+            page.request.get("/api/runs", params={"reaching": noted["case"]}).json()
+            == []
         )
-        expect(run).to_be_enabled()
-        expect(run).not_to_have_attribute("data-busy", "")
-        expect(evaluation.locator("tbody svg.animate-spin")).to_have_count(0)
-    expect(
-        evaluation.locator("summary").filter(has_text="stopped").first
-    ).to_be_visible()
-    first = re.findall(r"evaluation=([^&#]+)", page.url)[0]
-    every = page.request.get("/api/runs", params={"with": first}).json()
-    assert len(every) > 2
-    assert {r["job"]["status"] for r in every} == {"stopped"}
+        page.once("dialog", lambda d: d.accept())
+        with page.expect_navigation(timeout=120_000):
+            run.click(no_wait_after=True)
+        expect(run).to_be_disabled()
+        expect(page.locator("#evaluating")).to_have_count(0)
+        runs = page.request.get(
+            "/api/runs", params={"reaching": noted["case"], "limit": 200}
+        ).json()
+        assert len(runs) > 2
+        for r in runs:
+            assert page.request.post(f"/api/runs/{r['id']}/halt").status in (204, 409)
     assert errors == []
 
 
-def test_stepping_between_a_case_s_evaluations_redraws_only_their_values(
+def test_a_field_is_measured_in_a_column_of_its_own_and_closed_again(
     page: Page, world: Inventory, conn: Connection
 ) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
-    evaluation = page.locator("#review-evaluation")
-    spinning = evaluation.locator("tbody svg.animate-spin")
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    body = {"configuration": lines["id"], "families": [noted["id"]]}
+    page.set_viewport_size({"width": 1440, "height": 900})
     with faked(world, Store(conn).get):
-        _ = page.goto(f"/review/{noted['id']}")
-        run = page.get_by_role("group", name="Saving").get_by_role("button", name="Run")
-        firsts: list[str] = []
-        for _ in range(2):
-            run.click(no_wait_after=True)
-            page.wait_for_url(re.compile(r"evaluation=.*#evaluating$"), timeout=120_000)
-            expect(spinning).to_have_count(0, timeout=60_000)
-            expect(run).to_be_enabled()
-            firsts.append(re.findall(r"evaluation=([^&#]+)", page.url)[0])
-    assert firsts[0] != firsts[1]
-    row = evaluation.locator("tbody tr").first
-    _ = row.evaluate("found => { found.dataset.kept = ''; window.stayed = true }")
-    stepping = page.get_by_role("navigation", name="Evaluations of the case")
-    chips = stepping.locator("a[data-entry]")
-    expect(chips).to_have_count(2)
-    expect(chips.nth(1)).to_have_attribute("aria-current", "page")
-    expect(chips.nth(0)).to_have_accessible_name(re.compile(r", as things are now$"))
-    stepping.get_by_label("Only as things are now").check()
-    expect(chips.nth(0)).to_be_visible()
+        run = page.request.post("/api/runs", data=body).json()["runs"][0]["run"]
+        _settled(page, run)
+    _ = page.goto(f"/review/{noted['id']}")
+    review = page.locator("[data-review]")
+    measuring = page.get_by_role("region", name="Measuring the expectation")
+    diagnosis = page.locator('details[data-field="diagnosis"]')
+    warning = page.locator('details[data-field="warning"]')
+    expect(measuring).to_be_hidden()
+    diagnosis.get_by_role("button", name="Measure").click()
+    expect(page).to_have_url(re.compile(r"[?&]measure=diagnosis"))
+    expect(review).to_have_attribute("data-measuring", "")
+    expect(diagnosis).to_have_attribute("open", "")
+    expect(warning).to_have_attribute("inert", "")
+    expect(
+        page.locator("details[data-field] button", has_text="Measure")
+    ).to_have_count(0)
+    measured = measuring.locator("[data-measured]")
+    expect(measured).to_contain_text("1 answers", timeout=30_000)
+    expect(measured.locator("> ol > li").first).to_be_visible()
+    found = measuring.get_by_role("button", name=re.compile(r"^Found"))
 
-    chips.nth(0).click()
-    expect(page).to_have_url(re.compile(f"evaluation={firsts[0]}"))
-    expect(chips.nth(0)).to_have_attribute("aria-current", "page")
-    expect(page.get_by_role("link", name="Runs started then")).to_have_attribute(
-        "href", f"/runs/{firsts[0]}"
-    )
-    expect(evaluation.locator("summary").first).to_contain_text(
-        re.compile(r"\d+ \+ \d+ tokens")
-    )
-    linked = evaluation.locator("details a").first
-    runs = page.request.get(
-        "/api/runs", params={"with": firsts[0], "limit": 200}
-    ).json()
-    assert linked.get_attribute("href") in {f"/runs/{r['id']}" for r in runs}
+    diagnosis.get_by_label("Match").fill("nothing & like & it")
+    measuring.get_by_role("button", name="Update").click()
+    expect(found).to_contain_text("0")
+    expect(measured.locator("mark")).to_have_count(0)
+    measuring.get_by_role("button", name="Close").click()
+    expect(review).not_to_have_attribute("data-measuring", "")
+    expect(page).not_to_have_url(re.compile(r"measure="))
+    expect(warning).not_to_have_attribute("inert", "")
     _ = page.go_back()
-    expect(page).to_have_url(re.compile(f"evaluation={firsts[1]}"))
-    expect(page.get_by_role("link", name="Runs started then")).to_have_attribute(
-        "href", f"/runs/{firsts[1]}"
-    )
-    assert row.evaluate("found => 'kept' in found.dataset && window.stayed") is True
+    expect(review).to_have_attribute("data-measuring", "")
+    assert errors == []
 
-    [expected] = page.request.get(f"/api/families/{noted['id']}").json()["cases"][0][
-        "expectations"
-    ]
-    query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
-    mine = next(
-        t
-        for t in page.request.get("/api/threads", params=query).json()
-        if t["head"]["digest"] == expected["expectation"]
-    )
-    held = page.request.get(f"/api/components/{mine['head']['digest']}").json()["body"]
-    diagnosis = {**held["data"]["diagnosis"], "pattern": "pneumonia"}
-    changed = {**held, "data": {**held["data"], "diagnosis": diagnosis}}
-    got = page.request.post(
-        f"/api/threads/{mine['id']}/edits",
-        data={"head": mine["head"]["id"], "component": changed},
-    )
-    assert got.status == 201
-    _ = page.reload()
-    told = page.locator("[data-told]")
-    expect(told).to_contain_text("isn't scored against the expectation as it is")
-    expect(told.get_by_role("button", name="Rework")).to_be_visible()
-    told.get_by_role("button", name="Edit from this expectation").click()
-    expect(page.get_by_text("Save to make it the latest.").first).to_be_visible()
-    expected_box = page.locator("#review-expected")
-    expect(expected_box.get_by_text("Version 1 of 2", exact=True)).to_be_visible()
-    saving = page.get_by_role("group", name="Saving").get_by_role("button", name="Save")
-    expect(saving).to_be_enabled()
+
+def test_how_a_case_fares_is_drawn_below_its_review_once_scrolled_to(
+    page: Page, world: Inventory, conn: Connection
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    body = {"configuration": lines["id"], "families": [noted["id"]]}
+    page.set_viewport_size({"width": 1440, "height": 900})
+    with faked(world, Store(conn).get):
+        run = page.request.post("/api/runs", data=body).json()["runs"][0]["run"]
+        _settled(page, run)
+    _ = page.goto(f"/review/{noted['id']}")
+    faring = page.get_by_role("region", name="How the case fares")
+    expect(faring.get_by_role("figure").first).to_have_count(0)
+    faring.scroll_into_view_if_needed()
+    expect(faring.get_by_role("figure").first).to_be_visible(timeout=30_000)
+    strip = faring.get_by_role("img", name=re.compile(rf"^{LINES}: \d\.\d\d, above"))
+    expect(strip.first).to_be_visible()
+    expect(
+        faring.get_by_role("link", name=re.compile(r"^\d\.\d\d$")).first
+    ).to_have_attribute("href", re.compile(r"^/scores/"))
+    expect(faring.get_by_text("Other cases, drawn")).to_have_count(0)
     assert errors == []

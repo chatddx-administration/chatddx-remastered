@@ -8,6 +8,11 @@ configurations are made for (`src/chatddx/inventory/inventory.py:Inventory`). It
 endpoints serve (`src/chatddx/inventory/check.py:check`), and says what starting a local engine's endpoint takes
 (`src/chatddx/inventory/serving.py:start_up`).
 
+A World may hold a `synthetic.toml` with a `seed`, which draws scores for every case and configuration none of a
+person's runs scored, for the review page to show how a case fares among others before thousands of runs are made
+(`src/chatddx/scripted/fared.py:drawn`). It loads only while every endpoint is on this machine, so that no World running
+real models shows drawn scores (`src/chatddx/inventory/world.py:_synthetic`); the sample World holds one.
+
 A source is sensitive unless it says otherwise, and a directory source reads its vignettes from disk
 (`src/chatddx/inventory/sources.py:DirectorySource.fetch`). An endpoint not :Cleared for a sensitive source is refused
 its cases (docs/parts/clearance.md, "Vetted endpoints").

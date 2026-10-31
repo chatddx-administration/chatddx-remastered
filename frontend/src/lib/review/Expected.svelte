@@ -5,9 +5,15 @@
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
   import Changed from "$lib/thread/Changed.svelte";
   import type { Edited } from "./edited.svelte";
+  import type { Measure } from "./measure.svelte";
   import type { Expecting } from "./review";
 
-  let { expected, editor, edited }: { expected: Expecting; editor: ExpectationEditing; edited: Edited } = $props();
+  let {
+    expected,
+    editor,
+    edited,
+    measure,
+  }: { expected: Expecting; editor: ExpectationEditing; edited: Edited; measure: Measure } = $props();
   const given = untrack(() => expected);
 
   let shown = $state(given.history.length - 1);
@@ -30,16 +36,8 @@
     fields.load(to.data);
   }
 
-  let scored = $state<{ data: unknown } | null>(null);
-
-  export function fill(data: unknown): void {
-    if (!fields) return;
-    const held = version ? fields.holds(version.data) : !edited.pending;
-    if (!held && !confirm(t("Replace what you changed with the expectation these were scored against?"))) return;
-    fields.load(data);
-    const at = given.history.findIndex((v) => fields?.holds(v.data));
-    if (at >= 0) shown = at;
-    scored = { data };
+  export function current(): unknown {
+    return fields?.current();
   }
 
   function when(stamp: string): string {
@@ -47,23 +45,14 @@
   }
 </script>
 
-<ExpectationEditor
-  bind:this={fields}
-  {editor}
-  {edited}
-  restored={() => {
-    shown = given.history.length - 1;
-    scored = null;
-  }}
-/>
-{#if scored && fields?.holds(scored.data)}
-  <p class="mt-2 text-xs text-muted-foreground">
-    {t("The fields hold the expectation the runs were scored against: Save to make it the latest.")}
-  </p>
-{/if}
-
+<ExpectationEditor bind:this={fields} {editor} {edited} restored={() => (shown = given.history.length - 1)} {measure} />
 {#if version && given.history.length > 1}
-  <div class="mt-4 rounded-lg border border-border/60 p-3 text-sm">
+  <div
+    class="mt-4 rounded-lg border border-border/60 p-3 text-sm transition-opacity duration-500 {measure.field !== null
+      ? 'opacity-35'
+      : ''}"
+    inert={measure.field !== null}
+  >
     <nav class="mb-2 flex items-center gap-2 text-xs" aria-label={t("Versions")}>
       <button
         type="button"

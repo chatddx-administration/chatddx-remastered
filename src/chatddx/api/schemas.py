@@ -665,6 +665,118 @@ class Tried(_Schema):
     views: list[TriedView]
 
 
+class Measuring(_Schema):
+    case: str = Field(description="the case whose answers are read")
+    expectation_schema: str = Field(
+        description="the schema the expectation is written to, by digest"
+    )
+    data: JsonValue = Field(description="the expectation's data, as it is written now")
+    field: str = Field(
+        description="the field measured: each view of a scorer under the schema that "
+        + "reads it scores what it picks of each answer against the data"
+    )
+
+
+class MeasuredMark(_Schema):
+    item: int
+    start: int
+    end: int
+
+
+class MeasuredSeen(_Schema):
+    run: UUID
+    at: datetime
+    replicate: int
+    configuration: str
+    view: str = Field(description="the scorer's title and the view's label")
+    href: str | None = Field(description="the page of the score stored for it")
+
+
+class MeasuredText(_Schema):
+    texts: list[str] | None = Field(
+        description="what the views pick of the answers, alike in each of them"
+    )
+    marks: list[MeasuredMark]
+    found: bool | None = Field(
+        description="null when nothing was picked, for want of an answer or a target"
+    )
+    value: float | None
+    unit: str
+    reason: str | None
+    count: int = Field(description="how many times the views scored it")
+    alternatives: list[int] = Field(
+        description="the pattern's alternatives that find it, by position"
+    )
+    seen: list[MeasuredSeen] = Field(
+        description=f"where, the latest {settings.ROWS_PER_PAGE} at most"
+    )
+
+
+class MeasuredAlternative(_Schema):
+    pattern: str
+    found: int = Field(description="how many of what was found it finds")
+
+
+class Measured(_Schema):
+    pattern: str | None
+    problem: str | None = Field(
+        description="why the pattern doesn't read, if it doesn't"
+    )
+    answers: int = Field(description="how many answers the views read")
+    found: int
+    missed: int
+    unscored: int
+    alternatives: list[MeasuredAlternative] = Field(
+        description="each alternative of the pattern's, at its top level"
+    )
+    texts: list[MeasuredText] = Field(
+        description="missed first, then not scored, then found, each the most often "
+        + "scored first"
+    )
+
+
+class FaredConfiguration(_Schema):
+    id: int
+    name: str
+
+
+class FaredMetric(_Schema):
+    scorer: str
+    view: int
+    label: str = Field(description="the scorer's title and the view's label")
+    field: str | None = Field(description="the expectation's field the view reads")
+
+
+class FaredCase(_Schema):
+    case: str
+    family: int
+    title: str
+
+
+class FaredShown(_Schema):
+    value: float
+    replicates: int
+    synthetic: bool
+    href: str | None = Field(description="the page of its first replicate's score")
+
+
+class FaredRow(_Schema):
+    metric: int = Field(description="its metric, by position")
+    configuration: int = Field(description="its configuration, by position")
+    cases: list[int] = Field(description="the other cases, by position")
+    values: list[float] = Field(description="each other case's mean, alike in order")
+    synthetic: list[bool] = Field(description="whether each was drawn, alike in order")
+    shown: FaredShown | None = Field(description="the case asked about, if it has one")
+
+
+class Fared(_Schema):
+    synthetic: bool = Field(description="whether any value is drawn rather than run")
+    configurations: list[FaredConfiguration]
+    metrics: list[FaredMetric]
+    cases: list[FaredCase]
+    rows: list[FaredRow]
+
+
 class Asking(_Schema):
     judge: str = Field(description="a stored judge, by digest")
     expectation: str = Field(description="what a view picks of the expectation")

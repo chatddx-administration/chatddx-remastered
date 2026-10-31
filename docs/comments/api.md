@@ -26,6 +26,13 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 # Compromise: Raw, though it may quote sensitive content, until edges hold that back.
 ```
 
+## `src/chatddx/api/faring.py:_measured`
+
+```
+# Policy: a case's latest gathering under a configuration is the runs started together
+# with its latest run reaching it, each read by its latest score under each scorer.
+```
+
 ## `src/chatddx/api/listening.py:_AGAIN`
 
 ```
@@ -38,6 +45,22 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 ```
 # Policy: a stream this many messages behind drops what it holds and reads the ledger
 # again.
+```
+
+## `src/chatddx/api/measuring.py:_Readings`
+
+```
+# Policy: a run's latest score under each scorer alone, so that a run scored again isn't
+# told twice.
+```
+
+## `src/chatddx/api/measuring.py:_told`
+
+```
+# Policy: what was found is told by the items it was found in alone, so that lists that
+# differ only elsewhere are told as one; what was missed by all the view picked, so that
+# what the pattern should have found is there to see. A view that picked nothing, for
+# want of an answer or a target, scored nothing, whatever its value says.
 ```
 
 ## `src/chatddx/api/state.py:refused`
@@ -86,6 +109,13 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 # Accommodating for pytest, as src/chatddx/test/helpers.py:curated_template does.
 ```
 
+## `src/chatddx/api/test/test_variations.py:test_a_look_s_queries_don_t_grow_with_its_cases`
+
+```
+# Accommodating for the components Store.get holds parsed: both looks are made once
+# before they are counted, so that neither counts reading what the other read.
+```
+
 ## `src/chatddx/api/test/test_variations.py:test_a_look_s_queries_don_t_grow_with_its_cases.counting`
 
 ```
@@ -98,4 +128,14 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 ```
 # Policy: an expectation with no name is said by its case, in the reader's locale, rather
 # than by a title derived in English.
+```
+
+## `src/chatddx/api/threads.py:_THREADS`
+
+```
+# Policy: so many listings held and no more; each is what a person was shown of a kind
+# under the filters asked, held while the catalog's version stands, as the threads it
+# lists and how each is told (titles, whether it is outdated) are read from the catalog,
+# the components and the inventory alone, a database being served one World, besides
+# logins, which never change.
 ```

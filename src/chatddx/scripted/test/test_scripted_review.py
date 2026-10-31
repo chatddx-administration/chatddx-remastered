@@ -7,6 +7,7 @@ from chatddx.bench.seen import choices
 from chatddx.catalog import Subject, read
 from chatddx.factors.gathering import REPLICATED, Center
 from chatddx.scripted import review
+from chatddx.scripted.fared import drawn
 
 
 @pytest.mark.slow
@@ -34,3 +35,15 @@ def test_a_scripted_review_writes_versions_and_evaluations_over_past_weeks(
     assert max(r.at for r in runs) < now
     finished = bench.store.finished([r.run for r in runs])
     assert all(bench.scores_of(r) for r in runs if r.run in finished)
+
+
+def test_what_is_drawn_is_drawn_alike_every_time_and_by_its_inputs() -> None:
+    once = drawn(1, "sha256:a", 3, "sha256:s", 0, "reciprocal_rank")
+    assert once == drawn(1, "sha256:a", 3, "sha256:s", 0, "reciprocal_rank")
+    assert len(once) == 4 and all(v in (0.0, 1.0, 0.5, 1 / 3, 0.25) for v in once)
+    every = [drawn(1, f"sha256:{c}", 3, "sha256:s", 0, "mentions") for c in range(200)]
+    assert all(v in (0.0, 1.0) for got in every for v in got)
+    assert len({sum(got) for got in every}) >= 3
+    assert every != [
+        drawn(2, f"sha256:{c}", 3, "sha256:s", 0, "mentions") for c in range(200)
+    ]

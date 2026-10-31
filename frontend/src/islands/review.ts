@@ -3,9 +3,11 @@ import { t } from "$lib/locale";
 import About from "$lib/review/About.svelte";
 import Appendices from "$lib/review/Appendices.svelte";
 import { Edited } from "$lib/review/edited.svelte";
-import Evaluation from "$lib/review/Evaluation.svelte";
 import { flipped, kept, type Picked, pickedIn, shown } from "$lib/review/filtering";
 import Expected from "$lib/review/Expected.svelte";
+import Faring from "$lib/review/Faring.svelte";
+import { Measure, measuredAt } from "$lib/review/measure.svelte";
+import Measuring from "$lib/review/Measuring.svelte";
 import type { Review } from "$lib/review/review";
 import Save from "$lib/review/Save.svelte";
 import Vignette from "$lib/review/Vignette.svelte";
@@ -77,12 +79,38 @@ if (held) {
     mount(Vignette, { target: vignette, props: { family: review.family } });
   }
 
+  const grid = document.querySelector<HTMLElement>("[data-review]");
+  const measuring = document.getElementById("review-measure");
+  const moved = (field: string | null, pushed = true): void => {
+    if (!grid || !measuring) return;
+    measure.field = field;
+    grid.toggleAttribute("data-measuring", field !== null);
+    measuring.inert = field === null;
+    if (pushed) history.pushState(history.state, "", measuredAt(location.href, field));
+    if (field !== null && !matchMedia("(width >= 80rem)").matches) {
+      measuring.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  const measure = new Measure(review.measure, moved);
+  addEventListener("popstate", () => {
+    const field = new URL(location.href).searchParams.get("measure");
+    moved(field !== null && measure.fields.includes(field) ? field : null, false);
+  });
+
   const expected = document.getElementById("review-expected");
   const editor = review.expected.editor;
-  let filling: ((data: unknown) => void) | undefined;
   if (expected && editor) {
     expected.replaceChildren();
-    filling = mount(Expected, { target: expected, props: { expected: review.expected, editor, edited } }).fill;
+    const shown = mount(Expected, {
+      target: expected,
+      props: { expected: review.expected, editor, edited, measure },
+    });
+    if (measuring && measure.fields.length) {
+      mount(Measuring, {
+        target: measuring,
+        props: { measure, case: review.case, schema: editor.schema, current: () => shown.current() },
+      });
+    }
   }
 
   const appendices = document.getElementById("review-appendices");
@@ -92,6 +120,12 @@ if (held) {
       target: appendices,
       props: { appendices: review.appendices, family: review.family, case: review.case, edited },
     });
+  }
+
+  const faring = document.querySelector("#review-faring > .pane");
+  if (faring && review.schema) {
+    faring.replaceChildren();
+    mount(Faring, { target: faring, props: { family: review.family, case: review.case, schema: review.schema } });
   }
 
   const save = document.getElementById("review-save");
@@ -106,85 +140,6 @@ if (held) {
   addEventListener("beforeunload", (left) => {
     if (edited.pending && !leaving) left.preventDefault();
   });
-  const evaluation = document.getElementById("review-evaluation");
-  const evaluating = document.getElementById("evaluating");
-  if (evaluation && evaluating && review.evaluation) {
-    const settled = (runs: string[]) => {
-      const button = running?.querySelector("button");
-      if (!button?.hasAttribute("data-busy") || !review.busy?.every((r) => runs.includes(r))) return;
-      button.removeAttribute("data-busy");
-      button.disabled = false;
-    };
-    evaluation.replaceChildren();
-    const shown = mount(Evaluation, { target: evaluation, props: { evaluation: review.evaluation, settled } });
-    let from = review.from;
-    let only = false;
-    const stripped = () => {
-      const strip = evaluating.querySelector<HTMLElement>("[data-strip]");
-      if (!strip) return;
-      for (const unmatched of strip.querySelectorAll<HTMLElement>("li[data-unmatched]")) {
-        unmatched.hidden = only && !unmatched.querySelector('[aria-current="page"]');
-      }
-      const box = evaluating.querySelector<HTMLInputElement>("[data-only-matching]");
-      if (box) box.checked = only;
-      const current = strip.querySelector<HTMLElement>('[aria-current="page"]');
-      if (current) strip.scrollLeft = current.offsetLeft - (strip.clientWidth - current.offsetWidth) / 2;
-    };
-    stripped();
-    let at = location.search;
-    const loading = evaluating.querySelector<HTMLElement>("[data-loading]");
-    const stepped = async (to: string, pushed: boolean): Promise<void> => {
-      at = new URL(to).search;
-      if (loading) loading.hidden = false;
-      evaluation.classList.add("opacity-50");
-      let got: Response;
-      let said: string;
-      try {
-        got = await fetch(to);
-        said = await got.text();
-      } finally {
-        if (loading) loading.hidden = true;
-        evaluation.classList.remove("opacity-50");
-      }
-      const page = new DOMParser().parseFromString(said, "text/html");
-      const next = JSON.parse(page.getElementById("review-props")?.textContent ?? "null") as Review | null;
-      if (!got.ok || !next?.evaluation) return location.assign(to);
-      for (const part of ["header", "[data-told]"]) {
-        const from = page.querySelector(`#evaluating ${part}`);
-        if (from) evaluating.querySelector(part)?.replaceWith(from);
-      }
-      shown.show(next.evaluation);
-      from = next.from;
-      stripped();
-      if (pushed) history.pushState({ stepped: true }, "", to);
-    };
-    evaluating.addEventListener("change", (changed) => {
-      const box = (changed.target as Element).closest<HTMLInputElement>("[data-only-matching]");
-      if (!box) return;
-      only = box.checked;
-      stripped();
-    });
-    evaluating.addEventListener("click", (clicked) => {
-      const target = clicked.target as Element;
-      const scroll = target.closest<HTMLButtonElement>("[data-scroll]");
-      const strip = evaluating.querySelector<HTMLElement>("[data-strip]");
-      if (scroll && strip) {
-        strip.scrollBy({ left: Number(scroll.dataset.scroll) * strip.clientWidth * 0.8 });
-        return;
-      }
-      if (target.closest("[data-edit-from]")) {
-        if (from !== null) filling?.(from);
-        return;
-      }
-      const at = target.closest<HTMLAnchorElement>("a[data-entry]");
-      if (!at || clicked.button || clicked.metaKey || clicked.ctrlKey || clicked.shiftKey || clicked.altKey) return;
-      clicked.preventDefault();
-      void stepped(at.href, true);
-    });
-    addEventListener("popstate", () => {
-      if (location.search !== at) void stepped(location.href, false);
-    });
-  }
   for (const at of document.querySelectorAll<HTMLFormElement>("form[data-confirm]")) {
     at.addEventListener("submit", (sent) => {
       if (!confirm(at.dataset.confirm ?? "")) sent.preventDefault();

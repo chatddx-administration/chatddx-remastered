@@ -1,4 +1,4 @@
-2026-10-30T19:02:30Z 59b2b8a ./dev/check.sh browser
+2026-10-31T00:47:28Z 9d59c5d ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,51 +9,50 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [407.3ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [255.5ms]
 vite v8.3.4 building client environment for production...
 transforming...
-✓ 817 modules transformed.
+✓ 825 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/.vite/manifest.json                                              7.54 kB │ gzip:  1.05 kB
+dist/.vite/manifest.json                                              7.31 kB │ gzip:  1.02 kB
 dist/assets/plus-jakarta-sans-vietnamese-wght-normal-qRpaaN48.woff2   8.35 kB
 dist/assets/outfit-latin-ext-wght-normal-DdQaqQDo.woff2              14.80 kB
 dist/assets/plus-jakarta-sans-latin-ext-wght-normal-DmpS2jIq.woff2   21.72 kB
 dist/assets/plus-jakarta-sans-latin-wght-normal-eXO_dkmS.woff2       27.34 kB
 dist/assets/outfit-latin-wght-normal-Bc-8i84L.woff2                  32.29 kB
-dist/assets/portal-CpAaN1z1.css                                      73.34 kB │ gzip: 14.62 kB
-dist/assets/loader-circle-B6FQb9G_.js                                 0.28 kB │ gzip:  0.24 kB
-dist/assets/info-BURvXpmO.js                                          0.30 kB │ gzip:  0.24 kB
-dist/assets/events-DMKQ6T1G.js                                        0.66 kB │ gzip:  0.39 kB
-dist/assets/kinds-ZjzfVRfW.js                                         1.06 kB │ gzip:  0.34 kB
-dist/assets/input-Du1Eo-Yu.js                                         2.04 kB │ gzip:  0.72 kB
-dist/assets/paging-BlqjVDQP.js                                        2.50 kB │ gzip:  1.21 kB
-dist/assets/Findings-DjChZ7Qt.js                                      2.55 kB │ gzip:  1.19 kB
-dist/assets/button-WhLdsf9O.js                                        3.55 kB │ gzip:  1.29 kB
-dist/assets/badge-CWuwwRtH.js                                         3.71 kB │ gzip:  1.42 kB
-dist/assets/TextSegments-CBhp_X9M.js                                  3.78 kB │ gzip:  1.76 kB
-dist/assets/scoring-DOO5biRz.js                                       6.83 kB │ gzip:  2.99 kB
-dist/assets/client-Cnknc3pZ.js                                        7.36 kB │ gzip:  2.96 kB
-dist/assets/run-B4p95IoC.js                                           8.64 kB │ gzip:  3.47 kB
-dist/assets/native-select-CXi52m9X.js                                10.35 kB │ gzip:  4.33 kB
-dist/assets/SchemaField-baMwq7TX.js                                  14.97 kB │ gzip:  4.94 kB
-dist/assets/home-B2tFzGs6.js                                         15.85 kB │ gzip:  5.58 kB
-dist/assets/outcomes-B7ZppJqQ.js                                     18.06 kB │ gzip:  6.14 kB
-dist/assets/library-DVmvLNGB.js                                      24.33 kB │ gzip:  9.00 kB
-dist/assets/lab-BsG0j0GP.js                                          30.25 kB │ gzip: 10.36 kB
-dist/assets/review-VzMWQ8FN.js                                       43.06 kB │ gzip: 15.36 kB
-dist/assets/locale-vZUH9oIN.js                                       56.49 kB │ gzip: 21.75 kB
-dist/assets/dist-q5UgEd9p.js                                         67.43 kB │ gzip: 21.03 kB
+dist/assets/portal-DPBWbEUs.css                                      76.78 kB │ gzip: 15.19 kB
+dist/assets/loader-circle-Y2AaAEgN.js                                 0.28 kB │ gzip:  0.24 kB
+dist/assets/info-B67dPtwF.js                                          0.30 kB │ gzip:  0.24 kB
+dist/assets/kinds-BS_nIBqy.js                                         1.06 kB │ gzip:  0.34 kB
+dist/assets/input-DPrpgSBX.js                                         2.04 kB │ gzip:  0.71 kB
+dist/assets/paging-KC2u6u6J.js                                        2.50 kB │ gzip:  1.24 kB
+dist/assets/Findings-Xrg1ivz3.js                                      2.55 kB │ gzip:  1.19 kB
+dist/assets/button-DwgTrtae.js                                        3.55 kB │ gzip:  1.29 kB
+dist/assets/badge-BjLKd1ts.js                                         3.72 kB │ gzip:  1.42 kB
+dist/assets/TextSegments-DpNLE-Or.js                                  3.78 kB │ gzip:  1.76 kB
+dist/assets/scoring-DqBOxGDW.js                                       6.83 kB │ gzip:  2.98 kB
+dist/assets/client-B0YFkX_H.js                                        7.36 kB │ gzip:  2.96 kB
+dist/assets/run-DanYt11k.js                                           8.61 kB │ gzip:  3.40 kB
+dist/assets/native-select-C8KGS-ce.js                                10.35 kB │ gzip:  4.35 kB
+dist/assets/SchemaField-48ciepFV.js                                  14.97 kB │ gzip:  4.92 kB
+dist/assets/home-DgZgvvAt.js                                         15.82 kB │ gzip:  5.49 kB
+dist/assets/outcomes-jQ4zEbwM.js                                     18.67 kB │ gzip:  6.37 kB
+dist/assets/library-6vTCpLNk.js                                      24.33 kB │ gzip:  8.91 kB
+dist/assets/lab-jLuoph48.js                                          30.25 kB │ gzip: 10.20 kB
+dist/assets/review-demK_o7V.js                                       53.86 kB │ gzip: 18.57 kB
+dist/assets/locale-B0pMiKjT.js                                       57.33 kB │ gzip: 22.07 kB
+dist/assets/dist-DwGGEiqJ.js                                         67.43 kB │ gzip: 21.03 kB
 
-✓ built in 5.75s
+✓ built in 3.52s
 ============================= test session starts ==============================
 platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
-collected 1160 items / 1132 deselected / 28 selected
+collected 1171 items / 1143 deselected / 28 selected
 
 src/chatddx/portal/test/test_browser.py ............................     [100%]
 
-=============== 28 passed, 1132 deselected in 183.56s (0:03:03) ================
+=============== 28 passed, 1143 deselected in 106.34s (0:01:46) ================

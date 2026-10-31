@@ -422,6 +422,9 @@ def test_a_look_s_queries_don_t_grow_with_its_cases(
         shown = variation(signed, web, **params)
         return shown["reach"][0]["cases"], counted[0]
 
+    # Accommodating for the components Store.get holds parsed: both looks are made once
+    # before they are counted, so that neither counts reading what the other read.
+    _ = look(tag="swedish"), look()
     (few, queries), (every, again) = look(tag="swedish"), look()
     assert few < every
     assert queries == again

@@ -45,12 +45,6 @@ Written by `chatddx-dev index` from the comments in `[parts.dev]`'s code in `set
 # tells is stamped.
 ```
 
-## `dev/agent.sh:left_over`
-
-```
-# Migration: what dev/ held before dev/state/; drop once no checkout holds it.
-```
-
 ## `dev/agent.sh:moved_logs`
 
 ```

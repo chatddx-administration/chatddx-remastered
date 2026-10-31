@@ -18,6 +18,7 @@ class AppState:
     conninfo: str
     inventory: Inventory
     listener: Listener
+    synthetic: int | None = None
 
     def connect(self) -> Connection:
         return psycopg.connect(self.conninfo, autocommit=True)

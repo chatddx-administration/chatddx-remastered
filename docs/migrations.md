@@ -104,6 +104,11 @@ A new schema gets its own section with all three tiers.
   `UNIQUE (edit, part, position)`, and the value not empty. The old rows named a scorer digest; they are dropped, since
   a store from before holds v1 scorers, which can't be read any more, and is rebuilt from its data sets. The writer and
   the reader get the new table through `0011`'s default privileges.
+- `0028-t0-catalog-version.sql`: `catalog.version (one, version)`, one row, which a deferred constraint trigger on each
+  of the catalog's tables (`catalog.bump_version`) bumps once per transaction that writes to them, as it commits; what
+  is held of the catalog is held while it stands (`src/chatddx/store/cache.py:catalogued`). A table can't be altered
+  with the trigger pending, so a migration that writes to the catalog and then alters it first runs
+  `SET CONSTRAINTS ALL IMMEDIATE`.
 
 ### Tier 1
 

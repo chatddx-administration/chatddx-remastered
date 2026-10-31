@@ -33,12 +33,24 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import suggest_seeds
+from chatddx.store.cache import Cache, catalogued
 
 from . import schemas
 from .people import BenchDep
 from .state import refused
 
 router = APIRouter(tags=["threads"])
+
+type _Asked = tuple[
+    int, str, str | None, str | None, frozenset[str], bool, str | None, str | None
+]
+
+# Policy: so many listings held and no more; each is what a person was shown of a kind
+# under the filters asked, held while the catalog's version stands, as the threads it
+# lists and how each is told (titles, whether it is outdated) are read from the catalog,
+# the components and the inventory alone, a database being served one World, besides
+# logins, which never change.
+_THREADS: Cache[_Asked, tuple[schemas.Thread, ...]] = Cache(1_000)
 
 
 def login(bench: Bench, person: int | None) -> str | None:
@@ -133,6 +145,19 @@ def threads(
     wanted = set(tag or ())
     if kind == "configuration":
         purpose = purpose or "generation"
+    asked = (
+        bench.person.id,
+        kind,
+        name,
+        owner,
+        frozenset(wanted),
+        deleted,
+        purpose,
+        answers,
+    )
+    version = catalogued(bench.conn)
+    if (held := _THREADS.get(bench.conn, asked, version)) is not None:
+        return list(held)
     found = bench.threads(kind, deleted=deleted, purpose=purpose, answering=answers)
     shown = [
         (edit, about)
@@ -143,10 +168,12 @@ def threads(
     ]
     languages = edit_languages(bench.rows, [edit for edit, _ in shown])
     [single] = KINDS[kind] if len(KINDS[kind]) == 1 else [None]
-    return [
+    made = tuple(
         thread_of(bench, single or bench.rows.kind(e.digest) or "", e, a, languages)
         for e, a in shown
-    ]
+    )
+    _THREADS.put(bench.conn, asked, made, version)
+    return list(made)
 
 
 def _detail(bench: Bench, thread: int) -> schemas.ThreadDetail:

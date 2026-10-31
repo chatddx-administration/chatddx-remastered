@@ -1586,6 +1586,75 @@
         ]
       }
     },
+    "/api/families/{family}/fared": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Fared",
+        "description": "How the case fares under each of the person's configurations on each view of the\nscorers under the schema, among how every family's case fares: each the mean of its\nlatest gathering's replicates under a configuration, as the person's runs have it,\nnone where they ran but weren't scored, and, in a World that draws them, drawn where\nnone ran. Views in characters are left\nout, as they aren't on the scale of the others.\n\nCosts a read of each of the person's runs and their scores, finished scores held\nonce read; the drawing is local.",
+        "operationId": "fared_api_families__family__fared_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          },
+          {
+            "name": "case",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case"
+            }
+          },
+          {
+            "name": "expectation_schema",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Expectation Schema"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fared"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/endpoints": {
       "get": {
         "tags": [
@@ -2945,6 +3014,56 @@
         ]
       }
     },
+    "/api/expectations/measured": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Measured",
+        "description": "Each view, of the scorers under the schema, that reads the field, scoring each\nanswer of the person's runs reaching the case against the data as it is written now,\nthe scorers each run was scored by alone; what it found told by what it found, and\nwhat it missed by what the view picked.\n\nCosts a read of each such run's items, which hold the answers, and of its scores;\nthe scoring itself is local.",
+        "operationId": "measured_api_expectations_measured_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Measuring"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Measured"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/queue": {
       "get": {
         "tags": [
@@ -3944,6 +4063,231 @@
         "type": "object",
         "title": "FamilySaid"
       },
+      "Fared": {
+        "properties": {
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "description": "whether any value is drawn rather than run"
+          },
+          "configurations": {
+            "items": {
+              "$ref": "#/components/schemas/FaredConfiguration"
+            },
+            "type": "array",
+            "title": "Configurations"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/FaredMetric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/FaredCase"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/FaredRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "synthetic",
+          "configurations",
+          "metrics",
+          "cases",
+          "rows"
+        ],
+        "title": "Fared"
+      },
+      "FaredCase": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "family": {
+            "type": "integer",
+            "title": "Family"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "family",
+          "title"
+        ],
+        "title": "FaredCase"
+      },
+      "FaredConfiguration": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "FaredConfiguration"
+      },
+      "FaredMetric": {
+        "properties": {
+          "scorer": {
+            "type": "string",
+            "title": "Scorer"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "the scorer's title and the view's label"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field",
+            "description": "the expectation's field the view reads"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "view",
+          "label",
+          "field"
+        ],
+        "title": "FaredMetric"
+      },
+      "FaredRow": {
+        "properties": {
+          "metric": {
+            "type": "integer",
+            "title": "Metric",
+            "description": "its metric, by position"
+          },
+          "configuration": {
+            "type": "integer",
+            "title": "Configuration",
+            "description": "its configuration, by position"
+          },
+          "cases": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Cases",
+            "description": "the other cases, by position"
+          },
+          "values": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "each other case's mean, alike in order"
+          },
+          "synthetic": {
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array",
+            "title": "Synthetic",
+            "description": "whether each was drawn, alike in order"
+          },
+          "shown": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FaredShown"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the case asked about, if it has one"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric",
+          "configuration",
+          "cases",
+          "values",
+          "synthetic",
+          "shown"
+        ],
+        "title": "FaredRow"
+      },
+      "FaredShown": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "replicates": {
+            "type": "integer",
+            "title": "Replicates"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href",
+            "description": "the page of its first replicate's score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "replicates",
+          "synthetic",
+          "href"
+        ],
+        "title": "FaredShown"
+      },
       "Finding": {
         "additionalProperties": false,
         "properties": {
@@ -4804,6 +5148,304 @@
           "roles"
         ],
         "title": "Me"
+      },
+      "Measured": {
+        "properties": {
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why the pattern doesn't read, if it doesn't"
+          },
+          "answers": {
+            "type": "integer",
+            "title": "Answers",
+            "description": "how many answers the views read"
+          },
+          "found": {
+            "type": "integer",
+            "title": "Found"
+          },
+          "missed": {
+            "type": "integer",
+            "title": "Missed"
+          },
+          "unscored": {
+            "type": "integer",
+            "title": "Unscored"
+          },
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/MeasuredAlternative"
+            },
+            "type": "array",
+            "title": "Alternatives",
+            "description": "each alternative of the pattern's, at its top level"
+          },
+          "texts": {
+            "items": {
+              "$ref": "#/components/schemas/MeasuredText"
+            },
+            "type": "array",
+            "title": "Texts",
+            "description": "missed first, then not scored, then found, each the most often scored first"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pattern",
+          "problem",
+          "answers",
+          "found",
+          "missed",
+          "unscored",
+          "alternatives",
+          "texts"
+        ],
+        "title": "Measured"
+      },
+      "MeasuredAlternative": {
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "title": "Pattern"
+          },
+          "found": {
+            "type": "integer",
+            "title": "Found",
+            "description": "how many of what was found it finds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pattern",
+          "found"
+        ],
+        "title": "MeasuredAlternative"
+      },
+      "MeasuredMark": {
+        "properties": {
+          "item": {
+            "type": "integer",
+            "title": "Item"
+          },
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item",
+          "start",
+          "end"
+        ],
+        "title": "MeasuredMark"
+      },
+      "MeasuredSeen": {
+        "properties": {
+          "run": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "configuration": {
+            "type": "string",
+            "title": "Configuration"
+          },
+          "view": {
+            "type": "string",
+            "title": "View",
+            "description": "the scorer's title and the view's label"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href",
+            "description": "the page of the score stored for it"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "at",
+          "replicate",
+          "configuration",
+          "view",
+          "href"
+        ],
+        "title": "MeasuredSeen"
+      },
+      "MeasuredText": {
+        "properties": {
+          "texts": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texts",
+            "description": "what the views pick of the answers, alike in each of them"
+          },
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/MeasuredMark"
+            },
+            "type": "array",
+            "title": "Marks"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found",
+            "description": "null when nothing was picked, for want of an answer or a target"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "how many times the views scored it"
+          },
+          "alternatives": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Alternatives",
+            "description": "the pattern's alternatives that find it, by position"
+          },
+          "seen": {
+            "items": {
+              "$ref": "#/components/schemas/MeasuredSeen"
+            },
+            "type": "array",
+            "title": "Seen",
+            "description": "where, the latest 100 at most"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "texts",
+          "marks",
+          "found",
+          "value",
+          "unit",
+          "reason",
+          "count",
+          "alternatives",
+          "seen"
+        ],
+        "title": "MeasuredText"
+      },
+      "Measuring": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case",
+            "description": "the case whose answers are read"
+          },
+          "expectation_schema": {
+            "type": "string",
+            "title": "Expectation Schema",
+            "description": "the schema the expectation is written to, by digest"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "the expectation's data, as it is written now"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field",
+            "description": "the field measured: each view of a scorer under the schema that reads it scores what it picks of each answer against the data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "expectation_schema",
+          "data",
+          "field"
+        ],
+        "title": "Measuring"
       },
       "Metric": {
         "properties": {

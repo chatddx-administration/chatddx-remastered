@@ -96,6 +96,21 @@ class Pattern:
         """A text the pattern finds, with `pick(n)` choosing among n alternatives."""
         return " ".join(self._root.example(pick))
 
+    def alternatives(self) -> list[str]:
+        """Each alternative of the pattern's at its top level, as a pattern of its own:
+        what finds a text the pattern finds, joined by `|`."""
+        found: list[list[str]] = [[]]
+        depth = 0
+        for token in self._tokens:
+            if token == "|" and depth == 0:
+                found.append([])
+                continue
+            depth += (token == "(") - (token == ")")
+            found[-1].append(token)
+        return [
+            " ".join(tokens).replace("( ", "(").replace(" )", ")") for tokens in found
+        ]
+
     def find(self, text: str) -> int | None:
         found = self.spans(text)
         return None if found is None else found[0][0]

@@ -131,7 +131,8 @@
 
       inputs =
         named:
-        map (path: ./. + "/${path}") (builtins.fromTOML (builtins.readFile ./settings.toml)).checks.inputs.${named};
+        map (path: ./. + "/${path}")
+          (builtins.fromTOML (builtins.readFile ./settings.toml)).checks.inputs.${named};
 
       # Optimization: a check of dev/check.sh sees only the files settings.toml names for it, so that
       # nix runs it again only when one of them changes.
@@ -189,88 +190,78 @@
             inherit (lib) nixosSystem;
           };
 
-          docs =
-            check system "docs" [ "docs" ]
-              {
-                nativeBuildInputs = [ (devEnv system) ];
-                preBuild = ''
-                  unset PYTHONPATH
-                  export HOME="$TMPDIR" REPO_ROOT="$PWD"
-                '';
-              };
+          docs = check system "docs" [ "docs" ] {
+            nativeBuildInputs = [ (devEnv system) ];
+            preBuild = ''
+              unset PYTHONPATH
+              export HOME="$TMPDIR" REPO_ROOT="$PWD"
+            '';
+          };
 
           # Compromise: dev/check.sh's browser check isn't run here, for the browser
           # it starts.
-          package =
-            check system "package" [ "openapi" "index" "stamps" "python-lint" "python-tests" ]
-              {
-                # Dependency: index reads the frontend's code with frontend/scripts/facts.mjs, which
-                # takes TypeScript's and Svelte's parsers from frontend/node_modules.
-                pnpmRoot = "frontend";
-                inherit (frontend system) pnpmDeps;
-                nativeBuildInputs = [
-                  (devEnv system)
-                  (dev-db system)
-                  pkgs.shfmt
-                  pkgs.nodejs_22
-                  pkgs.pnpm
-                  pkgs.pnpmConfigHook
-                ];
-                # Accommodating for stdenv's SSL_CERT_FILE, a file that isn't there, which httpx2
-                # loads for plain HTTP too.
-                preBuild = ''
-                  unset PYTHONPATH
-                  export HOME="$TMPDIR" REPO_ROOT="$PWD" CHATDDX_STATE_HOME="$PWD"
-                  export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                  set -a && source .env-devshell && set +a
-                  dev-db start
-                '';
-                postBuild = "dev-db stop";
-              };
+          package = check system "package" [ "openapi" "index" "stamps" "python-lint" "python-tests" ] {
+            # Dependency: index reads the frontend's code with frontend/scripts/facts.mjs, which
+            # takes TypeScript's and Svelte's parsers from frontend/node_modules.
+            pnpmRoot = "frontend";
+            inherit (frontend system) pnpmDeps;
+            nativeBuildInputs = [
+              (devEnv system)
+              (dev-db system)
+              pkgs.shfmt
+              pkgs.nodejs_22
+              pkgs.pnpm
+              pkgs.pnpmConfigHook
+            ];
+            # Accommodating for stdenv's SSL_CERT_FILE, a file that isn't there, which httpx2
+            # loads for plain HTTP too.
+            preBuild = ''
+              unset PYTHONPATH
+              export HOME="$TMPDIR" REPO_ROOT="$PWD" CHATDDX_STATE_HOME="$PWD"
+              export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+              set -a && source .env-devshell && set +a
+              dev-db start
+            '';
+            postBuild = "dev-db stop";
+          };
 
-          format =
-            check system "format" [ "format" ]
-              {
-                pnpmRoot = "frontend";
-                inherit (frontend system) pnpmDeps;
-                nativeBuildInputs = [
-                  (devEnv system)
-                  pkgs.nodejs_22
-                  pkgs.pnpm
-                  pkgs.pnpmConfigHook
-                  pkgs.shfmt
-                  pkgs.taplo
-                ];
-                preBuild = ''
-                  unset PYTHONPATH
-                  export HOME="$TMPDIR" REPO_ROOT="$PWD"
-                '';
-              };
+          format = check system "format" [ "format" ] {
+            pnpmRoot = "frontend";
+            inherit (frontend system) pnpmDeps;
+            nativeBuildInputs = [
+              (devEnv system)
+              pkgs.nodejs_22
+              pkgs.pnpm
+              pkgs.pnpmConfigHook
+              pkgs.shfmt
+              pkgs.taplo
+            ];
+            preBuild = ''
+              unset PYTHONPATH
+              export HOME="$TMPDIR" REPO_ROOT="$PWD"
+            '';
+          };
 
-          dev =
-            check system "dev" [ "dev" ]
-              {
-                nativeBuildInputs = [
-                  pkgs.bats
-                  pkgs.shellcheck
-                  pkgs.git
-                  pkgs.python3
-                ];
-                # Accommodating for the sandbox, which has no /usr/bin/env for the scripts' shebangs.
-                preBuild = "patchShebangs dev";
-              };
+          dev = check system "dev" [ "dev" ] {
+            nativeBuildInputs = [
+              pkgs.bats
+              pkgs.shellcheck
+              pkgs.git
+              pkgs.python3
+            ];
+            # Accommodating for the sandbox, which has no /usr/bin/env for the scripts' shebangs.
+            preBuild = "patchShebangs dev";
+          };
 
-          frontend =
-            check system "frontend" [ "frontend" ]
-              {
-                pnpmRoot = "frontend";
-                inherit (frontend system) pnpmDeps;
-                nativeBuildInputs = [
-                  pkgs.nodejs_22
-                  pkgs.pnpm
-                  pkgs.pnpmConfigHook
-                ];
-              };
+          frontend = check system "frontend" [ "frontend" ] {
+            pnpmRoot = "frontend";
+            inherit (frontend system) pnpmDeps;
+            nativeBuildInputs = [
+              pkgs.nodejs_22
+              pkgs.pnpm
+              pkgs.pnpmConfigHook
+            ];
+          };
         }
       );
 

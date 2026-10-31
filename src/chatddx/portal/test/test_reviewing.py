@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
 
-from chatddx.api.test.helpers import family
+from chatddx.api.test.helpers import body, family
 from chatddx.portal.test.helpers import props, ran_template, run_title, shown
 
 __all__ = ["ran_template"]
@@ -52,8 +52,13 @@ def test_a_case_is_reviewed_with_what_is_expected_and_not_what_reads_it(
     assert f"under {schema['title']}" not in page
 
 
+def noted_schema(signed: TestClient, noted: dict[str, Any]) -> str:
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    return case["expectations"][0]["expectation_schema"]
+
+
 @pytest.mark.slow
-def test_review_shows_what_ran_the_case_only_in_an_evaluation(
+def test_review_shows_nothing_of_what_ran_the_case(
     signed: TestClient,
 ) -> None:
     noted = family(signed, "noted")
@@ -74,16 +79,22 @@ def test_review_shows_what_ran_the_case_only_in_an_evaluation(
         "expected",
         "appendices",
         "back",
-        "evaluation",
-        "from",
-        "busy",
+        "schema",
+        "measure",
         "about",
     }
-    assert (given["evaluation"], given["from"]) == (None, None)
+    assert given["schema"] == noted_schema(signed, noted)
+    assert given["measure"] == {
+        "fields": ["diagnosis", "warning", "disposition", "dont_miss"],
+        "field": None,
+    }
     assert f'action="/review/{noted["id"]}/runs"' in page
-    nothing = "00000000-0000-0000-0000-000000000000"
-    gone = signed.get(f"/review/{noted['id']}?evaluation={nothing}")
-    assert gone.status_code == 404
+    assert "<div data-review class" in page
+    measuring = shown(signed, f"/review/{noted['id']}?measure=warning")
+    assert props(measuring)["measure"]["field"] == "warning"
+    assert "<div data-review data-measuring class" in measuring
+    unread = shown(signed, f"/review/{noted['id']}?measure=notes")
+    assert props(unread)["measure"]["field"] is None
 
 
 @pytest.mark.slow
@@ -315,3 +326,58 @@ def test_a_refusal_s_page_leads_back_where_the_form_was_and_nowhere_else(
     gone = signed.get("/review/0")
     assert gone.status_code == 404 and "Back to where you were" not in gone.text
     assert ">Home</a>" not in gone.text
+
+
+@pytest.mark.slow
+def test_an_expectation_of_yours_on_another_case_is_offered_to_move_here(
+    signed: TestClient,
+) -> None:
+    crlf = family(signed, "crlf")
+    back = f"/review/{crlf['id']}?tag=targets"
+
+    def written(name: str, *under: str) -> tuple[str, str]:
+        given = {"name": name, "text": f"{name} found."}
+        got = signed.post(f"/api/families/{crlf['id']}/appendices", json=given)
+        assert got.status_code == 201
+        appendices = {"appendices": [*under, got.json()["head"]["digest"]]}
+        got = signed.post(f"/api/families/{crlf['id']}/cases", json=appendices)
+        assert got.status_code == 201
+        return got.json()["case"], appendices["appendices"][-1]
+
+    alone, ultrasound = written("ultrasound")
+    both, _ = written("labs", ultrasound)
+    [expected] = signed.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
+    query = {"kind": "expectation", "owner": "alice"}
+    [held] = [
+        t
+        for t in signed.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    ]
+    component = {**body(signed, held), "case": alone}
+    got = signed.post("/api/threads", json={"component": component, "name": "moved"})
+    assert got.status_code == 201
+    mine = got.json()
+
+    page = shown(signed, f"{back}&{urlencode({'case': both})}")
+    action = f'action="/threads/{mine["id"]}/carry"'
+    assert action in page and "Move yours here" in page
+    form = page.split(action, 1)[1].split("</form>", 1)[0]
+    [head] = re.findall(r'name="head" value="(\d+)"', form)
+    assert int(head) == mine["head"]["id"]
+    assert "Move yours here" not in shown(
+        signed, f"{back}&{urlencode({'case': alone})}"
+    )
+
+    got = signed.post(
+        f"/threads/{mine['id']}/carry",
+        data={"head": head, "case": both, "next": back},
+    )
+    assert got.status_code == 303
+    page = shown(signed, f"{back}&{urlencode({'case': both})}")
+    assert "Move yours here" not in page
+    assert f'href="/threads/{mine["id"]}#edit"' in page
+    assert f'href="/threads/{mine["id"]}#edit"' not in shown(
+        signed, f"{back}&{urlencode({'case': alone})}"
+    )

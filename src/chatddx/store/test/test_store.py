@@ -51,6 +51,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0019-t0-worker",
         "0022-t0-ledger-seq",
         "0024-t0-worker-scored",
+        "0028-t0-catalog-version",
     ]
     assert empty.info.transaction_status == TransactionStatus.IDLE
     assert migrate(empty, tier=0) == []
@@ -99,6 +100,21 @@ def test_components_roundtrip(conn: Connection) -> None:
         _ = store.get(missing)
     with pytest.raises(StructuralError, match="not in the store"):
         _ = store.load([missing])
+
+
+@pytest.mark.parametrize("autocommit", [True])
+def test_a_component_is_parsed_once_it_is_read_outside_a_transaction(
+    conn: Connection,
+) -> None:
+    store, _, ids = stored_world(conn)
+    trial = ids["trial"]
+    with conn.transaction():
+        within = store.get(trial)
+    first = store.get(trial)
+    assert first is not within and first == within
+    assert store.get(trial) is first
+    assert store.load([trial]).get(trial) is first
+    assert Store(conn).get(trial) is first
 
 
 def test_database_guards_components(conn: Connection, admin: Connection) -> None:

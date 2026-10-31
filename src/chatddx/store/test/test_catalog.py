@@ -47,6 +47,7 @@ from chatddx.factors.scoring import Expectation, Judge, Scoring
 from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe
 from chatddx.ledger import RunStarted, ScoreStarted
 from chatddx.store import People, Rows, Store
+from chatddx.store.cache import catalogued
 from chatddx.store.migrate import migrate
 from chatddx.store.store import Connection
 from chatddx.store.test.helpers import stored_world
@@ -86,6 +87,28 @@ def test_a_digest_is_kept_in_a_new_thread_a_new_edit_or_as_it_is(
     fork, kept = catalog.keep(v2, alice.id, None, forked_from=second.id)
     assert kept == "created"
     assert threads.thread(rows, fork.thread).forked_from == second.id
+
+
+@pytest.mark.parametrize("autocommit", [True])
+def test_the_catalog_s_version_is_bumped_once_by_each_transaction_that_writes_to_it(
+    conn: Connection,
+) -> None:
+    catalog, store, reg, ids, alice = stored_world(conn)
+    v1 = instructions(compiled(store, reg))
+    v2 = instructions(compiled(store, reg, "You are a cardiologist."))
+    before = catalogued(conn)
+    with conn.transaction():
+        first = catalog.create(v1, alice.id, name="physician")
+        assert catalogued(conn) == before
+    assert catalogued(conn) == before + 1
+    _ = threads.heads(Rows(conn), "chunk.instructions")
+    assert catalogued(conn) == before + 1
+    with pytest.raises(errors.ForeignKeyViolation), conn.transaction():
+        _ = catalog.edit(first.thread, v2, alice.id)
+        _ = catalog.edit(first.thread, ids["trial"], alice.id)
+    assert catalogued(conn) == before + 1
+    _ = catalog.edit(first.thread, v2, alice.id)
+    assert catalogued(conn) == before + 2
 
 
 def test_threads_follow_edits(conn: Connection) -> None:
@@ -889,6 +912,10 @@ def test_a_store_holding_an_empty_description_still_migrates(empty: Connection) 
     with empty.transaction():
         _ = empty.execute(emptied, (thread, alice.id))
         _ = empty.execute("DELETE FROM public.migration WHERE name = %s", (migration,))
+    # Accommodating for catalog.version's deferred triggers, which a table can't be
+    # altered with pending: the store's rows are committed before it migrates, as
+    # `chatddx migrate` finds them.
+    empty.commit()
     assert migrate(empty) == [migration]
     with pytest.raises(errors.CheckViolation), empty.transaction():
         _ = empty.execute(emptied, (thread, alice.id))

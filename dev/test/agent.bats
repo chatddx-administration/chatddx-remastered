@@ -102,20 +102,6 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   [ -z "$(cat dev/state/session-start)" ]
 }
 
-@test "session-start removes what dev/ held before dev/state/, keeping the spool" {
-  mkdir dev/logs
-  touch dev/logs/format.log dev/format-good dev/turn-start dev/stamped
-  echo timed >dev/costs-spool.tsv
-  hook session-start '{"source":"resume"}'
-  [ "$status" -eq 0 ]
-  [ ! -e dev/logs ]
-  [ ! -e dev/format-good ]
-  [ ! -e dev/turn-start ]
-  [ ! -e dev/stamped ]
-  [ ! -e dev/costs-spool.tsv ]
-  [ "$(cat dev/state/costs-spool.tsv)" = timed ]
-}
-
 @test "session-start refuses work in a container that fails to provision" {
   export CLAUDE_CODE_REMOTE=true
   hook session-start '{"source":"startup"}'

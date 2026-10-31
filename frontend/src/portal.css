@@ -380,3 +380,59 @@
     }
   }
 }
+
+/* Policy: the review's columns move rather than jump as measuring opens and closes, at the pace and easing iOS moves its panes by: the cases slide out to the left at their width, and the measuring comes in from the right at the width it ends at, so that neither reflows as it moves. */
+@layer components {
+  [data-review] {
+    --review-moving: 550ms cubic-bezier(0.32, 0.72, 0, 1);
+    &:not([data-measuring]) > [data-measure] {
+      @apply max-xl:hidden;
+    }
+  }
+  @media (width >= 80rem) {
+    [data-review] {
+      container-type: inline-size;
+      grid-template-columns: 15rem minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 0fr);
+      transition:
+        grid-template-columns var(--review-moving),
+        margin-left var(--review-moving);
+      & > [data-cases] {
+        transition:
+          translate var(--review-moving),
+          opacity var(--review-moving);
+      }
+      & > [data-measure] {
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity var(--review-moving),
+          visibility 0s 550ms;
+        /* Duplication: the 1.7fr of 3.4 in [data-measuring]'s columns, less its three 1rem gaps and the 1rem its margin takes back. */
+        & > * {
+          width: max(100%, calc((100cqw - 2rem) / 2));
+        }
+      }
+      &[data-measuring] {
+        grid-template-columns: 0rem minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1.7fr);
+        margin-left: -1rem;
+        & > [data-cases] {
+          translate: calc(-100% - 2rem) 0;
+          opacity: 0;
+        }
+        & > [data-measure] {
+          opacity: 1;
+          visibility: visible;
+          transition:
+            opacity var(--review-moving),
+            visibility 0s;
+        }
+      }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-review],
+    [data-review] > * {
+      transition: none !important;
+    }
+  }
+}

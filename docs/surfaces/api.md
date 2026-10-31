@@ -63,6 +63,7 @@ TypeScript and Svelte:
 * `inventory: Inventory`
 * `conninfo: str`
 * `worker: bool = False`
+* `synthetic: int | None = None`
 * ∟`FastAPI`
 
 ## `appendix` `@router.post("/families/{family}/appendices", status_code=201)`
@@ -81,6 +82,7 @@ TypeScript and Svelte:
 * `conninfo: str`
 * `inventory: Inventory`
 * `listener: Listener`
+* `synthetic: int | None = None`
 
 ## `AppState.connect`
 `src/chatddx/api/state.py:AppState.connect`
@@ -432,6 +434,77 @@ Raises:
 `src/chatddx/api/schemas.py:FamilySaid`
 
 * `language: str | None = Field(…)`
+
+## `Fared` `(_Schema)`
+`src/chatddx/api/schemas.py:Fared`
+
+* `synthetic: bool = Field(description="whether any value is drawn rather than run")`
+* `configurations: list[FaredConfiguration]`
+* `metrics: list[FaredMetric]`
+* `cases: list[FaredCase]`
+* `rows: list[FaredRow]`
+
+## `fared` `@router.get("/families/{family}/fared", dependencies=[Depends(no_store)])`
+`src/chatddx/api/faring.py:fared`
+
+How the case fares under each of the person's configurations on each view of the
+scorers under the schema, among how every family's case fares: each the mean of its
+latest gathering's replicates under a configuration, as the person's runs have it,
+none where they ran but weren't scored, and, in a World that draws them, drawn where
+none ran. Views in characters are left
+out, as they aren't on the scale of the others.
+
+Costs a read of each of the person's runs and their scores, finished scores held
+once read; the drawing is local.
+
+* `request: Request`
+* `bench: BenchDep`
+* `family: int`
+* `case: str`
+* `expectation_schema: str`
+* ∟`schemas.Fared`
+
+Raises:
+1. `NotFound`: `"no case {case} of family {family}"`
+
+## `FaredCase` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredCase`
+
+* `case: str`
+* `family: int`
+* `title: str`
+
+## `FaredConfiguration` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredConfiguration`
+
+* `id: int`
+* `name: str`
+
+## `FaredMetric` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredMetric`
+
+* `scorer: str`
+* `view: int`
+* `label: str = Field(description="the scorer's title and the view's label")`
+* `field: str | None = Field(description="the expectation's field the view reads")`
+
+## `FaredRow` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredRow`
+
+* `metric: int = Field(description="its metric, by position")`
+* `configuration: int = Field(description="its configuration, by position")`
+* `cases: list[int] = Field(description="the other cases, by position")`
+* `values: list[float] = Field(description="each other case's mean, alike in order")`
+* `synthetic: list[bool] = Field(description="whether each was drawn, alike in order")`
+* `shown: FaredShown | None = Field(description="the case asked about, if it has one")`
+
+## `FaredShown` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredShown`
+
+* `value: float`
+* `replicates: int`
+* `synthetic: bool`
+* `href: str | None = Field(description="the page of its first replicate's score")`
 
 ## `Finding` `(_Schema)`
 `src/chatddx/api/schemas.py:Finding`
@@ -825,6 +898,62 @@ Raises:
 * `person: Person`
 * ∟`Self`
 
+## `Measured` `(_Schema)`
+`src/chatddx/api/schemas.py:Measured`
+
+* `pattern: str | None`
+* `problem: str | None = Field(…)`
+* `answers: int = Field(description="how many answers the views read")`
+* `found: int`
+* `missed: int`
+* `unscored: int`
+* `alternatives: list[MeasuredAlternative] = Field(…)`
+* `texts: list[MeasuredText] = Field(…)`
+
+## `MeasuredAlternative` `(_Schema)`
+`src/chatddx/api/schemas.py:MeasuredAlternative`
+
+* `pattern: str`
+* `found: int = Field(description="how many of what was found it finds")`
+
+## `MeasuredMark` `(_Schema)`
+`src/chatddx/api/schemas.py:MeasuredMark`
+
+* `item: int`
+* `start: int`
+* `end: int`
+
+## `MeasuredSeen` `(_Schema)`
+`src/chatddx/api/schemas.py:MeasuredSeen`
+
+* `run: UUID`
+* `at: datetime`
+* `replicate: int`
+* `configuration: str`
+* `view: str = Field(description="the scorer's title and the view's label")`
+* `href: str | None = Field(description="the page of the score stored for it")`
+
+## `MeasuredText` `(_Schema)`
+`src/chatddx/api/schemas.py:MeasuredText`
+
+* `texts: list[str] | None = Field(…)`
+* `marks: list[MeasuredMark]`
+* `found: bool | None = Field(…)`
+* `value: float | None`
+* `unit: str`
+* `reason: str | None`
+* `count: int = Field(description="how many times the views scored it")`
+* `alternatives: list[int] = Field(…)`
+* `seen: list[MeasuredSeen] = Field(…)`
+
+## `Measuring` `(_Schema)`
+`src/chatddx/api/schemas.py:Measuring`
+
+* `case: str = Field(description="the case whose answers are read")`
+* `expectation_schema: str = Field(…)`
+* `data: JsonValue = Field(description="the expectation's data, as it is written now")`
+* `field: str = Field(…)`
+
 ## `Metric` `(_Schema)`
 `src/chatddx/api/schemas.py:Metric`
 
@@ -1170,6 +1299,16 @@ Raises:
 `src/chatddx/api/families.py:router`
 
 `router = APIRouter(tags=["families"])`
+
+## `faring.router`
+`src/chatddx/api/faring.py:router`
+
+`router = APIRouter(tags=["families"])`
+
+## `measuring.router`
+`src/chatddx/api/measuring.py:router`
+
+`router = APIRouter(tags=["scores"])`
 
 ## `people.router`
 `src/chatddx/api/people.py:router`

@@ -92,6 +92,23 @@ def test_a_pattern_that_doesn_t_read_is_refused(pattern: str, problem: str) -> N
         _ = Pattern(pattern)
 
 
+@pytest.mark.parametrize(
+    "pattern, alternatives",
+    [
+        ("pneumonia", ["pneumonia"]),
+        ("copd | exacerbation & pulmonary", ["copd", "exacerbation & pulmonary"]),
+        ("(renal | kidney) & colic | stone*", ["(renal | kidney) & colic", "stone*"]),
+        ("((a | b)) | c", ["((a | b))", "c"]),
+    ],
+)
+def test_a_pattern_s_alternatives_are_those_at_its_top_level(
+    pattern: str, alternatives: list[str]
+) -> None:
+    assert Pattern(pattern).alternatives() == alternatives
+    for alternative in alternatives:
+        _ = Pattern(alternative)
+
+
 def test_the_reciprocal_rank_is_that_of_the_first_diagnosis_found() -> None:
     differential = ["Pulmonary embolism", "Pneumonia", "Pneumonia, atypical"]
     assert reciprocal_rank(differential, "pneumonia") == Scored(

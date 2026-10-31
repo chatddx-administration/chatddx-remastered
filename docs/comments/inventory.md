@@ -26,3 +26,10 @@ Written by `chatddx-dev index` from the comments in `[parts.inventory]`'s code i
 # Policy: De facto refusal mechanism for
 # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at
 ```
+
+## `src/chatddx/inventory/world.py:_synthetic`
+
+```
+# Policy: a World draws cases' scores only while it serves none but this machine's
+# endpoints, so that no World that runs real models shows drawn scores among them.
+```

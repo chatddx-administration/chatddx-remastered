@@ -117,3 +117,16 @@ def test_a_collaborator_leaves_a_thread_shared_with_them(
         404,
         f"no configuration {mine['id']} shared with alice",
     )
+
+
+@pytest.mark.slow
+def test_a_listing_follows_what_is_said_of_its_threads(signed: TestClient) -> None:
+    mine = thread(signed, "configuration", LINES)
+    listed = {"kind": "configuration", "owner": "alice"}
+    before = signed.get("/api/threads", params=listed).json()
+    assert signed.get("/api/threads", params=listed).json() == before
+    got = signed.patch(f"/api/threads/{mine['id']}", json={"name": "renamed"})
+    assert got.status_code == 200
+    after = signed.get("/api/threads", params=listed).json()
+    assert [t["name"] for t in after if t["id"] == mine["id"]] == ["renamed"]
+    assert len(after) == len(before)

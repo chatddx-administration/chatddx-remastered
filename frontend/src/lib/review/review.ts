@@ -1,7 +1,7 @@
 import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
 import type { Telling } from "$lib/review/About.svelte";
 import type { Appended } from "$lib/review/Appendices.svelte";
-import type { Evaluating } from "$lib/review/evaluation";
+import type { Measuring } from "$lib/review/measure.svelte";
 
 export type Review = {
   family: number;
@@ -9,9 +9,8 @@ export type Review = {
   expected: Expecting;
   appendices: Appended[];
   back: string;
-  evaluation: Evaluating | null;
-  from: unknown;
-  busy: string[] | null;
+  schema: string | null;
+  measure: Measuring;
   about: Telling;
 };
 

@@ -1,18 +1,14 @@
 import html
-import json
-import re
 import time
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlsplit
-from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
 from chatddx import settings
-from chatddx.api.test.helpers import digest, thread
 from chatddx.inventory import Inventory
-from chatddx.portal.test.helpers import props, settled, shown, started, world_served
+from chatddx.portal.test.helpers import settled, shown, started, world_served
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, OFF, faked
@@ -185,7 +181,7 @@ def test_a_run_whose_scoring_is_queued_is_not_scored_again_by_another_press(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_case_is_evaluated_from_its_review_under_each_configuration_that_runs(
+def test_a_case_is_run_from_its_review_under_each_configuration_that_runs(
     signed: TestClient,
 ) -> None:
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
@@ -193,12 +189,11 @@ def test_a_case_is_evaluated_from_its_review_under_each_configuration_that_runs(
     form = {"case": crlf["case"], "back": back}
     got = signed.post(f"/review/{crlf['id']}/runs", data=form)
     assert got.status_code == 303
-    path, _, fragment = got.headers["location"].partition("#")
-    query = parse_qs(urlsplit(path).query)
-    assert fragment == "evaluating"
+    location = urlsplit(got.headers["location"])
+    query = parse_qs(location.query)
+    assert (location.path, location.fragment) == (f"/review/{crlf['id']}", "")
     assert (query["tag"], query["case"]) == (["targets"], [crlf["case"]])
-    [first] = query["evaluation"]
-    runs = signed.get("/api/runs", params={"with": first, "limit": 200}).json()
+    runs = reaching(signed, crlf)
     by: dict[int, list[dict[str, Any]]] = {}
     for r in runs:
         by.setdefault(r["ran"]["configuration"], []).append(r)
@@ -208,183 +203,47 @@ def test_a_case_is_evaluated_from_its_review_under_each_configuration_that_runs(
         assert three["cases"] == one["cases"] == [crlf["case"]]
         if not three["titled"]["greedy"]:
             assert one["seeds"] == three["seeds"][-1:]
+    query = {"kind": "configuration", "purpose": "generation", "owner": "alice"}
+    owned = {t["id"] for t in signed.get("/api/threads", params=query).json()}
+    assert by and set(by) <= owned
     for r in runs:
         _ = settled(signed, r["id"])
 
-    page = shown(signed, path)
-    held = page.split('<script type="application/json" id="review-props">', 1)[1]
-    given = json.loads(held.split("</script>", 1)[0])["evaluation"]
-    assert given["first"] == first
-    assert {c["configuration"] for c in given["configurations"]} == set(by)
-    assert all(len(c["runs"]) == 2 for c in given["configurations"])
-    assert given["fields"] == [
-        "diagnosis",
-        "warning",
-        "disposition",
-        "dont_miss",
-        "notes",
-    ]
-    fields = {v["field"] for views in given["scorers"].values() for v in views}
-    assert {"diagnosis", "dont_miss", "notes"} <= fields
-    left = page.split("Left out:", 1)[1].split("</ul>", 1)[0]
-    assert "tools can&#39;t be cleared yet" in left
-    query = {"kind": "configuration", "purpose": "generation", "owner": "alice"}
-    live = signed.get("/api/threads", params=query).json()
-    assert len(by) + left.count("<li>") == len(live)
-    every = {"kind": "configuration", "purpose": "generation"}
-    assert len(signed.get("/api/threads", params=every).json()) > len(live)
-    owned = {t["id"] for t in live}
-    assert set(by) <= owned and "archive/" not in left
-
-    [noted] = signed.get("/api/families", params={"name": "noted"}).json()
-    assert signed.get(f"/review/{noted['id']}?evaluation={first}").status_code == 404
+    page = shown(signed, f"{back}&case={crlf['case']}")
+    assert 'id="evaluating"' not in page and "review-evaluation" not in page
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     got = signed.post(f"/review/{crlf['id']}/runs", data=form, headers=elsewhere)
     assert got.status_code == 403
 
 
-def evaluating(signed: TestClient, family: dict[str, Any]) -> str:
-    form = {"case": family["case"], "back": f"/review/{family['id']}"}
-    got = signed.post(f"/review/{family['id']}/runs", data=form)
-    assert got.status_code == 303
-    [first] = parse_qs(urlsplit(got.headers["location"]).query)["evaluation"]
-    return first
+def reaching(signed: TestClient, family: dict[str, Any]) -> list[dict[str, Any]]:
+    query = {"reaching": family["case"], "limit": 200}
+    return signed.get("/api/runs", params=query).json()
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_case_s_review_shows_its_latest_runs_and_runs_no_other_while_one_is_open(
-    signed: TestClient,
-) -> None:
+def test_a_case_s_review_runs_no_other_while_one_is_open(signed: TestClient) -> None:
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
     review = f"/review/{crlf['id']}?case={crlf['case']}"
-    assert props(shown(signed, review))["evaluation"] is None
+    form = {"case": crlf["case"], "back": review}
+    assert '<button class="run">' in shown(signed, review)
     assert signed.post("/queue/pause").status_code == 303
-    first = evaluating(signed, crlf)
-    assert evaluating(signed, crlf) == first
-    runs = signed.get("/api/runs", params={"with": first, "limit": 200}).json()
-    page = shown(signed, review)
-    assert sorted(props(page)["busy"]) == sorted(r["id"] for r in runs)
-    assert props(page)["evaluation"]["first"] == first
-    assert re.search(r'<button class="run" disabled data-busy>', page)
+    assert signed.post(f"/review/{crlf['id']}/runs", data=form).status_code == 303
+    runs = reaching(signed, crlf)
+    assert runs
+    assert signed.post(f"/review/{crlf['id']}/runs", data=form).status_code == 303
+    assert len(reaching(signed, crlf)) == len(runs)
+    assert '<button class="run" disabled>' in shown(signed, review)
     assert signed.post("/queue/resume").status_code == 303
     for r in runs:
         _ = settled(signed, r["id"])
-
-    second = evaluating(signed, crlf)
-    assert second != first
-    for r in signed.get("/api/runs", params={"with": second, "limit": 200}).json():
-        _ = settled(signed, r["id"])
-    page = shown(signed, review)
-    assert (props(page)["busy"], props(page)["evaluation"]["first"]) == (None, second)
-    assert '<button class="run">' in page
-    assert "Not as things are now" not in page and "data-rework" not in page
-    assert entries(page) == [(first, False, True), (second, True, True)]
-    page = shown(signed, f"{review}&evaluation={first}")
-    assert props(page)["evaluation"]["first"] == first
-    assert entries(page) == [(first, True, True), (second, False, True)]
-
-
-def flagged(page: str) -> str:
-    held = page.split("data-told", 1)[1].split('id="review-evaluation"', 1)[0]
-    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", held))
-    return html.unescape(text).replace(" :", ":")
-
-
-def entries(page: str) -> list[tuple[str, bool, bool]]:
-    found = re.findall(
-        r'<a data-entry href="([^"]+)"( aria-current="page")? aria-label="([^"]+)"',
-        page,
-    )
-    return [
-        (
-            parse_qs(urlsplit(html.unescape(h)).query)["evaluation"][0],
-            bool(current),
-            label.endswith(", as things are now"),
-        )
-        for h, current, label in found
-    ]
+    assert '<button class="run">' in shown(signed, review)
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_the_latest_runs_flag_what_the_configuration_or_expectation_has_changed_since(
-    signed: TestClient,
-) -> None:
-    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
-    review = f"/review/{crlf['id']}?case={crlf['case']}"
-    first = evaluating(signed, crlf)
-    for r in signed.get("/api/runs", params={"with": first, "limit": 200}).json():
-        _ = settled(signed, r["id"])
-    assert "data-rework" not in shown(signed, review)
-
-    off = digest(signed, "reasoning", OFF)
-    lines = thread(signed, "configuration", LINES)
-    edited = {"head": lines["head"]["id"], "parts": {"reasoning": off}}
-    got = signed.post(f"/api/threads/{lines['id']}/edits", json=edited)
-    assert got.status_code == 201
-    page = shown(signed, review)
-    told = flagged(page)
-    assert f"{LINES}: its configuration has changed since it ran" in told
-    assert "data-rework" in page and "Rework" in told
-    assert "data-rework" in shown(signed, f"{review}&evaluation={first}")
-    before = ran(shown(signed, review))
-    reworking(signed, crlf, review)
-    after = ran(shown(signed, review))
-    assert after.keys() == before.keys()
-    for c, runs in after.items():
-        if c == lines["id"]:
-            assert {r["run"] for r in runs}.isdisjoint(r["run"] for r in before[c])
-            assert [r["seeds"] for r in runs] == [r["seeds"] for r in before[c]]
-        else:
-            assert runs == before[c]
-    page = shown(signed, review)
-    assert "data-rework" not in page
-    [(_, _, stale), (newest, _, matches)] = entries(page)
-    assert (stale, matches) == (False, True)
-    page = shown(signed, f"{review}&evaluation={first}")
-    assert "data-rework" not in page
-    assert "The latest as things are now" in flagged(page)
-    assert re.search(rf'<a data-entry href="[^"]*evaluation={newest}[^"]*">', page)
-
-    [case] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
-    [expected] = [e for e in case["expectations"] if e["expectation"]]
-    query = {"kind": "expectation", "owner": "alice"}
-    [mine] = [
-        t
-        for t in signed.get("/api/threads", params=query).json()
-        if t["head"]["digest"] == expected["expectation"]
-    ]
-    held = signed.get(f"/api/components/{mine['head']['digest']}").json()["body"]
-    worded = {**held["data"]["warning"], "text": "Bleeding on anticoagulants."}
-    changed = {**held, "data": {**held["data"], "warning": worded}}
-    got = signed.post(
-        f"/api/threads/{mine['id']}/edits",
-        json={"head": mine["head"]["id"], "component": changed},
-    )
-    assert got.status_code == 201
-    assert "Not as things are now" not in shown(signed, review)
-
-    warning = {**worded, "pattern": worded["pattern"] + " | apixaban"}
-    changed = {**held, "data": {**held["data"], "warning": warning}}
-    got = signed.post(
-        f"/api/threads/{mine['id']}/edits",
-        json={"head": got.json()["id"], "component": changed},
-    )
-    assert got.status_code == 201
-    page = shown(signed, review)
-    assert "isn't scored against the expectation as it is" in flagged(page)
-    assert "data-edit-from" in page and props(page)["from"] == held["data"]
-    before = ran(page)
-    reworking(signed, crlf, review)
-    page = shown(signed, review)
-    assert ran(page) == before
-    assert "Not as things are now" not in page and props(page)["from"] is None
-
-
-@pytest.mark.usefixtures("fake")
-@pytest.mark.slow
-def test_a_review_starts_nothing_over_the_quota_and_reworks_what_stopped(
+def test_a_review_starts_nothing_over_the_quota(
     signed: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
@@ -397,40 +256,3 @@ def test_a_review_starts_nothing_over_the_quota_and_reworks_what_stopped(
         "a day takes 1" in html.unescape(got.text)
     )
     assert signed.get("/api/runs").json() == []
-    monkeypatch.undo()
-
-    assert signed.post("/queue/pause").status_code == 303
-    first = evaluating(signed, crlf)
-    runs = signed.get("/api/runs", params={"with": first, "limit": 200}).json()
-    for r in runs:
-        assert signed.post(f"/runs/{r['id']}/halt").status_code == 303
-    assert signed.post("/queue/resume").status_code == 303
-    page = shown(signed, review)
-    assert "it was halted before it finished" in flagged(page)
-    assert "data-rework" in page
-    before = ran(page)
-    reworking(signed, crlf, review)
-    after = ran(shown(signed, review))
-    assert after.keys() == before.keys()
-    for c, held in after.items():
-        assert {r["run"] for r in held}.isdisjoint(r["run"] for r in before[c])
-        assert [r["seeds"] for r in held] == [r["seeds"] for r in before[c]]
-    assert "Not as things are now" not in shown(signed, review)
-
-
-def ran(page: str) -> dict[int, list[dict[str, Any]]]:
-    held = props(page)["evaluation"]["configurations"]
-    return {c["configuration"]: c["runs"] for c in held}
-
-
-def reworking(signed: TestClient, family: dict[str, Any], review: str) -> None:
-    form = {"case": family["case"], "back": f"{review}&evaluation={uuid4()}"}
-    got = signed.post(f"/review/{family['id']}/rework", data=form)
-    assert got.status_code == 303
-    path, _, fragment = got.headers["location"].partition("#")
-    assert fragment == "evaluating" and "evaluation" not in parse_qs(
-        urlsplit(path).query
-    )
-    for runs in ran(shown(signed, path)).values():
-        for r in runs:
-            _ = settled(signed, r["run"])

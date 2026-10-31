@@ -244,6 +244,14 @@ Raises:
 4. `Invalid`: `"a word is missing in %(text)s", text=repr(self.text)` (through `Pattern._any`)
 5. `Invalid`: `"unexpected %(token)s in %(text)s", token=repr(self._peek()), text=repr(text)`
 
+## `Pattern.alternatives`
+`src/chatddx/scorers/patterns.py:Pattern.alternatives`
+
+Each alternative of the pattern's at its top level, as a pattern of its own:
+what finds a text the pattern finds, joined by `|`.
+
+* ∟`list[str]`
+
 ## `Pattern.example`
 `src/chatddx/scorers/patterns.py:Pattern.example`
 

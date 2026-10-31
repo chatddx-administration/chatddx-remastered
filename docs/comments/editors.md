@@ -19,6 +19,12 @@ Written by `chatddx-dev index` from the comments in `[parts.editors]`'s code in 
 // Policy: one begun from what another case of the family expects is unsaved as it is shown.
 ```
 
+## `frontend/src/lib/editors/ExpectationEditor.svelte:opened`
+
+```
+// Policy: the field measured is opened as measuring begins, and otherwise left as the clinician leaves it.
+```
+
 ## `frontend/src/lib/editors/writing.ts:Target`
 
 ```

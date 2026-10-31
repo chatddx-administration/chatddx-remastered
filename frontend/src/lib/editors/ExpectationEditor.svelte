@@ -14,9 +14,11 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+  import RulerIcon from "@lucide/svelte/icons/ruler";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { refusal, t } from "$lib/locale";
   import type { Edited, Wrote } from "$lib/review/edited.svelte";
+  import type { Measure } from "$lib/review/measure.svelte";
   import { blank, fieldName, glimpse, kept, pruned, widget } from "$lib/schema/form";
   import SchemaField from "$lib/schema/SchemaField.svelte";
   import Findings from "./Findings.svelte";
@@ -26,7 +28,8 @@
     editor,
     edited,
     restored = () => undefined,
-  }: { editor: ExpectationEditing; edited: Edited; restored?: () => void } = $props();
+    measure,
+  }: { editor: ExpectationEditing; edited: Edited; restored?: () => void; measure?: Measure } = $props();
   const given = untrack(() => editor);
   const root = given.json_schema;
   const shape = widget(root, root);
@@ -53,6 +56,18 @@
 
   export function load(value: unknown): void {
     data = value ?? blank(root, root);
+  }
+
+  // Policy: the field measured is opened as measuring begins, and otherwise left as the clinician leaves it.
+  const opened = $state<Record<string, HTMLDetailsElement | undefined>>({});
+  $effect(() => {
+    const field = measure?.field;
+    const at = field == null ? undefined : untrack(() => opened[field]);
+    if (at) at.open = true;
+  });
+
+  export function current(): unknown {
+    return $state.snapshot(component().data);
   }
 
   export function holds(value: unknown): boolean {
@@ -140,13 +155,33 @@
   {#if sections}
     {#each sections as p (p.name)}
       {@const wrong = unreadable.get(p.name)}
-      <details class="group rounded-lg border border-border/60">
+      {@const chosen = measure?.field === p.name}
+      {@const dimmed = measure?.field != null && !chosen}
+      <details
+        class="group rounded-lg border transition-[opacity,border-color,box-shadow] duration-500 {chosen
+          ? 'border-primary shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_25%,transparent)]'
+          : 'border-border/60'} {dimmed ? 'opacity-35' : ''}"
+        bind:this={opened[p.name]}
+        inert={dimmed}
+        data-field={p.name}
+      >
         <summary
           class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm [&::-webkit-details-marker]:hidden"
         >
           <ChevronRightIcon class="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
           <span class="font-medium">{fieldName(p.name)}</span>
           <span class="min-w-0 flex-1 truncate text-xs text-muted-foreground">{held(fields()[p.name])}</span>
+          {#if measure?.fields.includes(p.name) && measure.field === null}
+            <button
+              type="button"
+              class="view inline-flex shrink-0 items-center gap-1 text-xs"
+              title={t("Every answer of the case's that this is scored against, and what it finds in each")}
+              onclick={(e) => {
+                e.preventDefault();
+                measure.open(p.name);
+              }}><RulerIcon class="size-3.5" />{t("Measure")}</button
+            >
+          {/if}
           {#if wrong}
             <TriangleAlertIcon
               class="size-4 shrink-0 text-destructive group-open:hidden"

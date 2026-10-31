@@ -768,3 +768,140 @@
 2026-10-30T19:05:44Z	container	194.1	0	10	59b2b8a	./dev/check.sh browser
 2026-10-30T19:05:46Z	container	228.1	0	10	59b2b8a	pytest -n 4
 2026-10-30T19:05:46Z	container	229.2	0	10	59b2b8a	./dev/check.sh python-tests
+2026-10-30T19:43:25Z	container	3.3	0	8	88359af	./dev/check.sh openapi
+2026-10-30T19:43:26Z	container	4.7	0	8	88359af	./dev/check.sh locale
+2026-10-30T19:43:28Z	container	6.0	0	8	88359af	./dev/check.sh stamps
+2026-10-30T19:43:30Z	container	8.4	0	8	88359af	./dev/check.sh docs
+2026-10-30T19:43:31Z	container	9.6	0	8	88359af	./dev/check.sh pending
+2026-10-30T19:43:40Z	container	18.9	0	8	88359af	./dev/check.sh format
+2026-10-30T19:43:47Z	container	4.2	0	8	88359af	pnpm --dir frontend test
+2026-10-30T19:43:47Z	container	25.4	0	8	88359af	./dev/check.sh frontend
+2026-10-30T19:43:52Z	container	30.2	0	8	88359af	./dev/check.sh index
+2026-10-30T19:44:06Z	container	44.5	0	8	88359af	./dev/check.sh python-lint
+2026-10-30T20:44:12Z	container	3.1	0	0	40b002e	pnpm --dir frontend test
+2026-10-30T20:44:12Z	container	13.3	0	0	40b002e	./dev/check.sh frontend
+2026-10-30T20:45:16Z	container	51.6	0	0	40b002e	pytest src/chatddx/portal/test/test_reviewing.py src/chatddx/portal/test/test_running.py
+2026-10-30T20:46:19Z	container	58.2	0	0	40b002e	pytest -m browser src/chatddx/portal/test/test_browser.py -k 'review or expectation or appendix or case'
+2026-10-30T21:04:14Z	container	42.1	0	0	8f56ea4	pytest -n 4 src/chatddx/portal/test/test_reviewing.py src/chatddx/portal/test/test_running.py src/chatddx/api/test
+2026-10-30T21:04:47Z	container	0.2	5	0	8f56ea4	pytest src/chatddx/portal/test/test_reviewing.py -k moved_here -x
+2026-10-30T21:04:57Z	container	6.2	0	0	8f56ea4	pytest src/chatddx/portal/test/test_reviewing.py -k move_here -x
+2026-10-30T21:06:16Z	container	2.4	0	0	fb37fb3	pytest src/chatddx/store/test/test_store.py
+2026-10-30T21:08:56Z	container	138.3	1	0	fb37fb3	pytest -n 4
+2026-10-30T21:08:56Z	container	138.8	1	0	fb37fb3	./dev/check.sh python-tests
+2026-10-30T21:09:14Z	container	2.3	0	0	fb37fb3	pytest src/chatddx/api/test/test_variations.py -k queries_don_t_grow
+2026-10-30T21:23:34Z	container	1.3	0	0	e95597a	pytest src/chatddx/store/test/test_catalog.py -k version
+2026-10-30T21:23:57Z	container	1.0	0	0	e95597a	pytest src/chatddx/store/test/test_catalog.py -k version
+2026-10-30T21:24:20Z	container	3.2	0	0	e95597a	pytest src/chatddx/api/test/test_said.py
+2026-10-30T21:24:30Z	container	2.3	1	0	e95597a	pytest src/chatddx/api/test/test_said.py -k listing_follows
+2026-10-30T21:25:29Z	container	40.3	0	1	e95597a	./dev/check.sh python-lint
+2026-10-30T21:27:02Z	container	133.3	1	1	e95597a	pytest -n 4
+2026-10-30T21:27:02Z	container	133.7	1	1	e95597a	./dev/check.sh python-tests
+2026-10-30T21:28:09Z	container	5.7	0	0	d7b15ee	pytest src/chatddx/store/test/test_cli.py src/chatddx/store/test/test_store.py src/chatddx/store/test/test_catalog.py
+2026-10-30T21:29:37Z	container	2.0	0	4	d7b15ee	./dev/check.sh stamps
+2026-10-30T21:29:50Z	container	15.3	0	4	d7b15ee	./dev/check.sh format
+2026-10-30T21:30:06Z	container	31.2	0	4	d7b15ee	./dev/check.sh index
+2026-10-30T21:30:20Z	container	44.8	0	4	d7b15ee	./dev/check.sh python-lint
+2026-10-30T21:31:57Z	container	142.0	0	4	d7b15ee	pytest -n 4
+2026-10-30T21:31:58Z	container	142.7	0	4	d7b15ee	./dev/check.sh python-tests
+2026-10-30T21:50:01Z	container	3.0	0	5	60fa55c	./dev/check.sh openapi
+2026-10-30T21:50:03Z	container	4.7	0	5	60fa55c	./dev/check.sh locale
+2026-10-30T21:50:04Z	container	5.6	0	5	60fa55c	./dev/check.sh pending
+2026-10-30T21:50:07Z	container	9.1	0	5	60fa55c	./dev/check.sh format
+2026-10-30T21:50:14Z	container	3.3	0	5	60fa55c	pnpm --dir frontend test
+2026-10-30T21:50:14Z	container	15.6	0	5	60fa55c	./dev/check.sh frontend
+2026-10-30T21:50:26Z	container	27.8	0	5	60fa55c	./dev/check.sh python-lint
+2026-10-30T22:32:05Z	container	3.4	1	0	60fa55c	pytest src/chatddx/api/test/test_scores.py -k measured
+2026-10-30T22:32:20Z	container	3.1	0	0	60fa55c	pytest src/chatddx/api/test/test_scores.py -k measured
+2026-10-30T22:32:42Z	container	0.1	0	0	60fa55c	pytest src/chatddx/scorers/test/test_scorers.py -k alternatives
+2026-10-30T22:33:23Z	container	12.3	1	0	60fa55c	pytest -m browser src/chatddx/portal/test/test_browser.py -k measured
+2026-10-30T22:34:19Z	container	7.4	0	0	60fa55c	pytest -m browser src/chatddx/portal/test/test_browser.py -k measured
+2026-10-30T22:34:32Z	container	4.3	0	0	60fa55c	pytest src/chatddx/portal/test/test_reviewing.py -k nothing_of_what_ran
+2026-10-30T22:35:38Z	container	1.2	1	10	60fa55c	./dev/check.sh pending
+2026-10-30T22:35:39Z	container	2.7	0	10	60fa55c	./dev/check.sh docs
+2026-10-30T22:35:45Z	container	8.7	0	10	60fa55c	./dev/check.sh openapi
+2026-10-30T22:35:48Z	container	11.9	0	10	60fa55c	./dev/check.sh stamps
+2026-10-30T22:35:50Z	container	13.4	0	10	60fa55c	./dev/check.sh locale
+2026-10-30T22:36:03Z	container	26.2	0	10	60fa55c	./dev/check.sh format
+2026-10-30T22:36:17Z	container	9.6	0	10	60fa55c	pnpm --dir frontend test
+2026-10-30T22:36:18Z	container	41.3	0	10	60fa55c	./dev/check.sh frontend
+2026-10-30T22:36:26Z	container	49.6	0	10	60fa55c	./dev/check.sh index
+2026-10-30T22:36:51Z	container	74.3	0	10	60fa55c	./dev/check.sh python-lint
+2026-10-30T22:36:58Z	container	81.6	0	10	60fa55c	./dev/check.sh dev
+2026-10-30T22:39:00Z	container	201.8	0	10	60fa55c	pytest -n 4
+2026-10-30T22:39:00Z	container	143.8	1	10	60fa55c	pytest -m browser
+2026-10-30T22:39:00Z	container	203.3	0	10	60fa55c	./dev/check.sh python-tests
+2026-10-30T22:39:01Z	container	162.5	1	10	60fa55c	./dev/check.sh browser
+2026-10-30T22:41:57Z	container	110.0	0	0	60fa55c	pytest -m browser
+2026-10-30T22:41:59Z	container	117.8	0	0	60fa55c	./dev/check.sh browser
+2026-10-30T22:42:11Z	container	3.2	0	0	60fa55c	pnpm --dir frontend test
+2026-10-30T22:42:11Z	container	12.1	0	0	60fa55c	./dev/check.sh frontend
+2026-10-30T22:44:45Z	container	0.5	1	2	c87ae7a	./dev/check.sh pending
+2026-10-30T22:44:47Z	container	2.6	0	2	c87ae7a	./dev/check.sh stamps
+2026-10-30T22:44:49Z	container	3.8	0	2	c87ae7a	./dev/check.sh locale
+2026-10-30T23:32:16Z	container	2.9	0	5	d68f789	./dev/check.sh openapi
+2026-10-30T23:32:17Z	container	3.9	0	5	d68f789	./dev/check.sh locale
+2026-10-30T23:32:17Z	container	4.4	0	5	d68f789	./dev/check.sh pending
+2026-10-30T23:32:20Z	container	7.3	0	5	d68f789	./dev/check.sh format
+2026-10-30T23:32:39Z	container	26.3	0	5	d68f789	./dev/check.sh python-lint
+2026-10-31T00:06:07Z	container	0.5	1	0	8043208	pytest src/chatddx/inventory/test/test_world.py src/chatddx/scripted/test/test_scripted_review.py -k 'draws or drawn'
+2026-10-31T00:06:11Z	container	0.1	1	0	8043208	pytest src/chatddx/scripted/test/test_scripted_review.py -k drawn
+2026-10-31T00:06:25Z	container	0.1	0	0	8043208	pytest src/chatddx/inventory/test/test_world.py src/chatddx/scripted/test/test_scripted_review.py -k 'draws or drawn'
+2026-10-31T00:06:48Z	container	3.1	0	0	8043208	pytest src/chatddx/api/test/test_scores.py -k fares
+2026-10-31T00:07:16Z	container	4.0	0	0	8043208	pytest src/chatddx/api/test/test_scores.py -k 'fares or measured'
+2026-10-31T00:07:27Z	container	2.9	0	0	8043208	pytest src/chatddx/api/test/test_scores.py -k fares
+2026-10-31T00:07:48Z	container	6.5	0	0	8043208	pytest -m browser src/chatddx/portal/test/test_browser.py -k fares
+2026-10-31T00:09:23Z	container	1.7	1	10	8043208	./dev/check.sh pending
+2026-10-31T00:09:23Z	container	2.6	0	10	8043208	./dev/check.sh docs
+2026-10-31T00:09:30Z	container	8.6	0	10	8043208	./dev/check.sh openapi
+2026-10-31T00:09:31Z	container	10.2	0	10	8043208	./dev/check.sh stamps
+2026-10-31T00:09:34Z	container	12.9	0	10	8043208	./dev/check.sh locale
+2026-10-31T00:09:44Z	container	23.5	0	10	8043208	./dev/check.sh format
+2026-10-31T00:09:54Z	container	6.5	0	10	8043208	pnpm --dir frontend test
+2026-10-31T00:09:54Z	container	32.9	0	10	8043208	./dev/check.sh frontend
+2026-10-31T00:10:04Z	container	42.8	0	10	8043208	./dev/check.sh index
+2026-10-31T00:10:22Z	container	60.8	0	10	8043208	./dev/check.sh python-lint
+2026-10-31T00:10:24Z	container	63.5	0	10	8043208	./dev/check.sh dev
+2026-10-31T00:12:32Z	container	144.8	1	10	8043208	pytest -m browser
+2026-10-31T00:12:33Z	container	159.4	1	10	8043208	./dev/check.sh browser
+2026-10-31T00:12:47Z	container	205.0	1	10	8043208	pytest -n 4
+2026-10-31T00:12:47Z	container	206.2	1	10	8043208	./dev/check.sh python-tests
+2026-10-31T00:13:16Z	container	5.1	0	0	8043208	pytest src/chatddx/portal/test/test_reviewing.py -k nothing_of
+2026-10-31T00:13:24Z	container	6.2	1	0	8043208	pytest -m browser src/chatddx/portal/test/test_browser.py -k clinician_reviews
+2026-10-31T00:13:45Z	container	5.6	1	0	8043208	pytest -m browser src/chatddx/portal/test/test_browser.py -k clinician_reviews
+2026-10-31T00:14:27Z	container	20.0	0	0	8043208	pytest -m browser src/chatddx/portal/test/test_browser.py -k 'clinician_reviews or fares or measured'
+2026-10-31T00:15:10Z	container	1.6	1	10	8043208	./dev/check.sh pending
+2026-10-31T00:15:11Z	container	2.8	0	10	8043208	./dev/check.sh docs
+2026-10-31T00:15:17Z	container	8.3	0	10	8043208	./dev/check.sh openapi
+2026-10-31T00:15:19Z	container	10.1	0	10	8043208	./dev/check.sh stamps
+2026-10-31T00:15:19Z	container	10.3	0	10	8043208	./dev/check.sh locale
+2026-10-31T00:15:33Z	container	24.0	0	10	8043208	./dev/check.sh format
+2026-10-31T00:15:45Z	container	9.3	0	10	8043208	pnpm --dir frontend test
+2026-10-31T00:15:46Z	container	37.0	0	10	8043208	./dev/check.sh frontend
+2026-10-31T00:15:55Z	container	46.5	0	10	8043208	./dev/check.sh index
+2026-10-31T00:16:14Z	container	66.0	0	10	8043208	./dev/check.sh python-lint
+2026-10-31T00:16:18Z	container	69.2	0	10	8043208	./dev/check.sh dev
+2026-10-31T00:18:28Z	container	198.0	0	10	8043208	pytest -n 4
+2026-10-31T00:18:28Z	container	199.4	0	10	8043208	./dev/check.sh python-tests
+2026-10-31T00:18:34Z	container	151.7	0	10	8043208	pytest -m browser
+2026-10-31T00:18:35Z	container	169.4	0	10	8043208	./dev/check.sh browser
+2026-10-31T00:43:31Z	container	2.6	0	5	403a842	./dev/check.sh openapi
+2026-10-31T00:43:32Z	container	3.9	0	5	403a842	./dev/check.sh locale
+2026-10-31T00:43:33Z	container	4.8	0	5	403a842	./dev/check.sh pending
+2026-10-31T00:43:36Z	container	7.9	0	5	403a842	./dev/check.sh format
+2026-10-31T00:43:55Z	container	26.6	0	5	403a842	./dev/check.sh python-lint
+2026-10-31T00:44:55Z	container	0.7	0	4	9d59c5d	./dev/check.sh docs
+2026-10-31T00:45:01Z	container	6.9	0	4	9d59c5d	./dev/check.sh format
+2026-10-31T00:45:20Z	container	25.5	1	4	9d59c5d	./dev/check.sh dev
+2026-10-31T00:45:20Z	container	25.7	0	4	9d59c5d	./dev/check.sh python-lint
+2026-10-31T00:47:27Z	container	127.1	0	0	9d59c5d	pytest -n 4
+2026-10-31T00:47:28Z	container	127.7	0	0	9d59c5d	./dev/check.sh python-tests
+2026-10-31T00:49:20Z	container	106.4	0	0	9d59c5d	pytest -m browser
+2026-10-31T00:49:22Z	container	113.7	0	0	9d59c5d	./dev/check.sh browser
+2026-10-31T00:49:56Z	container	25.8	1	0	1941a56	./dev/check.sh dev
+2026-10-31T01:19:27Z	container	2.0	0	5	20ef19c	./dev/check.sh openapi
+2026-10-31T01:19:30Z	container	4.2	0	5	20ef19c	./dev/check.sh locale
+2026-10-31T01:19:30Z	container	4.6	0	5	20ef19c	./dev/check.sh pending
+2026-10-31T01:19:34Z	container	8.3	0	5	20ef19c	./dev/check.sh format
+2026-10-31T01:19:56Z	container	31.1	0	5	20ef19c	./dev/check.sh python-lint
+2026-10-31T01:20:36Z	container	22.8	0	0	20ef19c	./dev/check.sh dev
+2026-10-31T01:21:19Z	container	22.1	0	0	20ef19c	./dev/check.sh dev

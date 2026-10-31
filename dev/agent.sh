@@ -39,7 +39,6 @@ field() {
 session-start() {
   [[ -t 0 ]] || event="$(cat)"
   mkdir -p "$STATE"
-  left_over
   local state=()
   case "$(field source)" in
   resume | clear | compact) ;;
@@ -52,15 +51,6 @@ session-start() {
     state+=(refused)
   fi
   echo "${state[*]}" >"$STARTED"
-}
-
-# Migration: what dev/ held before dev/state/; drop once no checkout holds it.
-left_over() {
-  if [[ -f dev/costs-spool.tsv ]]; then
-    cat dev/costs-spool.tsv >>"$STATE/costs-spool.tsv"
-    rm dev/costs-spool.tsv
-  fi
-  rm -rf dev/logs dev/session-start dev/turn-start dev/refused dev/stamped dev/*-good
 }
 
 session-checked() {

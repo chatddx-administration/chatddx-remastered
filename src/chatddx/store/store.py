@@ -22,6 +22,7 @@ from chatddx.ledger import (
     ScoreStarted,
 )
 
+from .cache import Cache
 from .notify import ROWS, channel
 
 Connection = psycopg.Connection[TupleRow]
@@ -37,6 +38,17 @@ _TOLD: dict[str, type[Record]] = {
     "score finished": ScoreFinished,
     "score item": ScoreItem,
 }
+
+
+# Policy: so many components held parsed and no more: factor.component is insert-only
+# and a digest names what it holds, so one is held without a version.
+_PARSED: Cache[str, Component] = Cache(20_000)
+
+# Policy: so many finished runs and scores held and no more: the ledger is insert-only
+# and a finished record seals what was written before it, so one is held without a
+# version; one not finished is read anew each time.
+_RUNS: Cache[UUID, Run] = Cache(2_000)
+_SCORES: Cache[UUID, Score] = Cache(20_000)
 
 
 class Store:
@@ -72,12 +84,16 @@ class Store:
         return digests
 
     def get(self, digest: str) -> Component:
+        if (held := _PARSED.get(self._conn, digest)) is not None:
+            return held
         row = self._conn.execute(
             "SELECT canonical FROM factor.component WHERE digest = %s", (digest,)
         ).fetchone()
         if row is None:
             raise StructuralError(f"{digest} is not in the store")
-        return Registry().add_raw(digest, str(row[0]).encode())
+        component = Registry().add_raw(digest, str(row[0]).encode())
+        _PARSED.put(self._conn, digest, component)
+        return component
 
     def load(self, roots: Iterable[str]) -> Registry:
         roots = list(roots)
@@ -96,7 +112,11 @@ class Store:
         ).fetchall()
         registry = Registry()
         for digest, canonical in rows:
-            _ = registry.add_raw(str(digest), str(canonical).encode())
+            if (held := _PARSED.get(self._conn, str(digest))) is not None:
+                _ = registry.add(held)
+            else:
+                parsed = registry.add_raw(str(digest), str(canonical).encode())
+                _PARSED.put(self._conn, parsed.digest, parsed)
         if missing := [r for r in roots if r not in registry]:
             raise StructuralError(f"not in the store: {missing}")
         return registry
@@ -181,6 +201,14 @@ class Store:
                 _ = cur.execute("SELECT pg_notify(%s, %s)", (channel(run), ROWS))
 
     def run(self, run: UUID) -> Run:
+        if (held := _RUNS.get(self._conn, run)) is not None:
+            return held
+        made = self._run(run)
+        if made.finished is not None:
+            _RUNS.put(self._conn, run, made)
+        return made
+
+    def _run(self, run: UUID) -> Run:
         started, finished = self._stages(
             "SELECT stage, payload FROM ledger.run_stage WHERE run = %s", "run", run
         )
@@ -202,6 +230,14 @@ class Store:
         )
 
     def score(self, score: UUID) -> Score:
+        if (held := _SCORES.get(self._conn, score)) is not None:
+            return held
+        made = self._score(score)
+        if made.finished is not None:
+            _SCORES.put(self._conn, score, made)
+        return made
+
+    def _score(self, score: UUID) -> Score:
         started, finished = self._stages(
             "SELECT stage, payload FROM ledger.score_stage WHERE score = %s",
             "score",

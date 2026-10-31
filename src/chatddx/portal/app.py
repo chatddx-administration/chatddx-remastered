@@ -31,7 +31,7 @@ def app(
     assets: Path | None = None,
     worker: bool = False,
 ) -> FastAPI:
-    made = api.app(world.inventory, conninfo, worker)
+    made = api.app(world.inventory, conninfo, worker, world.synthetic)
     made.state.world = world
     made.state.assets = Assets(assets or settings.portal_assets())
     made.state.locales = Locales()

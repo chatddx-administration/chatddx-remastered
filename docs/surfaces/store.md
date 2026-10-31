@@ -38,6 +38,35 @@ Finds:
 * `payload: str`
 * ∟`Message | None`
 
+## `Cache` `[K: Hashable, V]`
+`src/chatddx/store/cache.py:Cache`
+
+What was read from the database, by key, for as long as the process lives: valid
+forever without a version, or while it stands with one, as `catalogued` reads it.
+Holds a lock only while it looks up or puts in; never queries.
+
+## `Cache.__init__`
+`src/chatddx/store/cache.py:Cache.__init__`
+
+* `size: int`
+
+## `Cache.get`
+`src/chatddx/store/cache.py:Cache.get`
+
+* `conn: _Connection`
+* `key: K`
+* `version: int | None = None`
+* ∟`V | None`
+
+## `Cache.put`
+`src/chatddx/store/cache.py:Cache.put`
+
+* `conn: _Connection`
+* `key: K`
+* `value: V`
+* `version: int | None = None`
+* ∟`None`
+
 ## `Catalog`
 `src/chatddx/store/catalog.py:Catalog`
 
@@ -121,6 +150,15 @@ Finds:
 * `id: str | None = None`
 * `fingerprint: Fingerprint | None = None`
 * ∟`RepairPlan`
+
+## `catalogued`
+`src/chatddx/store/cache.py:catalogued`
+
+The catalog's version, which each transaction that writes to it bumps as it
+commits: one query.
+
+* `conn: _Connection`
+* ∟`int`
 
 ## `channel`
 `src/chatddx/store/notify.py:channel`
@@ -669,8 +707,8 @@ Raises:
 * ∟`Run`
 
 Raises:
-1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._stages`)
-2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._stages`)
+1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._run`)
+2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._run`)
 
 ## `Store.score`
 `src/chatddx/store/store.py:Store.score`
@@ -679,8 +717,8 @@ Raises:
 * ∟`Score`
 
 Raises:
-1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._stages`)
-2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._stages`)
+1. `LookupError`: `"{log} {key} is not in the store"` (through `Store._score`)
+2. `StructuralError`: `"{log} {key} has no started row"` (through `Store._score`)
 
 ## `Store.scores_of`
 `src/chatddx/store/store.py:Store.scores_of`

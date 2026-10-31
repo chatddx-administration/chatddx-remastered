@@ -1,9 +1,12 @@
+from dataclasses import replace
 from uuid import uuid4
 
 import httpx2
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from chatddx.api.state import AppState
 from chatddx.api.test.helpers import (
     UNDER_WAY,
     asked,
@@ -248,3 +251,115 @@ def test_what_a_judge_is_asked_is_its_request_with_what_a_view_picks(
     )
     elsewhere = {**body, "judge": expected["expectation"]}
     assert signed.post("/api/judges/asked", json=elsewhere).status_code == 404
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_field_is_measured_against_each_answer_as_it_is_written_and_nothing_is_written(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    noted = family(signed, "noted")
+    made, _ = sent(signed, asked(signed, families=[noted["id"]]))
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    body = {
+        "case": noted["case"],
+        "expectation_schema": expected["expectation_schema"],
+        "data": expected["data"],
+        "field": "diagnosis",
+    }
+    got = signed.post("/api/expectations/measured", json=body)
+    assert got.status_code == 200, got.json()
+    assert got.headers["cache-control"] == "no-store"
+    measured = got.json()
+    assert measured["answers"] == 1
+    assert measured["pattern"] == expected["data"]["diagnosis"]["pattern"]
+    stored = {
+        (g["score"], i["view"]): i["value"] for g in made["scores"] for i in g["items"]
+    }
+    told = 0
+    for text in measured["texts"]:
+        for seen in text["seen"]:
+            assert seen["run"] == made["id"] and seen["replicate"] == 0
+            score, _, replicate, view = seen["href"].split("/")[2:]
+            assert (replicate, text["value"]) == ("0", stored[score, int(view)])
+            told += 1
+    assert told == measured["found"] + measured["missed"] + measured["unscored"] > 0
+
+    missed = {**expected["data"], "diagnosis": {"pattern": "nothing & like & it"}}
+    again = signed.post(
+        "/api/expectations/measured", json={**body, "data": missed}
+    ).json()
+    assert (again["found"], again["missed"]) == (0, told)
+    assert again["alternatives"] == [{"pattern": "nothing & like & it", "found": 0}]
+    broken = {**expected["data"], "diagnosis": {"pattern": "(nothing"}}
+    refused = signed.post(
+        "/api/expectations/measured", json={**body, "data": broken}
+    ).json()
+    assert refused["problem"] and refused["alternatives"] == []
+    assert len(
+        signed.get(f"/api/runs/{made['id']}/scores", params={"all": True}).json()
+    ) == len(made["scores"])
+    elsewhere = signed.post("/api/expectations/measured", json=body, headers=bob)
+    assert (elsewhere.status_code, elsewhere.json()["answers"]) == (200, 0)
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_how_a_case_fares_is_its_latest_runs_means_among_other_cases_drawn_or_not(
+    signed: TestClient, served: FastAPI
+) -> None:
+    noted = family(signed, "noted")
+    made, _ = sent(signed, asked(signed, families=[noted["id"]]))
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    path = f"/api/families/{noted['id']}/fared"
+    query = {
+        "case": noted["case"],
+        "expectation_schema": expected["expectation_schema"],
+    }
+    got = signed.get(path, params=query)
+    assert got.status_code == 200, got.json()
+    assert got.headers["cache-control"] == "no-store"
+    fared = got.json()
+    assert fared["synthetic"] is False
+    families = signed.get("/api/families").json()
+    assert len(fared["cases"]) == len(families)
+    assert fared["cases"][-1] == {
+        "case": noted["case"],
+        "family": noted["id"],
+        "title": case["title"],
+    }
+    names = [c["name"] for c in fared["configurations"]]
+    shown = [r for r in fared["rows"] if r["shown"]]
+    assert shown and {names[r["configuration"]] for r in shown} == {LINES}
+    stored = {
+        (g["scorer"], i["view"]): i["value"]
+        for g in made["scores"]
+        for i in g["items"]
+        if i["value"] is not None
+    }
+    for row in shown:
+        metric = fared["metrics"][row["metric"]]
+        assert row["shown"]["value"] == stored[metric["scorer"], metric["view"]]
+        assert row["shown"]["synthetic"] is False
+        assert row["shown"]["href"].split("/")[2] in {
+            g["score"] for g in made["scores"]
+        }
+    assert all(r["cases"] == [] for r in fared["rows"])
+
+    held = served.state.chatddx
+    assert isinstance(held, AppState)
+    served.state.chatddx = replace(held, synthetic=3)
+    try:
+        drawn = signed.get(path, params=query).json()
+    finally:
+        served.state.chatddx = held
+    assert drawn["synthetic"] is True
+    last = len(drawn["cases"]) - 1
+    for row in drawn["rows"]:
+        assert len(row["cases"]) == last and last not in row["cases"]
+        assert all(row["synthetic"]) and all(0 <= v <= 1 for v in row["values"])
+    assert [
+        r["shown"] for r in drawn["rows"] if r["shown"] and not r["shown"]["synthetic"]
+    ] == [r["shown"] for r in shown]
