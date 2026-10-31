@@ -7,19 +7,22 @@ from pathlib import Path
 from pydantic import HttpUrl
 
 from chatddx import settings
-from chatddx.curation import Plan, load_cases, plan_factors
+from chatddx.curation import DataCase, Plan, load_cases, plan_factors, provision, sync
 from chatddx.factors.base import Resolver
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
-from chatddx.inventory import Inventory, World, start_up
+from chatddx.identity import Person
+from chatddx.inventory import DirectorySource, Inventory, World, start_up
 from chatddx.rig import rig
+from chatddx.store.store import Connection
 
 WORLDS = settings.PROJECT_ROOT / "worlds"
 TEST = WORLDS / "test"
 DATA = TEST / "_data"
 SAMPLE = WORLDS / "sample" / "_data"
+KOMPISMOLN = WORLDS / "kompismoln" / "_data"
 CASES = load_cases(DATA)
 
 QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"
@@ -77,6 +80,19 @@ LINTS = [*FACTOR_LINTS, *FACT_LINTS]
 
 def world_facts(world: Path = TEST) -> Facts:
     return Facts.load(BUNDLED, *World.load(world).facts)
+
+
+def loaded(
+    conn: Connection,
+    plan: Plan,
+    cases: dict[str, DataCase],
+    source: DirectorySource,
+    user: Person,
+    giftbag: bool = False,
+) -> list[str]:
+    """What sync-archive and then person provision say, as a deploy and an operator
+    run them, the giftbag left out unless asked for."""
+    return [*sync(conn, plan, cases, source), *provision(conn, user, giftbag)]
 
 
 def world_plan(world: Path = TEST, data: Path = DATA) -> Plan:

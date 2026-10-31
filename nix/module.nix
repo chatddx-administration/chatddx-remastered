@@ -70,8 +70,13 @@ let
     ];
   };
 
+  # Policy: after the archive's sync but not bound to it, so that a data set amiss
+  # leaves the portal and the workers serving what the archive held.
   migrated = {
-    after = [ "chatddx-migrate.service" ];
+    after = [
+      "chatddx-migrate.service"
+      "chatddx-sync-archive.service"
+    ];
     requires = [ "chatddx-migrate.service" ];
     wantedBy = [ "chatddx.target" ];
     partOf = [ "chatddx.target" ];
@@ -295,6 +300,22 @@ in
               User = admin;
               Group = admin;
               ExecStart = "${cfg.package}/bin/chatddx migrate --tier ${toString cfg.database.tier}";
+            };
+          };
+
+          chatddx-sync-archive = {
+            description = "chatddx: the World's data set written into the archive";
+            after = [ "chatddx-migrate.service" ];
+            requires = [ "chatddx-migrate.service" ];
+            wantedBy = [ "chatddx.target" ];
+            partOf = [ "chatddx.target" ];
+            inherit environment;
+            serviceConfig = hardened // {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              User = writer;
+              Group = writer;
+              ExecStart = "${cfg.package}/bin/chatddx sync-archive";
             };
           };
 

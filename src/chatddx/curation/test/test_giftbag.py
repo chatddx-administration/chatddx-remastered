@@ -1,7 +1,6 @@
 import pytest
 
 from chatddx.catalog import Entry, EntryField, Subject, read, threads
-from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
@@ -9,7 +8,7 @@ from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person, owns
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import world_plan
+from chatddx.test.world import loaded, world_plan
 
 
 def _case(id: str) -> str:
@@ -50,7 +49,7 @@ def test_the_giftbag_keeps_a_person_s_own_expectation(
     noted, crlf = _case("noted"), _case("crlf")
     written, schema = _own(conn, alice, noted)
 
-    lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
+    lines = loaded(conn, plan, CASES, vignettes(), alice, giftbag=True)
     assert "[giftbag expectation] noted: kept their own" in lines
     assert any(l.startswith("[giftbag expectation] crlf: forked") for l in lines)
 
@@ -61,7 +60,7 @@ def test_the_giftbag_keeps_a_person_s_own_expectation(
     ]
     catalog.note(Subject(thread=fork), Entry(field=EntryField.DELETED), alice.id)
     again, _ = _own(conn, alice, crlf)
-    lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
+    lines = loaded(conn, plan, CASES, vignettes(), alice, giftbag=True)
     assert "[giftbag expectation] crlf: kept their own" in lines
     assert read.about(rows, Subject(thread=fork)).deleted
     assert {

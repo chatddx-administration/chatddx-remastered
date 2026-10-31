@@ -19,13 +19,25 @@ Written by `chatddx-dev index` from the `raise Whoops` and `assert` statements i
 assert inventory is not None
 ```
 
+<<<<<<< signed
 ## `src/chatddx/curation/write.py:_Init._expecting`
-
-```
-assert isinstance(head, Expectation)
-```
-
+=======
 ## `src/chatddx/curation/write.py:_Init.binds`
+>>>>>>> @stamp
+
+```
+<<<<<<< signed
+assert isinstance(head, Expectation)
+=======
+assert isinstance(held, Appendix)
+>>>>>>> @stamp
+```
+
+<<<<<<< signed
+## `src/chatddx/curation/write.py:_Init.binds`
+=======
+## `src/chatddx/curation/write.py:_Init.case_family`
+>>>>>>> @stamp
 
 ```
 assert isinstance(held, Appendix)
@@ -36,3 +48,18 @@ assert isinstance(held, Appendix)
 ```
 assert isinstance(expectation, Expectation)
 ```
+<<<<<<< signed
+=======
+
+## `src/chatddx/curation/write.py:_Writer._expecting`
+
+```
+assert isinstance(head, Expectation)
+```
+
+## `src/chatddx/curation/write.py:_Writer.said`
+
+```
+assert isinstance(held, Appendix)
+```
+>>>>>>> @stamp

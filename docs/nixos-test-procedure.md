@@ -191,7 +191,12 @@ ENV=(env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY -u all_proxy 
   HOST=127.0.0.1:8766 CHATDDX_WORLD=/var/lib/chatddx-test/sample CHATDDX_PORTAL_ASSETS="$ASSETS"
   CHATDDX_SAMPLE_KEY=sample-key PYTHONUNBUFFERED=1)
 runuser -u chatddx-test -- "${ENV[@]}" "$CHATDDX" migrate --tier 2
+<<<<<<< signed
 runuser -u chatddx_writer -- "${ENV[@]}" "$CHATDDX" init-data alice --giftbag
+=======
+runuser -u chatddx_writer -- "${ENV[@]}" "$CHATDDX" sync-archive
+runuser -u chatddx_writer -- "${ENV[@]}" "$CHATDDX" person provision alice
+>>>>>>> @stamp
 printf '%s\n%s\n' 'correct horse' 'correct horse' \
   | runuser -u chatddx_writer -- setsid -w "${ENV[@]}" "$CHATDDX" person password alice
 for command in fake-engines portal worker; do
@@ -236,9 +241,18 @@ the log, not failures: `dhcpcd[…]: timed out` (the test network has no DHCP) a
 the test declares as an org would, with a home in `/var/lib/chatddx-test` (0750), whose group the writer is in. The
 sample World is copied out of the store into `/var/lib/chatddx-test/sample` by tmpfiles, inside that home, and its
 remote endpoint's secret is in `/var/lib/chatddx-test/secrets`, mode 0400. Then: 0. **The admin and the World**:
+<<<<<<< signed
 `chatddx-migrate` runs as `chatddx-test`; the writer reads the World, `nobody` doesn't.
+=======
+`chatddx-migrate` runs as `chatddx-test`; the writer reads the World, `nobody` doesn't; `chatddx-sync-archive` has
+written the sample's data into the archive.
+>>>>>>> @stamp
 
+<<<<<<< signed
 1. **The operator's command**: `chatddx init-data alice --giftbag` and `chatddx person password alice`, as root, through
+=======
+1. **The operator's command**: `chatddx person provision alice` and `chatddx person password alice`, as root, through
+>>>>>>> @stamp
    the wrapper, which runs them as `chatddx_writer`; then `chatddx-fake-engines`, a service of the test's that runs
    `chatddx fake-engines` the same way, and its three ports.
 2. **A run through the portal**: over HTTPS through nginx, sign in at `/api/session`, find the configuration `plan` of
@@ -260,7 +274,11 @@ substituted:
 | booting the VM                                        | 208     |
 | until `chatddx-portal.service` is active (after boot) | 473     |
 | until port 8000 answers                               | 180     |
+<<<<<<< signed
 | `chatddx init-data alice --giftbag`                   | 120     |
+=======
+| `chatddx init-data alice --giftbag`, before the split | 120     |
+>>>>>>> @stamp
 | until the fake engines' first port answers            | 51      |
 | subtest 2, the run, sent and scored                   | 39      |
 

@@ -1,6 +1,7 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
 from functools import partial
+from typing import final
 
 from pydantic import JsonValue
 
@@ -46,25 +47,130 @@ def short(digest: str) -> str:
     return digest.removeprefix("sha256:")[:6]
 
 
-class _Init:
-    def __init__(self, conn: Connection, plan: Plan, archive: Person) -> None:
+class _Writer:
+    def __init__(self, conn: Connection, archive: Person) -> None:
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
         self.rows: Rows = Rows(conn)
-        self.plan: Plan = plan
         self.archive: Person = archive
+        self.people: People = People(conn)
         self.threads: dict[tuple[str, str], int] = {}
         self.families: list[int] = []
-        self.landed: dict[str, list[str]] = {}
         self.lines: list[str] = []
-        self.surveyed: Survey | None = None
-        self.unsettled: set[int] = set()
-
-    def land(self, digest: str, what: str) -> None:
-        self.landed.setdefault(digest, []).append(what)
 
     def note(self, subject: Subject, entry: Entry) -> None:
         self.catalog.note(subject, entry, self.archive.id)
+
+    # Policy: an expectation is said by its case and an appendix by its name and its
+    # vignette's, as sync-archive says them as it writes them.
+    def said(self, kind: str, thread: int, about: About) -> str:
+        if kind not in ("expectation", "appendix"):
+            return about.name or titles.title(self.rows, thread)
+        held = self.store.get(threads.head(self.rows, thread).digest)
+        if isinstance(held, Expectation):
+            return titles.title_of(self.rows, held.case)
+        assert isinstance(held, Appendix)
+        return f"{about.name} for {held.vignette.id}"
+
+    def shared(self) -> list[Subject]:
+        return [
+            *(Subject(thread=t) for t in self.threads.values()),
+            *(Subject(family=f) for f in self.families),
+        ]
+
+    def share(self, user: Person) -> None:
+        subjects = self.shared()
+        known = read.abouts(self.rows, subjects)
+        shared = 0
+        for subject in subjects:
+            if user.id not in known[subject].collaborators:
+                self.note(subject, Entry(field=EntryField.COLLABORATOR, person=user.id))
+                shared += 1
+        self.lines.append(
+            f"[share] {shared} of {len(subjects)} archive threads and families with "
+            + f"{user.login}"
+        )
+
+    def giftbag(self, user: Person) -> None:
+        for (kind, name), thread in self.threads.items():
+            if not _gifted(kind):
+                continue
+            forks = {
+                t: read.about(self.rows, Subject(thread=t))
+                for t in threads.forks(self.rows, thread)
+            }
+            mine = {t: about for t, about in forks.items() if about.owner == user.id}
+            if kind == "expectation":
+                self._unnamed(user, name, thread, mine)
+            if any(not about.deleted for about in mine.values()):
+                self.lines.append(f"[giftbag {kind}] {name}: kept")
+                continue
+            if kind == "expectation" and self._expecting(user, thread):
+                self.lines.append(f"[giftbag {kind}] {name}: kept their own")
+                continue
+            # Policy: a fork the person deleted stays deleted, so that a provision
+            # doesn't bring back what they let go.
+            if mine:
+                self.lines.append(f"[giftbag {kind}] {name}: left deleted")
+                continue
+            head = threads.head(self.rows, thread)
+            about = read.about(self.rows, Subject(thread=thread))
+            # Policy: an expectation with no name is said by its case where it is shown,
+            # so its fork takes no title derived of it as a name.
+            named = about.name or (
+                None if kind == "expectation" else titles.title(self.rows, thread)
+            )
+            made = Subject(
+                thread=self.catalog.create(
+                    head.digest,
+                    user.id,
+                    compilation=head.compilation,
+                    forked_from=head.id,
+                    name=named,
+                ).thread
+            )
+            for tag in sorted(about.tags):
+                self.catalog.note(made, Entry(field=EntryField.TAG, value=tag), user.id)
+            if about.description is not None:
+                said = Entry(field=EntryField.DESCRIPTION, value=about.description)
+                self.catalog.note(made, said, user.id)
+            self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
+
+    # Policy: a name an earlier giftbag gave a fork of an expectation, its origin's title,
+    # is taken back, as an expectation with no name is said by its case.
+    def _unnamed(
+        self, user: Person, name: str, thread: int, forks: dict[int, About]
+    ) -> None:
+        derived = titles.title(self.rows, thread)
+        for fork, about in forks.items():
+            if about.name == derived:
+                taken = Entry(field=EntryField.NAME, present=False)
+                self.catalog.note(Subject(thread=fork), taken, user.id)
+                self.lines.append(f"[giftbag expectation] {name}: its name taken back")
+
+    def _expecting(self, user: Person, thread: int) -> bool:
+        head = self.store.get(threads.head(self.rows, thread).digest)
+        assert isinstance(head, Expectation)
+        case, schema = head.case, head.expectation_schema
+        return any(
+            owns(user.id, a)
+            for _, a in threads.expecting(self.rows, [case], schema)[case]
+        )
+
+
+@final
+class _Init(_Writer):
+    def __init__(self, conn: Connection, plan: Plan, archive: Person) -> None:
+        super().__init__(conn, archive)
+        self.plan: Plan = plan
+        self.landed: dict[str, list[str]] = {}
+        self.surveyed: Survey | None = None
+        self.unsettled: set[int] = set()
+        self.reached: set[str] = set()
+        self.restored: set[int] = set()
+
+    def land(self, digest: str, what: str) -> None:
+        self.landed.setdefault(digest, []).append(what)
 
     def sync(
         self,
@@ -117,8 +223,28 @@ class _Init:
         )
         return edit.thread, _VERBS[kept]
 
+    # Policy: the archive's live threads among those given, or else the latest it
+    # pruned, restored, so that what comes back to the data comes back as it was,
+    # its forks' origin with it.
+    def archived(self, given: Iterable[int]) -> list[int]:
+        ids = list(given)
+        known = read.abouts(self.rows, [Subject(thread=t) for t in ids])
+        ours = [t for t in ids if known[Subject(thread=t)].owner == self.archive.id]
+        live = [t for t in ours if not known[Subject(thread=t)].deleted]
+        if live or not ours:
+            return live
+        last = max(ours)
+        self.note(Subject(thread=last), Entry(field=EntryField.DELETED, present=False))
+        self.restored.add(last)
+        return [last]
+
+    def named(self, kind: str, name: str) -> list[int]:
+        ids = [t.id for t in self.rows.threads(kind)]
+        known = read.abouts(self.rows, [Subject(thread=t) for t in ids])
+        return [t for t in ids if known[Subject(thread=t)].name == name]
+
     def stanza(self, r: Planned) -> None:
-        found = threads.find(self.rows, r.kind, r.name, owner=self.archive.id)
+        found = self.archived(self.named(r.kind, r.name))
         labels: dict[tuple[Part, int], str] = {
             ("view", i): label for i, label in enumerate(r.labels) if label is not None
         }
@@ -131,6 +257,7 @@ class _Init:
             fork_of=None if r.fork_of is None else self.threads[(r.kind, r.fork_of)],
             labels=labels if r.kind == "scorer" else None,
         )
+        verb = "restored" if thread in self.restored else verb
         self.threads[(r.kind, r.name)] = thread
         self.land(r.digest, f"{r.kind} {r.name}")
         self.sync(Subject(thread=thread), r.tags, r.description)
@@ -205,7 +332,13 @@ class _Init:
                 repair = self.repair_for(source, id) or str(e)
                 self.lines.append(f"[archive case] {id}: needs repair: {repair}")
                 return
+        if read.about(self.rows, Subject(family=family)).deleted:
+            self.note(
+                Subject(family=family), Entry(field=EntryField.DELETED, present=False)
+            )
+            verb = "restored"
         self.families.append(family)
+        self.reached.add(id)
         self.land(digest, f"case {id}")
         self.sync(Subject(family=family), data.tags, None, data.language, name=id)
         self.lines.append(f"[archive case] {id}: {verb} {short(digest)}")
@@ -218,12 +351,11 @@ class _Init:
             Expectation(case=case, expectation_schema=schema, data=data)
         )
         _ = self.store.add(registry, [expectation])
-        found = [
-            e.thread
-            for e, a in threads.expecting(self.rows, [case])[case]
-            if a.owner == self.archive.id
-        ]
+        found = self.archived(
+            e.thread for e, _ in threads.expecting(self.rows, [case])[case]
+        )
         thread, verb = self.put("expectation", expectation, found, None)
+        verb = "restored" if thread in self.restored else verb
         self.threads[("expectation", named)] = thread
         self.land(expectation, f"expectation {named}")
         self.sync(Subject(thread=thread))
@@ -241,14 +373,11 @@ class _Init:
             appendix = Appendix(vignette=vignette, text=clean(text, ["newlines.lf@1"]))
             digest = registry.add(appendix)
             _ = self.store.add(registry, [digest])
-            found = [
-                t
-                for t in threads.find(
-                    self.rows, "appendix", name, owner=self.archive.id
-                )
-                if self.binds(t, vignette)
-            ]
+            found = self.archived(
+                t for t in self.named("appendix", name) if self.binds(t, vignette)
+            )
             thread, verb = self.put("appendix", digest, found, name)
+            verb = "restored" if thread in self.restored else verb
             self.threads[("appendix", named)] = thread
             self.land(digest, f"appendix {named}")
             self.sync(Subject(thread=thread))
@@ -285,7 +414,24 @@ class _Init:
             return False
         return True
 
-    def leftovers(self, cases: Collection[str]) -> None:
+    def provisioned(self) -> list[Person]:
+        subjects = [s for s in self.rows.involving(self.archive.id) if s.run is None]
+        known = read.abouts(self.rows, subjects)
+        held = {
+            p
+            for subject in subjects
+            if owns(self.archive.id, a := known[subject])
+            for p in a.collaborators
+        }
+        return sorted(
+            (self.people.get(i) for i in held if i != self.archive.id),
+            key=lambda p: p.login,
+        )
+
+    # Policy: what the archive holds and the data doesn't is deleted and unshared, but
+    # for a case the data names that wasn't reached this time, and what the data names
+    # that this World can't plan, so that a source or a World amiss prunes nothing of it.
+    def prune(self, cases: Collection[str]) -> None:
         kept = set(self.threads.values())
         subjects = self.rows.involving(self.archive.id)
         known = read.abouts(self.rows, subjects)
@@ -298,6 +444,15 @@ class _Init:
             about = known.get(Subject(family=family))
             return about is not None and about.name in cases
 
+        def unreached(family: int | None) -> bool:
+            if family is None:
+                return False
+            if family in self.unsettled:
+                return True
+            about = known.get(Subject(family=family))
+            name = None if about is None else about.name
+            return name in cases and name not in self.reached
+
         lines: list[str] = []
         for subject in subjects:
             about = known[subject]
@@ -305,14 +460,38 @@ class _Init:
                 continue
             if subject.thread is not None and subject.thread not in kept:
                 kind = threads.thread(self.rows, subject.thread).kind
-                if kind == "expectation" and named(self.family_of(subject.thread)):
+                name = self.said(kind, subject.thread, about)
+                if kind in ("expectation", "appendix"):
+                    if unreached(self.case_family(subject.thread)):
+                        continue
+                elif about.name in self.plan.unplanned:
+                    lines.append(
+                        f"[archive {kind}] {name}: kept, though this World can't "
+                        + "plan it"
+                    )
                     continue
-                name = about.name or titles.title(self.rows, subject.thread)
-                lines.append(f"[archive {kind}] {name}: not in the data")
+                self.retire(subject, about)
+                lines.append(f"[archive {kind}] {name}: pruned, not in the data")
             elif subject.family is not None and not named(subject.family):
+                self.retire(subject, about)
                 name = about.name or f"family {subject.family}"
-                lines.append(f"[archive case] {name}: not in the data")
+                lines.append(f"[archive case] {name}: pruned, not in the data")
         self.lines += sorted(lines)
+
+    def retire(self, subject: Subject, about: About) -> None:
+        self.note(subject, Entry(field=EntryField.DELETED))
+        for person in sorted(about.collaborators):
+            self.note(
+                subject,
+                Entry(field=EntryField.COLLABORATOR, person=person, present=False),
+            )
+
+    def case_family(self, thread: int) -> int | None:
+        held = self.store.get(threads.head(self.rows, thread).digest)
+        if isinstance(held, Expectation):
+            return families.family_of(self.rows, held.case)
+        assert isinstance(held, Appendix)
+        return families.family_of(self.rows, Case(vignette=held.vignette).digest)
 
     def family_of(self, expectation_thread: int) -> int | None:
         head = threads.head(self.rows, expectation_thread)
@@ -330,90 +509,6 @@ class _Init:
         n = len(findings)
         self.lines.append(
             f"[lint] {n} finding{'' if n == 1 else 's'} in {len(digests)} components"
-        )
-
-    def share(self, user: Person) -> None:
-        subjects = [Subject(thread=t) for t in self.threads.values()]
-        subjects += [Subject(family=f) for f in self.families]
-        known = read.abouts(self.rows, subjects)
-        shared = 0
-        for subject in subjects:
-            if user.id not in known[subject].collaborators:
-                self.note(subject, Entry(field=EntryField.COLLABORATOR, person=user.id))
-                shared += 1
-        self.lines.append(
-            f"[share] {shared} of {len(subjects)} archive threads and families with "
-            + f"{user.login}"
-        )
-
-    def giftbag(self, user: Person) -> None:
-        for (kind, name), thread in self.threads.items():
-            if not _gifted(kind):
-                continue
-            forks = {
-                t: read.about(self.rows, Subject(thread=t))
-                for t in threads.forks(self.rows, thread)
-            }
-            mine = {t: about for t, about in forks.items() if about.owner == user.id}
-            if kind == "expectation":
-                self._unnamed(user, name, thread, mine)
-            if any(not about.deleted for about in mine.values()):
-                self.lines.append(f"[giftbag {kind}] {name}: kept")
-                continue
-            if kind == "expectation" and self._expecting(user, thread):
-                self.lines.append(f"[giftbag {kind}] {name}: kept their own")
-                continue
-            if mine:
-                restored = max(mine)
-                self.catalog.note(
-                    Subject(thread=restored),
-                    Entry(field=EntryField.DELETED, present=False),
-                    user.id,
-                )
-                self.lines.append(f"[giftbag {kind}] {name}: restored")
-                continue
-            head = threads.head(self.rows, thread)
-            about = read.about(self.rows, Subject(thread=thread))
-            # Policy: an expectation with no name is said by its case where it is shown,
-            # so its fork takes no title derived of it as a name.
-            named = about.name or (
-                None if kind == "expectation" else titles.title(self.rows, thread)
-            )
-            made = Subject(
-                thread=self.catalog.create(
-                    head.digest,
-                    user.id,
-                    compilation=head.compilation,
-                    forked_from=head.id,
-                    name=named,
-                ).thread
-            )
-            for tag in sorted(about.tags):
-                self.catalog.note(made, Entry(field=EntryField.TAG, value=tag), user.id)
-            if about.description is not None:
-                said = Entry(field=EntryField.DESCRIPTION, value=about.description)
-                self.catalog.note(made, said, user.id)
-            self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
-
-    # Policy: a name an earlier giftbag gave a fork of an expectation, its origin's title,
-    # is taken back, as an expectation with no name is said by its case.
-    def _unnamed(
-        self, user: Person, name: str, thread: int, forks: dict[int, About]
-    ) -> None:
-        derived = titles.title(self.rows, thread)
-        for fork, about in forks.items():
-            if about.name == derived:
-                taken = Entry(field=EntryField.NAME, present=False)
-                self.catalog.note(Subject(thread=fork), taken, user.id)
-                self.lines.append(f"[giftbag expectation] {name}: its name taken back")
-
-    def _expecting(self, user: Person, thread: int) -> bool:
-        head = self.store.get(threads.head(self.rows, thread).digest)
-        assert isinstance(head, Expectation)
-        case, schema = head.case, head.expectation_schema
-        return any(
-            owns(user.id, a)
-            for _, a in threads.expecting(self.rows, [case], schema)[case]
         )
 
 
@@ -446,14 +541,17 @@ def wipe(conn: Connection, user: Person) -> list[str]:
     ] or [f"[wipe] {user.login}: nothing to delete or unshare"]
 
 
-def init(
+def sync(
     conn: Connection,
     plan: Plan,
     cases: dict[str, DataCase],
     source: DirectorySource,
-    user: Person,
-    giftbag: bool = False,
 ) -> list[str]:
+    """Write the data set into the archive, the threads and families it holds made
+    or updated to it, what the archive holds of an earlier one pruned (deleted and
+    unshared), and what it holds now shared with each person it is already shared
+    with. Reads every vignette at the source to fingerprint it, and every catalog row
+    the archive is in; all in one transaction."""
     schemas = [r for r in plan.stanzas if r.kind == "expectation_schema"]
     if len(schemas) != 1:
         raise ValueError("a data set needs exactly one expectation schema")
@@ -461,6 +559,7 @@ def init(
         people = People(conn)
         archive = people.find(ARCHIVE) or people.add(ARCHIVE, "Archive")
         writer = _Init(conn, plan, archive)
+        provisioned = writer.provisioned()
         compilations = [r.compilation for r in plan.stanzas if r.compilation]
         _ = writer.store.add(
             plan.registry,
@@ -472,9 +571,39 @@ def init(
         writer.lines += [f"[untranslated] {s}" for s in plan.untranslated]
         for id, data in cases.items():
             writer.case(source, id, data, schemas[0].digest)
-        writer.leftovers(cases)
+        writer.prune(cases)
+        for person in provisioned:
+            writer.share(person)
+        writer.lint()
+        return writer.lines
+
+
+def provision(conn: Connection, user: Person, giftbag: bool = True) -> list[str]:
+    """Share what the archive holds now with the person, and, with `giftbag`, give
+    them a fork of each thread of the kinds a person shapes they have none of, live or
+    deleted, nor, for an expectation, one of their own of its case. Reads every catalog row the archive
+    and the person are in; all in one transaction."""
+    if user.login == ARCHIVE:
+        raise ValueError(f"{ARCHIVE!r} holds what is provisioned; it isn't provisioned")
+    with conn.transaction():
+        archive = People(conn).find(ARCHIVE)
+        if archive is None:
+            raise ValueError(f"no {ARCHIVE!r} yet; sync-archive loads it")
+        writer = _Writer(conn, archive)
+        subjects = [s for s in writer.rows.involving(archive.id) if s.run is None]
+        known = read.abouts(writer.rows, subjects)
+        for subject in subjects:
+            if not owns(archive.id, known[subject]):
+                continue
+            if subject.thread is not None:
+                kind = threads.thread(writer.rows, subject.thread).kind
+                name = writer.said(kind, subject.thread, known[subject])
+                if (kind, name) in writer.threads:
+                    name = f"{name} (thread {subject.thread})"
+                writer.threads[(kind, name)] = subject.thread
+            elif subject.family is not None:
+                writer.families.append(subject.family)
         writer.share(user)
         if giftbag:
             writer.giftbag(user)
-        writer.lint()
         return writer.lines

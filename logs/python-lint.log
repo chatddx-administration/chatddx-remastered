@@ -1,4 +1,8 @@
-2026-10-31T11:01:22Z 3672e7b ./dev/check.sh python-lint
+2026-10-31T12:55:37Z 6c7fab7 ./dev/check.sh python-lint
 • python-lint
 All checks passed!
-0 errors, 0 warnings, 0 notes
+/home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py
+  /home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py:9:36 - error: "init" is unknown import symbol (reportAttributeAccessIssue)
+  /home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py:9:36 - warning: Type of "init" is unknown (reportUnknownVariableType)
+  /home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py:145:5 - warning: Type of "_" is unknown (reportUnknownVariableType)
+1 error, 2 warnings, 0 notes

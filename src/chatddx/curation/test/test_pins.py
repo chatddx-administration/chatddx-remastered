@@ -1,7 +1,6 @@
 import pytest
 
 from chatddx.catalog import read, threads
-from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
@@ -12,7 +11,7 @@ from chatddx.scorers.shipped import SCORERS
 from chatddx.store import People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.helpers import SHIPPED
-from chatddx.test.world import world_plan
+from chatddx.test.world import loaded, world_plan
 
 
 def _scorers(lines: list[str]) -> set[str]:
@@ -29,13 +28,15 @@ def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
     conn: Connection, alice: Person, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("CHATDDX_REVISION", "f" * 40)
-    assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {
+    assert _scorers(loaded(conn, world_plan(), CASES, vignettes(), alice)) == {
         "validated"
     }
 
     raised = metrics.score.version + 1
     monkeypatch.setitem(SCORERS, SHIPPED, Metrics(raised, metrics.score.metrics))
-    assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {"updated"}
+    assert _scorers(loaded(conn, world_plan(), CASES, vignettes(), alice)) == {
+        "updated"
+    }
     store = Store(conn)
     rows = Rows(conn)
     archive = People(conn).find("archive")

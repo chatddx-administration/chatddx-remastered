@@ -837,7 +837,11 @@ Raises:
 
 Raises:
 1. `NotFound`: `str(e)` (from `LookupError`)
+<<<<<<< signed
 2. `NotFound`: `"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in the store: load its World with init-data"`
+=======
+2. `NotFound`: `"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in the store: load its World with sync-archive"`
+>>>>>>> @stamp
 
 ## `Seen.expectation`
 `src/chatddx/bench/seen.py:Seen.expectation`

@@ -8,8 +8,9 @@ import pytest
 from chatddx.catalog import Entry, EntryField, Subject, families, read, threads, titles
 from chatddx.catalog.language import language_of
 from chatddx.cli import main
-from chatddx.curation import init
+from chatddx.curation import provision, sync
 from chatddx.curation.test.cases import CASES, TEXTS, appended, vignettes
+from chatddx.curation.write import short
 from chatddx.identity import Person
 from chatddx.inventory import World
 from chatddx.store import Catalog, People, Rows
@@ -27,6 +28,7 @@ from chatddx.test.world import (
     TEST,
     copied,
     edit,
+    loaded,
     world_plan,
 )
 
@@ -50,10 +52,10 @@ def edited(tmp_path: Path, file: str, old: str, new: str) -> Path:
 
 
 @pytest.mark.slow
-def test_init_data_loads_the_archive(conn: Connection) -> None:
+def test_sync_loads_the_archive_and_a_provision_shares_it(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = world_plan()
-    lines = init(conn, plan, CASES, vignettes(), alice)
+    lines = loaded(conn, plan, CASES, vignettes(), alice)
     appendices, ordered, expected = appended(CASES)
     made = len(plan.stanzas) + len(CASES) + appendices + expected
     assert tally(lines) == Counter(
@@ -66,13 +68,13 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     )
     shared = made + len(CASES)
     assert (
-        lines[-len(LINTS) - 2]
+        lines[-1]
         == f"[share] {shared} of {shared} archive threads and families with alice"
     )
     components = (
         len({r.digest for r in plan.stanzas}) + 2 * len(CASES) + sum(appended(CASES))
     )
-    assert lines[-len(LINTS) - 1 :] == [
+    assert lines[-len(LINTS) - 2 : -1] == [
         *LINTS,
         f"[lint] {len(LINTS)} findings in {components} components",
     ]
@@ -117,25 +119,43 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert language_of(rows, plan.named("translations", "guided").digest) is None
 
     some = {id: CASES[id] for id in ("crlf", "svenska")}
-    again = init(conn, world_plan(), some, vignettes(), alice)
+    again = sync(conn, world_plan(), some, vignettes())
     assert {v for v in tally(again) if v.startswith("archive")} == {
         "archive validated",
-        "archive not",
+        "archive pruned,",
     }
     left = {id: case for id, case in CASES.items() if id not in some}
     appendices, _, expected = appended(left)
-    assert tally(again)["archive not"] == 2 * len(left) + appendices + expected
-    assert "[archive case] matched: not in the data" in again
-    assert again[-len(LINTS) - 2].startswith("[share] 0 of ")
+    assert tally(again)["archive pruned,"] == 2 * len(left) + appendices + expected
+    assert "[archive case] matched: pruned, not in the data" in again
+    kept = shared - tally(again)["archive pruned,"]
+    assert f"[share] 0 of {kept} archive threads and families with alice" in again
     assert not [line for line in again if line.endswith(LANGUAGES)]
+    [matched] = [c for c in vignettes().cases() if c.vignette.id == "matched"]
+    family = families.family_of(rows, matched.digest)
+    assert family is not None
+    about = read.about(rows, Subject(family=family))
+    assert about.deleted and alice.id not in about.collaborators
+    shown = provision(conn, alice)
+    assert f"[share] 0 of {kept} archive threads and families with alice" in shown
+
+    back = sync(conn, world_plan(), CASES, vignettes())
+    assert "[archive case] matched: restored " + short(matched.digest) in back
+    assert not [line for line in back if "pruned" in line or ": created" in line]
+    assert (
+        f"[share] {shared - kept} of {shared} archive threads and families "
+        + ("with alice")
+        in back
+    )
+    assert not read.about(rows, Subject(family=family)).deleted
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
 @pytest.mark.slow
-def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
+def test_sync_lints_what_it_lands(conn: Connection, alice: Person) -> None:
     plan = world_plan()
     unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
-    lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
+    lines = loaded(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
     components = (
         len({r.digest for r in plan.stanzas}) + 2 * len(CASES) + sum(appended(CASES))
     )
@@ -150,7 +170,7 @@ def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
 @pytest.mark.slow
-def test_init_data_updates_and_gives_forks(
+def test_sync_updates_and_a_provision_gives_forks(
     conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
     world = edited(
@@ -160,13 +180,8 @@ def test_init_data_updates_and_gives_forks(
         'guidance = "List the diagnoses, most likely first."',
     )
     plan = world_plan(world, world / "_data")
-    lines = init(
-        conn,
-        plan,
-        CASES,
-        vignettes(crlf=b"Edited at the source."),
-        alice,
-        giftbag=True,
+    lines = loaded(
+        conn, plan, CASES, vignettes(crlf=b"Edited at the source."), alice, giftbag=True
     )
     assert sorted(line for line in lines if "updated" in line) == [
         line
@@ -218,13 +233,8 @@ def test_init_data_updates_and_gives_forks(
     assert origin is not None
     derived = Entry(field=EntryField.NAME, value=titles.title(rows, origin))
     Catalog(conn).note(Subject(thread=gift), derived, alice.id)
-    again = init(
-        conn,
-        plan,
-        CASES,
-        vignettes(crlf=b"Edited at the source."),
-        alice,
-        giftbag=True,
+    again = loaded(
+        conn, plan, CASES, vignettes(crlf=b"Edited at the source."), alice, giftbag=True
     )
     assert {line.split(": ")[1] for line in again if line.startswith("[giftbag")} == {
         "kept",
@@ -233,12 +243,12 @@ def test_init_data_updates_and_gives_forks(
     assert read.about(rows, Subject(thread=gift)).name is None
 
     gone = vignettes({})
-    lines = init(conn, plan, {"noted": CASES["noted"]}, gone, alice)
+    lines = loaded(conn, plan, {"noted": CASES["noted"]}, gone, alice)
     assert "[archive case] noted: missing at source 'test'" in lines
 
 
 @pytest.mark.slow
-def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
+def test_sync_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
     conn: Connection, tmp_path: Path
 ) -> None:
     alice = People(conn).add("alice", "Alice")
@@ -246,8 +256,8 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
     guided = 'fork_of = "lines-instructed"\n'
     before = edited(tmp_path / "before", factors, guided, "")
     after = edited(tmp_path / "after", factors, 'fork_of = "native"\n', "")
-    _ = init(conn, world_plan(before, before / "_data"), CASES, vignettes(), alice)
-    lines = init(conn, world_plan(after, after / "_data"), CASES, vignettes(), alice)
+    _ = loaded(conn, world_plan(before, before / "_data"), CASES, vignettes(), alice)
+    lines = loaded(conn, world_plan(after, after / "_data"), CASES, vignettes(), alice)
     assert sorted(line for line in lines if "; the data forks it from " in line) == [
         f"[archive skeleton] {LINES_GUIDED}: held as no fork; the data forks it from "
         + "lines-instructed",
@@ -258,7 +268,7 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
 @pytest.mark.slow
-def test_init_data_withdraws_only_the_tags_the_archive_gave(
+def test_sync_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
     catalog = Catalog(conn)
@@ -280,14 +290,14 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
         described,
     )
     retagged = {**CASES, "bom": replace(CASES["bom"], tags=("falls",))}
-    _ = init(conn, world_plan(world, world / "_data"), retagged, vignettes(), alice)
+    _ = loaded(conn, world_plan(world, world / "_data"), retagged, vignettes(), alice)
     assert read.about(rows, Subject(thread=native)).tags == {"alice's"}
     assert read.about(rows, Subject(family=family)).tags == {"alice's", "falls"}
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
 @pytest.mark.slow
-def test_init_data_says_how_a_vignette_moved_at_its_source(
+def test_sync_says_how_a_vignette_moved_at_its_source(
     conn: Connection, alice: Person
 ) -> None:
     rows = Rows(conn)
@@ -300,7 +310,7 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
         crlf=b"Edited at the source.",
     )
     at = "at source 'test'; repair-data rebinds family"
-    lines = init(conn, world_plan(), CASES, moved, alice)
+    lines = loaded(conn, world_plan(), CASES, moved, alice)
     assert [line for line in lines if "needs repair" in line] == [
         f"[archive case] crlf: needs repair: changed {at} {family_at['crlf']}",
         f"[archive case] noted: needs repair: renamed to noted2 {at} "
@@ -310,7 +320,7 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
 
     renamed = {**CASES, "noted2": CASES["noted"]}
     del renamed["noted"]
-    lines = init(conn, world_plan(), renamed, moved, alice)
+    lines = loaded(conn, world_plan(), renamed, moved, alice)
     assert (
         f"[archive case] noted2: needs repair: renamed from noted {at} "
         + str(family_at["noted"])
@@ -319,8 +329,8 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
 
 
 # Scope: what it loads is read in
-# test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
-def test_init_data_command(
+# test_wipe_data_deletes_and_unshares_and_a_provision_shares_it_back.
+def test_sync_archive_and_person_provision_commands(
     db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
@@ -347,10 +357,14 @@ def test_init_data_command(
         (["--facts", str(DATA / "factors.toml")], "facts have only 'model' tables"),
     ]:
         with pytest.raises(SystemExit, match=refusal):
-            main(["init-data", "alice", *data, *argv])
+            main(["sync-archive", *data, *argv])
+    with pytest.raises(SystemExit, match="no 'archive' yet; sync-archive loads it"):
+        main(["person", "provision", "alice"])
+    with pytest.raises(SystemExit, match="'archive' holds what is provisioned"):
+        main(["person", "provision", "archive"])
     monkeypatch.delenv("CHATDDX_WORLD")
     with pytest.raises(SystemExit, match="give a World with --world DIR"):
-        main(["init-data", "alice", *data])
+        main(["sync-archive", *data])
 
 
 @pytest.mark.slow
@@ -365,15 +379,17 @@ def test_a_world_whose_endpoints_share_weights_is_refused_and_doesn_t_start(
     shared = f"endpoints {QWEN}, twin serve the same weights, which one endpoint should"
     with (world / "inventory.toml").open("a") as f:
         _ = f.write(twin)
-    refused = f"init-data, refused and nothing written: {world}, as loaded:\n  {shared}"
+    refused = (
+        f"sync-archive, refused and nothing written: {world}, as loaded:\n  {shared}"
+    )
     with pytest.raises(SystemExit, match=re.escape(refused)):
-        main(["init-data", "alice", *data])
+        main(["sync-archive", *data])
     with connect(db) as conn:
         assert Rows(conn).threads("model.local") == []
-        assert People(conn).find("alice") is None
+        assert People(conn).find("archive") is None
 
     edit(world / "inventory.toml", twin, "")
-    main(["init-data", "alice", *data])
+    main(["sync-archive", *data])
     with (world / "inventory.toml").open("a") as f:
         _ = f.write(twin)
     for command in ("api", "worker"):
@@ -397,7 +413,7 @@ def test_a_world_brings_its_engines_and_their_models_facts(
         _ = f.write(
             f'\n[endpoint.ghost]\nengine = "{ghost}"\nurl = "http://127.0.0.1:1/v1/"\n'
         )
-    main(["init-data", "alice", "--world", str(world), "--data", str(world / "_data")])
+    main(["sync-archive", "--world", str(world), "--data", str(world / "_data")])
     out = capsys.readouterr().out.splitlines()
     assert any(
         line.startswith("[archive engine.remote] unknown@remote: created")
@@ -416,7 +432,7 @@ def test_a_world_brings_its_engines_and_their_models_facts(
 
 
 @pytest.mark.slow
-def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
+def test_wipe_data_deletes_and_unshares_and_a_provision_shares_it_back(
     db: str,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -434,38 +450,47 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         assert threads is not None and entries is not None
         return threads[0], entries[0]
 
-    argv = ["init-data", "alice", "--world", str(TEST), "--giftbag"]
-    argv += ["--data", str(DATA)]
-    loaded = run(*argv)
-    assert loaded[0] == "[person] alice: added"
-    assert loaded[1].startswith("[archive model.local] qwen3-8b-awq: created")
+    syncing = ["sync-archive", "--world", str(TEST), "--data", str(DATA)]
+    synced = run(*syncing)
+    assert synced[0].startswith("[archive model.local] qwen3-8b-awq: created")
     assert any(
-        line.startswith("[archive chunk.prompt] case: created") for line in loaded
+        line.startswith("[archive chunk.prompt] case: created") for line in synced
     )
-    assert any(line.startswith("[giftbag skeleton] native:") for line in loaded)
-    assert [line for line in loaded if line.startswith("[world")] == [
+    assert not [line for line in synced if line.startswith(("[share]", "[giftbag"))]
+    assert [line for line in synced if line.startswith("[world")] == [
         f"[world] 0 findings in 5 endpoints of {TEST}"
     ]
     with connect(db) as conn:
         assert conn.execute("SELECT count(*) FROM catalog.family").fetchone() == (
             len(CASES),
         )
-    gifts = sum(line.startswith("[giftbag ") for line in loaded)
-    shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
+    provisioned = run("person", "provision", "alice")
+    assert provisioned[0] == "[person] alice: added"
+    assert any(line.startswith("[giftbag skeleton] native:") for line in provisioned)
+    gifts = sum(line.startswith("[giftbag ") for line in provisioned)
+    [share] = [line for line in provisioned if line.startswith("[share]")]
+    shares = int(share.split()[1])
     threads, entries = counts()
 
     with monkeypatch.context() as patch:
         patch.setenv("CHATDDX_WORLD", str(TEST))
-        again = run("init-data", "alice", "--giftbag", "--data", str(DATA))
-    assert not [line for line in again if line.startswith("[person]")]
-    with connect(db) as conn:
-        alice = People(conn).find("alice")
-    assert alice is not None and (alice.name, alice.roles) == ("alice", frozenset())
+        again = run("sync-archive", "--data", str(DATA))
     assert {
         line.split(": ")[1].split(" ")[0]
         for line in again
         if line.startswith("[archive")
     } == {"validated"}
+    assert [line for line in again if line.startswith("[share]")] == [
+        f"[share] 0 of {shares} archive threads and families with alice"
+    ]
+    again = run("person", "provision", "alice")
+    assert not [line for line in again if line.startswith("[person]")]
+    assert {line.split(": ")[1] for line in again if line.startswith("[giftbag")} == {
+        "kept"
+    }
+    with connect(db) as conn:
+        alice = People(conn).find("alice")
+    assert alice is not None and (alice.name, alice.roles) == ("alice", frozenset())
     assert counts() == (threads, entries)
 
     wiped = run("wipe-data", "alice")
@@ -486,16 +511,15 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     assert run("wipe-data", "alice") == ["[wipe] alice: nothing to delete or unshare"]
     assert counts() == (threads, entries + gifts + shares)
 
-    cost = gifts + shares
-    for cycle in (1, 2):
-        again = run(*argv)
-        assert sum(line.endswith(": restored") for line in again) == gifts
-        assert not [line for line in again if ": created" in line or "forked" in line]
-        assert counts() == (threads, entries + 2 * cycle * cost)
-        _ = run("wipe-data", "alice")
-        assert counts() == (threads, entries + (2 * cycle + 1) * cost)
+    back = run("person", "provision", "alice")
+    assert sum(line.endswith(": left deleted") for line in back) == gifts
+    assert not [line for line in back if "forked" in line]
+    assert f"[share] {shares} of {shares} archive threads and families with alice" in (
+        back
+    )
+    assert counts() == (threads, entries + gifts + 2 * shares)
 
-    with pytest.raises(SystemExit, match="'archive' holds what init-data loads"):
+    with pytest.raises(SystemExit, match="'archive' holds what sync-archive loads"):
         main(["wipe-data", "archive"])
     with pytest.raises(SystemExit, match="no person with login 'nobody'"):
         main(["wipe-data", "nobody"])

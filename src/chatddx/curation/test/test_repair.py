@@ -4,13 +4,13 @@ import pytest
 
 from chatddx.catalog import Subject, families, read
 from chatddx.cli import main
-from chatddx.curation import init, repair
+from chatddx.curation import repair
 from chatddx.curation.test.cases import CASES, TEXTS, vignettes
 from chatddx.factors.bundle import Registry
 from chatddx.identity import Person
 from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection, Store
-from chatddx.test.world import DATA, copied, world_plan
+from chatddx.test.world import DATA, copied, loaded, world_plan
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
@@ -49,11 +49,15 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
 
     renamed = {**CASES, "noted2": CASES["noted"]}
     del renamed["noted"]
-    lines = init(conn, world_plan(), renamed, moved, alice)
+    lines = loaded(conn, world_plan(), renamed, moved, alice)
     cases = [
         line
         for line in lines
         if line.startswith(("[archive case]", "[archive expectation]"))
+        and "pruned" not in line
+    ]
+    assert [line for line in lines if "pruned" in line] == [
+        "[archive expectation] crlf (earlier): pruned, not in the data"
     ]
     assert [line.split(": ")[1].split(" ")[0] for line in cases] == [
         verb
@@ -64,7 +68,6 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
             *("validated" for o in case.ordered for _ in range(1 + bool(o.targets))),
         )
     ]
-    assert not [line for line in lines if "not in the data" in line]
     assert read.about(rows, Subject(family=family_at["noted"])).name == "noted2"
 
 
@@ -96,9 +99,9 @@ def test_repair_data_command(
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
     world = copied(tmp_path)
-    with pytest.raises(SystemExit, match="no 'archive' yet; init-data loads it"):
+    with pytest.raises(SystemExit, match="no 'archive' yet; sync-archive loads it"):
         main(["repair-data", "--world", str(world)])
-    main(["init-data", "alice", "--world", str(world), "--data", str(DATA)])
+    main(["sync-archive", "--world", str(world), "--data", str(DATA)])
     _ = capsys.readouterr()
     vignettes = world / "vignettes"
     _ = (vignettes / "noted.txt").rename(vignettes / "noted2.txt")

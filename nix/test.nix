@@ -95,8 +95,13 @@ pkgs.testers.runNixOSTest {
         machine.succeed("runuser -u chatddx_writer -- cat /var/lib/chatddx-test/sample/inventory.toml")
         machine.fail("runuser -u nobody -- cat /var/lib/chatddx-test/sample/inventory.toml")
 
+    with subtest("a deploy syncs the archive after the migrations"):
+        machine.wait_for_unit("chatddx-sync-archive.service")
+        synced = machine.succeed("journalctl -o cat -u chatddx-sync-archive")
+        assert "[archive case] dutch-11 with ultrasound: created" in synced, synced
+
     with subtest("the operator's command runs as the writer, with the services' World"):
-        machine.succeed("chatddx init-data alice --giftbag")
+        machine.succeed("chatddx person provision alice")
         machine.succeed("printf '%s\n%s\n' '${password}' '${password}' | setsid -w chatddx person password alice")
         machine.succeed("systemctl start chatddx-fake-engines")
         for port in (12099, 12100, 12101):

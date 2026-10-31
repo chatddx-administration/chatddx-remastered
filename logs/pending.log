@@ -1,11 +1,18 @@
-2026-10-31T11:02:52Z 07c4c13 ./dev/check.sh pending
+2026-10-31T12:55:37Z 6c7fab7 ./dev/check.sh pending
 • pending
-flag: docs/comments/api.md: 1 stamp pending
-flag: docs/comments/bench.md: 1 stamp pending
-flag: docs/comments/review.md: 2 stamps pending
-flag: docs/parts/locale.md: 1 stamp pending
-flag: docs/parts/review.md: 2 stamps pending
-flag: docs/surfaces/api.md: 17 stamps pending
+flag: README.md: 3 stamps pending
+flag: docs/comments/bench.md: 2 stamps pending
+flag: docs/comments/cli.md: 1 stamp pending
+flag: docs/comments/curation.md: 5 stamps pending
+flag: docs/glossary.md: 3 stamps pending
+flag: docs/nixos-test-procedure.md: 4 stamps pending
+flag: docs/parts/api.md: 1 stamp pending
+flag: docs/parts/bench.md: 2 stamps pending
+flag: docs/parts/curation.md: 2 stamps pending
+flag: docs/parts/deploy.md: 4 stamps pending
+flag: docs/parts/portal.md: 1 stamp pending
 flag: docs/surfaces/bench.md: 1 stamp pending
-flag: docs/surfaces/portal.md: 2 stamps pending
-flag: src/chatddx/locale/catalogs/sv.po: 15 stamps pending
+flag: docs/surfaces/curation.md: 4 stamps pending
+flag: docs/surfaces/test.md: 6 stamps pending
+flag: docs/vllm.md: 1 stamp pending
+flag: docs/whoopses/curation.md: 4 stamps pending

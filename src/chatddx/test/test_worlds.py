@@ -22,9 +22,9 @@ from chatddx.fake_vllm.served import CLOSURE, Served
 from chatddx.inventory import DirectorySource, World, check, start_up
 from chatddx.scorers.answer import read
 from chatddx.scorers.patterns import Pattern
-from chatddx.test.world import DATA, SAMPLE, WORLDS, world_plan
+from chatddx.test.world import DATA, KOMPISMOLN, SAMPLE, WORLDS, world_plan
 
-DATA_SETS = {"test": DATA, "sample": SAMPLE, "kompismoln": SAMPLE}
+DATA_SETS = {"test": DATA, "sample": SAMPLE, "kompismoln": KOMPISMOLN}
 
 
 @pytest.fixture(scope="module", params=sorted(DATA_SETS))
@@ -132,7 +132,7 @@ def few(data: Path, to: Path) -> Path:
 
 
 @pytest.mark.slow
-def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
+def test_a_sync_binds_each_world_s_endpoints_and_prunes_other_world_s_engines(
     db: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -143,7 +143,7 @@ def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
     for name in ("test", "sample", "kompismoln"):
         world = WORLDS / name
         data = few(DATA_SETS[name], tmp_path / name)
-        main(["init-data", "alice", "--world", str(world), "--data", str(data)])
+        main(["sync-archive", "--world", str(world), "--data", str(data)])
         out = capsys.readouterr().out.splitlines()
         endpoints = World.load(world).inventory.endpoints
         assert [line for line in out if line.startswith("[world")] == [
@@ -159,8 +159,9 @@ def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
             line
             for line in out
             if line.startswith(("[archive model.local]", "[archive engine."))
-            and line.endswith("not in the data")
+            and line.endswith("pruned, not in the data")
         ) == sorted(
-            f"[archive {kind}] {n}: not in the data" for kind, n in held - engines
+            f"[archive {kind}] {n}: pruned, not in the data"
+            for kind, n in held - engines
         )
-        held |= engines
+        held = engines

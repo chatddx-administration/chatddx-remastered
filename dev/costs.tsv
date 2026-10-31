@@ -958,3 +958,29 @@
 2026-10-31T11:01:43Z	container	20.4	0	6	3672e7b	./dev/check.sh python-lint
 2026-10-31T11:02:52Z	container	2.0	0	0	07c4c13	./dev/check.sh locale
 2026-10-31T11:02:52Z	container	0.3	1	0	07c4c13	./dev/check.sh pending
+2026-10-31T12:15:11Z	container	1.4	0	5	6c7fab7	./dev/check.sh openapi
+2026-10-31T12:15:14Z	container	4.2	0	5	6c7fab7	./dev/check.sh locale
+2026-10-31T12:15:15Z	container	4.9	0	5	6c7fab7	./dev/check.sh pending
+2026-10-31T12:15:19Z	container	8.8	0	5	6c7fab7	./dev/check.sh format
+2026-10-31T12:15:37Z	container	27.3	0	5	6c7fab7	./dev/check.sh python-lint
+2026-10-31T12:49:46Z	container	22.8	1	0	6c7fab7	pytest -n 4 src/chatddx/curation src/chatddx/test/test_the_test_world.py
+2026-10-31T12:50:18Z	container	14.0	1	0	6c7fab7	pytest -n 4 src/chatddx/curation src/chatddx/test/test_the_test_world.py
+2026-10-31T12:51:08Z	container	24.4	1	0	6c7fab7	pytest -n 4 src/chatddx/curation src/chatddx/test/test_the_test_world.py
+2026-10-31T12:51:17Z	container	1.8	1	0	6c7fab7	pytest src/chatddx/curation/test/test_repair.py -k moves -s
+2026-10-31T12:51:50Z	container	11.5	0	0	6c7fab7	pytest -n 4 src/chatddx/curation
+2026-10-31T12:52:19Z	container	2.9	1	0	6c7fab7	pytest src/chatddx/curation/test/test_tables.py -k prunes
+2026-10-31T12:52:50Z	container	16.4	0	0	6c7fab7	pytest -n 4 src/chatddx/curation
+2026-10-31T12:53:38Z	container	9.4	0	0	6c7fab7	pytest -n 4 src/chatddx/test
+2026-10-31T12:55:38Z	container	0.7	1	10	6c7fab7	./dev/check.sh pending
+2026-10-31T12:55:38Z	container	1.1	1	10	6c7fab7	./dev/check.sh docs
+2026-10-31T12:55:39Z	container	2.1	0	10	6c7fab7	./dev/check.sh stamps
+2026-10-31T12:55:41Z	container	3.8	0	10	6c7fab7	./dev/check.sh openapi
+2026-10-31T12:55:43Z	container	6.0	0	10	6c7fab7	./dev/check.sh locale
+2026-10-31T12:55:53Z	container	1.7	2	10	6c7fab7	pytest -m browser
+2026-10-31T12:55:54Z	container	16.6	2	10	6c7fab7	./dev/check.sh browser
+2026-10-31T12:55:56Z	container	18.7	0	10	6c7fab7	./dev/check.sh format
+2026-10-31T12:55:59Z	container	21.7	0	10	6c7fab7	./dev/check.sh index
+2026-10-31T12:56:07Z	container	30.4	1	10	6c7fab7	./dev/check.sh python-lint
+2026-10-31T12:58:53Z	container	195.9	1	10	6c7fab7	pytest -n 4
+2026-10-31T12:58:53Z	container	196.5	1	10	6c7fab7	./dev/check.sh python-tests
+2026-10-31T12:59:17Z	container	6.1	0	0	6c7fab7	pytest src/chatddx/bench/test/test_updating.py

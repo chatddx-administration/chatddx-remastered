@@ -196,7 +196,11 @@ Finds:
 ## `DATA_SETS`
 `src/chatddx/test/test_worlds.py:DATA_SETS`
 
+<<<<<<< signed
 `DATA_SETS = {"test": DATA, "sample": SAMPLE, "kompismoln": SAMPLE}`
+=======
+`DATA_SETS = {"test": DATA, "sample": SAMPLE, "kompismoln": KOMPISMOLN}`
+>>>>>>> @stamp
 
 ## `drop_database`
 `src/chatddx/test/helpers.py:drop_database`
@@ -326,6 +330,14 @@ Finds:
 
 `JUDGE = "judge"`
 
+<<<<<<< signed
+=======
+## `KOMPISMOLN`
+`src/chatddx/test/world.py:KOMPISMOLN`
+
+`KOMPISMOLN = WORLDS / "kompismoln" / "_data"`
+
+>>>>>>> @stamp
 ## `test_tests.LINES`
 `src/chatddx/test/test_tests.py:LINES`
 
@@ -356,6 +368,23 @@ Finds:
 
 * `name: str`
 * `said: list[str]`
+<<<<<<< signed
+=======
+
+## `loaded`
+`src/chatddx/test/world.py:loaded`
+
+What sync-archive and then person provision say, as a deploy and an operator
+run them, the giftbag left out unless asked for.
+
+* `conn: Connection`
+* `plan: Plan`
+* `cases: dict[str, DataCase]`
+* `source: DirectorySource`
+* `user: Person`
+* `giftbag: bool = False`
+* ∟`list[str]`
+>>>>>>> @stamp
 
 ## `made`
 `src/chatddx/test/test_budget.py:made`
@@ -562,6 +591,18 @@ Finds:
 * `parsed: list[tuple[Path, ast.Module]]`
 * ∟`None`
 
+<<<<<<< signed
+=======
+## `test_a_sync_binds_each_world_s_endpoints_and_prunes_other_world_s_engines` `@pytest.mark.slow`
+`src/chatddx/test/test_worlds.py:test_a_sync_binds_each_world_s_endpoints_and_prunes_other_world_s_engines`
+
+* `db: str`
+* `tmp_path: Path`
+* `monkeypatch: pytest.MonkeyPatch`
+* `capsys: pytest.CaptureFixture[str]`
+* ∟`None`
+
+>>>>>>> @stamp
 ## `test_a_test_matches_a_table_s_cells_not_its_padding` `@pytest.mark.slow`
 `src/chatddx/test/test_tests.py:test_a_test_matches_a_table_s_cells_not_its_padding`
 
@@ -603,13 +644,21 @@ Finds:
 
 * ∟`None`
 
+<<<<<<< signed
 ## `test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines` `@pytest.mark.slow`
 `src/chatddx/test/test_worlds.py:test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines`
+=======
+## `test_kompismoln_s_data_is_the_sample_s_without_its_appendices`
+`src/chatddx/test/test_sample.py:test_kompismoln_s_data_is_the_sample_s_without_its_appendices`
+>>>>>>> @stamp
 
+<<<<<<< signed
 * `db: str`
 * `tmp_path: Path`
 * `monkeypatch: pytest.MonkeyPatch`
 * `capsys: pytest.CaptureFixture[str]`
+=======
+>>>>>>> @stamp
 * ∟`None`
 
 ## `test_kompismoln_s_facts_are_the_bundled_ones_as_its_engines_serve_them`

@@ -182,7 +182,11 @@ of the World, each on a server of its own where its start-up says, till Ctrl-C, 
 `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. A remote engine's endpoint
 on this machine gets a stand-in: the engine's model, served under its own name at the endpoint's address, parsing tool
 calls as a hosted API does, and asking for the key in the variable the endpoint's credential names, which must be set.
+<<<<<<< signed
 The engines come from the store, where init-data put them.
+=======
+The engines come from the store, where sync-archive put them.
+>>>>>>> @stamp
 
 Each entry is one emulated behaviour, then a line with:
 

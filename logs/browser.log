@@ -1,4 +1,4 @@
-2026-10-31T10:57:25Z 3672e7b ./dev/check.sh browser
+2026-10-31T12:55:37Z 6c7fab7 ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,7 +9,7 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [514.2ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [821ms]
 vite v8.3.4 building client environment for production...
 transforming...
 ✓ 825 modules transformed.
@@ -44,15 +44,27 @@ dist/assets/locale-B0pMiKjT.js                                       57.33 kB �
 dist/assets/review-8i8L5n8q.js                                       57.80 kB │ gzip: 19.71 kB
 dist/assets/dist-DwGGEiqJ.js                                         67.43 kB │ gzip: 21.03 kB
 
-✓ built in 5.74s
+✓ built in 7.14s
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
-collected 1173 items / 1145 deselected / 28 selected
+collected 1177 items / 1 error / 1149 deselected / 28 selected
 
-src/chatddx/portal/test/test_browser.py ............................     [100%]
-
-=============== 28 passed, 1145 deselected in 109.05s (0:01:49) ================
+==================================== ERRORS ====================================
+___________ ERROR collecting src/chatddx/bench/test/test_updating.py ___________
+ImportError while importing test module '/home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/chatddx/bench/test/test_updating.py:9: in <module>
+    from chatddx.curation import Plan, init
+E   ImportError: cannot import name 'init' from 'chatddx.curation' (/home/user/chatddx-remastered/src/chatddx/curation/__init__.py)
+=========================== short test summary info ============================
+ERROR src/chatddx/bench/test/test_updating.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+====================== 1149 deselected, 1 error in 1.65s =======================

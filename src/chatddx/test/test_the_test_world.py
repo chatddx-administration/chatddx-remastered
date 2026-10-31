@@ -4,11 +4,11 @@ from collections import Counter
 
 import pytest
 
-from chatddx.curation import init, load_cases
+from chatddx.curation import load_cases
 from chatddx.inventory import DirectorySource, World, check
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINTS, TEST, world_plan
+from chatddx.test.world import DATA, LINTS, TEST, loaded, world_plan
 
 SKIPPED = [
     "facts about test/unknown: none are known, so engine.remote unknown@remote can't "
@@ -48,7 +48,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     cases = load_cases(DATA)
     source = world.inventory.source(kind=DirectorySource)
-    lines = init(conn, plan, cases, source, alice, giftbag=True)
+    lines = loaded(conn, plan, cases, source, alice, giftbag=True)
     appended = sum(
         len(c.appendices) + sum(1 + (o.targets is not None) for o in c.ordered)
         for c in cases.values()
@@ -73,7 +73,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     assert all(": created " in line for line in adopted)
     assert check(world.inventory, plan.registry.get) == []
 
-    again = init(conn, plan, cases, source, alice, giftbag=True)
+    again = loaded(conn, plan, cases, source, alice, giftbag=True)
     assert {
         line.split(": ", 1)[1].split(" ")[0]
         for line in again
