@@ -1,4 +1,4 @@
-2026-10-31T12:55:37Z 6c7fab7 ./dev/check.sh python-tests
+2026-10-31T12:59:39Z 6c7fab7 ./dev/check.sh python-tests
 • python-tests
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
@@ -7,45 +7,32 @@ configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
 created: 4/4 workers
-4 workers [1177 items]
+4 workers [1181 items]
 
 ........................................................................ [  6%]
 ........................................................................ [ 12%]
 ........................................................................ [ 18%]
 ........................................................................ [ 24%]
-...............................ssssssssssssssssssssssssssss............. [ 30%]
-........................................................................ [ 36%]
+.................................................sssssssssssssssssssssss [ 30%]
+sssss................................................................... [ 36%]
 ........................................................................ [ 42%]
 ........................................................................ [ 48%]
-........................................................................ [ 55%]
-........................................................................ [ 61%]
+........................................................................ [ 54%]
+........................................................................ [ 60%]
 ........................................................................ [ 67%]
 ........................................................................ [ 73%]
 ........................................................................ [ 79%]
 ........................................................................ [ 85%]
 ........................................................................ [ 91%]
 ........................................................................ [ 97%]
-.........................                                                [100%]
-==================================== ERRORS ====================================
-___________ ERROR collecting src/chatddx/bench/test/test_updating.py ___________
-ImportError while importing test module '/home/user/chatddx-remastered/src/chatddx/bench/test/test_updating.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.13/importlib/__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/chatddx/bench/test/test_updating.py:9: in <module>
-    from chatddx.curation import Plan, init
-E   ImportError: cannot import name 'init' from 'chatddx.curation' (/home/user/chatddx-remastered/src/chatddx/curation/__init__.py)
+.............................                                            [100%]
 ================================= slow budget ==================================
-268.1 s in 1149 tests; slow from 0.222 s on
-the quick run takes 30.4 s of it, 11%
-set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 2.1 s, curated 4.6 s, plan 0.6 s, described 1.2 s, loaded 1.1 s, ran 3.7 s, sampled 2.9 s, pytestconfig 0.0 s, parsed 1.0 s, each 0.1 s
-waited for, made ahead: db 418.0 s
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_facts_are_its_script_s_and_its_markup_s_at_their_own_lines (1.775 s)
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_surface_is_its_props_named_after_its_file (1.185 s)
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_facts_are_its_top_level_names_its_class_s_members_and_comments (2.585 s)
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (1.134 s)
-=========================== short test summary info ============================
-ERROR src/chatddx/bench/test/test_updating.py - ImportError while importing t...
-============ 1149 passed, 28 skipped, 1 error in 195.84s (0:03:15) =============
+287.4 s in 1153 tests; slow from 0.237 s on
+the quick run takes 31.6 s of it, 11%
+set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 2.6 s, curated 5.1 s, plan 0.5 s, described 1.0 s, loaded 1.2 s, ran 3.8 s, sampled 5.6 s, pytestconfig 0.0 s, parsed 1.0 s, each 0.1 s
+waited for, made ahead: db 469.5 s
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_facts_are_its_script_s_and_its_markup_s_at_their_own_lines (1.206 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_surface_is_its_props_named_after_its_file (1.211 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_facts_are_its_top_level_names_its_class_s_members_and_comments (1.214 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (1.305 s)
+================= 1153 passed, 28 skipped in 213.93s (0:03:33) =================

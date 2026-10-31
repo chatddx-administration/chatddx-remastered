@@ -984,3 +984,15 @@
 2026-10-31T12:58:53Z	container	195.9	1	10	6c7fab7	pytest -n 4
 2026-10-31T12:58:53Z	container	196.5	1	10	6c7fab7	./dev/check.sh python-tests
 2026-10-31T12:59:17Z	container	6.1	0	0	6c7fab7	pytest src/chatddx/bench/test/test_updating.py
+2026-10-31T12:59:40Z	container	0.7	1	10	6c7fab7	./dev/check.sh pending
+2026-10-31T12:59:40Z	container	1.2	0	10	6c7fab7	./dev/check.sh docs
+2026-10-31T12:59:41Z	container	2.2	0	10	6c7fab7	./dev/check.sh stamps
+2026-10-31T12:59:43Z	container	3.9	0	10	6c7fab7	./dev/check.sh openapi
+2026-10-31T12:59:44Z	container	4.8	0	10	6c7fab7	./dev/check.sh locale
+2026-10-31T12:59:57Z	container	18.4	0	10	6c7fab7	./dev/check.sh format
+2026-10-31T13:00:02Z	container	22.6	0	10	6c7fab7	./dev/check.sh index
+2026-10-31T13:00:11Z	container	32.0	0	10	6c7fab7	./dev/check.sh python-lint
+2026-10-31T13:01:39Z	container	108.3	0	10	6c7fab7	pytest -m browser
+2026-10-31T13:01:40Z	container	120.6	0	10	6c7fab7	./dev/check.sh browser
+2026-10-31T13:03:14Z	container	214.0	0	10	6c7fab7	pytest -n 4
+2026-10-31T13:03:14Z	container	214.7	0	10	6c7fab7	./dev/check.sh python-tests

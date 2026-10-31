@@ -1,3 +1,2 @@
-2026-10-31T12:55:37Z 6c7fab7 ./dev/check.sh docs
+2026-10-31T12:59:39Z 6c7fab7 ./dev/check.sh docs
 • docs
-docs/glossary.md:327: code: src/chatddx/curation/write.py:_Init.leftovers: no _Init.leftovers
