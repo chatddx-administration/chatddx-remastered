@@ -40,11 +40,7 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 
 ```
 # Policy: What src/chatddx/bench/seen.py:Seen.handle and Seen.served rely on, checked as
-<<<<<<< signed
-# a process starts and before init-data commits.
-=======
 # a process starts and before sync-archive commits.
->>>>>>> @stamp
 ```
 
 ## `src/chatddx/bench/model.py:Reason`
@@ -163,11 +159,7 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 
 ```
 # Scope: a release as import-engine writes one, new weights under the handles and the
-<<<<<<< signed
-# engines serving them at the endpoints, loaded with init-data.
-=======
 # engines serving them at the endpoints, loaded with sync-archive.
->>>>>>> @stamp
 ```
 
 ## `src/chatddx/bench/updating.py:_LATER`

@@ -66,12 +66,9 @@ in `docs/parts/clearance.md`.
 ## Flows
 
 Against the sample World on a migrated database, served by `chatddx api` with `chatddx worker` and
-<<<<<<< signed
-`chatddx fake-engines` beside it, after `chatddx init-data alice` and `chatddx person password alice`. The examples run
-=======
-`chatddx fake-engines` beside it, after `chatddx sync-archive`, `chatddx person provision alice` and `chatddx person password alice`. The examples run
->>>>>>> @stamp
-in one shell, each on what the one before it set, with curl's `--json` (7.82 or later) and jq.
+`chatddx fake-engines` beside it, after `chatddx sync-archive`, `chatddx person provision alice` and
+`chatddx person password alice`. The examples run in one shell, each on what the one before it set, with curl's `--json`
+(7.82 or later) and jq.
 
 1. Signing in, and asking who that is:
 

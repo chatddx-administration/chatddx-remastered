@@ -23,10 +23,6 @@ Written by `chatddx-dev index` from the comments in `[parts.cli]`'s code in `set
 ## `src/chatddx/cli.py:DATA`
 
 ```
-<<<<<<< signed
-# Policy: a World's data set is where the World itself doesn't read it; init-data's by
-=======
 # Policy: a World's data set is where the World itself doesn't read it; sync-archive's by
->>>>>>> @stamp
 # default.
 ```

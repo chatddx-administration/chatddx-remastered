@@ -75,21 +75,14 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 - **PostgreSQL 16**: the database, the admin and the writer, and `LISTEN`/`NOTIFY` for a run's events and for waking
   workers.
 - **Migrations**: `chatddx migrate`, once, as the admin, before the app and the workers start.
-<<<<<<< signed
-=======
 - **The archive's sync**: `chatddx sync-archive`, once, as the writer, after the migrations and before the app and the
   workers start, which don't wait on it succeeding. It runs again when a deploy changes its unit, the package with it;
   after a change to the World's data alone, `systemctl restart chatddx-sync-archive`.
->>>>>>> @stamp
 - **The World**: a directory both read, with sensitive vignettes in it.
 - **Secrets**: the endpoints' credentials, which both the app and the workers need, and the database's, beyond peer
   authentication.
 - **In front**: TLS and a reverse proxy, and later Keycloak.
-<<<<<<< signed
-- **The operator's commands**, not services: `chatddx person add` and `password`, `init-data`, `import-engine` and
-=======
 - **The operator's commands**, not services: `chatddx person add`, `password` and `provision`, `import-engine` and
->>>>>>> @stamp
   `repl`, with the same World and database as the services.
 - **Something on a schedule**, once there is a command for it: purging expired sessions (`docs/parts/clearance.md`,
   "Before real patient data", Sessions).
@@ -99,14 +92,6 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 Decided, built: each service runs one command, with no flag that changes what it serves. `chatddx portal` serves the app
 without a worker (`src/chatddx/cli.py:_portal`), as `chatddx api` serves the API.
 
-<<<<<<< signed
-| Service                                        | Command           |
-| ---------------------------------------------- | ----------------- |
-| the app, the portal with the API               | `chatddx portal`  |
-| the API alone, where nothing serves the portal | `chatddx api`     |
-| each worker                                    | `chatddx worker`  |
-| the migrations, before the others start        | `chatddx migrate` |
-=======
 | Service                                        | Command                |
 | ---------------------------------------------- | ---------------------- |
 | the app, the portal with the API               | `chatddx portal`       |
@@ -114,7 +99,6 @@ without a worker (`src/chatddx/cli.py:_portal`), as `chatddx api` serves the API
 | each worker                                    | `chatddx worker`       |
 | the migrations, before the others start        | `chatddx migrate`      |
 | the archive's sync, after the migrations       | `chatddx sync-archive` |
->>>>>>> @stamp
 
 Take: "the HTTP server" of the worker's decision is the proxy in front of the app, since the portal and the API are one
 app on one origin.
@@ -162,15 +146,12 @@ flake's `checks.<system>.module`, boots it in a VM.
 - **The test**: PostgreSQL 17; the admin a user of the test's own, `chatddx-test`, with a home (0750), as an org
   declares it; the sample World copied out of the store into that home, reached through the admin's group, which the
   writer is in; the portal on `[::1]:8000`; and the World's secret in a file. That the migrations run as the admin, and
-<<<<<<< signed
-  that the writer reads the World and `nobody` doesn't; through the operator's command, init-data and a password; then
-=======
-  that the writer reads the World and `nobody` doesn't; the archive's sync after the migrations; through the operator's command, a provision and a password; then
->>>>>>> @stamp
-  the fake engines. Through nginx, with a certificate made for the test: a typed case run by the portal, sent and scored
-  by a worker; the headers; a 429 among sign-ins sent at once. Last, a worker that doesn't see a proxy set for every
-  service. It passed by emulation in a cloud session before the admin option; decided since, a cloud session doesn't run
-  it, the person does, on a host with KVM (`docs/nixos-test-procedure.md`, "Who runs what").
+  that the writer reads the World and `nobody` doesn't; the archive's sync after the migrations; through the operator's
+  command, a provision and a password; then the fake engines. Through nginx, with a certificate made for the test: a
+  typed case run by the portal, sent and scored by a worker; the headers; a 429 among sign-ins sent at once. Last, a
+  worker that doesn't see a proxy set for every service. It passed by emulation in a cloud session before the admin
+  option; decided since, a cloud session doesn't run it, the person does, on a host with KVM
+  (`docs/nixos-test-procedure.md`, "Who runs what").
 - **The evaluation**: `nix/module-eval.nix`, the flake's `checks.<system>.module-eval`, evaluates the module without
   building or booting: the default and an org's admin, workers, a database elsewhere, ordering, the sandbox's settings,
   PostgreSQL's versions, the database's name, and paths in the store refused. A cloud session runs it, `pytest` against

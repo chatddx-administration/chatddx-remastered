@@ -6,12 +6,8 @@ write, and where what they start runs. It keeps nothing of its own: the catalog 
 runs, the store keeps components, records and typed texts, the factors compile and lint, and the runner starts, sends
 and scores behind its `:Gate`.
 
-<<<<<<< signed
-The examples run in order on the sample World, loaded for alice (`chatddx init-data alice --giftbag`), with
-=======
-The examples run in order on the sample World, loaded for alice (`chatddx sync-archive` and `chatddx person provision alice`), with
->>>>>>> @stamp
-`chatddx fake-engines` serving; ids and digests are left out of what they show.
+The examples run in order on the sample World, loaded for alice (`chatddx sync-archive` and
+`chatddx person provision alice`), with `chatddx fake-engines` serving; ids and digests are left out of what they show.
 
 ## Reads and writes
 
@@ -86,13 +82,9 @@ bench.thread("plan-shown", "configuration")[0] == mine  # True
 ## Model handles
 
 - A person picks a model by its `:Handle`. Given weights are held by one model thread, which is checked as a process
-<<<<<<< signed
-  starts and before init-data commits (`src/chatddx/bench/handles.py:broken`), and the one endpoint serving a handle's
-=======
-  starts and before sync-archive commits (`src/chatddx/bench/handles.py:broken`), and the one endpoint serving a handle's
->>>>>>> @stamp
-  head is where it runs (`Seen.served`). A deleted handle, or one no endpoint here serves, is refused as a pick to make
-  again.
+  starts and before sync-archive commits (`src/chatddx/bench/handles.py:broken`), and the one endpoint serving a
+  handle's head is where it runs (`Seen.served`). A deleted handle, or one no endpoint here serves, is refused as a pick
+  to make again.
 - Where a variation runs (`Seen.at`): under the handle of its recipe's model, which must hold that model still; under a
   handle the person names, only for a hand-written configuration; at an endpoint named, only for a `:Scripted run`.
 - A judge is asked where its model's handle is served (`Seen.judged`), and is refused once its handle holds other

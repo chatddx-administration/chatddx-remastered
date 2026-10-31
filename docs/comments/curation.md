@@ -38,26 +38,11 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 # Dependency: after the stanzas whose texts its entries are grouped by.
 ```
 
-<<<<<<< signed
-## `src/chatddx/curation/test/test_init.py:test_init_data_command`
-=======
 ## `src/chatddx/curation/test/test_init.py:test_sync_archive_and_person_provision_commands`
->>>>>>> @stamp
 
 ```
 # Scope: what it loads is read in
-<<<<<<< signed
-# test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
-```
-
-## `src/chatddx/curation/write.py:_Init._unnamed`
-
-```
-# Policy: a name an earlier giftbag gave a fork of an expectation, its origin's title,
-# is taken back, as an expectation with no name is said by its case.
-=======
 # test_wipe_data_deletes_and_unshares_and_a_provision_shares_it_back.
->>>>>>> @stamp
 ```
 
 ## `src/chatddx/curation/write.py:_Init.appended`
@@ -65,8 +50,6 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 ```
 # Dependency: an appendix is bound to the vignette its case was just read at, so
 # it's built here rather than planned.
-<<<<<<< signed
-=======
 ```
 
 ## `src/chatddx/curation/write.py:_Init.archived`
@@ -75,7 +58,6 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 # Policy: the archive's live threads among those given, or else the latest it
 # pruned, restored, so that what comes back to the data comes back as it was,
 # its forks' origin with it.
->>>>>>> @stamp
 ```
 
 ## `src/chatddx/curation/write.py:_Init.binds`
@@ -92,9 +74,6 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 # reports one that differs from the data's.
 ```
 
-<<<<<<< signed
-## `src/chatddx/curation/write.py:_Init.giftbag`
-=======
 ## `src/chatddx/curation/write.py:_Init.prune`
 
 ```
@@ -116,14 +95,11 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 # Policy: a fork the person deleted stays deleted, so that a provision
 # doesn't bring back what they let go.
 ```
->>>>>>> @stamp
 
 ```
 # Policy: an expectation with no name is said by its case where it is shown,
 # so its fork takes no title derived of it as a name.
 ```
-<<<<<<< signed
-=======
 
 ## `src/chatddx/curation/write.py:_Writer.said`
 
@@ -131,4 +107,3 @@ Written by `chatddx-dev index` from the comments in `[parts.curation]`'s code in
 # Policy: an expectation is said by its case and an appendix by its name and its
 # vignette's, as sync-archive says them as it writes them.
 ```
->>>>>>> @stamp

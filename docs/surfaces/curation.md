@@ -37,23 +37,6 @@ Finds:
 * `targets: JsonValue`
 * `appendices: Mapping[str, str] = field(default_factory=dict[str, str])`
 * `ordered: tuple[Ordered, ...] = ()`
-<<<<<<< signed
-
-## `init`
-`src/chatddx/curation/write.py:init`
-
-* `conn: Connection`
-* `plan: Plan`
-* `cases: dict[str, DataCase]`
-* `source: DirectorySource`
-* `user: Person`
-* `giftbag: bool = False`
-* ∟`list[str]`
-
-Raises:
-1. `ValueError`: `"a data set needs exactly one expectation schema"`
-=======
->>>>>>> @stamp
 
 ## `load_cases`
 `src/chatddx/curation/plan.py:load_cases`
@@ -89,10 +72,7 @@ Raises:
 * `facts: Facts`
 * `stanzas: list[Planned] = field(default_factory=list)`
 * `skipped: list[str] = field(default_factory=list)`
-<<<<<<< signed
-=======
 * `unplanned: set[str] = field(default_factory=set[str])`
->>>>>>> @stamp
 * `untranslated: list[str] = field(default_factory=list)`
 * `compilations: list[str] = field(default_factory=list)`
 * `engines: dict[str, str] = field(default_factory=dict)`
@@ -156,8 +136,6 @@ Raises:
 
 `PLANNED_TABLES = (*TABLES, "recipe", "judge")`
 
-<<<<<<< signed
-=======
 ## `provision`
 `src/chatddx/curation/write.py:provision`
 
@@ -175,7 +153,6 @@ Raises:
 1. `ValueError`: `"{ARCHIVE!r} holds what is provisioned; it isn't provisioned"`
 2. `ValueError`: `"no {ARCHIVE!r} yet; sync-archive loads it"`
 
->>>>>>> @stamp
 ## `repair`
 `src/chatddx/curation/repair.py:repair`
 
@@ -196,8 +173,6 @@ Raises:
 * `digest: str`
 * ∟`str`
 
-<<<<<<< signed
-=======
 ## `sync`
 `src/chatddx/curation/write.py:sync`
 
@@ -216,7 +191,6 @@ the archive is in; all in one transaction.
 Raises:
 1. `ValueError`: `"a data set needs exactly one expectation schema"`
 
->>>>>>> @stamp
 ## `TABLES`
 `src/chatddx/curation/plan.py:TABLES`
 

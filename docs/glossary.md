@@ -231,13 +231,8 @@ serving the model. `src/chatddx/runner/gate.py:bar`
 :Gathering — Runs about a center bound each to a seeding of a group, with the trial it ran.
 `src/chatddx/factors/gathering.py:Gathering`
 
-<<<<<<< signed
-:Giftbag — A person's own forks of the chunks, tools, skeletons and expectations a loading gives the archive.
-`src/chatddx/curation/write.py:_Init.giftbag`
-=======
-:Giftbag — A person's own forks of the chunks, tools, skeletons and expectations the archive holds, given by a provision.
-`src/chatddx/curation/write.py:_Writer.giftbag`
->>>>>>> @stamp
+:Giftbag — A person's own forks of the chunks, tools, skeletons and expectations the archive holds, given by a
+provision. `src/chatddx/curation/write.py:_Writer.giftbag`
 
 :Greedy — Sampling at a temperature of exactly 0. The settings that matter only when sampling are dropped, so equivalent
 greedy chunks share a digest, and no seed is sent. `src/chatddx/factors/request.py:Skeleton.greedy`
@@ -323,14 +318,9 @@ leave a text untranslated. Said with why, and not sent. `src/chatddx/bench/model
 :Left to score — A scorer that applies to a finished run, with an expectation for some of its cases, and no whole score
 of the run under the scoring built now. `src/chatddx/bench/seen.py:Seen.unscored`
 
-<<<<<<< signed
-:Leftover — An archive thread or family a loading didn't come to, as when the data set no longer names it. Listed, never
-deleted. `src/chatddx/curation/write.py:_Init.leftovers`
-=======
 :Leftover — An archive thread or family a loading didn't come to, as when the data set no longer names it. Pruned:
 deleted and unshared, but for what the data names and the loading couldn't write this time.
 `src/chatddx/curation/write.py:_Init.prune`
->>>>>>> @stamp
 
 :Level (finding) — How much a finding weighs: a warning, or an info. `src/chatddx/factors/base.py:Finding.level`
 
@@ -344,15 +334,9 @@ gives warnings or infos that nothing stores, and no write refuses on one. `src/c
 :Live — Not deleted. A deleted thread, family, run or score is still stored, but nobody owns it, collaborates on it or
 finds it by name until an entry restores it. `src/chatddx/identity/identity.py:owns`
 
-<<<<<<< signed
-:Loading — One run of `chatddx init-data`: planning a data set with its World's engines and facts, writing it into the
-store as the archive's, sharing it with the person it names, then linting it and checking the World. Running it again
-loads the changes. `src/chatddx/curation/write.py:init`
-=======
 :Loading — One run of `chatddx sync-archive`: planning a data set with its World's engines and facts, writing it into
 the store as the archive's, pruning what the data no longer holds, sharing it with the people it is shared with, then
 linting it and checking the World. Running it again loads the changes. `src/chatddx/curation/write.py:sync`
->>>>>>> @stamp
 
 :Location — Where a host keeps a model or a chat template, written the way vLLM on the host reads it.
 `src/chatddx/inventory/inventory.py:HostSpec`
@@ -808,11 +792,7 @@ it. (warning; configuration)
 
 ### The inventory
 
-<<<<<<< signed
-Raised at the end of `chatddx init-data` (`src/chatddx/cli.py`) and of an o11n import
-=======
 Raised at the end of `chatddx sync-archive` (`src/chatddx/cli.py`) and of an o11n import
->>>>>>> @stamp
 (`src/chatddx/importers/o11n.py:checked`), by `src/chatddx/inventory/check.py:check`.
 
 :endpoint.engine_unknown — Its engine isn't known. (warning; endpoint)
