@@ -1435,4 +1435,13 @@ def test_how_a_case_fares_is_drawn_below_its_review_once_scrolled_to(
         faring.get_by_role("link", name=re.compile(r"^\d\.\d\d$")).first
     ).to_have_attribute("href", re.compile(r"^/scores/"))
     expect(faring.get_by_text("Other cases, drawn")).to_have_count(0)
+    standing = faring.get_by_role("list", name="Where each configuration stands")
+    expect(
+        standing.get_by_role("listitem").filter(has_text=LINES).first
+    ).to_contain_text("aren't three replicates and a repeat")
+    expect(strip.first).to_have_accessible_name(re.compile(r"not as things are now$"))
+    expect(
+        faring.get_by_role("link", name=re.compile(r"^Replicate 1: \d\.\d\d$")).first
+    ).to_have_attribute("href", re.compile(r"^/scores/"))
+    expect(page.get_by_role("button", name="Run", exact=True)).to_be_enabled()
     assert errors == []

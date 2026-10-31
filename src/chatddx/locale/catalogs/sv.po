@@ -1436,6 +1436,14 @@ msgstr "Blodgas"
 msgid "Breadcrumb"
 msgstr "Brödsmulor"
 
+#: src/chatddx/portal/templates/review.html
+msgid ""
+"Brings the case as it is saved to three replicates and a repeat under "
+"each of your configurations: runs what has no runs or has changed, goes "
+"on with what stopped, and scores again what isn't scored against the "
+"expectation as it is"
+msgstr ""
+
 #: src/chatddx/portal/templates/score.html
 #, python-format
 msgid "By %(judge)s, as its request is rebuilt from what it pins."
@@ -2144,6 +2152,10 @@ msgstr "Prompt"
 #: src/chatddx/portal/templates/thread.html
 msgid "Its recipe"
 msgstr "Recept"
+
+#: frontend/src/lib/review/Faring.svelte
+msgid "Its replicates, each a link to its score"
+msgstr ""
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its request"
@@ -3102,6 +3114,15 @@ msgstr "Ersätta det du ändrat med version %(n)s?"
 msgid "Replicate"
 msgstr "Replikat"
 
+#: frontend/src/lib/review/Faring.svelte
+#, python-format
+msgid "Replicate %(n)s: %(value)s"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "Replikat %(n)s: %(value)s"
+>>>>>>> @stamp
+
 #: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/score.html
 msgid "Replicates"
@@ -3180,17 +3201,6 @@ msgstr "Körningar"
 #: src/chatddx/portal/templates/world.html
 msgid "Runs by default"
 msgstr "Körs som standard"
-
-#: src/chatddx/portal/templates/review.html
-#, python-format
-msgid "Runs the case as it is saved under %(num)s configuration, four times"
-msgid_plural ""
-"Runs the case as it is saved under each of %(num)s configurations, four "
-"times"
-msgstr[0] "Kör fallet som det är sparat under %(num)s konfiguration, fyra gånger"
-msgstr[1] ""
-"Kör fallet som det är sparat under var och en av %(num)s konfigurationer,"
-" fyra gånger"
 
 #: frontend/src/islands/Variation.svelte
 #, python-format
@@ -3854,6 +3864,10 @@ msgid "This case"
 msgstr "Det här fallet"
 
 #: frontend/src/lib/review/Faring.svelte
+msgid "This case, not as things are now"
+msgstr ""
+
+#: frontend/src/lib/review/Faring.svelte
 #, python-format
 msgid "This case: %(value)s, above %(share)s%% of the other cases"
 msgstr "Det här fallet: %(value)s, över %(share)s%% av de andra fallen"
@@ -4195,6 +4209,14 @@ msgstr ""
 #: src/chatddx/portal/templates/world.html
 msgid "Where"
 msgstr "Var"
+
+#: frontend/src/lib/review/Faring.svelte
+msgid "Where each configuration stands"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "Var varje konfiguration står"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/templates/world.html
 msgid ""
@@ -4949,9 +4971,62 @@ msgstr "ogiltig"
 msgid "it doesn't translate into it yet"
 msgstr "den översätter inte till det än"
 
+#: frontend/src/lib/review/faring.ts
+msgid "it has no runs of the case yet"
+msgstr ""
+
+#: frontend/src/lib/review/faring.ts
+#, python-format
+msgid "it has no translation into %(language)s"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "den har ingen översättning till %(language)s"
+>>>>>>> @stamp
+
+#: frontend/src/lib/review/faring.ts
+msgid "it is out of date: update it on its page"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "den är ouppdaterad: uppdatera den på dess sida"
+>>>>>>> @stamp
+
+#: frontend/src/lib/review/faring.ts
+msgid "it isn't scored against the expectation as it is"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "den är inte rättad mot förväntan som den är nu"
+>>>>>>> @stamp
+
+#: frontend/src/lib/review/faring.ts
+msgid "it stopped before it finished"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "den stannade innan den blev klar"
+>>>>>>> @stamp
+
 #: src/chatddx/portal/templates/translations.html
 msgid "it translates into it"
 msgstr "den översätter till det"
+
+#: frontend/src/lib/review/faring.ts
+msgid "it was halted before it finished"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "den avbröts innan den blev klar"
+>>>>>>> @stamp
+
+#: frontend/src/lib/review/faring.ts
+msgid "its configuration has changed since it ran"
+<<<<<<< signed
+msgstr ""
+=======
+msgstr "dess konfiguration har ändrats sedan den kördes"
+>>>>>>> @stamp
 
 #: frontend/src/lib/scorer/rewriting.ts
 #, python-format
@@ -4970,6 +5045,10 @@ msgstr "dess instruktioner"
 #: frontend/src/lib/scorer/ScorerViews.svelte
 msgid "its judge"
 msgstr "dess bedömare"
+
+#: frontend/src/lib/review/faring.ts
+msgid "its latest runs of the case aren't three replicates and a repeat"
+msgstr ""
 
 #: src/chatddx/portal/scoring.py
 msgid "its latest version"
@@ -5407,6 +5486,10 @@ msgstr "ingen: en extern inferensserver"
 #: src/chatddx/portal/templates/world.html
 msgid "none: it takes no secret"
 msgstr "ingen: den tar ingen hemlighet"
+
+#: frontend/src/lib/review/Faring.svelte
+msgid "not as things are now"
+msgstr ""
 
 #: src/chatddx/portal/templates/run.html
 msgid "not finished"
@@ -6088,6 +6171,10 @@ msgstr ""
 "tråden %(thread)s har gått vidare sedan version %(edit)s: dess senaste "
 "version är %(head)s"
 
+#: frontend/src/lib/review/Faring.svelte
+msgid "three replicates and a repeat, as things are now"
+msgstr ""
+
 #: src/chatddx/portal/templates/library.html
 msgctxt "after the button Run the picked"
 msgid "together, as one start, in the Lab."
@@ -6174,6 +6261,7 @@ msgstr "under en annan rättning"
 msgid "under any schema"
 msgstr "under vilket schema som helst"
 
+#: frontend/src/lib/review/Faring.svelte frontend/src/lib/review/faring.ts
 #: src/chatddx/portal/templates/macros.html
 msgid "under way"
 msgstr "pågår"

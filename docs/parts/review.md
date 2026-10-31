@@ -21,13 +21,38 @@ another case. Fields for tags and languages visually scuffed but exist.
 
 If the case chosen is with an appendix that the user owns it can be deleted and shows a delete button.
 
+<<<<<<< signed
 A run button that queues a case centered gathering with 3 replicates and 1 repeat, and leads back to the page as it was:
 nothing of what ran is shown, and the button is disabled while a run of the case is queued or under way.
+=======
+A run button that brings the case to a whole gathering of 3 replicates and 1 repeat under each of the person's
+configurations as things are now, and leads back to the page as it was. It is disabled while a run of the case is queued
+or under way, and, once How the case fares has read, while nothing is behind that a run mends.
+>>>>>>> @stamp
 
 ## Gatherings
 
+<<<<<<< signed
 Below the run button the page holds nothing, the table of each configuration's scores and the list of its answers gone.
 `/runs` and `/scores/{score}/{case}/{replicate}/{view}` show what ran.
+=======
+A case's latest gathering under a configuration is the runs started together with its latest run reaching it
+(`src/chatddx/bench/gathering.py:gatherings`): what How the case fares plots and what Run mends. Under each
+configuration it is either a whole 3+1 as things are now or behind (`src/chatddx/api/standing.py:standing`):
+
+- under way, which Run waits for;
+- out of date, untranslated or refused by the gate, which Run can't mend;
+- no runs, not a whole 3+1, its configuration changed since, or halted, which Run runs again, on the same seeds where it
+  has them;
+- stopped before it finished, which Run resumes;
+- not scored against the expectation as it is, which Run scores again.
+
+## How the case fares
+
+Below the page, read once scrolled near, then again while a run of the case is under way: where each configuration
+stands, then, by field and view, each configuration's mean on this case among every other case's latest under it. A
+configuration behind marks its value, and each replicate the mean is made of is a point linking to its score.
+>>>>>>> @stamp
 
 ## Measuring the yardstick
 

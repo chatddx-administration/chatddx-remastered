@@ -4,9 +4,14 @@
   import { api, type Schemas, why } from "$lib/api/client";
   import { t } from "$lib/locale";
   import { fieldName } from "$lib/schema/form";
-  import { BINS, type Bin, below, binned, grouped } from "./faring";
+  import { BINS, type Bin, below, binned, grouped, said, ticks } from "./faring";
 
-  let { family, case: faring, schema }: { family: number; case: string; schema: string } = $props();
+  let {
+    family,
+    case: faring,
+    schema,
+    onread,
+  }: { family: number; case: string; schema: string; onread?: (fared: Schemas["Fared"]) => void } = $props();
 
   type Fared = Schemas["Fared"];
   type Row = Schemas["FaredRow"];
@@ -30,17 +35,38 @@
     return () => seen.disconnect();
   });
 
+  // Policy: read again so long after while a run of the case is under way, so that what it scores comes in
+  // without a stream held open for each of its runs.
+  const AGAIN = 10_000;
+
   async function read(): Promise<void> {
     const res = await api.GET("/api/families/{family}/fared", {
       params: { path: { family }, query: { case: faring, expectation_schema: schema } },
     });
-    if (res.data) got = res.data;
-    else problem = why(res.error);
+    if (!res.data) {
+      problem = why(res.error);
+      return;
+    }
+    got = res.data;
+    onread?.(res.data);
+    if (res.data.configurations.some((c) => c.behind.some((b) => b.why === "under_way"))) {
+      setTimeout(() => void read(), AGAIN);
+    }
   }
 
+  const mended: Schemas["FaredBehind"]["why"][] = [
+    "no_runs",
+    "not_whole",
+    "changed",
+    "halted",
+    "unfinished",
+    "unscored",
+  ];
+
   const PAD = 8;
-  const HIGH = 32;
-  const BASE = HIGH - 6;
+  const HIGH = 40;
+  const BASE = HIGH - 14;
+  const TICK = BASE + 8;
   const x = (value: number): number => PAD + value * Math.max(0, width - 2 * PAD);
   const groups = $derived(got === null ? [] : grouped(got));
   const step = $derived(Math.max(2, (width - 2 * PAD) / BINS - 2));
@@ -66,6 +92,14 @@
         {t("This case")}
       </li>
       <li class="flex items-center gap-1.5">
+        <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="fill-warning" /></svg>
+        {t("This case, not as things are now")}
+      </li>
+      <li class="flex items-center gap-1.5">
+        <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="2.5" class="fill-primary/70" /></svg>
+        {t("Its replicates, each a link to its score")}
+      </li>
+      <li class="flex items-center gap-1.5">
         <svg width="14" height="14" aria-hidden="true"
           ><rect x="3" y="3" width="8" height="10" rx="2" class="fill-muted-foreground/60" /></svg
         >
@@ -87,6 +121,28 @@
         "This World draws scores for every case and configuration none of your runs scored: lighter, they show how a case would sit among others, not how any did.",
       )}
     </p>
+  {/if}
+
+  {#if got?.configurations.length}
+    <ul class="mb-6 space-y-1 text-sm" aria-label={t("Where each configuration stands")}>
+      {#each got.configurations as c (c.id)}
+        {@const under = c.behind.some((b) => b.why === "under_way")}
+        <li class="flex flex-wrap items-baseline gap-x-2">
+          <span class="font-medium">{c.name}</span>
+          {#if under}
+            <span class="flex items-center gap-1 text-muted-foreground"
+              ><LoaderCircleIcon class="size-3.5 animate-spin" />{t("under way")}</span
+            >
+          {:else if !c.behind.length}
+            <span class="text-muted-foreground">{t("three replicates and a repeat, as things are now")}</span>
+          {:else}
+            <span class={c.behind.some((b) => mended.includes(b.why)) ? "text-warning" : "text-muted-foreground"}
+              >{c.behind.map(said).join("; ")}</span
+            >
+          {/if}
+        </li>
+      {/each}
+    </ul>
   {/if}
 
   {#if problem}
@@ -111,7 +167,15 @@
                 <div class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-x-3">
                   {#each metric.rows as row (row.configuration)}
                     {@const shown = row.shown}
-                    <span class="truncate text-sm">{got.configurations[row.configuration]?.name}</span>
+                    {@const configuration = got.configurations[row.configuration]}
+                    {@const behind = !!configuration?.behind.length}
+                    {@const first = shown?.replicates.find((r) => r.href !== null)?.href}
+                    <span
+                      class="truncate text-sm"
+                      title={behind ? configuration?.behind.map(said).join("; ") : undefined}
+                      >{configuration?.name}{#if behind}<span class="ml-1 text-warning" aria-hidden="true">!</span
+                        >{/if}</span
+                    >
                     {@const bins = binned(row)}
                     {@const most = Math.max(1, ...bins.map((b) => b.run + b.drawn))}
                     <div bind:clientWidth={width}>
@@ -119,14 +183,14 @@
                         class="block w-full"
                         height={HIGH}
                         role="img"
-                        aria-label={`${got.configurations[row.configuration]?.name}: ${
+                        aria-label={`${configuration?.name}: ${
                           shown
                             ? t("%(value)s, above %(share)s%% of the other cases", {
                                 value: shown.value.toFixed(2),
                                 share: Math.round(100 * below(row)),
                               })
                             : t("Not scored on this case")
-                        }`}
+                        }${behind ? `, ${t("not as things are now")}` : ""}`}
                       >
                         <line
                           x1={x(0)}
@@ -171,11 +235,32 @@
                           </g>
                         {/each}
                         {#if shown}
+                          {#each ticks(shown) as tick (tick.n)}
+                            {@const at = x(tick.value) + 6 * tick.offset}
+                            {#if tick.href}
+                              <a href={tick.href}>
+                                <title
+                                  >{t("Replicate %(n)s: %(value)s", { n: tick.n, value: tick.value.toFixed(2) })}</title
+                                >
+                                <circle cx={at} cy={TICK} r="2.5" class="fill-primary/70 hover:fill-primary" />
+                              </a>
+                            {:else}
+                              <circle cx={at} cy={TICK} r="2.5" class="fill-primary/30">
+                                <title
+                                  >{t("Replicate %(n)s: %(value)s", { n: tick.n, value: tick.value.toFixed(2) })}</title
+                                >
+                              </circle>
+                            {/if}
+                          {/each}
                           <circle
                             cx={x(shown.value)}
                             cy={BASE}
                             r="5"
-                            class={shown.synthetic ? "fill-card stroke-primary" : "fill-primary stroke-card"}
+                            class={shown.synthetic
+                              ? "fill-card stroke-primary"
+                              : behind
+                                ? "fill-warning stroke-card"
+                                : "fill-primary stroke-card"}
                             stroke-width="2"
                           >
                             <title
@@ -188,9 +273,9 @@
                         {/if}
                       </svg>
                     </div>
-                    <span class="text-right text-sm font-medium tabular-nums">
+                    <span class="text-right text-sm font-medium tabular-nums" class:text-warning={behind}>
                       {#if !shown}<span class="text-muted-foreground">—</span>
-                      {:else if shown.href}<a href={shown.href}>{shown.value.toFixed(2)}</a>
+                      {:else if first}<a href={first}>{shown.value.toFixed(2)}</a>
                       {:else}{shown.value.toFixed(2)}{/if}
                     </span>
                   {/each}

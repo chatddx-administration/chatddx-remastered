@@ -160,6 +160,19 @@ a seed and its configuration's edit.
 * `started_with: UUID | None = None`
 * `among: Collection[UUID] | None = None`
 * ∟`Gathering | None`
+<<<<<<< signed
+=======
+
+## `Bench.gatherings`
+`src/chatddx/bench/gathering.py:gatherings`
+
+Each case's latest gathering under each configuration the person varied and ran
+it under, by case and the configuration's thread, the latest run first. Reads the
+person's runs, their catalog rows and each one's trial.
+
+* `cases: Collection[str]`
+* ∟`dict[tuple[str, int], list[RunStarted]]`
+>>>>>>> @stamp
 
 ## `Bench.leave`
 `src/chatddx/bench/saying.py:leave`

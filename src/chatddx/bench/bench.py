@@ -3,7 +3,7 @@ from typing import final
 from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .configurations import save
-from .gathering import gathering
+from .gathering import gathering, gatherings
 from .runs import (
     again,
     check_quota,
@@ -62,3 +62,4 @@ class Bench(Seen):
     score = score
 
     gathering = gathering
+    gatherings = gatherings

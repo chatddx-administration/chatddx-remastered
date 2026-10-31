@@ -1,4 +1,4 @@
-2026-10-31T00:47:28Z 9d59c5d ./dev/check.sh browser
+2026-10-31T10:57:25Z 3672e7b ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,19 +9,19 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [255.5ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [514.2ms]
 vite v8.3.4 building client environment for production...
 transforming...
 ✓ 825 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/.vite/manifest.json                                              7.31 kB │ gzip:  1.02 kB
+dist/.vite/manifest.json                                              7.31 kB │ gzip:  1.03 kB
 dist/assets/plus-jakarta-sans-vietnamese-wght-normal-qRpaaN48.woff2   8.35 kB
 dist/assets/outfit-latin-ext-wght-normal-DdQaqQDo.woff2              14.80 kB
 dist/assets/plus-jakarta-sans-latin-ext-wght-normal-DmpS2jIq.woff2   21.72 kB
 dist/assets/plus-jakarta-sans-latin-wght-normal-eXO_dkmS.woff2       27.34 kB
 dist/assets/outfit-latin-wght-normal-Bc-8i84L.woff2                  32.29 kB
-dist/assets/portal-DPBWbEUs.css                                      76.78 kB │ gzip: 15.19 kB
+dist/assets/portal-C5yjW7tW.css                                      77.17 kB │ gzip: 15.24 kB
 dist/assets/loader-circle-Y2AaAEgN.js                                 0.28 kB │ gzip:  0.24 kB
 dist/assets/info-B67dPtwF.js                                          0.30 kB │ gzip:  0.24 kB
 dist/assets/kinds-BS_nIBqy.js                                         1.06 kB │ gzip:  0.34 kB
@@ -40,19 +40,19 @@ dist/assets/home-DgZgvvAt.js                                         15.82 kB �
 dist/assets/outcomes-jQ4zEbwM.js                                     18.67 kB │ gzip:  6.37 kB
 dist/assets/library-6vTCpLNk.js                                      24.33 kB │ gzip:  8.91 kB
 dist/assets/lab-jLuoph48.js                                          30.25 kB │ gzip: 10.20 kB
-dist/assets/review-demK_o7V.js                                       53.86 kB │ gzip: 18.57 kB
 dist/assets/locale-B0pMiKjT.js                                       57.33 kB │ gzip: 22.07 kB
+dist/assets/review-8i8L5n8q.js                                       57.80 kB │ gzip: 19.71 kB
 dist/assets/dist-DwGGEiqJ.js                                         67.43 kB │ gzip: 21.03 kB
 
-✓ built in 3.52s
+✓ built in 5.74s
 ============================= test session starts ==============================
-platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
-collected 1171 items / 1143 deselected / 28 selected
+collected 1173 items / 1145 deselected / 28 selected
 
 src/chatddx/portal/test/test_browser.py ............................     [100%]
 
-=============== 28 passed, 1143 deselected in 106.34s (0:01:46) ================
+=============== 28 passed, 1145 deselected in 109.05s (0:01:49) ================

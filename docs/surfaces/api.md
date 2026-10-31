@@ -106,6 +106,23 @@ TypeScript and Svelte:
 `src/chatddx/api/listening.py:BEHIND`
 
 `BEHIND = 1000`
+<<<<<<< signed
+=======
+
+## `Behind` `@dataclass(frozen=True)`
+`src/chatddx/api/standing.py:Behind`
+
+Why a case's latest gathering under a configuration isn't a whole 3+1 as things
+are now, and what Run does about it: runs it again on `rerun`'s seeds, drawing
+those it doesn't hold, resumes `resume` and scores `rescore` again.
+
+* `why: Why`
+* `refusal: Exception | None = None`
+* `language: str | None = None`
+* `rerun: Seeds | None = None`
+* `resume: tuple[UUID, ...] = ()`
+* `rescore: tuple[UUID, ...] = ()`
+>>>>>>> @stamp
 
 ## `bench`
 `src/chatddx/api/people.py:bench`
@@ -260,6 +277,17 @@ Raises:
 
 `ComponentBody`
 
+<<<<<<< signed
+=======
+## `configurations`
+`src/chatddx/api/standing.py:configurations`
+
+The person's own configurations that generate, by name.
+
+* `bench: Bench`
+* ∟`list[schemas.Thread]`
+
+>>>>>>> @stamp
 ## `ConnDep`
 `src/chatddx/api/people.py:ConnDep`
 
@@ -352,6 +380,17 @@ Raises:
 * `wording: str | list[str] | None = Field(…)`
 * `params: dict[str, str | int | float] | None = Field(…)`
 
+<<<<<<< signed
+=======
+## `Error.of` `@classmethod`
+`src/chatddx/api/schemas.py:Error.of`
+
+* `e: Exception`
+* `code: Code`
+* `detail: str | None = None`
+* ∟`Self`
+
+>>>>>>> @stamp
 ## `ErrorData` `(_Schema)`
 `src/chatddx/api/schemas.py:ErrorData`
 
@@ -439,6 +478,10 @@ Raises:
 `src/chatddx/api/schemas.py:Fared`
 
 * `synthetic: bool = Field(description="whether any value is drawn rather than run")`
+<<<<<<< signed
+=======
+* `run: bool = Field(…)`
+>>>>>>> @stamp
 * `configurations: list[FaredConfiguration]`
 * `metrics: list[FaredMetric]`
 * `cases: list[FaredCase]`
@@ -449,13 +492,27 @@ Raises:
 
 How the case fares under each of the person's configurations on each view of the
 scorers under the schema, among how every family's case fares: each the mean of its
+<<<<<<< signed
 latest gathering's replicates under a configuration, as the person's runs have it,
+=======
+latest gathering's replicates under a configuration, as `bench.gatherings` has it,
+>>>>>>> @stamp
 none where they ran but weren't scored, and, in a World that draws them, drawn where
+<<<<<<< signed
 none ran. Views in characters are left
 out, as they aren't on the scale of the others.
+=======
+none ran; and, under each configuration, what keeps the case's latest gathering from
+being a whole 3+1 as things are now. Views in characters are left out, as they
+aren't on the scale of the others.
+>>>>>>> @stamp
 
 Costs a read of each of the person's runs and their scores, finished scores held
+<<<<<<< signed
 once read; the drawing is local.
+=======
+once read, and what `standing` costs; the drawing is local.
+>>>>>>> @stamp
 
 * `request: Request`
 * `bench: BenchDep`
@@ -466,6 +523,16 @@ once read; the drawing is local.
 
 Raises:
 1. `NotFound`: `"no case {case} of family {family}"`
+<<<<<<< signed
+=======
+
+## `FaredBehind` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredBehind`
+
+* `why: Literal['under_way', 'outdated', 'untranslated', 'refused', 'no_runs', 'not_whole', 'changed', 'halted', 'unfinished', 'unscored']`
+* `refusal: Error | None = Field(default=None, description="a refused's refusal")`
+* `language: str | None = Field(…)`
+>>>>>>> @stamp
 
 ## `FaredCase` `(_Schema)`
 `src/chatddx/api/schemas.py:FaredCase`
@@ -479,6 +546,10 @@ Raises:
 
 * `id: int`
 * `name: str`
+<<<<<<< signed
+=======
+* `behind: list[FaredBehind] = Field(…)`
+>>>>>>> @stamp
 
 ## `FaredMetric` `(_Schema)`
 `src/chatddx/api/schemas.py:FaredMetric`
@@ -487,6 +558,15 @@ Raises:
 * `view: int`
 * `label: str = Field(description="the scorer's title and the view's label")`
 * `field: str | None = Field(description="the expectation's field the view reads")`
+<<<<<<< signed
+=======
+
+## `FaredReplicate` `(_Schema)`
+`src/chatddx/api/schemas.py:FaredReplicate`
+
+* `value: float | None = Field(description="null where it wasn't scored")`
+* `href: str | None = Field(description="the page of its score, null where drawn")`
+>>>>>>> @stamp
 
 ## `FaredRow` `(_Schema)`
 `src/chatddx/api/schemas.py:FaredRow`
@@ -502,9 +582,16 @@ Raises:
 `src/chatddx/api/schemas.py:FaredShown`
 
 * `value: float`
+<<<<<<< signed
 * `replicates: int`
+=======
+>>>>>>> @stamp
 * `synthetic: bool`
+<<<<<<< signed
 * `href: str | None = Field(description="the page of its first replicate's score")`
+=======
+* `replicates: list[FaredReplicate] = Field(…)`
+>>>>>>> @stamp
 
 ## `Finding` `(_Schema)`
 `src/chatddx/api/schemas.py:Finding`
@@ -1111,6 +1198,14 @@ Raises:
 * `response: Response`
 * ∟`None`
 
+<<<<<<< signed
+=======
+## `OPEN`
+`src/chatddx/api/standing.py:OPEN`
+
+`OPEN = ("queued", "under way")`
+
+>>>>>>> @stamp
 ## `Part` `(_Schema)`
 `src/chatddx/api/schemas.py:Part`
 
@@ -1586,7 +1681,11 @@ expectation schema.
 
 * `scorers: list[Unscored]`
 
+<<<<<<< signed
 ## `Seeds` `(_Schema)`
+=======
+## `schemas.Seeds` `(_Schema)`
+>>>>>>> @stamp
 `src/chatddx/api/schemas.py:Seeds`
 
 * `seeds: list[int] | None = Field(…)`
@@ -1594,6 +1693,14 @@ expectation schema.
 
 Raises:
 1. `ValueError`: `"a run takes seeds or replicates, not both"` (through `Seeds._seeds_or_replicates`, in a `ValidationError`)
+<<<<<<< signed
+=======
+
+## `standing.Seeds`
+`src/chatddx/api/standing.py:Seeds`
+
+`type Seeds = Mapping[str, tuple[int, ...]]`
+>>>>>>> @stamp
 
 ## `Session` `@dataclass(frozen=True)`
 `src/chatddx/api/people.py:Session`
@@ -1659,6 +1766,43 @@ Raises:
 * `data: BaseModel`
 * `id: int | None = None`
 * ∟`str`
+<<<<<<< signed
+=======
+
+## `stale`
+`src/chatddx/api/standing.py:stale`
+
+The scorers under the schema that the run, finished, isn't scored by as things
+are now, by digest. Costs what `bench.unscored` costs.
+
+* `bench: Bench`
+* `run: RunStarted`
+* `schema: str | None`
+* ∟`list[str]`
+
+## `Standing` `@dataclass(frozen=True)`
+`src/chatddx/api/standing.py:Standing`
+
+* `configuration: schemas.Thread`
+* `runs: list[RunStarted]`
+* `behind: list[Behind] = field(default_factory=list[Behind])`
+
+## `standing`
+`src/chatddx/api/standing.py:standing`
+
+How the case's latest gathering stands under each of the person's
+configurations, as `bench.gatherings` has it: under way, or what keeps it from
+being a whole 3+1 of the configuration as it is now, scored under the schema
+against the expectation, if `marked`, as it is now. Costs the person's runs read,
+their places in the queue, and, for each configuration, its trial built twice and
+gated and its runs' scorings built.
+
+* `bench: Bench`
+* `case: str`
+* `schema: str | None`
+* `marked: bool`
+* ∟`list[Standing]`
+>>>>>>> @stamp
 
 ## `start` `@router.post("/runs", …)`
 `src/chatddx/api/runs.py:start`
@@ -1992,6 +2136,14 @@ Raises:
 Raises:
 1. `NotFound`: `str(e)` (from `LookupError`)
 
+<<<<<<< signed
+=======
+## `Why`
+`src/chatddx/api/standing.py:Why`
+
+`Why`
+
+>>>>>>> @stamp
 ## `api`
 `frontend/src/lib/api/client.ts:api`
 

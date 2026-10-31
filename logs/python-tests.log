@@ -1,38 +1,39 @@
-2026-10-31T00:45:20Z 9d59c5d ./dev/check.sh python-tests
+2026-10-31T10:57:25Z 3672e7b ./dev/check.sh python-tests
 • python-tests
 ============================= test session starts ==============================
-platform linux -- Python 3.13.17, pytest-9.1.1, pluggy-1.6.0
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
 created: 4/4 workers
-4 workers [1171 items]
+4 workers [1173 items]
 
 ........................................................................ [  6%]
 ........................................................................ [ 12%]
 ........................................................................ [ 18%]
 ........................................................................ [ 24%]
-........................................................................ [ 30%]
-..sssssssssssss.sssssssssssssss......................................... [ 36%]
-........................................................................ [ 43%]
+........................................................ssssssssssssssss [ 30%]
+ssssssssssss............................................................ [ 36%]
+........................................................................ [ 42%]
 ........................................................................ [ 49%]
 ........................................................................ [ 55%]
 ........................................................................ [ 61%]
 ........................................................................ [ 67%]
 ........................................................................ [ 73%]
 ........................................................................ [ 79%]
-........................................................................ [ 86%]
+........................................................................ [ 85%]
 ........................................................................ [ 92%]
 ........................................................................ [ 98%]
-...................                                                      [100%]
+.....................                                                    [100%]
 ================================= slow budget ==================================
-363.1 s in 1143 tests; slow from 0.335 s on
-the quick run takes 36.3 s of it, 10%
-set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 1.1 s, curated 4.4 s, plan 1.1 s, described 1.2 s, loaded 2.1 s, ran 5.1 s, sampled 9.1 s, pytestconfig 0.0 s, each 0.2 s, parsed 1.5 s
-waited for, made ahead: db 55.1 s
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_facts_are_its_script_s_and_its_markup_s_at_their_own_lines (1.089 s)
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (1.023 s)
-unmark: src/chatddx/api/test/test_world.py::test_endpoints_say_what_they_serve_and_what_they_re_cleared_for (0.111 s)
-unmark: src/chatddx/repl/test/test_choosing.py::test_set_model_swaps_the_model_keeping_every_pick_and_runs_under_its_handle (0.112 s)
-================= 1143 passed, 28 skipped in 127.09s (0:02:07) =================
+303.3 s in 1145 tests; slow from 0.254 s on
+the quick run takes 31.3 s of it, 10%
+set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 1.4 s, curated 5.1 s, plan 0.8 s, described 0.8 s, loaded 1.6 s, ran 3.5 s, sampled 2.8 s, pytestconfig 0.0 s, parsed 0.4 s, each 0.1 s
+waited for, made ahead: db 430.8 s
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_facts_are_its_script_s_and_its_markup_s_at_their_own_lines (1.409 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_component_s_surface_is_its_props_named_after_its_file (1.004 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_facts_are_its_top_level_names_its_class_s_members_and_comments (1.401 s)
+mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (0.785 s)
+mark slow: src/chatddx/portal/test/test_scores.py::test_a_judge_s_request_rebuilt_otherwise_than_sent_is_told (0.791 s)
+================= 1145 passed, 28 skipped in 208.20s (0:03:28) =================

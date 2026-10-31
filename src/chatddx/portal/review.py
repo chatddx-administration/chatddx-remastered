@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Annotated, Any
@@ -14,6 +14,7 @@ from chatddx.api import (
     schemas,
     threads as api,
 )
+from chatddx.api.standing import stale, standing
 from chatddx.api.state import refused
 from chatddx.bench import Bench, Endpoint, Family, NotFound, TriedVariation
 from chatddx.catalog import Edit, Subject, read
@@ -29,6 +30,7 @@ from chatddx.runner import Refused, Running
 from chatddx.store import Queue, fetch_vignette
 
 from .pages import BenchDep, page, within
+from .runs import pressed
 from .titles import display_case
 
 router = APIRouter()
@@ -146,6 +148,7 @@ def running_in_review(
     bench: BenchDep,
     family: int,
     case: Annotated[str, Form()],
+    under: Annotated[str | None, Form()] = None,
     back: Annotated[str | None, Form()] = None,
 ) -> Response:
     picked = _picked(api_families.family(bench, family), case)
@@ -153,15 +156,33 @@ def running_in_review(
     # counts as made.
     if _busy(bench, picked.case):
         return _moved(family, back, picked.case)
+    schema = _under(_schemas(bench), under)
+    expected = next(
+        (e for e in picked.expectations if e.expectation_schema == schema), None
+    )
+    marked = expected is not None and expected.expectation is not None
+    behind = [
+        (s.configuration, b)
+        for s in standing(bench, picked.case, schema, marked)
+        for b in s.behind
+    ]
+    rerun = [(t, b.rerun) for t, b in behind if b.rerun is not None]
+    bench.check_quota([s.seeds for _ in rerun for s in REPLICATED])
     first: UUID | None = None
-    chosen = [t for t in _configurations(bench) if _placed(bench, t) is not None]
-    bench.check_quota([s.seeds for _ in chosen for s in REPLICATED])
     begun: list[Running] = []
     with _queueing(bench, begun):
-        for t in chosen:
-            begun += _begin(bench, t, picked.case, first)
+        for t, seeds in rerun:
+            begun += _begin(bench, t, picked.case, first, seeds)
             first = first or (begun[0].started.run if begun else None)
-    if first is None:
+    for _, b in behind:
+        for run in b.resume:
+            with pressed():
+                _ = bench.queue(bench.resume(bench.run(run)))
+        for run in b.rescore:
+            if left := stale(bench, bench.run(run), schema):
+                with pressed():
+                    _ = bench.queue_scoring(bench.run(run), left)
+    if rerun and first is None:
         raise Invalid.of(
             "no configuration can run %(case)s now", case=display_case(picked.titled)
         )
@@ -187,6 +208,7 @@ def _begin(
     t: schemas.Thread,
     case: str,
     first: UUID | None,
+    seeds: Mapping[str, tuple[int, ...]],
 ) -> list[Running]:
     if (placed := _placed(bench, t)) is None:
         return []
@@ -195,7 +217,9 @@ def _begin(
     begun: list[Running] = []
     for s in REPLICATED:
         each = drawn[s.name] = (
-            suggest_seeds(s.seeds)
+            seeds[s.name]
+            if s.name in seeds
+            else suggest_seeds(s.seeds)
             if s.repeats is None
             else drawn[s.repeats][-s.seeds :]
         )

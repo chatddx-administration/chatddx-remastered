@@ -24,6 +24,16 @@ Written by `chatddx-dev index` from the comments in `[parts.review]`'s code in `
 
 ```
 // Policy: read once the section is near view, as most visits to a case look at its expectation alone.
+<<<<<<< signed
+=======
+```
+
+## `frontend/src/lib/review/Faring.svelte:AGAIN`
+
+```
+// Policy: read again so long after while a run of the case is under way, so that what it scores comes in
+// without a stream held open for each of its runs.
+>>>>>>> @stamp
 ```
 
 ## `frontend/src/lib/review/Measuring.svelte`
@@ -57,6 +67,15 @@ Written by `chatddx-dev index` from the comments in `[parts.review]`'s code in `
 // Policy: so many bins between 0 and 1, so that a mean of four replicates falls on one of its own.
 ```
 
+<<<<<<< signed
+=======
+## `frontend/src/lib/review/faring.ts:ticks`
+
+```
+// Policy: replicates of a value side by side, so that four alike on a metric that scores 0 or 1 show as four.
+```
+
+>>>>>>> @stamp
 ## `frontend/src/lib/review/measure.svelte.ts:segments`
 
 ```
