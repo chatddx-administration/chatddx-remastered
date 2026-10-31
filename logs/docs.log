@@ -1,3 +1,2 @@
-2026-10-31T10:57:25Z 3672e7b ./dev/check.sh docs
+2026-10-31T11:01:22Z 3672e7b ./dev/check.sh docs
 • docs
-docs/parts/locale.md:176: code: src/chatddx/api/app.py:_worded: no _worded

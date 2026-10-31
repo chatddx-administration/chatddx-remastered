@@ -1443,6 +1443,13 @@ msgid ""
 "on with what stopped, and scores again what isn't scored against the "
 "expectation as it is"
 msgstr ""
+<<<<<<< signed
+=======
+"Tar fallet som det är sparat till tre replikat och en upprepning under "
+"var och en av dina konfigurationer: kör det som saknar körningar eller "
+"har ändrats, fortsätter det som stannade och rättar igen det som inte är "
+"rättat mot förväntan som den är nu"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/templates/score.html
 #, python-format
@@ -2155,7 +2162,11 @@ msgstr "Recept"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "Its replicates, each a link to its score"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "Dess replikat, var och en en länk till dess rättning"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its request"
@@ -3865,7 +3876,11 @@ msgstr "Det här fallet"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "This case, not as things are now"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "Det här fallet, inte som det är nu"
+>>>>>>> @stamp
 
 #: frontend/src/lib/review/Faring.svelte
 #, python-format
@@ -4973,7 +4988,11 @@ msgstr "den översätter inte till det än"
 
 #: frontend/src/lib/review/faring.ts
 msgid "it has no runs of the case yet"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "den har inga körningar av fallet än"
+>>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 #, python-format
@@ -5048,7 +5067,11 @@ msgstr "dess bedömare"
 
 #: frontend/src/lib/review/faring.ts
 msgid "its latest runs of the case aren't three replicates and a repeat"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "dess senaste körningar av fallet är inte tre replikat och en upprepning"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/scoring.py
 msgid "its latest version"
@@ -5489,7 +5512,11 @@ msgstr "ingen: den tar ingen hemlighet"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "not as things are now"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "inte som det är nu"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/templates/run.html
 msgid "not finished"
@@ -6173,7 +6200,11 @@ msgstr ""
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "three replicates and a repeat, as things are now"
+<<<<<<< signed
 msgstr ""
+=======
+msgstr "tre replikat och en upprepning, som det är nu"
+>>>>>>> @stamp
 
 #: src/chatddx/portal/templates/library.html
 msgctxt "after the button Run the picked"

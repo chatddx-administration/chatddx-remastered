@@ -1,10 +1,11 @@
-2026-10-31T10:57:25Z 3672e7b ./dev/check.sh pending
+2026-10-31T11:02:52Z 07c4c13 ./dev/check.sh pending
 • pending
 flag: docs/comments/api.md: 1 stamp pending
 flag: docs/comments/bench.md: 1 stamp pending
 flag: docs/comments/review.md: 2 stamps pending
+flag: docs/parts/locale.md: 1 stamp pending
 flag: docs/parts/review.md: 2 stamps pending
 flag: docs/surfaces/api.md: 17 stamps pending
 flag: docs/surfaces/bench.md: 1 stamp pending
 flag: docs/surfaces/portal.md: 2 stamps pending
-flag: src/chatddx/locale/catalogs/sv.po: 8 stamps pending
+flag: src/chatddx/locale/catalogs/sv.po: 15 stamps pending

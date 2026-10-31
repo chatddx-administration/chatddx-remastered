@@ -949,3 +949,12 @@
 2026-10-31T10:59:25Z	container	119.5	0	10	3672e7b	./dev/check.sh browser
 2026-10-31T11:00:54Z	container	208.2	0	10	3672e7b	pytest -n 4
 2026-10-31T11:00:54Z	container	209.0	0	10	3672e7b	./dev/check.sh python-tests
+2026-10-31T11:01:23Z	container	0.7	0	6	3672e7b	./dev/check.sh docs
+2026-10-31T11:01:23Z	container	0.7	0	6	3672e7b	./dev/check.sh stamps
+2026-10-31T11:01:25Z	container	2.4	0	6	3672e7b	./dev/check.sh openapi
+2026-10-31T11:01:25Z	container	3.1	0	6	3672e7b	./dev/check.sh locale
+2026-10-31T11:01:29Z	container	6.8	0	6	3672e7b	./dev/check.sh format
+2026-10-31T11:01:35Z	container	12.3	0	6	3672e7b	./dev/check.sh index
+2026-10-31T11:01:43Z	container	20.4	0	6	3672e7b	./dev/check.sh python-lint
+2026-10-31T11:02:52Z	container	2.0	0	0	07c4c13	./dev/check.sh locale
+2026-10-31T11:02:52Z	container	0.3	1	0	07c4c13	./dev/check.sh pending
