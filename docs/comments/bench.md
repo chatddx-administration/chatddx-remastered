@@ -26,8 +26,6 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 # Policy: an expectation is refused when a scorer under its schema can't read it, as what
 # a scorer reads, such as a pattern, is the scorer's to say and not the schema's; checked,
 # it is a finding by the field the view reads, so that it can be shown by it.
-<<<<<<< signed
-=======
 ```
 
 ## `src/chatddx/bench/gathering.py:gatherings`
@@ -36,7 +34,6 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 # Policy: a case's latest gathering under a configuration is the runs started together
 # with its latest run reaching it, those of them reaching it, so that whatever started
 # it, a review's 3+1 or a trial of many cases, the latest start stands for the case.
->>>>>>> @stamp
 ```
 
 ## `src/chatddx/bench/handles.py:broken`

@@ -160,8 +160,6 @@ a seed and its configuration's edit.
 * `started_with: UUID | None = None`
 * `among: Collection[UUID] | None = None`
 * ∟`Gathering | None`
-<<<<<<< signed
-=======
 
 ## `Bench.gatherings`
 `src/chatddx/bench/gathering.py:gatherings`
@@ -172,7 +170,6 @@ person's runs, their catalog rows and each one's trial.
 
 * `cases: Collection[str]`
 * ∟`dict[tuple[str, int], list[RunStarted]]`
->>>>>>> @stamp
 
 ## `Bench.leave`
 `src/chatddx/bench/saying.py:leave`

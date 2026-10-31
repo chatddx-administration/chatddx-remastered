@@ -1443,13 +1443,10 @@ msgid ""
 "on with what stopped, and scores again what isn't scored against the "
 "expectation as it is"
 msgstr ""
-<<<<<<< signed
-=======
 "Tar fallet som det är sparat till tre replikat och en upprepning under "
 "var och en av dina konfigurationer: kör det som saknar körningar eller "
 "har ändrats, fortsätter det som stannade och rättar igen det som inte är "
 "rättat mot förväntan som den är nu"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/score.html
 #, python-format
@@ -2162,11 +2159,7 @@ msgstr "Recept"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "Its replicates, each a link to its score"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "Dess replikat, var och en en länk till dess rättning"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its request"
@@ -3128,11 +3121,7 @@ msgstr "Replikat"
 #: frontend/src/lib/review/Faring.svelte
 #, python-format
 msgid "Replicate %(n)s: %(value)s"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "Replikat %(n)s: %(value)s"
->>>>>>> @stamp
 
 #: frontend/src/islands/Variation.svelte
 #: src/chatddx/portal/templates/score.html
@@ -3876,11 +3865,7 @@ msgstr "Det här fallet"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "This case, not as things are now"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "Det här fallet, inte som det är nu"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/Faring.svelte
 #, python-format
@@ -4227,11 +4212,7 @@ msgstr "Var"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "Where each configuration stands"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "Var varje konfiguration står"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/world.html
 msgid ""
@@ -4988,44 +4969,24 @@ msgstr "den översätter inte till det än"
 
 #: frontend/src/lib/review/faring.ts
 msgid "it has no runs of the case yet"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den har inga körningar av fallet än"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 #, python-format
 msgid "it has no translation into %(language)s"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den har ingen översättning till %(language)s"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 msgid "it is out of date: update it on its page"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den är ouppdaterad: uppdatera den på dess sida"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 msgid "it isn't scored against the expectation as it is"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den är inte rättad mot förväntan som den är nu"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 msgid "it stopped before it finished"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den stannade innan den blev klar"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/translations.html
 msgid "it translates into it"
@@ -5033,19 +4994,11 @@ msgstr "den översätter till det"
 
 #: frontend/src/lib/review/faring.ts
 msgid "it was halted before it finished"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "den avbröts innan den blev klar"
->>>>>>> @stamp
 
 #: frontend/src/lib/review/faring.ts
 msgid "its configuration has changed since it ran"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "dess konfiguration har ändrats sedan den kördes"
->>>>>>> @stamp
 
 #: frontend/src/lib/scorer/rewriting.ts
 #, python-format
@@ -5067,11 +5020,7 @@ msgstr "dess bedömare"
 
 #: frontend/src/lib/review/faring.ts
 msgid "its latest runs of the case aren't three replicates and a repeat"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "dess senaste körningar av fallet är inte tre replikat och en upprepning"
->>>>>>> @stamp
 
 #: src/chatddx/portal/scoring.py
 msgid "its latest version"
@@ -5512,11 +5461,7 @@ msgstr "ingen: den tar ingen hemlighet"
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "not as things are now"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "inte som det är nu"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/run.html
 msgid "not finished"
@@ -6200,11 +6145,7 @@ msgstr ""
 
 #: frontend/src/lib/review/Faring.svelte
 msgid "three replicates and a repeat, as things are now"
-<<<<<<< signed
-msgstr ""
-=======
 msgstr "tre replikat och en upprepning, som det är nu"
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/library.html
 msgctxt "after the button Run the picked"

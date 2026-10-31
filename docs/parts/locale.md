@@ -173,11 +173,7 @@ time, so that Babel matches a changed message only to one translated.
 - **Extracted**, built, from each `raise X.of(…)` in `src/chatddx/` (`src/chatddx/locale/locale.py:_refusals`); a
   wording not written where it is raised is marked where it is written, with `pgettext_noop("refusal", …)`.
 - **Answered**, built: the API's `Error` carries `wording` and `params` beside `detail`
-<<<<<<< signed
-  (`src/chatddx/api/app.py:_worded`), through `src/chatddx/api/state.py:refused` too
-=======
   (`src/chatddx/api/schemas.py:Error.of`), through `src/chatddx/api/state.py:refused` too
->>>>>>> @stamp
   (`src/chatddx/api/state.py:Refusing`).
 - **Said where it is shown**, built, by `src/chatddx/locale/locale.py:refusal`: the error page (`error.html`), a refusal
   shown on the page that was sent (`src/chatddx/portal/pages.py:refusal_of`), a field's, from pydantic's context
