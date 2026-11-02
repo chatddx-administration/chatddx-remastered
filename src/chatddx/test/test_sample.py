@@ -1,5 +1,6 @@
 import json
 import tomllib
+from dataclasses import replace
 from typing import cast
 
 from jsonschema import validators
@@ -16,7 +17,14 @@ from chatddx.rig import rig
 from chatddx.store import People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.helpers import Loaded, sampled_template
-from chatddx.test.world import GPT_OSS_MODEL, QWEN_MODEL, SAMPLE, WORLDS, world_plan
+from chatddx.test.world import (
+    GPT_OSS_MODEL,
+    KOMPISMOLN,
+    QWEN_MODEL,
+    SAMPLE,
+    WORLDS,
+    world_plan,
+)
 
 __all__ = ["sampled_template"]
 
@@ -98,13 +106,24 @@ def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
 
 def test_kompismoln_s_facts_are_the_bundled_ones_as_its_engines_serve_them() -> None:
     assert World.load(WORLDS / "kompismoln").facts == ()
-    plan = world_plan(WORLDS / "kompismoln", SAMPLE)
+    plan = world_plan(WORLDS / "kompismoln", KOMPISMOLN)
     qwen, gpt_oss = (plan.facts.models[m] for m in (QWEN_MODEL, GPT_OSS_MODEL))
     assert (qwen.context_length, gpt_oss.context_length) == (8192, 32768)
     assert isinstance(qwen.reasoning.budget, Refusal)
     assert qwen.reasoning.budget.refused.startswith("qwen3-8b@pelle serves it without")
     stored = plan.named("facts", QWEN_MODEL).digest
     assert resolve(plan.registry.get, stored, ModelFacts) == qwen
+
+
+def test_kompismoln_s_data_is_the_sample_s_without_its_appendices() -> None:
+    sample, kompismoln = load_cases(SAMPLE), load_cases(KOMPISMOLN)
+    assert {id for id, c in sample.items() if c.appendices} == {"akm-01", "dutch-11"}
+    assert kompismoln == {
+        id: replace(c, appendices={}, ordered=()) for id, c in sample.items()
+    }
+    assert sorted(
+        p.name for p in KOMPISMOLN.iterdir() if p.resolve().parent != SAMPLE
+    ) == ["cases-en.toml", "cases-sv.toml"]
 
 
 def test_kompismoln_s_sources_are_the_sample_s() -> None:

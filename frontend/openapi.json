@@ -1592,7 +1592,7 @@
           "families"
         ],
         "summary": "Fared",
-        "description": "How the case fares under each of the person's configurations on each view of the\nscorers under the schema, among how every family's case fares: each the mean of its\nlatest gathering's replicates under a configuration, as the person's runs have it,\nnone where they ran but weren't scored, and, in a World that draws them, drawn where\nnone ran. Views in characters are left\nout, as they aren't on the scale of the others.\n\nCosts a read of each of the person's runs and their scores, finished scores held\nonce read; the drawing is local.",
+        "description": "How the case fares under each of the person's configurations on each view of the\nscorers under the schema, among how every family's case fares: each the mean of its\nlatest gathering's replicates under a configuration, as `bench.gatherings` has it,\nnone where they ran but weren't scored, and, in a World that draws them, drawn where\nnone ran; and, under each configuration, what keeps the case's latest gathering from\nbeing a whole 3+1 as things are now. Views in characters are left out, as they\naren't on the scale of the others.\n\nCosts a read of each of the person's runs and their scores, finished scores held\nonce read, and what `standing` costs; the drawing is local.",
         "operationId": "fared_api_families__family__fared_get",
         "security": [
           {
@@ -3408,6 +3408,23 @@
         ],
         "description": "a chunk's digest; empty or null takes an optional part out"
       },
+      "Code": {
+        "enum": [
+          "unauthenticated",
+          "cross_site",
+          "not_found",
+          "not_allowed",
+          "ambiguous",
+          "conflict",
+          "moved_on",
+          "refused",
+          "unprocessable",
+          "over_quota",
+          "whoops",
+          "error"
+        ],
+        "type": "string"
+      },
       "Compared": {
         "properties": {
           "runs": {
@@ -3731,6 +3748,93 @@
           "problem"
         ],
         "title": "Endpoint"
+      },
+      "Error": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              }
+            ],
+            "description": "why, or where a request doesn't validate",
+            "title": "Detail"
+          },
+          "code": {
+            "$ref": "#/components/schemas/Code"
+          },
+          "pass_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "a whoops's: what the person is to pass on to ops, as it is",
+            "title": "Pass On"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "a refusal's detail as written, its placeholders unfilled, or singular and plural counted by params' num; null where the detail is all there is",
+            "title": "Wording"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "what fills its wording's placeholders",
+            "title": "Params"
+          }
+        },
+        "required": [
+          "detail",
+          "code"
+        ],
+        "title": "Error",
+        "type": "object"
       },
       "Expected": {
         "properties": {
@@ -4070,6 +4174,11 @@
             "title": "Synthetic",
             "description": "whether any value is drawn rather than run"
           },
+          "run": {
+            "type": "boolean",
+            "title": "Run",
+            "description": "whether a run of the case has something to do: nothing of it is under way and a configuration is behind in a way a run mends"
+          },
           "configurations": {
             "items": {
               "$ref": "#/components/schemas/FaredConfiguration"
@@ -4103,12 +4212,62 @@
         "type": "object",
         "required": [
           "synthetic",
+          "run",
           "configurations",
           "metrics",
           "cases",
           "rows"
         ],
         "title": "Fared"
+      },
+      "FaredBehind": {
+        "properties": {
+          "why": {
+            "type": "string",
+            "enum": [
+              "under_way",
+              "outdated",
+              "untranslated",
+              "refused",
+              "no_runs",
+              "not_whole",
+              "changed",
+              "halted",
+              "unfinished",
+              "unscored"
+            ],
+            "title": "Why"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a refused's refusal"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "an untranslated's language, by tag"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "why"
+        ],
+        "title": "FaredBehind"
       },
       "FaredCase": {
         "properties": {
@@ -4143,13 +4302,22 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "behind": {
+            "items": {
+              "$ref": "#/components/schemas/FaredBehind"
+            },
+            "type": "array",
+            "title": "Behind",
+            "description": "what keeps the case's latest gathering under it from being a whole 3+1 as things are now, empty when it is one"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
-          "name"
+          "name",
+          "behind"
         ],
         "title": "FaredConfiguration"
       },
@@ -4190,6 +4358,41 @@
           "field"
         ],
         "title": "FaredMetric"
+      },
+      "FaredReplicate": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "null where it wasn't scored"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href",
+            "description": "the page of its score, null where drawn"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "href"
+        ],
+        "title": "FaredReplicate"
       },
       "FaredRow": {
         "properties": {
@@ -4257,34 +4460,25 @@
             "type": "number",
             "title": "Value"
           },
-          "replicates": {
-            "type": "integer",
-            "title": "Replicates"
-          },
           "synthetic": {
             "type": "boolean",
             "title": "Synthetic"
           },
-          "href": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Href",
-            "description": "the page of its first replicate's score"
+          "replicates": {
+            "items": {
+              "$ref": "#/components/schemas/FaredReplicate"
+            },
+            "type": "array",
+            "title": "Replicates",
+            "description": "each replicate the value is the mean of, as they ran"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "value",
-          "replicates",
           "synthetic",
-          "href"
+          "replicates"
         ],
         "title": "FaredShown"
       },
@@ -8313,23 +8507,6 @@
         "title": "CanaryEndedData",
         "type": "object"
       },
-      "Code": {
-        "enum": [
-          "unauthenticated",
-          "cross_site",
-          "not_found",
-          "not_allowed",
-          "ambiguous",
-          "conflict",
-          "moved_on",
-          "refused",
-          "unprocessable",
-          "over_quota",
-          "whoops",
-          "error"
-        ],
-        "type": "string"
-      },
       "DoneData": {
         "additionalProperties": false,
         "properties": {
@@ -8350,93 +8527,6 @@
           "halted"
         ],
         "title": "DoneData",
-        "type": "object"
-      },
-      "Error": {
-        "additionalProperties": false,
-        "properties": {
-          "detail": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "array"
-              }
-            ],
-            "description": "why, or where a request doesn't validate",
-            "title": "Detail"
-          },
-          "code": {
-            "$ref": "#/components/schemas/Code"
-          },
-          "pass_on": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "a whoops's: what the person is to pass on to ops, as it is",
-            "title": "Pass On"
-          },
-          "wording": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "a refusal's detail as written, its placeholders unfilled, or singular and plural counted by params' num; null where the detail is all there is",
-            "title": "Wording"
-          },
-          "params": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "what fills its wording's placeholders",
-            "title": "Params"
-          }
-        },
-        "required": [
-          "detail",
-          "code"
-        ],
-        "title": "Error",
         "type": "object"
       },
       "ErrorData": {

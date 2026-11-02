@@ -1,4 +1,5 @@
 import { mount } from "svelte";
+import type { Schemas } from "$lib/api/client";
 import { t } from "$lib/locale";
 import About from "$lib/review/About.svelte";
 import Appendices from "$lib/review/Appendices.svelte";
@@ -122,15 +123,22 @@ if (held) {
     });
   }
 
+  const running = document.querySelector<HTMLFormElement>("form[data-running]");
   const faring = document.querySelector("#review-faring > .pane");
   if (faring && review.schema) {
     faring.replaceChildren();
-    mount(Faring, { target: faring, props: { family: review.family, case: review.case, schema: review.schema } });
+    const onread = (fared: Schemas["Fared"]): void => {
+      const button = running?.querySelector("button");
+      if (button) button.disabled = !fared.run;
+    };
+    mount(Faring, {
+      target: faring,
+      props: { family: review.family, case: review.case, schema: review.schema, onread },
+    });
   }
 
   const save = document.getElementById("review-save");
   if (save) mount(Save, { target: save, props: { edited } });
-  const running = document.querySelector<HTMLFormElement>("form[data-running]");
   let leaving = false;
   running?.addEventListener("submit", (sent) => {
     if (edited.pending && !confirm(t("What you changed isn't saved: run the case as it was last saved?"))) {

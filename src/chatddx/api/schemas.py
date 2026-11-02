@@ -54,6 +54,17 @@ class Error(_Schema):
         default=None, description="what fills its wording's placeholders"
     )
 
+    @classmethod
+    def of(cls, e: Exception, code: Code, detail: str | None = None) -> Self:
+        if not isinstance(e, factors.Worded) or e.wording is None:
+            return cls(detail=str(e) if detail is None else detail, code=code)
+        return cls(
+            detail=str(e) if detail is None else detail,
+            code=code,
+            wording=e.wording if isinstance(e.wording, str) else list(e.wording),
+            params=dict(e.params),
+        )
+
 
 class SignIn(_Schema):
     login: str
@@ -735,9 +746,32 @@ class Measured(_Schema):
     )
 
 
+class FaredBehind(_Schema):
+    why: Literal[
+        "under_way",
+        "outdated",
+        "untranslated",
+        "refused",
+        "no_runs",
+        "not_whole",
+        "changed",
+        "halted",
+        "unfinished",
+        "unscored",
+    ]
+    refusal: Error | None = Field(default=None, description="a refused's refusal")
+    language: str | None = Field(
+        default=None, description="an untranslated's language, by tag"
+    )
+
+
 class FaredConfiguration(_Schema):
     id: int
     name: str
+    behind: list[FaredBehind] = Field(
+        description="what keeps the case's latest gathering under it from being a "
+        + "whole 3+1 as things are now, empty when it is one"
+    )
 
 
 class FaredMetric(_Schema):
@@ -753,11 +787,17 @@ class FaredCase(_Schema):
     title: str
 
 
+class FaredReplicate(_Schema):
+    value: float | None = Field(description="null where it wasn't scored")
+    href: str | None = Field(description="the page of its score, null where drawn")
+
+
 class FaredShown(_Schema):
     value: float
-    replicates: int
     synthetic: bool
-    href: str | None = Field(description="the page of its first replicate's score")
+    replicates: list[FaredReplicate] = Field(
+        description="each replicate the value is the mean of, as they ran"
+    )
 
 
 class FaredRow(_Schema):
@@ -771,6 +811,10 @@ class FaredRow(_Schema):
 
 class Fared(_Schema):
     synthetic: bool = Field(description="whether any value is drawn rather than run")
+    run: bool = Field(
+        description="whether a run of the case has something to do: nothing of it is "
+        + "under way and a configuration is behind in a way a run mends"
+    )
     configurations: list[FaredConfiguration]
     metrics: list[FaredMetric]
     cases: list[FaredCase]

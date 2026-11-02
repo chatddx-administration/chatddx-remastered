@@ -156,6 +156,11 @@ let
         migrate = {
           inherit (config.systemd.services.chatddx-migrate) after requires;
         };
+        sync = {
+          inherit (config.systemd.services.chatddx-sync-archive) after requires;
+          inherit (config.systemd.services.chatddx-sync-archive.serviceConfig) User;
+          command = lib.removePrefix "${config.services.chatddx.package}/bin/" config.systemd.services.chatddx-sync-archive.serviceConfig.ExecStart;
+        };
         portal = {
           inherit (config.systemd.services.chatddx-portal) after requires;
         };
@@ -197,6 +202,7 @@ let
       services = [
         "chatddx-migrate"
         "chatddx-portal"
+        "chatddx-sync-archive"
         "chatddx-worker-1"
       ];
       environment = {
@@ -251,6 +257,7 @@ let
       services = [
         "chatddx-migrate"
         "chatddx-portal"
+        "chatddx-sync-archive"
         "chatddx-worker-1"
         "chatddx-worker-2"
         "chatddx-worker-3"
@@ -263,6 +270,7 @@ let
       services = [
         "chatddx-migrate"
         "chatddx-portal"
+        "chatddx-sync-archive"
       ];
       postgresql = false;
       after = [ "network-online.target" ];
@@ -274,8 +282,17 @@ let
         after = [ "postgresql.target" ];
         requires = [ "postgresql.target" ];
       };
-      portal = {
+      sync = {
         after = [ "chatddx-migrate.service" ];
+        requires = [ "chatddx-migrate.service" ];
+        User = "chatddx_writer";
+        command = "chatddx sync-archive";
+      };
+      portal = {
+        after = [
+          "chatddx-migrate.service"
+          "chatddx-sync-archive.service"
+        ];
         requires = [ "chatddx-migrate.service" ];
       };
     };

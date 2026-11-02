@@ -7,7 +7,7 @@ from .model import KINDS
 
 
 # Policy: What src/chatddx/bench/seen.py:Seen.handle and Seen.served rely on, checked as
-# a process starts and before init-data commits.
+# a process starts and before sync-archive commits.
 def broken(rows: Rows, inventory: Inventory) -> list[str]:
     threads = [t.id for kind in KINDS["model"] for t in rows.threads(kind)]
     abouts = read.abouts(rows, [Subject(thread=t) for t in threads])

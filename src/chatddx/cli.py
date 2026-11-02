@@ -19,7 +19,7 @@ from chatddx import locale, settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.bench.handles import broken
-from chatddx.curation import init, load_cases, plan_factors, repair, wipe
+from chatddx.curation import load_cases, plan_factors, provision, repair, sync, wipe
 from chatddx.curation.write import ARCHIVE
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
@@ -94,7 +94,7 @@ def _person_password(args: argparse.Namespace) -> None:
     print(f"password set for {args.login}")
 
 
-# Policy: a World's data set is where the World itself doesn't read it; init-data's by
+# Policy: a World's data set is where the World itself doesn't read it; sync-archive's by
 # default.
 DATA = "_data"
 
@@ -117,37 +117,31 @@ def _held(command: str, world: World, conn: Connection) -> None:
         )
 
 
-def _init_data(args: argparse.Namespace) -> None:
-    world = _world("init-data", args.world)
+def _sync_archive(args: argparse.Namespace) -> None:
+    world = _world("sync-archive", args.world)
     data: Path = args.data or world.path / DATA
     if not data.is_dir():
         raise SystemExit(
-            f"init-data: {world.path} has no {DATA}/: give a data set with --data DIR"
+            f"sync-archive: {world.path} has no {DATA}/: give a data set with --data DIR"
         )
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
         plan = plan_factors(data, facts, rig(), world)
         cases = load_cases(data)
     except ValueError as e:
-        raise SystemExit(f"init-data: {e}") from None
+        raise SystemExit(f"sync-archive: {e}") from None
     try:
         source = world.inventory.source(args.source, DirectorySource)
     except LookupError as e:
-        raise SystemExit(f"init-data: {world.path}: {e}") from None
+        raise SystemExit(f"sync-archive: {world.path}: {e}") from None
     if not set(cases) & set(source.ids()):
         raise SystemExit(
-            f"init-data: none of the data's {len(cases)} cases is in source "
+            f"sync-archive: none of the data's {len(cases)} cases is in source "
             + f"{source.name!r} of {world.path}"
         )
-    lines: list[str] = []
     with psycopg.connect(settings.database()) as conn, conn.transaction():
-        people = People(conn)
-        user = people.find(args.user)
-        if user is None:
-            user = people.add(args.user, args.user)
-            lines.append(f"[person] {args.user}: added")
-        lines += init(conn, plan, cases, source, user, giftbag=args.giftbag)
-        _held("init-data, refused and nothing written", world, conn)
+        lines = sync(conn, plan, cases, source)
+        _held("sync-archive, refused and nothing written", world, conn)
     findings = check(world.inventory, plan.registry.get)
     lines += [f"[world {f.level}] {f.subject}: {f.code}: {f.message}" for f in findings]
     n, m = len(findings), len(world.inventory.endpoints)
@@ -155,6 +149,28 @@ def _init_data(args: argparse.Namespace) -> None:
         f"[world] {n} finding{'' if n == 1 else 's'} in {m} endpoint"
         + f"{'' if m == 1 else 's'} of {world.path}"
     )
+    for line in lines:
+        print(line)
+
+
+def _person_provision(args: argparse.Namespace) -> None:
+    if args.login == ARCHIVE:
+        raise SystemExit(
+            f"person provision: {ARCHIVE!r} holds what is provisioned; it isn't "
+            + "provisioned"
+        )
+    lines: list[str] = []
+    with psycopg.connect(settings.database()) as conn, conn.transaction():
+        people = People(conn)
+        if people.find(ARCHIVE) is None:
+            raise SystemExit(
+                f"person provision: no {ARCHIVE!r} yet; sync-archive loads it"
+            )
+        user = people.find(args.login)
+        if user is None:
+            user = people.add(args.login, args.name or args.login)
+            lines.append(f"[person] {args.login}: added")
+        lines += provision(conn, user)
     for line in lines:
         print(line)
 
@@ -168,7 +184,7 @@ def _repair_data(args: argparse.Namespace) -> None:
     with psycopg.connect(settings.database()) as conn:
         archive = People(conn).find(ARCHIVE)
         if archive is None:
-            raise SystemExit(f"repair-data: no {ARCHIVE!r} yet; init-data loads it")
+            raise SystemExit(f"repair-data: no {ARCHIVE!r} yet; sync-archive loads it")
         lines = repair(conn, source, archive, dry=args.dry_run)
     for line in lines:
         print(line)
@@ -177,7 +193,7 @@ def _repair_data(args: argparse.Namespace) -> None:
 def _wipe_data(args: argparse.Namespace) -> None:
     if args.user == ARCHIVE:
         raise SystemExit(
-            f"wipe-data: {ARCHIVE!r} holds what init-data loads; it isn't wiped"
+            f"wipe-data: {ARCHIVE!r} holds what sync-archive loads; it isn't wiped"
         )
     with psycopg.connect(settings.database()) as conn:
         user = People(conn).find(args.user)
@@ -241,7 +257,7 @@ def _repl(args: argparse.Namespace) -> None:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
-                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+                f"no person {args.login!r}: chatddx person provision {args.login} adds them"
             )
         bench = Bench(conn, person, world.inventory)
         if loop(Repl(bench, console()), args.history):
@@ -266,7 +282,7 @@ def _scripted_runs(args: argparse.Namespace) -> None:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
-                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+                f"no person {args.login!r}: chatddx person provision {args.login} adds them"
             )
         bench = Bench(conn, person, world.inventory)
         for scripted in chosen:
@@ -294,7 +310,7 @@ def _scripted_review(args: argparse.Namespace) -> None:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
-                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+                f"no person {args.login!r}: chatddx person provision {args.login} adds them"
             )
         bench = Bench(conn, person, world.inventory)
         try:
@@ -510,42 +526,47 @@ def main(argv: Sequence[str] | None = None) -> None:
     password = person_commands.add_parser("password", help="set a person's password")
     _ = password.add_argument("login")
     password.set_defaults(run=_person_password)
+    provisioning = person_commands.add_parser(
+        "provision",
+        help="share what the archive holds with a person and give them forks of what "
+        + "they have none of, live or deleted",
+    )
+    _ = provisioning.add_argument("login", help="the person's, added when missing")
+    _ = provisioning.add_argument(
+        "--name", help="the name a person added is given (their login)"
+    )
+    provisioning.set_defaults(run=_person_provision)
 
-    init = commands.add_parser(
-        "init-data",
-        help="load a data set into the archive and share it with a person",
+    syncing = commands.add_parser(
+        "sync-archive",
+        help="write a data set into the archive, prune what it no longer holds, and "
+        + "share what it holds with each person it is shared with",
     )
-    _ = init.add_argument(
-        "user", help="the login to share the archive with, added when missing"
-    )
-    _ = init.add_argument(
+    _ = syncing.add_argument(
         "--world",
         type=Path,
         help="the World directory: its inventory.toml locates the vignettes and "
         + "endpoints, and its engines.toml and facts.toml are loaded with the data's "
         + "(CHATDDX_WORLD)",
     )
-    _ = init.add_argument(
+    _ = syncing.add_argument(
         "--source",
         help="the name of the World's directory source that holds the cases' "
         + "vignettes, needed when it has more than one",
     )
-    _ = init.add_argument(
-        "--giftbag", action="store_true", help="also give the user forks of their own"
-    )
-    _ = init.add_argument(
+    _ = syncing.add_argument(
         "--data",
         type=Path,
         help="what to load: a directory with factors.toml and cases-<language>.toml "
         + f"(the World's {DATA}/)",
     )
-    _ = init.add_argument(
+    _ = syncing.add_argument(
         "--facts",
         type=Path,
         action="append",
         help="more model facts to load, beside the bundled ones and the World's",
     )
-    init.set_defaults(run=_init_data)
+    syncing.set_defaults(run=_sync_archive)
 
     repair_parser = commands.add_parser(
         "repair-data",
@@ -570,7 +591,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     wipe_parser = commands.add_parser(
         "wipe-data",
         help="delete what a person owns and unshare what they collaborate on; "
-        + "init-data shares and gives it back",
+        + "person provision shares it back, and leaves the forks it deleted deleted",
     )
     _ = wipe_parser.add_argument("user", help="the person's login")
     wipe_parser.set_defaults(run=_wipe_data)
@@ -601,7 +622,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         type=Path,
         required=True,
         help="the engines file to write the models and engines to, such as "
-        + "worlds/kompismoln/engines.toml, which init-data loads with its World",
+        + "worlds/kompismoln/engines.toml, which sync-archive loads with its World",
     )
     _ = imp.add_argument(
         "--endpoints",

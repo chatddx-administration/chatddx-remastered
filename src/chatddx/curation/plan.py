@@ -101,6 +101,7 @@ class Plan:
     facts: Facts
     stanzas: list[Planned] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
+    unplanned: set[str] = field(default_factory=set[str])
     untranslated: list[str] = field(default_factory=list)
     compilations: list[str] = field(default_factory=list)
     engines: dict[str, str] = field(default_factory=dict)
@@ -295,6 +296,8 @@ def plan_factors(
         planned[(table, name)] = stanza
         if stanza is not None:
             plan.stanzas.append(stanza)
+        else:
+            plan.unplanned.add(name)
 
     def base(table: str, name: str, fork_of: object) -> str | None:
         if fork_of is not None and not isinstance(fork_of, str):

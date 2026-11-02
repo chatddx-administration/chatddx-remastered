@@ -1,7 +1,10 @@
-import type { Schemas } from "$lib/api/client";
+import { type Schemas, why } from "$lib/api/client";
+import { displayLanguage, t } from "$lib/locale";
 
 type Fared = Schemas["Fared"];
 type Row = Schemas["FaredRow"];
+type Behind = Schemas["FaredBehind"];
+type Shown = Schemas["FaredShown"];
 
 export type Group = { field: string | null; metrics: { at: number; rows: Row[] }[] };
 export type Bin = { at: number; run: number; drawn: number; cases: number[] };
@@ -40,4 +43,49 @@ export function below(row: Row): number {
   const value = row.shown.value;
   const under = row.values.reduce((n, v) => n + (v < value ? 1 : v === value ? 0.5 : 0), 0);
   return under / row.values.length;
+}
+
+export function said(behind: Behind): string {
+  switch (behind.why) {
+    case "under_way":
+      return t("under way");
+    case "outdated":
+      return t("it is out of date: update it on its page");
+    case "untranslated":
+      return t("it has no translation into %(language)s", { language: displayLanguage(behind.language ?? "") });
+    case "refused":
+      return why(behind.refusal);
+    case "no_runs":
+      return t("it has no runs of the case yet");
+    case "not_whole":
+      return t("its latest runs of the case aren't three replicates and a repeat");
+    case "changed":
+      return t("its configuration has changed since it ran");
+    case "halted":
+      return t("it was halted before it finished");
+    case "unfinished":
+      return t("it stopped before it finished");
+    case "unscored":
+      return t("it isn't scored against the expectation as it is");
+  }
+}
+
+export type Tick = { value: number; href: string | null; n: number; offset: number };
+
+// Policy: replicates of a value side by side, so that four alike on a metric that scores 0 or 1 show as four.
+export function ticks(shown: Shown): Tick[] {
+  const found: Tick[] = [];
+  const alike = new Map<number, number>();
+  shown.replicates.forEach((r, i) => {
+    if (r.value === null) return;
+    alike.set(r.value, (alike.get(r.value) ?? 0) + 1);
+    found.push({ value: r.value, href: r.href, n: i + 1, offset: 0 });
+  });
+  const placed = new Map<number, number>();
+  for (const tick of found) {
+    const k = placed.get(tick.value) ?? 0;
+    placed.set(tick.value, k + 1);
+    tick.offset = k - ((alike.get(tick.value) ?? 1) - 1) / 2;
+  }
+  return found;
 }

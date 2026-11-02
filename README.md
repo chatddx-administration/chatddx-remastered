@@ -95,11 +95,15 @@ git conflicts to resolve. [docs/parts/dev.md](docs/parts/dev.md) says how to fet
 
 ### The sample world
 
-`worlds/sample` serves two fake vLLM engines on this machine, and a stand-in for a remote one. Load the sample data and
-share it with alice:
+`worlds/sample` serves two fake vLLM engines on this machine, and a stand-in for a remote one. Write the sample data
+into the archive, then share it with alice and give her forks of her own:
 
 ```sh
-chatddx init-data alice --giftbag
+chatddx sync-archive
+```
+
+```sh
+chatddx person provision alice
 ```
 
 In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, till Ctrl-C:
@@ -170,7 +174,8 @@ No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both a
 so a case can run on them:
 
 ```sh
-chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
+chatddx sync-archive --world worlds/kompismoln
+chatddx person provision alice
 chatddx repl alice --world worlds/kompismoln
 ```
 

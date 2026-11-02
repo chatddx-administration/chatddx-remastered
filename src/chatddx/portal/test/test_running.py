@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx import settings
+from chatddx.api.test.helpers import digest, thread
 from chatddx.inventory import Inventory
 from chatddx.portal.test.helpers import settled, shown, started, world_served
 from chatddx.store import Store
@@ -256,3 +257,144 @@ def test_a_review_starts_nothing_over_the_quota(
         "a day takes 1" in html.unescape(got.text)
     )
     assert signed.get("/api/runs").json() == []
+
+
+def fared(signed: TestClient, family: dict[str, Any]) -> dict[str, Any]:
+    [case] = signed.get(f"/api/families/{family['id']}").json()["cases"]
+    [expected] = [e for e in case["expectations"] if e["expectation"]]
+    query = {
+        "case": family["case"],
+        "expectation_schema": expected["expectation_schema"],
+    }
+    got = signed.get(f"/api/families/{family['id']}/fared", params=query)
+    assert got.status_code == 200, got.json()
+    return got.json()
+
+
+def behind(signed: TestClient, family: dict[str, Any]) -> dict[str, list[str]]:
+    return {
+        c["name"]: [b["why"] for b in c["behind"]]
+        for c in fared(signed, family)["configurations"]
+    }
+
+
+def running(signed: TestClient, family: dict[str, Any]) -> None:
+    form = {"case": family["case"], "back": f"/review/{family['id']}"}
+    assert signed.post(f"/review/{family['id']}/runs", data=form).status_code == 303
+    for r in reaching(signed, family):
+        _ = settled(signed, r["id"])
+
+
+def by_configuration(
+    signed: TestClient, family: dict[str, Any]
+) -> dict[int, list[tuple[str, list[int]]]]:
+    found: dict[int, list[tuple[str, list[int]]]] = {}
+    for r in reaching(signed, family):
+        found.setdefault(r["ran"]["configuration"], []).append((r["id"], r["seeds"]))
+    return found
+
+
+UNRUNNABLE = {"outdated", "untranslated", "refused"}
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_review_s_run_mends_what_the_configuration_or_expectation_changed_since(
+    signed: TestClient,
+) -> None:
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    told = behind(signed, crlf)
+    assert told[LINES] == ["no_runs"] and fared(signed, crlf)["run"] is True
+    running(signed, crlf)
+    told = behind(signed, crlf)
+    assert all(not why or set(why) <= UNRUNNABLE for why in told.values()), told
+    assert told[LINES] == [] and fared(signed, crlf)["run"] is False
+    refused = [
+        b
+        for c in fared(signed, crlf)["configurations"]
+        for b in c["behind"]
+        if b["why"] == "refused"
+    ]
+    assert refused and all(b["refusal"]["detail"] for b in refused)
+    before = by_configuration(signed, crlf)
+    running(signed, crlf)
+    assert by_configuration(signed, crlf) == before
+
+    off = digest(signed, "reasoning", OFF)
+    lines = thread(signed, "configuration", LINES)
+    edited = {"head": lines["head"]["id"], "parts": {"reasoning": off}}
+    got = signed.post(f"/api/threads/{lines['id']}/edits", json=edited)
+    assert got.status_code == 201
+    assert behind(signed, crlf)[LINES] == ["changed"]
+    running(signed, crlf)
+    after = by_configuration(signed, crlf)
+    assert after.keys() == before.keys()
+    for c, runs in after.items():
+        if c == lines["id"]:
+            fresh = [r for r in runs if r not in before[c]]
+            assert sorted(s for _, s in fresh) == sorted(s for _, s in before[c])
+        else:
+            assert runs == before[c]
+    assert behind(signed, crlf)[LINES] == []
+
+    [case] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+    [expected] = [e for e in case["expectations"] if e["expectation"]]
+    query = {"kind": "expectation", "owner": "alice"}
+    [mine] = [
+        t
+        for t in signed.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    ]
+    held = signed.get(f"/api/components/{mine['head']['digest']}").json()["body"]
+    worded = {**held["data"]["warning"], "text": "Bleeding on anticoagulants."}
+    changed = {**held, "data": {**held["data"], "warning": worded}}
+    got = signed.post(
+        f"/api/threads/{mine['id']}/edits",
+        json={"head": mine["head"]["id"], "component": changed},
+    )
+    assert got.status_code == 201
+    assert behind(signed, crlf)[LINES] == []
+
+    warning = {**worded, "pattern": worded["pattern"] + " | apixaban"}
+    changed = {**held, "data": {**held["data"], "warning": warning}}
+    got = signed.post(
+        f"/api/threads/{mine['id']}/edits",
+        json={"head": got.json()["id"], "component": changed},
+    )
+    assert got.status_code == 201
+    told = behind(signed, crlf)
+    unscored = {c for c, why in told.items() if why == ["unscored"]}
+    assert unscored and LINES not in unscored
+    before = by_configuration(signed, crlf)
+    running(signed, crlf)
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline and any(
+        why == ["unscored"] for why in behind(signed, crlf).values()
+    ):
+        time.sleep(0.2)
+    assert all(why != ["unscored"] for why in behind(signed, crlf).values())
+    assert by_configuration(signed, crlf) == before
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_review_s_run_runs_again_on_the_same_seeds_what_was_halted(
+    signed: TestClient,
+) -> None:
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    assert signed.post("/queue/pause").status_code == 303
+    form = {"case": crlf["case"], "back": f"/review/{crlf['id']}"}
+    assert signed.post(f"/review/{crlf['id']}/runs", data=form).status_code == 303
+    assert behind(signed, crlf)[LINES] == ["under_way"]
+    assert fared(signed, crlf)["run"] is False
+    for r in reaching(signed, crlf):
+        assert signed.post(f"/runs/{r['id']}/halt").status_code == 303
+    assert signed.post("/queue/resume").status_code == 303
+    assert behind(signed, crlf)[LINES] == ["halted"]
+    before = by_configuration(signed, crlf)
+    running(signed, crlf)
+    after = by_configuration(signed, crlf)
+    for c, runs in after.items():
+        fresh = [r for r in runs if r not in before[c]]
+        assert sorted(s for _, s in fresh) == sorted(s for _, s in before[c])
+    assert behind(signed, crlf)[LINES] == []

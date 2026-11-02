@@ -829,12 +829,14 @@ Raises:
 * `bench: BenchDep`
 * `family: int`
 * `case: Annotated[str, Form()]`
+* `under: Annotated[str | None, Form()] = None`
 * `back: Annotated[str | None, Form()] = None`
 * ∟`Response`
 
 Raises:
 1. `NotFound`: `"no case %(case)s of %(family)s", case=str(case), family=shown.name` (through `_picked`)
-2. `Invalid`: `"no configuration can run %(case)s now", case=display_case(picked.titled)`
+2. `NotFound`: `"no expectation schema %(schema)s for you", schema=schema` (through `_under`)
+3. `Invalid`: `"no configuration can run %(case)s now", case=display_case(picked.titled)`
 
 ## `runs` `@router.get("/runs")`
 `src/chatddx/portal/runs.py:runs`

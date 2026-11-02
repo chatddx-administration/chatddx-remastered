@@ -93,8 +93,6 @@ and are squeezed in for completeness.
 - **The sidebar**: the kinds under headings, the headings and the kinds under each sorted alphabetically, always open,
   no deeper tree: what refers to what is a graph, not a hierarchy, and a collapsed branch hides a kind from a person
   with little time.
-- **The giftbag stays**: the deploy loads each person with `init-data <login> --giftbag`, so what it forks reads as
-  theirs, beside the archive's.
 - **A vignette's text stays out of the Library**, deliberately: a case's section links to it on a page of its own.
 - **No sample trials for now**: data sets load none, so the trial shelf starts empty, says how a trial is begun, and
   points to the Lab, which runs a configuration on cases straight away.

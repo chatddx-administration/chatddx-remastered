@@ -38,20 +38,6 @@ Finds:
 * `appendices: Mapping[str, str] = field(default_factory=dict[str, str])`
 * `ordered: tuple[Ordered, ...] = ()`
 
-## `init`
-`src/chatddx/curation/write.py:init`
-
-* `conn: Connection`
-* `plan: Plan`
-* `cases: dict[str, DataCase]`
-* `source: DirectorySource`
-* `user: Person`
-* `giftbag: bool = False`
-* ∟`list[str]`
-
-Raises:
-1. `ValueError`: `"a data set needs exactly one expectation schema"`
-
 ## `load_cases`
 `src/chatddx/curation/plan.py:load_cases`
 
@@ -86,6 +72,7 @@ Raises:
 * `facts: Facts`
 * `stanzas: list[Planned] = field(default_factory=list)`
 * `skipped: list[str] = field(default_factory=list)`
+* `unplanned: set[str] = field(default_factory=set[str])`
 * `untranslated: list[str] = field(default_factory=list)`
 * `compilations: list[str] = field(default_factory=list)`
 * `engines: dict[str, str] = field(default_factory=dict)`
@@ -149,6 +136,23 @@ Raises:
 
 `PLANNED_TABLES = (*TABLES, "recipe", "judge")`
 
+## `provision`
+`src/chatddx/curation/write.py:provision`
+
+Share what the archive holds now with the person, and, with `giftbag`, give
+them a fork of each thread of the kinds a person shapes they have none of, live or
+deleted, nor, for an expectation, one of their own of its case. Reads every catalog row the archive
+and the person are in; all in one transaction.
+
+* `conn: Connection`
+* `user: Person`
+* `giftbag: bool = True`
+* ∟`list[str]`
+
+Raises:
+1. `ValueError`: `"{ARCHIVE!r} holds what is provisioned; it isn't provisioned"`
+2. `ValueError`: `"no {ARCHIVE!r} yet; sync-archive loads it"`
+
 ## `repair`
 `src/chatddx/curation/repair.py:repair`
 
@@ -168,6 +172,24 @@ Raises:
 
 * `digest: str`
 * ∟`str`
+
+## `sync`
+`src/chatddx/curation/write.py:sync`
+
+Write the data set into the archive, the threads and families it holds made
+or updated to it, what the archive holds of an earlier one pruned (deleted and
+unshared), and what it holds now shared with each person it is already shared
+with. Reads every vignette at the source to fingerprint it, and every catalog row
+the archive is in; all in one transaction.
+
+* `conn: Connection`
+* `plan: Plan`
+* `cases: dict[str, DataCase]`
+* `source: DirectorySource`
+* ∟`list[str]`
+
+Raises:
+1. `ValueError`: `"a data set needs exactly one expectation schema"`
 
 ## `TABLES`
 `src/chatddx/curation/plan.py:TABLES`

@@ -9,6 +9,12 @@ die() {
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 cd "$(git rev-parse --show-toplevel)"
 
+as.sh() {
+  entity="user-$1"
+  shift
+  o11n as "$entity" "$@"
+}
+
 MAIN=${MAIN:-main}
 # shellcheck source=dev/settings.sh
 . "$(dirname "${BASH_SOURCE[0]}")/settings.sh"

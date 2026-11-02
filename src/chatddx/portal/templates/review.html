@@ -161,8 +161,8 @@
         <button class="danger" title="{{ _('Deletes the appendix %(appendix)s: this case and those under it leave the list', appendix=deleting) }}">{{ _("Delete") }}</button>
       </form>
       {% endif %}
-      <form method="post" action="{{ here }}/runs" data-running title="{{ ngettext('Runs the case as it is saved under %(num)s configuration, four times', 'Runs the case as it is saved under each of %(num)s configurations, four times', runnable) }}">
-        <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
+      <form method="post" action="{{ here }}/runs" data-running title="{{ _("Brings the case as it is saved to three replicates and a repeat under each of your configurations: runs what has no runs or has changed, goes on with what stopped, and scores again what isn't scored against the expectation as it is") }}">
+        <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">{% if schema %}<input type="hidden" name="under" value="{{ schema }}">{% endif %}
         <button class="run"{% if not runnable or busy %} disabled{% endif %}>{{ pgettext("a button", "Run") }}</button>
       </form>
       <div id="review-save" class="contents"></div>

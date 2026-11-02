@@ -28,11 +28,19 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 # it is a finding by the field the view reads, so that it can be shown by it.
 ```
 
+## `src/chatddx/bench/gathering.py:gatherings`
+
+```
+# Policy: a case's latest gathering under a configuration is the runs started together
+# with its latest run reaching it, those of them reaching it, so that whatever started
+# it, a review's 3+1 or a trial of many cases, the latest start stands for the case.
+```
+
 ## `src/chatddx/bench/handles.py:broken`
 
 ```
 # Policy: What src/chatddx/bench/seen.py:Seen.handle and Seen.served rely on, checked as
-# a process starts and before init-data commits.
+# a process starts and before sync-archive commits.
 ```
 
 ## `src/chatddx/bench/model.py:Reason`
@@ -151,7 +159,7 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 
 ```
 # Scope: a release as import-engine writes one, new weights under the handles and the
-# engines serving them at the endpoints, loaded with init-data.
+# engines serving them at the endpoints, loaded with sync-archive.
 ```
 
 ## `src/chatddx/bench/updating.py:_LATER`

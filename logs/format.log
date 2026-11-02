@@ -1,3 +1,2 @@
-2026-10-31T01:19:25Z 20ef19c ./dev/check.sh format
-• format
-493 files already formatted
+2026-11-02T11:23:38Z 9b21e50 ./dev/check.sh format
+• format: unchanged since it passed (dev/state/format-good)

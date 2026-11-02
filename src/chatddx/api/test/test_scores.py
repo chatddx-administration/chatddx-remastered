@@ -343,10 +343,15 @@ def test_how_a_case_fares_is_its_latest_runs_means_among_other_cases_drawn_or_no
         metric = fared["metrics"][row["metric"]]
         assert row["shown"]["value"] == stored[metric["scorer"], metric["view"]]
         assert row["shown"]["synthetic"] is False
-        assert row["shown"]["href"].split("/")[2] in {
-            g["score"] for g in made["scores"]
-        }
+        [replicate] = row["shown"]["replicates"]
+        assert replicate["value"] == row["shown"]["value"]
+        assert replicate["href"].split("/")[2] in {g["score"] for g in made["scores"]}
     assert all(r["cases"] == [] for r in fared["rows"])
+    behind = {
+        c["name"]: [b["why"] for b in c["behind"]] for c in fared["configurations"]
+    }
+    assert behind[LINES] == ["not_whole"]
+    assert fared["run"] is True
 
     held = served.state.chatddx
     assert isinstance(held, AppState)

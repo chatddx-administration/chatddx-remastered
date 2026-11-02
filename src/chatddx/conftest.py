@@ -8,7 +8,7 @@ from argon2 import PasswordHasher
 from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
-from chatddx.curation import Plan, init, load_cases
+from chatddx.curation import Plan, load_cases
 from chatddx.identity import identity
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.runner.test import tools as test_tools
@@ -29,6 +29,7 @@ from chatddx.test.world import (
     TEST,
     faked,
     free_world,
+    loaded,
     world_plan,
 )
 
@@ -110,7 +111,7 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
             source = World.load(TEST).inventory.source(kind=DirectorySource)
-            _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
+            _ = loaded(conn, world_plan(), CASES, source, alice, giftbag=True)
         yield name
 
 
@@ -134,7 +135,7 @@ def sampled(copies: Copies, migrated: str) -> Iterator[Loaded]:
             alice = People(conn).add("alice", "Alice")
             source = World.load(world).inventory.source(kind=DirectorySource)
             plan = world_plan(world, SAMPLE)
-            said = init(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
+            said = loaded(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
         yield Loaded(name, said)
 
 

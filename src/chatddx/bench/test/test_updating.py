@@ -6,7 +6,7 @@ from pydantic import JsonValue
 from chatddx.bench import Bench, NotFound
 from chatddx.bench.test.helpers import correct_facts, move_model, trial
 from chatddx.catalog import Edit, threads, titles
-from chatddx.curation import Plan, init
+from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.scoring import Judge, Scorer
@@ -22,6 +22,7 @@ from chatddx.test.world import (
     TEST,
     copied,
     edit,
+    loaded,
     world_plan,
 )
 
@@ -124,7 +125,7 @@ def test_only_its_owner_updates_it(bench: Bench) -> None:
 
 
 # Scope: a release as import-engine writes one, new weights under the handles and the
-# engines serving them at the endpoints, loaded with init-data.
+# engines serving them at the endpoints, loaded with sync-archive.
 @pytest.mark.slow
 def test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date(
     bench: Bench, tmp_path: Path
@@ -142,7 +143,7 @@ def test_a_release_s_new_weights_leave_nothing_of_the_archive_s_out_of_date(
     released = World.load(world)
     source = released.inventory.source(kind=DirectorySource)
     plan = world_plan(world, world / "_data")
-    _ = init(bench.conn, plan, CASES, source, bench.person, giftbag=True)
+    _ = loaded(bench.conn, plan, CASES, source, bench.person, giftbag=True)
 
     later = Bench(bench.conn, bench.person, released.inventory)
     archive = People(bench.conn).find("archive")

@@ -161,6 +161,16 @@ a seed and its configuration's edit.
 * `among: Collection[UUID] | None = None`
 * ∟`Gathering | None`
 
+## `Bench.gatherings`
+`src/chatddx/bench/gathering.py:gatherings`
+
+Each case's latest gathering under each configuration the person varied and ran
+it under, by case and the configuration's thread, the latest run first. Reads the
+person's runs, their catalog rows and each one's trial.
+
+* `cases: Collection[str]`
+* ∟`dict[tuple[str, int], list[RunStarted]]`
+
 ## `Bench.leave`
 `src/chatddx/bench/saying.py:leave`
 
@@ -827,7 +837,7 @@ Raises:
 
 Raises:
 1. `NotFound`: `str(e)` (from `LookupError`)
-2. `NotFound`: `"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in the store: load its World with init-data"`
+2. `NotFound`: `"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in the store: load its World with sync-archive"`
 
 ## `Seen.expectation`
 `src/chatddx/bench/seen.py:Seen.expectation`

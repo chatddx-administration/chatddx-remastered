@@ -239,7 +239,7 @@ class Seen:
         if model is None:
             raise NotFound(
                 f"endpoint {name!r} serves engine {display_digest(spec.engine)}, which isn't in "
-                + "the store: load its World with init-data"
+                + "the store: load its World with sync-archive"
             )
         return Endpoint(name, spec, model)
 

@@ -26,13 +26,6 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 # Compromise: Raw, though it may quote sensitive content, until edges hold that back.
 ```
 
-## `src/chatddx/api/faring.py:_measured`
-
-```
-# Policy: a case's latest gathering under a configuration is the runs started together
-# with its latest run reaching it, each read by its latest score under each scorer.
-```
-
 ## `src/chatddx/api/listening.py:_AGAIN`
 
 ```
