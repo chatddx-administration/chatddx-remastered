@@ -19,7 +19,7 @@ from chatddx.locale import (
     tr,
 )
 from chatddx.locale.test.helpers import catalog
-from chatddx.markers import applied, restamped, signed, stamps
+from chatddx.markers import applied, restamped, stamps
 
 
 def tree(root: Path, files: dict[str, str]) -> Path:
@@ -365,12 +365,10 @@ def test_a_catalog_is_kept_in_step_with_what_the_code_says(tmp_path: Path) -> No
         'SHELF = N_("%(n)s runs in all")\n'
     )
     [moved] = proofs([], root, catalogs)
-    assert moved.behind and moved.untranslated == 2
+    assert moved.behind and moved.untranslated == 3
     assert "fuzzy" not in moved.written and '"%(n)s run"' not in moved.written
-    assert stamps(moved.written) == [('msgstr ""', "=======", 'msgstr "Bibliotek"')]
-    guessed = f'#: {template}\nmsgid "The Library"\nmsgstr "Bibliotek"'
-    assert guessed not in "\n".join(signed(moved.written))
-    assert guessed in "\n".join(applied(moved.written))
+    assert not stamps(moved.written)
+    assert f'#: {template}\nmsgid "The Library"\nmsgstr ""' in moved.written
 
     _ = moved.path.write_text(moved.written)
     [held] = proofs([], root, catalogs)

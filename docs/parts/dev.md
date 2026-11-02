@@ -128,7 +128,7 @@ In the dev shell, pulling and pushing through `as.sh` as `$CHATDDX_DEV`:
 
 `stamp` prints at once when nothing changed since it last stamped, as in `./dev/operator.sh stamp | osc copy`. Start the
 next session at the revision it prints, with a first prompt that begins `At <revision>`. `settings.toml`'s `[operator]`
-names what `fetch` tells of and `stamp` refuses on.
+names what `fetch` tells of and `stamp` refuses on: what `turn-start` checks, so that what is stamped passes it.
 
 ## Agent
 
@@ -142,7 +142,8 @@ Claude Code's hooks (`.claude/settings.json`):
   pending, and errors of format, lint, types or references.
 - `./dev/agent.sh turn-start`, as a turn starts: moves a fresh session to the commit its first prompt starts at, or
   fast-forwards to what the operator pushed, fetching `refs/stamped/*` along, and checks what that moved it to, refusing
-  work on the OpenAPI document or the catalogs out of step and telling of the rest.
+  work on the OpenAPI document or the catalogs out of step and telling of the rest, a part's doc no part names among
+  them.
 - `./dev/agent.sh turn-end`, as a turn ends: unless work was refused or nothing changed since the turn started, runs
   `./dev/write.sh`, commits what that changed as `turn-end` and pushes.
 

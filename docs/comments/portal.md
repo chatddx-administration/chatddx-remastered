@@ -26,12 +26,6 @@ Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `
 // UTF-16 units.
 ```
 
-## `frontend/src/lib/drawers.ts:remembered`
-
-```
-// Convenience: kept per viewer, and the page works the same when storage is refused.
-```
-
 ## `frontend/src/lib/scorer/judging.ts:startingParams`
 
 ```
@@ -97,27 +91,6 @@ Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `
 
 ```
 # Accommodating for the API, which lists configurations of one purpose at a time.
-```
-
-## `src/chatddx/portal/lab.py:_columns`
-
-```
-# Policy: Configurations that send the set's cases as the same skeletons under the same
-# handle share a column, as a fork that varies nothing does its origin's.
-```
-
-## `src/chatddx/portal/lab.py:_FARING`
-
-```
-# Accommodating for the variation's query, whose schema refuses what it doesn't know: the
-# Lab's own parameters are taken out of the address before it is read.
-```
-
-## `src/chatddx/portal/lab.py:_trials`
-
-```
-# Policy: a trial is the configuration's when its skeleton is one of its versions, or
-# compiled from the recipe of one into a language.
 ```
 
 ## `src/chatddx/portal/pages.py`

@@ -984,7 +984,17 @@ def test_check_flags_what_parts_hold_amiss_a_proof_no_module_writes_and_a_broken
     _ = (tmp_path / "docs" / "comments" / "gone.md").write_text("## e\n")
     (tmp_path / "docs" / "whoopses").mkdir()
     _ = (tmp_path / "docs" / "whoopses" / "gone.md").write_text("## e\n")
-    _ = sourced(tmp_path, {"chatddx/loose.py": "", "chatddx/lost/__init__.py": ""})
+    _ = sourced(
+        tmp_path,
+        {
+            "chatddx/loose.py": "",
+            "chatddx/lost/__init__.py": "",
+            "chatddx/split/__init__.py": "",
+            "chatddx/split/page.py": "",
+            "chatddx/torn/__init__.py": "",
+            "chatddx/torn/page.py": "",
+        },
+    )
     (tmp_path / "docs" / "parts").mkdir()
     _ = (tmp_path / "docs" / "parts" / "astray.md").write_text("# Astray\n")
     lib = tmp_path / "frontend" / "src" / "lib"
@@ -996,8 +1006,18 @@ def test_check_flags_what_parts_hold_amiss_a_proof_no_module_writes_and_a_broken
         project,
         "PARTS",
         {
-            "a": machinery("docs/parts/gone.md", ("frontend/src/lib/x", "nix")),
-            "b": machinery(None, ("frontend/src/lib/x/y.ts",)),
+            "a": machinery(
+                "docs/parts/gone.md",
+                ("frontend/src/lib/x", "nix", "src/chatddx/split/__init__.py"),
+            ),
+            "b": machinery(
+                None,
+                (
+                    "frontend/src/lib/x/y.ts",
+                    "src/chatddx/split/page.py",
+                    "src/chatddx/torn/page.py",
+                ),
+            ),
         },
     )
     with pytest.raises(SystemExit) as e:
@@ -1007,6 +1027,7 @@ def test_check_flags_what_parts_hold_amiss_a_proof_no_module_writes_and_a_broken
         "flag: frontend/src/lib/stray.ts: no part's code in project.PARTS holds it",
         "flag: src/chatddx/loose.py: no part's code in project.PARTS holds it",
         "flag: src/chatddx/lost: no part's code in project.PARTS holds it",
+        "flag: src/chatddx/torn: no part's code in project.PARTS holds it",
         "flag: nix: in a's code, but isn't there",
         "flag: frontend/src/lib/x: held by a and b",
         "flag: docs/parts/astray.md: no part in project.PARTS has it as its doc",

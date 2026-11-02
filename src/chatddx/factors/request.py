@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from difflib import SequenceMatcher
 from typing import Annotated, ClassVar, Literal, NamedTuple, cast, override
 from urllib.parse import unquote
 
@@ -911,6 +912,35 @@ def untranslated(recipe: Recipe, get: Resolver, into: str) -> tuple[str, ...]:
     entries = translated(recipe, get).get(into, {})
     held = {t for found in texts(recipe, get).values() for t in found}
     return tuple(sorted(held - entries.keys()))
+
+
+def remapped(
+    before: Mapping[str, tuple[str, ...]],
+    after: Mapping[str, tuple[str, ...]],
+    into: Mapping[str, Mapping[str, str]],
+) -> dict[str, dict[str, str]]:
+    """Moves each translation of a text that changed in place, matched part by part
+    and in order, over to the text it changed into, dropping the old key once no part
+    holds it; every other translation is kept."""
+    moved: dict[str, str] = {}
+    for part, now in after.items():
+        was = before.get(part, ())
+        matched = SequenceMatcher(a=was, b=now, autojunk=False)
+        for op, i1, i2, j1, j2 in matched.get_opcodes():
+            if op == "replace":
+                for old, new in zip(was[i1:i2], now[j1:j2], strict=False):
+                    _ = moved.setdefault(new, old)
+    held = {t for found in after.values() for t in found}
+    left = {old for old in moved.values() if old not in held}
+    found: dict[str, dict[str, str]] = {}
+    for language, entries in into.items():
+        kept = {k: v for k, v in entries.items() if k not in left}
+        for new, old in moved.items():
+            if new not in kept and old in entries:
+                kept[new] = entries[old]
+        if kept:
+            found[language] = dict(sorted(kept.items()))
+    return found
 
 
 def landings(

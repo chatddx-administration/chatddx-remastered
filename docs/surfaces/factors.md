@@ -1256,6 +1256,18 @@ Raises:
 Raises:
 1. `StructuralError`: `"{digest} is not in the registry"`
 
+## `remapped`
+`src/chatddx/factors/request.py:remapped`
+
+Moves each translation of a text that changed in place, matched part by part
+and in order, over to the text it changed into, dropping the old key once no part
+holds it; every other translation is kept.
+
+* `before: Mapping[str, tuple[str, ...]]`
+* `after: Mapping[str, tuple[str, ...]]`
+* `into: Mapping[str, Mapping[str, str]]`
+* ∟`dict[str, dict[str, str]]`
+
 ## `RemoteEngine` `(Component)`
 `src/chatddx/factors/engine.py:RemoteEngine`
 

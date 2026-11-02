@@ -70,6 +70,7 @@ from chatddx.factors.request import (
     compiled,
     landings,
     next_request,
+    remapped,
     texts,
     translated,
     untranslated,
@@ -1798,3 +1799,20 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
     ]
     _ = reg.add(compilation.model_copy(update={"facts": None}))
     assert found(gpt_oss) == []
+
+
+def test_a_translation_follows_its_text_where_it_changed_in_place() -> None:
+    before = {"prompt": ("Read it.", "Answer.", "Kept."), "output": ("Lines.",)}
+    after = {"prompt": ("Read it.", "Answer briefly.", "Kept."), "output": ("Lines.",)}
+    into = {
+        "sv": {"Read it.": "Läs.", "Answer.": "Svara.", "Lines.": "Rader."},
+        "de": {"Answer.": "Antworte.", "Elsewhere.": "Anderswo."},
+    }
+    assert remapped(before, after, into) == {
+        "sv": {"Answer briefly.": "Svara.", "Lines.": "Rader.", "Read it.": "Läs."},
+        "de": {"Answer briefly.": "Antworte.", "Elsewhere.": "Anderswo."},
+    }
+    added = {"prompt": ("Read it.", "First.", "Answer.", "Kept.")}
+    assert remapped(before, added, into)["sv"]["Answer."] == "Svara."
+    gone = {"prompt": ("Read it.",)}
+    assert remapped(before, gone, into)["sv"] == into["sv"]

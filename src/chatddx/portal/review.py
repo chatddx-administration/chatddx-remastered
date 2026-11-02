@@ -29,7 +29,7 @@ from chatddx.locale import display_language
 from chatddx.runner import Refused, Running
 from chatddx.store import Queue, fetch_vignette
 
-from .pages import BenchDep, page, within
+from .pages import BenchDep, configurations, page, within
 from .runs import pressed
 from .titles import display_case
 
@@ -83,7 +83,7 @@ def review(
     appendices = _appendices(bench, picked.appendices, seen)
     branch = _branches(bench, bench.family(family), seen).get(picked.case)
     last = None if branch is None else seen[branch.appendices[-1]]
-    live = _configurations(bench)
+    live = configurations(bench)
     busy = _busy(bench, picked.case)
     editor = _editing(bench, shown, picked, under, expected, own)
     measurable = [] if editor is None else _measurable(bench, under)
@@ -285,12 +285,6 @@ def _query(**given: _Given) -> str:
         if v is not None
     ]
     return "?" + urlencode(pairs) if pairs else ""
-
-
-def _configurations(bench: Bench) -> list[schemas.Thread]:
-    login = bench.person.login
-    found = api.threads(bench, "configuration", purpose="generation", owner=login)
-    return sorted(found, key=lambda t: t.name or t.title)
 
 
 def _placed(bench: Bench, t: schemas.Thread) -> tuple[TriedVariation, Endpoint] | None:

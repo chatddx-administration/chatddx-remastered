@@ -193,12 +193,11 @@ message not written out, or a `%` other than `%(name)s` and `%%`; what a refusal
 `raise X.of` raises it, in the context `refusal`, with `src/chatddx/locale/locale.py:_refusals`; the templates, with
 Jinja's `babel_extract`; and the islands' `t()`, `tn()`, `tp()`, `tnp()` and `th()` in `.svelte` and `.ts`, with
 `src/chatddx/locale/locale.py:_islands`, their tests, declarations and shadcn's components left out. It brings each
-catalog up to that on both sides of its stamps, in the order of its messages, the side written now with a changed
-message's closest translation as a stamp, and begins a catalog of each tag it is given, such as
-`chatddx locale write sv`. A catalog keeps which file says each message but not the line, so that moving code leaves it
-as it is, and the file is how the islands' share is told: what they say, whoopses and what is said below the portal,
-which the API may answer them with. It fails on a message said both counted and not in the same context, which gettext
-holds as one plural message, leaving the other untranslatable.
+catalog up to that on both sides of its stamps, in the order of its messages, a changed message untranslated, and begins
+a catalog of each tag it is given, such as `chatddx locale write sv`. A catalog keeps which file says each message but
+not the line, so that moving code leaves it as it is, and the file is how the islands' share is told: what they say,
+whoopses and what is said below the portal, which the API may answer them with. It fails on a message said both counted
+and not in the same context, which gettext holds as one plural message, leaving the other untranslatable.
 
 ### Checks
 
@@ -216,7 +215,7 @@ holds as one plural message, leaving the other untranslatable.
   not (`src/chatddx/ledger/test/test_ledger.py`). `frontend/src/lib/locale.test.ts`: `t()` and its kin, in English and
   in a catalog's locale, and `localized()`. In a browser (`src/chatddx/portal/test/test_browser.py`), an island said in
   Swedish, a plural put into a sentence among it; and a whoops said in Swedish with what it passes on as it is
-  (`src/chatddx/portal/test/test_lab.py`).
+  (`src/chatddx/portal/test/test_compose.py`).
 
 ## Steps
 
@@ -228,10 +227,10 @@ Each step leaves the portal working in English, and Swedish appearing only where
 2. **`base.html`, the macros and the Library**, built: each sentence made whole, each plural made `ngettext`, each
    kind's word drawn by `kind`, each message marked; 122 messages. What the Library still says in English comes from the
    portal's Python, the shelves' headings and what each kind is, and waits for step 4.
-3. **The other pages**, built: Review, the Lab, Scoring, Runs, a run's, a thread's and a case's, the World, and every
-   template besides; 613 messages in all. Every page rendered in a locale that brackets each message it says leaves
-   unbracketed only the name ChatDDX, data (names, tags, a schema's field names) and what comes from the portal's Python
-   and the API, which step 4 and step 6 take.
+3. **The other pages**, built: Review, the Lab (now Compose), Scoring, Runs, a run's, a thread's and a case's, the
+   World, and every template besides; 613 messages in all. Every page rendered in a locale that brackets each message it
+   says leaves unbracketed only the name ChatDDX, data (names, tags, a schema's field names) and what comes from the
+   portal's Python and the API, which step 4 and step 6 take.
 4. **The portal's Python**, built: `SHELVES`, the refusals of `src/chatddx/portal/fields.py` and of each module's
    routes, the 404s of an address that names nothing, and what the modules name things by (`, an earlier version`,
    `view %(n)s`); 709 messages in all, 96 of them the Python's. What the portal shows from below it stays English: the
@@ -267,7 +266,7 @@ Each step leaves the portal working in English, and Swedish appearing only where
      _block_, output _svarsform_, passthrough _genomsläpp_, toolset _verktygsuppsättning_, few shot _exempel_, run
      _körning_, item _post_, replicate _replikat_, view _vy_, metric _mått_, finding _anmärkning_, lint _kontroll_,
      model _modell_, endpoint _ändpunkt_, thread _tråd_, fork _förgrening_, origin _ursprung_, cleared _godkänd_,
-     sensitive _känslig_, the Library _Biblioteket_, the Lab _Labbet_, Review _Granskning_.
+     sensitive _känslig_, the Library _Biblioteket_, Compose _Sammansättningen_, Review _Granskning_.
    - **Decided: the words reviewed**: the World _Miljön_; scorer _rättare_, score and Scoring _rättning_, to score
      _rätta_; judge _bedömare_, its grading _bedöma_, verdict _omdöme_; expectation _facit_, expectation schema
      _facitschema_; trial _försök_, an attempt always _anropsförsök_; kind _typ_; follow _uppdatera_; handle _alias_;

@@ -315,6 +315,55 @@ class NewEdit(_Schema):
     )
 
 
+type Drafted = Annotated[
+    dict[str, ComponentBody | None],
+    Field(
+        description="chunks by part, each in place of the configuration's own; null "
+        + "takes an optional part out"
+    ),
+]
+type Into = Annotated[
+    dict[str, dict[str, str]],
+    Field(description="translations by language, each text to its translation"),
+]
+
+
+class Draft(_Schema):
+    head: int | None = Field(
+        None, description="the edit drafted on, the configuration's head unless given"
+    )
+    before: Drafted = Field(
+        default_factory=dict,
+        description="the draft the translations are given for, the edit's own unless "
+        + "given",
+    )
+    after: Drafted = Field(default_factory=dict, description="the draft as it is now")
+    translations: Into = Field(default_factory=dict)
+
+
+class Drafting(_Schema):
+    texts: dict[str, list[str]] = Field(
+        description="the texts the draft holds, by part, as its translations key them"
+    )
+    translations: Into = Field(
+        description="those given, carried over to the texts that changed in place"
+    )
+
+
+class NewSave(_Schema):
+    head: int = Field(description="the edit the change was made on")
+    name: str | None = Field(
+        None, min_length=1, description="a fork's: without it, a version is saved"
+    )
+    chunks: Drafted = Field(default_factory=dict)
+    model: ModelDigest = None
+    translations: Into | None = Field(
+        None,
+        description="all of them, by the texts as saved; without them its own, carried "
+        + "over to the texts that changed in place",
+    )
+
+
 class Part(_Schema):
     part: str
     digest: str | None

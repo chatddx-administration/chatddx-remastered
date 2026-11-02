@@ -203,7 +203,7 @@ def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
     assert eleven["answer"].endswith("påbörja empirisk bredspektrumantibiotika.")
 
 
-def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
+def test_the_sample_world_holds_the_vignettes_at_7893656_but_akm_06_s_amended() -> None:
     source = Inventory.load(WORLDS / "sample" / "inventory.toml").source(
         "sample", DirectorySource
     )
@@ -216,7 +216,7 @@ def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
     )
     assert (
         Fingerprint.of(listing.encode()).hex
-        == "28a71609459f02f5391a54114fe5bb3dcc9a03353c75c4105ffe8ce0a7d37846"
+        == "ca6e9a8afb74ee15eed949a745b853679a8502bd7af37480210ec17ec8571648"
     )
 
 

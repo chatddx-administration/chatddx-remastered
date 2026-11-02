@@ -32,7 +32,6 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.helpers import PASSWORD
 from chatddx.test.world import (
-    GPT_OSS_ARTIFACT,
     JUDGE,
     LINES,
     LINES_GUIDED,
@@ -54,6 +53,24 @@ def _settled(page: Page, run: str) -> None:
             return
         time.sleep(0.02)
     raise AssertionError(f"run {run} is still under way")
+
+
+def _started(page: Page, configuration: int, *families: str) -> str:
+    found = [
+        page.request.get("/api/families", params={"name": f}).json()[0]["id"]
+        for f in families
+    ]
+    body = {
+        "configuration": configuration,
+        "families": found,
+        "seeds": [1],
+        "score": True,
+    }
+    got = page.request.post("/api/runs", data=body)
+    assert got.status == 202, got.json()
+    run = got.json()["runs"][0]["run"]
+    _ = page.goto(f"/runs/{run}")
+    return run
 
 
 def _weights(page: Page, name: str) -> str:
@@ -130,28 +147,7 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     lines = page.request.get("/api/threads", params=query).json()[0]
 
     with faked(world, Store(conn).get, delay=0.3):
-        _ = page.goto(f"/lab/{lines['id']}")
-        expect(page.get_by_role("heading", name="Running it")).to_be_visible()
-        expect(page.get_by_text(f"Runs under {QWEN_ARTIFACT}.")).to_be_visible()
-        expect(
-            page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
-        ).to_be_visible()
-        gpt_oss = _weights(page, GPT_OSS_ARTIFACT)
-        with page.expect_response(re.compile(r"/variation\?")):
-            _ = page.select_option("#part-model", gpt_oss)
-        expect(page.get_by_text(f"Runs under {GPT_OSS_ARTIFACT}.")).to_be_visible()
-        qwen = _weights(page, QWEN_ARTIFACT)
-        with page.expect_response(re.compile(r"/variation\?")):
-            _ = page.select_option("#part-model", qwen)
-        expect(
-            page.get_by_text(re.compile(rf"Sends \d+ items under {QWEN_ARTIFACT}"))
-        ).to_be_visible()
-        page.get_by_label("of the families picked").check()
-        page.get_by_label("crlf", exact=True).check()
-        expect(page.get_by_text("Sends 1 item under")).to_be_visible()
-        page.get_by_role("button", name="Run it").click()
-        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
-        run = page.url.rsplit("/", 1)[1]
+        run = _started(page, lines["id"], "crlf")
 
         expect(page.get_by_role("heading", name="Under way")).to_be_visible()
         expect(
@@ -175,52 +171,7 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     assert errors == []
 
 
-def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
-    page: Page,
-    world: Inventory,
-    conn: Connection,
-) -> None:
-    errors: list[str] = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-
-    def configuration(name: str) -> int:
-        query: dict[str, str | float | bool] = {
-            "kind": "configuration",
-            "name": name,
-            "owner": "alice",
-        }
-        return page.request.get("/api/threads", params=query).json()[0]["id"]
-
-    _ = page.goto(f"/lab/{configuration(LINES)}?tag=swedish")
-    expect(
-        page.get_by_text(
-            "Left out: 3 cases in Swedish, which lines has no translations into."
-        )
-    ).to_be_visible()
-
-    with faked(world, Store(conn).get):
-        _ = page.goto(f"/lab/{configuration(LINES_GUIDED)}?tag=swedish")
-        expect(
-            page.get_by_text(
-                "A run per language: in English, 1 case; in Swedish, 3 cases, "
-                + "translated."
-            )
-        ).to_be_visible()
-        expect(page.get_by_text("Left out")).to_have_count(0)
-        expect(page.get_by_text("Sends 4 items under")).to_be_visible()
-        page.get_by_role("button", name="Run it").click()
-        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
-        first = page.url.rsplit("/", 1)[1]
-        other = page.get_by_role("link", name=re.compile(r", in Swedish$"))
-        expect(other).to_be_visible()
-        other.click()
-        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
-        expect(page.get_by_role("link", name=f"{first[:8]}, in en")).to_be_visible()
-
-    assert errors == []
-
-
-def test_a_judge_s_lab_offers_no_run(page: Page) -> None:
+def test_a_judge_s_configuration_is_written_in_compose(page: Page) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     query: dict[str, str | float | bool] = {
@@ -229,10 +180,50 @@ def test_a_judge_s_lab_offers_no_run(page: Page) -> None:
         "name": JUDGE,
     }
     judge = page.request.get("/api/threads", params=query).json()[0]
-    _ = page.goto(f"/lab/{judge['id']}")
-    expect(page.get_by_role("heading", name="Saving it")).to_be_visible()
-    expect(page.get_by_role("heading", name="Running it")).to_have_count(0)
-    expect(page.get_by_role("heading", name="Its runs")).to_have_count(0)
+    _ = page.goto(f"/compose/{judge['id']}")
+    expect(page.get_by_role("heading", name="Its texts")).to_be_visible()
+    expect(page.get_by_role("button", name="Save")).to_be_visible()
+    expect(page.get_by_role("button", name="Run it")).to_have_count(0)
+    assert errors == []
+
+
+def test_a_configuration_s_parts_are_written_in_compose_and_saved_with_it(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES_GUIDED,
+        "owner": "alice",
+    }
+    guided = page.request.get("/api/threads", params=query).json()[0]
+    _ = page.goto(f"/compose/{guided['id']}")
+
+    text = page.get_by_label("instructions, text 1")
+    old = text.input_value()
+    new = old.replace("Read the case", "Read the case closely")
+    with page.expect_response(re.compile(r"/drafts$")):
+        text.fill(new)
+
+    page.get_by_role("button", name=re.compile("^Swedish")).click()
+    expect(page.get_by_label(f"Into Swedish: {old}", exact=True)).to_have_count(0)
+    carried = page.get_by_label(f"Into Swedish: {new}", exact=True)
+    expect(carried).to_have_value(re.compile(r"^Du bistår"))
+
+    with page.expect_response(re.compile(r"/drafts$")):
+        page.get_by_label("temperature", exact=True).fill("0.5")
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(rf"/compose/{guided['id']}"))
+    expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
+
+    recipe = page.request.get(f"/api/threads/{guided['id']}").json()["recipe"]
+    held = page.request.get(f"/api/components/{recipe['instructions']}").json()
+    assert held["body"]["text"][0] == new
+    sampling = page.request.get(f"/api/components/{recipe['sampling']}").json()
+    assert sampling["body"]["temperature"] == 0.5
+    into = page.request.get(f"/api/components/{recipe['translations']}").json()
+    assert into["body"]["into"]["sv"][new].startswith("Du bistår")
     assert errors == []
 
 
@@ -762,7 +753,7 @@ def test_what_a_judge_is_asked_is_rewritten_on_its_page_and_picked_in_the_librar
     assert errors == []
 
 
-def test_a_translator_carries_an_edited_instruction_over_and_the_lab_takes_it(
+def test_a_translator_carries_an_edited_instruction_over_and_compose_takes_it(
     page: Page,
 ) -> None:
     errors: list[str] = []
@@ -811,8 +802,8 @@ def test_a_translator_carries_an_edited_instruction_over_and_the_lab_takes_it(
         page.get_by_role("button", name="Save it").click()
     expect(page.get_by_text("Not translated yet")).to_have_count(0)
 
-    page.locator(f'a[href^="/lab/{guided["id"]}?translations="]').click()
-    page.wait_for_url(re.compile(rf"/lab/{guided['id']}\?translations="))
+    page.locator(f'a[href^="/compose/{guided["id"]}?translations="]').click()
+    page.wait_for_url(re.compile(rf"/compose/{guided['id']}\?translations="))
     expect(
         page.get_by_text(re.compile(r"^Saves version \d+ of this configuration"))
     ).to_be_visible()
@@ -1182,15 +1173,9 @@ def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
             "class=\\"text-foreground\\">Differential Diagnostics</span>"
             msgstr "<span class=\\"gradient-text\\">Akut</span> differentialdiagnostik"
 
-            #: frontend/src/islands/Variation.svelte
-            msgid "Sends %(items)s under %(model)s, one at a time."
-            msgstr "Skickar %(items)s under %(model)s, en i taget."
-
-            #: frontend/src/islands/Variation.svelte
-            msgid "%(n)s item"
-            msgid_plural "%(n)s items"
-            msgstr[0] "%(n)s post"
-            msgstr[1] "%(n)s poster"
+            #: frontend/src/lib/variation/Texts.svelte
+            msgid "Its texts"
+            msgstr "Dess texter"
             """,
         )
     )
@@ -1208,12 +1193,8 @@ def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
         "owner": "alice",
     }
     lines = page.request.get("/api/threads", params=query).json()[0]
-    _ = page.goto(f"/lab/{lines['id']}")
-    expect(
-        page.get_by_text(
-            re.compile(rf"Skickar \d+ poster under {QWEN_ARTIFACT}, en i taget\.")
-        )
-    ).to_be_visible()
+    _ = page.goto(f"/compose/{lines['id']}")
+    expect(page.get_by_role("heading", name="Dess texter")).to_be_visible()
     assert errors == []
 
 
@@ -1226,67 +1207,6 @@ def _lines(page: Page) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("template", ["ran"], indirect=True)
-def test_a_variation_s_runs_are_paged_and_found_in_on_the_server(
-    page: Page, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 2)
-    lines = _lines(page)
-    query: dict[str, str | float | bool] = {
-        "reaching": lines["head"]["digest"],
-        "limit": 200,
-    }
-    reaching = page.request.get("/api/runs", params=query).json()
-    assert len(reaching) > 2
-    _ = page.goto(f"/lab/{lines['id']}")
-    held = page.get_by_role("heading", name="Its runs", exact=True).locator("..")
-    links = held.locator("tbody a")
-    pages = held.get_by_role("navigation", name="Pages")
-    expect(links).to_have_count(2)
-    expect(pages).to_contain_text("page 1")
-    seen = set(links.evaluate_all("found => found.map(a => a.getAttribute('href'))"))
-    pages.get_by_role("button", name="Next").click()
-    expect(pages).to_contain_text("page 2")
-    shown = links.evaluate_all("found => found.map(a => a.getAttribute('href'))")
-    assert shown and not seen & set(shown)
-
-    held.get_by_role("searchbox").fill("no-such-word")
-    held.get_by_role("button", name="Find").click()
-    expect(held).to_contain_text("None you see of these.")
-    expect(pages).to_be_hidden()
-    held.get_by_role("searchbox").fill(LINES.upper())
-    held.get_by_role("button", name="Find").click()
-    expect(links).to_have_count(2)
-    expect(pages).to_contain_text("page 1")
-
-
-@pytest.mark.parametrize("template", ["ran"], indirect=True)
-def test_the_cases_picked_for_a_run_are_paged_and_found_in_without_sending_it(
-    page: Page, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(settings, "ROWS_PER_PAGE", 2)
-    names = sorted(f["name"] for f in page.request.get("/api/families").json())
-    runs = len(page.request.get("/api/runs", params={"limit": 200}).json())
-    _ = page.goto(f"/lab/{_lines(page)['id']}")
-    page.get_by_label(re.compile("of the families picked")).check()
-    finding = page.get_by_role("searchbox", name="Find a family")
-    picker = page.locator("fieldset").filter(has=finding)
-    pages = picker.get_by_role("navigation", name="Pages")
-    expect(picker.get_by_role("checkbox")).to_have_count(2)
-    expect(pages).to_contain_text(f"page 1 of {(len(names) + 1) // 2}")
-    pages.get_by_role("button", name="Next").click()
-    expect(pages).to_contain_text("page 2 of")
-
-    word = names[-1]
-    finding.fill(word.upper())
-    matching = [n for n in names if word.lower() in n.lower()]
-    expect(picker.get_by_role("checkbox")).to_have_count(min(2, len(matching)))
-    expect(picker.get_by_role("checkbox", name=word, exact=True)).to_be_visible()
-    expect(picker).to_contain_text(f"{len(matching)} of {len(names)}")
-    finding.press("Enter")
-    assert len(page.request.get("/api/runs", params={"limit": 200}).json()) == runs
-
-
-@pytest.mark.parametrize("template", ["ran"], indirect=True)
 def test_a_run_s_items_are_paged_and_found_in_as_they_come(
     page: Page,
     monkeypatch: pytest.MonkeyPatch,
@@ -1295,13 +1215,7 @@ def test_a_run_s_items_are_paged_and_found_in_as_they_come(
 ) -> None:
     monkeypatch.setattr(settings, "ROWS_PER_PAGE", 1)
     with faked(world, Store(conn).get, delay=0.3):
-        _ = page.goto(f"/lab/{_lines(page)['id']}")
-        page.get_by_label(re.compile("of the families picked")).check()
-        for name in ("crlf", "noted"):
-            page.get_by_role("searchbox", name="Find a family").fill(name)
-            page.get_by_label(name, exact=True).check()
-        page.get_by_role("button", name="Run it").click()
-        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        _ = _started(page, _lines(page)["id"], "crlf", "noted")
         live = page.locator("#run-live")
         pages = live.get_by_role("navigation", name="Pages")
         expect(pages).to_contain_text("page 1 of 2")

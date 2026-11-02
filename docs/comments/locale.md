@@ -89,10 +89,10 @@ Written by `chatddx-dev index` from the comments in `[parts.locale]`'s code in `
 ## `src/chatddx/locale/locale.py:_restamped`
 
 ```
-# Policy: a catalog is written in step with the code on both sides of its stamps, the
-# side last stamped matched to the code by its messages alone and the side written now
-# also by Babel's guess at a changed message's closest translation, and in the order of
-# the messages, so that what is left to stamp is the translations alone.
+# Policy: a catalog is written in step with the code on both sides of its stamps, each
+# matched to the code by its messages alone, never by a guess at a changed message's
+# closest translation, which is left untranslated to be translated anew, and in the
+# order of the messages, so that what is left to stamp is the translations alone.
 ```
 
 ## `src/chatddx/locale/locale.py:_shared`

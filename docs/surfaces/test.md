@@ -695,8 +695,8 @@ run them, the giftbag left out unless asked for.
 
 * ∟`None`
 
-## `test_the_sample_world_holds_the_vignettes_at_7893656`
-`src/chatddx/test/test_sample.py:test_the_sample_world_holds_the_vignettes_at_7893656`
+## `test_the_sample_world_holds_the_vignettes_at_7893656_but_akm_06_s_amended`
+`src/chatddx/test/test_sample.py:test_the_sample_world_holds_the_vignettes_at_7893656_but_akm_06_s_amended`
 
 * ∟`None`
 

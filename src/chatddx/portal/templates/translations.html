@@ -50,7 +50,7 @@
 {{ languages(t, base, "" if latest else "&version=" ~ at, editable) }}
 <p class="mb-3 text-xs text-muted-foreground">
   {%- if t.configurations %}
-  {%- set holding %}{% for c, latest in t.configurations %}<a href="/threads/{{ c.id }}">{{ (c.owner ~ "/" if c.owner != thread.owner else "") ~ (c.name or c.title) }}</a>{% if latest %} {% trans tried="/lab/" ~ c.id ~ "?translations=" ~ (latest | urlencode) %}(an earlier version: <a href="{{ tried }}">try it with the latest in the Lab</a>){% endtrans %}{% endif %}{{ ", " if not loop.last }}{% endfor %}{% endset %}
+  {%- set holding %}{% for c, latest in t.configurations %}<a href="/threads/{{ c.id }}">{{ (c.owner ~ "/" if c.owner != thread.owner else "") ~ (c.name or c.title) }}</a>{% if latest %} {% trans tried="/compose/" ~ c.id ~ "?translations=" ~ (latest | urlencode) %}(an earlier version: <a href="{{ tried }}">try it with the latest in Compose</a>){% endtrans %}{% endif %}{{ ", " if not loop.last }}{% endfor %}{% endset %}
   {{- _("Held by %(configurations)s: what they send that it doesn't translate yet comes first.", configurations=holding) }}
   {%- else %}{{ _("No configuration you see holds it, so it is offered no text to translate.") }}{% endif -%}
 </p>

@@ -189,7 +189,7 @@
       {% if runnable %}
       <div class="sticky bottom-0 -mx-5 mt-2 flex flex-wrap items-center gap-3 border-t border-border/60 bg-card/95 px-5 py-3 text-sm backdrop-blur sm:-mx-6 sm:px-6">
         <button class="run">{{ _("Run the picked") }}</button>
-        <span class="text-muted-foreground">{{ pgettext("after the button Run the picked", "together, as one start, in the Lab.") }}</span>
+        <span class="text-muted-foreground">{{ pgettext("after the button Run the picked", "together, as one start.") }}</span>
         <a class="view" href="{{ listing.link() if every else listing.link(pick='all') }}">{{ _("Pick none") if every else _("Pick every one shown") }}</a>
       </div>
       </form>
@@ -197,7 +197,7 @@
       {% elif listing.q or listing.schema %}
       <p class="text-sm text-muted-foreground">{{ _("None you see of these.") }}</p>
       {% elif word == "trial" %}
-      <p class="text-sm text-muted-foreground">{% trans %}None you see yet. A trial is begun of the cases picked on the <a href="/library?kind=case">case shelf</a>, with <span class="font-medium">Begin a trial of the picked</span>; or try a configuration on cases straight away in the <a class="bench" href="/lab">Lab</a>.{% endtrans %}</p>
+      <p class="text-sm text-muted-foreground">{% trans %}None you see yet. A trial is begun of the cases picked on the <a href="/library?kind=case">case shelf</a>, with <span class="font-medium">Begin a trial of the picked</span>; or run a configuration on a case straight away in <a class="bench" href="/review">Review</a>.{% endtrans %}</p>
       {% else %}
       <p class="text-sm text-muted-foreground">{{ _("None you see.") }}</p>
       {% endif %}

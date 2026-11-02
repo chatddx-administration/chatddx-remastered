@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import JsonValue
@@ -408,6 +408,62 @@ def edit(
     if written.what == "unchanged":
         response.status_code = 200
     return _made_edit(bench, written)
+
+
+@router.post("/threads/{thread}/drafts")
+def draft(bench: BenchDep, thread: int, given: schemas.Draft) -> schemas.Drafting:
+    """The texts a configuration would hold with the chunks drafted, and the
+    translations given carried over to them, writing nothing."""
+    with refused():
+        held, into = bench.drafted(
+            thread,
+            given.head,
+            _drafted(given.before),
+            _drafted(given.after),
+            given.translations,
+        )
+    return schemas.Drafting(
+        texts={p: list(t) for p, t in held.items()}, translations=into
+    )
+
+
+@router.post(
+    "/threads/{thread}/saves",
+    status_code=201,
+    responses={
+        409: {
+            "description": "A thread has moved on since the head the save was made on"
+        }
+    },
+)
+def save(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    thread: int,
+    given: schemas.NewSave,
+) -> schemas.MadeThread:
+    """Saves a configuration with the chunks given in place of its own, each written
+    to its own thread first, as a version of it or, named, a fork."""
+    if not _configures(bench, thread):
+        raise HTTPException(422, "only a configuration is saved with its parts")
+    with refused():
+        written = bench.compose(
+            thread,
+            given.head,
+            _drafted(given.chunks),
+            given.model,
+            given.translations,
+            given.name,
+        )
+    return made(request, response, bench, written.edit.thread, written.findings)
+
+
+def _drafted(given: Mapping[str, JsonValue]) -> dict[str, Component | None]:
+    return {
+        part: None if body is None else component_of(cast(dict[str, JsonValue], body))
+        for part, body in given.items()
+    }
 
 
 def _made_edit(bench: Bench, written: Written) -> schemas.MadeEdit:

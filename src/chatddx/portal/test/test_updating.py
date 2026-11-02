@@ -35,7 +35,7 @@ def test_what_is_out_of_date_is_tagged_and_updated_one_by_one_or_all(
     assert thread(signed, "configuration", LINES)["outdated"]
     library = said(shown(signed, "/library?kind=configuration"))
     assert "Out of date" in library and "Update all" in library
-    lab = said(shown(signed, f"/lab/{configuration['id']}"))
+    lab = said(shown(signed, f"/compose/{configuration['id']}"))
     assert f"Its model, {QWEN_MODEL}, has a new version." in lab
     assert "It can't be used until it is updated." in lab
     scoring = said(shown(signed, f"/scoring/{mine}"))
@@ -83,7 +83,7 @@ def test_a_world_s_switch_of_model_is_named_and_updated_all_at_once(
         + f"{QWEN_MODEL}: updating moves yours to {GPT_OSS_MODEL}."
     )
     assert named in said(shown(signed, f"/threads/{mine['id']}"))
-    assert named in said(shown(signed, f"/lab/{mine['id']}"))
+    assert named in said(shown(signed, f"/compose/{mine['id']}"))
 
     done = signed.post("/library/update")
     assert done.status_code == 200, done.text[:500]

@@ -303,6 +303,36 @@ The person's own configurations that generate, by name.
 
 * `halted: bool | None = Field(…)`
 
+## `Draft` `(_Schema)`
+`src/chatddx/api/schemas.py:Draft`
+
+* `head: int | None = Field(…)`
+* `before: Drafted = Field(…)`
+* `after: Drafted = Field(default_factory=dict, description="the draft as it is now")`
+* `translations: Into = Field(default_factory=dict)`
+
+## `draft` `@router.post("/threads/{thread}/drafts")`
+`src/chatddx/api/threads.py:draft`
+
+The texts a configuration would hold with the chunks drafted, and the
+translations given carried over to them, writing nothing.
+
+* `bench: BenchDep`
+* `thread: int`
+* `given: schemas.Draft`
+* ∟`schemas.Drafting`
+
+## `Drafted`
+`src/chatddx/api/schemas.py:Drafted`
+
+`Drafted`
+
+## `Drafting` `(_Schema)`
+`src/chatddx/api/schemas.py:Drafting`
+
+* `texts: dict[str, list[str]] = Field(…)`
+* `translations: Into = Field(…)`
+
 ## `drop_cookie`
 `src/chatddx/api/people.py:drop_cookie`
 
@@ -645,6 +675,11 @@ Raises:
 
 * `case: str`
 * `runs: list[UUID] = Field(description="the runs that hold it")`
+
+## `Into`
+`src/chatddx/api/schemas.py:Into`
+
+`Into`
 
 ## `Item` `(_Schema)`
 `src/chatddx/api/schemas.py:Item`
@@ -1089,6 +1124,15 @@ Raises:
 Raises:
 1. `ValueError`: `"a run takes one of families, tags or cases"` (through `NewRun._cases`, in a `ValidationError`)
 
+## `NewSave` `(_Schema)`
+`src/chatddx/api/schemas.py:NewSave`
+
+* `head: int = Field(description="the edit the change was made on")`
+* `name: str | None = Field(…)`
+* `chunks: Drafted = Field(default_factory=dict)`
+* `model: ModelDigest = None`
+* `translations: Into | None = Field(…)`
+
 ## `NewScoring` `(_Schema)`
 `src/chatddx/api/schemas.py:NewScoring`
 
@@ -1513,6 +1557,22 @@ Raises:
 
 Raises:
 1. `HTTPException`: `403, "a browser's request must come from this site's pages"`
+
+## `save` `@router.post("/threads/{thread}/saves", …)`
+`src/chatddx/api/threads.py:save`
+
+Saves a configuration with the chunks given in place of its own, each written
+to its own thread first, as a version of it or, named, a fork.
+
+* `request: Request`
+* `response: Response`
+* `bench: BenchDep`
+* `thread: int`
+* `given: schemas.NewSave`
+* ∟`schemas.MadeThread`
+
+Raises:
+1. `HTTPException`: `422, "only a configuration is saved with its parts"`
 
 ## `say` `@router.patch("/threads/{thread}")`
 `src/chatddx/api/threads.py:say`

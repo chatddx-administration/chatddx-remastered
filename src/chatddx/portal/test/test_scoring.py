@@ -98,7 +98,7 @@ def test_a_judge_shows_who_asks_it_what_it_is_asked_and_where_its_seeds_disagree
         "/api/threads", params={"kind": "configuration", "purpose": "judge"}
     ).json()
     asks = [t for t in configurations if t["head"]["digest"] == body["skeleton"]]
-    assert asks and any(f'href="/lab/{t["id"]}"' in page for t in asks)
+    assert asks and any(f'href="/compose/{t["id"]}"' in page for t in asks)
     assert f'href="/scoring/{judged["id"]}"' in page
     assert re.search(r"archive/judged · note-graded its latest version", text)
     assert "‹completion›" in text

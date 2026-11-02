@@ -42,7 +42,7 @@
     <label class="grid gap-1"><span class="text-muted-foreground">{{ pgettext("a language", "into") }}</span>
       <input name="into" required pattern="{{ language_pattern }}" title="{{ _('a language tag, such as sv or pt-BR') }}" value="{{ into or '' }}" placeholder="{{ _('such as sv') }}" class="h-9 w-36 rounded-md border border-input bg-transparent px-2.5"></label>
     <button>{{ _("Show its texts") }}</button>
-    <span class="basis-full text-xs text-muted-foreground">{{ _("Translations are begun of a configuration's texts, into a language; its recipe holds them once it picks them, in the Library or the Lab.") }}</span>
+    <span class="basis-full text-xs text-muted-foreground">{{ _("Translations are begun of a configuration's texts, into a language; its recipe holds them once it picks them, in the Library or in Compose.") }}</span>
   </form>
   {% else %}
   {% set of %}{% for id, named in configurations if id == configuration %}{{ named }}{% endfor %}{% endset %}

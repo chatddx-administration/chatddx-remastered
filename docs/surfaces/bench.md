@@ -103,6 +103,45 @@ Raises:
 2. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, as many as a day takes", login=login, num=started`
 3. `OverQuota`: `"%(login)s has started %(num)s runs in the last day, and a day takes %(limit)s, not %(more)s more", login=login, num=started, limit=settings.RUNS_PER_DAY, more=len(runs)`
 
+## `Bench.compose`
+`src/chatddx/bench/composing.py:compose`
+
+Saves the configuration with the chunks given in place of its own at `head`:
+a version of it, or a fork of it named `name`. Each chunk that changed is written
+to the thread its own came from, as a new version where that is the person's, or
+else as a fork of it under its name; a fork of the configuration forks those it
+changes. Its translations are `into` when given, or else its own carried over to
+the texts that changed. One transaction, locking each thread it writes.
+
+* `thread: int`
+* `head: int`
+* `chunks: Drafts`
+* `model: str | None = None`
+* `into: Mapping[str, Mapping[str, str]] | None = None`
+* `name: str | None = None`
+* ∟`Written`
+
+Raises:
+1. `ValueError`: `"{variation.name} has no recipe to save its parts in"`
+2. `ValueError`: `"no part {stray[0]!r}: the parts are {', '.join(CHUNK_PARTS)}"`
+
+## `Bench.drafted`
+`src/chatddx/bench/composing.py:drafted`
+
+The texts a configuration's recipe would hold with the chunks drafted in
+place of its own, by part, and the translations given for the texts `before`
+held carried over to them. Reads the recipe's chunks; writes nothing.
+
+* `thread: int`
+* `head: int | None`
+* `before: Drafts`
+* `after: Drafts`
+* `into: Mapping[str, Mapping[str, str]]`
+* ∟`tuple[dict[str, tuple[str, ...]], dict[str, dict[str, str]]]`
+
+Raises:
+1. `NotFound`: `"no recipe of configuration {thread}"` (through `_recipe`)
+
 ## `Bench.edit`
 `src/chatddx/bench/components.py:edit`
 
@@ -530,6 +569,11 @@ Raises:
 
 ## `Conflict` `(Worded, ValueError)`
 `src/chatddx/bench/errors.py:Conflict`
+
+## `Drafts`
+`src/chatddx/bench/composing.py:Drafts`
+
+`type Drafts = Mapping[str, Component | None]`
 
 ## `Endpoint` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Endpoint`

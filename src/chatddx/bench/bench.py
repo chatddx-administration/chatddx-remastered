@@ -2,6 +2,7 @@ from typing import final
 
 from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
+from .composing import compose, drafted
 from .configurations import save
 from .gathering import gathering, gatherings
 from .runs import (
@@ -34,6 +35,8 @@ class Bench(Seen):
     edit = edit
     save = save
     check = check
+    compose = compose
+    drafted = drafted
 
     case = case
     replacement = replacement

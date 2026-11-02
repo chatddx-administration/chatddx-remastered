@@ -18,7 +18,7 @@ export default defineConfig({
         portal: "src/portal.css",
         home: "src/islands/home.ts",
         run: "src/islands/run.ts",
-        lab: "src/islands/lab.ts",
+        compose: "src/islands/compose.ts",
         review: "src/islands/review.ts",
         scoring: "src/islands/scoring.ts",
         library: "src/islands/library.ts",

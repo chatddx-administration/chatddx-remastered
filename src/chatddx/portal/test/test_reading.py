@@ -12,11 +12,11 @@ from markupsafe import escape
 from chatddx import settings
 from chatddx.api.state import AppState
 from chatddx.portal.test.helpers import (
+    compose_props,
     ran_template,
     run_title,
     said,
     shown,
-    variation_props,
 )
 from chatddx.store import People
 from chatddx.store.store import Connection
@@ -149,17 +149,16 @@ def test_another_s_run_isn_t_found_by_a_page_or_the_api(
 
 
 @pytest.mark.slow
-def test_a_configuration_is_read_with_its_recipe_in_the_lab(
+def test_a_configuration_is_read_with_its_recipe_in_compose(
     signed: TestClient,
 ) -> None:
     query = {"kind": "configuration"}
     [first, *_] = signed.get("/api/threads", params=query).json()
-    page = shown(signed, f"/lab/{first['id']}")
-    parts = signed.get(f"/api/threads/{first['id']}/variation").json()["parts"]
-    assert variation_props(page)["look"]["parts"] == parts
+    page = shown(signed, f"/compose/{first['id']}")
+    assert compose_props(page)["drafted"] is not None
     assert "Version 1" in page and "take scripts" in page
     scorer = signed.get("/api/threads", params={"kind": "scorer"}).json()[0]
-    assert signed.get(f"/lab/{scorer['id']}").status_code == 404
+    assert signed.get(f"/compose/{scorer['id']}").status_code == 404
 
 
 @pytest.mark.slow

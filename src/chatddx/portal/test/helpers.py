@@ -82,8 +82,8 @@ def run_title(run: dict[str, Any]) -> str:
     return f"{cases} with {configuration} on {titled['at']} ({seeds})"
 
 
-def variation_props(page: str) -> dict[str, Any]:
-    opened = '<script type="application/json" id="variation-props">'
+def compose_props(page: str) -> dict[str, Any]:
+    opened = '<script type="application/json" id="compose-props">'
     return json.loads(page.split(opened, 1)[1].split("</script>", 1)[0])
 
 

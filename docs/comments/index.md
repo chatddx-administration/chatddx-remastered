@@ -20,6 +20,13 @@ Written by `chatddx-dev index` from the comments in `[parts.index]`'s code in `s
 # frontend/src/lib/api/schema.d.ts, isn't read, and what [index] left_out names neither.
 ```
 
+## `dev/src/chatddx_dev/index/__init__.py:_held`
+
+```
+# Policy: a unit is held whole by a part, or split among parts file by file, so that a
+# page's own files can be another part's than the package they are in.
+```
+
 ## `dev/src/chatddx_dev/index/anchored.py:SCANNED`
 
 ```

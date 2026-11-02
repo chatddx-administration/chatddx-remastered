@@ -35,6 +35,32 @@ assert isinstance(error.detail, str)
 assert isinstance(e, SignInFirst)
 ```
 
+## `src/chatddx/portal/test/helpers.py:shown`
+
+```
+assert got.status_code == 200, (path, got.text[:500])
+```
+
+```
+assert got.headers["content-type"].startswith("text/html")
+```
+
+```
+assert got.headers["cache-control"] == "no-store"
+```
+
+## `src/chatddx/portal/test/helpers.py:started`
+
+```
+assert got.status_code == 202, got.json()
+```
+
+## `src/chatddx/portal/test/helpers.py:submitted`
+
+```
+assert found.fields, f"no form posting to {action}"
+```
+
 ## `src/chatddx/portal/world.py:_pinned`
 
 ```

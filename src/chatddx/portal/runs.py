@@ -23,7 +23,7 @@ from chatddx.locale import pgettext, pgettext_noop, tr
 from chatddx.runner import Outcome, outcome
 from chatddx.store import Queue, UnderWay
 
-from .lab import linked, viewed
+from .compose import linked
 from .pages import BenchDep, page
 from .scoring import unit_in
 from .titles import display_case
@@ -97,7 +97,7 @@ def comparing(
         raise Invalid.of("pick the runs to compare on the runs page")
     compared = api.compared(bench, run)
     cases = [i.case for i in compared.items] + [c.case for c in compared.apart]
-    picked = viewed(compared.views, by)
+    picked = _viewed(compared.views, by)
     at = next(
         (i for i, v in enumerate(compared.views) if f"{v.scorer}:{v.view}" == picked),
         None,
@@ -264,7 +264,7 @@ def _configuration(
     latest = threads.head(bench.rows, ran.configuration).id
     query = schemas.Varying.model_validate({p: d or "" for p, d in ran.parts.items()})
     given = linked(query, ran.head, latest).removesuffix("?")
-    link = f"/lab/{ran.configuration}{given}"
+    link = f"/compose/{ran.configuration}{given}"
     if ran.head == latest:
         return link, tried.label
     return link, tr("%(configuration)s, an earlier version", configuration=tried.label)
@@ -285,9 +285,9 @@ def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
     )
     title = bench.title(skeleton)
     if heads[found.thread][0].id == found.id:
-        return f"/lab/{found.thread}", title
+        return f"/compose/{found.thread}", title
     return (
-        f"/lab/{found.thread}?head={found.id}",
+        f"/compose/{found.thread}?head={found.id}",
         tr("%(configuration)s, an earlier version", configuration=title),
     )
 
@@ -319,3 +319,14 @@ def _part(part: Part) -> str:
     if part.name is None:
         return pgettext("a part of a response", _PARTS[part.kind])
     return tr("tool call: %(name)s", name=part.name)
+
+
+def _keyed(view: schemas.ComparedView) -> str:
+    return f"{view.scorer}:{view.view}"
+
+
+def _viewed(views: list[schemas.ComparedView], by: str | None) -> str | None:
+    if by in {_keyed(v) for v in views}:
+        return by
+    valued = (v for v in views if any(x is not None for xs in v.values for x in xs))
+    return next((_keyed(v) for v in valued), None)

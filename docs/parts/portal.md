@@ -6,8 +6,8 @@ cognitive reserves.
 ## Its pages
 
 - **Review**: where clinicians check their vignettes against appendices and expectations, write them, and evaluate a
-  case under every configuration they see; how a configuration fares beyond one case is for the Lab, Scoring and Runs.
-- **Lab**: the evolution of configurations, and queueing trials and seeing how they fare against each other.
+  case under every configuration they see; how a configuration fares beyond one case is for Scoring and Runs.
+- **Compose**: writing configurations from their texts and settings.
 - **Scoring**: managing judges and scorers.
 - **Runs**: everything run-related: what is under way and what is queued, its order, pausing and halting.
 - **Library**: schema driven, instructive of the data model rather than practical. Translations stay in the Library,
@@ -20,7 +20,7 @@ weighed where its consequences show.
 | Page    | For                     | Writes                                                          | Weighs                                                     | Picks                  |
 | ------- | ----------------------- | --------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------- |
 | Review  | clinicians              | appendices, expectations; a case's tags and language            | a case against its expectation under each configuration    | —                      |
-| Lab     | researchers             | configurations of either purpose, as variations; trials         | a lineage on a set of cases                                | parts, models          |
+| Compose | researchers             | configurations of either purpose, and the chunks they hold      | —                                                          | models                 |
 | Scoring | researchers             | judges; a scorer's code, resources, parameters and labels       | what a scorer reads and how it scored; a judge's verdicts  | judges' configurations |
 | Runs    | whoever runs and scores | the queue: its order, pausing, halting, stopping; scoring again | what is under way, queued and left to score; runs compared | —                      |
 | Library | everyone                | any kind, a field at a time; translations                       | versions, what each changed, findings                      | —                      |
@@ -31,12 +31,12 @@ Take, the moves it asks for:
 1. **What a judge is asked** is changed on Scoring (`JudgeTexts`), and a scorer's views, with a judge made of a
    configuration, a model and seeds in place (`JudgeEditor`), in the Library (`ScorerViews`), all in
    `frontend/src/lib/scorer/`: Review composes no scorer and says nothing of what reads an expectation. Built.
-2. **A judge's configuration** is still varied in the Lab, beside every other configuration. How its judges fare, which
-   the Lab leaves out, is on Scoring, and the Lab links to it.
+2. **A judge's configuration** is still written in Compose, beside every other configuration. How its judges fare is on
+   Scoring, which links to Compose.
 3. **The code a scorer pins**, its metrics and what each measures and takes, is shipped, so it is the World's to show,
    as models are, and Scoring links to it.
 4. **Scoring again** stays on Runs, and Scoring links to what is left to score.
-5. **The navigation** reads Review, Lab, Scoring, Runs, Library, World: the three benches by who works at them, then
+5. **The navigation** reads Review, Compose, Scoring, Runs, Library, World: the three benches by who works at them, then
    what runs, the data model and the World. Built.
 6. **The name** Scoring, over Judging or Scorers: a run's scoring is what its scorer and judges make of it. Decided, as
    no namespace collides with it: the kind `scoring` stays derived, is a thread kind of the catalog but no word of the
@@ -95,26 +95,7 @@ and are squeezed in for completeness.
   with little time.
 - **A vignette's text stays out of the Library**, deliberately: a case's section links to it on a page of its own.
 - **No sample trials for now**: data sets load none, so the trial shelf starts empty, says how a trial is begun, and
-  points to the Lab, which runs a configuration on cases straight away.
-
-## The Lab
-
-The Lab is where researchers combine what exists already and try to run it, the evolution of configurations
-(`docs/chatddx.md`, "Intended evolution of configurations").
-
-Drafted: `/lab/{id}` (`src/chatddx/portal/lab.py`; `src/chatddx/portal/test/test_lab.py`) is where a configuration is
-varied, run and compared with its lineage, and `/lab` leads to the person's first configuration. In its address are the
-variation's query (`schemas.Varying`, its parts, `head`, `under`, `tag`) and its own: `handle`, `family` and `by`.
-
-- **Lineage**, a drawer: its first origin and every fork below it, each with its mean on the set, the higher first.
-- **The configuration**: its name, language, origin and translations; its versions by link; **Update** it where it is
-  behind what it was made from; the variation's island (`frontend/src/islands/lab.ts`), which tries parts in place of
-  its own, says what it makes, runs it and saves it as a version or a fork; and **Its trials**, run through the runner,
-  whose page for trials picked in the Library is `/lab/run`.
-- **How they fare**: each configuration of the lineage as a column on a set of cases, under each its own model or one
-  handle, by its latest run, sorted by a view.
-
-A judge's configuration is tried and saved there too, without how they fare, running it, its runs or trials.
+  points to Review, which runs a configuration on a case straight away.
 
 ## Scoring
 
@@ -129,7 +110,7 @@ first scorer, and the Library's page of a scorer or a judge leads to theirs.
   those it doesn't (`src/chatddx/factors/scoring.py:View.offered_by`). How many of the cases the person sees they expect
   something of under its schema, with those to choose from and those without, each linking to Review. How it scored: the
   person's runs scored by this version, by their mean under each view, compared on `/runs/compare`. Its findings.
-- **A judge**: its configuration, linking to the Lab, its model, seeds, fill rule, and the endpoint it is served at now
+- **A judge**: its configuration, linking to Compose, its model, seeds, fill rule, and the endpoint it is served at now
   or why none. The views of the scorers asking it, by the version of it each asks, or the judge it is forked from, and
   for each scorer asking another, following its latest version: the views asking another are pointed at it, in a new
   version of the person's own scorer or a fork of another's, with its labels. What it is asked, rendered with its first
@@ -140,31 +121,3 @@ first scorer, and the Library's page of a scorer or a judge leads to theirs.
   of the person's runs under each scorer asking any version of it: the items judged, how many its seeds agree on, how
   many a seed gave none for, the mean, and the items where its seeds disagree. These are the values a view's metric read
   of each seed's verdict, kept in the item's detail, never the verdicts, which are sensitive. Its findings.
-
-## Next
-
-Take: the Library's forms first.
-
-1. **What Review writes already.** Built: an expectation's `data`, a scorer's `views` and a text's inserts, each an
-   editor over its text box.
-2. **The rest of the table.** Built: a few-shot's `messages` and an output's `contract` by their schema's form, the rest
-   as JSON checked as it is typed.
-3. **The Lab.** Open:
-   - Its cases are picked twice: the island's tags and the tags how they fare is shown over are one `tag` in its
-     address, but each has its control, and the island's changes it without showing how they fare again.
-   - What `/translate` did that the Library's translations don't: the request a configuration sends into a language, how
-     many texts each configuration lacks by language, and that a case in a regional tag, such as `sv-SE`, wants
-     translations of its own.
-4. **Scoring.** Take, in order:
-   - Making and changing a judge on its page with `JudgeEditor`, and its versions by link as the Lab's, each with how it
-     scored; how a scorer scored lists its shown version's runs only.
-   - A judge against a judge: two judges, or two versions of one, on the same items. It takes scoring the same runs
-     under a scorer asking the other, which Runs does a run at a time. Open: judging scored items again without a run.
-   - A judge against a clinician: measuring a judge by real answers (`docs/backlog.md`, "The sample's judge") compares
-     its verdicts with a clinician's on the same answers, and nothing stores a clinician's verdict on an answer: an
-     expectation is written of a case, before any answer. Open, where it is kept: a kind of its own, of an answer and a
-     view, or an expectation written of an answer rather than of a case.
-   - A scorer's coverage said before a run is scored, as its page says it, which the backlog asks of the scoring
-     (`docs/backlog.md`, "Scoring: coverage and judges").
-   - Cost: a judge's verdicts read every score of every run any of its versions scored, which is fine for the test World
-     and wants a query of its own once measured (`docs/backlog.md`, "Performance, once measured").

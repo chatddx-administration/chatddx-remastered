@@ -148,7 +148,7 @@
   {% if judge %}
   <section class="{{ part }}" aria-label="{{ _('What it is') }}">
     <h2 class="{{ h2 }}">{{ _("What it is") }}</h2>
-    {% set configuration %}{% call asks(judge.configuration) %}/lab/{{ judge.configuration.thread }}{% endcall %}{% endset %}
+    {% set configuration %}{% call asks(judge.configuration) %}/compose/{{ judge.configuration.thread }}{% endcall %}{% endset %}
     {{ facts([
       (_("Its request"), configuration),
       (_("Asked under"), judge.model),
@@ -156,7 +156,7 @@
       (_("Its slots filled by"), judge.fill),
       (_("Served now at"), judge.sent or judge.unsent),
     ]) }}
-    <p class="mt-3 text-xs text-muted-foreground">{{ _("Its request is a judge's configuration, varied and saved in the Lab; a scorer asks the version of a judge it names until it follows another, below.") }}</p>
+    <p class="mt-3 text-xs text-muted-foreground">{{ _("Its request is a judge's configuration, written and saved in Compose; a scorer asks the version of a judge it names until it follows another, below.") }}</p>
   </section>
 
   <section class="{{ part }}" aria-label="{{ _('Asked by') }}">

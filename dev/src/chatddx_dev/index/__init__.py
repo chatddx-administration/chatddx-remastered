@@ -280,6 +280,18 @@ def write(parts: Sequence[str] = (), kinds: Sequence[str] = ()) -> None:
     print("\n".join(written) or "nothing to write")
 
 
+# Policy: a unit is held whole by a part, or split among parts file by file, so that a
+# page's own files can be another part's than the package they are in.
+def _held(unit: Path, held: list[Path]) -> bool:
+    def holding(p: Path) -> bool:
+        return any(h == p or h in p.parents for h in held)
+
+    if holding(unit):
+        return True
+    files = [f for f in unit.rglob("*") if f.is_file() and "__pycache__" not in f.parts]
+    return unit.is_dir() and bool(files) and all(holding(f) for f in files)
+
+
 def _strays(written: set[Path]) -> list[str]:
     root = project.PROJECT_ROOT
     units = [
@@ -299,7 +311,7 @@ def _strays(written: set[Path]) -> list[str]:
         [
             f"{_shown(p)}: no part's code in project.PARTS holds it"
             for p in sorted(units)
-            if not any(h == p or h in p.parents for _, h in held)
+            if not _held(p, [h for _, h in held])
         ]
         + [
             f"{_shown(p)}: in {name}'s code, but isn't there"

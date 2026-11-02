@@ -1,2 +1,31 @@
-2026-11-02T11:23:38Z 9b21e50 ./dev/check.sh frontend
-• frontend: unchanged since it passed (dev/state/frontend-good)
+2026-11-02T21:34:20Z 1a884e2 ./dev/check.sh frontend
+• frontend
+
+> chatddx-portal@0.0.0 check /home/user/chatddx-remastered/frontend
+> pnpm types && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+
+
+> chatddx-portal@0.0.0 types /home/user/chatddx-remastered/frontend
+> openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi.json → src/lib/api/schema.d.ts [395ms]
+1793655272288 START "/home/user/chatddx-remastered/frontend"
+1793655272292 COMPLETED 881 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
+
+> chatddx-portal@0.0.0 test /home/user/chatddx-remastered/frontend
+> vitest run
+
+
+ RUN  v5.0.3 /home/user/chatddx-remastered/frontend
+
+
+ Test Files  21 passed (21)
+      Tests  88 passed (88)
+   Start at  21:34:33
+   Duration  2.40s (transform 74%, import 17%, tests 6%, worker 2%)
+
+  Transform  transforming modules took 2.62s · 74% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+

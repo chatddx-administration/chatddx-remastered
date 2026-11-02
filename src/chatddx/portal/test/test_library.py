@@ -196,7 +196,7 @@ def test_a_thread_s_page_holds_its_versions_and_what_is_said(
     lines = thread(signed, "configuration", LINES)
     page = shown(signed, f"/threads/{lines['id']}")
     assert "What is said of it" in page
-    assert f'href="/lab/{lines["id"]}"' in page
+    assert f'href="/compose/{lines["id"]}"' in page
 
 
 @pytest.mark.slow

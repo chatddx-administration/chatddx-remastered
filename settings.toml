@@ -138,12 +138,22 @@ checked_at_hand_over = ["format", "python-lint", "frontend", "docs", "dev"]
 # Policy: checked after the others, each alone, so that what they take counts towards the figures the docs quote
 # (dev/src/chatddx_dev/costs/__init__.py:medians).
 timed_at_hand_over = ["python-tests", "browser"]
+# Duplication: [operator]'s refused_at_stamp, right below, checks what these two do, so that what is stamped passes the
+# next turn's start.
 refused_at_turn_start = ["openapi", "locale"]
-told_at_turn_start = ["pending", "format", "python-lint", "frontend"]
+told_at_turn_start = ["index", "pending", "format", "python-lint", "frontend"]
 
 # What dev/operator.sh checks when.
 [operator]
-refused_at_stamp = ["openapi", "locale", "pending"]
+refused_at_stamp = [
+  "openapi",
+  "locale",
+  "index",
+  "pending",
+  "format",
+  "python-lint",
+  "frontend",
+]
 told_at_fetch = ["pending"]
 
 # What chatddx.settings.PARTS holds: each part of the project at its stage, as AGENTS.md's "Development stages" names
@@ -177,6 +187,19 @@ code = []
 stage = "solidified"
 class = "ux"
 code = ["src/chatddx/cli.py"]
+
+[parts.compose]
+stage = "drafted"
+class = "ux"
+doc = "docs/parts/compose.md"
+code = [
+  "src/chatddx/portal/compose.py",
+  "src/chatddx/portal/templates/compose.html",
+  "src/chatddx/portal/test/test_compose.py",
+  "frontend/src/lib/compose",
+  "frontend/src/islands/compose.ts",
+  "frontend/src/islands/Compose.svelte",
+]
 
 [parts.conftest]
 stage = "solidified"
@@ -311,16 +334,73 @@ stage = "solidified"
 class = "ux"
 doc = "docs/parts/portal.md"
 code = [
-  "src/chatddx/portal",
+  "src/chatddx/portal/__init__.py",
+  "src/chatddx/portal/app.py",
+  "src/chatddx/portal/assets.py",
+  "src/chatddx/portal/cases.py",
+  "src/chatddx/portal/changes.py",
+  "src/chatddx/portal/editors.py",
+  "src/chatddx/portal/fields.py",
+  "src/chatddx/portal/judged.py",
+  "src/chatddx/portal/pages.py",
+  "src/chatddx/portal/review.py",
+  "src/chatddx/portal/runs.py",
+  "src/chatddx/portal/scores.py",
+  "src/chatddx/portal/scoring.py",
+  "src/chatddx/portal/shelves.py",
+  "src/chatddx/portal/starting.py",
+  "src/chatddx/portal/threads.py",
+  "src/chatddx/portal/titles.py",
+  "src/chatddx/portal/translations.py",
+  "src/chatddx/portal/world.py",
+  "src/chatddx/portal/templates/base.html",
+  "src/chatddx/portal/templates/begun.html",
+  "src/chatddx/portal/templates/case.html",
+  "src/chatddx/portal/templates/compare.html",
+  "src/chatddx/portal/templates/error.html",
+  "src/chatddx/portal/templates/fields.html",
+  "src/chatddx/portal/templates/home.html",
+  "src/chatddx/portal/templates/library.html",
+  "src/chatddx/portal/templates/macros.html",
+  "src/chatddx/portal/templates/review.html",
+  "src/chatddx/portal/templates/run.html",
+  "src/chatddx/portal/templates/runner.html",
+  "src/chatddx/portal/templates/runs.html",
+  "src/chatddx/portal/templates/score.html",
+  "src/chatddx/portal/templates/scoring.html",
+  "src/chatddx/portal/templates/sign-in.html",
+  "src/chatddx/portal/templates/starting.html",
+  "src/chatddx/portal/templates/taken.html",
+  "src/chatddx/portal/templates/thread.html",
+  "src/chatddx/portal/templates/translations.html",
+  "src/chatddx/portal/templates/updated.html",
+  "src/chatddx/portal/templates/vignette.html",
+  "src/chatddx/portal/templates/world.html",
+  "src/chatddx/portal/test/__init__.py",
+  "src/chatddx/portal/test/conftest.py",
+  "src/chatddx/portal/test/helpers.py",
+  "src/chatddx/portal/test/test_browser.py",
+  "src/chatddx/portal/test/test_changes.py",
+  "src/chatddx/portal/test/test_clinicians.py",
+  "src/chatddx/portal/test/test_frontend.py",
+  "src/chatddx/portal/test/test_library.py",
+  "src/chatddx/portal/test/test_localized.py",
+  "src/chatddx/portal/test/test_reading.py",
+  "src/chatddx/portal/test/test_reviewing.py",
+  "src/chatddx/portal/test/test_running.py",
+  "src/chatddx/portal/test/test_scores.py",
+  "src/chatddx/portal/test/test_scoring.py",
+  "src/chatddx/portal/test/test_signing_in.py",
+  "src/chatddx/portal/test/test_translating.py",
+  "src/chatddx/portal/test/test_trials.py",
+  "src/chatddx/portal/test/test_updating.py",
   "frontend/src/lib/components",
   "frontend/src/lib/scorer",
   "frontend/src/lib/thread",
-  "frontend/src/lib/drawers.ts",
   "frontend/src/lib/kinds.ts",
   "frontend/src/lib/utils.ts",
   "frontend/src/islands/Home.svelte",
   "frontend/src/islands/home.ts",
-  "frontend/src/islands/lab.ts",
   "frontend/src/islands/scoring.ts",
   "frontend/src/portal.css",
 ]
@@ -407,11 +487,6 @@ class = "datamodel"
 doc = "docs/parts/tools.md"
 code = ["src/chatddx/tools"]
 
-[parts.variation]
-stage = "drafted"
-class = "ux"
-doc = "docs/parts/variation.md"
-code = ["frontend/src/lib/variation", "frontend/src/islands/Variation.svelte"]
 
 [parts.whoops]
 stage = "solidified"

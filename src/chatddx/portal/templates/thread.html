@@ -29,7 +29,7 @@
     (_("Tags"), tagged),
     (_("Description"), thread.description or "—"),
   ]) }}
-  {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/{{ thread }}">Try it in the Lab</a>, where it is varied, run and saved{% endtrans %}</p>{% endif %}
+  {% if thread.kind == "skeleton" and not thread.deleted %}<p class="mt-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/compose/{{ thread }}">Open it in Compose</a>, where its texts and settings are written and saved{% endtrans %}</p>{% endif %}
   {% if thread.kind in ("scorer", "judge") and not thread.deleted %}<p class="mt-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/scoring/{{ thread }}">Weigh it on Scoring</a>, beside the scorers and judges it works with and how they scored{% endtrans %}</p>{% endif %}
   {% endcall %}
 
@@ -141,7 +141,7 @@
 
   {% if ran is not none %}
   {% call section(_("Its runs"), "runs") %}
-  {% if not thread.deleted %}<p class="mb-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/run?trial={{ thread }}">Run it</a>, in the Lab{% endtrans %}</p>{% endif %}
+  {% if not thread.deleted %}<p class="mb-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/run?trial={{ thread }}">Run it</a>{% endtrans %}</p>{% endif %}
   {% call paged(ran | length) %}
   <ul class="space-y-1 text-sm" data-paged>
     {% for i, r, titled in ran %}

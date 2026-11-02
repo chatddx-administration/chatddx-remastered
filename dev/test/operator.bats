@@ -11,8 +11,8 @@ setup() {
   unset MAIN
 
   mkdir bin
-  printf '#!/bin/sh\nshift\nexec "$@"\n' >bin/as.sh
-  chmod +x bin/as.sh
+  printf '#!/bin/sh\n[ "$1 $2" = "as user-dev" ] || exit 64\nshift 2\nexec "$@"\n' >bin/o11n
+  chmod +x bin/o11n
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
 
   git init -q --bare -b main origin.git
@@ -49,7 +49,18 @@ committed() {
   [ "$(git rev-parse refs/stamped/feat)" = "$(git rev-parse HEAD)" ]
   [ "$(git ls-remote origin refs/stamped/feat | cut -f1)" = "$(git rev-parse HEAD)" ]
   [ -z "$(git status --porcelain)" ]
-  [ "$(cat "$CHECKED")" = "openapi locale pending" ]
+  [ "$(cat "$CHECKED")" = "openapi locale index pending format python-lint frontend" ]
+}
+
+@test "stamp refuses on what turn-start checks" {
+  run python3 -c '
+import tomllib
+with open("settings.toml", "rb") as f:
+    held = tomllib.load(f)
+turn = held["agent"]["refused_at_turn_start"] + held["agent"]["told_at_turn_start"]
+print(sorted(turn) == sorted(held["operator"]["refused_at_stamp"]))
+'
+  [ "$output" = True ]
 }
 
 @test "stamp commits with the message given" {

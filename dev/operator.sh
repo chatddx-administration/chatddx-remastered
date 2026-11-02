@@ -38,7 +38,7 @@ stamp() {
   local branch was
   branch=$(git branch --show-current)
   [[ -n ${CHATDDX_DEV:-} ]] || die "CHATDDX_DEV is unset, so as.sh has no one to push as"
-  command -v as.sh >/dev/null || die "no as.sh on PATH to push with"
+  command -v o11n >/dev/null || die "no o11n on PATH for as.sh to push with"
   [[ ! -d "$(git rev-parse --git-path rebase-merge)" && ! -d "$(git rev-parse --git-path rebase-apply)" ]] ||
     die "a rebase is in progress"
   [[ -n $branch ]] || die "HEAD is detached; switch to a branch"

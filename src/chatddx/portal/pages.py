@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import JsonValue
 
 from chatddx import locale, settings
-from chatddx.api import schemas
+from chatddx.api import schemas, threads as api_threads
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
 from chatddx.api.state import NO_STORE, state
 from chatddx.bench import Bench, Conflict, MovedOn, OverQuota
@@ -157,6 +157,16 @@ def refusal_of(e: Exception) -> str:
 def own_first(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:
     login = bench.person.login
     return sorted(found, key=lambda t: (t.owner != login, (t.name or t.title).lower()))
+
+
+def configurations(bench: Bench) -> list[schemas.Thread]:
+    """The person's own configurations of generation, by name: those Review runs a case
+    under and Compose lists."""
+    login = bench.person.login
+    found = api_threads.threads(
+        bench, "configuration", purpose="generation", owner=login
+    )
+    return sorted(found, key=lambda t: t.name or t.title)
 
 
 def _back(request: Request) -> str | None:

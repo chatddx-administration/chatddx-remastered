@@ -84,7 +84,7 @@ def test_a_run_links_the_variation_it_ran(signed: TestClient) -> None:
     run = started(signed, parts=parts, score=False)
     ran = settled(signed, run)["ran"]
     page = shown(signed, f"/runs/{run}")
-    tried = f"/lab/{ran['configuration']}?{urlencode(parts)}"
+    tried = f"/compose/{ran['configuration']}?{urlencode(parts)}"
     assert f'href="{tried}">{LINES}+reasoning={OFF}<' in page
 
 

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "macros.html" import named, pane, updating with context %}
+
+{% block title %}{{ _("Compose") ~ " · " ~ named(configuration) if configuration else _("Compose") }} · ChatDDX{% endblock %}
+{% block main %}
+{% if not configuration %}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <p class="text-muted-foreground">{% trans %}No configuration to try: <a class="begin" href="/library/new?kind=configuration">write one from a recipe</a>, in the Library.{% endtrans %}</p>
+</div>
+{% else %}
+{% set here = "/compose/" ~ configuration.id %}
+<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)]">
+
+  {% call pane(_("Configurations")) %}
+  <nav class="xl:w-72" aria-label="{{ _('Configurations') }}">
+    <ul class="space-y-0.5 text-sm">
+      {% for c in configurations %}
+      <li><a href="/compose/{{ c.id }}"{% if c.id == configuration.id %} aria-current="page"{% endif %} class="block truncate px-2 py-1">{{ named(c) }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endcall %}
+
+  {% call pane(_("The configuration")) %}
+  <header class="mb-4">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-2">
+      <h1 class="text-xl font-bold tracking-tight">{{ named(configuration) }}</h1>
+      <a href="/threads/{{ configuration.id }}" class="text-xs">{{ _("Show in the Library") }}</a>
+    </div>
+    {% set last = versions | length - 1 %}
+    <nav class="mt-3 flex flex-wrap items-center gap-2 text-sm" aria-label="{{ _('Versions') }}">
+      {% if at > 0 %}<a class="view" aria-label="{{ _('The version before') }}" href="{{ links[at - 1] }}" data-head="{{ versions[at - 1].id }}">◀</a>{% else %}<span class="text-muted-foreground/50" aria-hidden="true">◀</span>{% endif %}
+      <span class="font-medium">{{ _("Version %(at)s of %(last)s", at=at + 1, last=versions | length) }}</span>
+      {% if at < last %}<a class="view" aria-label="{{ _('The version after') }}" href="{{ links[at + 1] }}" data-head="{{ versions[at + 1].id }}">▶</a>{% else %}<span class="text-muted-foreground/50" aria-hidden="true">▶</span>{% endif %}
+      <span class="text-xs text-muted-foreground">{{ versions[at].at | when }}, {{ versions[at].by }}</span>
+    </nav>
+    {% if at < last %}
+    <p class="mt-2 rounded-lg bg-warning/10 p-3 text-sm">{{ _("A newer version is saved: version %(n)s, %(at)s by %(by)s.", n=versions | length, at=versions[last].at | when, by=versions[last].by) }} <a class="view" href="{{ links[last] }}" data-head="{{ versions[last].id }}">{{ _("Open the latest") }}</a></p>
+    {% endif %}
+  </header>
+  {{ updating(configuration, proposal, changes, here) }}
+
+  <div id="compose">
+    <p class="mb-6 border-t border-border/60 pt-4 text-sm text-muted-foreground">{{ _("Writing it and saving it take scripts.") }}</p>
+  </div>
+  <script type="application/json" id="compose-props">{{ props | tojson }}</script>
+
+  {% endcall %}
+
+</div>
+{% endif %}
+{% endblock %}

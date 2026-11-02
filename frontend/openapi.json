@@ -790,6 +790,131 @@
         }
       }
     },
+    "/api/threads/{thread}/drafts": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Draft",
+        "description": "The texts a configuration would hold with the chunks drafted, and the\ntranslations given carried over to them, writing nothing.",
+        "operationId": "draft_api_threads__thread__drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Draft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Drafting"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/saves": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Save",
+        "description": "Saves a configuration with the chunks given in place of its own, each written\nto its own thread first, as a version of it or, named, a fork.",
+        "operationId": "save_api_threads__thread__saves_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeThread"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A thread has moved on since the head the save was made on"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/takes": {
       "post": {
         "tags": [
@@ -3568,6 +3693,76 @@
         "type": "object",
         "description": "a component's JSON as GET /api/components/{digest} gives its body, kind included"
       },
+      "Draft": {
+        "properties": {
+          "head": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head",
+            "description": "the edit drafted on, the configuration's head unless given"
+          },
+          "before": {
+            "$ref": "#/components/schemas/Drafted",
+            "description": "the draft the translations are given for, the edit's own unless given"
+          },
+          "after": {
+            "$ref": "#/components/schemas/Drafted",
+            "description": "the draft as it is now"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Into"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Draft"
+      },
+      "Drafted": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ComponentBody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "object",
+        "description": "chunks by part, each in place of the configuration's own; null takes an optional part out"
+      },
+      "Drafting": {
+        "properties": {
+          "texts": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Texts",
+            "description": "the texts the draft holds, by part, as its translations key them"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Into",
+            "description": "those given, carried over to the texts that changed in place"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "texts",
+          "translations"
+        ],
+        "title": "Drafting"
+      },
       "Edit": {
         "properties": {
           "id": {
@@ -4701,6 +4896,16 @@
           "runs"
         ],
         "title": "HeldBySome"
+      },
+      "Into": {
+        "additionalProperties": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "type": "object",
+        "description": "translations by language, each text to its translation"
       },
       "Item": {
         "properties": {
@@ -6085,6 +6290,51 @@
           "configuration"
         ],
         "title": "NewRun"
+      },
+      "NewSave": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "a fork's: without it, a version is saved"
+          },
+          "chunks": {
+            "$ref": "#/components/schemas/Drafted"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelDigest"
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Into"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "all of them, by the texts as saved; without them its own, carried over to the texts that changed in place"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head"
+        ],
+        "title": "NewSave"
       },
       "NewScoring": {
         "properties": {

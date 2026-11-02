@@ -13,12 +13,13 @@ from chatddx.whoops import Whoops
 
 from . import (
     cases,
-    lab,
+    compose,
     pages,
     review,
     runs,
     scores,
     scoring,
+    starting,
     threads,
     world as world_page,
 )
@@ -53,7 +54,8 @@ def app(
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
     for router in (
         review.router,
-        lab.router,
+        compose.router,
+        starting.router,
         scoring.router,
         scores.router,
         runs.router,

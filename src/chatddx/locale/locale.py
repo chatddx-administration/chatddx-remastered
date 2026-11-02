@@ -395,21 +395,19 @@ def restamped(
     return _restamped(tag, then, now, _extracted(root))[0]
 
 
-# Policy: a catalog is written in step with the code on both sides of its stamps, the
-# side last stamped matched to the code by its messages alone and the side written now
-# also by Babel's guess at a changed message's closest translation, and in the order of
-# the messages, so that what is left to stamp is the translations alone.
+# Policy: a catalog is written in step with the code on both sides of its stamps, each
+# matched to the code by its messages alone, never by a guess at a changed message's
+# closest translation, which is left untranslated to be translated anew, and in the
+# order of the messages, so that what is left to stamp is the translations alone.
 def _restamped(
     tag: str, then: str | None, now: str | None, template: Catalog
 ) -> tuple[str, Catalog]:
-    last = _updated(tag, None if then is None else signed(then), template, guess=False)
-    written = _updated(tag, None if now is None else applied(now), template, guess=True)
+    last = _updated(tag, None if then is None else signed(then), template)
+    written = _updated(tag, None if now is None else applied(now), template)
     return markers.restamped(_po(last), _po(written)), written
 
 
-def _updated(
-    tag: str, lines: list[str] | None, template: Catalog, guess: bool
-) -> Catalog:
+def _updated(tag: str, lines: list[str] | None, template: Catalog) -> Catalog:
     if lines is None:
         catalog = _begun(tag)
     else:
@@ -418,7 +416,7 @@ def _updated(
     # if it were translated: what holds no translation comes anew from the code.
     for m in [m for m in catalog if m.id and not _translated(m)]:
         catalog.delete(m.id, m.context)
-    catalog.update(template, no_fuzzy_matching=not guess, update_creation_date=False)
+    catalog.update(template, no_fuzzy_matching=True, update_creation_date=False)
     for m in catalog:
         m.flags.discard("fuzzy")
     return catalog

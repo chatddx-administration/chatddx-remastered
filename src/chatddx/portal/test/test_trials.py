@@ -36,11 +36,11 @@ def written(signed: TestClient, action: str, name: str) -> Any:
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
+def test_a_trial_is_begun_of_the_picked_cases_and_run(
     signed: TestClient,
 ) -> None:
     none = shown(signed, "/library?kind=trial")
-    assert "None you see yet" in none and 'href="/lab">Lab</a>' in none
+    assert "None you see yet" in none and 'href="/review">Review</a>' in none
     tab = shown(signed, "/library?kind=case")
     assert 'formaction="/library/new"' in tab and 'name="kind" value="trial"' in tab
     action = begun(signed, "nfd", "svenska")
@@ -94,26 +94,6 @@ def test_a_trial_is_begun_of_the_picked_cases_and_run_in_the_lab(
     assert got.status_code == 422 and "pick a trial to run" in got.text
 
 
-@pytest.mark.usefixtures("fake")
-@pytest.mark.slow
-def test_a_configuration_s_trials_are_run_from_the_lab(signed: TestClient) -> None:
-    got = written(signed, begun(signed, "nfd", "svenska"), "swedish")
-    assert got.status_code == 303, got.text[:500]
-    made = signed.get(f"/api{got.headers['location']}").json()
-    guided = thread(signed, "configuration", LINES_GUIDED)
-    page = shown(signed, f"/lab/{guided['id']}")
-    assert 'aria-label="version of swedish"' in page and "Run the picked" in page
-    form = submitted(page, "/lab/run")
-    assert form["version"] == [""]
-    assert signed.post("/lab/run", data=form).status_code == 422
-
-    [version] = signed.get(f"/api/threads/{made['id']}/edits").json()
-    got = signed.post("/lab/run", data={**form, "version": [str(version["id"])]})
-    assert got.status_code == 303 and got.headers["location"].startswith("/runs/")
-    lines = thread(signed, "configuration", LINES)
-    assert 'aria-label="version of swedish"' not in shown(signed, f"/lab/{lines['id']}")
-
-
 @pytest.mark.slow
 def test_a_trial_s_forms_from_another_site_start_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
@@ -137,7 +117,7 @@ def test_a_world_broken_under_a_running_app_is_paged_with_its_boot_check(
         f"RuntimeError: {display_digest(weights)} is held by 2 model threads, not one: "
         + "fix boot-check src/chatddx/bench/handles.py:broken"
     )
-    for path in (action, f"/lab/{lines['id']}"):
+    for path in (action, f"/compose/{lines['id']}"):
         got = paged.get(path)
         assert got.status_code == 500, (path, said(got.text)[:300])
         assert said(got.text).startswith(
