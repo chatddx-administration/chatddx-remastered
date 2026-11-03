@@ -147,6 +147,14 @@ evaluations scored against them, some faring better than others and a few broken
 chatddx scripted-review alice dutch-10   # --gatherings, --versions, --days and --seed shape it
 ```
 
+For configurations as they would look after weeks of composing, each in a few versions and some 36 gatherings of them,
+baselines on the World's baseline cases, reviews of a case and tries on a handful, some versions faring better than
+others and a few broken (~90s):
+
+```sh
+chatddx scripted-compose alice   # --gatherings, --versions, --days and --seed shape it
+```
+
 ### The portal
 
 The portal is served with the API, and builds its frontend in `frontend/` with pnpm, which the shell has. With the

@@ -1,12 +1,13 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import { api, why } from "$lib/api/client";
-  import { t, tn } from "$lib/locale";
+  import { t, tn, tp } from "$lib/locale";
   import {
     type Body,
     type Chunk,
@@ -60,6 +61,7 @@
   let saving = $state(false);
   let unsaved = $state<string | null>(null);
   let independent = $state(false);
+  let running = $state(false);
 
   const changed = $derived(
     given.varied ||
@@ -77,6 +79,16 @@
       changed,
       configurations: given.configurations,
     }),
+  );
+
+  const runnable = $derived(
+    given.baseline !== null &&
+      !saving &&
+      !waiting &&
+      !running &&
+      (goes.to === "nothing"
+        ? !changed && !given.baseline.running && (given.baseline.behind || given.baseline.whole)
+        : true),
   );
 
   function saves(): string {
@@ -151,15 +163,42 @@
 
   async function save(event: SubmitEvent): Promise<void> {
     event.preventDefault();
+    const id = await written();
+    if (id !== null) location.assign(`/compose/${id}`);
+  }
+
+  const again = $derived(goes.to === "nothing" && !!given.baseline?.whole);
+
+  // Policy: Run saves what there is to save first, and runs the configuration it saved into; with nothing to save, it
+  // runs the version open, an earlier one among them.
+  async function run(): Promise<void> {
+    const id = goes.to === "nothing" ? configuration.id : await written();
+    if (id === null) return;
+    running = true;
+    const form = document.createElement("form");
+    form.method = "post";
+    form.action = `/compose/${id}/runs`;
+    if (goes.to === "nothing") {
+      const version = document.createElement("input");
+      version.type = "hidden";
+      version.name = "head";
+      version.value = String(head);
+      form.append(version);
+    }
+    document.body.append(form);
+    form.submit();
+  }
+
+  async function written(): Promise<number | null> {
     const to = goes.to;
-    if (to === "nothing") return;
+    if (to === "nothing") return null;
     saving = true;
     unsaved = null;
     await settled();
     if (draftFailure !== null) {
       unsaved = draftFailure;
       saving = false;
-      return;
+      return null;
     }
     const got = await api.POST("/api/threads/{thread}/saves", {
       params: { path: { thread: configuration.id } },
@@ -174,9 +213,9 @@
     if (!got.data) {
       unsaved = why(got.error);
       saving = false;
-      return;
+      return null;
     }
-    location.assign(`/compose/${got.data.id}`);
+    return got.data.id;
   }
 </script>
 
@@ -253,10 +292,17 @@
               <Alert.Description>{unsaved}</Alert.Description>
             </Alert.Root>
           {/if}
-          <Button type="submit" disabled={goes.to === "nothing" || saving || waiting}>
-            {#if saving}<LoaderCircleIcon class="animate-spin" />{/if}
-            {t("Save")}
-          </Button>
+          <div class="flex flex-wrap gap-2">
+            <Button type="submit" disabled={goes.to === "nothing" || saving || waiting}>
+              {#if saving}<LoaderCircleIcon class="animate-spin" />{/if}
+              {t("Save")}
+            </Button>
+            {#if given.baseline}
+              <button type="button" class="run" disabled={!runnable} onclick={() => void run()}
+                >{#if again}<RotateCcwIcon />{/if}{tp("a button", "Run")}</button
+              >
+            {/if}
+          </div>
         </form>
       </section>
     </div>

@@ -1257,6 +1257,57 @@
         }
       }
     },
+    "/api/threads/{thread}/breakdown": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Breakdown",
+        "description": "How the configuration fared on the World's baseline cases: its versions, those\nthat compile to one skeleton pooled, each view's estimate over every replicate of\nevery case and its difference from the version before, case by case; each\nbaseline gathering's means, how far its repeats were from it, and its failed\nitems, time and tokens; and the person's other configurations' latest baselines\non the views they share. Costs a read of each of the person's runs and their\nscores, rows read before held.",
+        "operationId": "breakdown_api_threads__thread__breakdown_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Broken"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/families": {
       "get": {
         "tags": [
@@ -3464,6 +3515,333 @@
         ],
         "title": "Asking"
       },
+      "Broken": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/BrokenView"
+            },
+            "type": "array",
+            "title": "Views"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/BrokenVersion"
+            },
+            "type": "array",
+            "title": "Versions",
+            "description": "in the order first saved"
+          },
+          "peers": {
+            "items": {
+              "$ref": "#/components/schemas/BrokenPeer"
+            },
+            "type": "array",
+            "title": "Peers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "tag",
+          "cases",
+          "views",
+          "versions",
+          "peers"
+        ],
+        "title": "Broken"
+      },
+      "BrokenLanguage": {
+        "properties": {
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "cases"
+        ],
+        "title": "BrokenLanguage"
+      },
+      "BrokenPeer": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "means": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Means",
+            "description": "by view, its latest baseline's mean, none where not shared"
+          },
+          "point": {
+            "$ref": "#/components/schemas/BrokenPoint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "means",
+          "point"
+        ],
+        "title": "BrokenPeer"
+      },
+      "BrokenPoint": {
+        "properties": {
+          "started": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Started",
+            "description": "the gathering's first run"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "description": "the configuration's version, from 1"
+          },
+          "means": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Means",
+            "description": "by view, its replicates' mean"
+          },
+          "spread": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Spread",
+            "description": "by view, how far its repeats' values were from its replicates'"
+          },
+          "alike": {
+            "type": "integer",
+            "title": "Alike",
+            "description": "answers its repeats gave alike to the letter"
+          },
+          "compared": {
+            "type": "integer",
+            "title": "Compared",
+            "description": "answers its repeats were compared on"
+          },
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/BrokenLanguage"
+            },
+            "type": "array",
+            "title": "Languages"
+          },
+          "failed": {
+            "type": "number",
+            "title": "Failed",
+            "description": "the share of its items whose call failed"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds",
+            "description": "an item's mean time"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens",
+            "description": "an item's mean answer tokens"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "not all of it scored as things are now"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "started",
+          "at",
+          "version",
+          "means",
+          "spread",
+          "alike",
+          "compared",
+          "languages",
+          "failed",
+          "seconds",
+          "tokens",
+          "stale"
+        ],
+        "title": "BrokenPoint"
+      },
+      "BrokenVersion": {
+        "properties": {
+          "digest": {
+            "type": "string",
+            "title": "Digest",
+            "description": "the skeleton its versions compile to"
+          },
+          "versions": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Versions",
+            "description": "the versions that compile to it, from 1"
+          },
+          "estimates": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Estimated"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Estimates",
+            "description": "by view, over every replicate of every case"
+          },
+          "paired": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Estimated"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Paired",
+            "description": "by view, its mean difference from the one before, case by case"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/BrokenPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "digest",
+          "versions",
+          "estimates",
+          "paired",
+          "points"
+        ],
+        "title": "BrokenVersion"
+      },
+      "BrokenView": {
+        "properties": {
+          "scorer": {
+            "type": "string",
+            "title": "Scorer"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "the scorer's title and the view's label"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field",
+            "description": "the expectation's field the view reads"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "view",
+          "label",
+          "field"
+        ],
+        "title": "BrokenView"
+      },
       "Carried": {
         "properties": {
           "language": {
@@ -4091,6 +4469,38 @@
         ],
         "title": "Error",
         "type": "object"
+      },
+      "Estimated": {
+        "properties": {
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "half": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Half",
+            "description": "the half-width of its 95% interval, none for one value"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mean",
+          "half",
+          "n"
+        ],
+        "title": "Estimated"
       },
       "Expected": {
         "properties": {

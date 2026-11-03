@@ -1408,3 +1408,70 @@ EVENTS: dict[str, type[_Schema]] = {
     "error": ErrorData,
     "done": DoneData,
 }
+
+
+class BrokenView(_Schema):
+    scorer: str
+    view: int
+    label: str = Field(description="the scorer's title and the view's label")
+    field: str | None = Field(description="the expectation's field the view reads")
+
+
+class Estimated(_Schema):
+    mean: float
+    half: float | None = Field(
+        description="the half-width of its 95% interval, none for one value"
+    )
+    n: int
+
+
+class BrokenLanguage(_Schema):
+    language: str | None
+    cases: int
+
+
+class BrokenPoint(_Schema):
+    started: UUID = Field(description="the gathering's first run")
+    at: datetime
+    version: int = Field(description="the configuration's version, from 1")
+    means: list[float | None] = Field(description="by view, its replicates' mean")
+    spread: list[float | None] = Field(
+        description="by view, how far its repeats' values were from its replicates'"
+    )
+    alike: int = Field(description="answers its repeats gave alike to the letter")
+    compared: int = Field(description="answers its repeats were compared on")
+    languages: list[BrokenLanguage]
+    failed: float = Field(description="the share of its items whose call failed")
+    seconds: float = Field(description="an item's mean time")
+    tokens: float | None = Field(description="an item's mean answer tokens")
+    stale: bool = Field(description="not all of it scored as things are now")
+
+
+class BrokenVersion(_Schema):
+    digest: str = Field(description="the skeleton its versions compile to")
+    versions: list[int] = Field(description="the versions that compile to it, from 1")
+    estimates: list[Estimated | None] = Field(
+        description="by view, over every replicate of every case"
+    )
+    paired: list[Estimated | None] = Field(
+        description="by view, its mean difference from the one before, case by case"
+    )
+    points: list[BrokenPoint]
+
+
+class BrokenPeer(_Schema):
+    id: int
+    name: str
+    means: list[float | None] = Field(
+        description="by view, its latest baseline's mean, none where not shared"
+    )
+    point: BrokenPoint
+
+
+class Broken(_Schema):
+    name: str
+    tag: str
+    cases: int
+    views: list[BrokenView]
+    versions: list[BrokenVersion] = Field(description="in the order first saved")
+    peers: list[BrokenPeer]

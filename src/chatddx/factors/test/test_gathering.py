@@ -7,7 +7,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.gatherer import gather
 from chatddx.factors.gathering import (
-    REPLICATED,
+    REVIEW,
     Center,
     Gathered,
     Gathering,
@@ -34,11 +34,11 @@ def center(reg: Registry) -> Center:
 def gathered(reg: Registry, *groups: tuple[str, ...]) -> Gathering:
     return Gathering(
         center=center(reg),
-        seedings=REPLICATED,
+        seedings=REVIEW,
         gathered=tuple(
             Gathered(group=g, seeding=s.name, run=uuid4(), trial=trial)
             for g, trials in enumerate(groups)
-            for s, trial in zip(REPLICATED, trials, strict=False)
+            for s, trial in zip(REVIEW, trials, strict=False)
         ),
     )
 
@@ -177,7 +177,7 @@ def test_gather_fills_each_group_s_seedings_with_the_first_run_that_fits(
         ("b", runs["b"], seeded(reg, 21, 22, 23)),
         ("c", uuid4(), seeded(reg, 5, 6)),
     ]
-    held = gather(center(reg), REPLICATED, found, reg.get)
+    held = gather(center(reg), REVIEW, found, reg.get)
     assert held is not None and held.cross_check(reg.get) == []
     by_run = {g.run: (g.group, g.seeding) for g in held.gathered}
     a = by_run[runs["three"]][0]
@@ -186,9 +186,9 @@ def test_gather_fills_each_group_s_seedings_with_the_first_run_that_fits(
     assert by_run[runs["b"]] == (1 - a, "replicates")
     assert len(held.groups()) == 2
 
-    again = gather(center(reg), REPLICATED, reversed(found), reg.get)
+    again = gather(center(reg), REVIEW, reversed(found), reg.get)
     assert again is not None
     assert [g.trial for g in again.gathered] != [g.trial for g in held.gathered]
     shuffled = [found[4], *found[:4]]
-    assert gather(center(reg), REPLICATED, shuffled, reg.get) == held
-    assert gather(center(reg), REPLICATED, found[-1:], reg.get) is None
+    assert gather(center(reg), REVIEW, shuffled, reg.get) == held
+    assert gather(center(reg), REVIEW, found[-1:], reg.get) is None

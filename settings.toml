@@ -342,6 +342,7 @@ code = [
   "src/chatddx/portal/editors.py",
   "src/chatddx/portal/fields.py",
   "src/chatddx/portal/judged.py",
+  "src/chatddx/portal/mending.py",
   "src/chatddx/portal/pages.py",
   "src/chatddx/portal/review.py",
   "src/chatddx/portal/runs.py",

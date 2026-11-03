@@ -45,6 +45,12 @@ Written by `chatddx-dev index` from the comments in `[parts.dev]`'s code in `set
 # tells is stamped.
 ```
 
+## `dev/agent.sh:hand-over`
+
+```
+# Policy: the budget is told only once all pass, lest it be read as part of a failure.
+```
+
 ## `dev/agent.sh:moved_logs`
 
 ```

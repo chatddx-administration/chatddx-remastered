@@ -5,7 +5,7 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import model_of
-from chatddx.factors.gathering import REPLICATED, Center, Gathering
+from chatddx.factors.gathering import REVIEW, Center, Gathering
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -34,7 +34,7 @@ def test_a_gathering_groups_the_runs_about_a_center_by_configuration(
     guided = started(bench, LINES_GUIDED, crlf, 21, 22, 23)
     elsewhere = started(bench, LINES, bom, 31, 32, 33)
 
-    held = bench.gathering(Center(component=crlf), REPLICATED)
+    held = bench.gathering(Center(component=crlf), REVIEW)
     assert sorted(seedings(held), key=len) == [
         {"replicates": guided},
         {"replicates": lines, "repeat": repeated},
@@ -45,14 +45,12 @@ def test_a_gathering_groups_the_runs_about_a_center_by_configuration(
 
     trial = resolve(bench.store.get, bench.run(lines).trial, Trial)
     model = model_of(trial.engine, bench.store.get).digest
-    every = seedings(bench.gathering(Center(component=model), REPLICATED))
+    every = seedings(bench.gathering(Center(component=model), REVIEW))
     assert {"replicates": elsewhere} in every
     assert {"replicates": lines, "repeat": repeated} not in every
-    assert seedings(bench.gathering(Center(seed=12), REPLICATED)) == [
-        {"replicates": lines}
-    ]
-    assert bench.gathering(Center(seed=99), REPLICATED) is None
-    alone = bench.gathering(Center(component=crlf), REPLICATED, started_with=lines)
+    assert seedings(bench.gathering(Center(seed=12), REVIEW)) == [{"replicates": lines}]
+    assert bench.gathering(Center(seed=99), REVIEW) is None
+    alone = bench.gathering(Center(component=crlf), REVIEW, started_with=lines)
     assert seedings(alone) == [{"replicates": lines}]
-    among = bench.gathering(Center(component=crlf), REPLICATED, among={guided})
+    among = bench.gathering(Center(component=crlf), REVIEW, among={guided})
     assert seedings(among) == [{"replicates": guided}]

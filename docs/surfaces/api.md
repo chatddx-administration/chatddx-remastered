@@ -50,6 +50,17 @@ TypeScript and Svelte:
 * `given: schemas.NewAgain`
 * ∟`schemas.RunStartedData`
 
+## `against`
+`src/chatddx/api/standing.py:against`
+
+What a review's gathering is to be scored by: of the scorers under the schema,
+those a finished run isn't scored by as things are now, if `marked`, else none.
+
+* `bench: Bench`
+* `schema: str | None`
+* `marked: bool`
+* ∟`Callable[[RunStarted], list[str]]`
+
 ## `Answer` `(_Schema)`
 `src/chatddx/api/schemas.py:Answer`
 
@@ -102,6 +113,15 @@ TypeScript and Svelte:
 * `expectation: str = Field(description="what a view picks of the expectation")`
 * `data: JsonValue = Field(description="the expectation's data")`
 
+## `baseline_cases`
+`src/chatddx/api/standing.py:baseline_cases`
+
+The World's baseline cases the person sees: the bare case of each family tagged
+with its baseline tag, none when it names none. Reads the person's families.
+
+* `bench: Bench`
+* ∟`list[str]`
+
 ## `BEHIND`
 `src/chatddx/api/listening.py:BEHIND`
 
@@ -110,9 +130,9 @@ TypeScript and Svelte:
 ## `Behind` `@dataclass(frozen=True)`
 `src/chatddx/api/standing.py:Behind`
 
-Why a case's latest gathering under a configuration isn't a whole 3+1 as things
-are now, and what Run does about it: runs it again on `rerun`'s seeds, drawing
-those it doesn't hold, resumes `resume` and scores `rescore` again.
+Why a configuration's latest gathering on the cases isn't whole in its shape as
+things are now, and what Run does about it: runs it again on `rerun`'s seeds,
+drawing those it doesn't hold, resumes `resume` and scores `rescore` again.
 
 * `why: Why`
 * `refusal: Exception | None = None`
@@ -133,6 +153,81 @@ those it doesn't hold, resumes `resume` and scores `rescore` again.
 `src/chatddx/api/people.py:BenchDep`
 
 `type BenchDep = Annotated[Bench, Depends(bench)]`
+
+## `breakdown` `@router.get("/threads/{thread}/breakdown", dependencies=[Depends(no_store)])`
+`src/chatddx/api/breakdown.py:breakdown`
+
+How the configuration fared on the World's baseline cases: its versions, those
+that compile to one skeleton pooled, each view's estimate over every replicate of
+every case and its difference from the version before, case by case; each
+baseline gathering's means, how far its repeats were from it, and its failed
+items, time and tokens; and the person's other configurations' latest baselines
+on the views they share. Costs a read of each of the person's runs and their
+scores, rows read before held.
+
+* `bench: BenchDep`
+* `thread: int`
+* ∟`schemas.Broken`
+
+Raises:
+1. `NotFound`: `"this World names no baseline cases"`
+
+## `Broken` `(_Schema)`
+`src/chatddx/api/schemas.py:Broken`
+
+* `name: str`
+* `tag: str`
+* `cases: int`
+* `views: list[BrokenView]`
+* `versions: list[BrokenVersion] = Field(description="in the order first saved")`
+* `peers: list[BrokenPeer]`
+
+## `BrokenLanguage` `(_Schema)`
+`src/chatddx/api/schemas.py:BrokenLanguage`
+
+* `language: str | None`
+* `cases: int`
+
+## `BrokenPeer` `(_Schema)`
+`src/chatddx/api/schemas.py:BrokenPeer`
+
+* `id: int`
+* `name: str`
+* `means: list[float | None] = Field(…)`
+* `point: BrokenPoint`
+
+## `BrokenPoint` `(_Schema)`
+`src/chatddx/api/schemas.py:BrokenPoint`
+
+* `started: UUID = Field(description="the gathering's first run")`
+* `at: datetime`
+* `version: int = Field(description="the configuration's version, from 1")`
+* `means: list[float | None] = Field(description="by view, its replicates' mean")`
+* `spread: list[float | None] = Field(…)`
+* `alike: int = Field(description="answers its repeats gave alike to the letter")`
+* `compared: int = Field(description="answers its repeats were compared on")`
+* `languages: list[BrokenLanguage]`
+* `failed: float = Field(description="the share of its items whose call failed")`
+* `seconds: float = Field(description="an item's mean time")`
+* `tokens: float | None = Field(description="an item's mean answer tokens")`
+* `stale: bool = Field(description="not all of it scored as things are now")`
+
+## `BrokenVersion` `(_Schema)`
+`src/chatddx/api/schemas.py:BrokenVersion`
+
+* `digest: str = Field(description="the skeleton its versions compile to")`
+* `versions: list[int] = Field(description="the versions that compile to it, from 1")`
+* `estimates: list[Estimated | None] = Field(…)`
+* `paired: list[Estimated | None] = Field(…)`
+* `points: list[BrokenPoint]`
+
+## `BrokenView` `(_Schema)`
+`src/chatddx/api/schemas.py:BrokenView`
+
+* `scorer: str`
+* `view: int`
+* `label: str = Field(description="the scorer's title and the view's label")`
+* `field: str | None = Field(description="the expectation's field the view reads")`
 
 ## `canary_of`
 `src/chatddx/api/events.py:canary_of`
@@ -416,6 +511,13 @@ Raises:
 `src/chatddx/api/schemas.py:ErrorData`
 
 * `detail: str`
+
+## `Estimated` `(_Schema)`
+`src/chatddx/api/schemas.py:Estimated`
+
+* `mean: float`
+* `half: float | None = Field(…)`
+* `n: int`
 
 ## `runs.EVENTS`
 `src/chatddx/api/runs.py:EVENTS`
@@ -1423,6 +1525,11 @@ Raises:
 * `version: str`
 * `revision: str | None`
 
+## `breakdown.router`
+`src/chatddx/api/breakdown.py:router`
+
+`router = APIRouter(tags=["threads"])`
+
 ## `families.router`
 `src/chatddx/api/families.py:router`
 
@@ -1826,22 +1933,32 @@ are now, by digest. Costs what `bench.unscored` costs.
 * `configuration: schemas.Thread`
 * `runs: list[RunStarted]`
 * `behind: list[Behind] = field(default_factory=list[Behind])`
+* `version: int | None = None`
 
 ## `standing`
 `src/chatddx/api/standing.py:standing`
 
-How the case's latest gathering stands under each of the person's
-configurations, as `bench.gatherings` has it: under way, or what keeps it from
-being a whole 3+1 of the configuration as it is now, scored under the schema
-against the expectation, if `marked`, as it is now. Costs the person's runs read,
-their places in the queue, and, for each configuration, its trial built twice and
-gated and its runs' scorings built.
+How each configuration's latest gathering on the cases stands in the seedings'
+shape, as `bench.latest_starts` has it: under way, or what keeps it from being
+whole, in each language the cases are sent in and scored by what `left` gives, as
+the cases and the configuration are now, at its version `at` when given, else at
+its head. A case in a language the configuration has no translations into is left
+out while any other is sent.
+
+Costs the person's runs read with their catalog rows and trials, their places in
+the queue, and, for each configuration, the trial of each language built twice and
+gated, and its finished runs given to `left`.
 
 * `bench: Bench`
-* `case: str`
-* `schema: str | None`
-* `marked: bool`
+* `configurations: Sequence[schemas.Thread]`
+* `cases: Sequence[str]`
+* `seedings: tuple[Seeding, ...]`
+* `left: Callable[[RunStarted], list[str]]`
+* `at: int | None = None`
 * ∟`list[Standing]`
+
+Raises:
+1. `NotFound`: `"no version {at}"`
 
 ## `start` `@router.post("/runs", …)`
 `src/chatddx/api/runs.py:start`

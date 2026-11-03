@@ -82,7 +82,7 @@ def start(
     with seen.conn.transaction():
         for each in sent:
             assert each.skeleton is not None
-            first = runs[0][1].run if runs else joining
+            first = joining or (runs[0][1].run if runs else None)
             with_first = [] if first is None else [Entry.started_with(first)]
             running = _begun(
                 seen,

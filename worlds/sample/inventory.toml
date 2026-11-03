@@ -1,5 +1,6 @@
 include = ["endpoints.toml"]
 configurations = "qwen3-8b-awq"
+baseline = "akm"
 
 [source.sample]
 path = "vignettes"

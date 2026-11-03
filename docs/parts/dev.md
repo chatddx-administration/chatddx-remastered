@@ -150,4 +150,6 @@ Claude Code's hooks (`.claude/settings.json`):
 Run at request "hand over":
 
 - `./dev/agent.sh hand-over`: writes as `turn-end` does, commits all as `hand-over` and pushes, then runs the checks
-  `[agent]` names for it, and commits and pushes their logs.
+  `[agent]` names for it, and commits and pushes their logs; it tells what failed, or, once all pass, what the budget
+  suggests and its thanks. The stamps a session writes are the human's to resolve, and neither it nor `turn-end` tells
+  of them.

@@ -241,6 +241,10 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         first.run,
     )
     assert varying(bench, second.run) == varying(bench, first.run)
+    joined = bench.start(guided, QWEN, cases, (7,), joining=first.run)
+    assert [
+        read.about(bench.rows, Subject(run=r.run)).started_with for _, r in joined.runs
+    ] == [first.run, first.run]
     assert bench.described(second.started) == (
         f"{LINES_GUIDED} × {QWEN_ARTIFACT} × 2 cases, in sv, translated (greedy)"
     )
@@ -264,8 +268,8 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     ):
         _ = bench.start(lines, QWEN, [svenska, nfd], (7,))
 
-    monkeypatch.setattr(settings, "RUNS_PER_DAY", 4)
-    with pytest.raises(OverQuota, match="a day takes 4, not 2 more"):
+    monkeypatch.setattr(settings, "RUNS_PER_DAY", 6)
+    with pytest.raises(OverQuota, match="a day takes 6, not 2 more"):
         _ = bench.start(guided, QWEN, cases, (7,))
 
 

@@ -1,6 +1,5 @@
 import { mount } from "svelte";
 import type { Schemas } from "$lib/api/client";
-import { t } from "$lib/locale";
 import About from "$lib/review/About.svelte";
 import Appendices from "$lib/review/Appendices.svelte";
 import { Edited } from "$lib/review/edited.svelte";
@@ -10,6 +9,7 @@ import Faring from "$lib/review/Faring.svelte";
 import { Measure, measuredAt } from "$lib/review/measure.svelte";
 import Measuring from "$lib/review/Measuring.svelte";
 import type { Review } from "$lib/review/review";
+import Run from "$lib/review/Run.svelte";
 import Save from "$lib/review/Save.svelte";
 import Vignette from "$lib/review/Vignette.svelte";
 
@@ -123,14 +123,22 @@ if (held) {
     });
   }
 
+  let leaving = false;
   const running = document.querySelector<HTMLFormElement>("form[data-running]");
+  const pressing = running?.querySelector("button");
+  const run =
+    running && pressing
+      ? mount(Run, {
+          target: running,
+          anchor: pressing,
+          props: { edited, form: running, held: pressing.disabled, leave: () => (leaving = true) },
+        })
+      : null;
+  pressing?.remove();
   const faring = document.querySelector("#review-faring > .pane");
   if (faring && review.schema) {
     faring.replaceChildren();
-    const onread = (fared: Schemas["Fared"]): void => {
-      const button = running?.querySelector("button");
-      if (button) button.disabled = !fared.run;
-    };
+    const onread = (fared: Schemas["Fared"]): void => run?.fared(fared.run);
     mount(Faring, {
       target: faring,
       props: { family: review.family, case: review.case, schema: review.schema, onread },
@@ -139,12 +147,6 @@ if (held) {
 
   const save = document.getElementById("review-save");
   if (save) mount(Save, { target: save, props: { edited } });
-  let leaving = false;
-  running?.addEventListener("submit", (sent) => {
-    if (edited.pending && !confirm(t("What you changed isn't saved: run the case as it was last saved?"))) {
-      sent.preventDefault();
-    } else leaving = true;
-  });
   addEventListener("beforeunload", (left) => {
     if (edited.pending && !leaving) left.preventDefault();
   });

@@ -24,6 +24,53 @@ Finds:
 
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `clock` `@contextmanager`
+`src/chatddx/scripted/answering.py:clock`
+
+* `at: datetime`
+* ∟`Generator[None]`
+
+## `Composed` `@dataclass(frozen=True)`
+`src/chatddx/scripted/composed.py:Composed`
+
+* `gatherings: dict[str, dict[Sort, int]]`
+* `versions: dict[str, int]`
+* `broken: int`
+* `unfinished: int`
+* `skipped: dict[str, str]`
+
+## `composed`
+`src/chatddx/scripted/composed.py:composed`
+
+Writes a few weeks of composing for each of the person's configurations that
+runs: `versions` versions of it, each its sampling with a temperature drawn, and
+`gatherings` gatherings of it spread over the last `days` days, as Run starts
+them: a baseline on the World's baseline cases as each version is saved, reviews of
+a case, and tries on a handful of cases. Each version is drawn a mean quality its
+answers are drawn around, against each case's expectation under the schema, and a
+few gatherings are broken by a server that hangs up, or left with a run
+unfinished. A configuration without a recipe is gathered at its head alone.
+
+Sends and scores every run in the calling thread, serving each one's fakes the
+while, on ports of this machine's for endpoints the fake vLLM doesn't run; lifts
+the person's quota of runs for as long.
+
+Heads-up: `LookupError` when no configuration of the person's runs, or the person
+sees no case.
+
+* `bench: Bench`
+* `schema: str`
+* `*`
+* `gatherings: int = 36`
+* `versions: int = 6`
+* `seed: int = 1`
+* `days: int = 42`
+* ∟`Composed`
+
+Raises:
+1. `LookupError`: `"no configuration of {bench.person.login}'s runs: {said}"`
+2. `LookupError`: `"{bench.person.login} sees no case to run"`
+
 ## `drawn`
 `src/chatddx/scripted/fared.py:drawn`
 
@@ -55,6 +102,11 @@ Raises:
 4. `LookupError`: `"endpoint {name!r} runs in {startup.closure}, not the fake vLLM"`
 5. `LookupError`: `"{name} won't start: {e}"` (from `Refused`)
 
+## `FIELDS`
+`src/chatddx/scripted/answering.py:FIELDS`
+
+`FIELDS = ("diagnosis", "warning", "disposition", "dont_miss")`
+
 ## `judging` `@contextmanager`
 `src/chatddx/scripted/run.py:judging`
 
@@ -76,6 +128,34 @@ Raises:
 `src/chatddx/scripted/run.py:NONE`
 
 `NONE = "none"`
+
+## `pattern_of`
+`src/chatddx/scripted/answering.py:pattern_of`
+
+* `data: JsonValue`
+* `field: str`
+* ∟`str | None`
+
+## `Placed` `@dataclass(frozen=True)`
+`src/chatddx/scripted/answering.py:Placed`
+
+* `variation: TriedVariation`
+* `endpoint: str`
+* `fake: Served`
+
+## `placing`
+`src/chatddx/scripted/answering.py:placing`
+
+* `bench: Bench`
+* `fakes: dict[str, Served]`
+* `refused: dict[str, str]`
+* ∟`tuple[list[Placed], dict[str, str]]`
+
+## `Quality` `@dataclass(frozen=True)`
+`src/chatddx/scripted/answering.py:Quality`
+
+* `data: dict[str, JsonValue]`
+* `mean: float`
 
 ## `ran_before`
 `src/chatddx/scripted/run.py:ran_before`
@@ -168,6 +248,22 @@ Raises:
 * `scored: bool = True`
 * `turns: tuple[Turn, ...] = ()`
 
+## `send`
+`src/chatddx/scripted/answering.py:send`
+
+* `bench: Bench`
+* `fake: Served`
+* `fakes: dict[str, Served]`
+* `running: Running`
+* `turns: list[Turn]`
+* `finish: bool`
+* ∟`None`
+
+## `Sort`
+`src/chatddx/scripted/composed.py:Sort`
+
+`type Sort = Literal["baseline", "review", "try"]`
+
 ## `standing_in`
 `src/chatddx/scripted/fakes.py:standing_in`
 
@@ -178,6 +274,16 @@ neither can be served is left out. Binds a socket for each port it takes.
 * `inventory: Inventory`
 * `get: Resolver`
 * ∟`tuple[Inventory, dict[str, Served], dict[str, str]]`
+
+## `turn`
+`src/chatddx/scripted/answering.py:turn`
+
+* `bench: Bench`
+* `running: Running`
+* `rng: random.Random`
+* `version: Quality`
+* `hang_up: bool`
+* ∟`Turn`
 
 ## `variation`
 `src/chatddx/scripted/run.py:variation`

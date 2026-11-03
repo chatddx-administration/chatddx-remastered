@@ -9,7 +9,13 @@ from fastapi.testclient import TestClient
 from chatddx import settings
 from chatddx.api.test.helpers import digest, thread
 from chatddx.inventory import Inventory
-from chatddx.portal.test.helpers import settled, shown, started, world_served
+from chatddx.portal.test.helpers import (
+    compose_props,
+    settled,
+    shown,
+    started,
+    world_served,
+)
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, OFF, faked
@@ -398,3 +404,149 @@ def test_a_review_s_run_runs_again_on_the_same_seeds_what_was_halted(
         fresh = [r for r in runs if r not in before[c]]
         assert sorted(s for _, s in fresh) == sorted(s for _, s in before[c])
     assert behind(signed, crlf)[LINES] == []
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_configuration_s_baseline_is_run_from_compose(signed: TestClient) -> None:
+    query = {"kind": "configuration", "purpose": "generation", "owner": "alice"}
+    mine = min(
+        signed.get("/api/threads", params=query).json(),
+        key=lambda t: t["name"] or t["title"],
+    )
+    compose = f"/compose/{mine['id']}"
+    assert based(signed, compose) == NO_RUNS
+    got = signed.post(f"{compose}/runs")
+    assert (got.status_code, got.headers["location"]) == (303, compose)
+    runs = [
+        r
+        for r in signed.get("/api/runs", params={"limit": 200}).json()
+        if r["ran"]["configuration"] == mine["id"]
+    ]
+    targets = signed.get("/api/families", params={"tag": "targets"}).json()
+    sent = {c for r in runs for c in r["cases"]}
+    assert sent and sent <= {f["case"] for f in targets}
+    assert {len(r["seeds"]) for r in runs} == {1}
+    assert len(runs) == 2 * len({tuple(r["cases"]) for r in runs})
+    for r in runs:
+        _ = settled(signed, r["id"])
+    assert based(signed, compose) == WHOLE
+    assert signed.post(f"{compose}/runs").status_code == 303
+    again = [
+        r
+        for r in signed.get("/api/runs", params={"limit": 200}).json()
+        if r["ran"]["configuration"] == mine["id"]
+    ]
+    fresh = [r for r in again if r["id"] not in {r["id"] for r in runs}]
+    assert len(fresh) == len(runs)
+    assert {s for r in fresh for s in r["seeds"]}.isdisjoint(
+        {s for r in runs for s in r["seeds"]}
+    ) or all(r["titled"]["greedy"] for r in runs)
+
+    for r in fresh:
+        _ = settled(signed, r["id"])
+    got = signed.get(f"/api/threads/{mine['id']}/breakdown")
+    assert got.status_code == 200, got.json()
+    broken = got.json()
+    assert broken["tag"] == "targets" and broken["views"]
+    [version] = broken["versions"]
+    assert version["versions"] == [1] and len(version["points"]) == 2
+    assert all(len(e) == len(broken["views"]) for e in (version["estimates"],))
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_review_and_a_baseline_over_the_same_case_stand_apart(
+    signed: TestClient,
+) -> None:
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    assert "targets" in crlf["tags"]
+    running(signed, crlf)
+    query = {"kind": "configuration", "purpose": "generation", "owner": "alice"}
+    mine = min(
+        signed.get("/api/threads", params=query).json(),
+        key=lambda t: t["name"] or t["title"],
+    )
+    compose = f"/compose/{mine['id']}"
+    assert based(signed, compose) == NO_RUNS
+    assert signed.post(f"{compose}/runs").status_code == 303
+    for r in signed.get("/api/runs", params={"limit": 200}).json():
+        _ = settled(signed, r["id"])
+    assert based(signed, compose) == WHOLE
+    assert "not_whole" not in behind(signed, crlf)[mine["name"] or mine["title"]]
+    running(signed, crlf)
+    assert based(signed, compose) == WHOLE
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_baseline_falls_behind_as_an_expectation_changes_and_is_scored_again(
+    signed: TestClient,
+) -> None:
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    lines = thread(signed, "configuration", LINES)
+    compose = f"/compose/{lines['id']}"
+    assert signed.post(f"{compose}/runs").status_code == 303
+    for r in signed.get("/api/runs", params={"limit": 200}).json():
+        _ = settled(signed, r["id"])
+    assert based(signed, compose) == WHOLE
+    runs = signed.get("/api/runs", params={"limit": 200}).json()
+
+    [case] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+    [expected] = [e for e in case["expectations"] if e["expectation"]]
+    query = {"kind": "expectation", "owner": "alice"}
+    [mine] = [
+        t
+        for t in signed.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    ]
+    held = signed.get(f"/api/components/{mine['head']['digest']}").json()["body"]
+    diagnosis = {**held["data"]["diagnosis"]}
+    diagnosis["pattern"] = diagnosis["pattern"] + " | apixaban"
+    changed = {**held, "data": {**held["data"], "diagnosis": diagnosis}}
+    got = signed.post(
+        f"/api/threads/{mine['id']}/edits",
+        json={"head": mine["head"]["id"], "component": changed},
+    )
+    assert got.status_code == 201
+    assert based(signed, compose) == BEHIND
+
+    assert signed.post(f"{compose}/runs").status_code == 303
+    again = signed.get("/api/runs", params={"limit": 200}).json()
+    assert {r["id"] for r in again} == {r["id"] for r in runs}
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline and based(signed, compose) != WHOLE:
+        time.sleep(0.2)
+    assert based(signed, compose) == WHOLE
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_an_earlier_version_s_baseline_is_run_from_compose(signed: TestClient) -> None:
+    lines = thread(signed, "configuration", LINES)
+    first = lines["head"]["id"]
+    off = digest(signed, "reasoning", OFF)
+    edited = {"head": first, "parts": {"reasoning": off}}
+    assert (
+        signed.post(f"/api/threads/{lines['id']}/edits", json=edited).status_code == 201
+    )
+    compose = f"/compose/{lines['id']}"
+    got = signed.post(f"{compose}/runs", data={"head": str(first)})
+    assert (got.status_code, got.headers["location"]) == (
+        303,
+        f"{compose}?head={first}",
+    )
+    runs = signed.get("/api/runs", params={"limit": 200}).json()
+    assert runs and {r["ran"]["head"] for r in runs} == {first}
+    for r in runs:
+        _ = settled(signed, r["id"])
+    assert based(signed, f"{compose}?head={first}") == WHOLE
+    assert based(signed, compose) == NO_RUNS
+
+
+NO_RUNS = BEHIND = {"running": False, "behind": True, "whole": False}
+WHOLE = {"running": False, "behind": False, "whole": True}
+
+
+def based(signed: TestClient, compose: str) -> dict[str, bool]:
+    return compose_props(shown(signed, compose))["baseline"]

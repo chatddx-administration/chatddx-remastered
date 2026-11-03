@@ -295,7 +295,7 @@ wrote() { grep -c "^write" "$CALLS" || true; }
   echo work >work
   run ./dev/agent.sh hand-over </dev/null
   [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  [ "$output" = "Thanks for your hard work, have a good day!" ]
   [ "$(subject HEAD~1)" = hand-over ]
   [ "$(subject)" = "hand-over: logs" ]
   [ "$(git rev-parse origin/feat)" = "$(git rev-parse HEAD)" ]

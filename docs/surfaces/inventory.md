@@ -118,6 +118,7 @@ Raises:
 * `cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)`
 * `judges: dict[str, str] = Field(default_factory=dict)`
 * `configurations: str | None = None`
+* `baseline: str | None = None`
 
 Raises:
 1. `ValueError`: `"source {name!r} is named {source.name!r}"` (through `Inventory._sources_named`, in a `ValidationError`)
@@ -141,7 +142,7 @@ Raises:
 * ∟`Self`
 
 Raises:
-1. `ValueError`: `"{path}: the inventory has only 'include', 'configurations', 'source', 'endpoint', 'host', 'cleared' and 'judge', not {sorted(stray)}"`
+1. `ValueError`: `"{path}: the inventory has only 'include', 'configurations', 'baseline', 'source', 'endpoint', 'host', 'cleared' and 'judge', not {sorted(stray)}"`
 2. `ValueError`: `"{included}: an included inventory has only 'endpoint' and 'host' tables, not {sorted(stray)}"`
 3. `ValueError`: `"{included}: {table} {twice} are in {path} too"`
 

@@ -93,6 +93,21 @@ Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `
 # Accommodating for the API, which lists configurations of one purpose at a time.
 ```
 
+## `src/chatddx/portal/mending.py:_queueing`
+
+```
+# Policy: queued once every run is begun, so that the worker sending the first doesn't
+# slow beginning the rest, and queued too when beginning one fails, so that none is left
+# begun with nothing to send it.
+```
+
+## `src/chatddx/portal/mending.py:pressed`
+
+```
+# Policy: a press made while something is under way for its run, from a second tab, a
+# stale page or a second click, counts as made: the page it leads back to says so.
+```
+
 ## `src/chatddx/portal/pages.py`
 
 ```
@@ -129,14 +144,6 @@ Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `
 # their browser kept the session's cookie and says so if it didn't.
 ```
 
-## `src/chatddx/portal/review.py:_queueing`
-
-```
-# Policy: queued once every run is begun, so that the worker sending the first doesn't
-# slow beginning the rest, and queued too when beginning one fails, so that none is left
-# begun with nothing to send it.
-```
-
 ## `src/chatddx/portal/review.py:running_in_review`
 
 ```
@@ -148,13 +155,6 @@ Written by `chatddx-dev index` from the comments in `[parts.portal]`'s code in `
 
 ```
 # Policy: as with pressed, a run with nothing left under way is halted already.
-```
-
-## `src/chatddx/portal/runs.py:pressed`
-
-```
-# Policy: a press made while something is under way for its run, from a second tab, a
-# stale page or a second click, counts as made: the page it leads back to says so.
 ```
 
 ## `src/chatddx/portal/runs.py:run`

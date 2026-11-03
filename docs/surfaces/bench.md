@@ -68,6 +68,20 @@ Raises:
 
 * ∟`list[int]`
 
+## `Bench.breakdown`
+`src/chatddx/bench/breakdown.py:breakdown`
+
+How the configuration fared on the cases, as the baseline gatherings of its
+versions and of the peers' latest have it. A baseline is a start of runs of none
+but the cases on one seed each, as Run starts one, of no parts replaced. Costs what
+`observed` costs for each of the person's runs, cached rows costing nothing, and
+each configuration's head resolved.
+
+* `thread: int`
+* `cases: Collection[str]`
+* `peers: Collection[int] = ()`
+* ∟`Breakdown`
+
 ## `Bench.case`
 `src/chatddx/bench/cases.py:case`
 
@@ -218,6 +232,20 @@ person's runs, their catalog rows and each one's trial.
 * `cases: Collection[str]`
 * ∟`dict[tuple[str, int], list[RunStarted]]`
 
+## `Bench.latest_starts`
+`src/chatddx/bench/gathering.py:latest_starts`
+
+Under each configuration the person varied, the runs of its latest start in the
+seedings' shape on the cases, each a trial of none but the cases on as many seeds
+as a seeding holds, and, for a configuration in `compiled`, of a version that
+compiles to the skeleton named; by the configuration's thread, the latest run
+first. Reads the person's runs, their catalog rows and each one's trial.
+
+* `cases: Collection[str]`
+* `seedings: tuple[Seeding, ...]`
+* `compiled: Mapping[int, str] | None = None`
+* ∟`dict[int, list[RunStarted]]`
+
 ## `Bench.leave`
 `src/chatddx/bench/saying.py:leave`
 
@@ -258,6 +286,18 @@ Raises:
 8. `NotFound`: `"no case {missing[0]} for {seen.person.login}"` (through `_written`)
 9. `Invalid`: `"a trial's cases are in one language, not in %(languages)s", languages=", ".join(known)` (through `_written`)
 10. `Invalid`: `"%(configuration)s has no translations into %(into)s, its cases' language", configuration=seen.title(trial.skeleton), into=into` (through `_written`)
+
+## `Bench.observed`
+`src/chatddx/bench/observed.py:observed`
+
+The runs that finished, each with its finished scores and what it isn't scored
+by as things are now, in the order given. Held rows cost nothing to read again;
+each run not held reads its log once with its catalog rows, each score not held
+reads its log, and each run's scores are listed once, and, once the catalog has
+changed, what `seen.unscored` costs.
+
+* `runs: Sequence[RunStarted]`
+* ∟`list[Observed]`
 
 ## `Bench.outdated`
 `src/chatddx/bench/updating.py:outdated`
@@ -509,6 +549,17 @@ Raises:
 Raises:
 1. `ValueError`: `"an appendix is bound to the current vignette of a case you see"`
 
+## `Breakdown` `@dataclass(frozen=True)`
+`src/chatddx/bench/breakdown.py:Breakdown`
+
+How a configuration fared on the baseline cases: the views its skeleton offers,
+its versions pooled by what they compile to in the order first saved, and its
+peers among the configurations given.
+
+* `views: tuple[View, ...]`
+* `timeline: tuple[Pooled, ...]`
+* `peers: tuple[Peer, ...]`
+
 ## `broken`
 `src/chatddx/bench/handles.py:broken`
 
@@ -614,6 +665,16 @@ Raises:
 `src/chatddx/bench/model.py:Endpoint.engine`
 
 * ∟`str`
+
+## `Estimate` `@dataclass(frozen=True)`
+`src/chatddx/bench/breakdown.py:Estimate`
+
+A mean of `n` values with the half-width of its 95% interval, None for fewer
+than two.
+
+* `mean: float`
+* `half: float | None`
+* `n: int`
 
 ## `Family` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Family`
@@ -753,8 +814,28 @@ Finds:
 ## `NotFound` `(Worded, LookupError)`
 `src/chatddx/bench/errors.py:NotFound`
 
+## `Observed` `@dataclass(frozen=True)`
+`src/chatddx/bench/observed.py:Observed`
+
+A finished run with the latest finished score of each scorer, and the scorers
+it isn't scored by as things are now.
+
+* `ran: Ran`
+* `scores: tuple[Valued, ...]`
+* `unscored: frozenset[str]`
+
 ## `OverQuota` `(Worded, ValueError)`
 `src/chatddx/bench/errors.py:OverQuota`
+
+## `Peer` `@dataclass(frozen=True)`
+`src/chatddx/bench/breakdown.py:Peer`
+
+Another configuration's latest baseline gathering, on the views it shares with
+the one broken down.
+
+* `configuration: int`
+* `point: Point`
+* `shared: tuple[View, ...]`
 
 ## `picked`
 `src/chatddx/bench/seen.py:picked`
@@ -773,6 +854,37 @@ Raises:
 
 `PLACEHOLDERS: dict[SlotName, str] = {…}`
 
+## `Point` `@dataclass(frozen=True)`
+`src/chatddx/bench/breakdown.py:Point`
+
+One baseline gathering of a configuration: `means` over its replicates alone,
+`spread` and `alike` its repeats against them.
+
+* `started: UUID`
+* `at: datetime`
+* `version: int`
+* `means: dict[View, float]`
+* `spread: dict[View, float]`
+* `alike: tuple[int, int]`
+* `languages: dict[str | None, int]`
+* `failed: float`
+* `seconds: float`
+* `tokens: float | None`
+* `stale: bool`
+
+## `Pooled` `@dataclass(frozen=True)`
+`src/chatddx/bench/breakdown.py:Pooled`
+
+The baseline gatherings of the versions that compile to one skeleton, by its
+digest: each view's estimate over every replicate of every case, and its mean
+difference from the pooled before it on the cases both sent, case by case.
+
+* `digest: str`
+* `versions: tuple[int, ...]`
+* `points: tuple[Point, ...]`
+* `estimates: dict[View, Estimate]`
+* `paired: dict[View, Estimate]`
+
 ## `Previewed` `@dataclass(frozen=True)`
 `src/chatddx/bench/composing.py:Previewed`
 
@@ -790,6 +902,26 @@ Raises:
 * `digest: str | None`
 * `compilation: str | None`
 * `refused: ValueError | None`
+
+## `Ran` `@dataclass(frozen=True)`
+`src/chatddx/bench/observed.py:Ran`
+
+A finished run as a breakdown reads it, `digest` its version's skeleton and
+`started_with` its own id where it began its start.
+
+* `run: UUID`
+* `at: datetime`
+* `trial: str`
+* `skeleton: str`
+* `language: str | None`
+* `cases: tuple[str, ...]`
+* `seeds: tuple[int, ...]`
+* `configuration: int | None`
+* `version: int | None`
+* `digest: str | None`
+* `replaced: bool`
+* `started_with: UUID`
+* `items: tuple[Sent, ...]`
 
 ## `Reach` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Reach`
@@ -1197,6 +1329,19 @@ Raises:
 2. `ValueError`: `"no part {part!r}: the parts are {', '.join(RECIPE_PARTS)}"`
 3. `ValueError`: `"{digest} isn't a stored {what}"`
 
+## `Sent` `@dataclass(frozen=True)`
+`src/chatddx/bench/observed.py:Sent`
+
+An item of a run as a breakdown reads it, `said` None where it answered
+nothing.
+
+* `case: str`
+* `replicate: int`
+* `failed: bool`
+* `seconds: float`
+* `tokens: int | None`
+* `said: str | None`
+
 ## `Started` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Started`
 
@@ -1282,6 +1427,22 @@ Raises:
 * `written: Written | None`
 * `refused: ValueError | None`
 * `remodelled: tuple[str, str] | None`
+
+## `Valued` `@dataclass(frozen=True)`
+`src/chatddx/bench/observed.py:Valued`
+
+A finished score as a breakdown reads it, each value with its case, replicate
+and view.
+
+* `score: UUID`
+* `at: datetime`
+* `scorer: str`
+* `values: tuple[tuple[str, int, int, float | None], ...]`
+
+## `View`
+`src/chatddx/bench/breakdown.py:View`
+
+`type View = tuple[str, int]`
 
 ## `WITH`
 `src/chatddx/bench/seen.py:WITH`

@@ -1,10 +1,12 @@
 from typing import final
 
+from .breakdown import breakdown
 from .cases import case, replacement, type_case
 from .components import check, edit, fork, new
 from .composing import compose, drafted, preview
 from .configurations import save
-from .gathering import gathering, gatherings
+from .gathering import gathering, gatherings, latest_starts
+from .observed import observed
 from .runs import (
     again,
     check_quota,
@@ -67,3 +69,6 @@ class Bench(Seen):
 
     gathering = gathering
     gatherings = gatherings
+    latest_starts = latest_starts
+    observed = observed
+    breakdown = breakdown

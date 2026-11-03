@@ -1,9 +1,9 @@
 import json
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, replace
+from typing import Annotated, Any
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Form, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue, ValidationError
@@ -13,10 +13,12 @@ from chatddx.api import (
     schemas,
     threads as api,
 )
+from chatddx.api.standing import Behind, Standing, baseline_cases, standing
 from chatddx.bench import Bench, Handle, NotFound
 from chatddx.curation.write import ARCHIVE
-from chatddx.factors.base import Component, resolve
+from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.facts import LEVELS, ContractFact, Refusal, Refused
+from chatddx.factors.gathering import BASELINE
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
     CHUNK_PARTS,
@@ -27,7 +29,8 @@ from chatddx.factors.request import (
     texts,
 )
 
-from .pages import BenchDep, configurations, page
+from .mending import mend, placed
+from .pages import BenchDep, configurations, page, refusal_of
 from .shelves import display_kind
 
 router = APIRouter()
@@ -65,6 +68,7 @@ def compose(
     mine = shown.owner == bench.person.login
     proposal = api.proposal(bench, thread) if mine and not shown.deleted else None
     purpose = "judge" if judged else "generation"
+    based = None if judged else _baseline(bench, shown, look.head.id)
     props: dict[str, Any] = {
         "configuration": shown.model_dump(mode="json"),
         "me": bench.person.login,
@@ -89,6 +93,13 @@ def compose(
             t.model_dump(mode="json")
             for t in api.threads(bench, "configuration", purpose=purpose)
         ],
+        "baseline": None
+        if based is None
+        else {
+            "running": based.running,
+            "behind": based.mendable,
+            "whole": based.whole,
+        },
     }
     return page(
         request,
@@ -108,9 +119,101 @@ def compose(
             )
             for v in ([] if proposal is None else proposal.varies)
         ],
+        baseline=based,
         props=props,
         island="compose",
     )
+
+
+@router.post("/compose/{thread}/runs")
+def running_in_compose(
+    bench: BenchDep, thread: int, head: Annotated[int | None, Form()] = None
+) -> Response:
+    shown = api.thread(bench, thread)
+    if shown.kind != "skeleton":
+        raise NotFound.of(
+            "no configuration %(thread)s for %(login)s",
+            thread=thread,
+            login=bench.person.login,
+        )
+    if not (cases := baseline_cases(bench)):
+        raise NotFound("this World names no baseline cases")
+    stood = _stood(bench, shown, cases, head)
+    back = f"/compose/{thread}" + ("" if head is None else f"?head={head}")
+    # Policy: as in Review, a press made while its baseline is under way counts as made.
+    if any(b.why == "under_way" for b in stood.behind):
+        return RedirectResponse(back, 303)
+    # Policy: a baseline whole as things are now is run again on seeds drawn anew, as
+    # what narrows its version's interval is another draw, and its repeat is none.
+    if not stood.behind:
+        stood = replace(stood, behind=[Behind("no_runs", rerun={})])
+    # Policy: a baseline that can't run says why on the page it leads back to.
+    _ = mend(bench, [stood], cases, BASELINE, bench.unscored)
+    return RedirectResponse(back, 303)
+
+
+@dataclass(frozen=True)
+class Baseline:
+    refusal: str | None
+    outdated: bool
+    findings: list[Finding]
+    running: bool
+    mendable: bool
+    whole: bool
+
+
+def _baseline(bench: Bench, shown: schemas.ThreadDetail, head: int) -> Baseline | None:
+    tag = bench.inventory.baseline
+    cases = baseline_cases(bench)
+    if tag is None or not cases:
+        return None
+    stood = _stood(bench, shown, cases, head)
+    runs, behind = stood.runs, stood.behind
+    refused = next((b.refusal for b in behind if b.refusal is not None), None)
+    return Baseline(
+        refusal=None if refused is None else refusal_of(refused),
+        outdated=any(b.why == "outdated" for b in behind),
+        findings=_found(bench, shown, cases, head) if runs else [],
+        running=any(b.why == "under_way" for b in behind),
+        mendable=_mendable(behind),
+        whole=not behind,
+    )
+
+
+def _stood(
+    bench: Bench, shown: schemas.Thread, cases: list[str], head: int | None
+) -> Standing:
+    [stood] = standing(bench, [shown], cases, BASELINE, bench.unscored, head)
+    return stood
+
+
+def _mendable(behind: list[Behind]) -> bool:
+    return not any(b.why == "under_way" for b in behind) and any(
+        b.rerun is not None or b.resume or b.rescore for b in behind
+    )
+
+
+# Policy: a case in a language the configuration has no translations into is left out
+# of its baseline unsaid, and said among its findings once it has run, as a translation
+# that fails to compile is.
+def _found(
+    bench: Bench, shown: schemas.ThreadDetail, cases: list[str], head: int
+) -> list[Finding]:
+    if (at_hand := placed(bench, shown, head)) is None:
+        return []
+    variation, at = at_hand
+    carried = bench.languages(variation, cases)
+    found = bench.findings(variation, at.engine, 0, carried)
+    for each in carried:
+        if each.untranslated:
+            found.append(
+                Finding(
+                    code="translations.missing",
+                    message=each.refused or "",
+                    subject=shown.head.digest,
+                )
+            )
+    return found
 
 
 @dataclass(frozen=True)

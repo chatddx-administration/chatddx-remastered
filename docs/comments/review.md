@@ -45,11 +45,23 @@ Written by `chatddx-dev index` from the comments in `[parts.review]`'s code in `
 // Policy: so many texts at a time, so that a case read thousands of times opens at once.
 ```
 
+## `frontend/src/lib/review/Run.svelte:run`
+
+```
+// Policy: Run saves what is unsaved first, and runs the case it saved into.
+```
+
 ## `frontend/src/lib/review/edited.svelte.ts:Edited`
 
 ```
 // Policy: the page's Save writes each part that holds something unsaved, by rank, and stops at
 // the first refused; what was written stays written, so saving again writes what is left.
+```
+
+## `frontend/src/lib/review/edited.svelte.ts:Edited.written`
+
+```
+// Policy: once written, the page stays busy till it is left, as what it shows is no longer what is saved.
 ```
 
 ## `frontend/src/lib/review/faring.ts:below`

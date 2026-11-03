@@ -184,6 +184,7 @@ def test_a_judge_s_configuration_is_written_in_compose(page: Page) -> None:
     expect(page.get_by_role("region", name="Its texts")).to_be_visible()
     expect(page.get_by_role("button", name="Save")).to_be_visible()
     expect(page.get_by_role("button", name="Run it")).to_have_count(0)
+    expect(page.get_by_role("button", name="Run", exact=True)).to_have_count(0)
     assert errors == []
 
 
@@ -227,6 +228,43 @@ def test_a_configuration_s_parts_are_written_in_compose_and_saved_with_it(
     assert sampling["body"]["temperature"] == 0.5
     into = page.request.get(f"/api/components/{recipe['translations']}").json()
     assert into["body"]["into"]["sv"][new].startswith("Du bistår")
+    assert errors == []
+
+
+def test_a_configuration_s_baseline_is_run_from_compose_once_it_is_saved(
+    page: Page, world: Inventory, conn: Connection
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES_GUIDED,
+        "owner": "alice",
+    }
+    guided = page.request.get("/api/threads", params=query).json()[0]
+    with faked(world, Store(conn).get, delay=0.3):
+        _ = page.goto(f"/compose/{guided['id']}")
+        expect(page.get_by_role("button", name="Run", exact=True)).to_be_enabled()
+        with page.expect_response(re.compile(r"/drafts$")):
+            page.get_by_label("temperature", exact=True).fill("0.5")
+        run = page.get_by_role("button", name="Run", exact=True)
+        with page.expect_navigation(timeout=120_000):
+            run.click(no_wait_after=True)
+        expect(page.get_by_text("Version 2 of 2", exact=True)).to_be_visible()
+        recipe = page.request.get(f"/api/threads/{guided['id']}").json()["recipe"]
+        sampling = page.request.get(f"/api/components/{recipe['sampling']}").json()
+        assert sampling["body"]["temperature"] == 0.5
+        runs = [
+            r
+            for r in page.request.get("/api/runs", params={"limit": 200}).json()
+            if r["ran"]["configuration"] == guided["id"]
+        ]
+        assert runs and {len(r["seeds"]) for r in runs} == {1}
+        for r in runs:
+            assert page.request.post(f"/api/runs/{r['id']}/halt").status in (204, 409)
+        fared = page.get_by_role("region", name="Baseline", exact=True)
+        fared.scroll_into_view_if_needed()
+        expect(fared.get_by_role("status")).to_have_count(0, timeout=30_000)
     assert errors == []
 
 
@@ -1327,7 +1365,7 @@ def test_a_run_s_items_are_paged_and_found_in_as_they_come(
         expect(page.get_by_role("heading", name="Items")).to_be_visible()
 
 
-def test_a_case_is_run_from_its_review_once_what_changed_is_saved_or_let_go(
+def test_a_case_is_run_from_its_review_once_what_changed_is_saved(
     page: Page, world: Inventory, conn: Connection
 ) -> None:
     errors: list[str] = []
@@ -1344,21 +1382,15 @@ def test_a_case_is_run_from_its_review_once_what_changed_is_saved_or_let_go(
             asked.append(dialog.message)
             dialog.dismiss()
 
-        page.once("dialog", dismissed)
+        page.on("dialog", dismissed)
         run = bar.get_by_role("button", name="Run")
-        run.click()
-        assert asked == [
-            "What you changed isn't saved: run the case as it was last saved?"
-        ]
-        assert (
-            page.request.get("/api/runs", params={"reaching": noted["case"]}).json()
-            == []
-        )
-        page.once("dialog", lambda d: d.accept())
         with page.expect_navigation(timeout=120_000):
             run.click(no_wait_after=True)
+        assert asked == []
         expect(run).to_be_disabled()
         expect(page.locator("#evaluating")).to_have_count(0)
+        family = page.request.get(f"/api/families/{noted['id']}").json()
+        assert "evaluated" in family["tags"]
         runs = page.request.get(
             "/api/runs", params={"reaching": noted["case"], "limit": 200}
         ).json()

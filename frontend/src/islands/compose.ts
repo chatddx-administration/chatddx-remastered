@@ -1,5 +1,6 @@
 import { mount } from "svelte";
 import type { Props } from "$lib/compose/props";
+import Breakdown from "$lib/compose/Breakdown.svelte";
 import Preview from "$lib/compose/Preview.svelte";
 import { Sending } from "$lib/compose/sending.svelte";
 import Compose from "./Compose.svelte";
@@ -26,4 +27,18 @@ if (target && held) {
       props: { thread: props.configuration.id, own: props.configuration.language, sending },
     });
   }
+}
+
+const breakdown = document.querySelector("#compose-breakdown > .pane");
+if (breakdown && held) {
+  const props = JSON.parse(held.textContent ?? "null") as Props;
+  breakdown.replaceChildren();
+  mount(Breakdown, {
+    target: breakdown,
+    props: {
+      thread: props.configuration.id,
+      version: props.versions.findIndex((v) => v.id === props.head) + 1,
+      running: props.baseline?.running ?? false,
+    },
+  });
 }

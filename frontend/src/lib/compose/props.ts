@@ -22,4 +22,5 @@ export type Props = {
   toolChoices: ToolChoice[];
   drafted: Drafted | null;
   configurations: Schemas["Thread"][];
+  baseline: { running: boolean; behind: boolean; whole: boolean } | null;
 };

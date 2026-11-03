@@ -13,6 +13,7 @@ from .sources import DatabaseSource, DirectorySource, Source
 _TABLES = (
     "include",
     "configurations",
+    "baseline",
     "source",
     "endpoint",
     "host",
@@ -67,6 +68,7 @@ class Inventory(Frozen):
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     judges: dict[str, str] = Field(default_factory=dict)
     configurations: str | None = None
+    baseline: str | None = None
 
     @model_validator(mode="after")
     def _sources_named(self) -> Self:
@@ -100,7 +102,7 @@ class Inventory(Frozen):
         if stray := set(data) - set(_TABLES):
             raise ValueError(
                 f"{path}: the inventory has only 'include', 'configurations', "
-                + "'source', 'endpoint', 'host', 'cleared' and 'judge', not "
+                + "'baseline', 'source', 'endpoint', 'host', 'cleared' and 'judge', not "
                 + f"{sorted(stray)}"
             )
         tables = {t: dict(data.get(t, {})) for t in ("source", "endpoint", "host")}
@@ -130,6 +132,7 @@ class Inventory(Frozen):
                 "cleared": data.get("cleared", {}),
                 "judges": data.get("judge", {}),
                 "configurations": data.get("configurations"),
+                "baseline": data.get("baseline"),
             }
         )
 

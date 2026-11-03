@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 from uuid import UUID
@@ -7,7 +7,7 @@ from chatddx.bench import Bench, NotFound
 from chatddx.bench.seen import trial
 from chatddx.factors.base import Invalid, resolve
 from chatddx.factors.gatherer import gather
-from chatddx.factors.gathering import REPLICATED, Center
+from chatddx.factors.gathering import Center, Seeding
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
 from chatddx.ledger import RunStarted
@@ -38,9 +38,9 @@ type Seeds = Mapping[str, tuple[int, ...]]
 
 @dataclass(frozen=True)
 class Behind:
-    """Why a case's latest gathering under a configuration isn't a whole 3+1 as things
-    are now, and what Run does about it: runs it again on `rerun`'s seeds, drawing
-    those it doesn't hold, resumes `resume` and scores `rescore` again."""
+    """Why a configuration's latest gathering on the cases isn't whole in its shape as
+    things are now, and what Run does about it: runs it again on `rerun`'s seeds,
+    drawing those it doesn't hold, resumes `resume` and scores `rescore` again."""
 
     why: Why
     refusal: Exception | None = None
@@ -55,6 +55,7 @@ class Standing:
     configuration: schemas.Thread
     runs: list[RunStarted]
     behind: list[Behind] = field(default_factory=list[Behind])
+    version: int | None = None
 
 
 def configurations(bench: Bench) -> list[schemas.Thread]:
@@ -63,16 +64,46 @@ def configurations(bench: Bench) -> list[schemas.Thread]:
     return sorted(found, key=lambda t: t.name or t.title)
 
 
+def baseline_cases(bench: Bench) -> list[str]:
+    """The World's baseline cases the person sees: the bare case of each family tagged
+    with its baseline tag, none when it names none. Reads the person's families."""
+    tag = bench.inventory.baseline
+    return [] if tag is None else [f.case for f in bench.families([tag])]
+
+
+def against(
+    bench: Bench, schema: str | None, marked: bool
+) -> Callable[[RunStarted], list[str]]:
+    """What a review's gathering is to be scored by: of the scorers under the schema,
+    those a finished run isn't scored by as things are now, if `marked`, else none."""
+    return (lambda r: stale(bench, r, schema)) if marked else (lambda _: [])
+
+
 def standing(
-    bench: Bench, case: str, schema: str | None, marked: bool
+    bench: Bench,
+    configurations: Sequence[schemas.Thread],
+    cases: Sequence[str],
+    seedings: tuple[Seeding, ...],
+    left: Callable[[RunStarted], list[str]],
+    at: int | None = None,
 ) -> list[Standing]:
-    """How the case's latest gathering stands under each of the person's
-    configurations, as `bench.gatherings` has it: under way, or what keeps it from
-    being a whole 3+1 of the configuration as it is now, scored under the schema
-    against the expectation, if `marked`, as it is now. Costs the person's runs read,
-    their places in the queue, and, for each configuration, its trial built twice and
-    gated and its runs' scorings built."""
-    latest = bench.gatherings([case])
+    """How each configuration's latest gathering on the cases stands in the seedings'
+    shape, as `bench.latest_starts` has it: under way, or what keeps it from being
+    whole, in each language the cases are sent in and scored by what `left` gives, as
+    the cases and the configuration are now, at its version `at` when given, else at
+    its head. A case in a language the configuration has no translations into is left
+    out while any other is sent.
+
+    Costs the person's runs read with their catalog rows and trials, their places in
+    the queue, and, for each configuration, the trial of each language built twice and
+    gated, and its finished runs given to `left`."""
+    compiled = None
+    if at is not None:
+        edit = bench.rows.edit(at)
+        if edit is None:
+            raise NotFound(f"no version {at}")
+        compiled = {edit.thread: edit.digest}
+    latest = bench.latest_starts(cases, seedings, compiled)
     ids = [r.run for runs in latest.values() for r in runs]
     placed = Queue(bench.conn).placed(ids)
     finished = bench.store.finished(ids)
@@ -82,93 +113,87 @@ def standing(
         return None if held is None else held.job.status
 
     found: list[Standing] = []
-    for t in configurations(bench):
-        runs = latest.get((case, t.id), [])
-        behind = _behind(bench, t, case, runs, status, finished, schema, marked)
-        found.append(Standing(t, runs, behind))
+    for t in configurations:
+        runs = latest.get(t.id, [])
+        behind = _behind(bench, t, at, cases, seedings, runs, status, finished, left)
+        found.append(Standing(t, runs, behind, at))
     return found
 
 
 def _behind(
     bench: Bench,
     t: schemas.Thread,
-    case: str,
+    at: int | None,
+    cases: Sequence[str],
+    seedings: tuple[Seeding, ...],
     runs: list[RunStarted],
     status: Callable[[UUID], str | None],
     finished: set[UUID],
-    schema: str | None,
-    marked: bool,
+    left: Callable[[RunStarted], list[str]],
 ) -> list[Behind]:
     if any(status(r.run) in OPEN for r in runs):
         return [Behind("under_way")]
-    if (refused := _unrunnable(bench, t, case)) is not None:
-        return [refused]
+    if t.outdated:
+        return [Behind("outdated")]
+    try:
+        variation = bench.variation(t.id, {}, at)
+        endpoint = bench.at(variation)
+    except (Invalid, NotFound) as e:
+        return [Behind("refused", refusal=e)]
+    carried = bench.languages(variation, cases)
+    sent = [(c, c.skeleton) for c in carried if c.skeleton is not None]
+    if not sent:
+        first = carried[0]
+        if first.untranslated:
+            return [Behind("untranslated", language=str(first.language))]
+        return [Behind("refused", refusal=Invalid(first.refused or ""))]
+    for each, skeleton in sent:
+        registry, made = trial(bench, skeleton, endpoint.engine, each.cases, (0,))
+        try:
+            bar(bench.inventory, registry.get, endpoint.name, made)
+        except Refused as e:
+            return [Behind("refused", refusal=e)]
     if not runs:
         return [Behind("no_runs", rerun={})]
+    get = bench.store.get
     held = gather(
-        Center(component=case),
-        REPLICATED,
-        [(t.id, r.run, r.trial) for r in runs],
-        bench.store.get,
+        Center(component=t.head.digest),
+        seedings,
+        [(resolve(get, r.trial, Trial).skeleton, r.run, r.trial) for r in runs],
+        get,
     )
-    group = {} if held is None else held.groups()[0]
-    seeds = {
-        s: resolve(bench.store.get, g.trial, Trial).seeds for s, g in group.items()
-    }
-    if len(group) < len(REPLICATED) or len(runs) > len(group):
+    groups = [] if held is None else held.groups()
+    seeds: Seeds = (
+        {s: resolve(get, g.trial, Trial).seeds for s, g in groups[0].items()}
+        if groups
+        else {}
+    )
+    whole = len(groups) == len(sent) and all(len(g) == len(seedings) for g in groups)
+    if not whole or len(runs) > len(seedings) * len(groups):
         return [Behind("not_whole", rerun=seeds)]
-    head = group[REPLICATED[0].name]
-    if _trial_now(bench, t, case, seeds[head.seeding]) != head.trial:
+    head = seedings[0].name
+    now = {
+        trial(
+            bench,
+            skeleton,
+            endpoint.engine,
+            each.cases,
+            seeds[head],
+            bench.cleanup(each.cases),
+        )[1].digest
+        for each, skeleton in sent
+    }
+    if {g[head].trial for g in groups} != now:
         return [Behind("changed", rerun=seeds)]
-    if any(status(g.run) == "stopped" for g in group.values()):
+    gathered = [g.run for group in groups for g in group.values()]
+    if any(status(r) == "stopped" for r in gathered):
         return [Behind("halted", rerun=seeds)]
     found: list[Behind] = []
-    if unsent := tuple(g.run for g in group.values() if g.run not in finished):
+    if unsent := tuple(r for r in gathered if r not in finished):
         found.append(Behind("unfinished", resume=unsent))
-    by_run = {r.run: r for r in runs}
-    if marked and (
-        unscored := tuple(
-            g.run
-            for g in group.values()
-            if g.run in finished and stale(bench, by_run[g.run], schema)
-        )
-    ):
+    if unscored := tuple(r.run for r in runs if r.run in finished and left(r)):
         found.append(Behind("unscored", rescore=unscored))
     return found
-
-
-def _unrunnable(bench: Bench, t: schemas.Thread, case: str) -> Behind | None:
-    if t.outdated:
-        return Behind("outdated")
-    try:
-        variation = bench.variation(t.id, {}, None)
-        at = bench.at(variation)
-    except (Invalid, NotFound) as e:
-        return Behind("refused", refusal=e)
-    for each in bench.languages(variation, [case]):
-        if each.skeleton is None:
-            if each.untranslated:
-                return Behind("untranslated", language=str(each.language))
-            return Behind("refused", refusal=Invalid(each.refused or ""))
-        registry, made = trial(bench, each.skeleton, at.engine, each.cases, (0,))
-        try:
-            bar(bench.inventory, registry.get, at.name, made)
-        except Refused as e:
-            return Behind("refused", refusal=e)
-    return None
-
-
-def _trial_now(
-    bench: Bench, t: schemas.Thread, case: str, seeds: tuple[int, ...]
-) -> str | None:
-    variation = bench.variation(t.id, {}, None)
-    at = bench.at(variation)
-    for each in bench.languages(variation, [case]):
-        if each.skeleton is not None:
-            cleanup = bench.cleanup(each.cases)
-            _, made = trial(bench, each.skeleton, at.engine, each.cases, seeds, cleanup)
-            return made.digest
-    return None
 
 
 def stale(bench: Bench, run: RunStarted, schema: str | None) -> list[str]:

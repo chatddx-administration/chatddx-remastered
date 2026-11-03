@@ -48,8 +48,18 @@ export class Edited {
     this.problem = null;
   }
 
+  get at(): string {
+    return this.#at;
+  }
+
   async save(back: string): Promise<void> {
-    if (this.busy) return;
+    const to = await this.written(back);
+    if (to !== null) this.#shown(to);
+  }
+
+  // Policy: once written, the page stays busy till it is left, as what it shows is no longer what is saved.
+  async written(back: string): Promise<string | null> {
+    if (this.busy) return null;
     this.busy = true;
     this.problem = null;
     for (const part of this.#parts) {
@@ -58,10 +68,10 @@ export class Edited {
       if ("problem" in got) {
         this.problem = got.problem;
         this.busy = false;
-        return;
+        return null;
       }
       if (got.case) this.#at = got.case;
     }
-    this.#shown(this.#at === this.#start ? back : replaced(back, this.#start, { [this.#start]: this.#at }));
+    return this.#at === this.#start ? back : replaced(back, this.#start, { [this.#start]: this.#at });
   }
 }

@@ -46,6 +46,7 @@ from chatddx.rig import rig
 from chatddx.runner import Refused, outcome
 from chatddx.scripted import (
     RUNS,
+    composed as composed_scripted,
     fake_at,
     ran_before,
     review as review_scripted,
@@ -339,6 +340,47 @@ def _scripted_review(args: argparse.Namespace) -> None:
         )
         for name, why in made.skipped.items():
             print(f"[scripted review {args.case}] left out {name}: {why}")
+
+
+def _scripted_compose(args: argparse.Namespace) -> None:
+    world = _world("scripted-compose", args.world)
+    with psycopg.connect(settings.database(), autocommit=True) as conn:
+        _held("scripted-compose", world, conn)
+        person = People(conn).find(args.login)
+        if person is None:
+            raise SystemExit(
+                f"no person {args.login!r}: chatddx person provision {args.login} adds them"
+            )
+        bench = Bench(conn, person, world.inventory)
+        try:
+            schema = bench.thread(args.schema, "expectation_schema")[0].digest
+            made = composed_scripted(
+                bench,
+                schema,
+                gatherings=args.gatherings,
+                versions=args.versions,
+                seed=args.seed,
+                days=args.days,
+            )
+        except OSError as e:
+            raise SystemExit(
+                f"scripted-compose: {e}; scripted runs serve their own fakes, so "
+                + "chatddx fake-engines must not be running"
+            ) from None
+        except (LookupError, ValueError, Refused) as e:
+            raise SystemExit(f"scripted-compose: {e}") from None
+        for name, sorts in made.gatherings.items():
+            said = ", ".join(f"{n} {sort}" for sort, n in sorted(sorts.items()))
+            print(
+                f"[scripted compose {name}] {made.versions[name]} versions, "
+                + f"gathered as {said or 'nothing'}"
+            )
+        print(
+            f"[scripted compose] {made.broken} broken and {made.unfinished} left "
+            + "unfinished"
+        )
+        for name, why in made.skipped.items():
+            print(f"[scripted compose] left out {name}: {why}")
 
 
 def _ran(bench: Bench, started: RunStarted) -> str:
@@ -699,6 +741,40 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = reviewed.add_argument("--seed", type=int, default=1, help="the draw's seed (1)")
     reviewed.set_defaults(run=_scripted_review)
+
+    composing = commands.add_parser(
+        "scripted-compose",
+        help="write a few weeks of composing for each of a person's configurations: "
+        + "versions of it and dozens of gatherings of it, baselines, reviews and "
+        + "tries, each answered by the fake vLLM as well as a quality drawn for its "
+        + "version has it",
+    )
+    _ = composing.add_argument("login", help="whose configurations they are")
+    _ = composing.add_argument(
+        "--world", type=Path, help="the World it is written in (CHATDDX_WORLD)"
+    )
+    _ = composing.add_argument(
+        "--schema", default="targets", help="the expectation schema (targets)"
+    )
+    _ = composing.add_argument(
+        "--gatherings",
+        type=int,
+        default=36,
+        help="how many gatherings of each configuration (36)",
+    )
+    _ = composing.add_argument(
+        "--versions",
+        type=int,
+        default=6,
+        help="how many versions of each configuration (6)",
+    )
+    _ = composing.add_argument(
+        "--days", type=int, default=42, help="over how many days past (42)"
+    )
+    _ = composing.add_argument(
+        "--seed", type=int, default=1, help="the draw's seed (1)"
+    )
+    composing.set_defaults(run=_scripted_compose)
 
     api = commands.add_parser(
         "api",

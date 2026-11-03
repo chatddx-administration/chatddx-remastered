@@ -440,7 +440,8 @@ msgid_plural "%(num)s canary calls missing"
 msgstr[0] "%(num)s kanarieanrop saknas"
 msgstr[1] "%(num)s kanarieanrop saknas"
 
-#: frontend/src/lib/runs/titles.ts src/chatddx/portal/templates/macros.html
+#: frontend/src/lib/compose/Breakdown.svelte frontend/src/lib/runs/titles.ts
+#: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/runner.html
 #, python-format
 msgid "%(num)s case"
@@ -1344,6 +1345,11 @@ msgstr "Tillbaka till formuläret"
 msgid "Back to where you were"
 msgstr "Tillbaka dit du var"
 
+#: frontend/src/lib/compose/Breakdown.svelte
+#: src/chatddx/portal/templates/compose.html
+msgid "Baseline"
+msgstr "Baslinje"
+
 #: frontend/src/lib/compose/Paired.svelte
 msgid "Before it:"
 msgstr "Före den:"
@@ -1527,7 +1533,8 @@ msgstr "Sammansättning"
 msgid "Configuration"
 msgstr "Konfiguration"
 
-#: src/chatddx/portal/shelves.py src/chatddx/portal/templates/compose.html
+#: frontend/src/lib/compose/Breakdown.svelte src/chatddx/portal/shelves.py
+#: src/chatddx/portal/templates/compose.html
 msgid "Configurations"
 msgstr "Konfigurationer"
 
@@ -2077,6 +2084,7 @@ msgstr "Fall vid den här vinjetten"
 msgid "Its description"
 msgstr "Dess beskrivning"
 
+#: src/chatddx/portal/templates/compose.html
 #: src/chatddx/portal/templates/scoring.html
 #: src/chatddx/portal/templates/thread.html
 msgid "Its findings"
@@ -2273,6 +2281,7 @@ msgstr "Hamnar på %(level)s."
 msgid "Language"
 msgstr "Språk"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/compose/Texts.svelte
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/translations.html
@@ -2339,6 +2348,7 @@ msgstr "Kvar att rätta med"
 msgid "Left to score by %(scorers)s."
 msgstr "Kvar att rätta med %(scorers)s."
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Faring.svelte
 msgid "Legend"
 msgstr "Teckenförklaring"
@@ -2388,6 +2398,7 @@ msgctxt "a field"
 msgid "Match"
 msgstr "Matchning"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/scoring.html
 msgid "Mean"
@@ -2637,6 +2648,7 @@ msgstr ""
 msgid "None you see."
 msgstr "Inga som du har tillgång till."
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/updated.html
@@ -3010,6 +3022,7 @@ msgstr "Avvisad"
 msgid "Renal function"
 msgstr "Njurfunktion"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/score.html
 msgid "Repeats"
 msgstr "Upprepningar"
@@ -3029,6 +3042,7 @@ msgstr "Replikat"
 msgid "Replicate %(n)s: %(value)s"
 msgstr "Replikat %(n)s: %(value)s"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/score.html
 msgid "Replicates"
 msgstr "Replikat"
@@ -3067,6 +3081,7 @@ msgstr "Högst antal anropsrundor"
 msgid "Run"
 msgstr "Körning"
 
+#: frontend/src/islands/Compose.svelte frontend/src/lib/review/Run.svelte
 #: src/chatddx/portal/templates/review.html
 msgctxt "a button"
 msgid "Run"
@@ -3093,6 +3108,7 @@ msgstr "Kör de valda"
 msgid "Run trials"
 msgstr "Kör försök"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/base.html src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/runs.html
 msgid "Runs"
@@ -3613,6 +3629,7 @@ msgctxt "whoops"
 msgid "The model has no handle and can't be used."
 msgstr "Modellen saknar alias och går inte att använda."
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Faring.svelte
 msgid "The numbers"
 msgstr "Siffrorna"
@@ -3712,6 +3729,7 @@ msgstr ""
 msgid "The vignette…"
 msgstr "Vinjetten…"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Faring.svelte
 msgid "The whole answer"
 msgstr "Hela svaret"
@@ -3807,6 +3825,7 @@ msgstr ""
 "För att styra hur fritt modellen väljer sina ord, och hur långt den får "
 "svara."
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/run.html
 msgid "Tokens"
 msgstr "Token"
@@ -3913,6 +3932,7 @@ msgstr "Version %(n)s"
 msgid "Version %(n)s, %(at)s"
 msgstr "Version %(n)s, %(at)s"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Expected.svelte
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/compose.html
@@ -3920,6 +3940,7 @@ msgstr "Version %(n)s, %(at)s"
 msgid "Versions"
 msgstr "Versioner"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Faring.svelte
 #: src/chatddx/portal/templates/scoring.html
 msgid "View"
@@ -4084,10 +4105,6 @@ msgstr "Vad den här versionen ändrade i dess recept"
 #: src/chatddx/portal/templates/run.html
 msgid "What was noted"
 msgstr "Vad som noterades"
-
-#: frontend/src/islands/review.ts
-msgid "What you changed isn't saved: run the case as it was last saved?"
-msgstr "Det du har ändrat är inte sparat: köra fallet som det senast sparades?"
 
 #: src/chatddx/portal/templates/macros.html
 msgid ""
@@ -4715,6 +4732,7 @@ msgctxt "refusal"
 msgid "facts about %(facts)s can't compile for %(model)s"
 msgstr "fakta om %(facts)s kan inte kompileras för %(model)s"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/macros.html
 msgctxt "job"
 msgid "failed"
@@ -4838,7 +4856,7 @@ msgstr "den har inga körningar av fallet än"
 msgid "it has no translation into %(language)s"
 msgstr "den har ingen översättning till %(language)s"
 
-#: frontend/src/lib/review/faring.ts
+#: frontend/src/lib/review/faring.ts src/chatddx/portal/templates/compose.html
 msgid "it is out of date: update it on its page"
 msgstr "den är ouppdaterad: uppdatera den på dess sida"
 
@@ -5322,6 +5340,7 @@ msgstr "ingen: en extern inferensserver"
 msgid "none: it takes no secret"
 msgstr "ingen: den tar ingen hemlighet"
 
+#: frontend/src/lib/compose/Breakdown.svelte
 #: frontend/src/lib/review/Faring.svelte
 msgid "not as things are now"
 msgstr "inte som det är nu"

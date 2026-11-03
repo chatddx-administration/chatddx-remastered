@@ -372,9 +372,10 @@ hand-over() {
     done
     echo "If it's in what this session changed and fails again alone (./dev/check.sh <check>), fix it and run" \
       "./dev/agent.sh hand-over again; else, or once fixing it keeps growing, tell the user so and wait for what they say."
-  # Policy: the budget is told only once all pass, lest it be read as part of a failure.
-  elif [[ -n $budget ]]; then
-    printf '%s\n' "Flip what the budget suggests, should it feel right:" "$budget"
+  else
+    # Policy: the budget is told only once all pass, lest it be read as part of a failure.
+    [[ -z $budget ]] || printf '%s\n' "Flip what the budget suggests, should it feel right:" "$budget"
+    echo "Thanks for your hard work, have a good day!"
   fi
 }
 

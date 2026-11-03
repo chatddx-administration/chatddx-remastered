@@ -48,6 +48,12 @@ beside what was declared. `src/chatddx/ledger/call.py:attest_model`
 :Base — The version a fork is compared with: the one it came from, or the origin's head it last followed.
 `src/chatddx/catalog/model.py:Divergence.base`
 
+:Baseline — A configuration's gathering on the World's baseline cases, a replicate and its seed repeated, set before it
+is varied for a variation to be measured against. `src/chatddx/factors/gathering.py:BASELINE`
+
+:Baseline tag (inventory) — The tag of the families whose bare cases a configuration's baseline runs on.
+`src/chatddx/inventory/inventory.py:Inventory.baseline`
+
 :Beat — Marking a worker and its jobs as seen, and hearing whether each is to halt or its owner has paused.
 `src/chatddx/store/queue.py:Queue.beat`
 

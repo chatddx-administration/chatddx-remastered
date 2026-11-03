@@ -1,9 +1,6 @@
-from collections.abc import Generator, Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Annotated, Any
 from urllib.parse import parse_qsl, urlencode
-from uuid import UUID
 
 from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
@@ -14,23 +11,21 @@ from chatddx.api import (
     schemas,
     threads as api,
 )
-from chatddx.api.standing import stale, standing
+from chatddx.api.standing import against, configurations as owned, standing
 from chatddx.api.state import refused
-from chatddx.bench import Bench, Endpoint, Family, NotFound, TriedVariation
+from chatddx.bench import Bench, Family, NotFound
 from chatddx.catalog import Edit, Subject, read
 from chatddx.factors.base import Fingerprint, Invalid, resolve
 from chatddx.factors.cases import Appendix, Case, Vignette
-from chatddx.factors.gathering import REPLICATED
+from chatddx.factors.gathering import REVIEW
 from chatddx.factors.request import Translations
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.select import field
-from chatddx.factors.trial import suggest_seeds
 from chatddx.locale import display_language
-from chatddx.runner import Refused, Running
 from chatddx.store import Queue, fetch_vignette
 
+from .mending import mend, placed
 from .pages import BenchDep, configurations, page, within
-from .runs import pressed
 from .titles import display_case
 
 router = APIRouter()
@@ -133,7 +128,7 @@ def review(
         own=own,
         offered=offered,
         carried=_carried(bench, shown, picked, under, expected),
-        runnable=sum(_placed(bench, t) is not None for t in live),
+        runnable=sum(placed(bench, t) is not None for t in live),
         busy=busy,
         measuring=measuring,
         back=back,
@@ -161,28 +156,9 @@ def running_in_review(
         (e for e in picked.expectations if e.expectation_schema == schema), None
     )
     marked = expected is not None and expected.expectation is not None
-    behind = [
-        (s.configuration, b)
-        for s in standing(bench, picked.case, schema, marked)
-        for b in s.behind
-    ]
-    rerun = [(t, b.rerun) for t, b in behind if b.rerun is not None]
-    bench.check_quota([s.seeds for _ in rerun for s in REPLICATED])
-    first: UUID | None = None
-    begun: list[Running] = []
-    with _queueing(bench, begun):
-        for t, seeds in rerun:
-            begun += _begin(bench, t, picked.case, first, seeds)
-            first = first or (begun[0].started.run if begun else None)
-    for _, b in behind:
-        for run in b.resume:
-            with pressed():
-                _ = bench.queue(bench.resume(bench.run(run)))
-        for run in b.rescore:
-            if left := stale(bench, bench.run(run), schema):
-                with pressed():
-                    _ = bench.queue_scoring(bench.run(run), left)
-    if rerun and first is None:
+    left = against(bench, schema, marked)
+    stood = standing(bench, owned(bench), [picked.case], REVIEW, left)
+    if not mend(bench, stood, [picked.case], REVIEW, left):
         raise Invalid.of(
             "no configuration can run %(case)s now", case=display_case(picked.titled)
         )
@@ -201,48 +177,6 @@ def _under(visible: list[schemas.Thread], schema: str | None) -> str | None:
     if schema is not None and under is None:
         raise NotFound.of("no expectation schema %(schema)s for you", schema=schema)
     return under
-
-
-def _begin(
-    bench: Bench,
-    t: schemas.Thread,
-    case: str,
-    first: UUID | None,
-    seeds: Mapping[str, tuple[int, ...]],
-) -> list[Running]:
-    if (placed := _placed(bench, t)) is None:
-        return []
-    variation, at = placed
-    drawn: dict[str, tuple[int, ...]] = {}
-    begun: list[Running] = []
-    for s in REPLICATED:
-        each = drawn[s.name] = (
-            seeds[s.name]
-            if s.name in seeds
-            else suggest_seeds(s.seeds)
-            if s.repeats is None
-            else drawn[s.repeats][-s.seeds :]
-        )
-        joining = first or (begun[0].started.run if begun else None)
-        try:
-            started = bench.start(variation, at.name, [case], each, joining=joining)
-        except (Invalid, Refused):
-            break
-        begun += [running for _, running in started.runs]
-    return begun
-
-
-# Policy: queued once every run is begun, so that the worker sending the first doesn't
-# slow beginning the rest, and queued too when beginning one fails, so that none is left
-# begun with nothing to send it.
-@contextmanager
-def _queueing(bench: Bench, begun: list[Running]) -> Generator[None]:
-    try:
-        yield
-    finally:
-        with bench.conn.transaction():
-            for running in begun:
-                _ = bench.queue(running, True)
 
 
 _OPEN_STATUSES = ("queued", "under way")
@@ -285,16 +219,6 @@ def _query(**given: _Given) -> str:
         if v is not None
     ]
     return "?" + urlencode(pairs) if pairs else ""
-
-
-def _placed(bench: Bench, t: schemas.Thread) -> tuple[TriedVariation, Endpoint] | None:
-    if t.outdated:
-        return None
-    try:
-        variation = bench.variation(t.id, {}, None)
-        return variation, bench.at(variation)
-    except (Invalid, NotFound):
-        return None
 
 
 def _picked(shown: schemas.FamilyDetail, case: str | None) -> schemas.FamilyCase:

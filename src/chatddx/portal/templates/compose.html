@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import named, pane, updating with context %}
+{% from "macros.html" import findings, named, pane, updating with context %}
 
 {% macro forks(listed) %}
 {% for f in listed %}
@@ -45,6 +45,13 @@
     {% endif %}
   </header>
   {{ updating(configuration, proposal, changes, here) }}
+  {% if baseline and (baseline.refusal or baseline.outdated or baseline.findings) %}
+  <section aria-label="{{ _('Its findings') }}" class="mb-4 text-sm">
+    {% if baseline.outdated %}<p class="mb-2 text-warning">{{ _("it is out of date: update it on its page") }}</p>{% endif %}
+    {% if baseline.refusal %}<p class="mb-2 text-warning">{{ baseline.refusal }}</p>{% endif %}
+    {% if baseline.findings %}{{ findings(baseline.findings) }}{% endif %}
+  </section>
+  {% endif %}
 
   <div id="compose">
     <p class="mb-6 border-t border-border/60 pt-4 text-sm text-muted-foreground">{{ _("Writing it and saving it take scripts.") }}</p>
@@ -56,5 +63,12 @@
   <section id="compose-preview" data-slide-in aria-label="{{ _('What it sends') }}" class="pane relative min-h-0 overflow-hidden rounded-2xl xl:col-start-3 xl:row-start-1" inert>
   </section>
 </div>
+{% if baseline %}
+<section id="compose-breakdown" aria-label="{{ _('Baseline') }}" class="px-4 pt-3 pb-6 sm:px-6">
+  <div class="pane rounded-2xl p-5 sm:p-6">
+    <h2>{{ _("Baseline") }}</h2>
+  </div>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}

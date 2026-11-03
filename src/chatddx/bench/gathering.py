@@ -1,4 +1,4 @@
-from collections.abc import Collection, Hashable
+from collections.abc import Collection, Hashable, Mapping
 from datetime import datetime
 from uuid import UUID
 
@@ -47,9 +47,10 @@ def gathering(
     return gather(center, seedings, found, seen.store.get)
 
 
-# Policy: a case's latest gathering under a configuration is the runs started together
+# Policy: what is plotted of a case under a configuration is the runs started together
 # with its latest run reaching it, those of them reaching it, so that whatever started
-# it, a review's 3+1 or a trial of many cases, the latest start stands for the case.
+# it, a review's 3+1, a baseline or a trial of many cases, the latest start stands for
+# the case.
 def gatherings(
     seen: Seen, cases: Collection[str]
 ) -> dict[tuple[str, int], list[RunStarted]]:
@@ -74,4 +75,48 @@ def gatherings(
     return {
         at: sorted(together[(*at, first)], key=lambda r: r.at, reverse=True)
         for at, (_, first) in latest.items()
+    }
+
+
+# Policy: a start stands for a gathering only in the shape it could have been made in,
+# its runs of the gathering's cases alone, each on as many seeds as a seeding holds, so
+# that a review of a case and a baseline over many don't stand for each other.
+def latest_starts(
+    seen: Seen,
+    cases: Collection[str],
+    seedings: tuple[Seeding, ...],
+    compiled: Mapping[int, str] | None = None,
+) -> dict[int, list[RunStarted]]:
+    """Under each configuration the person varied, the runs of its latest start in the
+    seedings' shape on the cases, each a trial of none but the cases on as many seeds
+    as a seeding holds, and, for a configuration in `compiled`, of a version that
+    compiles to the skeleton named; by the configuration's thread, the latest run
+    first. Reads the person's runs, their catalog rows and each one's trial."""
+    within = set(cases)
+    sizes = {s.seeds for s in seedings}
+    runs = seen.runs()
+    abouts = read.abouts(seen.rows, [Subject(run=r.run) for r in runs])
+    starts: dict[tuple[int, UUID], list[RunStarted]] = {}
+    for r in runs:
+        about = abouts[Subject(run=r.run)]
+        varied = None if about.varied is None else seen.rows.edit(about.varied)
+        if varied is None or (
+            compiled is not None
+            and varied.thread in compiled
+            and compiled[varied.thread] != varied.digest
+        ):
+            continue
+        first = about.started_with or r.run
+        starts.setdefault((varied.thread, first), []).append(r)
+    latest: dict[int, list[RunStarted]] = {}
+    for (thread, _), each in starts.items():
+        trials = [resolve(seen.store.get, r.trial, Trial) for r in each]
+        if not all(set(t.cases) <= within and len(t.seeds) in sizes for t in trials):
+            continue
+        held = latest.get(thread)
+        if held is None or max(r.at for r in held) < max(r.at for r in each):
+            latest[thread] = each
+    return {
+        thread: sorted(each, key=lambda r: r.at, reverse=True)
+        for thread, each in latest.items()
     }

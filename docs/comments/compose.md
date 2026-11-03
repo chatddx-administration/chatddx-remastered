@@ -20,6 +20,25 @@ Written by `chatddx-dev index` from the comments in `[parts.compose]`'s code in 
 // the chunks, and aren't typed in meanwhile.
 ```
 
+## `frontend/src/islands/Compose.svelte:run`
+
+```
+// Policy: Run saves what there is to save first, and runs the configuration it saved into; with nothing to save, it
+// runs the version open, an earlier one among them.
+```
+
+## `frontend/src/lib/compose/Breakdown.svelte`
+
+```
+// Policy: read once the section is near view, as most visits to a configuration write it rather than weigh it.
+```
+
+## `frontend/src/lib/compose/Breakdown.svelte:AGAIN`
+
+```
+// Policy: read again so long after while its baseline is under way, as Review's faring does.
+```
+
 ## `frontend/src/lib/compose/Preview.svelte`
 
 ```
@@ -57,6 +76,13 @@ Written by `chatddx-dev index` from the comments in `[parts.compose]`'s code in 
 ```
 // Policy: what is listed rather than paired follows the texts the server last said, so that a text being typed
 // doesn't move between the two meanwhile.
+```
+
+## `frontend/src/lib/compose/breakdown.ts:spread`
+
+```
+// Policy: a version's gatherings spread across its column by when they ran, so that a version run again
+// later sits to the right of its first.
 ```
 
 ## `frontend/src/lib/compose/diffing.ts:overlaid`
@@ -107,9 +133,32 @@ Written by `chatddx-dev index` from the comments in `[parts.compose]`'s code in 
 // Dependency: src/chatddx/factors/request.py:texts orders a recipe's texts by these parts.
 ```
 
+## `src/chatddx/portal/compose.py:_found`
+
+```
+# Policy: a case in a language the configuration has no translations into is left out
+# of its baseline unsaid, and said among its findings once it has run, as a translation
+# that fails to compile is.
+```
+
 ## `src/chatddx/portal/compose.py:_set`
 
 ```
 # Accommodating for the forms, which show a field that is set: a default left out is
 # filled in again where it is read, to the same digest.
+```
+
+## `src/chatddx/portal/compose.py:running_in_compose`
+
+```
+# Policy: as in Review, a press made while its baseline is under way counts as made.
+```
+
+```
+# Policy: a baseline whole as things are now is run again on seeds drawn anew, as
+# what narrows its version's interval is another draw, and its repeat is none.
+```
+
+```
+# Policy: a baseline that can't run says why on the page it leads back to.
 ```

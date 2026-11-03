@@ -60,6 +60,11 @@ Finds:
 * `values: tuple[str, ...]`
 * ∟`tuple[str, ...]`
 
+## `BASELINE`
+`src/chatddx/factors/gathering.py:BASELINE`
+
+`BASELINE: tuple[Seeding, ...] = (…)`
+
 ## `Bundle` `(Frozen)`
 `src/chatddx/factors/bundle.py:Bundle`
 
@@ -1295,11 +1300,6 @@ holds it; every other translation is kept.
 
 `RemoteModelRef = Annotated[Digest, RefTo("model.remote")]`
 
-## `REPLICATED`
-`src/chatddx/factors/gathering.py:REPLICATED`
-
-`REPLICATED: tuple[Seeding, ...] = (…)`
-
 ## `replicates`
 `src/chatddx/factors/trial.py:replicates`
 
@@ -1322,6 +1322,11 @@ Raises:
 `src/chatddx/factors/base.py:Resolver`
 
 `Resolver = Callable[[str], "Component"]`
+
+## `REVIEW`
+`src/chatddx/factors/gathering.py:REVIEW`
+
+`REVIEW: tuple[Seeding, ...] = (…)`
 
 ## `Run` `(Frozen)`
 `src/chatddx/factors/request.py:Run`

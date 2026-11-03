@@ -5,7 +5,7 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.bench.seen import choices
 from chatddx.catalog import Subject, read
-from chatddx.factors.gathering import REPLICATED, Center
+from chatddx.factors.gathering import REVIEW, Center
 from chatddx.scripted import review
 from chatddx.scripted.fared import drawn
 
@@ -27,9 +27,9 @@ def test_a_scripted_review_writes_versions_and_evaluations_over_past_weeks(
     firsts = {abouts[Subject(run=r.run)].started_with or r.run for r in runs}
     assert len(firsts) == 6
     for first in firsts:
-        held = bench.gathering(Center(component=case), REPLICATED, started_with=first)
+        held = bench.gathering(Center(component=case), REVIEW, started_with=first)
         assert held is not None
-        assert all(len(g) == len(REPLICATED) for g in held.groups())
+        assert all(len(g) == len(REVIEW) for g in held.groups())
     now = datetime.now(UTC)
     assert min(r.at for r in runs) < now - timedelta(days=7)
     assert max(r.at for r in runs) < now

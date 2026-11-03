@@ -31,9 +31,18 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 ## `src/chatddx/bench/gathering.py:gatherings`
 
 ```
-# Policy: a case's latest gathering under a configuration is the runs started together
+# Policy: what is plotted of a case under a configuration is the runs started together
 # with its latest run reaching it, those of them reaching it, so that whatever started
-# it, a review's 3+1 or a trial of many cases, the latest start stands for the case.
+# it, a review's 3+1, a baseline or a trial of many cases, the latest start stands for
+# the case.
+```
+
+## `src/chatddx/bench/gathering.py:latest_starts`
+
+```
+# Policy: a start stands for a gathering only in the shape it could have been made in,
+# its runs of the gathering's cases alone, each on as many seeds as a seeding holds, so
+# that a review of a case and a baseline over many don't stand for each other.
 ```
 
 ## `src/chatddx/bench/handles.py:broken`
@@ -48,6 +57,22 @@ Written by `chatddx-dev index` from the comments in `[parts.bench]`'s code in `s
 ```
 # Policy: a thread is behind what it was made from for these reasons, the last three of
 # which leave it unusable until it is updated.
+```
+
+## `src/chatddx/bench/observed.py:_RAN`
+
+```
+# Policy: so many finished runs and scores held as rows and no more: what a run or a
+# score finished with is sealed, so one is held without a version; what isn't scored as
+# things are now is held while the catalog stands and the run's scores are the same.
+```
+
+## `src/chatddx/bench/observed.py:_said`
+
+```
+# Policy: what an item answered is its last message's text and the names and arguments
+# of its tool calls, so that two answers alike to the letter share a digest whatever
+# else their responses hold, the calls' ids among it.
 ```
 
 ## `src/chatddx/bench/runs.py:start`

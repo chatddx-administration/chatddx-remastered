@@ -21,22 +21,30 @@ another case. Fields for tags and languages visually scuffed but exist.
 
 If the case chosen is with an appendix that the user owns it can be deleted and shows a delete button.
 
-A run button that brings the case to a whole gathering of 3 replicates and 1 repeat under each of the person's
-configurations as things are now, and leads back to the page as it was. It is disabled while a run of the case is queued
-or under way, and, once How the case fares has read, while nothing is behind that a run mends.
+A run button that saves what is unsaved, as Save does, then brings the case it saved into to a whole gathering of 3
+replicates and 1 repeat under each of the person's configurations as things are now, and leads back to the page as it
+was. It is disabled while a run of the case is queued or under way, and, once How the case fares has read, while nothing
+is behind that a run mends.
 
 ## Gatherings
 
-A case's latest gathering under a configuration is the runs started together with its latest run reaching it
-(`src/chatddx/bench/gathering.py:gatherings`): what How the case fares plots and what Run mends. Under each
-configuration it is either a whole 3+1 as things are now or behind (`src/chatddx/api/standing.py:standing`):
+A gathering is a configuration's runs on some cases in a shape: Review's on a case in 3 replicates and 1 repeat
+(`src/chatddx/factors/gathering.py:REVIEW`). Its latest is the configuration's latest start that could have been made in
+its shape, each run of none but its cases on as many seeds as a seeding holds
+(`src/chatddx/bench/gathering.py:latest_starts`), so that a review and other gatherings don't stand for each other.
+Under each configuration it is either whole in its shape as things are now, in each language its cases are sent in, or
+behind (`src/chatddx/api/standing.py:standing`):
 
 - under way, which Run waits for;
 - out of date, untranslated or refused by the gate, which Run can't mend;
-- no runs, not a whole 3+1, its configuration changed since, or halted, which Run runs again, on the same seeds where it
-  has them;
+- no runs, not whole, its configuration or its cases changed since, or halted, which Run runs again, on the same seeds
+  where it has them;
 - stopped before it finished, which Run resumes;
-- not scored against the expectation as it is, which Run scores again.
+- not scored as things are now, against the expectation as it is for a review, which Run scores again
+  (`src/chatddx/portal/mending.py:mend`).
+
+How the case fares plots each case's latest start whatever its shape (`src/chatddx/bench/gathering.py:gatherings`), so
+other runs reaching a case are plotted there while Review's Run mends the case's 3+1.
 
 ## How the case fares
 

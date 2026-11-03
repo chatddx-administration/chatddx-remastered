@@ -1,4 +1,4 @@
-2026-11-03T15:40:53Z 7533a5e ./dev/check.sh python-tests
+2026-11-03T19:36:09Z 8207d83 ./dev/check.sh python-tests
 • python-tests
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
@@ -7,29 +7,30 @@ configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
 created: 4/4 workers
-4 workers [1185 items]
+4 workers [1192 items]
 
 ........................................................................ [  6%]
 ........................................................................ [ 12%]
 ........................................................................ [ 18%]
 ........................................................................ [ 24%]
 ........................................................................ [ 30%]
-..........................................................sss.ssss...... [ 36%]
-sssssssssssssssssssss................................................... [ 42%]
+....................sssssssssssssssssssssssssssss....................... [ 36%]
+........................................................................ [ 42%]
 ........................................................................ [ 48%]
 ........................................................................ [ 54%]
 ........................................................................ [ 60%]
 ........................................................................ [ 66%]
 ........................................................................ [ 72%]
 ........................................................................ [ 78%]
-........................................................................ [ 85%]
-........................................................................ [ 91%]
-........................................................................ [ 97%]
-.................................                                        [100%]
+........................................................................ [ 84%]
+........................................................................ [ 90%]
+........................................................................ [ 96%]
+........................................                                 [100%]
 ================================= slow budget ==================================
-248.9 s in 1157 tests; slow from 0.209 s on
-the quick run takes 25.7 s of it, 10%
-set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 1.4 s, curated 2.8 s, plan 0.7 s, described 0.7 s, loaded 1.3 s, ran 3.4 s, sampled 5.4 s, pytestconfig 0.0 s, parsed 0.9 s, each 0.1 s
-waited for, made ahead: db 330.8 s
-mark slow: dev/src/chatddx_dev/index/test/test_frontend.py::test_a_module_s_surface_is_what_it_exports_its_class_s_public_members_among_it (0.679 s)
-================= 1157 passed, 28 skipped in 168.38s (0:02:48) =================
+318.1 s in 1163 tests; slow from 0.259 s on
+the quick run takes 27.8 s of it, 9%
+set up once for many tests: tmp_path_factory 0.0 s, cheap_hashing 0.0 s, shipped_test_tools 0.0 s, unsynced_commits 0.0 s, copies 0.0 s, migrated 1.5 s, curated 2.8 s, plan 0.5 s, described 0.7 s, loaded 1.5 s, ran 3.7 s, sampled 5.6 s, pytestconfig 0.0 s, each 0.1 s, parsed 1.2 s
+waited for, made ahead: db 393.7 s
+unmark: src/chatddx/api/test/test_variations.py::test_a_judge_configuration_is_looked_at_as_a_judge (0.086 s)
+unmark: src/chatddx/bench/test/test_seen.py::test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id (0.082 s)
+================= 1163 passed, 29 skipped in 197.53s (0:03:17) =================

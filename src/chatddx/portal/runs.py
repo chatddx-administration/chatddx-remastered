@@ -1,6 +1,5 @@
 from collections import Counter
-from collections.abc import Generator
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
@@ -21,9 +20,10 @@ from chatddx.factors.response import Part, parts
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.locale import pgettext, pgettext_noop, tr
 from chatddx.runner import Outcome, outcome
-from chatddx.store import Queue, UnderWay
+from chatddx.store import Queue
 
 from .compose import linked
+from .mending import pressed
 from .pages import BenchDep, page
 from .scoring import unit_in
 from .titles import display_case
@@ -187,14 +187,6 @@ def _trial_of(bench: Bench, digest: str) -> tuple[int, str] | None:
         return None
     edit, about = held
     return edit.thread, about.name or bench.title(digest)
-
-
-# Policy: a press made while something is under way for its run, from a second tab, a
-# stale page or a second click, counts as made: the page it leads back to says so.
-@contextmanager
-def pressed() -> Generator[None]:
-    with refused(), suppress(UnderWay):
-        yield
 
 
 @router.post("/runs/{run}/halt")

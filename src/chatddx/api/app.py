@@ -20,7 +20,18 @@ from chatddx.store import UnderWay
 from chatddx.whoops import Whoops
 from chatddx.worker import Worker
 
-from . import families, faring, measuring, people, queue, runs, scores, threads, world
+from . import (
+    breakdown,
+    families,
+    faring,
+    measuring,
+    people,
+    queue,
+    runs,
+    scores,
+    threads,
+    world,
+)
 from .listening import Listener
 from .schemas import EVENTS, Code, Error
 from .state import AppState, Refusing
@@ -153,6 +164,7 @@ def app(
     for module in (
         people,
         threads,
+        breakdown,
         families,
         faring,
         world,

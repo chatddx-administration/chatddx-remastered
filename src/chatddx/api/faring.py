@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request
 
 from chatddx.bench import Bench, NotFound
 from chatddx.factors.base import resolve
+from chatddx.factors.gathering import REVIEW
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import ExpectationSchema, Scorer, Scoring
 from chatddx.factors.select import field as field_of
@@ -15,7 +16,7 @@ from chatddx.scripted.fared import drawn
 
 from . import families as api_families, schemas
 from .people import BenchDep
-from .standing import standing
+from .standing import against, configurations as owned, standing
 from .state import no_store, state
 from .threads import threads
 
@@ -54,7 +55,8 @@ def fared(
         None,
     )
     marked = expected is not None and expected.expectation is not None
-    stood = standing(bench, case, expectation_schema, marked)
+    left = against(bench, expectation_schema, marked)
+    stood = standing(bench, owned(bench), [case], REVIEW, left)
     configurations = [s.configuration for s in stood]
     metrics = _metrics(bench, expectation_schema)
     cases = [

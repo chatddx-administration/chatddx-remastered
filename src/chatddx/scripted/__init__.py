@@ -1,3 +1,4 @@
+from .composed import Composed, composed
 from .fakes import fake_at
 from .read import ScriptedRun, load, scripted_runs
 from .review import Reviewed, review
@@ -7,8 +8,10 @@ RUNS = "_runs"
 
 __all__ = [
     "RUNS",
+    "Composed",
     "Reviewed",
     "ScriptedRun",
+    "composed",
     "fake_at",
     "load",
     "ran_before",
