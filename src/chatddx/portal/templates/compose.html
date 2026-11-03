@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% from "macros.html" import named, pane, updating with context %}
 
+{% macro forks(listed) %}
+{% for f in listed %}
+<li><a href="/compose/{{ f.thread.id }}"{% if f.thread.id == configuration.id %} aria-current="page"{% endif %} class="block truncate px-2 py-1">{{ named(f.thread) }}</a>
+  {% if f.forks %}<ol class="ml-3.5 border-l border-border pl-1" aria-label="{{ _('Forked from %(name)s', name=named(f.thread)) }}">{{ forks(f.forks) }}</ol>{% endif %}
+</li>
+{% endfor %}
+{% endmacro %}
+
 {% block title %}{{ _("Compose") ~ " · " ~ named(configuration) if configuration else _("Compose") }} · ChatDDX{% endblock %}
 {% block main %}
 {% if not configuration %}
@@ -9,17 +17,15 @@
 </div>
 {% else %}
 {% set here = "/compose/" ~ configuration.id %}
-<div class="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 pb-4 sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[auto_minmax(0,1fr)]">
+<div data-slides data-compose class="grid gap-4 px-4 pb-4 max-xl:grid-cols-[minmax(0,1fr)] sm:px-6 xl:h-[calc(100dvh-5rem)] xl:grid-rows-[minmax(0,1fr)] xl:overflow-x-clip">
 
-  {% call pane(_("Configurations")) %}
-  <nav class="xl:w-72" aria-label="{{ _('Configurations') }}">
+  <section aria-label="{{ _('Configurations') }}" data-slide-out class="pane relative min-h-0 rounded-2xl p-4 max-xl:max-h-[45dvh] max-xl:overflow-y-auto xl:overflow-y-auto">
+  <nav aria-label="{{ _('Configurations') }}">
     <ul class="space-y-0.5 text-sm">
-      {% for c in configurations %}
-      <li><a href="/compose/{{ c.id }}"{% if c.id == configuration.id %} aria-current="page"{% endif %} class="block truncate px-2 py-1">{{ named(c) }}</a></li>
-      {% endfor %}
+      {{ forks(configurations) }}
     </ul>
   </nav>
-  {% endcall %}
+  </section>
 
   {% call pane(_("The configuration")) %}
   <header class="mb-4">
@@ -47,6 +53,8 @@
 
   {% endcall %}
 
+  <section id="compose-preview" data-slide-in aria-label="{{ _('What it sends') }}" class="pane relative min-h-0 overflow-hidden rounded-2xl xl:col-start-3 xl:row-start-1" inert>
+  </section>
 </div>
 {% endif %}
 {% endblock %}

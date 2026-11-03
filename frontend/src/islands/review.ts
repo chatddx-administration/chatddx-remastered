@@ -85,7 +85,7 @@ if (held) {
   const moved = (field: string | null, pushed = true): void => {
     if (!grid || !measuring) return;
     measure.field = field;
-    grid.toggleAttribute("data-measuring", field !== null);
+    grid.toggleAttribute("data-slid", field !== null);
     measuring.inert = field === null;
     if (pushed) history.pushState(history.state, "", measuredAt(location.href, field));
     if (field !== null && !matchMedia("(width >= 80rem)").matches) {

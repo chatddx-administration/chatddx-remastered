@@ -23,6 +23,8 @@ def kept(
     thread: int | None,
     name: str | None,
     head: int | None = None,
+    *,
+    forked: bool = True,
 ) -> Written:
     skeleton = seen.skeleton(variation)
     with seen.conn.transaction():
@@ -35,7 +37,7 @@ def kept(
             thread,
             name=name,
             compilation=compilation,
-            forked_from=variation.configuration.id,
+            forked_from=variation.configuration.id if forked else None,
             head=head,
         )
     return Written(edit, SAVED[kept], linted(seen, skeleton.digest))

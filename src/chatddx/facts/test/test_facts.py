@@ -7,13 +7,13 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel, RemoteEngine
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
+    CompiledContract,
+    CompiledText,
     Message,
     NativeOutput,
-    OutputContract,
     Sampling,
     Skeleton,
     Slot,
-    TextOutput,
 )
 from chatddx.factors.test.sample import SHA, local_engine, remote_engine, world
 from chatddx.factors.trial import Trial
@@ -183,7 +183,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
         "json_schema": {"name": "output", "schema": {"type": "object"}},
     }
 
-    def skeleton(contract: OutputContract, **body: JsonValue) -> str:
+    def skeleton(contract: CompiledContract, **body: JsonValue) -> str:
         return reg.add(Skeleton(messages=(user,), body=body, contract=contract))
 
     def findings(skeleton: str, engine: str) -> dict[str, str]:
@@ -206,15 +206,15 @@ def test_facts_check_pairs(facts: Facts) -> None:
     )
     assert {f.level for f in lint(reg, [trial])} == {"info"}
 
-    effort = skeleton(TextOutput(), reasoning_effort="low")
+    effort = skeleton(CompiledText(), reasoning_effort="low")
     assert findings(effort, qwen) == {"facts.reasoning_unmatched": "warning"}
     gpt_oss = engine(GPT_OSS_MODEL, "--reasoning-parser", "openai_gptoss")
     assert findings(effort, gpt_oss) == {}
-    assert findings(skeleton(TextOutput(), reasoning_effort="none"), gpt_oss) == {
+    assert findings(skeleton(CompiledText(), reasoning_effort="none"), gpt_oss) == {
         "facts.reasoning_unmatched": "warning"
     }
     assert findings(
-        skeleton(TextOutput(), reasoning_effort="high", thinking_token_budget=512),
+        skeleton(CompiledText(), reasoning_effort="high", thinking_token_budget=512),
         gpt_oss,
     ) == {"facts.budget_refused": "warning"}
     assert findings(native, gpt_oss) == {"facts.output_note": "info"}
@@ -235,7 +235,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
     ]
 
     unknown = engine("someone/unknown")
-    assert findings(skeleton(TextOutput()), unknown) == {"facts.missing": "info"}
+    assert findings(skeleton(CompiledText()), unknown) == {"facts.missing": "info"}
     remote = reg.add(remote_engine(reg, GPT_OSS_MODEL))
     assert findings(effort, remote) == {}
 
@@ -247,7 +247,9 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
 
     def findings(engine_model: str, **body: JsonValue) -> dict[str, str]:
         engine = reg.add(remote_engine(reg, engine_model))
-        skeleton = reg.add(Skeleton(messages=(user,), body=body, contract=TextOutput()))
+        skeleton = reg.add(
+            Skeleton(messages=(user,), body=body, contract=CompiledText())
+        )
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )

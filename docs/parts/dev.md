@@ -44,15 +44,15 @@ Each area's lint, then its tests:
 
 The built app in a browser:
 
-- `./dev/check.sh browser` ~140s, `pnpm --dir frontend build`, then `pytest -m browser`.
+- `./dev/check.sh browser` ~93s, `pnpm --dir frontend build`, then `pytest -m browser`.
 
 ### Narrower runs
 
 - `pytest` runs every test but the browser tests ~220s.
 - `pytest -m 'not slow'` leaves out the slowest tests, 7/8 of the time, ~43s.
 - `pytest -n 4` on 4 workers, fast when nothing else runs, ~160s.
-- `pytest -m browser` the browser tests, after `pnpm --dir frontend build` if the frontend changed, ~140s.
-- `pnpm --dir frontend test` the frontend's tests ~3.1s.
+- `pytest -m browser` the browser tests, after `pnpm --dir frontend build` if the frontend changed, ~88s.
+- `pnpm --dir frontend test` the frontend's tests ~2s.
 - `bats dev/test` the tests of `dev/`'s scripts.
 
 ## Write

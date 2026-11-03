@@ -45,6 +45,8 @@ from chatddx.factors.request import (
     OUTPUT_KEYS,
     AppendixLayout,
     Compilation,
+    CompiledContract,
+    CompiledText,
     Example,
     FewShot,
     Insert,
@@ -52,11 +54,11 @@ from chatddx.factors.request import (
     Message,
     NativeOutput,
     Output,
-    OutputContract,
     Passthrough,
     Prompt,
     Reasoning,
     Recipe,
+    Run,
     Sampling,
     Segment,
     Skeleton,
@@ -72,6 +74,7 @@ from chatddx.factors.request import (
     next_request,
     remapped,
     texts,
+    traced,
     translated,
     untranslated,
 )
@@ -270,7 +273,7 @@ def test_greedy_drops_sampling_noise() -> None:
     skeleton = Skeleton(
         messages=(Message(role="user", content=(Slot(slot="vignette"),)),),
         body={"temperature": 0, "min_p": 0.1},
-        contract=TextOutput(),
+        contract=CompiledText(),
     )
     assert "min_p" not in skeleton.body
     body = skeleton.render(model="m", seed=42, fills={"vignette": "x"})
@@ -280,7 +283,7 @@ def test_greedy_drops_sampling_noise() -> None:
 def test_a_slot_without_a_fill_is_named() -> None:
     skeleton = Skeleton(
         messages=(Message(role="user", content=(Slot(slot="vignette"),)),),
-        contract=TextOutput(),
+        contract=CompiledText(),
     )
     with pytest.raises(StructuralError, match=r"no fill for slots \['vignette'\]"):
         _ = skeleton.render(model="m", seed=None, fills={"appendices": ""})
@@ -386,8 +389,10 @@ def test_outputs_show_their_schema(reg: Registry) -> None:
 
 def test_schema_inserts_are_checked() -> None:
     schema: dict[str, JsonValue] = {"type": "object"}
-    with pytest.raises(ValidationError, match="goes in json_schema"):
-        _ = Output(contract=TextOutput(json_schema=schema))
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        _ = Output.model_validate(
+            {"contract": {"kind": "text", "json_schema": schema}, "json_schema": schema}
+        )
     with pytest.raises(ValidationError, match="native contracts need json_schema"):
         _ = Output(contract=NativeOutput())
     with pytest.raises(ValidationError, match="only an output with a schema"):
@@ -460,6 +465,71 @@ def test_output_guidance_goes_where_it_is_inserted(reg: Registry) -> None:
 
     with pytest.raises(StructuralError, match="both the instructions and the prompt"):
         _ = system_and_user(first, last, guided)
+
+
+def test_a_traced_request_says_where_each_run_of_text_came_from(reg: Registry) -> None:
+    schema: dict[str, JsonValue] = {"type": "object", "description": "The answer"}
+    recipe = Recipe(
+        model=local_engine(reg).model,
+        instructions=reg.add(Instructions(text="Be terse.")),
+        prompt=reg.add(
+            Prompt(
+                segments=(
+                    "Case: ",
+                    Slot(slot="vignette"),
+                    Insert(insert="output_guidance", before="\n\n"),
+                )
+            )
+        ),
+        output=reg.add(
+            Output(
+                contract=NativeOutput(),
+                json_schema=schema,
+                guidance=("Answer as ", Insert(insert="schema")),
+            )
+        ),
+        sampling=reg.add(Sampling()),
+        translations=reg.add(
+            Translations(
+                into={"sv": {"Be terse.": "Var kortfattad.", "Case: ": "Fall: "}}
+            )
+        ),
+    )
+    whole = traced(recipe, reg.get)
+    assert whole.skeleton == compile_request(recipe, reg.get)
+    system, user = whole.messages
+    assert [(r.text, r.origin) for r in system.runs if isinstance(r, Run)] == [
+        ("Be terse.", "instructions")
+    ]
+    shown = json.dumps(schema, indent=2, ensure_ascii=False)
+    assert [(r.text, r.origin) if isinstance(r, Run) else r for r in user.runs] == [
+        ("Case: ", "prompt"),
+        Slot(slot="vignette"),
+        ("\n\n", "prompt"),
+        ("Answer as ", "output_guidance"),
+        (shown, "output_schema"),
+    ]
+    assert whole.appendix_layout[1] == Run(text="\n\n", origin="appendix_layout")
+
+    with pytest.raises(StructuralError, match="no translation into sv"):
+        _ = traced(recipe, reg.get, into="sv")
+    partly = traced(recipe, reg.get, into="sv", partly=True)
+    marked = [
+        (r.text, r.untranslated)
+        for m in partly.messages
+        for r in m.runs
+        if isinstance(r, Run)
+    ]
+    assert marked == [
+        ("Var kortfattad.", False),
+        ("Fall: ", False),
+        ("\n\n", False),
+        ("Answer as ", True),
+        (shown, True),
+    ]
+    assert traced(recipe, reg.get, into="de", partly=True).messages[0].runs[0] == Run(
+        text="Be terse.", origin="instructions", untranslated=True
+    )
 
 
 def test_inserts_are_checked_per_chunk() -> None:
@@ -581,10 +651,10 @@ def test_passthrough_keeps_to_engine_extras(reg: Registry) -> None:
 def test_skeleton_structure_is_enforced() -> None:
     user = Message(role="user", content=(Slot(slot="vignette"),))
     with pytest.raises(ValidationError, match="may not set"):
-        _ = Skeleton(messages=(user,), body={"seed": 1}, contract=TextOutput())
+        _ = Skeleton(messages=(user,), body={"seed": 1}, contract=CompiledText())
     with pytest.raises(ValidationError, match=r"need slots vignette\b"):
         _ = Skeleton(
-            messages=(Message(role="user", content=("hi",)),), contract=TextOutput()
+            messages=(Message(role="user", content=("hi",)),), contract=CompiledText()
         )
     with pytest.raises(ValidationError, match="cannot use slots"):
         _ = Skeleton(
@@ -594,7 +664,7 @@ def test_skeleton_structure_is_enforced() -> None:
                     content=(Slot(slot="vignette"), Slot(slot="completion")),
                 ),
             ),
-            contract=TextOutput(),
+            contract=CompiledText(),
         )
     with pytest.raises(ValidationError, match="native contract"):
         _ = Skeleton(messages=(user,), contract=NativeOutput())
@@ -1343,7 +1413,7 @@ def test_lint(reg: Registry) -> None:
         Skeleton(
             messages=(Message(role="user", content=(Slot(slot="vignette"),)),),
             body={"temperature": 0.005},
-            contract=TextOutput(),
+            contract=CompiledText(),
         )
     )
     trial = reg.add(
@@ -1520,7 +1590,7 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
         "json_schema": {"name": "output", "schema": schema},
     }
 
-    def skeleton(contract: OutputContract, **body: JsonValue) -> str:
+    def skeleton(contract: CompiledContract, **body: JsonValue) -> str:
         return reg.add(Skeleton(messages=(user,), body=body, contract=contract))
 
     native = skeleton(NativeOutput(), response_format=response_format)
@@ -1539,7 +1609,7 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
         tools=[{"type": "function", "function": {"name": "f", "parameters": schema}}],
         tool_choice={"type": "function", "function": {"name": "f"}},
     )
-    budget = skeleton(TextOutput(), thinking_token_budget=512)
+    budget = skeleton(CompiledText(), thinking_token_budget=512)
 
     def findings(skeleton: str, engine: str) -> dict[str, str]:
         trial = reg.add(

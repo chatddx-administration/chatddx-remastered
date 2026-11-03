@@ -58,11 +58,28 @@ def test_compose_lists_the_configurations_review_runs_a_case_under(
         params={"kind": "configuration", "purpose": "generation", "owner": "alice"},
     ).json()
     names = sorted(t["name"] or t["title"] for t in listed)
-    listing = page.split('<nav class="xl:w-72"', 1)[1].split("</nav>", 1)[0]
+    listing = page.split('<nav aria-label="Configurations"', 1)[1].split("</nav>", 1)[0]
     assert re.findall(r'href="/compose/\d+"[^>]*>([^<]*)</a>', listing) == names
     assert "<details" not in page
     assert f'href="/compose/{mine["id"]}" aria-current="page"' in page
     assert 'aria-label="How they fare"' not in page
+
+
+def test_compose_lists_a_fork_under_what_it_was_forked_from(
+    signed: TestClient,
+) -> None:
+    mine = thread(signed, "configuration", LINES_INSTRUCTED)
+    saves = f"/api/threads/{mine['id']}/saves"
+    base: dict[str, JsonValue] = {"head": mine["head"]["id"], "chunks": {}}
+    fork = signed.post(saves, json={**base, "name": "a fork"}).json()
+    alone = signed.post(saves, json={**base, "name": "alone", "independent": True})
+    assert alone.status_code == 201, alone.json()
+    page = shown(signed, f"/compose/{mine['id']}")
+    under = page.split(f'aria-label="Forked from {LINES_INSTRUCTED}"', 1)[1]
+    under = under.split("</ol>", 1)[0]
+    assert f'href="/compose/{fork["id"]}"' in under
+    assert f'href="/compose/{alone.json()["id"]}"' not in under
+    assert f'href="/compose/{alone.json()["id"]}"' in page
 
 
 @pytest.mark.slow

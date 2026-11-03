@@ -1129,6 +1129,7 @@ Raises:
 
 * `head: int = Field(description="the edit the change was made on")`
 * `name: str | None = Field(…)`
+* `independent: bool = Field(…)`
 * `chunks: Drafted = Field(default_factory=dict)`
 * `model: ModelDigest = None`
 * `translations: Into | None = Field(…)`
@@ -1265,6 +1266,39 @@ Raises:
 * `_: BenchDep`
 * `given: schemas.Picking`
 * ∟`list[schemas.Picked]`
+
+## `Preview` `(_Schema)`
+`src/chatddx/api/schemas.py:Preview`
+
+* `head: int | None = Field(…)`
+* `chunks: Drafted = Field(default_factory=dict)`
+* `model: ModelDigest = None`
+* `translations: Into | None = Field(…)`
+* `language: str | None = Field(…)`
+
+## `preview` `@router.post("/threads/{thread}/previews")`
+`src/chatddx/api/threads.py:preview`
+
+The request a configuration would send with the chunks, model and
+translations drafted, writing nothing.
+
+* `bench: BenchDep`
+* `thread: int`
+* `given: schemas.Preview`
+* ∟`schemas.Previewed`
+
+## `Previewed` `(_Schema)`
+`src/chatddx/api/schemas.py:Previewed`
+
+* `messages: list[PreviewMessage] = Field(…)`
+* `request: dict[str, JsonValue] = Field(…)`
+* `contract: dict[str, JsonValue] = Field(description="how the answer is held")`
+
+## `PreviewMessage` `(_Schema)`
+`src/chatddx/api/schemas.py:PreviewMessage`
+
+* `role: str`
+* `runs: list[Stretch]`
 
 ## `Proposal` `(_Schema)`
 `src/chatddx/api/schemas.py:Proposal`
@@ -1562,7 +1596,7 @@ Raises:
 `src/chatddx/api/threads.py:save`
 
 Saves a configuration with the chunks given in place of its own, each written
-to its own thread first, as a version of it or, named, a fork.
+to its own thread first, as a version of it or, named, a fork or one of its own.
 
 * `request: Request`
 * `response: Response`
@@ -1873,6 +1907,15 @@ Raises:
 `src/chatddx/api/runs.py:STREAM`
 
 `STREAM = "text/event-stream"`
+
+## `Stretch` `(_Schema)`
+`src/chatddx/api/schemas.py:Stretch`
+
+* `text: str | None = Field(…)`
+* `origin: str | None = Field(default=None, description="the part the text came from")`
+* `untranslated: bool = Field(…)`
+* `slot: str | None = None`
+* `appendix: int | None = Field(…)`
 
 ## `take` `@router.post("/threads/{thread}/takes", …)`
 `src/chatddx/api/threads.py:take`

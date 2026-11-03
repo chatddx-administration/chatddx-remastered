@@ -21,6 +21,7 @@ from chatddx.factors.engine import (
     Runtime,
 )
 from chatddx.factors.request import (
+    CompiledText,
     Instructions,
     Message,
     NativeOutput,
@@ -31,7 +32,6 @@ from chatddx.factors.request import (
     Sampling,
     Skeleton,
     Slot,
-    TextOutput,
     compile_request,
 )
 from chatddx.factors.scoring import (
@@ -155,7 +155,7 @@ def world(reg: Registry) -> dict[str, str]:
                 Message(role="user", content=("Grade: ", Slot(slot="completion"))),
             ),
             body={"temperature": 0},
-            contract=TextOutput(),
+            contract=CompiledText(),
         )
     )
     model = resolve(reg.get, engine, LocalEngine).model

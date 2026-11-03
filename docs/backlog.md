@@ -577,6 +577,10 @@ Take: the engine says whether it takes token ids, so the choice is a factor a tr
 - **Every engine is asked for the prompt's token ids**.
 - **Tool parameters whose root isn't an object.** OpenAI's API is reported to refuse function parameters whose root
   isn't `type: object`. Unverified; a candidate lint for tools on a remote engine.
+- **The key for the output limit is the sampling's.** `Sampling.max_tokens_key` picks `max_completion_tokens` or
+  `max_tokens`, which the API an engine serves decides, not the experiment; Compose keeps it under Advanced. Its home is
+  the engine, beside `api`: an engine field defaulting to `max_completion_tokens` keeps every engine's digest, and
+  `render` would name the key, but the sampling field can't go without a way to read the chunks that set it.
 
 ### Engine identity: hardware and model files
 

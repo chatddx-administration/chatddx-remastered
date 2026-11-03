@@ -234,13 +234,6 @@ Finds:
 * `into: str | None = None`
 * ∟`Skeleton`
 
-Raises:
-1. `StructuralError`: `"no translations into %(into)s", into=into`
-2. `StructuralError`: `"no translation into %(into)s for %(texts)s", into=into, texts=listed`
-3. `StructuralError`: `"%(prompt)s prompt in a %(recipe)s recipe", prompt=prompt.purpose, recipe=recipe.purpose`
-4. `StructuralError`: `"%(insert)s is inserted in both the instructions and the prompt", insert=name.replace("_", " ")`
-5. `StructuralError`: `"the answer tool %(tool)s has the name of a tool in the toolset", tool=repr(name)`
-
 ## `compiled`
 `src/chatddx/factors/request.py:compiled`
 
@@ -250,6 +243,17 @@ Raises:
 * `facts: ModelFacts | None = None`
 * `into: str | None = None`
 * ∟`tuple[Skeleton, Compilation]`
+
+## `CompiledContract`
+`src/chatddx/factors/request.py:CompiledContract`
+
+`CompiledContract = Annotated[…]`
+
+## `CompiledText` `(Frozen)`
+`src/chatddx/factors/request.py:CompiledText`
+
+* `kind: Literal["text"] = "text"`
+* `json_schema: dict[str, JsonValue] | None = None`
 
 ## `Component` `(Frozen)`
 `src/chatddx/factors/base.py:Component`
@@ -899,6 +903,11 @@ Raises:
 
 `Order = Literal["case_major@1", "replicate_major@1", "shuffled@1"]`
 
+## `Origin`
+`src/chatddx/factors/request.py:Origin`
+
+`Origin = Literal[…]`
+
 ## `Output` `(Component)`
 `src/chatddx/factors/request.py:Output`
 
@@ -909,12 +918,11 @@ Raises:
 * `schema_ops: Annotated[tuple[SchemaOp, ...], AfterValidator(distinct)] = ()`
 
 Raises:
-1. `Invalid`: `"an output's schema goes in json_schema, not its contract"` (through `Output._schema_placement`, in a `ValidationError`)
-2. `Invalid`: `"%(contract)s contracts need json_schema", contract=self.contract.kind` (through `Output._schema_placement`, in a `ValidationError`)
-3. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
-4. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
-5. `Invalid`: `"only an output with a schema can show it"` (through `Output._inserts`, in a `ValidationError`)
-6. `Invalid`: `"schema ops need a schema"` (through `Output._schema_ops`, in a `ValidationError`)
+1. `Invalid`: `"%(contract)s contracts need json_schema", contract=self.contract.kind` (through `Output._schema_placement`, in a `ValidationError`)
+2. `Invalid`: `"%(kind)s cannot use inserts %(inserts)s", kind=kind, inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
+3. `Invalid`: `"inserts used more than once: %(inserts)s", inserts=inserts` (through `Output._inserts`, in a `ValidationError`)
+4. `Invalid`: `"only an output with a schema can show it"` (through `Output._inserts`, in a `ValidationError`)
+5. `Invalid`: `"schema ops need a schema"` (through `Output._schema_ops`, in a `ValidationError`)
 
 ## `Output.guidance_text`
 `src/chatddx/factors/request.py:Output.guidance_text`
@@ -1315,6 +1323,13 @@ Raises:
 
 `Resolver = Callable[[str], "Component"]`
 
+## `Run` `(Frozen)`
+`src/chatddx/factors/request.py:Run`
+
+* `text: str`
+* `origin: Origin`
+* `untranslated: bool = False`
+
 ## `Runtime` `(Frozen)`
 `src/chatddx/factors/engine.py:Runtime`
 
@@ -1495,7 +1510,7 @@ Raises:
 * `api: Api = "chat.completions"`
 * `messages: tuple[Message, ...] = Field(min_length=1)`
 * `body: Settings = Field(default_factory=dict)`
-* `contract: OutputContract`
+* `contract: CompiledContract`
 * `appendix_layout: AppendixLayout = AppendixLayout()`
 * `tools: tuple[ToolRef, ...] = ()`
 * `max_rounds: int | None = Field(default=None, ge=1)`
@@ -1613,7 +1628,6 @@ Raises:
 `src/chatddx/factors/request.py:TextOutput`
 
 * `kind: Literal["text"] = "text"`
-* `json_schema: dict[str, JsonValue] | None = None`
 
 ## `texts`
 `src/chatddx/factors/request.py:texts`
@@ -1681,6 +1695,43 @@ Raises:
 
 * `get: Resolver`
 * ∟`list[str]`
+
+## `Traced` `(NamedTuple)`
+`src/chatddx/factors/request.py:Traced`
+
+* `skeleton: Skeleton`
+* `messages: tuple[TracedMessage, ...]`
+* `appendix_layout: tuple[Run, Run, Run]`
+
+## `traced`
+`src/chatddx/factors/request.py:traced`
+
+The request a recipe compiles to, with each message as the runs of text it is
+made of, marked with the part each came from, and the appendix layout's runs.
+`partly` compiles into a language whose translations are missing some texts, the
+texts as they are in their place, marked untranslated: its skeleton is no
+recipe's to run. Resolves the recipe's chunks and tools.
+
+* `recipe: Recipe`
+* `get: Resolver`
+* `facts: ModelFacts | None = None`
+* `into: str | None = None`
+* `*`
+* `partly: bool = False`
+* ∟`Traced`
+
+Raises:
+1. `StructuralError`: `"no translations into %(into)s", into=into`
+2. `StructuralError`: `"no translation into %(into)s for %(texts)s", into=into, texts=listed`
+3. `StructuralError`: `"%(prompt)s prompt in a %(recipe)s recipe", prompt=prompt.purpose, recipe=recipe.purpose`
+4. `StructuralError`: `"%(insert)s is inserted in both the instructions and the prompt", insert=name.replace("_", " ")`
+5. `StructuralError`: `"the answer tool %(tool)s has the name of a tool in the toolset", tool=repr(name)`
+
+## `TracedMessage` `(Frozen)`
+`src/chatddx/factors/request.py:TracedMessage`
+
+* `role: Literal["system", "developer", "user", "assistant"]`
+* `runs: tuple[Run | Slot, ...]`
 
 ## `translated`
 `src/chatddx/factors/request.py:translated`

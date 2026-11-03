@@ -104,3 +104,74 @@ def test_translations_follow_the_texts_changed_in_place_when_saved(
     assert held(signed, after["translations"])["into"] == drafted["translations"]
     assert language is not None
     assert signed.get(f"/api/threads/{mine['id']}").json()["language"] == language
+
+
+def test_a_preview_is_the_request_drafted_as_far_as_it_is_translated(
+    signed: TestClient,
+) -> None:
+    mine = thread(signed, "configuration", LINES_GUIDED)
+    parts = recipe(signed, mine)
+    instructions = held(signed, parts["instructions"])
+    old, *rest = instructions["text"]
+    new = old.replace("Read the case", "Read the case closely")
+    edited = {**instructions, "text": [new, *rest]}
+    into = held(signed, parts["translations"])["into"]
+    previews = f"/api/threads/{mine['id']}/previews"
+
+    got = signed.post(previews, json={"chunks": {"instructions": edited}})
+    assert got.status_code == 200, got.json()
+    shown = got.json()
+    system, *_, user = shown["messages"]
+    assert system["runs"][0] == {
+        "text": new,
+        "origin": "instructions",
+        "untranslated": False,
+        "slot": None,
+        "appendix": None,
+    }
+    assert [r["appendix"] for r in user["runs"] if r["appendix"]] == [1, 2]
+    assert {"slot": "vignette"}.items() <= next(
+        r for r in user["runs"] if r["slot"]
+    ).items()
+    sent = shown["request"]["messages"]
+    assert sent[0]["content"].startswith(new)
+    assert "‹appendix 1›" in sent[-1]["content"] and "seed" not in shown["request"]
+
+    swedish = signed.post(
+        previews,
+        json={
+            "chunks": {"instructions": edited},
+            "translations": into,
+            "language": "sv",
+        },
+    ).json()
+    first = swedish["messages"][0]["runs"][0]
+    assert (first["text"], first["untranslated"]) == (new, True)
+    kept = signed.post(previews, json={"translations": into, "language": "sv"}).json()
+    first = kept["messages"][0]["runs"][0]
+    assert (first["text"], first["untranslated"]) == (into["sv"][old], False)
+    saved = signed.post(previews, json={"language": "sv"}).json()
+    assert saved["messages"] == kept["messages"]
+    bare = signed.post(previews, json={"translations": {}, "language": "sv"}).json()
+    assert bare["messages"][0]["runs"][0]["untranslated"]
+
+
+@pytest.mark.slow
+def test_a_configuration_saved_independent_is_forked_from_nothing(
+    signed: TestClient,
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    parts = recipe(signed, mine)
+    changed = {**held(signed, parts["sampling"]), "temperature": 0.42}
+    saves = f"/api/threads/{mine['id']}/saves"
+    given = {"head": mine["head"]["id"], "chunks": {"sampling": changed}}
+    forked = signed.post(saves, json={**given, "name": "warmer"}).json()
+    alone = signed.post(saves, json={**given, "name": "alone", "independent": True})
+    assert alone.status_code == 201, alone.json()
+    detail = signed.get(f"/api/threads/{alone.json()['id']}").json()
+    assert detail["forked_from"] is None
+    assert signed.get(f"/api/threads/{forked['id']}").json()["forked_from"] is not None
+    named = holders(signed, "sampling", recipe(signed, alone.json())["sampling"])
+    assert "alone sampling" in [s["name"] for s in named]
+    nameless = signed.post(saves, json={**given, "independent": True})
+    assert nameless.status_code == 422

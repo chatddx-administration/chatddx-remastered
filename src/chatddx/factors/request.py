@@ -226,11 +226,20 @@ class ToolOutput(Frozen):
 
 class TextOutput(Frozen):
     kind: Literal["text"] = "text"
-    json_schema: dict[str, JsonValue] | None = None
 
 
 OutputContract = Annotated[
     NativeOutput | ToolOutput | TextOutput, Field(discriminator="kind")
+]
+
+
+class CompiledText(Frozen):
+    kind: Literal["text"] = "text"
+    json_schema: dict[str, JsonValue] | None = None
+
+
+CompiledContract = Annotated[
+    NativeOutput | ToolOutput | CompiledText, Field(discriminator="kind")
 ]
 
 
@@ -284,12 +293,7 @@ class Output(Component):
 
     @model_validator(mode="after")
     def _schema_placement(self) -> "Output":
-        if isinstance(self.contract, TextOutput):
-            if self.contract.json_schema is not None:
-                raise Invalid.of(
-                    "an output's schema goes in json_schema, not its contract"
-                )
-        elif self.json_schema is None:
+        if not isinstance(self.contract, TextOutput) and self.json_schema is None:
             raise Invalid.of(
                 "%(contract)s contracts need json_schema", contract=self.contract.kind
             )
@@ -509,7 +513,7 @@ class Skeleton(Component):
     api: Api = "chat.completions"
     messages: tuple[Message, ...] = Field(min_length=1)
     body: Settings = Field(default_factory=dict)
-    contract: OutputContract
+    contract: CompiledContract
     appendix_layout: AppendixLayout = AppendixLayout()
     tools: tuple[ToolRef, ...] = ()
     max_rounds: int | None = Field(default=None, ge=1)
@@ -566,16 +570,16 @@ class Skeleton(Component):
                     raise ValueError(
                         f"tool contract needs its tool described as {description!r}"
                     )
-            case TextOutput() if self.tools:
+            case CompiledText() if self.tools:
                 if keys != {"tools", "tool_choice"} or choice != "auto":
                     raise ValueError(
                         "text contract with tools needs tools and tool_choice auto"
                     )
-            case TextOutput():
+            case CompiledText():
                 if keys:
                     raise ValueError("text contract may not constrain the output")
         match self.contract, self.output_schema:
-            case (TextOutput(), _) | (_, dict()):
+            case (CompiledText(), _) | (_, dict()):
                 pass
             case _:
                 raise ValueError(
@@ -608,7 +612,7 @@ class Skeleton(Component):
             case ToolOutput(name=name):
                 function = _tool_function(self.body, name)
                 return None if function is None else function.get("parameters")
-            case TextOutput(json_schema=schema):
+            case CompiledText(json_schema=schema):
                 return schema
 
     def render(
@@ -985,24 +989,123 @@ def landings(
     return landed, followed
 
 
+Origin = Literal[
+    "instructions",
+    "few_shot",
+    "prompt",
+    "output_guidance",
+    "output_schema",
+    "tool_guidance",
+    "appendix_layout",
+    "joining",
+]
+
+
+class Run(Frozen):
+    text: str
+    origin: Origin
+    untranslated: bool = False
+
+
+class TracedMessage(Frozen):
+    role: Literal["system", "developer", "user", "assistant"]
+    runs: tuple[Run | Slot, ...]
+
+
+class Traced(NamedTuple):
+    skeleton: Skeleton
+    messages: tuple[TracedMessage, ...]
+    appendix_layout: tuple[Run, Run, Run]
+
+
+class _Tracer(NamedTuple):
+    entries: Mapping[str, str] | None
+
+    def tr(self, text: str) -> str:
+        return text if self.entries is None else self.entries.get(text, text)
+
+    def missing(self, text: str) -> bool:
+        return (
+            self.entries is not None and bool(text.strip()) and text not in self.entries
+        )
+
+    def run(self, text: str, origin: Origin) -> Run:
+        return Run(
+            text=_tr(text, self.tr), origin=origin, untranslated=self.missing(text)
+        )
+
+    def said(self, text: str, origin: Origin) -> list[Run]:
+        run = self.run(text, origin)
+        return [run] if run.text else []
+
+    def segments(
+        self,
+        segments: Iterable[Segment | Insert],
+        origin: Origin,
+        fills: Mapping[InsertName, Sequence[Run]],
+    ) -> list[Run | Slot]:
+        runs: list[Run | Slot] = []
+        for s in segments:
+            match s:
+                case str():
+                    runs += self.said(s, origin)
+                case Slot():
+                    runs.append(s)
+                case Insert(insert=name, before=before, after=after):
+                    if filled := fills[name]:
+                        runs += [
+                            *self.said(before, origin),
+                            *filled,
+                            *self.said(after, origin),
+                        ]
+        return runs
+
+
+def _joined(runs: Iterable[Run | Slot]) -> str:
+    return "".join(r.text for r in runs if isinstance(r, Run))
+
+
+def _content(runs: Iterable[Run | Slot]) -> tuple[Segment, ...]:
+    return _merged(r.text if isinstance(r, Run) else r for r in runs)
+
+
 def compile_request(
     recipe: Recipe,
     get: Resolver,
     facts: ModelFacts | None = None,
     into: str | None = None,
 ) -> Skeleton:
+    return traced(recipe, get, facts, into).skeleton
+
+
+def traced(
+    recipe: Recipe,
+    get: Resolver,
+    facts: ModelFacts | None = None,
+    into: str | None = None,
+    *,
+    partly: bool = False,
+) -> Traced:
+    """The request a recipe compiles to, with each message as the runs of text it is
+    made of, marked with the part each came from, and the appendix layout's runs.
+    `partly` compiles into a language whose translations are missing some texts, the
+    texts as they are in their place, marked untranslated: its skeleton is no
+    recipe's to run. Resolves the recipe's chunks and tools."""
     landed, followed = landings(recipe, get, facts)
-    entries: dict[str, str] = {}
+    entries: dict[str, str] | None = None
     if into is not None:
-        if into not in (held := translated(recipe, get)):
+        held = translated(recipe, get)
+        if into not in held and not partly:
             raise StructuralError.of("no translations into %(into)s", into=into)
-        if missing := untranslated(recipe, get, into):
+        if not partly and (missing := untranslated(recipe, get, into)):
             listed = ", ".join(repr(t) for t in missing)
             raise StructuralError.of(
                 "no translation into %(into)s for %(texts)s", into=into, texts=listed
             )
-        entries = held[into]
-    parts = _parts(recipe, get, lambda text: entries.get(text, text))
+        entries = held.get(into, {})
+    tracer = _Tracer(entries)
+    parts = _parts(recipe, get, tracer.tr)
+    source = _parts(recipe, get, lambda text: text)
     prompt, output = parts.prompt, parts.output
     sampling = resolve(get, recipe.sampling, Sampling)
     if prompt.purpose != recipe.purpose:
@@ -1013,19 +1116,47 @@ def compile_request(
         )
 
     toolset = parts.toolset
-    fills: dict[InsertName, str] = {
-        "output_guidance": output.guidance_text(),
-        "tool_guidance": "" if toolset is None else toolset.guidance or "",
+    schema: list[Run] = []
+    if (shown := output.output_schema) is not None:
+        prose: list[str] = []
+
+        def kept(text: str) -> str:
+            prose.append(text)
+            return text
+
+        _ = _tr_schema(source.output.json_schema, kept)
+        schema = [
+            Run(
+                text=json.dumps(shown, indent=2, ensure_ascii=False),
+                origin="output_schema",
+                untranslated=any(tracer.missing(t) for t in prose),
+            )
+        ]
+    guidance = source.output.guidance
+    fills: dict[InsertName, list[Run]] = {
+        "output_guidance": []
+        if guidance is None
+        else [
+            r
+            for r in tracer.segments(
+                _segments(guidance), "output_guidance", {"schema": schema}
+            )
+            if isinstance(r, Run)
+        ],
+        "tool_guidance": []
+        if source.toolset is None or source.toolset.guidance is None
+        else tracer.said(source.toolset.guidance, "tool_guidance"),
     }
-    instructions = parts.instructions
+    instructions = source.instructions
     in_prompt = set(_inserts(prompt.segments))
     in_instructions = set(
         [] if instructions is None else _inserts(_segments(instructions.text))
     )
-    system = ""
+    system: list[Run | Slot] = []
     role: Literal["system", "developer"] = "system"
     if instructions is not None:
-        system, role = _fill_text(instructions.text, fills), instructions.role
+        system = tracer.segments(_segments(instructions.text), "instructions", fills)
+        role = instructions.role
     # Policy: guidance goes where it's inserted, or else after the instructions, in this
     # order.
     guidances: tuple[InsertName, ...] = ("output_guidance", "tool_guidance")
@@ -1035,17 +1166,25 @@ def compile_request(
                 "%(insert)s is inserted in both the instructions and the prompt",
                 insert=name.replace("_", " "),
             )
-        if (text := fills[name]) and name not in in_prompt | in_instructions:
-            system = f"{system}\n\n{text}" if system else text
+        if _joined(text := fills[name]) and name not in in_prompt | in_instructions:
+            if _joined(system):
+                system = [*system, Run(text="\n\n", origin="joining"), *text]
+            else:
+                system = list(text)
 
     messages: list[Message] = []
-    if system:
-        messages.append(Message(role=role, content=(system,)))
-    if (few_shot := parts.few_shot) is not None:
-        messages.extend(
-            Message(role=m.role, content=(m.content,)) for m in few_shot.messages
-        )
-    messages.append(Message(role="user", content=_fill(prompt.segments, fills)))
+    runs: list[TracedMessage] = []
+    if _joined(system):
+        messages.append(Message(role=role, content=(_joined(system),)))
+        runs.append(TracedMessage(role=role, runs=tuple(system)))
+    if (few_shot := parts.few_shot) is not None and source.few_shot is not None:
+        for m, was in zip(few_shot.messages, source.few_shot.messages, strict=True):
+            messages.append(Message(role=m.role, content=(m.content,)))
+            said = tracer.said(was.content, "few_shot")
+            runs.append(TracedMessage(role=m.role, runs=tuple(said)))
+    asked = tracer.segments(source.prompt.segments, "prompt", fills)
+    messages.append(Message(role="user", content=_content(asked)))
+    runs.append(TracedMessage(role="user", runs=tuple(asked)))
 
     body: dict[str, JsonValue] = {}
     if recipe.passthrough is not None:
@@ -1080,9 +1219,9 @@ def compile_request(
     ]
     if offered:
         managed["tools"], managed["tool_choice"] = offered, "auto"
-    contract = output.contract
-    match contract:
-        case NativeOutput():
+    compiled: NativeOutput | ToolOutput | CompiledText
+    match output.contract:
+        case NativeOutput() as compiled:
             managed["response_format"] = {
                 "type": "json_schema",
                 "json_schema": {
@@ -1091,7 +1230,7 @@ def compile_request(
                     "schema": output.output_schema,
                 },
             }
-        case ToolOutput(name=name, description=description):
+        case ToolOutput(name=name, description=description) as compiled:
             if name in {t.name for t in parts.tools}:
                 raise StructuralError.of(
                     "the answer tool %(tool)s has the name of a tool in the toolset",
@@ -1108,17 +1247,27 @@ def compile_request(
                 else {"type": "function", "function": {"name": name}}
             )
         case TextOutput():
-            contract = TextOutput(json_schema=output.output_schema)
+            compiled = CompiledText(json_schema=output.output_schema)
     body.update(managed)
 
-    return Skeleton(
+    skeleton = Skeleton(
         purpose=recipe.purpose,
         messages=tuple(messages),
         body=body,
-        contract=contract,
+        contract=compiled,
         appendix_layout=parts.appendix_layout,
         tools=() if toolset is None else toolset.tools,
         max_rounds=None if toolset is None else toolset.max_rounds,
+    )
+    layout = source.appendix_layout
+    return Traced(
+        skeleton,
+        tuple(runs),
+        (
+            tracer.run(layout.before, "appendix_layout"),
+            tracer.run(layout.between, "appendix_layout"),
+            tracer.run(layout.after, "appendix_layout"),
+        ),
     )
 
 

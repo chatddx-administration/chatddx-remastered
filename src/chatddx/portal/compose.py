@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode
 
@@ -7,19 +8,22 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue, ValidationError
 
+from chatddx import catalog
 from chatddx.api import (
     schemas,
     threads as api,
 )
 from chatddx.bench import Bench, Handle, NotFound
-from chatddx.factors.base import Component
+from chatddx.curation.write import ARCHIVE
+from chatddx.factors.base import Component, resolve
+from chatddx.factors.facts import LEVELS, ContractFact, Refusal, Refused
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
     CHUNK_PARTS,
     INSERTS_BY_KIND,
-    OPTIONAL_PARTS,
     SLOTS_BY_PURPOSE,
     Recipe,
+    Toolset,
     texts,
 )
 
@@ -67,10 +71,17 @@ def compose(
         "versions": [v.model_dump(mode="json") for v in versions],
         "head": look.head.id,
         "varied": bool(query.given()),
-        "optional": list(OPTIONAL_PARTS),
         "modelChoices": [
             t.model_dump(mode="json") for t in _choices(bench, "model", models)
         ],
+        "facts": {
+            d: _facts(bench, d)
+            for d in {
+                *(t.head.digest for t in _choices(bench, "model", models)),
+                *([] if recipe is None else [recipe.model]),
+            }
+        },
+        "toolChoices": _tool_choices(bench),
         "drafted": _drafted(
             bench, bench.variation(thread, query.given(), query.head).varied
         ),
@@ -84,7 +95,7 @@ def compose(
         "compose.html",
         person=bench.person,
         configuration=shown,
-        configurations=configurations(bench),
+        configurations=_forks(bench, configurations(bench)),
         versions=versions,
         at=at,
         links=[linked(query, v.id, versions[-1].id) for v in versions],
@@ -100,6 +111,25 @@ def compose(
         props=props,
         island="compose",
     )
+
+
+@dataclass(frozen=True)
+class Forked:
+    thread: schemas.Thread
+    forks: list["Forked"]
+
+
+def _forks(bench: Bench, listed: list[schemas.Thread]) -> list[Forked]:
+    ids = {t.id for t in listed}
+    under: dict[int | None, list[schemas.Thread]] = {}
+    for t in listed:
+        origin = catalog.threads.origin(bench.rows, t.id)
+        under.setdefault(origin if origin in ids else None, []).append(t)
+
+    def grown(t: schemas.Thread) -> Forked:
+        return Forked(t, [grown(f) for f in under.get(t.id, [])])
+
+    return [grown(t) for t in under.get(None, [])]
 
 
 def _varying(request: Request) -> schemas.Varying:
@@ -158,7 +188,72 @@ def _drafted(bench: Bench, recipe: Recipe | None) -> dict[str, Any] | None:
             if f"chunk.{p}" in INSERTS_BY_KIND
         },
         "slots": {p: sorted(s) for p, s in SLOTS_BY_PURPOSE.items()},
+        "tools": _tools(bench, recipe),
     }
+
+
+def _facts(bench: Bench, model: str) -> dict[str, Any] | None:
+    facts = bench.facts.about(model, bench.store.get)
+    if facts is None:
+        return None
+    levels: dict[str, Any] = {}
+    for level in ("default", *LEVELS):
+        try:
+            landed = facts.reasoning.landing(level)
+        except Refused as e:
+            levels[level] = {"refused": str(e)}
+        else:
+            levels[level] = {"lands": landed.level, "nearest": list(landed.nearest)}
+    output: dict[str, Any] = {}
+    for contract in ("native", "tool", "text"):
+        match getattr(facts.output, contract):
+            case Refusal(refused=refused):
+                output[contract] = {"refused": refused}
+            case ContractFact(note=note):
+                output[contract] = {"note": note}
+            case _:
+                output[contract] = {}
+    match facts.reasoning.budget:
+        case Refusal(refused=refused):
+            budget: bool | str = refused
+        case None:
+            budget = False
+        case _:
+            budget = True
+    return {
+        "levels": levels,
+        "recommended": {
+            level: values.model_dump(exclude_none=True)
+            for level, values in facts.sampling.recommended.items()
+        },
+        "output": output,
+        "answers": facts.output.default,
+        "budget": budget,
+    }
+
+
+def _tool_choices(bench: Bench) -> list[dict[str, Any]]:
+    mine = bench.person.login
+    found: dict[str, schemas.Thread] = {}
+    for t in sorted(api.threads(bench, "tool"), key=lambda t: t.owner != mine):
+        if t.owner in {mine, ARCHIVE}:
+            _ = found.setdefault(t.head.digest, t)
+    tools = [(t, bench.store.get(t.head.digest)) for t in found.values()]
+    return [
+        {
+            "digest": t.head.digest,
+            "name": t.name or t.title,
+            "description": getattr(tool, "description", ""),
+        }
+        for t, tool in tools
+    ]
+
+
+def _tools(bench: Bench, recipe: Recipe) -> dict[str, Any]:
+    if recipe.toolset is None:
+        return {}
+    toolset = resolve(bench.store.get, recipe.toolset, Toolset)
+    return {d: bench.store.get(d).model_dump(mode="json") for d in toolset.tools}
 
 
 # Accommodating for the forms, which show a field that is set: a default left out is

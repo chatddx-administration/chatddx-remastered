@@ -122,18 +122,18 @@ Written by `chatddx-dev index` from the comments in `[parts.factors]`'s code in 
 # answer outside the output contract, or put the prompt's text in the stored response.
 ```
 
-## `src/chatddx/factors/request.py:compile_request`
-
-```
-# Policy: guidance goes where it's inserted, or else after the instructions, in this
-# order.
-```
-
 ## `src/chatddx/factors/request.py:SchemaOp`
 
 ```
 # Policy: as with CleanupOp (cases.py), each op name pins one behavior; a changed
 # behavior gets a new name.
+```
+
+## `src/chatddx/factors/request.py:traced`
+
+```
+# Policy: guidance goes where it's inserted, or else after the instructions, in this
+# order.
 ```
 
 ## `src/chatddx/factors/response.py:REASONING`

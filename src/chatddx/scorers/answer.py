@@ -8,7 +8,7 @@ from jsonschema.exceptions import relevance
 from pydantic import JsonValue
 from referencing.exceptions import Unresolvable
 
-from chatddx.factors.request import NativeOutput, Skeleton, TextOutput, ToolOutput
+from chatddx.factors.request import CompiledText, NativeOutput, Skeleton, ToolOutput
 from chatddx.factors.response import message, tool_calls
 
 _FENCED = re.compile(r"```[^\n`]*\n(.*?)```", re.DOTALL)
@@ -40,7 +40,7 @@ def read(skeleton: Skeleton, response: Mapping[str, JsonValue] | None) -> Answer
             if not isinstance(content, str):
                 return Answer(None, "no content")
             found = _json(content, "the content", True)
-        case TextOutput():
+        case CompiledText():
             if not isinstance(content, str) or not content.strip():
                 return Answer(None, "no content")
             if skeleton.output_schema is None:

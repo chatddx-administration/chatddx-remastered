@@ -181,7 +181,7 @@ def test_a_judge_s_configuration_is_written_in_compose(page: Page) -> None:
     }
     judge = page.request.get("/api/threads", params=query).json()[0]
     _ = page.goto(f"/compose/{judge['id']}")
-    expect(page.get_by_role("heading", name="Its texts")).to_be_visible()
+    expect(page.get_by_role("region", name="Its texts")).to_be_visible()
     expect(page.get_by_role("button", name="Save")).to_be_visible()
     expect(page.get_by_role("button", name="Run it")).to_have_count(0)
     assert errors == []
@@ -210,7 +210,10 @@ def test_a_configuration_s_parts_are_written_in_compose_and_saved_with_it(
     expect(page.get_by_label(f"Into Swedish: {old}", exact=True)).to_have_count(0)
     carried = page.get_by_label(f"Into Swedish: {new}", exact=True)
     expect(carried).to_have_value(re.compile(r"^Du bistår"))
+    expect(page.get_by_text("Carried over from the text as it was.")).to_be_visible()
+    expect(page.get_by_label("temperature", exact=True)).to_have_count(0)
 
+    page.get_by_role("button", name="English", exact=True).click()
     with page.expect_response(re.compile(r"/drafts$")):
         page.get_by_label("temperature", exact=True).fill("0.5")
     page.get_by_role("button", name="Save").click()
@@ -224,6 +227,99 @@ def test_a_configuration_s_parts_are_written_in_compose_and_saved_with_it(
     assert sampling["body"]["temperature"] == 0.5
     into = page.request.get(f"/api/components/{recipe['translations']}").json()
     assert into["body"]["into"]["sv"][new].startswith("Du bistår")
+    assert errors == []
+
+
+def test_what_a_configuration_sends_slides_in_marked_against_what_was_saved(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES_GUIDED,
+        "owner": "alice",
+    }
+    guided = page.request.get("/api/threads", params=query).json()[0]
+    page.set_viewport_size({"width": 1600, "height": 1000})
+    _ = page.goto(f"/compose/{guided['id']}")
+    sends = page.get_by_role("region", name="What it sends")
+    expect(sends).to_be_hidden()
+    with page.expect_response(re.compile(r"/previews$")):
+        page.get_by_role("button", name="What it sends").click()
+    expect(page.locator("[data-compose]")).to_have_attribute("data-slid", "")
+    shown = sends.locator("[data-preview]")
+    expect(shown).to_contain_text("You are assisting")
+    update = sends.get_by_role("button", name="Update")
+    expect(update).to_be_disabled()
+    expect(shown).to_contain_text("‹appendix 2›")
+    expect(shown.locator("ins, del")).to_have_count(0)
+
+    with page.expect_response(re.compile(r"/drafts$")):
+        page.get_by_label("instructions, text 1").fill("Be brief.")
+    expect(update).to_be_enabled()
+    with page.expect_response(re.compile(r"/previews$")):
+        update.click()
+    expect(shown.locator("del").first).to_contain_text("You")
+    expect(shown.locator("ins").first).to_contain_text("brief")
+    with page.expect_response(re.compile(r"/previews$")):
+        page.get_by_role("button", name=re.compile("^Swedish")).click()
+    expect(update).to_be_disabled()
+    expect(shown.locator("ins, del")).to_have_count(0)
+    page.get_by_label("Into Swedish: Be brief.", exact=True).fill("")
+    expect(update).to_be_enabled()
+    with page.expect_response(re.compile(r"/previews$")):
+        update.click()
+    expect(shown.get_by_title("instructions, not yet translated").first).to_be_visible()
+    expect(shown.locator("del").first).to_contain_text("Du")
+    expect(update).to_be_disabled()
+    sends.get_by_role("button", name="As sent").click()
+    expect(shown.locator("pre")).to_contain_text('"messages"')
+    expect(shown.locator("pre")).not_to_contain_text("\\n")
+    expect(shown.locator("pre ins").first).to_contain_text("Be brief.")
+    sends.get_by_role("button", name="Close").click()
+    expect(page.locator("[data-compose]")).not_to_have_attribute("data-slid", "")
+    expect(page.get_by_role("button", name="What it sends")).to_be_visible()
+    assert errors == []
+
+
+def test_a_configuration_s_settings_are_written_by_what_they_decide(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": "reasoned",
+        "owner": "alice",
+    }
+    reasoned = page.request.get("/api/threads", params=query).json()[0]
+    _ = page.goto(f"/compose/{reasoned['id']}")
+    settings = page.get_by_role("region", name="Its settings")
+    expect(settings.get_by_text("Lands at on.")).to_be_visible()
+    expect(settings.get_by_label("temperature", exact=True)).to_have_attribute(
+        "placeholder", "0.6"
+    )
+    with page.expect_response(re.compile(r"/drafts$")):
+        settings.get_by_label("By hand").check()
+    expect(settings.get_by_text("Effort")).to_be_visible()
+    with page.expect_response(re.compile(r"/drafts$")):
+        settings.get_by_label("A tool call").check()
+    expect(settings.get_by_label("The answer's schema")).to_be_visible()
+    expect(settings.get_by_text("The answer tool's name")).to_be_visible()
+
+    expect(settings.get_by_text("Thinking token budget")).to_be_visible()
+    model = settings.get_by_label("model", exact=True)
+    gpt = model.locator("option", has_text="gpt-oss").first.get_attribute("value")
+    assert gpt is not None
+    _ = model.select_option(gpt)
+    expect(settings.get_by_text("Thinking token budget")).to_have_count(0)
+
+    page.get_by_label("Name", exact=True).fill("reasoned anew")
+    alone = page.get_by_role("checkbox", name=re.compile("Independent of this one"))
+    expect(alone).not_to_be_checked()
+    alone.check()
+    expect(page.get_by_text("independent of this one.")).to_be_visible()
     assert errors == []
 
 
@@ -1194,7 +1290,7 @@ def test_an_island_says_what_its_page_s_catalog_holds_in_the_locale_asked_for(
     }
     lines = page.request.get("/api/threads", params=query).json()[0]
     _ = page.goto(f"/compose/{lines['id']}")
-    expect(page.get_by_role("heading", name="Dess texter")).to_be_visible()
+    expect(page.get_by_role("region", name="Dess texter")).to_be_visible()
     assert errors == []
 
 
@@ -1297,7 +1393,7 @@ def test_a_field_is_measured_in_a_column_of_its_own_and_closed_again(
     expect(measuring).to_be_hidden()
     diagnosis.get_by_role("button", name="Measure").click()
     expect(page).to_have_url(re.compile(r"[?&]measure=diagnosis"))
-    expect(review).to_have_attribute("data-measuring", "")
+    expect(review).to_have_attribute("data-slid", "")
     expect(diagnosis).to_have_attribute("open", "")
     expect(warning).to_have_attribute("inert", "")
     expect(
@@ -1313,11 +1409,11 @@ def test_a_field_is_measured_in_a_column_of_its_own_and_closed_again(
     expect(found).to_contain_text("0")
     expect(measured.locator("mark")).to_have_count(0)
     measuring.get_by_role("button", name="Close").click()
-    expect(review).not_to_have_attribute("data-measuring", "")
+    expect(review).not_to_have_attribute("data-slid", "")
     expect(page).not_to_have_url(re.compile(r"measure="))
     expect(warning).not_to_have_attribute("inert", "")
     _ = page.go_back()
-    expect(review).to_have_attribute("data-measuring", "")
+    expect(review).to_have_attribute("data-slid", "")
     assert errors == []
 
 

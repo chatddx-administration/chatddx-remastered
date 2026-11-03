@@ -220,6 +220,12 @@ msgctxt "refusal"
 msgid "%(kind)s cannot use inserts %(inserts)s"
 msgstr "%(kind)s kan inte använda infogningarna %(inserts)s"
 
+#: frontend/src/lib/compose/Texts.svelte
+#, python-format
+msgid "%(label)s, message %(n)s"
+msgstr "%(label)s, meddelande %(n)s"
+
+#: frontend/src/lib/compose/Paired.svelte
 #: frontend/src/lib/scorer/TextSegments.svelte
 #, python-format
 msgid "%(label)s, text %(n)s"
@@ -341,6 +347,11 @@ msgid "%(n)s seed"
 msgid_plural "%(n)s seeds"
 msgstr[0] "%(n)s seed"
 msgstr[1] "%(n)s seeds"
+
+#: frontend/src/lib/compose/Texts.svelte
+#, python-format
+msgid "%(n)s to look over"
+msgstr "%(n)s att se över"
 
 #: frontend/src/islands/RunLive.svelte
 #, python-format
@@ -670,6 +681,11 @@ msgstr ""
 msgid "%(owner)s's"
 msgstr "%(owner)ss"
 
+#: frontend/src/lib/compose/Preview.svelte
+#, python-format
+msgid "%(part)s, not yet translated"
+msgstr "%(part)s, ännu inte översatt"
+
 #: frontend/src/lib/scorer/rewriting.ts
 #, python-format
 msgid "%(part)s: %(problem)s"
@@ -983,6 +999,10 @@ msgstr ""
 "för test. Det ersätter inte klinisk bedömning eller medicinsk "
 "konsultation."
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "A call to an answer tool, its parameters the schema."
+msgstr "Ett anrop till ett svarsverktyg, med schemat som parametrar."
+
 #: frontend/src/islands/Home.svelte
 #, python-format
 msgid "A case holds at most %(num)s character; this one has %(given)s."
@@ -1145,6 +1165,18 @@ msgstr ""
 "En egen tråd, som börjar från dess senaste version, och som uppdateras "
 "med den här trådens ändringar när du ber om det."
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "A tool call"
+msgstr "Ett verktygsanrop"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "A value given here is used in place of the one recommended."
+msgstr "Ett värde som anges här används i stället för det rekommenderade."
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "A value left out is the engine's."
+msgstr "Ett värde som utelämnas blir motorns."
+
 #: src/chatddx/portal/templates/scoring.html
 msgid ""
 "A view reads a configuration's answers where its output's schema offers "
@@ -1180,6 +1212,10 @@ msgstr "Över"
 msgid "Acute warning"
 msgstr "Akut varning"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Add a tool"
+msgstr "Lägg till ett verktyg"
+
 #: frontend/src/lib/review/Appendices.svelte
 msgid "Add an appendix"
 msgstr "Lägg till bilaga"
@@ -1187,6 +1223,14 @@ msgstr "Lägg till bilaga"
 #: src/chatddx/portal/templates/world.html
 msgid "Address"
 msgstr "Adress"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Advanced"
+msgstr "Avancerat"
+
+#: frontend/src/lib/compose/Paired.svelte
+msgid "After it:"
+msgstr "Efter den:"
 
 #: src/chatddx/portal/templates/runs.html
 msgid "All"
@@ -1221,6 +1265,15 @@ msgstr "Svar från"
 msgid "Arguments"
 msgstr "Argument"
 
+#: frontend/src/lib/compose/Preview.svelte
+msgid "As JSON to its schema, which response_format holds."
+msgstr "Som JSON enligt sitt schema, som response_format håller."
+
+#: frontend/src/lib/compose/Preview.svelte
+#, python-format
+msgid "As a call to %(name)s, its schema the tool's parameters."
+msgstr "Som ett anrop till %(name)s, med schemat som verktygets parametrar."
+
 #: src/chatddx/portal/templates/run.html
 msgid "As it ran"
 msgstr "Under körningen"
@@ -1229,6 +1282,31 @@ msgstr "Under körningen"
 msgid "As it would read"
 msgstr "Som den skulle läsas"
 
+#: frontend/src/lib/compose/Preview.svelte
+msgid "As read"
+msgstr "Som det läses"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "As sent"
+msgstr "Som det skickas"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "As text, its schema told where it is inserted."
+msgstr "Som text, med schemat återgivet där det infogas."
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "As text."
+msgstr "Som text."
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "As the model does"
+msgstr "Som modellen gör"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "As the model writes it; JSON read out of it if it has a schema."
+msgstr "Som modellen skriver det; JSON läses ut ur det om det har ett schema."
+
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/compose/Texts.svelte
 msgid "As written"
 msgstr "Som den är skriven"
@@ -1265,6 +1343,10 @@ msgstr "Tillbaka till formuläret"
 #: src/chatddx/portal/templates/error.html
 msgid "Back to where you were"
 msgstr "Tillbaka dit du var"
+
+#: frontend/src/lib/compose/Paired.svelte
+msgid "Before it:"
+msgstr "Före den:"
 
 #: src/chatddx/portal/templates/library.html
 msgid "Begin a trial of the picked"
@@ -1313,10 +1395,18 @@ msgstr "Av %(judge)s, med förfrågan återskapad ur det som pinnats."
 msgid "By %(scorer)s, replicate %(replicate)s."
 msgstr "Av %(scorer)s, replikat %(replicate)s."
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "By hand"
+msgstr "För hand"
+
 #: src/chatddx/portal/templates/compare.html
 #, python-format
 msgid "By item, under %(view)s"
 msgstr "Per post, under %(view)s"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "By level"
+msgstr "Efter nivå"
 
 #: src/chatddx/portal/templates/review.html
 msgid "Can't be checked"
@@ -1333,6 +1423,10 @@ msgstr "Kapacitet"
 #: frontend/src/lib/plan/labs.ts
 msgid "Cardiac markers"
 msgstr "Hjärtmarkörer"
+
+#: frontend/src/lib/compose/Said.svelte
+msgid "Carried over from the text as it was."
+msgstr "Överförd från texten som den var."
 
 #: src/chatddx/portal/templates/run.html
 msgid "Case"
@@ -1365,6 +1459,10 @@ msgstr "Att ändra vad den frågas kräver skript."
 msgid "Chat template"
 msgstr "Chattmall"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Chat template arguments"
+msgstr "Argument till chattmallen"
+
 #: src/chatddx/portal/templates/world.html
 msgid "Chat templates"
 msgstr "Chattmallar"
@@ -1385,6 +1483,7 @@ msgstr "Godkänd för"
 msgid "Cleared for it"
 msgstr "Godkänd för den"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/review/Measuring.svelte
 msgid "Close"
 msgstr "Stäng"
@@ -1409,6 +1508,10 @@ msgstr "Jämförd med"
 #: src/chatddx/portal/templates/compare.html
 msgid "Comparing runs"
 msgstr "Jämförelse av körningar"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "Compiles it again as it is written now, saved or not"
+msgstr "Sammanställer det igen som det är skrivet nu, sparat eller inte"
 
 #: frontend/src/lib/plan/labs.ts
 msgid "Complete blood count"
@@ -1569,6 +1672,10 @@ msgstr ""
 msgid "Each trial's version at the endpoint serving its engine."
 msgstr "Varje försöks version på ändpunkten för dess inferensserver."
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Effort"
+msgstr "Ansträngning"
+
 #: frontend/src/lib/plan/labs.ts
 msgid "Electrolytes"
 msgstr "Elektrolyter"
@@ -1702,6 +1809,11 @@ msgstr "Förgrena oförändrat"
 msgid "Forked from"
 msgstr "Förgrenad från"
 
+#: src/chatddx/portal/templates/compose.html
+#, python-format
+msgid "Forked from %(name)s"
+msgstr "Grenad från %(name)s"
+
 #: frontend/src/lib/review/Measuring.svelte
 msgid "Found"
 msgstr "Hittade"
@@ -1713,6 +1825,12 @@ msgstr "Ur svaret"
 #: src/chatddx/portal/templates/score.html
 msgid "From the expectation"
 msgstr "Ur facit"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid ""
+"Further keys of the request, as they are sent; the keys the rest sets are"
+" refused."
+msgstr "Fler nycklar i anropet, som de skickas; nycklar som resten sätter avvisas."
 
 #: frontend/src/islands/Compose.svelte frontend/src/lib/editors/writing.ts
 msgid "Give it a name to save it."
@@ -1761,6 +1879,10 @@ msgstr ""
 msgid "Held by only some"
 msgstr "Bara hos några"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Held to its schema by the engine, as response_format."
+msgstr "Hålls till sitt schema av motorn, som response_format."
+
 #: frontend/src/lib/plan/DiagnosisCard.svelte
 msgctxt "probability"
 msgid "High"
@@ -1782,6 +1904,7 @@ msgstr "Värd"
 msgid "Hosts"
 msgstr "Värdar"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/compose/Texts.svelte
 msgid "How appendices are laid out"
 msgstr "Hur bilagorna läggs upp"
@@ -1815,16 +1938,24 @@ msgstr "Hur de klarar sig"
 msgid "In sync"
 msgstr "I synk"
 
+#: frontend/src/islands/Compose.svelte
+msgid "Independent of this one: not a fork of it, nor of its parts"
+msgstr "Fristående från denna: inte en gren av den, inte heller av dess delar"
+
 #: frontend/src/lib/plan/labs.ts
 msgid "Inflammatory markers"
 msgstr "Inflammationsmarkörer"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Inline the schema's references"
+msgstr "Infoga schemats referenser"
 
 #: src/chatddx/portal/templates/translations.html
 msgctxt "languages"
 msgid "Into"
 msgstr "Till"
 
-#: frontend/src/lib/compose/Texts.svelte
+#: frontend/src/lib/compose/Said.svelte
 #, python-format
 msgid "Into %(language)s: %(text)s"
 msgstr "Till %(language)s: %(text)s"
@@ -1903,6 +2034,10 @@ msgstr ""
 "Det finns kvar i de körningar som använde det, och du kan återställa det "
 "från Biblioteket."
 
+#: frontend/src/lib/compose/Said.svelte
+msgid "It still reads right"
+msgstr "Den stämmer fortfarande"
+
 #: src/chatddx/portal/templates/score.html
 msgid "It wasn't asked."
 msgstr "Den tillfrågades inte."
@@ -1919,6 +2054,12 @@ msgstr "Avslutade poster"
 msgid "Items judged"
 msgstr "Bedömda poster"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid ""
+"Its $refs replaced by what they point at before it is sent "
+"(inline_refs@1)."
+msgstr "Dess $refs ersätts med det de pekar på innan det skickas (inline_refs@1)."
+
 #: src/chatddx/portal/templates/case.html
 msgid "Its cases"
 msgstr "Fall"
@@ -1931,6 +2072,10 @@ msgstr "Dess fall är de valda, och dess språk deras."
 #: src/chatddx/portal/templates/case.html
 msgid "Its cases at this vignette"
 msgstr "Fall vid den här vinjetten"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Its description"
+msgstr "Dess beskrivning"
 
 #: src/chatddx/portal/templates/scoring.html
 #: src/chatddx/portal/templates/thread.html
@@ -2076,6 +2221,10 @@ msgstr "Dess vinjetts: dess fall skickas på det."
 msgid "Its vignette, %(id)s in %(source)s."
 msgstr "Dess vinjett, %(id)s i %(source)s."
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "JSON"
+msgstr "JSON"
+
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/run.html
 msgid "Job"
@@ -2112,6 +2261,11 @@ msgstr "Typer"
 msgid "Kinds: %(kind)s"
 msgstr "Typer: %(kind)s"
 
+#: frontend/src/lib/compose/Settings.svelte
+#, python-format
+msgid "Lands at %(level)s."
+msgstr "Hamnar på %(level)s."
+
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/library.html
 #: src/chatddx/portal/templates/run.html
@@ -2146,6 +2300,11 @@ msgstr "Utelämna"
 #, python-format
 msgid "Leave out %(name)s"
 msgstr "Utelämna %(name)s"
+
+#: frontend/src/lib/compose/Settings.svelte
+#, python-format
+msgid "Leave out stop sequence %(n)s"
+msgstr "Utelämna stoppsekvens %(n)s"
 
 #: src/chatddx/portal/templates/runner.html
 msgid ""
@@ -2184,6 +2343,7 @@ msgstr "Kvar att rätta med %(scorers)s."
 msgid "Legend"
 msgstr "Teckenförklaring"
 
+#: frontend/src/lib/compose/Settings.svelte
 #: src/chatddx/portal/templates/world.html
 msgid "Level"
 msgstr "Nivå"
@@ -2362,6 +2522,18 @@ msgid_plural "No expectation of yours: %(num)s"
 msgstr[0] "Inget eget facit: %(num)s"
 msgstr[1] "Inget eget facit: %(num)s"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid ""
+"No facts are known about it, so a thinking level and recommended sampling"
+" can't be worked out."
+msgstr ""
+"Inga fakta är kända om den, så en tankenivå och rekommenderad sampling "
+"kan inte räknas ut."
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "No facts are known about the model: a level can't be worked out."
+msgstr "Inga fakta är kända om modellen: en nivå kan inte räknas ut."
+
 #: src/chatddx/portal/templates/scoring.html
 msgid "No item of yours is judged by it yet."
 msgstr "Ingen post av dina är bedömd av den än."
@@ -2476,6 +2648,10 @@ msgstr "Inga."
 #, python-format
 msgid "Not JSON yet: %(error)s"
 msgstr "Inte JSON än: %(error)s"
+
+#: frontend/src/lib/compose/JsonField.svelte
+msgid "Not JSON yet: it is kept as it was till it is."
+msgstr "Inte JSON än: det behålls som det var tills det är det."
 
 #: frontend/src/lib/api/client.ts src/chatddx/portal/templates/error.html
 msgid "Not allowed"
@@ -2650,6 +2826,7 @@ msgstr "Utfall"
 msgid "Output contracts"
 msgstr "Svarsformens kontrakt"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/compose/Texts.svelte
 msgid "Output guidance"
 msgstr "Vägledning för svaret"
@@ -2765,9 +2942,17 @@ msgstr "Föregående"
 msgid "Purpose"
 msgstr "Syfte"
 
+#: frontend/src/lib/compose/Preview.svelte
+msgid "Put between them as it is compiled"
+msgstr "Insatt mellan dem när det sammanställs"
+
 #: src/chatddx/portal/templates/world.html
 msgid "Quantization"
 msgstr "Kvantisering"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Read JSON out of the answer, checked against a schema"
+msgstr "Läs ut JSON ur svaret, kontrollerat mot ett schema"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Read by"
@@ -2808,6 +2993,10 @@ msgid ""
 msgstr ""
 "Återskapad, det här är inte förfrågan som skickades: det den pinnar har "
 "ändrats sedan dess."
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Recommended for its thinking level"
+msgstr "Rekommenderad för dess tankenivå"
 
 #: src/chatddx/portal/templates/world.html
 msgid "Recommended sampling"
@@ -2867,6 +3056,10 @@ msgstr "Granska"
 msgid "Rig"
 msgstr "Rigg"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Rounds of calls at most"
+msgstr "Högst antal anropsrundor"
+
 #: src/chatddx/portal/templates/macros.html
 #: src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/score.html
@@ -2913,6 +3106,10 @@ msgstr "Körs som standard"
 msgid "Runtime"
 msgstr "Körmiljö"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Sampling"
+msgstr "Sampling"
+
 #: frontend/src/islands/Compose.svelte frontend/src/lib/editors/Saving.svelte
 #: frontend/src/lib/review/Save.svelte
 msgid "Save"
@@ -2945,6 +3142,11 @@ msgid ""
 msgstr ""
 "Sparar en ny egen konfiguration, ”%(name)s”, förgrenad från version %(n)s"
 " av den här."
+
+#: frontend/src/islands/Compose.svelte
+#, python-format
+msgid "Saves a new configuration of yours, “%(name)s”, independent of this one."
+msgstr "Sparar en ny konfiguration av dina, ”%(name)s”, fristående från denna."
 
 #: frontend/src/lib/editors/writing.ts
 msgid "Saves a new version of it."
@@ -2979,6 +3181,10 @@ msgstr "Sparar"
 #: frontend/src/islands/Compose.svelte
 msgid "Saving it"
 msgstr "Sparande"
+
+#: frontend/src/lib/compose/Texts.svelte
+msgid "Schemas and tools"
+msgstr "Scheman och verktyg"
 
 #: src/chatddx/portal/templates/score.html
 msgid "Score"
@@ -3078,6 +3284,11 @@ msgstr "Tillhandahålls nu på"
 #: src/chatddx/portal/templates/thread.html
 msgid "Shared with"
 msgstr "Delad med"
+
+#: frontend/src/lib/compose/Said.svelte
+#, python-format
+msgid "Shared with %(parts)s."
+msgstr "Delas med %(parts)s."
 
 #: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/thread.html
@@ -3211,6 +3422,15 @@ msgstr "Stoppa"
 msgid "Stop now"
 msgstr "Stoppa nu"
 
+#: frontend/src/lib/compose/Settings.svelte
+#, python-format
+msgid "Stop sequence %(n)s"
+msgstr "Stoppsekvens %(n)s"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Stop sequences"
+msgstr "Stoppsekvenser"
+
 #: src/chatddx/portal/templates/case.html
 msgid "Store its replacement"
 msgstr "Lagra dess ersättning"
@@ -3265,6 +3485,10 @@ msgstr ""
 msgid "Takes typed cases"
 msgstr "Tar skrivna fall"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Text"
+msgstr "Text"
+
 #: frontend/src/lib/review/AppendixForm.svelte
 msgid "Text, as it is added to the vignette"
 msgstr "Text, som den läggs till vinjetten"
@@ -3290,6 +3514,8 @@ msgstr "Det borde inte ha hänt"
 msgid "The World"
 msgstr "Miljön"
 
+#: frontend/src/lib/compose/Preview.svelte
+#: frontend/src/lib/compose/Settings.svelte
 #: src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/score.html
 msgid "The answer"
@@ -3299,9 +3525,19 @@ msgstr "Svaret"
 msgid "The answer breaks its schema"
 msgstr "Svaret bryter mot sitt schema"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "The answer tool's name"
+msgstr "Svarsverktygets namn"
+
 #: frontend/src/islands/Home.svelte
 msgid "The answer was cut short"
 msgstr "Svaret avkortades"
+
+#: frontend/src/lib/compose/Preview.svelte
+#: frontend/src/lib/compose/Settings.svelte
+#: frontend/src/lib/compose/Texts.svelte
+msgid "The answer's schema"
+msgstr "Svarets schema"
 
 #: src/chatddx/portal/templates/score.html
 msgid "The answer, as it was given"
@@ -3354,6 +3590,10 @@ msgstr "Startsidans skript är inte byggt."
 msgid "The judge"
 msgstr "Bedömaren"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "The key for max output tokens"
+msgstr "Nyckeln för högsta antal utdatatokens"
+
 #: src/chatddx/portal/shelves.py
 msgid "The last message, which puts the case to the model and asks for an answer."
 msgstr ""
@@ -3376,6 +3616,10 @@ msgstr "Modellen saknar alias och går inte att använda."
 #: frontend/src/lib/review/Faring.svelte
 msgid "The numbers"
 msgstr "Siffrorna"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "The one the engine's API takes."
+msgstr "Den som motorns API tar emot."
 
 #: src/chatddx/portal/templates/error.html
 msgid "The request didn't hold together:"
@@ -3485,9 +3729,13 @@ msgstr "Hela förfrågan, %(count)s meddelanden"
 msgid "There is no answer to read."
 msgstr "Det finns inget svar att läsa."
 
-#: frontend/src/islands/RunLive.svelte
+#: frontend/src/islands/RunLive.svelte frontend/src/lib/compose/Settings.svelte
 msgid "Thinking"
 msgstr "Tänkande"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Thinking token budget"
+msgstr "Tokenbudget för tänkande"
 
 #: frontend/src/islands/Home.svelte
 #, python-format
@@ -3563,9 +3811,18 @@ msgstr ""
 msgid "Tokens"
 msgstr "Token"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/compose/Texts.svelte
 msgid "Tool guidance"
 msgstr "Vägledning för verktygen"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "Tools"
+msgstr "Verktyg"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "Tools offered"
+msgstr "Erbjudna verktyg"
 
 #: src/chatddx/portal/templates/translations.html
 msgid "Translate into it"
@@ -3615,6 +3872,7 @@ msgctxt "after the button Resume"
 msgid "Unfinished: resuming sends what it lacks."
 msgstr "Oavslutad: att återuppta skickar det som saknas."
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/review/Measuring.svelte
 #: src/chatddx/portal/templates/macros.html
 msgid "Update"
@@ -3623,6 +3881,10 @@ msgstr "Uppdatera"
 #: src/chatddx/portal/templates/library.html
 msgid "Update all"
 msgstr "Uppdatera alla"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "Update compiles it as it is written now, saved or not."
+msgstr "Uppdatera sammanställer det som det är skrivet nu, sparat eller inte."
 
 #: src/chatddx/portal/templates/updated.html
 msgid "Updated"
@@ -3662,6 +3924,10 @@ msgstr "Versioner"
 #: src/chatddx/portal/templates/scoring.html
 msgid "View"
 msgstr "Vy"
+
+#: frontend/src/lib/compose/Preview.svelte
+msgid "Views"
+msgstr "Vyer"
 
 #: frontend/src/islands/Home.svelte
 msgid "Waiting for the model…"
@@ -3754,6 +4020,11 @@ msgstr "Vad den läste"
 #: src/chatddx/portal/templates/scoring.html
 msgid "What it reads"
 msgstr "Vad den läser"
+
+#: frontend/src/islands/Compose.svelte frontend/src/lib/compose/Preview.svelte
+#: src/chatddx/portal/templates/compose.html
+msgid "What it sends"
+msgstr "Vad det skickar"
 
 #: src/chatddx/portal/templates/thread.html
 msgid "What it sends: the request compiled from its recipe"
@@ -4146,6 +4417,7 @@ msgctxt "refusal"
 msgid "a word is missing in %(text)s"
 msgstr "ett ord saknas i %(text)s"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/thread/Changed.svelte
 #: src/chatddx/portal/templates/thread.html
 msgctxt "change"
@@ -4160,11 +4432,6 @@ msgstr "alla"
 #: src/chatddx/portal/templates/scoring.html
 msgid "an earlier version"
 msgstr "en tidigare version"
-
-#: src/chatddx/factors/request.py
-msgctxt "refusal"
-msgid "an output's schema goes in json_schema, not its contract"
-msgstr "en svarsforms schema hör hemma i json_schema, inte i dess kontrakt"
 
 #: frontend/src/lib/review/Measuring.svelte
 #, python-format
@@ -4194,6 +4461,11 @@ msgstr "bilagor: %(appendices)s"
 msgctxt "kind"
 msgid "appendix"
 msgstr "bilaga"
+
+#: frontend/src/lib/compose/Preview.svelte
+#, python-format
+msgid "appendix %(n)s"
+msgstr "bilaga %(n)s"
 
 #: src/chatddx/portal/templates/world.html
 #, python-format
@@ -4476,6 +4748,10 @@ msgstr "förgrenad från %(origin)s"
 msgid "forked from one you don't see"
 msgstr "förgrenad från en du inte har tillgång till"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "frequency penalty"
+msgstr "frequency penalty"
+
 #: src/chatddx/portal/templates/review.html
 #, python-format
 msgctxt "after the button Move yours here"
@@ -4591,6 +4867,10 @@ msgstr "dess konfiguration har ändrats sedan den kördes"
 msgid "its configuration: %(problem)s"
 msgstr "dess konfiguration: %(problem)s"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "its default"
+msgstr "dess standard"
+
 #: src/chatddx/portal/templates/world.html
 #, python-format
 msgid "its directory can't be read: %(why)s"
@@ -4696,6 +4976,14 @@ msgstr "laddade med datamängder, eller skrivna på Start"
 #: src/chatddx/portal/templates/thread.html
 msgid "logins, comma separated"
 msgstr "inloggningsnamn, kommaseparerade"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "max output tokens"
+msgstr "högsta antal utdatatokens"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "min p"
+msgstr "min p"
 
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
@@ -5151,6 +5439,10 @@ msgstr "välj körningarna att jämföra på sidan Körningar"
 msgid "pinned by"
 msgstr "fäst av"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "presence penalty"
+msgstr "presence penalty"
+
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
 msgid "prompt"
@@ -5213,11 +5505,16 @@ msgstr "avvisad: %(why)s"
 msgid "refused: %(why)s, so %(nearest)s is asked for instead"
 msgstr "avvisad: %(why)s, så %(nearest)s efterfrågas i stället"
 
+#: frontend/src/lib/compose/Preview.svelte
 #: frontend/src/lib/thread/Changed.svelte
 #: src/chatddx/portal/templates/thread.html
 msgctxt "change"
 msgid "removed"
 msgstr "borttaget"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "repetition penalty"
+msgstr "repetition penalty"
 
 #: src/chatddx/runner/run.py
 #, python-format
@@ -5386,6 +5683,10 @@ msgstr "källa"
 msgid "split %(split)s"
 msgstr "delat %(split)s"
 
+#: frontend/src/lib/compose/Settings.svelte
+msgid "stop sequence"
+msgstr "stoppsekvens"
+
 #: src/chatddx/portal/templates/macros.html
 msgctxt "job"
 msgid "stopped"
@@ -5422,6 +5723,10 @@ msgstr "tagen, till <a href=\"/threads/%(thread)s\">din tråd %(thread)s</a>"
 #, python-format
 msgid "taken: %(note)s"
 msgstr "godtagen: %(note)s"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "temperature"
+msgstr "temperatur"
 
 #: frontend/src/lib/scorer/scorers.ts
 msgctxt "an output"
@@ -5729,6 +6034,14 @@ msgstr "verktyg måste vara en lista"
 msgctxt "kind"
 msgid "toolset"
 msgstr "verktygsuppsättning"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "top k"
+msgstr "top k"
+
+#: frontend/src/lib/compose/Settings.svelte
+msgid "top p"
+msgstr "top p"
 
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"

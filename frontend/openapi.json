@@ -851,13 +851,74 @@
         }
       }
     },
+    "/api/threads/{thread}/previews": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Preview",
+        "description": "The request a configuration would send with the chunks, model and\ntranslations drafted, writing nothing.",
+        "operationId": "preview_api_threads__thread__previews_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Previewed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/saves": {
       "post": {
         "tags": [
           "threads"
         ],
         "summary": "Save",
-        "description": "Saves a configuration with the chunks given in place of its own, each written\nto its own thread first, as a version of it or, named, a fork.",
+        "description": "Saves a configuration with the chunks given in place of its own, each written\nto its own thread first, as a version of it or, named, a fork or one of its own.",
         "operationId": "save_api_threads__thread__saves_post",
         "security": [
           {
@@ -6311,6 +6372,12 @@
             "title": "Name",
             "description": "a fork's: without it, a version is saved"
           },
+          "independent": {
+            "type": "boolean",
+            "title": "Independent",
+            "description": "with a name, a configuration of its own, forked from nothing",
+            "default": false
+          },
           "chunks": {
             "$ref": "#/components/schemas/Drafted"
           },
@@ -6794,6 +6861,112 @@
           "selectors"
         ],
         "title": "Picking"
+      },
+      "Preview": {
+        "properties": {
+          "head": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head",
+            "description": "the edit drafted on, the configuration's head unless given"
+          },
+          "chunks": {
+            "$ref": "#/components/schemas/Drafted"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelDigest"
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Into"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "all of them, by the texts drafted; without them its own"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language it is compiled into, as far as it is translated; its own unless given"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Preview"
+      },
+      "PreviewMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/Stretch"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "runs"
+        ],
+        "title": "PreviewMessage"
+      },
+      "Previewed": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewMessage"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "the messages as read, the appendices laid out as placeholders"
+          },
+          "request": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Request",
+            "description": "the request as sent, without a seed or return_token_ids"
+          },
+          "contract": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Contract",
+            "description": "how the answer is held"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "messages",
+          "request",
+          "contract"
+        ],
+        "title": "Previewed"
       },
       "Proposal": {
         "properties": {
@@ -8021,6 +8194,66 @@
           "halting"
         ],
         "title": "Stopped"
+      },
+      "Stretch": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "a run of text, or else a slot's"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "the part the text came from"
+          },
+          "untranslated": {
+            "type": "boolean",
+            "title": "Untranslated",
+            "description": "the text as written, for want of a translation",
+            "default": false
+          },
+          "slot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot"
+          },
+          "appendix": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appendix",
+            "description": "the appendix of the placeholders, counted from 1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Stretch"
       },
       "Taken": {
         "properties": {

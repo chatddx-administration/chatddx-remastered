@@ -89,10 +89,10 @@ def test_review_shows_nothing_of_what_ran_the_case(
         "field": None,
     }
     assert f'action="/review/{noted["id"]}/runs"' in page
-    assert "<div data-review class" in page
+    assert "<div data-slides data-review class" in page
     measuring = shown(signed, f"/review/{noted['id']}?measure=warning")
     assert props(measuring)["measure"]["field"] == "warning"
-    assert "<div data-review data-measuring class" in measuring
+    assert "<div data-slides data-review data-slid class" in measuring
     unread = shown(signed, f"/review/{noted['id']}?measure=notes")
     assert props(unread)["measure"]["field"] is None
 

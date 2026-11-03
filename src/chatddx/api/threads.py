@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Annotated, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
@@ -29,6 +29,8 @@ from chatddx.factors.request import (
     Compilation,
     Purpose,
     Recipe,
+    Run,
+    Slot,
     translated,
 )
 from chatddx.factors.scoring import Expectation
@@ -427,6 +429,53 @@ def draft(bench: BenchDep, thread: int, given: schemas.Draft) -> schemas.Draftin
     )
 
 
+@router.post("/threads/{thread}/previews")
+def preview(bench: BenchDep, thread: int, given: schemas.Preview) -> schemas.Previewed:
+    """The request a configuration would send with the chunks, model and
+    translations drafted, writing nothing."""
+    with refused():
+        made = bench.preview(
+            thread,
+            given.head,
+            _drafted(given.chunks),
+            given.model,
+            given.translations,
+            given.language,
+        )
+    traced = made.traced
+    return schemas.Previewed(
+        messages=[
+            schemas.PreviewMessage(
+                role=m.role, runs=_ran(m.runs, traced.appendix_layout)
+            )
+            for m in traced.messages
+        ],
+        request=made.request,
+        contract=traced.skeleton.contract.model_dump(mode="json"),
+    )
+
+
+def _ran(
+    runs: Sequence[Run | Slot], layout: tuple[Run, Run, Run]
+) -> list[schemas.Stretch]:
+    before, between, after = layout
+    found: list[schemas.Stretch] = []
+    for r in runs:
+        match r:
+            case Run():
+                found.append(schemas.Stretch.model_validate(r.model_dump()))
+            case Slot(slot="appendices"):
+                laid = [before, 1, between, 2, after]
+                for at in laid:
+                    if isinstance(at, int):
+                        found.append(schemas.Stretch(appendix=at))
+                    elif at.text:
+                        found.append(schemas.Stretch.model_validate(at.model_dump()))
+            case Slot(slot=slot):
+                found.append(schemas.Stretch(slot=slot))
+    return found
+
+
 @router.post(
     "/threads/{thread}/saves",
     status_code=201,
@@ -444,7 +493,7 @@ def save(
     given: schemas.NewSave,
 ) -> schemas.MadeThread:
     """Saves a configuration with the chunks given in place of its own, each written
-    to its own thread first, as a version of it or, named, a fork."""
+    to its own thread first, as a version of it or, named, a fork or one of its own."""
     if not _configures(bench, thread):
         raise HTTPException(422, "only a configuration is saved with its parts")
     with refused():
@@ -455,6 +504,7 @@ def save(
             given.model,
             given.translations,
             given.name,
+            given.independent,
         )
     return made(request, response, bench, written.edit.thread, written.findings)
 

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { type Chunks, CHUNKS, cleaned, counted, kept, offered } from "./drafting";
+import { type Chunks, CHUNKS, cleaned, counted, kept, offered, paired, restaled, settled } from "./drafting";
 
 describe("translations as they are drafted", () => {
   it("leave out what has no translation, and a language with none", () => {
@@ -13,6 +13,39 @@ describe("translations as they are drafted", () => {
 
   it("count each text once, wherever it is held", () => {
     expect(counted({ prompt: ["Read", "Answer"], output: ["Read"] }, { Read: "Läs" })).toEqual([1, 2]);
+  });
+});
+
+describe("translations carried over", () => {
+  it("are to be looked over once carried to a text that changed, and no more once that text is gone", () => {
+    const before = { sv: { Read: "Läs", Answer: "Svara" } };
+    const after = { sv: { "Read it": "Läs", Answer: "Svara" } };
+    expect(restaled({}, before, after)).toEqual({ sv: ["Read it"] });
+    expect(restaled({ sv: ["Read it"] }, after, { sv: { Answer: "Svara" } })).toEqual({});
+  });
+
+  it("are looked over one at a time", () => {
+    expect(settled({ sv: ["Read", "Answer"], de: ["Read"] }, "sv", "Read")).toEqual({ sv: ["Answer"], de: ["Read"] });
+    expect(settled({ sv: ["Read"] }, "sv", "Read")).toEqual({});
+  });
+});
+
+describe("the texts paired with their translations", () => {
+  it("are the prose's, an insert's surroundings among them, and not what is blank", () => {
+    const chunks: Chunks = {
+      ...(Object.fromEntries(CHUNKS.map((c) => [c, null])) as Chunks),
+      instructions: { text: ["Read", { insert: "schema", before: "Answer as: ", after: " " }] },
+      few_shot: {
+        messages: [
+          { role: "user", content: "Hi" },
+          { role: "assistant", content: "" },
+        ],
+      },
+      prompt: { segments: [{ slot: "vignette" }, "Answer"] },
+      output: { guidance: "Briefly", json_schema: { description: "The answer" } },
+      toolset: { guidance: "Use them" },
+    };
+    expect([...paired(chunks)]).toEqual(["Read", "Answer as: ", "Hi", "Answer", "Briefly", "Use them"]);
   });
 });
 

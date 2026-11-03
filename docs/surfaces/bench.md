@@ -35,6 +35,11 @@ Finds:
 ## `Ambiguous` `(Worded, LookupError)`
 `src/chatddx/bench/errors.py:Ambiguous`
 
+## `APPENDICES`
+`src/chatddx/bench/composing.py:APPENDICES`
+
+`APPENDICES = ("‹appendix 1›", "‹appendix 2›")`
+
 ## `Bench` `@final` `(Seen)`
 `src/chatddx/bench/bench.py:Bench`
 
@@ -107,10 +112,11 @@ Raises:
 `src/chatddx/bench/composing.py:compose`
 
 Saves the configuration with the chunks given in place of its own at `head`:
-a version of it, or a fork of it named `name`. Each chunk that changed is written
-to the thread its own came from, as a new version where that is the person's, or
+a version of it, or a fork of it named `name`, or, `independent`, a configuration
+of its own named so, forked from nothing. Each chunk that changed is written to
+the thread its own came from, as a new version where that is the person's, or
 else as a fork of it under its name; a fork of the configuration forks those it
-changes. Its translations are `into` when given, or else its own carried over to
+changes, and an independent one starts a thread of each, named after it. Its translations are `into` when given, or else its own carried over to
 the texts that changed. One transaction, locking each thread it writes.
 
 * `thread: int`
@@ -119,11 +125,13 @@ the texts that changed. One transaction, locking each thread it writes.
 * `model: str | None = None`
 * `into: Mapping[str, Mapping[str, str]] | None = None`
 * `name: str | None = None`
+* `independent: bool = False`
 * ∟`Written`
 
 Raises:
 1. `ValueError`: `"{variation.name} has no recipe to save its parts in"`
-2. `ValueError`: `"no part {stray[0]!r}: the parts are {', '.join(CHUNK_PARTS)}"`
+2. `ValueError`: `"an independent configuration needs a name"`
+3. `ValueError`: `"no part {stray[0]!r}: the parts are {', '.join(CHUNK_PARTS)}"`
 
 ## `Bench.drafted`
 `src/chatddx/bench/composing.py:drafted`
@@ -257,6 +265,26 @@ Raises:
 * `edit: Edit`
 * `kind: str`
 * ∟`bool`
+
+## `Bench.preview`
+`src/chatddx/bench/composing.py:preview`
+
+The request a configuration would send with the chunks, model and
+translations drafted in place of its own, its own where not given, in `language` as far as it is
+translated, its slots holding placeholders and its appendices `APPENDICES`. Reads
+the recipe's chunks and the models served; writes nothing.
+
+* `thread: int`
+* `head: int | None`
+* `chunks: Drafts`
+* `model: str | None`
+* `into: Mapping[str, Mapping[str, str]] | None`
+* `language: str | None`
+* ∟`Previewed`
+
+Raises:
+1. `NotFound`: `"no recipe of configuration {thread}"` (through `_recipe`)
+2. `ValueError`: `"no part {stray[0]!r}: the parts are {', '.join(parts)}"` (through `_check_parts`)
 
 ## `Bench.proposal`
 `src/chatddx/bench/updating.py:proposal`
@@ -664,6 +692,8 @@ Raises:
 * `thread: int | None`
 * `name: str | None`
 * `head: int | None = None`
+* `*`
+* `forked: bool = True`
 * ∟`Written`
 
 ## `Kin` `@dataclass(frozen=True)`
@@ -742,6 +772,12 @@ Raises:
 `src/chatddx/bench/model.py:PLACEHOLDERS`
 
 `PLACEHOLDERS: dict[SlotName, str] = {…}`
+
+## `Previewed` `@dataclass(frozen=True)`
+`src/chatddx/bench/composing.py:Previewed`
+
+* `traced: Traced`
+* `request: dict[str, JsonValue]`
 
 ## `Proposed` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Proposed`

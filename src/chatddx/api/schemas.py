@@ -350,10 +350,59 @@ class Drafting(_Schema):
     )
 
 
+class Preview(_Schema):
+    head: int | None = Field(
+        None, description="the edit drafted on, the configuration's head unless given"
+    )
+    chunks: Drafted = Field(default_factory=dict)
+    model: ModelDigest = None
+    translations: Into | None = Field(
+        None, description="all of them, by the texts drafted; without them its own"
+    )
+    language: str | None = Field(
+        None,
+        description="the language it is compiled into, as far as it is translated; "
+        + "its own unless given",
+    )
+
+
+class Stretch(_Schema):
+    text: str | None = Field(
+        default=None, description="a run of text, or else a slot's"
+    )
+    origin: str | None = Field(default=None, description="the part the text came from")
+    untranslated: bool = Field(
+        default=False, description="the text as written, for want of a translation"
+    )
+    slot: str | None = None
+    appendix: int | None = Field(
+        default=None, description="the appendix of the placeholders, counted from 1"
+    )
+
+
+class PreviewMessage(_Schema):
+    role: str
+    runs: list[Stretch]
+
+
+class Previewed(_Schema):
+    messages: list[PreviewMessage] = Field(
+        description="the messages as read, the appendices laid out as placeholders"
+    )
+    request: dict[str, JsonValue] = Field(
+        description="the request as sent, without a seed or return_token_ids"
+    )
+    contract: dict[str, JsonValue] = Field(description="how the answer is held")
+
+
 class NewSave(_Schema):
     head: int = Field(description="the edit the change was made on")
     name: str | None = Field(
         None, min_length=1, description="a fork's: without it, a version is saved"
+    )
+    independent: bool = Field(
+        False,
+        description="with a name, a configuration of its own, forked from nothing",
     )
     chunks: Drafted = Field(default_factory=dict)
     model: ModelDigest = None
