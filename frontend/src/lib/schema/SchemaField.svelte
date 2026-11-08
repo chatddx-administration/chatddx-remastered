@@ -289,7 +289,8 @@
         class="rounded-md border border-input bg-transparent px-2.5 py-1.5 font-mono text-xs"
         value={typed ?? JSON.stringify(value, null, 2)}
         oninput={(e) => parsed(e.currentTarget.value)}></textarea>
-      {#if broken}<span class="text-xs text-destructive">{t("Not JSON yet: %(error)s", { error: broken })}</span>{/if}
+      {#if broken}<span class="text-xs text-destructive">{t("It isn't JSON yet: %(error)s", { error: broken })}</span
+        >{/if}
     {/if}
     {#if said}<span class="text-xs text-muted-foreground">{said}</span>{/if}
   </label>

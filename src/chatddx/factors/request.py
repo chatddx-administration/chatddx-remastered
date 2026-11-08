@@ -450,15 +450,15 @@ class Translations(Component):
     def _into(cls, into: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
         for language, entries in into.items():
             if not entries:
-                raise Invalid.of("no translations into %(language)s", language=language)
+                raise Invalid.of("no translations into %(into)s", into=language)
             if any(not text.strip() for text in entries):
                 raise Invalid.of("whitespace isn't translated")
             if empty := sorted(
                 text for text, translation in entries.items() if not translation
             ):
                 raise Invalid.of(
-                    "no translation into %(language)s given for %(texts)s",
-                    language=language,
+                    "no translation into %(into)s for %(texts)s",
+                    into=language,
                     texts=str(empty),
                 )
         return {language: sorted_keys(entries) for language, entries in into.items()}

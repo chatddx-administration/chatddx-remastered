@@ -53,7 +53,7 @@
       judge: (j.owner && j.owner !== me ? `${j.owner}/` : "") + j.name,
       configuration: j.configuration,
       model: j.model ?? "",
-      seeds: tn("%(n)s seed", "%(n)s seeds", j.seeds.length, { n: j.seeds.length }),
+      seeds: tn("%(num)s seed", "%(num)s seeds", j.seeds.length, { num: j.seeds.length }),
     };
     return j.model
       ? t("%(judge)s: %(configuration)s under %(model)s, %(seeds)s", given)
