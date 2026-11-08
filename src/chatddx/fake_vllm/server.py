@@ -119,7 +119,7 @@ class _Handler(BaseHTTPRequestHandler):
             sent = generated
 
     def _reply(self, served: Served, body: dict[str, Any]) -> Reply:
-        if self.script is None:
+        if self.script is None or not self.script.scripts(body):
             return respond(served, body, self.runaway)
         held = self.script.next()
         if held is None:

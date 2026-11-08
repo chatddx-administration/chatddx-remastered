@@ -6,8 +6,8 @@ from chatddx.bench import Bench
 from chatddx.bench.seen import choices
 from chatddx.catalog import Subject, read
 from chatddx.factors.gathering import REVIEW, Center
+from chatddx.inventory.synthetic import drawn
 from chatddx.scripted import review
-from chatddx.scripted.fared import drawn
 
 
 @pytest.mark.slow

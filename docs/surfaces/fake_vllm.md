@@ -204,6 +204,7 @@ Raises:
 `src/chatddx/fake_vllm/script.py:Script.__init__`
 
 * `turns: Iterable[Turn]`
+* `unscripted: Iterable[Sequence[object]] = ()`
 
 ## `Script.load` `@classmethod`
 `src/chatddx/fake_vllm/script.py:Script.load`
@@ -230,6 +231,15 @@ Raises:
 `src/chatddx/fake_vllm/script.py:Script.release`
 
 * ∟`None`
+
+## `Script.scripts`
+`src/chatddx/fake_vllm/script.py:Script.scripts`
+
+Whether a request is the script's to answer: any but one whose messages are
+among those it was told to leave unscripted, such as a run's canaries.
+
+* `body: dict[str, Any]`
+* ∟`bool`
 
 ## `scripted`
 `src/chatddx/fake_vllm/chat.py:scripted`

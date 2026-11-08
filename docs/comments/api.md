@@ -56,6 +56,13 @@ Written by `chatddx-dev index` from the comments in `[parts.api]`'s code in `set
 # want of an answer or a target, scored nothing, whatever its value says.
 ```
 
+## `src/chatddx/api/runs.py:_checked`
+
+```
+# Policy: drift is compared across the person's earlier finished runs of the trial at
+# the same endpoint too, as decided (docs/backlog.md, "Drift between runs").
+```
+
 ## `src/chatddx/api/state.py:refused`
 
 ```

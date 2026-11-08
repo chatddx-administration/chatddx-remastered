@@ -1,6 +1,7 @@
 from .call import Attempt, Call, ToolRun, Turn, fingerprint_request
 from .record import ItemKey, Record
 from .run import (
+    DRIFT_CODES,
     CanaryCall,
     Endpoint,
     Run,
@@ -8,6 +9,7 @@ from .run import (
     RunItem,
     RunStarted,
     ToolCode,
+    check_drift,
     check_run,
 )
 from .score import (
@@ -21,6 +23,7 @@ from .score import (
 )
 
 __all__ = [
+    "DRIFT_CODES",
     "Attempt",
     "Call",
     "CanaryCall",
@@ -40,6 +43,7 @@ __all__ = [
     "ToolCode",
     "ToolRun",
     "Turn",
+    "check_drift",
     "check_run",
     "check_score",
     "fingerprint_request",

@@ -913,6 +913,14 @@ repeatable, so never stored.
 :canary.phase — Start canary calls hadn't finished when the first item was sent, or end canary calls started before the
 last item call finished. (warning)
 
+:canary.drift — A canary answered otherwise between phases, or between runs of the trial at the endpoint. (warning;
+canary)
+
+:canary.prompt_drift — A canary's prompt was tokenized otherwise between phases or runs. (warning; canary)
+
+:engine.system_drift — The engine said more than one system fingerprint within a run, or between runs of the trial at
+the endpoint. (warning)
+
 ### Checking a score
 
 Raised by `src/chatddx/ledger/score.py:check_score`, with `src/chatddx/ledger/call.py` and

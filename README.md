@@ -165,7 +165,7 @@ chatddx person password alice
 chatddx run --watch   # builds the frontend as it changes, till Ctrl-C
 ```
 
-Then sign in as alice at http://localhost:8000, type a case and pick an endpoint. `pnpm --dir frontend check` checks the
+Then sign in as alice at http://localhost:8000, type a case and pick a model. `pnpm --dir frontend check` checks the
 frontend's types.
 
 ### Kompismoln's hosts

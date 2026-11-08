@@ -21,7 +21,7 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 - **The flake** (`flake.nix`) has `packages.default`, the Python environment with `chatddx` on its PATH, and
   `packages.frontend`, the portal's build, which a deployment points `CHATDDX_PORTAL_ASSETS` at portal;
   `nixosModules.default`, and its tests in `checks` (see "The NixOS module"). It has no image, and nothing builds it but
-  a person: there is no CI.
+  a person. CI runs the flake's checks on each push to main (docs/parts/dev.md, "CI").
 - **What serves**, by command (`src/chatddx/cli.py`):
 
   | Command                | Serves                                                                                                                                    |
@@ -169,8 +169,8 @@ Decided: chatddx-dev first, on stationary, from this repository's `main`, with t
 chatddx stays on helsinki meanwhile.
 
 Built, in use: chatddx-dev runs with `CHATDDX_WORLD=worlds/kompismoln`, and its runs on the sample's vignettes go to
-pelle and malborg. Its store is dropped and loaded again when a stored kind's version goes up, for now: what it holds is
-to be kept soon, which wants old versions read (`docs/backlog.md`, "Old versions readable") before the next bump.
+pelle and malborg. Its store has been dropped and loaded again when a stored kind's version went up; since a bump adds
+the kind's upgrade from the version before (docs/parts/factors.md, "Components"), what it holds can be kept.
 
 - **Where it is**: Kompismoln's org (`Kompismoln/org`), in `apps/chatddx-remastered.nix`, the app file of
   `[app.chatddx-dev]` in its `org.toml`, which o11n's app-scheduler role imports on the app's hosts. It adapts the org's
@@ -218,9 +218,9 @@ to be kept soon, which wants old versions read (`docs/backlog.md`, "Old versions
 
 ## Open
 
-- Which target serves real patient data first, and whether the other stays (`docs/chatddx.md` puts the orchestrator in
-  Kubernetes; decides systemd on NixOS).
+- Which target serves real patient data first, and whether the other stays (`docs/chatddx.md`, "How it runs", names
+  both).
 - Keycloak in front: which target runs it, and how it hands the app a login.
-- CI: what builds the image and the module's test, and runs `pytest` and the frontend's checks, before a deployment
-  takes a revision. The VM test needs KVM: a self-hosted runner on one of Kompismoln's hosts is among the options in
-  o11n's `agents/wip-self-hosted-kvm.md`.
+- CI: whether a deployment takes only a revision CI passed, and what builds the image. The checks, the VM test included,
+  run on each push to main on a self-hosted Forgejo runner (docs/parts/dev.md, "CI"); the options for one with KVM on
+  one of Kompismoln's hosts are in o11n's `agents/wip-self-hosted-kvm.md`.

@@ -52,6 +52,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0022-t0-ledger-seq",
         "0024-t0-worker-scored",
         "0028-t0-catalog-version",
+        "0029-t0-ledger-canaries",
     ]
     assert empty.info.transaction_status == TransactionStatus.IDLE
     assert migrate(empty, tier=0) == []
@@ -79,6 +80,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0025-t2-worker-scored",
         "0026-t2-catalog-run-variation",
         "0027-t2-catalog-description",
+        "0030-t2-ledger-canaries",
     ]
     with pytest.raises(errors.RaiseException, match="insert-only"):
         _ = empty.execute("TRUNCATE factor.component CASCADE")
@@ -258,6 +260,25 @@ def test_database_guards_the_ledger(conn: Connection) -> None:
     store.append(canary)
     with pytest.raises(errors.UniqueViolation):
         store.append(canary.model_copy(update={"call": call("other")}))
+    unstored = "sha256:" + "c" * 64
+    with pytest.raises(errors.ForeignKeyViolation):
+        store.append(
+            RunStarted(
+                run=uuid4(), at=NOW, rig=RIG, trial=ids["trial"], canaries=unstored
+            )
+        )
+    started = RunStarted(run=uuid4(), at=NOW, rig=RIG, trial=ids["trial"])
+    payload = started.model_copy(
+        update={"canaries": ids["canaries"]}
+    ).canonical.decode()
+    with pytest.raises(errors.CheckViolation), conn.transaction():
+        _ = conn.execute(
+            """
+            INSERT INTO ledger.run_stage (run, stage, trial, payload, doc)
+            VALUES (%s, 'started', %s, %s, %s::jsonb)
+            """,
+            (started.run, ids["trial"], payload, payload),
+        )
 
 
 def test_compilations_are_found_by_their_skeleton(conn: Connection) -> None:

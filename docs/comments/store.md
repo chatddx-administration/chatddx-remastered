@@ -302,6 +302,20 @@ Written by `chatddx-dev index` from the comments in `[parts.store]`'s code in `s
 -- the admin that made it.
 ```
 
+## `src/chatddx/store/migrations/0029-t0-ledger-canaries.sql`
+
+```
+-- Accommodating for runs from before, which name no canary set here, whatever their doc
+-- says (0030-t2-ledger-canaries.sql).
+```
+
+## `src/chatddx/store/migrations/0030-t2-ledger-canaries.sql`
+
+```
+-- Accommodating for runs from before, which name none in the column: checked as rows are
+-- added, not of those there are.
+```
+
 ## `src/chatddx/store/notify.py:LIMIT`
 
 ```

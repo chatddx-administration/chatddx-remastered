@@ -669,12 +669,22 @@ Raises:
 ## `Estimate` `@dataclass(frozen=True)`
 `src/chatddx/bench/breakdown.py:Estimate`
 
-A mean of `n` values with the half-width of its 95% interval, None for fewer
-than two.
+A mean of `n` values, each a case's, with the half-width of its 95% interval,
+None for fewer than two.
 
 * `mean: float`
 * `half: float | None`
 * `n: int`
+
+## `estimate`
+`src/chatddx/bench/breakdown.py:estimate`
+
+The mean of values, one a case, with Student's t interval over them: a case's
+replicates aren't independent draws of how a configuration fares, so they are
+averaged before they get here. None for none.
+
+* `values: Sequence[float]`
+* ∟`Estimate | None`
 
 ## `Family` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Family`
@@ -876,8 +886,9 @@ One baseline gathering of a configuration: `means` over its replicates alone,
 `src/chatddx/bench/breakdown.py:Pooled`
 
 The baseline gatherings of the versions that compile to one skeleton, by its
-digest: each view's estimate over every replicate of every case, and its mean
-difference from the pooled before it on the cases both sent, case by case.
+digest: each view's estimate over the cases, each case its replicates' mean, and
+its mean difference from the pooled before it on the cases both sent, case by
+case.
 
 * `digest: str`
 * `versions: tuple[int, ...]`
@@ -1352,6 +1363,18 @@ nothing.
 `src/chatddx/bench/model.py:Started.first`
 
 * ∟`Running`
+
+## `t975`
+`src/chatddx/bench/breakdown.py:t975`
+
+Student's t at 0.975 for `df` degrees of freedom: tabled to 30, then by the
+Cornish-Fisher expansion, within 0.001.
+
+* `df: int`
+* ∟`float`
+
+Raises:
+1. `ValueError`: `"df must be at least 1, not {df}"`
 
 ## `Taken` `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Taken`

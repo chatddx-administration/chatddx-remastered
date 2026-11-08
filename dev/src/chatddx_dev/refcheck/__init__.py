@@ -13,6 +13,7 @@ _DOC = re.compile(r"(?<![\w/.-])((?:docs|agents)/[\w./-]+\.md|AGENTS\.md|README\
 _CODE = re.compile(r"(?<![\w/.-])(src/chatddx/[\w./-]+(?::[A-Za-z_][\w.]*)?)")
 _SECTIONS = re.compile(r'^`?(?:,\s*|\s*\(\s*)((?:"[^"]+"(?:\s*(?:,|and|or)\s*)?)+)')
 _SEE = re.compile(r'\(see ((?:"[^"]+"(?:\s*(?:,|and|or)\s*)?)+)')
+_ANCHOR = re.compile(r"\]\(#([^)\s]+)\)")
 _TERM = re.compile(r"(?:(?<=[\s(`])|^):(?=[A-Z])")
 _COMMIT = re.compile(
     r"(?<![\w/.:-])(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?![\w-])"
@@ -45,6 +46,7 @@ def _prose(path: Path) -> list[tuple[int, str]]:
 class _Doc:
     text: str
     headings: set[str]
+    anchors: set[str]
     items: set[str]
     entries: set[str]
 
@@ -55,6 +57,7 @@ class _Doc:
         self.headings = {
             m.group(1) for line in lines if (m := re.match(r"^#+\s+(.*?)\s*$", line))
         }
+        self.anchors = {_slug(h) for h in self.headings}
         self.items = {i.rstrip(".:,;") for i in re.findall(r"\*\*(.+?)\*\*", self.text)}
         self.entries = {
             m.group(1) for line in lines if (m := re.match(r"^:(.+?) — ", line))
@@ -64,6 +67,12 @@ class _Doc:
         if section[0].islower():
             return section in self.text
         return section in self.headings or section.rstrip(".:,;") in self.items
+
+
+# Dependency: GitHub's heading anchors: lower case, all but word characters, spaces
+# and hyphens dropped, spaces as hyphens.
+def _slug(heading: str) -> str:
+    return re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-")
 
 
 def _code_problem(root: Path, ref: str) -> str | None:
@@ -165,6 +174,9 @@ def check() -> list[str]:
                     section = " ".join(section.split())
                     if m.start() < len(line) and not doc(path).holds(section):
                         found.append(f'{here}: section: "{section}"')
+            for m in _ANCHOR.finditer(line):
+                if m.group(1) not in doc(path).anchors:
+                    found.append(f"{here}: anchor: #{m.group(1)}")
             for m in _CODE.finditer(line):
                 ref = m.group(1)
                 if _ELSEWHERE_BEFORE.search(line[: m.start()]):

@@ -210,11 +210,32 @@ def _walk(tp: Any, value: Any, path: str) -> Iterator[RefSite]:
 
 Resolver = Callable[[str], "Component"]
 
+type Upgrade = Callable[[dict[str, object]], dict[str, object]]
+
+
+def upgraded(
+    name: str, doc: dict[str, object], current: int, upgrades: Mapping[int, Upgrade]
+) -> dict[str, object]:
+    """The doc, its "v" popped, brought to `current` by `upgrades[v]`, which takes a
+    doc of version v to v + 1, each in turn: as cheap as the upgrades. Raises a
+    StructuralError for a version it has no way up from."""
+    v = doc.pop("v", None)
+    if not isinstance(v, int) or isinstance(v, bool) or v > current:
+        raise StructuralError(f"{name} v{v} is not readable by v{current}")
+    while v < current:
+        upgrade = upgrades.get(v)
+        if upgrade is None:
+            raise StructuralError(f"{name} v{v} is not readable by v{current}")
+        doc, v = upgrade(doc), v + 1
+    return doc
+
 
 class Component(Frozen):
     # Policy: bump when an existing field's meaning or default changes; additive fields
-    # don't.
+    # don't. A bump adds the upgrade from the version before to `upgrades`, so that
+    # what is stored at it stays readable.
     schema_version: ClassVar[int] = 1
+    upgrades: ClassVar[Mapping[int, Upgrade]] = {}
 
     @classmethod
     @override

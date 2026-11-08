@@ -1,7 +1,7 @@
 import json
 from typing import cast
 
-from .base import Component, StructuralError
+from .base import Component, StructuralError, upgraded
 from .cases import Appendix, Case
 from .engine import LocalEngine, LocalModel, RemoteEngine, RemoteModel
 from .facts import ModelFacts
@@ -79,7 +79,6 @@ def parse_component(data: bytes) -> Component:
     cls = BY_KIND.get(kind) if isinstance(kind, str) else None
     if cls is None:
         raise StructuralError(f"unknown component kind {kind!r}")
-    v = doc.pop("v", None)
-    if v != cls.schema_version:
-        raise StructuralError(f"{kind} v{v} is not readable by v{cls.schema_version}")
-    return cls.model_validate(doc)
+    return cls.model_validate(
+        upgraded(str(kind), doc, cls.schema_version, cls.upgrades)
+    )

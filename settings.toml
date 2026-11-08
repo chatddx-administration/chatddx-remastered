@@ -155,6 +155,9 @@ refused_at_stamp = [
   "frontend",
 ]
 told_at_fetch = ["pending"]
+# Policy: what a merge's squash is refused on besides what its stamp is, so that main, which chatddx-dev deploys from,
+# holds nothing these fail on; the rest is CI's (docs/parts/dev.md, "CI").
+refused_at_merge = ["python-tests", "dev", "docs"]
 
 # What chatddx.settings.PARTS holds: each part of the project at its stage, as AGENTS.md's "Development stages" names
 # them; its class, the vocabulary it speaks: datamodel, the glossary's terms, ux, what people see and do, or machinery,

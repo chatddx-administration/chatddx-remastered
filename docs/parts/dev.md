@@ -86,6 +86,14 @@ the indexes `chatddx-dev index` writes, for a human to resolve. `./dev/check.sh 
 names for it alone, `nix/test.nix`, which boots the NixOS module in a VM for its test, ~7 minutes, and
 `nix/module-eval.nix`.
 
+## CI
+
+Main is gated twice, as there are no pull requests: before, by `./dev/operator.sh merge`, which refuses to squash onto
+main what `[operator] refused_at_merge` fails on (see "Operator"), and after, by `.forgejo/workflows/checks.yml`, which
+runs `nix flake check` on each push to main, the VM test included, on a Forgejo runner on a host with Nix and KVM that
+registers the label `nix`. The runner's Nix store keeps what passed, so a check whose inputs didn't change costs
+nothing. `browser` runs in neither: `./dev/agent.sh hand-over` runs it.
+
 ## The database
 
 `dev-db` runs PostgreSQL 16 from `~/.local/state/dev-db/`, on a socket only. The first start creates the cluster, the
@@ -128,7 +136,9 @@ In the dev shell, pulling and pushing through `as.sh` as `$CHATDDX_DEV`:
 
 `stamp` prints at once when nothing changed since it last stamped, as in `./dev/operator.sh stamp | osc copy`. Start the
 next session at the revision it prints, with a first prompt that begins `At <revision>`. `settings.toml`'s `[operator]`
-names what `fetch` tells of and `stamp` refuses on: what `turn-start` checks, so that what is stamped passes it.
+names what `fetch` tells of and `stamp` refuses on: what `turn-start` checks, so that what is stamped passes it; and
+what `merge` refuses on besides, on the branch once stamped, before it squashes: a failure leaves it stamped, and main
+as it was.
 
 ## Agent
 

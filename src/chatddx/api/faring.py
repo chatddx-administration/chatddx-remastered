@@ -11,8 +11,8 @@ from chatddx.factors.gathering import REVIEW
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import ExpectationSchema, Scorer, Scoring
 from chatddx.factors.select import field as field_of
+from chatddx.inventory.synthetic import drawn
 from chatddx.scorers.shipped import unit_of
-from chatddx.scripted.fared import drawn
 
 from . import families as api_families, schemas
 from .people import BenchDep

@@ -4,10 +4,19 @@ from collections.abc import Sequence
 
 from pydantic import HttpUrl
 
-from chatddx.factors.base import Resolver, StructuralError
+from chatddx.factors.base import Resolver, StructuralError, resolve
 from chatddx.factors.engine import RemoteEngine, served_model_name
+from chatddx.factors.trial import CanarySet
 from chatddx.fake_vllm.served import CLOSURE, Refused, Served
 from chatddx.inventory import Inventory, start_up
+
+
+def canaried(get: Resolver, canaries: str | None) -> list[tuple[object, ...]]:
+    """The messages of each canary of the set, none for none: what a script leaves to the
+    fake, as a script answers a run's items alone. Reads the set."""
+    if canaries is None:
+        return []
+    return [c.messages for c in resolve(get, canaries, CanarySet).canaries]
 
 
 def fake_at(inventory: Inventory, get: Resolver, name: str) -> Served:

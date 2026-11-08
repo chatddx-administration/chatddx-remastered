@@ -19,8 +19,8 @@ type View = tuple[str, int]
 
 @dataclass(frozen=True)
 class Estimate:
-    """A mean of `n` values with the half-width of its 95% interval, None for fewer
-    than two."""
+    """A mean of `n` values, each a case's, with the half-width of its 95% interval,
+    None for fewer than two."""
 
     mean: float
     half: float | None
@@ -48,8 +48,9 @@ class Point:
 @dataclass(frozen=True)
 class Pooled:
     """The baseline gatherings of the versions that compile to one skeleton, by its
-    digest: each view's estimate over every replicate of every case, and its mean
-    difference from the pooled before it on the cases both sent, case by case."""
+    digest: each view's estimate over the cases, each case its replicates' mean, and
+    its mean difference from the pooled before it on the cases both sent, case by
+    case."""
 
     digest: str
     versions: tuple[int, ...]
@@ -114,11 +115,7 @@ def breakdown(
                 estimates={
                     v: e
                     for v in views
-                    if (
-                        e := _estimate(
-                            [x for xs in values.get(v, {}).values() for x in xs]
-                        )
-                    )
+                    if (e := estimate([mean(xs) for xs in values.get(v, {}).values()]))
                 },
                 paired={}
                 if before is None
@@ -278,15 +275,40 @@ def _paired(
     for v in views:
         then, now = before.get(v, {}), after.get(v, {})
         diffs = [mean(now[c]) - mean(then[c]) for c in now if c in then]
-        if (e := _estimate(diffs)) is not None:
+        if (e := estimate(diffs)) is not None:
             found[v] = e
     return found
 
 
-def _estimate(values: Sequence[float]) -> Estimate | None:
+def estimate(values: Sequence[float]) -> Estimate | None:
+    """The mean of values, one a case, with Student's t interval over them: a case's
+    replicates aren't independent draws of how a configuration fares, so they are
+    averaged before they get here. None for none."""
     if not values:
         return None
     if len(values) < 2:
         return Estimate(values[0], None, 1)
-    half = 1.96 * stdev(values) / math.sqrt(len(values))
+    half = t975(len(values) - 1) * stdev(values) / math.sqrt(len(values))
     return Estimate(mean(values), half, len(values))
+
+
+_T975 = tuple(
+    t
+    for row in (
+        (12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228),
+        (2.201, 2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086),
+        (2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042),
+    )
+    for t in row
+)
+
+
+def t975(df: int) -> float:
+    """Student's t at 0.975 for `df` degrees of freedom: tabled to 30, then by the
+    Cornish-Fisher expansion, within 0.001."""
+    if df < 1:
+        raise ValueError(f"df must be at least 1, not {df}")
+    if df <= len(_T975):
+        return _T975[df - 1]
+    z = 1.959964
+    return z + (z**3 + z) / (4 * df) + (5 * z**5 + 16 * z**3 + 3 * z) / (96 * df**2)

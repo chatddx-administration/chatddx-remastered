@@ -1438,7 +1438,8 @@ msgstr "Överförd från texten som den var."
 msgid "Case"
 msgstr "Fall"
 
-#: src/chatddx/portal/shelves.py src/chatddx/portal/templates/review.html
+#: frontend/src/lib/compose/Breakdown.svelte src/chatddx/portal/shelves.py
+#: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/run.html
 msgid "Cases"
 msgstr "Fall"
@@ -3042,7 +3043,6 @@ msgstr "Replikat"
 msgid "Replicate %(n)s: %(value)s"
 msgstr "Replikat %(n)s: %(value)s"
 
-#: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/score.html
 msgid "Replicates"
 msgstr "Replikat"
@@ -4518,6 +4518,20 @@ msgid_plural "calling a tool, %(n)s tokens"
 msgstr[0] "anropar ett verktyg, %(n)s token"
 msgstr[1] "anropar ett verktyg, %(n)s token"
 
+#: src/chatddx/ledger/run.py
+#, python-format
+msgctxt "canary.drift"
+msgid "canary %(canary)s answered %(ways)s ways where it was to answer alike"
+msgstr ""
+"kanariefråga %(canary)s besvarades på %(ways)s sätt där den skulle "
+"besvaras likadant"
+
+#: src/chatddx/ledger/run.py
+#, python-format
+msgctxt "canary.prompt_drift"
+msgid "canary %(canary)s was tokenized %(ways)s ways"
+msgstr "kanariefråga %(canary)s tokeniserades på %(ways)s sätt"
+
 #: frontend/src/lib/kinds.ts src/chatddx/portal/shelves.py
 msgctxt "kind"
 msgid "canary set"
@@ -5810,6 +5824,12 @@ msgid ""
 msgstr ""
 "konfigurationens verktyg skulle få innehåll från källan %(sources)s, som "
 "är känslig, och verktyg kan inte godkännas än"
+
+#: src/chatddx/ledger/run.py
+#, python-format
+msgctxt "engine.system_drift"
+msgid "the engine said %(ways)s system fingerprints"
+msgstr "motorn angav %(ways)s systemfingeravtryck"
 
 #: src/chatddx/factors/lint.py
 #, python-format

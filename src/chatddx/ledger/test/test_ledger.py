@@ -36,6 +36,7 @@ from chatddx.ledger import (
     check_score,
     fingerprint_request,
 )
+from chatddx.ledger.record import seal_rows
 from chatddx.ledger.test.rounds import ran, rounds
 from chatddx.test.helpers import one_attempt, registry
 
@@ -291,6 +292,30 @@ def test_records_carry_their_schema_version() -> None:
         _ = RunStarted.parse(json.dumps(doc))
     with pytest.raises(StructuralError, match="not a JSON object"):
         _ = RunStarted.parse("[]")
+
+
+def test_a_record_stored_at_an_older_version_is_upgraded_and_keeps_its_seal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    started = RunStarted(run=uuid4(), at=NOW, rig=RIG, trial="sha256:" + "0" * 64)
+    stored, sealed = started.canonical, seal_rows(started)
+    seen: list[dict[str, object]] = []
+
+    def up(doc: dict[str, object]) -> dict[str, object]:
+        seen.append(doc)
+        return doc
+
+    monkeypatch.setattr(RunStarted, "schema_version", 3)
+    monkeypatch.setattr(RunStarted, "upgrades", {2: up})
+    parsed = RunStarted.parse(stored)
+
+    assert len(seen) == 1 and parsed.run == started.run
+    assert json.loads(parsed.canonical)["v"] == 3
+    assert parsed.as_stored() == json.loads(stored)
+    assert seal_rows(parsed) == sealed
+    monkeypatch.setattr(RunStarted, "upgrades", {})
+    with pytest.raises(StructuralError, match="RunStarted v2 is not readable by v3"):
+        _ = RunStarted.parse(stored)
 
 
 def test_execution_is_checked_against_the_calls(reg: Registry) -> None:

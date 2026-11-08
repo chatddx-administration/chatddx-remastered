@@ -1,7 +1,7 @@
 import json
 import threading
 import tomllib
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -91,8 +91,11 @@ def turn(where: str, value: object) -> Turn:
 # Dependency: a script's file may hold keys of its reader's:
 # src/chatddx/scripted/read.py.
 class Script:
-    def __init__(self, turns: Iterable[Turn]) -> None:
+    def __init__(
+        self, turns: Iterable[Turn], unscripted: Iterable[Sequence[object]] = ()
+    ) -> None:
         self.turns: tuple[Turn, ...] = tuple(turns)
+        self._unscripted: frozenset[str] = frozenset(map(_said, unscripted))
         self._next: int = 0
         self._lock: threading.Lock = threading.Lock()
         self.released: threading.Event = threading.Event()
@@ -112,6 +115,11 @@ class Script:
         with path.open("rb") as f:
             return cls.of(tomllib.load(f), str(path))
 
+    def scripts(self, body: dict[str, Any]) -> bool:
+        """Whether a request is the script's to answer: any but one whose messages are
+        among those it was told to leave unscripted, such as a run's canaries."""
+        return _said(body.get("messages", ())) not in self._unscripted
+
     def release(self) -> None:
         self.released.set()
 
@@ -121,3 +129,7 @@ class Script:
                 return None
             self._next += 1
             return self._next, self.turns[self._next - 1]
+
+
+def _said(messages: object) -> str:
+    return json.dumps(messages, sort_keys=True)

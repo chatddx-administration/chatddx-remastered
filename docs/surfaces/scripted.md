@@ -24,6 +24,16 @@ Finds:
 
 - A stamp pending is a git conflict, from `<<<<<<< signed` to `=======` as last stamped and on to the `>>>>>>>` closing it as written now, till it is stamped.
 
+## `canaried`
+`src/chatddx/scripted/fakes.py:canaried`
+
+The messages of each canary of the set, none for none: what a script leaves to the
+fake, as a script answers a run's items alone. Reads the set.
+
+* `get: Resolver`
+* `canaries: str | None`
+* ∟`list[tuple[object, ...]]`
+
 ## `clock` `@contextmanager`
 `src/chatddx/scripted/answering.py:clock`
 
@@ -70,22 +80,6 @@ sees no case.
 Raises:
 1. `LookupError`: `"no configuration of {bench.person.login}'s runs: {said}"`
 2. `LookupError`: `"{bench.person.login} sees no case to run"`
-
-## `drawn`
-`src/chatddx/scripted/fared.py:drawn`
-
-What a gathering of a case under a configuration would score on a scorer's view,
-a value per replicate, drawn as the seed has it alike every time: the configuration
-strong or weak, the case easy or hard and the view lenient or strict alike for every
-other they meet. Costs nothing but the drawing.
-
-* `seed: int`
-* `case: str`
-* `configuration: int`
-* `scorer: str`
-* `view: int`
-* `metric: str`
-* ∟`list[float]`
 
 ## `fake_at`
 `src/chatddx/scripted/fakes.py:fake_at`
@@ -166,11 +160,6 @@ Raises:
 
 Raises:
 1. `ValueError`: `"{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}"` (through `_sent`)
-
-## `REPLICATES`
-`src/chatddx/scripted/fared.py:REPLICATES`
-
-`REPLICATES = 4`
 
 ## `review`
 `src/chatddx/scripted/review.py:review`

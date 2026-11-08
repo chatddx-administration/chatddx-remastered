@@ -38,6 +38,11 @@ A new schema gets its own section with all three tiers.
   `score_item (score, case, replicate, view)`. `payload` holds `Record.canonical`; `doc` is its `jsonb` copy. Item rows
   and canary calls reference their log's started row through a constant `stage` column, and a score's started row
   references its run's. Trials, scorings and cases reference `factor.component`.
+- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
+  are read back in the order they were written; rows from before are numbered as the column is added, in no particular
+  order. An index on `score_stage (run)`.
+- `0029-t0-ledger-canaries.sql`: a `canaries` column on `run_stage` referencing `factor.component`, as `trial` does, so
+  that a run names no canary set that isn't stored; runs from before name none in it.
 
 ### Tier 1
 
@@ -45,15 +50,14 @@ A new schema gets its own section with all three tiers.
   gets nothing: `run_item`, `score_item` and a score's finish in `score_stage` hold sensitive records
   (`src/chatddx/ledger/record.py:Record.sensitive`), and the other stage rows and canary calls sit beside them so that
   each log stays in one schema.
-- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
-  are read back in the order they were written; rows from before are numbered as the column is added, in no particular
-  order. An index on `score_stage (run)`.
+- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
 
 ### Tier 2
 
 - `0006-t2-ledger.sql`: CHECKs that `doc` matches `payload` and that every key column matches `doc`; insert-only
   triggers on every table.
-- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
+- `0030-t2-ledger-canaries.sql`: a CHECK that `canaries` matches `doc`, NOT VALID, so that it holds of the rows added
+  from then on and not of runs from before.
 
 ## identity
 

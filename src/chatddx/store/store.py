@@ -127,13 +127,23 @@ class Store:
                 payload = record.canonical.decode()
                 match record:
                     case RunStarted() | RunFinished():
-                        trial = record.trial if isinstance(record, RunStarted) else None
+                        started = isinstance(record, RunStarted)
+                        trial = record.trial if started else None
+                        canaries = record.canaries if started else None
                         _ = cur.execute(
                             """
-                            INSERT INTO ledger.run_stage (run, stage, trial, payload, doc)
-                            VALUES (%s, %s, %s, %s, %s::jsonb)
+                            INSERT INTO ledger.run_stage
+                                (run, stage, trial, canaries, payload, doc)
+                            VALUES (%s, %s, %s, %s, %s, %s::jsonb)
                             """,
-                            (record.run, record.stage, trial, payload, payload),
+                            (
+                                record.run,
+                                record.stage,
+                                trial,
+                                canaries,
+                                payload,
+                                payload,
+                            ),
                         )
                     case RunItem():
                         _ = cur.execute(

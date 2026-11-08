@@ -1,18 +1,20 @@
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from typing import Annotated, ClassVar, Protocol, Self, cast, override
 from uuid import UUID
 
-from pydantic import AfterValidator, AwareDatetime, Field, JsonValue
+from pydantic import AfterValidator, AwareDatetime, Field, JsonValue, PrivateAttr
 
 from chatddx.factors.base import (
     Finding,
     Frozen,
     StructuralError,
+    Upgrade,
     canonical_bytes,
     sha256_digest,
     sorted_keys,
+    upgraded,
 )
 from chatddx.factors.cases import CaseRef
 
@@ -32,6 +34,8 @@ def in_order(started: datetime, finished: datetime) -> None:
 class Record(Frozen):
     sensitive: ClassVar[bool] = True
     schema_version: ClassVar[int] = 1
+    upgrades: ClassVar[Mapping[int, Upgrade]] = {}
+    _stored: dict[str, JsonValue] | None = PrivateAttr(default=None)
 
     def canonical_doc(self) -> dict[str, JsonValue]:
         doc = cast(
@@ -44,18 +48,22 @@ class Record(Frozen):
     def canonical(self) -> bytes:
         return canonical_bytes(self.canonical_doc())
 
+    def as_stored(self) -> dict[str, JsonValue]:
+        """The doc as it was stored, of the version it was stored at, for a record
+        parsed from it, else its canonical doc."""
+        return self.canonical_doc() if self._stored is None else self._stored
+
     @classmethod
     def parse(cls, data: bytes | str) -> Self:
         loaded: object = json.loads(data)
         if not isinstance(loaded, dict):
             raise StructuralError(f"{cls.__name__} is not a JSON object")
-        doc = cast(dict[str, object], loaded)
-        v = doc.pop("v", None)
-        if v != cls.schema_version:
-            raise StructuralError(
-                f"{cls.__name__} v{v} is not readable by v{cls.schema_version}"
-            )
-        return cls.model_validate(doc)
+        stored = cast(dict[str, JsonValue], loaded)
+        doc = upgraded(cls.__name__, dict(stored), cls.schema_version, cls.upgrades)
+        record = cls.model_validate(doc)
+        if stored.get("v") != cls.schema_version:
+            record._stored = stored
+        return record
 
 
 class ItemKey(Frozen):
@@ -81,10 +89,10 @@ def check_log(started: Stage, finished: Stage | None, ids: Iterable[UUID]) -> No
 
 def seal_rows(started: Record, **rows: Iterable[Record]) -> str:
     doc: dict[str, JsonValue] = {
-        name: sorted((r.canonical_doc() for r in group), key=canonical_bytes)
+        name: sorted((r.as_stored() for r in group), key=canonical_bytes)
         for name, group in rows.items()
     }
-    doc["started"] = started.canonical_doc()
+    doc["started"] = started.as_stored()
     return sha256_digest(canonical_bytes(sorted_keys(doc)))
 
 

@@ -25,8 +25,8 @@ and a vignette or a request only as a :Fingerprint (docs/parts/ledger.md).
 
 ## Requirements
 
-- Conversely, simple and reliable scoring methods are needed to produce clean easily processed outputs, which will
-  require strict and simple pattern matching.
+- Simple and reliable scoring methods are needed to produce clean, easily processed outputs, which will require strict
+  and simple pattern matching.
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can
   be passed along revealing just enough for the orchestrator to fulfill its duty. Cases enter the system de-identified,
   from a predefined source or typed directly into a chat (:Typed case). De-identification is the clinician's duty.
@@ -37,9 +37,9 @@ and a vignette or a request only as a :Fingerprint (docs/parts/ledger.md).
   monitoring runs.
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
   scorer is put together by researchers in the portal.
-- a self-contained bundle that can be verified offline
-- scripts that can read the World to import factor parameters.
-- import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
+- A self-contained bundle that can be verified offline.
+- Scripts that can read the World to import factor parameters.
+- Import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
 
 ### Intended evolution of configurations
 

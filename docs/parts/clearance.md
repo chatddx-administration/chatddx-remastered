@@ -183,10 +183,11 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
    - A run's event stream holds two for as long as it is open, the request's and its own
      (`src/chatddx/api/runs.py:215-229`, `src/chatddx/api/telling.py:166`), and each app one more for its listener
      (`src/chatddx/api/listening.py:114`).
-   - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:178-185`). A
-     run's job is held to its endpoint's capacity, but a scoring alone holds no slots
-     (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
-     counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as are queued.
+   - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:Worker._work`),
+     up to `src/chatddx/settings.py:WORKER_JOBS` jobs. A run's job is held to its endpoint's capacity, but a scoring
+     alone holds no slots (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory
+     doesn't name isn't counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as it has room
+     for.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
      (`src/chatddx/bench/cases.py:type_case`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:check_quota`). Scoring
      again has no quota, beyond one job per run at a time.
@@ -232,7 +233,7 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
    - `Role` is shown, never checked.
    - No command deactivates anyone, though `People` can (`src/chatddx/store/people.py:81-84`), and a deactivated
      person's queued jobs still run: the worker finds a job's owner by id, active or not
-     (`src/chatddx/worker/worker.py:208`).
+     (`src/chatddx/worker/worker.py:Worker._done`).
    - `chatddx person password` refuses an empty password; `People.set_password` doesn't.
    - Tracked in `docs/backlog.md` ("Administering people"), but for signing in again, the deactivated person's jobs and
      the empty password.
@@ -240,10 +241,10 @@ out of the app, in the healthcheck's order, with where else it is tracked. Some 
    before 08ae453, and none has been since. Tracked: `docs/backlog.md` ("Migrations checked by content") keeps their
    checksums, before a shared database.
 10. **Error text** goes to clients.
-    - Any exception in a job becomes the job's `why` (`src/chatddx/worker/worker.py:189-191`), served by `GET /api/runs`
-      and `GET /api/runs/{run}` (`src/chatddx/api/runs.py:246-257`), which aren't no-store, shown on the portal's runs
-      pages, and told in a run's `error` event (`src/chatddx/api/telling.py:113-115`). The worker logs it with its
-      traceback (:190). A scoring's refusal carries its exception's text in `run.scored`.
+    - Any exception in a job becomes the job's `why` (`src/chatddx/worker/worker.py:Worker._work`), served by
+      `GET /api/runs` and `GET /api/runs/{run}` (`src/chatddx/api/runs.py:246-257`), which aren't no-store, shown on the
+      portal's runs pages, and told in a run's `error` event (`src/chatddx/api/telling.py:113-115`). The worker logs it
+      with its traceback (:190). A scoring's refusal carries its exception's text in `run.scored`.
     - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:44-48`), answered as a 422 and shown on the
       portal's error page.
     - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending; says

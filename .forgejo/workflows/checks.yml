@@ -1,0 +1,15 @@
+# Dependency: a host runner with Nix, KVM for the VM test, and Node for actions/checkout,
+# registered with the label nix (docs/parts/dev.md, "CI").
+name: checks
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: nix
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: nix flake check --print-build-logs

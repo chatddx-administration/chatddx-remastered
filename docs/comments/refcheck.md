@@ -28,3 +28,10 @@ Written by `chatddx-dev index` from the comments in `[parts.refcheck]`'s code in
 # unchecked, and a shallow one, which holds main only so far back: a commit it doesn't
 # hold, or one older than the oldest of main it holds, is taken to be on main.
 ```
+
+## `dev/src/chatddx_dev/refcheck/__init__.py:_slug`
+
+```
+# Dependency: GitHub's heading anchors: lower case, all but word characters, spaces
+# and hyphens dropped, spaces as hyphens.
+```

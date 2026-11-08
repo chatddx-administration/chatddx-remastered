@@ -264,6 +264,7 @@ Finds:
 `src/chatddx/factors/base.py:Component`
 
 * `schema_version: ClassVar[int] = 1`
+* `upgrades: ClassVar[Mapping[int, Upgrade]] = {}`
 
 Raises:
 1. `Invalid`: `"a %(kind)s may not hold U+0000, which can't be stored", kind=self.kind_name` (through `Component._storable`, in a `ValidationError`)
@@ -989,7 +990,6 @@ Raises:
 Raises:
 1. `StructuralError`: `"component is not a JSON object"`
 2. `StructuralError`: `"unknown component kind {kind!r}"`
-3. `StructuralError`: `"{kind} v{v} is not readable by v{cls.schema_version}"`
 
 ## `parse_selector`
 `src/chatddx/factors/select.py:parse_selector`
@@ -1808,6 +1808,27 @@ repeat each other.
 * `get: Resolver`
 * `into: str`
 * ∟`tuple[str, ...]`
+
+## `Upgrade`
+`src/chatddx/factors/base.py:Upgrade`
+
+`type Upgrade = Callable[[dict[str, object]], dict[str, object]]`
+
+## `upgraded`
+`src/chatddx/factors/base.py:upgraded`
+
+The doc, its "v" popped, brought to `current` by `upgrades[v]`, which takes a
+doc of version v to v + 1, each in turn: as cheap as the upgrades. Raises a
+StructuralError for a version it has no way up from.
+
+* `name: str`
+* `doc: dict[str, object]`
+* `current: int`
+* `upgrades: Mapping[int, Upgrade]`
+* ∟`dict[str, object]`
+
+Raises:
+1. `StructuralError`: `"{name} v{v} is not readable by v{current}"`
 
 ## `View` `(Frozen)`
 `src/chatddx/factors/scoring.py:View`

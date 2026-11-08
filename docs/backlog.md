@@ -14,10 +14,8 @@ doc in docs/parts/ tracks is that doc's, not this document's.
   - [Canary sets in use](#canary-sets-in-use)
   - [Drift between runs](#drift-between-runs)
   - [Attestation within a run](#attestation-within-a-run)
-  - [Each attempt recorded](#each-attempt-recorded)
   - [Aggregation](#aggregation)
   - [Export and publication](#export-and-publication)
-  - [Digests to settle before real data](#digests-to-settle-before-real-data)
   - [Scoring: coverage and judges](#scoring-coverage-and-judges)
   - [A view's reach knows the type it picks](#a-views-reach-knows-the-type-it-picks)
   - [Unheeded reasoning](#unheeded-reasoning)
@@ -55,9 +53,7 @@ doc in docs/parts/ tracks is that doc's, not this document's.
   - [Facts waiting on a model or a run](#facts-waiting-on-a-model-or-a-run)
   - [Claims: slots, turns and a lost endpoint](#claims-slots-turns-and-a-lost-endpoint)
   - [Garbage collection](#garbage-collection)
-  - [Old versions readable](#old-versions-readable)
   - [Performance, once measured](#performance-once-measured)
-  - [The object layer, if the split happens](#the-object-layer-if-the-split-happens)
   - [Execution settings as a component](#execution-settings-as-a-component)
   - [Chat templates as components](#chat-templates-as-components)
   - [Text cleanup steps](#text-cleanup-steps)
@@ -74,36 +70,29 @@ runtime is necessary.
 
 ### Canary sets in use
 
-Worlds' endpoints name a canary set and runs send it: scripted runs answer canaries, canary calls stream events, judge
-engines are probed, and a run's canary set is tied to the run in the database. It comes before "Drift between runs" can
-check canaries.
+Built: the sample World's endpoints name the `basics` canary set, so its runs send it at start and end; a scripted run's
+fake answers its canaries outside the script (`src/chatddx/fake_vllm/script.py:Script.scripts`); and a run's canary set
+is referenced from `ledger.run_stage` as its trial is (`0029-t0-ledger-canaries.sql`). What is left:
 
-- **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared (see "Drift
-  between runs"), and canary calls stream without events.
-- **No scripted run sends a canary set**: the Worlds' endpoints name none, and a scripted run's turns would have to
-  answer its canaries too.
+- **Kompismoln's endpoints name none**: `worlds/kompismoln/endpoints.toml` is written by `chatddx import-engine`, which
+  knows no canary set, so one written in by hand goes at the next import. Take: the inventory names a canary set for
+  every endpoint it includes, an endpoint's own taking its place.
 - Canary calls emit no `Streamed`.
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
   canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
-- A run's canary set isn't tied to the run in the database, so a run can name a canary set that isn't stored, and then
-  can't be checked.
-- `RunStarted.canaries` has no foreign key.
 
 ### Drift between runs
 
-One check that compares runs: their canary outputs, prompt-token fingerprints and system fingerprints. The canary
-outputs wait for "Canary sets in use".
+Built: `src/chatddx/ledger/run.py:check_drift` compares, between phases and runs of one trial at one endpoint, each
+canary's answer (`canary.drift`) and prompt-token fingerprint (`canary.prompt_drift`), and the system fingerprints the
+engine says (`engine.system_drift`), as findings. `check_run` compares a run's own phases, and a run's page the person's
+earlier finished runs of its trial at its endpoint too (`src/chatddx/api/runs.py:_checked`).
 
 Take: the group under a handle is where its canaries would be compared across its engines, which would give the group
 the evidence it lacks; still a take.
 
-Decided: the same canary output is the same digest of each choice's message and the same prompt-token fingerprint, the
-fingerprint under a code of its own; neither needs a new field, since `CanaryCall.call` holds the response and the
-prompt-token fingerprint. Decided: runs are compared within the same trial digest at the same endpoint, and drift is a
-finding, not a refusal.
-
-- **Canary drift is not implemented:** nothing compares canary outputs between phases or runs.
-- **The system fingerprint is kept but never compared** between calls or runs.
+- Nothing but a run's page compares runs: the portal's run page, scores and the breakdown don't say that a run's engine
+  drifted from an earlier one's.
 
 ### Attestation within a run
 
@@ -626,21 +615,6 @@ Decided: it waits until storage cost or an erasure calls for it; until then the 
 mean it to. Erasing a typed text is docs/parts/clearance.md's ("Before real patient data", 4).
 
 - Garbage collector for true deletions of non-referenced items.
-
-### Old versions readable
-
-Stored rows of an older schema version read after a bump. Next, before the deployment's data is kept.
-
-Decided: upgrade on read: a kind keeps a reader for each of its older versions, returning the current shape, and the
-stored bytes and their digest stay as they are.
-
-- A schema-version bump strands stored rows. Reading parses every row, and parsing refuses another version, so after a
-  bump the store can't return rows of the old version, nor load a closure that holds one. The rows can't be rewritten
-  either: the tables are append-only, and digests and seals depend on the bytes. "Splits beyond `lines@1`" already
-  considers a bump of the scorer's schema version.
-
-- A schema-version bump strands stored rows: `get`, `load`, `run` and `score` refuse another version, and the rows can't
-  be rewritten.
 
 ### Performance, once measured
 

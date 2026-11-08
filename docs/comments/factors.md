@@ -36,7 +36,8 @@ Written by `chatddx-dev index` from the comments in `[parts.factors]`'s code in 
 
 ```
 # Policy: bump when an existing field's meaning or default changes; additive fields
-# don't.
+# don't. A bump adds the upgrade from the version before to `upgrades`, so that
+# what is stored at it stays readable.
 ```
 
 ## `src/chatddx/factors/cases.py:CleanupOp`

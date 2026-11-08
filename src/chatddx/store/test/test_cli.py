@@ -35,6 +35,7 @@ def test_migrate_command(
         "would apply 0023-t1-ledger-seq",
         "would apply 0024-t0-worker-scored",
         "would apply 0028-t0-catalog-version",
+        "would apply 0029-t0-ledger-canaries",
         "applied 0001-t0-factor",
         "applied 0002-t1-factor",
         "applied 0004-t0-ledger",
@@ -53,6 +54,7 @@ def test_migrate_command(
         "applied 0023-t1-ledger-seq",
         "applied 0024-t0-worker-scored",
         "applied 0028-t0-catalog-version",
+        "applied 0029-t0-ledger-canaries",
         "nothing to apply up to tier 1",
         "applied 0003-t2-factor",
         "applied 0006-t2-ledger",
@@ -64,6 +66,7 @@ def test_migrate_command(
         "applied 0025-t2-worker-scored",
         "applied 0026-t2-catalog-run-variation",
         "applied 0027-t2-catalog-description",
+        "applied 0030-t2-ledger-canaries",
     ]
     with pytest.raises(SystemExit):
         main(["migrate", "--tier", "3"])

@@ -91,10 +91,11 @@ on the baseline cases (`frontend/src/lib/compose/Breakdown.svelte`), from `GET /
 
 - **Its versions**, a column each in the order saved, the versions that compile to one skeleton being one, by its
   digest, so that a version run again, or saved again as it was, adds to the same: each baseline gathering a point
-  linking to its runs, ringed where it isn't scored as things are now, and the mean over every replicate of every case
-  with its 95% interval, the version open marked. Its difference from the one before, case by case on the cases both
-  sent, is its Δ, on hover and among the numbers. A gathering's repeat adds no draw of its own, its seed being its
-  replicate's.
+  linking to its runs, ringed where it isn't scored as things are now, and the mean over the cases, each case its
+  replicates' mean, with its 95% interval by Student's t over the cases, as a case's replicates aren't independent draws
+  of how the configuration fares (`src/chatddx/bench/breakdown.py:estimate`), the version open marked. Its difference
+  from the one before, case by case on the cases both sent, is its Δ, on hover and among the numbers. A gathering's
+  repeat adds no draw of its own, its seed being its replicate's.
 - **Its peers**, beside it: the latest baseline of this configuration and of each of the person's others that shares the
   view.
 - **The numbers**, folded: each view's estimate and Δ by version; and by version, how far each repeat's values were from

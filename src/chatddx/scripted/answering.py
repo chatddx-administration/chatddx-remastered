@@ -21,6 +21,7 @@ from chatddx.fake_vllm.server import serving
 from chatddx.runner import Running
 from chatddx.scorers.patterns import Pattern
 
+from .fakes import canaried
 from .run import judging
 
 # Dependency: each module of the runner that stamps what it records with the time.
@@ -106,7 +107,8 @@ def send(
     turns: list[Turn],
     finish: bool,
 ) -> None:
-    with serving([fake], script=Script(turns)):
+    unscripted = canaried(bench.store.get, running.started.canaries)
+    with serving([fake], script=Script(turns, unscripted)):
         running.send(lambda _: None)
     if not finish:
         return

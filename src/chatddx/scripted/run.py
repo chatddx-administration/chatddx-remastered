@@ -11,7 +11,7 @@ from chatddx.fake_vllm.server import serving
 from chatddx.ledger import RunStarted
 from chatddx.runner import Halt, RunEvent, Streamed
 
-from .fakes import fake_at
+from .fakes import canaried, fake_at
 from .read import ScriptedRun
 
 NONE = "none"
@@ -60,7 +60,12 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
     _ = _sent(scripted, bench.languages(tried, cases))
     fake = fake_at(bench.inventory, bench.store.get, scripted.endpoint)
-    script = Script(scripted.turns) if scripted.turns else None
+    canaries = bench.inventory.endpoint(scripted.endpoint).canaries
+    script = (
+        Script(scripted.turns, canaried(bench.store.get, canaries))
+        if scripted.turns
+        else None
+    )
     with serving([fake], script=script):
         started = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
         running = started.first

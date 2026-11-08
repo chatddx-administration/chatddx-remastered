@@ -244,6 +244,31 @@ def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
     assert stored.digest == digest != engine.digest
 
 
+def test_a_component_stored_at_an_older_version_is_upgraded_keeping_its_digest(
+    reg: Registry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = local_engine(reg)
+    v = LocalEngine.schema_version
+    renamed = json.loads(engine.canonical)
+    renamed["machine"] = renamed.pop("hardware")
+    raw = canonical_bytes(renamed)
+
+    def up(doc: dict[str, object]) -> dict[str, object]:
+        doc["hardware"] = doc.pop("machine")
+        return doc
+
+    monkeypatch.setattr(LocalEngine, "schema_version", v + 1)
+    monkeypatch.setattr(LocalEngine, "upgrades", {v: up})
+    stored = Registry().add_raw(sha256_digest(raw), raw)
+
+    assert isinstance(stored, LocalEngine) and stored.hardware == engine.hardware
+    assert stored.canonical == raw and stored.digest == sha256_digest(raw)
+    assert json.loads(canonical_bytes(stored.canonical_doc()))["v"] == v + 1
+    monkeypatch.setattr(LocalEngine, "upgrades", {})
+    with pytest.raises(StructuralError, match=f"v{v} is not readable by v{v + 1}"):
+        _ = Registry().add_raw(sha256_digest(raw), raw)
+
+
 def test_components_refuse_what_the_store_cannot_hold() -> None:
     with pytest.raises(ValidationError, match="U\\+0000"):
         _ = Appendix(

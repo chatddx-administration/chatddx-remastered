@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Annotated, ClassVar, Literal
 from uuid import UUID
 
-from pydantic import AfterValidator, AwareDatetime, Field, model_validator
+from pydantic import AfterValidator, AwareDatetime, Field, JsonValue, model_validator
 
 from chatddx.factors.base import (
     Code,
@@ -11,8 +11,10 @@ from chatddx.factors.base import (
     Fingerprint,
     Frozen,
     StructuralError,
+    canonical_bytes,
     distinct,
     resolve,
+    sha256_digest,
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
@@ -233,7 +235,7 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     calls = [*(c for i in run.items for c in i.calls), *(c.call for c in run.canaries)]
     sent = {i.key: i.call.started_at for i in run.items}
     findings.extend(check_execution(started.execution, trial, calls, sent))
-    return findings + _bracketed(run)
+    return findings + _bracketed(run) + check_drift([run])
 
 
 def _bracketed(run: Run) -> list[Finding]:
@@ -377,3 +379,84 @@ def _tool_code(
                 )
             )
     return findings
+
+
+DRIFT_CODES = frozenset({"canary.drift", "canary.prompt_drift", "engine.system_drift"})
+
+
+def check_drift(runs: Sequence[Run]) -> list[Finding]:
+    """What the runs' canary calls and calls say of their engine changing under them: a
+    canary answered otherwise, its prompt tokenized otherwise, or a system fingerprint
+    that moved, compared between phases and runs of one trial at one endpoint each, and
+    findings, not refusals. Costs a digest of each call's answer."""
+    groups: dict[tuple[str, str | None], list[Run]] = {}
+    for run in runs:
+        endpoint = run.started.endpoint
+        key = (run.started.trial, None if endpoint is None else endpoint.name)
+        groups.setdefault(key, []).append(run)
+    findings: list[Finding] = []
+    for group in groups.values():
+        findings.extend(_drifted(group))
+    return findings
+
+
+def _drifted(runs: Sequence[Run]) -> list[Finding]:
+    said: dict[int, set[str]] = {}
+    tokens: dict[int, set[str]] = {}
+    systems: set[str] = set()
+    for run in runs:
+        for c in run.canaries:
+            if c.call.error is not None:
+                continue
+            if (answer := _answer(c.call)) is not None:
+                said.setdefault(c.canary, set()).add(answer)
+            if c.call.prompt_tokens is not None:
+                tokens.setdefault(c.canary, set()).add(c.call.prompt_tokens.hex)
+        calls = [c.call for c in run.canaries] + [i.calls[-1] for i in run.items]
+        systems |= {s for call in calls if (s := _system(call)) is not None}
+    findings = [
+        Finding.of(
+            "canary.drift",
+            "canary %(canary)s answered %(ways)s ways where it was to answer alike",
+            subject=f"canary {canary}",
+            canary=canary,
+            ways=len(answers),
+        )
+        for canary, answers in sorted(said.items())
+        if len(answers) > 1
+    ]
+    findings += [
+        Finding.of(
+            "canary.prompt_drift",
+            "canary %(canary)s was tokenized %(ways)s ways",
+            subject=f"canary {canary}",
+            canary=canary,
+            ways=len(prompts),
+        )
+        for canary, prompts in sorted(tokens.items())
+        if len(prompts) > 1
+    ]
+    if len(systems) > 1:
+        findings.append(
+            Finding.of(
+                "engine.system_drift",
+                "the engine said %(ways)s system fingerprints",
+                ways=len(systems),
+            )
+        )
+    return findings
+
+
+def _answer(call: Call) -> str | None:
+    choices = (call.response or {}).get("choices")
+    if not isinstance(choices, list):
+        return None
+    messages: list[JsonValue] = [
+        c.get("message") for c in choices if isinstance(c, dict)
+    ]
+    return sha256_digest(canonical_bytes(messages))
+
+
+def _system(call: Call) -> str | None:
+    system = (call.response or {}).get("system_fingerprint")
+    return system if isinstance(system, str) else None

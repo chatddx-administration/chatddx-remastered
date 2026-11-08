@@ -20,6 +20,7 @@ MAIN=${MAIN:-main}
 . "$(dirname "${BASH_SOURCE[0]}")/settings.sh"
 setting REFUSED_AT_STAMP operator.refused_at_stamp
 setting TOLD_AT_FETCH operator.told_at_fetch
+setting REFUSED_AT_MERGE operator.refused_at_merge
 
 unmerged() {
   die "stamped but didn't merge: $*"
@@ -76,6 +77,7 @@ merge() {
 
   branch_sha=$(git rev-parse HEAD)
   [[ $main_sha != "$branch_sha" ]] || unmerged "'$branch' has no commits beyond '$MAIN'"
+  ./dev/check.sh "${REFUSED_AT_MERGE[@]}" >&2 || unmerged "a check failed"
 
   msgfile=$(mktemp)
   # shellcheck disable=SC2064

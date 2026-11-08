@@ -1,4 +1,4 @@
-# The portal: work in progress
+# The portal
 
 The portal is where clinicians review and researchers research, assume they're tech-illiterate with little time and
 cognitive reserves.

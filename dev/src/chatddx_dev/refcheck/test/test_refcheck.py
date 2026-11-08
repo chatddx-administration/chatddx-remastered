@@ -46,6 +46,20 @@ def test_what_a_doc_refers_to_is_checked_but_in_a_fence_or_as_last_signed(
     ]
 
 
+def test_a_link_to_a_heading_of_its_own_doc_is_checked(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    documented(
+        monkeypatch,
+        tmp_path,
+        {
+            "docs/a.md": "# A\n\n- [Ok](#splits-beyond-lines1)\n- [Gone](#gone)\n\n"
+            + "## Splits beyond `lines@1`\n"
+        },
+    )
+    assert refcheck.check() == ["docs/a.md:4: anchor: #gone"]
+
+
 def test_a_conflict_in_a_doc_that_isn_t_a_stamp_is_refused(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

@@ -75,6 +75,22 @@ Raises:
 * `canary: int = Field(ge=0)`
 * `call: Call`
 
+## `check_drift`
+`src/chatddx/ledger/run.py:check_drift`
+
+What the runs' canary calls and calls say of their engine changing under them: a
+canary answered otherwise, its prompt tokenized otherwise, or a system fingerprint
+that moved, compared between phases and runs of one trial at one endpoint each, and
+findings, not refusals. Costs a digest of each call's answer.
+
+* `runs: Sequence[Run]`
+* ∟`list[Finding]`
+
+Finds:
+1. `canary.drift`: `"canary %(canary)s answered %(ways)s ways where it was to answer alike"` (through `_drifted`)
+2. `canary.prompt_drift`: `"canary %(canary)s was tokenized %(ways)s ways"` (through `_drifted`)
+3. `engine.system_drift`: `"the engine said %(ways)s system fingerprints"` (through `_drifted`)
+
 ## `check_execution`
 `src/chatddx/ledger/call.py:check_execution`
 
@@ -169,6 +185,11 @@ Finds:
 Finds:
 1. `ledger.seal`: `"rows changed after the log was sealed"`
 
+## `DRIFT_CODES`
+`src/chatddx/ledger/run.py:DRIFT_CODES`
+
+`DRIFT_CODES = frozenset({"canary.drift", "canary.prompt_drift", "engine.system_drift"})`
+
 ## `Endpoint` `(Frozen)`
 `src/chatddx/ledger/run.py:Endpoint`
 
@@ -251,6 +272,15 @@ Raises:
 
 * `sensitive: ClassVar[bool] = True`
 * `schema_version: ClassVar[int] = 1`
+* `upgrades: ClassVar[Mapping[int, Upgrade]] = {}`
+
+## `Record.as_stored`
+`src/chatddx/ledger/record.py:Record.as_stored`
+
+The doc as it was stored, of the version it was stored at, for a record
+parsed from it, else its canonical doc.
+
+* ∟`dict[str, JsonValue]`
 
 ## `Record.canonical` `@property`
 `src/chatddx/ledger/record.py:Record.canonical`
@@ -270,7 +300,6 @@ Raises:
 
 Raises:
 1. `StructuralError`: `"{cls.__name__} is not a JSON object"`
-2. `StructuralError`: `"{cls.__name__} v{v} is not readable by v{cls.schema_version}"`
 
 ## `Run` `(Frozen)`
 `src/chatddx/ledger/run.py:Run`

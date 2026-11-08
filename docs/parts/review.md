@@ -4,12 +4,12 @@ Drafted: `/review/{family}` (`src/chatddx/portal/review.py`; `src/chatddx/portal
 in `frontend/src/lib/review/`.
 
 Review is a family (vignette), appendices, expectations and Gatherings centered on case. Its purpose is to provide the
-means for a the clinician to assess whether the expectation's intention and application align. The page consists of
-three columns filling the viewport: Tree, Vignette and Expectations.
+means for the clinician to assess whether the expectation's intention and application align. The page consists of three
+columns filling the viewport: Tree, Vignette and Expectations.
 
 The Tree lists each family, with its cases of appendices as branches under it filtered in place by tags and languages.
 
-Vignette shows the vignette and managages appendices.
+Vignette shows the vignette and manages appendices.
 
 Expectations manages the notes and patterns associated with each view: Differential diagnoses, warnings (red flags),
 disposition, must not be missed and a medical statement from a clinician. It has a shallow version shifter that prefills
@@ -17,7 +17,7 @@ the fields on change with confirmation. What a scorer can't read, like a pattern
 field, marked in a collapsed field's header, and can't be saved.
 
 A restore button restores all fields to their stored values. Saves save it all. If appendices have changed this is now
-another case. Fields for tags and languages visually scuffed but exist.
+another case. The fields for tags and languages exist but are visually unfinished.
 
 If the case chosen is with an appendix that the user owns it can be deleted and shows a delete button.
 

@@ -10,10 +10,11 @@ from chatddx.bench import Bench, Graded, NotFound, Started, Titled
 from chatddx.catalog import Subject
 from chatddx.catalog.language import language_of
 from chatddx.catalog.read import about as about_of
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Finding, resolve
+from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial, suggest_seeds
-from chatddx.ledger import RunStarted, check_run
+from chatddx.ledger import DRIFT_CODES, Run, RunStarted, check_drift, check_run
 from chatddx.runner import Running, outcome, rendered_again as rendered
 from chatddx.scorers.answer import read
 from chatddx.store import Queue
@@ -290,6 +291,25 @@ def _titled(titled: Titled) -> schemas.Titled:
     )
 
 
+# Policy: drift is compared across the person's earlier finished runs of the trial at
+# the same endpoint too, as decided (docs/backlog.md, "Drift between runs").
+def _checked(bench: Bench, whole: Run, registry: Registry) -> list[Finding]:
+    started = whole.started
+    earlier = [
+        bench.store.run(r.run)
+        for r in bench.runs()
+        if r.trial == started.trial
+        and r.endpoint == started.endpoint
+        and r.at < started.at
+    ]
+    earlier = [r for r in earlier if r.finished is not None]
+    found = check_run(whole, registry)
+    if not earlier:
+        return found
+    kept = [f for f in found if f.code not in DRIFT_CODES]
+    return kept + check_drift([*earlier, whole])
+
+
 def _detail(bench: Bench, run: UUID) -> schemas.RunDetail:
     started = bench.run(run)
     whole = bench.store.run(run)
@@ -305,7 +325,7 @@ def _detail(bench: Bench, run: UUID) -> schemas.RunDetail:
         rig=schemas.Rig(**started.rig.model_dump()),
         finished_at=None if finished is None else finished.at,
         noted=[schemas.Finding.of(f) for f in noted],
-        findings=[schemas.Finding.of(f) for f in check_run(whole, registry)],
+        findings=[schemas.Finding.of(f) for f in _checked(bench, whole, registry)],
         items=[item_of(skeleton, item) for item in whole.items],
         scores=[graded_of(g) for g in bench.scores_of(started)],
     )

@@ -309,7 +309,7 @@
               <th class="py-1 pr-3 font-medium">{t("Versions")}</th>
               <th class="py-1 pr-3 text-right font-medium">{t("Mean")}</th>
               <th class="py-1 pr-3 text-right font-medium">±95%</th>
-              <th class="py-1 pr-3 text-right font-medium">{t("Replicates")}</th>
+              <th class="py-1 pr-3 text-right font-medium">{t("Cases")}</th>
               <th class="py-1 text-right font-medium">Δ</th>
             </tr>
           </thead>

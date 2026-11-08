@@ -17,8 +17,11 @@ them.
 - Equivalent components share a digest, by their canonical form, and a component that can't be stored is refused when it
   is built: one holding U+0000 (`Component._storable`). NaN and infinity aren't refused yet (`docs/backlog.md`, "Values
   the canonical form can't keep").
-- A kind's `schema_version` follows the policy at `src/chatddx/factors/base.py:Component.schema_version`, and
-  `parse_component` reads stored bytes of the current version only (`docs/backlog.md`, "Old versions readable").
+- A kind's `schema_version` follows the policy at `src/chatddx/factors/base.py:Component.schema_version`, and a bump
+  adds to the kind's `upgrades` the step from the version before. `parse_component` brings stored bytes of an older
+  version up to the current one step by step, and refuses a version it has no step from
+  (`src/chatddx/factors/base.py:upgraded`); a registry keeps what was stored as the component's bytes and digest
+  (`src/chatddx/factors/bundle.py:Registry.add_raw`), and a bundle says `bundle.recanonicalized` of it.
 - Text cleanup steps, schema ops, fill rules, splits and execution orders are named and versioned, as `strip@1` is, so
   that what names one means the same whatever the code becomes (`src/chatddx/factors/cases.py:CleanupOp`).
 

@@ -19,7 +19,7 @@ setup() {
   git clone -q origin.git repo 2>/dev/null
   cd repo
   mkdir dev
-  printf '#!/bin/sh\necho "$@" >>"$CHECKED"\nexit "${CHECK_EXIT:-0}"\n' >dev/check.sh
+  printf '#!/bin/sh\necho "$@" >>"$CHECKED"\ncase " $* " in *" ${CHECK_FAILS:-} "*) exit 1 ;; esac\nexit "${CHECK_EXIT:-0}"\n' >dev/check.sh
   chmod +x dev/check.sh
   cp "$BATS_TEST_DIRNAME/../../settings.toml" .
   git add dev/check.sh settings.toml
@@ -166,6 +166,23 @@ print(sorted(turn) == sorted(held["operator"]["refused_at_stamp"]))
   [ -z "$(git ls-remote origin refs/stamped/feat)" ]
   run ! git rev-parse --verify -q refs/heads/feat
   run ! git rev-parse --verify -q refs/stamped/feat
+}
+
+@test "merge checks what stamp doesn't before it squashes" {
+  run "$OPERATOR" merge
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 2p "$CHECKED")" = "python-tests dev docs" ]
+}
+
+@test "merge stamps but merges nothing when a check of its own fails" {
+  echo b >b
+  CHECK_FAILS=python-tests run "$OPERATOR" merge
+  [ "$status" -eq 1 ]
+  [[ $output == *"stamped but didn't merge: a check failed"* ]]
+  [ "$(git branch --show-current)" = feat ]
+  [ "$(subject)" = stamp ]
+  [ "$(subject main)" = init ]
+  [ "$(git rev-parse origin/main)" = "$(git rev-parse main)" ]
 }
 
 @test "merge switches to the branch named" {
