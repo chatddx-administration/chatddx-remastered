@@ -1,4 +1,4 @@
-2026-11-08T22:08:14Z 006fde6 ./dev/check.sh browser
+2026-11-08T22:36:30Z b003233 ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,7 +9,7 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [175.5ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [449.3ms]
 vite v8.3.4 building client environment for production...
 transforming...
 ✓ 833 modules transformed.
@@ -35,16 +35,26 @@ dist/assets/client-BBYBPZv7.js                                        7.36 kB �
 dist/assets/libesm-CiuisrBw.js                                        8.98 kB │ gzip:  3.36 kB
 dist/assets/native-select-BSqeinef.js                                10.36 kB │ gzip:  4.32 kB
 dist/assets/run-B8-vG2im.js                                          10.82 kB │ gzip:  4.26 kB
-dist/assets/SchemaField-BSxPpz_v.js                                  14.97 kB │ gzip:  4.91 kB
+dist/assets/SchemaField-Ct1h6pm5.js                                  14.97 kB │ gzip:  4.91 kB
 dist/assets/home-BCj3s-LM.js                                         15.82 kB │ gzip:  5.49 kB
 dist/assets/outcomes-C4wmXAl3.js                                     20.25 kB │ gzip:  6.89 kB
-dist/assets/library-BS5qk_TA.js                                      24.34 kB │ gzip:  8.96 kB
-dist/assets/review-C3GqOVxY.js                                       49.62 kB │ gzip: 16.74 kB
+dist/assets/library-cjzQNNmB.js                                      24.34 kB │ gzip:  8.96 kB
+dist/assets/review-CL6NXnt_.js                                       49.62 kB │ gzip: 16.74 kB
 dist/assets/locale-CNzZghOQ.js                                       57.21 kB │ gzip: 22.01 kB
 dist/assets/dist-Bhi-F0BH.js                                         67.43 kB │ gzip: 21.03 kB
-dist/assets/compose-aBaTNEKT.js                                      69.00 kB │ gzip: 21.35 kB
+dist/assets/compose-DVucBj76.js                                      69.00 kB │ gzip: 21.35 kB
 
-✓ built in 2.14s
+✓ built in 4.53s
+[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 4.3s of this 4.5s build (95%).
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin @tailwindcss/vite:generate:build transform (81%, 3.7s, 3 calls)
+  - plugin vite-plugin-svelte:compile transform (49%, 2.2s, 303 calls)
+  - plugin vite-plugin-svelte:compile-module transform (29%, 1.3s, 99 calls)
+These rows add up to more than the total. Callbacks can overlap, so the same time counts for more than one row.
+1 callback is listed without a time. Its calls overlapped, so the time inside one call includes work from other calls. To find its cost, profile the build with `node --cpu-prof`:
+  - plugin vite-plugin-svelte:preprocess transform (303 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
@@ -55,4 +65,4 @@ collected 1206 items / 1177 deselected / 29 selected
 
 src/chatddx/portal/test/test_browser.py .............................    [100%]
 
-================ 29 passed, 1177 deselected in 93.79s (0:01:33) ================
+=============== 29 passed, 1177 deselected in 137.23s (0:02:17) ================

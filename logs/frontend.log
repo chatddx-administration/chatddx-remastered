@@ -1,2 +1,30 @@
-2026-11-08T22:06:03Z 006fde6 ./dev/check.sh frontend
-• frontend: unchanged since it passed (dev/state/frontend-good)
+2026-11-08T22:34:45Z b003233 ./dev/check.sh frontend
+• frontend
+
+> chatddx-portal@0.0.0 check /home/user/chatddx-remastered/frontend
+> pnpm types && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+
+
+> chatddx-portal@0.0.0 types /home/user/chatddx-remastered/frontend
+> openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi.json → src/lib/api/schema.d.ts [520.6ms]
+1794177298698 START "/home/user/chatddx-remastered/frontend"
+1794177298702 COMPLETED 893 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
+
+> chatddx-portal@0.0.0 test /home/user/chatddx-remastered/frontend
+> vitest run
+
+
+ RUN  v5.0.3 /home/user/chatddx-remastered/frontend
+
+
+ Test Files  23 passed (23)
+      Tests  101 passed (101)
+   Start at  22:34:59
+   Duration  2.35s (transform 62%, import 24%, tests 10%, worker 4%)
+
+    Isolate  23 workers spawned · ~150ms startup each (spawn + environment, per file)
+             at least ~997ms faster with isolate: false — reuses workers across files instead of one per file
+

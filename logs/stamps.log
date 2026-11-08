@@ -1,4 +1,4 @@
-2026-11-08T21:35:29Z ba8513f ./dev/check.sh stamps
+2026-11-08T22:35:32Z b003233 ./dev/check.sh stamps
 • stamps
 ok
 stamps: no commit known to be stamped, as dev/stamped.sh tells, so the prose isn't checked
