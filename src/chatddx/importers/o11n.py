@@ -31,6 +31,10 @@ _HOST_ENV = frozenset(
     {"CUDA_HOME", "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_HUB_CACHE", "HF_HUB_OFFLINE"}
 )
 
+# Policy: the interface and address vLLM's workers talk to each other over, which
+# change with the host's network and never an answer.
+_NETWORK_ENV = frozenset({"GLOO_SOCKET_IFNAME", "NCCL_SOCKET_IFNAME", "VLLM_HOST_IP"})
+
 
 @dataclass(frozen=True)
 class Imported:
@@ -220,7 +224,11 @@ def imported(
             model=model.digest,
             chat_template=template["sha256"],
             argv=argv,
-            env={k: v for k, v in environment.items() if k not in _HOST_ENV},
+            env={
+                k: v
+                for k, v in environment.items()
+                if k not in _HOST_ENV | _NETWORK_ENV
+            },
         )
     except (KeyError, TypeError, ValueError) as e:
         raise ValueError(f"{name} can't be imported: {e}") from e

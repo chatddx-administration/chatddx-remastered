@@ -24,6 +24,16 @@ Written by `chatddx-dev index` from the comments in `[parts.importers]`'s code i
 ```
 # Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,
 # which the runtime closure covers: where an engine runs, not what it is.
+<<<<<<< signed
+=======
+```
+
+## `src/chatddx/importers/o11n.py:_NETWORK_ENV`
+
+```
+# Policy: the interface and address vLLM's workers talk to each other over, which
+# change with the host's network and never an answer.
+>>>>>>> @stamp
 ```
 
 ## `src/chatddx/importers/o11n.py:REPORT`

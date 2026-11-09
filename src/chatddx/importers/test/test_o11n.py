@@ -124,6 +124,18 @@ def serving_its_digest(changes: dict[str, Any] | None = None) -> Imported:
     )
 
 
+def test_a_server_s_network_leaves_its_engine_as_it_was() -> None:
+    networked = server()["environment"] | {
+        "GLOO_SOCKET_IFNAME": "lo",
+        "NCCL_SOCKET_IFNAME": "lo",
+        "VLLM_HOST_IP": "127.0.0.1",
+    }
+    engine = imported(report(), "qwen3-8b").engine
+    moved = imported(report({"qwen3-8b": server(environment=networked)}), "qwen3-8b")
+    assert moved.engine.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
+    assert moved.engine.digest == engine.digest
+
+
 def test_a_server_s_report_becomes_its_model_engine_endpoint_and_host() -> None:
     i = imported(report(), "qwen3-8b", "pelle.kompismoln.se")
     assert i.name == "qwen3-8b@pelle"
