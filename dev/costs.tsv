@@ -1780,3 +1780,11 @@
 2026-11-08T22:38:55Z	container	145.4	0	1	b003233	./dev/check.sh browser
 2026-11-08T22:39:27Z	container	176.8	0	1	b003233	pytest -n 4
 2026-11-08T22:39:27Z	container	177.3	0	1	b003233	./dev/check.sh python-tests
+2026-11-09T00:06:29Z	container	0.5	0	4	08b6d2c	./dev/check.sh stamps
+2026-11-09T00:06:29Z	container	0.7	0	4	08b6d2c	./dev/check.sh docs
+2026-11-09T00:06:35Z	container	7.2	0	4	08b6d2c	./dev/check.sh format
+2026-11-09T00:06:43Z	container	14.7	0	4	08b6d2c	./dev/check.sh index
+2026-11-09T00:06:51Z	container	22.7	0	4	08b6d2c	./dev/check.sh python-lint
+2026-11-09T00:06:59Z	container	6.9	0	0	08b6d2c	pytest src/chatddx/test src/chatddx/inventory src/chatddx/importers -n 4
+2026-11-09T00:07:06Z	container	0.6	0	1	08b6d2c	./dev/check.sh docs
+2026-11-09T00:07:10Z	container	4.5	0	1	08b6d2c	./dev/check.sh format

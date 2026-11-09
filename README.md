@@ -173,8 +173,12 @@ frontend's types.
 On the Kompismoln VPN, ask pelle and malborg what they serve:
 
 ```sh
+<<<<<<< signed
+chatddx import-engine http://pelle.km:12008 http://malborg.km:12008 \
+=======
 chatddx import-engine \
   http://pelle.via-pelle.int.kompismoln.se:12008 http://malborg.via-pelle.int.kompismoln.se:12008 \
+>>>>>>> @stamp
   --engines worlds/kompismoln/engines.toml --endpoints worlds/kompismoln/endpoints.toml
 git diff
 ```
