@@ -16,7 +16,7 @@ host = "malborg"
 capacity = 4
 
 [host.pelle]
-bind = "::"
+bind = "127.0.0.1"
 
 [host.pelle.models]
 "sha256:a22391757f4757a1798ec6f4a599bbd988ff2fedd70685af9931dfe869d292c7" = "/srv/models/huggingface/models--Qwen--Qwen3-8B-AWQ/snapshots/4da05a8edb55c6046cce958586c33b61da07bb79"
@@ -25,7 +25,7 @@ bind = "::"
 e132ae041e1217b5e1114eb9dc292484a7f478df945d72fa49ba01b88d8ec01a = "/nix/store/sxqqnn8jqlch6nklh7g2rwfkz29ya33x-chat_template.jinja"
 
 [host.malborg]
-bind = "::"
+bind = "127.0.0.1"
 
 [host.malborg.models]
 "sha256:8325b4ac257bf3cc56f9e12ec5b9c31cb2d7911da2edb7024ba7a4474c54edef" = "/srv/models/huggingface/models--openai--gpt-oss-20b/snapshots/6cee5e81ee83917806bbde320786a8fb61efebee"

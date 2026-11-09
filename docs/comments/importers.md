@@ -26,6 +26,13 @@ Written by `chatddx-dev index` from the comments in `[parts.importers]`'s code i
 # which the runtime closure covers: where an engine runs, not what it is.
 ```
 
+## `src/chatddx/importers/o11n.py:_NETWORK_ENV`
+
+```
+# Policy: the interface and address vLLM's workers talk to each other over, which
+# change with the host's network and never an answer.
+```
+
 ## `src/chatddx/importers/o11n.py:REPORT`
 
 ```

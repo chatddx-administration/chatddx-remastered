@@ -25,11 +25,20 @@ from chatddx.inventory import EndpointSpec, HostSpec, Inventory, broken, check
 # (Kompismoln/o11n, nixos/vllm-report.py).
 REPORT = "o11n.vllm.report/1"
 
-# Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,
-# which the runtime closure covers: where an engine runs, not what it is.
 _HOST_ENV = frozenset(
-    {"CUDA_HOME", "CUDA_VISIBLE_DEVICES", "HF_HOME", "HF_HUB_CACHE", "HF_HUB_OFFLINE"}
+    {
+        "CUDA_HOME",
+        "CUDA_VISIBLE_DEVICES",
+        "HF_HOME",
+        "HF_HUB_CACHE",
+        "HF_HUB_OFFLINE",
+        "TIKTOKEN_ENCODINGS_BASE",
+    }
 )
+
+# Policy: the interface and address vLLM's workers talk to each other over, which
+# change with the host's network and never an answer.
+_NETWORK_ENV = frozenset({"GLOO_SOCKET_IFNAME", "NCCL_SOCKET_IFNAME", "VLLM_HOST_IP"})
 
 
 @dataclass(frozen=True)
@@ -220,7 +229,11 @@ def imported(
             model=model.digest,
             chat_template=template["sha256"],
             argv=argv,
-            env={k: v for k, v in environment.items() if k not in _HOST_ENV},
+            env={
+                k: v
+                for k, v in environment.items()
+                if k not in _HOST_ENV | _NETWORK_ENV
+            },
         )
     except (KeyError, TypeError, ValueError) as e:
         raise ValueError(f"{name} can't be imported: {e}") from e

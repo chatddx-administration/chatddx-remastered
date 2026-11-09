@@ -69,6 +69,7 @@ def server(**changes: Any) -> dict[str, Any]:
             "HF_HUB_CACHE": "/srv/models/huggingface",
             "HF_HUB_OFFLINE": "1",
             "VLLM_USE_FLASHINFER_SAMPLER": "0",
+            "TIKTOKEN_ENCODINGS_BASE": "0",
         },
         "host": "::",
         "port": 12009,
@@ -122,6 +123,18 @@ def serving_its_digest(changes: dict[str, Any] | None = None) -> Imported:
     return imported(
         report({"qwen3-8b": server(served=served, **(changes or {}))}), "qwen3-8b"
     )
+
+
+def test_a_server_s_network_leaves_its_engine_as_it_was() -> None:
+    networked = server()["environment"] | {
+        "GLOO_SOCKET_IFNAME": "lo",
+        "NCCL_SOCKET_IFNAME": "lo",
+        "VLLM_HOST_IP": "127.0.0.1",
+    }
+    engine = imported(report(), "qwen3-8b").engine
+    moved = imported(report({"qwen3-8b": server(environment=networked)}), "qwen3-8b")
+    assert moved.engine.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
+    assert moved.engine.digest == engine.digest
 
 
 def test_a_server_s_report_becomes_its_model_engine_endpoint_and_host() -> None:
