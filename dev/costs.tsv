@@ -1795,3 +1795,9 @@
 2026-11-09T00:42:16Z	container	133.8	0	0	9d6e8c1	./dev/check.sh python-tests
 2026-11-09T00:43:59Z	container	97.5	0	0	9d6e8c1	pytest -m browser
 2026-11-09T00:43:59Z	container	103.0	0	0	9d6e8c1	./dev/check.sh browser
+2026-11-09T01:02:37Z	container	0.3	0	0	811a201	pytest src/chatddx/importers
+2026-11-09T01:03:19Z	container	0.6	0	4	811a201	./dev/check.sh docs
+2026-11-09T01:03:26Z	container	7.1	0	4	811a201	./dev/check.sh format
+2026-11-09T01:03:33Z	container	15.0	0	4	811a201	./dev/check.sh index
+2026-11-09T01:03:43Z	container	24.1	0	4	811a201	./dev/check.sh python-lint
+2026-11-09T01:04:27Z	container	38.0	0	0	811a201	pytest -n 4 -m 'not slow'
