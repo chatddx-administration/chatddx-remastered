@@ -62,8 +62,8 @@
   {% if scorer %}
   {% if scorer.unshipped %}<p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">{{ scorer.unshipped }}</p>{% endif %}
 
-  <section class="{{ part }}" aria-label="{{ _('Its views') }}">
-    <h2 class="{{ h2 }}">{{ _("Its views") }}</h2>
+  <section class="{{ part }}" aria-label="{{ _('Views') }}">
+    <h2 class="{{ h2 }}">{{ _("Views") }}</h2>
     {% set given %}<code class="font-mono">{{ scorer.params | tojson }}</code>{% endset %}
     {% set held = scorer.resources | join(", ") %}
     <p class="mb-3 text-xs text-muted-foreground">
@@ -75,7 +75,7 @@
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-left text-xs text-muted-foreground">
-          <tr><th class="{{ th }}">{{ _("View") }}</th><th class="{{ th }}">{{ _("Metric") }}</th><th class="{{ th }}">{{ _("Of the answer") }}</th><th class="{{ th }}">{{ _("Of the expectation") }}</th><th class="{{ th }}">{{ _("Judge") }}</th><th class="{{ th }}">{{ _("Parameters") }}</th></tr>
+          <tr><th class="{{ th }}">{{ _("View") }}</th><th class="{{ th }}">{{ _("Metric") }}</th><th class="{{ th }}">{{ _("From the answer") }}</th><th class="{{ th }}">{{ _("From the expectation") }}</th><th class="{{ th }}">{{ _("Judge") }}</th><th class="{{ th }}">{{ _("Parameters") }}</th></tr>
         </thead>
         <tbody>
           {% for v in scorer.views %}

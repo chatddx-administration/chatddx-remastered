@@ -762,7 +762,7 @@ def test_a_scorer_s_page_fits_a_phone(page: Page) -> None:
     lines = page.request.get("/api/threads", params=query).json()[0]
     page.set_viewport_size({"width": 390, "height": 844})
     _ = page.goto(f"/scoring/{lines['id']}")
-    expect(page.get_by_role("heading", name="Its views")).to_be_visible()
+    expect(page.get_by_role("heading", name="Views")).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth") == 390
 
 

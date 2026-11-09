@@ -1745,3 +1745,53 @@
 2026-11-08T22:08:14Z	container	113.4	0	0	006fde6	./dev/check.sh python-tests
 2026-11-08T22:09:52Z	container	93.8	0	0	006fde6	pytest -m browser
 2026-11-08T22:09:53Z	container	98.3	0	0	006fde6	./dev/check.sh browser
+2026-11-08T20:21:43Z	container	1.5	0	8	386c7cc	./dev/check.sh stamps
+2026-11-08T20:21:44Z	container	2.0	0	8	386c7cc	./dev/check.sh docs
+2026-11-08T20:21:45Z	container	3.5	0	8	386c7cc	./dev/check.sh openapi
+2026-11-08T20:21:47Z	container	5.0	0	8	386c7cc	./dev/check.sh locale
+2026-11-08T20:21:48Z	container	6.5	0	8	386c7cc	./dev/check.sh pending
+2026-11-08T20:21:53Z	container	11.6	0	8	386c7cc	./dev/check.sh format
+2026-11-08T20:22:00Z	container	4.3	0	8	386c7cc	pnpm --dir frontend test
+2026-11-08T20:22:00Z	container	18.8	0	8	386c7cc	./dev/check.sh frontend
+2026-11-08T20:22:03Z	container	21.5	0	8	386c7cc	./dev/check.sh index
+2026-11-08T20:22:12Z	container	30.4	0	8	386c7cc	./dev/check.sh python-lint
+2026-11-08T22:31:34Z	container	2.3	0	8	b003233	./dev/check.sh openapi
+2026-11-08T22:31:35Z	container	3.6	0	8	b003233	./dev/check.sh stamps
+2026-11-08T22:31:35Z	container	3.6	0	8	b003233	./dev/check.sh docs
+2026-11-08T22:31:36Z	container	3.9	0	8	b003233	./dev/check.sh locale
+2026-11-08T22:31:38Z	container	6.0	0	8	b003233	./dev/check.sh pending
+2026-11-08T22:31:45Z	container	13.0	0	8	b003233	./dev/check.sh format
+2026-11-08T22:31:50Z	container	3.6	0	8	b003233	pnpm --dir frontend test
+2026-11-08T22:31:50Z	container	18.3	0	8	b003233	./dev/check.sh frontend
+2026-11-08T22:31:52Z	container	20.3	0	8	b003233	./dev/check.sh index
+2026-11-08T22:32:04Z	container	32.5	0	8	b003233	./dev/check.sh python-lint
+2026-11-08T22:34:46Z	container	0.6	0	6	b003233	./dev/check.sh stamps
+2026-11-08T22:34:49Z	container	3.1	0	6	b003233	./dev/check.sh openapi
+2026-11-08T22:34:50Z	container	4.2	0	6	b003233	./dev/check.sh locale
+2026-11-08T22:34:55Z	container	10.0	0	6	b003233	./dev/check.sh format
+2026-11-08T22:35:02Z	container	3.5	0	6	b003233	pnpm --dir frontend test
+2026-11-08T22:35:02Z	container	16.3	0	6	b003233	./dev/check.sh frontend
+2026-11-08T22:35:04Z	container	18.9	1	6	b003233	./dev/check.sh index
+2026-11-08T22:35:13Z	container	27.9	0	6	b003233	./dev/check.sh python-lint
+2026-11-08T22:35:32Z	container	0.4	0	1	b003233	./dev/check.sh stamps
+2026-11-08T22:35:44Z	container	12.0	0	1	b003233	./dev/check.sh index
+2026-11-08T22:36:26Z	container	38.4	0	0	b003233	pytest -m 'not slow' -n 4
+2026-11-08T22:38:55Z	container	137.2	0	1	b003233	pytest -m browser
+2026-11-08T22:38:55Z	container	145.4	0	1	b003233	./dev/check.sh browser
+2026-11-08T22:39:27Z	container	176.8	0	1	b003233	pytest -n 4
+2026-11-08T22:39:27Z	container	177.3	0	1	b003233	./dev/check.sh python-tests
+2026-11-09T00:06:29Z	container	0.5	0	4	08b6d2c	./dev/check.sh stamps
+2026-11-09T00:06:29Z	container	0.7	0	4	08b6d2c	./dev/check.sh docs
+2026-11-09T00:06:35Z	container	7.2	0	4	08b6d2c	./dev/check.sh format
+2026-11-09T00:06:43Z	container	14.7	0	4	08b6d2c	./dev/check.sh index
+2026-11-09T00:06:51Z	container	22.7	0	4	08b6d2c	./dev/check.sh python-lint
+2026-11-09T00:06:59Z	container	6.9	0	0	08b6d2c	pytest src/chatddx/test src/chatddx/inventory src/chatddx/importers -n 4
+2026-11-09T00:07:06Z	container	0.6	0	1	08b6d2c	./dev/check.sh docs
+2026-11-09T00:07:10Z	container	4.5	0	1	08b6d2c	./dev/check.sh format
+2026-11-09T00:39:42Z	container	0.5	0	4	9d6e8c1	./dev/check.sh docs
+2026-11-09T00:39:47Z	container	5.2	0	4	9d6e8c1	./dev/check.sh format
+2026-11-09T00:40:02Z	container	20.4	0	4	9d6e8c1	./dev/check.sh dev
+2026-11-09T00:42:16Z	container	133.4	0	0	9d6e8c1	pytest -n 4
+2026-11-09T00:42:16Z	container	133.8	0	0	9d6e8c1	./dev/check.sh python-tests
+2026-11-09T00:43:59Z	container	97.5	0	0	9d6e8c1	pytest -m browser
+2026-11-09T00:43:59Z	container	103.0	0	0	9d6e8c1	./dev/check.sh browser

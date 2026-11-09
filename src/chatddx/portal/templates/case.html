@@ -56,7 +56,7 @@
   {% endif %}
 
   <h3>{{ _("Its cases at this vignette") }}</h3>
-  <ul class="space-y-3 text-sm" aria-label="{{ _('Its cases') }}">
+  <ul class="space-y-3 text-sm" aria-label="{{ _('Cases') }}">
     {% for c in cases %}
     <li class="rounded-lg border border-border/60 p-3">
       <div class="flex flex-wrap items-baseline gap-x-3"><span class="font-medium">{{ c.titled | case }}</span><span class="font-mono text-xs text-muted-foreground">{{ c.case | short }}</span></div>
@@ -89,7 +89,7 @@
     {% endfor %}
   </ul>
 
-  <h3>{{ _("Its versions") }}</h3>
+  <h3>{{ _("Versions") }}</h3>
   <ol class="space-y-1 text-sm">
     {% for b in bindings | reverse %}
     {% set i = last - loop.index0 %}
@@ -122,7 +122,7 @@
   </form>
   <form method="post" action="/cases/{{ case.id }}/delete" class="mt-6 border-t border-border/60 pt-4 text-sm">
     <button class="danger">{{ _("Delete it") }}</button>
-    <span class="ml-2 text-muted-foreground">{{ pgettext("after the button Delete it", "It stays in the runs that ran it, and you can restore it from the Library.") }}</span>
+    <span class="ml-2 text-muted-foreground">{{ pgettext("after the button Delete it", "It stays in the runs that used it, and you can restore it from the Library.") }}</span>
   </form>
   {% endcall %}
   {% endif %}

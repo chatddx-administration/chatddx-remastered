@@ -1682,7 +1682,7 @@ login is unprocessable rather than not found.
 * ∟`None`
 
 Raises:
-1. `Invalid`: `"no person %(person)s", person=repr(missing[0])`
+1. `Invalid`: `"no person %(login)s", login=repr(missing[0])`
 
 ## `said_of`
 `src/chatddx/api/events.py:said_of`

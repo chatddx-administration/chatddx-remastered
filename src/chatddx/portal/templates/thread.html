@@ -124,7 +124,7 @@
     {% endfor %}
   </ul>
   {% endif %}
-  <h3>{{ _("Its versions") }}</h3>
+  <h3>{{ _("Versions") }}</h3>
   {% call paged(versions | length) %}
   <ol class="space-y-1 text-sm" data-paged>
     {% for v in versions | reverse %}
@@ -140,7 +140,7 @@
   {% endcall %}
 
   {% if ran is not none %}
-  {% call section(_("Its runs"), "runs") %}
+  {% call section(_("Runs"), "runs") %}
   {% if not thread.deleted %}<p class="mb-3 text-sm">{% trans thread=thread.id %}<a class="bench" href="/lab/run?trial={{ thread }}">Run it</a>{% endtrans %}</p>{% endif %}
   {% call paged(ran | length) %}
   <ul class="space-y-1 text-sm" data-paged>

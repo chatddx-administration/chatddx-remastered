@@ -566,7 +566,7 @@ def said(bench: Bench, subject: Subject, given: schemas.Said) -> None:
     """
     people = bench.people
     if missing := [c for c in given.collaborators or () if people.find(c) is None]:
-        raise Invalid.of("no person %(person)s", person=repr(missing[0]))
+        raise Invalid.of("no person %(login)s", login=repr(missing[0]))
     with refused():
         _ = bench.say(subject, **given.model_dump(exclude_unset=True))
 

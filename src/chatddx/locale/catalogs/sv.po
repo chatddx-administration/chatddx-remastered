@@ -341,13 +341,6 @@ msgid_plural "%(n)s scored"
 msgstr[0] "%(n)s rättad"
 msgstr[1] "%(n)s rättade"
 
-#: frontend/src/lib/scorer/ScorerViews.svelte
-#, python-format
-msgid "%(n)s seed"
-msgid_plural "%(n)s seeds"
-msgstr[0] "%(n)s seed"
-msgstr[1] "%(n)s seeds"
-
 #: frontend/src/lib/compose/Texts.svelte
 #, python-format
 msgid "%(n)s to look over"
@@ -568,6 +561,7 @@ msgid_plural "%(num)s salvaged"
 msgstr[0] "%(num)s räddad"
 msgstr[1] "%(num)s räddade"
 
+#: frontend/src/lib/scorer/ScorerViews.svelte
 #: src/chatddx/portal/templates/runner.html
 #, python-format
 msgid "%(num)s seed"
@@ -1439,6 +1433,7 @@ msgid "Case"
 msgstr "Fall"
 
 #: frontend/src/lib/compose/Breakdown.svelte src/chatddx/portal/shelves.py
+#: src/chatddx/portal/templates/case.html
 #: src/chatddx/portal/templates/review.html
 #: src/chatddx/portal/templates/run.html
 msgid "Cases"
@@ -1827,10 +1822,12 @@ msgid "Found"
 msgstr "Hittade"
 
 #: src/chatddx/portal/templates/score.html
+#: src/chatddx/portal/templates/scoring.html
 msgid "From the answer"
 msgstr "Ur svaret"
 
 #: src/chatddx/portal/templates/score.html
+#: src/chatddx/portal/templates/scoring.html
 msgid "From the expectation"
 msgstr "Ur facit"
 
@@ -2022,17 +2019,12 @@ msgid "It is to be an object, between { and }."
 msgstr "Det ska vara ett objekt, mellan { och }."
 
 #: frontend/src/lib/library/editors.ts
+#: frontend/src/lib/schema/SchemaField.svelte
 #, python-format
 msgid "It isn't JSON yet: %(error)s"
 msgstr "Det är inte JSON än: %(error)s"
 
 #: src/chatddx/portal/templates/case.html
-msgctxt "after the button Delete it"
-msgid "It stays in the runs that ran it, and you can restore it from the Library."
-msgstr ""
-"Det finns kvar i de körningar som körde det, och du kan återställa det "
-"från Biblioteket."
-
 #: src/chatddx/portal/templates/thread.html
 msgctxt "after the button Delete it"
 msgid ""
@@ -2067,10 +2059,6 @@ msgid ""
 "Its $refs replaced by what they point at before it is sent "
 "(inline_refs@1)."
 msgstr "Dess $refs ersätts med det de pekar på innan det skickas (inline_refs@1)."
-
-#: src/chatddx/portal/templates/case.html
-msgid "Its cases"
-msgstr "Fall"
 
 #: src/chatddx/portal/templates/library.html
 msgctxt "after the button Begin a trial of the picked"
@@ -2167,10 +2155,6 @@ msgstr "Förfrågan, en bedömarkonfiguration"
 msgid "Its run"
 msgstr "Dess körning"
 
-#: src/chatddx/portal/templates/thread.html
-msgid "Its runs"
-msgstr "Körningar"
-
 #: frontend/src/lib/review/Measuring.svelte
 msgid "Its score"
 msgstr "Dess rättning"
@@ -2210,15 +2194,6 @@ msgstr "Omdöme vid"
 #: src/chatddx/portal/templates/scoring.html
 msgid "Its verdicts"
 msgstr "Omdömen"
-
-#: src/chatddx/portal/templates/case.html
-#: src/chatddx/portal/templates/thread.html
-msgid "Its versions"
-msgstr "Versioner"
-
-#: src/chatddx/portal/templates/scoring.html
-msgid "Its views"
-msgstr "Vyer"
 
 #: src/chatddx/portal/templates/case.html
 msgctxt "under the field Language"
@@ -2657,11 +2632,6 @@ msgstr "Inga som du har tillgång till."
 msgid "None."
 msgstr "Inga."
 
-#: frontend/src/lib/schema/SchemaField.svelte
-#, python-format
-msgid "Not JSON yet: %(error)s"
-msgstr "Inte JSON än: %(error)s"
-
 #: frontend/src/lib/compose/JsonField.svelte
 msgid "Not JSON yet: it is kept as it was till it is."
 msgstr "Inte JSON än: det behålls som det var tills det är det."
@@ -2767,14 +2737,6 @@ msgstr "Inget att översätta till %(language)s."
 #: frontend/src/lib/compose/Texts.svelte
 msgid "Nothing to translate."
 msgstr "Inget att översätta."
-
-#: src/chatddx/portal/templates/scoring.html
-msgid "Of the answer"
-msgstr "Ur svaret"
-
-#: src/chatddx/portal/templates/scoring.html
-msgid "Of the expectation"
-msgstr "Ur facit"
 
 #: src/chatddx/portal/templates/scoring.html
 msgid "Of what is expected of"
@@ -2884,13 +2846,10 @@ msgctxt "of a list"
 msgid "Pages"
 msgstr "Sidor"
 
+#: src/chatddx/portal/templates/score.html
 #: src/chatddx/portal/templates/scoring.html
 #: src/chatddx/portal/templates/world.html
 msgid "Parameters"
-msgstr "Parametrar"
-
-#: src/chatddx/portal/templates/score.html
-msgid "Params"
 msgstr "Parametrar"
 
 #: src/chatddx/portal/templates/sign-in.html
@@ -3111,6 +3070,7 @@ msgstr "Kör försök"
 #: frontend/src/lib/compose/Breakdown.svelte
 #: src/chatddx/portal/templates/base.html src/chatddx/portal/templates/run.html
 #: src/chatddx/portal/templates/runs.html
+#: src/chatddx/portal/templates/thread.html
 msgid "Runs"
 msgstr "Körningar"
 
@@ -3947,6 +3907,7 @@ msgid "View"
 msgstr "Vy"
 
 #: frontend/src/lib/compose/Preview.svelte
+#: src/chatddx/portal/templates/scoring.html
 msgid "Views"
 msgstr "Vyer"
 
@@ -5172,17 +5133,11 @@ msgstr ""
 "ingen sida för %(kind)s %(thread)s: den finns i Granskning, i fallet den "
 "hör till"
 
-#: src/chatddx/bench/saying.py
+#: src/chatddx/api/threads.py src/chatddx/bench/saying.py
 #, python-format
 msgctxt "refusal"
 msgid "no person %(login)s"
 msgstr "ingen person %(login)s"
-
-#: src/chatddx/api/threads.py
-#, python-format
-msgctxt "refusal"
-msgid "no person %(person)s"
-msgstr "ingen person %(person)s"
 
 #: frontend/src/islands/Home.svelte
 msgid "no run was started"
@@ -5213,20 +5168,8 @@ msgstr "ingen översättning till %(into)s för %(texts)s"
 #: src/chatddx/factors/request.py
 #, python-format
 msgctxt "refusal"
-msgid "no translation into %(language)s given for %(texts)s"
-msgstr "ingen översättning till %(language)s angiven för %(texts)s"
-
-#: src/chatddx/factors/request.py
-#, python-format
-msgctxt "refusal"
 msgid "no translations into %(into)s"
 msgstr "inga översättningar till %(into)s"
-
-#: src/chatddx/factors/request.py
-#, python-format
-msgctxt "refusal"
-msgid "no translations into %(language)s"
-msgstr "inga översättningar till %(language)s"
 
 #: src/chatddx/portal/starting.py
 #, python-format

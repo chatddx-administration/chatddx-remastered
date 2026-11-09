@@ -1753,9 +1753,9 @@ Raises:
 * `into: Annotated[dict[Language, dict[str, str]], AfterValidator(sorted_keys)] = Field(…)`
 
 Raises:
-1. `Invalid`: `"no translations into %(language)s", language=language` (through `Translations._into`, in a `ValidationError`)
+1. `Invalid`: `"no translations into %(into)s", into=language` (through `Translations._into`, in a `ValidationError`)
 2. `Invalid`: `"whitespace isn't translated"` (through `Translations._into`, in a `ValidationError`)
-3. `Invalid`: `"no translation into %(language)s given for %(texts)s", language=language, texts=str(empty)` (through `Translations._into`, in a `ValidationError`)
+3. `Invalid`: `"no translation into %(into)s for %(texts)s", into=language, texts=str(empty)` (through `Translations._into`, in a `ValidationError`)
 
 ## `Trial` `(Component)`
 `src/chatddx/factors/trial.py:Trial`

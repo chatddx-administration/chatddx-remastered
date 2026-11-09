@@ -646,7 +646,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = imp.add_argument(
         "reports",
         nargs="+",
-        help="each host's report: its URL, such as http://pelle.km:12008/, a file, or "
+        help="each host's report: its URL, such as "
+        + "http://pelle.via-pelle.int.kompismoln.se:12008/, a file, or "
         + "- for stdin",
     )
     _ = imp.add_argument(
