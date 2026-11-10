@@ -1,4 +1,4 @@
-2026-11-09T00:42:16Z 9d6e8c1 ./dev/check.sh browser
+2026-11-09T19:29:52Z a8228cc ./dev/check.sh browser
 • browser
 
 > chatddx-portal@0.0.0 build /home/user/chatddx-remastered/frontend
@@ -9,7 +9,7 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [221.2ms]
+🚀 openapi.json → src/lib/api/schema.d.ts [290.4ms]
 vite v8.3.4 building client environment for production...
 transforming...
 ✓ 833 modules transformed.
@@ -44,15 +44,23 @@ dist/assets/locale-CNzZghOQ.js                                       57.21 kB �
 dist/assets/dist-Bhi-F0BH.js                                         67.43 kB │ gzip: 21.03 kB
 dist/assets/compose-DVucBj76.js                                      69.00 kB │ gzip: 21.35 kB
 
-✓ built in 2.75s
+✓ built in 4.99s
+[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 4.8s of this 5.0s build (96%).
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin @tailwindcss/vite:generate:build transform (92%, 4.6s, 3 calls)
+  - plugin vite-plugin-svelte:compile transform (48%, 2.4s, 303 calls)
+  - plugin vite-plugin-svelte:compile-module transform (28%, 1.4s, 99 calls)
+These rows add up to more than the total. Callbacks can overlap, so the same time counts for more than one row.
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0
 rootdir: /home/user/chatddx-remastered
 configfile: pyproject.toml
 testpaths: dev/src, src
 plugins: xdist-3.8.0, anyio-4.15.1
-collected 1206 items / 1177 deselected / 29 selected
+collected 1207 items / 1178 deselected / 29 selected
 
 src/chatddx/portal/test/test_browser.py .............................    [100%]
 
-================ 29 passed, 1177 deselected in 97.46s (0:01:37) ================
+=============== 29 passed, 1178 deselected in 121.80s (0:02:01) ================

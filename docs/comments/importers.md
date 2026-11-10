@@ -17,6 +17,7 @@ Written by `chatddx-dev index` from the comments in `[parts.importers]`'s code i
 
 ```
 # Accommodating for o11n's report: a part it couldn't gather holds only the error.
+<<<<<<< signed
 ```
 
 ## `src/chatddx/importers/o11n.py:_HOST_ENV`
@@ -24,6 +25,8 @@ Written by `chatddx-dev index` from the comments in `[parts.importers]`'s code i
 ```
 # Policy: o11n.vllm sets these on every server to find the model, the GPU and CUDA,
 # which the runtime closure covers: where an engine runs, not what it is.
+=======
+>>>>>>> @stamp
 ```
 
 ## `src/chatddx/importers/o11n.py:_NETWORK_ENV`
