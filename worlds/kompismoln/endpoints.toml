@@ -10,7 +10,7 @@ host = "pelle"
 capacity = 1
 
 [endpoint."gpt-oss-20b@malborg"]
-engine = "sha256:e0d96eadaa35a1dfe7cfbe5c685d31a2e5a311105b4b3f948455f2e0041ab8b6"
+engine = "sha256:389286f96e5ab0c3cdb4adcd9dde4718b1395064f5eaa02e5f2297de12a5f05c"
 url = "http://malborg.via-pelle.int.kompismoln.se:12009/v1/"
 host = "malborg"
 capacity = 4

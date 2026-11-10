@@ -55,7 +55,7 @@ description = "openai/gpt-oss-20b on malborg, as its o11n.vllm report has it."
 tags = ["malborg"]
 model = "gpt-oss-20b"
 hardware = { gpu = "NVIDIA GeForce RTX 5090", compute_capability = [12, 0], vram_mib = 32607, driver = "595.99.02" }
-runtime = { version = "0.24.0", closure = "/nix/store/wc7y3a2yrlz03kj3587pwwz86jcamhhs-vllm-runtime" }
+runtime = { version = "0.24.0", closure = "/nix/store/c5llbj4qxadbcgx74z5d2rvpaw3yqbm7-vllm-runtime" }
 chat_template = "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146"
 argv = ["--gpu-memory-utilization=0.95", "--max-model-len=32768", "--max-num-seqs=4", "--enable-prefix-caching", "--tool-call-parser=openai", "--enable-auto-tool-choice", "--reasoning-parser=openai_gptoss"]
 env = { VLLM_SYSTEM_START_DATE = "2026-10-07", VLLM_USE_FLASHINFER_SAMPLER = "0" }
