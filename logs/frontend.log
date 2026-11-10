@@ -1,4 +1,4 @@
-2026-11-09T19:20:53Z a8228cc ./dev/check.sh frontend
+2026-11-10T01:22:43Z db48a54 ./dev/check.sh frontend
 • frontend
 
 > chatddx-portal@0.0.0 check /home/user/chatddx-remastered/frontend
@@ -9,9 +9,9 @@
 > openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts
 
 ✨ openapi-typescript 7.13.0
-🚀 openapi.json → src/lib/api/schema.d.ts [253.5ms]
-1794252067163 START "/home/user/chatddx-remastered/frontend"
-1794252067167 COMPLETED 893 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
+🚀 openapi.json → src/lib/api/schema.d.ts [739.9ms]
+1794273779637 START "/home/user/chatddx-remastered/frontend"
+1794273779645 COMPLETED 893 FILES 0 ERRORS 0 WARNINGS 0 FILES_WITH_PROBLEMS
 
 > chatddx-portal@0.0.0 test /home/user/chatddx-remastered/frontend
 > vitest run
@@ -22,9 +22,10 @@
 
  Test Files  23 passed (23)
       Tests  101 passed (101)
-   Start at  19:21:08
-   Duration  1.91s (transform 66%, import 21%, tests 10%, worker 3%)
+   Start at  01:23:00
+   Duration  2.95s (transform 63%, import 21%, tests 12%, worker 4%)
 
-    Isolate  23 workers spawned · ~114ms startup each (spawn + environment, per file)
-             at least ~760ms faster with isolate: false — reuses workers across files instead of one per file
+  Transform  transforming modules took 2.55s · 63% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
