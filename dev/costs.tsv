@@ -1853,3 +1853,8 @@
 2026-11-10T01:51:40Z	container	8.7	0	6	9e5d306	./dev/check.sh format
 2026-11-10T01:51:49Z	container	18.2	0	6	9e5d306	./dev/check.sh index
 2026-11-10T01:51:57Z	container	25.5	0	6	9e5d306	./dev/check.sh python-lint
+2026-11-10T01:52:35Z	container	0.6	0	4	95042cc	./dev/check.sh docs
+2026-11-10T01:54:48Z	container	132.1	0	0	95042cc	pytest -n 4
+2026-11-10T01:54:48Z	container	132.6	0	0	95042cc	./dev/check.sh python-tests
+2026-11-10T01:56:32Z	container	98.4	0	0	95042cc	pytest -m browser
+2026-11-10T01:56:32Z	container	104.1	0	0	95042cc	./dev/check.sh browser
