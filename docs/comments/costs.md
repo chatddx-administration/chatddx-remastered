@@ -23,6 +23,15 @@ Written by `chatddx-dev index` from the comments in `[parts.costs]`'s code in `s
 
 ```
 # Compromise: timed from when pytest loads its plugins, its own start left out.
+<<<<<<< signed
+=======
+```
+
+## `dev/src/chatddx_dev/costs/__init__.py:Costs.pytest_unconfigure`
+
+```
+# Accommodating for a checkout without git, such as nix's: nothing is spooled there.
+>>>>>>> @stamp
 ```
 
 ## `dev/src/chatddx_dev/costs/__init__.py:MARGIN`
