@@ -158,8 +158,6 @@ Written by `chatddx-dev index` from the comments in `[parts.factors]`'s code in 
 # (cases.py).
 ```
 
-<<<<<<< signed
-=======
 ## `src/chatddx/factors/scoring.py:View.offered_by`
 
 ```
@@ -168,7 +166,6 @@ Written by `chatddx-dev index` from the comments in `[parts.factors]`'s code in 
 # what a field beside the one meant says.
 ```
 
->>>>>>> @stamp
 ## `src/chatddx/factors/select.py`
 
 ```

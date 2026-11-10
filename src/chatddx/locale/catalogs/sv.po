@@ -1709,12 +1709,9 @@ msgid ""
 "Enter nothing that could identify a patient. De-identifying a case is the"
 " responsibility of the clinician or researcher who enters it."
 msgstr ""
-<<<<<<< signed
-=======
 "Ange ingenting som kan identifiera en patient. Ansvaret för att "
 "avidentifiera ett fall ligger hos den kliniker eller forskare som matar "
 "in det."
->>>>>>> @stamp
 
 #: src/chatddx/portal/templates/world.html
 msgid "Environment"

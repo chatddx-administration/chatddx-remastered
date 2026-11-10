@@ -31,15 +31,12 @@ assert isinstance(e, RequestValidationError)
 assert isinstance(held, AppState)
 ```
 
-<<<<<<< signed
-=======
 ## `src/chatddx/api/app.py:_unstorable`
 
 ```
 assert isinstance(e, psycopg.DataError)
 ```
 
->>>>>>> @stamp
 ## `src/chatddx/api/app.py:_whoops`
 
 ```

@@ -1075,8 +1075,6 @@ Raises:
 * `selector: str`
 * ∟`bool`
 
-<<<<<<< signed
-=======
 ## `reaches_text`
 `src/chatddx/factors/select.py:reaches_text`
 
@@ -1087,7 +1085,6 @@ an object or an array: what a metric reads as it is written, not as its JSON.
 * `selector: str`
 * ∟`bool`
 
->>>>>>> @stamp
 ## `REASONING`
 `src/chatddx/factors/response.py:REASONING`
 
